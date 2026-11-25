@@ -10,7 +10,7 @@ export function UltraLuxeIdentityMotionProvider({clock,fullSet,active=true,child
 export function useUltraLuxeIdentityMotion(){return useContext(IdentityMotion);}
 export function UltraLuxeTitleText({title,color,style,verified}:{title:string;color:string;style?:StyleProp<TextStyle>;verified:boolean}){
  const motion=useUltraLuxeIdentityMotion();
+ const opacity=useMemo(()=>verified&&motion?motion.clock.interpolate({inputRange:[...SIGNATURE_CURVE_PHASE],outputRange:SIGNATURE_TITLE_OPACITY}):undefined,[verified,motion]);
  if(!verified||!motion)return <Text numberOfLines={1} style={[style,{color}]}>{title}</Text>;
- const opacity=motion.clock.interpolate({inputRange:[...SIGNATURE_CURVE_PHASE],outputRange:SIGNATURE_TITLE_OPACITY});
- return <Animated.Text numberOfLines={1} style={[style,{color,opacity,textShadowColor:color,textShadowRadius:motion.fullSet?3:1,textShadowOffset:{width:0,height:0}}]}>{title}</Animated.Text>;
+ return <Animated.Text numberOfLines={1} style={[style,{color,opacity,textShadowColor:color,textShadowRadius:motion.fullSet?4:2,textShadowOffset:{width:0,height:0}}]}>{title}</Animated.Text>;
 }

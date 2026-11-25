@@ -1,4 +1,4 @@
-import {useEffect,useRef,useState} from 'react';
+import {useEffect,useMemo,useRef,useState} from 'react';
 import {AccessibilityInfo,Animated,AppState,Easing,Image,StyleSheet,View} from 'react-native';
 import {getCelestialAssetBundle} from '../../theme/celestial-integration-assets';
 
@@ -41,9 +41,9 @@ export function CelestialStandardBackgroundEffects({active,reduceMotion=false}:{
  * The richer rail/eclipsing signature belongs to CelestialSovereignPreview only. */
 export function CelestialStandardBorderEffects({active,reduceMotion=false}:{active:boolean;reduceMotion?:boolean}){
  const [width,setWidth]=useState(0),clock=useCelestialClock(active,reduceMotion,12000),star=getCelestialAssetBundle().scene.star;
- const travel=clock.interpolate({inputRange:[0,1],outputRange:[0,Math.max(0,width-42)]});
+ const travel=useMemo(()=>clock.interpolate({inputRange:[0,.5,1],outputRange:[0,Math.max(0,width-42),0]}),[clock,width]);
  const pulse=clock.interpolate({inputRange:[0,.35,.7,1],outputRange:[.25,.85,.35,.25]});
- return <View onLayout={event=>setWidth(event.nativeEvent.layout.width)} pointerEvents="none" accessible={false}
+ return <View onLayout={event=>{const next=event.nativeEvent.layout.width;setWidth(old=>Math.abs(old-next)<.5?old:next);}} pointerEvents="none" accessible={false}
   importantForAccessibility="no-hide-descendants" style={s.borderLayer}>
   <Animated.Image source={star} resizeMode="contain" style={[s.railStar,{opacity:pulse,transform:[{translateX:travel}]}]}/>
   <Animated.Image source={star} resizeMode="contain" style={[s.cornerStar,s.cornerTL,{opacity:pulse}]}/>

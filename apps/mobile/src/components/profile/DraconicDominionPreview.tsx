@@ -2,7 +2,7 @@ import {useUltraLuxePetReaction,UltraLuxePetReaction} from './UltraLuxePetReacti
 import {UltraLuxeIdentityMotionProvider} from './UltraLuxeIdentityMotion';
 import {UltraLuxePetPoseSprite} from './UltraLuxePetPoseSprite';
 import {ULTRA_LUXE_CYCLE_MS} from '../../core/ultra-luxe-motion';
-import {UltraLuxeEnvironment,UltraLuxeRail,UltraLuxePetAura,UltraLuxeAscendantFlourish,signatureEnergy,petIdleMotion} from './UltraLuxeMotion';
+import {UltraLuxeEnvironment,UltraLuxeRail,UltraLuxePetAura,UltraLuxeAscendantFlourish,petIdleMotion,awakeningEnergy,awakeningPetLift} from './UltraLuxeMotion';
 import {useEffect,useMemo,useRef,useState,type ReactNode} from 'react';
 import {AccessibilityInfo,Animated,AppState,Easing,Image,Pressable,StyleSheet,View,useWindowDimensions,type ImageSourcePropType} from 'react-native';
 import {DRACONIC_BOXES as B,DRACONIC_STAGE as S,draconicPetMode,draconicStageSupported} from '../../core/draconic-showcase-layout';
@@ -40,28 +40,30 @@ export function DraconicDominionPreview({assets,equippedPetId,alternatePetSource
  const mode=draconicPetMode(equippedPetId,!!alternatePetSource);
  const reactionEnabled=running&&mode==='matching';
  const {reaction,trigger}=useUltraLuxePetReaction(reactionEnabled);
- const pulse=useMemo(()=>signatureEnergy(clock),[clock]);
+ const pulse=useMemo(()=>awakeningEnergy(clock,'draconic'),[clock]);
+ const signatureLift=useMemo(()=>awakeningPetLift(clock,k,'draconic'),[clock,k]);
  const idle=useMemo(()=>petIdleMotion(clock,k,mode==='alternate'?'alternate':'draconic'),[clock,k,mode]);
  // Atlas already animates local body parts; do not layer rocking/stretching over it.
  const mirroredBody=assets.smoothPoseAtlas?[{scaleX:-1}]:[{rotate:idle.tilt},{scaleX:Animated.multiply(idle.scaleX,-1)},{scaleY:idle.scaleY}];
+ const bodyLift=useMemo(()=>Animated.add(idle.lift,signatureLift),[idle.lift,signatureLift]);
  const ringGlow=useMemo(()=>Animated.add(.72,Animated.multiply(pulse,.28)),[pulse]);
  return <View style={s.outer} onLayout={e=>{const next=e.nativeEvent.layout.width;setWidth(old=>Math.abs(old-next)<.5?old:next);}}>
  {!supported?fallback:<View style={[s.card,{height:S.height*k}]}>
   <View pointerEvents="none" accessible={false} importantForAccessibility="no-hide-descendants" style={StyleSheet.absoluteFill}>
-   <Image source={assets.background} resizeMode="cover" style={s.fill}/>
-   <Animated.View style={[s.heat,{opacity:Animated.multiply(pulse,.18)}]}/>
+   <Image source={assets.background} fadeDuration={0} resizeMode="cover" style={s.fill}/>
+   <Animated.View style={[s.heat,{opacity:Animated.multiply(pulse,.12)}]}/>
    {running?<UltraLuxeEnvironment clock={clock} scale={k} theme="draconic" particle={assets.ember}/>:null}
    {mode==='matching'?<>
-    <Animated.View style={[StyleSheet.absoluteFill,{transform:[{translateY:idle.lift}]}]}>
-     <Animated.Image source={assets.fallbackGlow} resizeMode="stretch" style={[box(B.ring),{opacity:ringGlow}]}/>
-     {running&&assets.smoothPoseAtlas?<Animated.View style={[box(B.dragon),{transform:mirroredBody}]}><UltraLuxePetPoseSprite source={assets.smoothPoseAtlas} clock={clock} theme="draconic" width={B.dragon.w*k} height={B.dragon.h*k}/></Animated.View>:<Animated.Image source={assets.dragon} resizeMode="contain" style={[box(B.dragon),{transform:mirroredBody}]}/>}
-     <Animated.Image source={assets.flames} resizeMode="contain" style={[box(B.flames),{opacity:Animated.add(Animated.multiply(idle.glow,.08),Animated.multiply(pulse,.55)),transform:mirroredBody}]}/>
+    <Animated.Image source={assets.fallbackGlow} fadeDuration={0} resizeMode="stretch" style={[box(B.ring),{opacity:ringGlow}]}/>
+    <Animated.View style={[StyleSheet.absoluteFill,{transform:[{translateY:bodyLift}]}]}>
+     {running&&assets.smoothPoseAtlas?<Animated.View style={[box(B.dragon),{transform:mirroredBody}]}><UltraLuxePetPoseSprite source={assets.smoothPoseAtlas} clock={clock} theme="draconic" width={B.dragon.w*k} height={B.dragon.h*k}/></Animated.View>:<Animated.Image source={assets.dragon} fadeDuration={0} resizeMode="contain" style={[box(B.dragon),{transform:mirroredBody}]}/>}
+     <Animated.Image source={assets.flames} fadeDuration={0} resizeMode="contain" style={[box(B.flames),{opacity:Animated.add(Animated.multiply(idle.glow,.18),Animated.multiply(pulse,.82)),transform:mirroredBody}]}/>
      {running?<UltraLuxePetAura clock={clock} scale={k} theme="draconic" particle={assets.ember}/>:null}
      {reactionEnabled?<UltraLuxePetReaction reaction={reaction} scale={k} theme="draconic" particle={assets.ember} glow={assets.fallbackGlow}/>:null}
     </Animated.View>
    </>:mode==='alternate'&&alternatePetSource?<><Animated.Image source={assets.fallbackGlow} resizeMode="contain" style={[box(B.glow),{opacity:Animated.add(.55,Animated.multiply(idle.glow,.5))}]}/><Animated.Image source={alternatePetSource} resizeMode="contain" style={[box(B.alternate),{transform:[{translateY:idle.lift},{rotate:idle.tilt},{scaleX:idle.scaleX},{scaleY:idle.scaleY}]}]}/></>:null}
   </View>
-  {reactionEnabled?<Pressable accessibilityRole="button" accessibilityLabel={petAccessibilityLabel??'Vharaxis'} onPress={trigger} style={box(B.dragon)}/>:mode!=='none'&&petAccessibilityLabel?<View accessible accessibilityLabel={petAccessibilityLabel} pointerEvents="none" style={box(mode==='matching'?B.dragon:B.alternate)}/>:null}
+  {reactionEnabled?<Pressable accessibilityRole="button" accessibilityLabel={petAccessibilityLabel??'Vharaxis'} onPress={trigger} hitSlop={{top:5*k,bottom:0,left:0,right:0}} style={box(B.dragon)}/>:mode!=='none'&&petAccessibilityLabel?<View accessible accessibilityLabel={petAccessibilityLabel} pointerEvents="none" style={box(mode==='matching'?B.dragon:B.alternate)}/>:null}
   <View style={[box(B.plate),s.plate]}/>
   <View style={[box(B.portrait),s.portrait]}>{portrait}</View>
   <UltraLuxeIdentityMotionProvider clock={clock} fullSet={fullSet} active={running}>
@@ -70,7 +72,7 @@ export function DraconicDominionPreview({assets,equippedPetId,alternatePetSource
   </UltraLuxeIdentityMotionProvider>
   {guild?<View style={[box(B.guild),s.guild]}>{guild}</View>:null}
   <View pointerEvents="none" accessible={false} importantForAccessibility="no-hide-descendants" style={StyleSheet.absoluteFill}>
-   <Image source={assets.border} resizeMode="stretch" style={s.fill}/>
+   <Image source={assets.border} fadeDuration={0} resizeMode="stretch" style={s.fill}/>
    {running?<UltraLuxeRail clock={clock} scale={k} theme="draconic" particle={assets.ember}/>:null}
     {running&&fullSet?<UltraLuxeAscendantFlourish clock={clock} scale={k} theme="draconic" particle={assets.ember}/>:null}
   </View>

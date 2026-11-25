@@ -60,8 +60,8 @@ const publicSource=fs.readFileSync('src/components/PublicProfileScene.tsx','utf8
 ok(motionSource.includes("if(!enabled)return;setForeground"),'inactive and static layers skip AppState subscriptions');
 ok(motionSource.includes('const staticItems=useMemo')&&motionSource.includes('()=>!enabled?[]:runtime.tracks.map'),'static effects skip native interpolation graphs');
 ok(motionSource.includes('const glows=useMemo'),'procedural glow interpolation is memoized');
-const collapsed=stageSource.slice(stageSource.indexOf('if(collapsed)return'),stageSource.indexOf('return <View style={s.root}>'));
-ok(collapsed.includes('active reduceMotion')&&!collapsed.includes('reduceMotion={state.settings.reduceMotion}/>:effectRuntime'),'collapsed strip uses static effects');
+const collapsed=stageSource.slice(stageSource.indexOf('if(collapsed)return'),stageSource.indexOf('if(dedicated)return'));
+ok((collapsed.match(/active=\{false\} reduceMotion/g)||[]).length===2&&!collapsed.includes('reduceMotion={state.settings.reduceMotion}/>:effectRuntime'),'collapsed strip uses static effects');
 ok(audienceSource.includes('cosmeticsActive={visible&&cosmeticViewport.visible}')&&publicSource.includes('const active=cosmeticsActive&&(stageActive??true)&&(review?.active??true)')&&publicSource.includes('active={active} reduceMotion={reduceMotion}'),'hidden audience preview stops cosmetics');
 console.log('PASS: cosmetic idle and static rendering contract');
 
@@ -92,7 +92,7 @@ for(const name of ['AnimatedProfileBorderGlows','ProfileCosmeticExteriorMatte','
 }
 ok(motionSource.includes('if(!pieces.length)return []')&&motionSource.includes('left:box.left-left,top:box.top-top'),'sprite glows composite only their clipped footprint');
 const selfSource=fs.readFileSync('src/components/ProfileScenePreview.tsx','utf8');
-ok(publicSource.includes('resolveProfileBorderArtworkId(review?reviewBorderId:renderBorderId,runtimeFallbackBorderId)')&&selfSource.includes('resolveProfileBorderArtworkId(renderBorderId,borderRuntime?.fallbackBorderId)')&&stageSource.includes('resolveProfileBorderArtworkId(character.profileBorderId,borderRuntime?.fallbackBorderId)'),'fallback artwork uses its actual aperture calibration in all three scene renderers');
+ok(publicSource.includes('runtimeFallbackBorderId??(review?reviewBorderId:renderBorderId)')&&selfSource.includes('borderRuntime?.fallbackBorderId??renderBorderId')&&stageSource.includes('borderRuntime?.fallbackBorderId??character.profileBorderId'),'fallback artwork uses its actual aperture calibration in all three scene renderers');
 console.log('PASS: cosmetic re-entry, memo boundaries, clipped compositing and fallback aperture contract');
 
 
@@ -165,3 +165,7 @@ for(const [id,asset,reward] of [
 ok(storeSource.includes('resolveProfileBorderArtworkId(runtime.borderId,runtime.fallbackBorderId)'),'store resolves dedicated frame artwork');
 ok(wardrobeSource.includes('profileBorderSourceById.get(row.id)'),'wardrobe prefers dedicated frame artwork');
 console.log('PASS: standard frames use dedicated artwork without replacing dungeon reward assets');
+
+ok(selfSource.includes('directBorder=profileBorderSourceById.get(renderBorderId)')&&selfSource.includes('borderArt?.border??directBorder??'),'personal direct artwork takes priority');
+ok(publicSource.includes('profileBorderSourceById.get(renderBorderId)')&&publicSource.includes('borderArt?.border??directBorder??'),'public direct artwork takes priority');
+ok(stageSource.includes('directFrame=profileBorderSourceById.get(character.profileBorderId')&&stageSource.includes('borderArt?.border??directFrame??'),'stage direct artwork takes priority');

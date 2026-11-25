@@ -3,13 +3,19 @@ import {ownedUltraLuxeTitleColor,ownedUltraLuxeTitles} from '../../core/ultra-lu
 import {profileT} from '../../i18n/profile';
 import {useGameLanguage} from '../../i18n/GameLanguageProvider';
 import {useMemo} from 'react';
+import {ProfileScenePreview} from '../ProfileScenePreview';
+import {CELESTIAL_IDS} from '../../core/ascendant-cosmetics';
+import {DRACONIC_IDS} from '../../core/draconic-showcase-layout';
+import {resolveTesterUltraLuxeVisuals,ultraLuxeSceneEffectCompatible} from '../../core/ultra-luxe-set-visuals';
+import {profileCosmeticsTester} from '../../core/profile-cosmetic-access';
+import {canUseProfileCosmetic} from '../../core/profile-cosmetics';
 import {Image,Pressable,StyleSheet,Text,View} from 'react-native';
 import {CLASSES} from '../../content/classes';
 import type {GameState} from '../../core/types';
 import {effectivePlayerNameStyle} from '../../core/player-name-style';
 import {BASE_PROFILE_BACKGROUNDS} from '../../core/profile-cosmetics';
 import {profileBackgroundPreviewById} from '../../theme/profile-background-assets';
-import {profileBorderSourceById,resolveProfileBorderArtworkId} from '../../theme/profile-border-assets';
+import {profileBorderSourceById} from '../../theme/profile-border-assets';
 import {personalBackgroundVariants} from '../../theme/card-background-assets';
 import {petArtSource} from '../../theme/pet-art';
 import {radii,typography,type ThemeColors} from '../../theme/theme';
@@ -30,51 +36,61 @@ import {RegionArtwork} from '../RegionArtwork';
 
 /** The customization stage: always on screen while browsing, so a tap's effect is visible.
  * Collapses to a single strip once the wardrobe is scrolled, and expands again on demand. */
-export function ProfileStage({state,collapsed,onToggle,onAudiencePreview,trailing}:{
- state:GameState;collapsed:boolean;onToggle:()=>void;onAudiencePreview?:()=>void;trailing?:string;
+export function ProfileStage({state,collapsed,onToggle,onAudiencePreview,trailing,active=true}:{
+ state:GameState;collapsed:boolean;onToggle:()=>void;onAudiencePreview?:()=>void;trailing?:string;active?:boolean;
 }){
  const language=useGameLanguage();
- const privateName=useUltraLuxeNameSelection(ownedUltraLuxeTitles(state).length>0).style;
+ const privateName=useUltraLuxeNameSelection(active&&!collapsed&&ownedUltraLuxeTitles(state).length>0).style;
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),badges=usePlayerBadges();
  const character=state.character;
  if(!character)return null;
  const backgroundId=character.profileBackgroundId??'asterfall-night';
+ const ownsBackground=canUseProfileCosmetic(state,'background',backgroundId),ownsBorder=!!character.profileBorderId&&canUseProfileCosmetic(state,'border',character.profileBorderId);
+ const tester=profileCosmeticsTester(state);
+ const visual=resolveTesterUltraLuxeVisuals({background:backgroundId,border:character.profileBorderId,displayedBadges:[]},{background:tester&&ownsBackground,border:tester&&ownsBorder,pet:false});
+ const dedicated=ownsBackground&&ownsBorder&&((visual.background===CELESTIAL_IDS.background&&visual.border===CELESTIAL_IDS.border&&ultraLuxeSceneEffectCompatible(character.profileEffectId,'premium:celestial-sovereign:celestial-alignment'))||(visual.background===DRACONIC_IDS.background&&visual.border===DRACONIC_IDS.border&&ultraLuxeSceneEffectCompatible(character.profileEffectId,'premium:draconic-dominion:awakening-of-the-dragon')));
  const scene=profileBackgroundPreviewById.get(backgroundId),base=BASE_PROFILE_BACKGROUNDS.find(row=>row.id===backgroundId);
  const animated=profileAnimatedCosmeticsEnabled(state);
  const borderArt=animated?cosmeticArtByBorder.get(character.profileBorderId??''):undefined,effectArt=animated?cosmeticArtByEffect.get(character.profileEffectId??''):undefined;
  const borderRuntime=animated?profileCosmeticRuntimeByBorder.get(character.profileBorderId??''):undefined,effectRuntime=animated?profileCosmeticRuntimeByEffect.get(character.profileEffectId??''):undefined;
- const borderArtworkId=resolveProfileBorderArtworkId(character.profileBorderId,borderRuntime?.fallbackBorderId);
  const directFrame=profileBorderSourceById.get(character.profileBorderId??'');
- const frame=borderArt?.border??directFrame??profileBorderSourceById.get(borderArtworkId),pet=petArtSource(character.selectedCosmeticPetId??'');
+ const frame=borderArt?.border??directFrame??(borderRuntime?profileBorderSourceById.get(borderRuntime.fallbackBorderId):undefined),pet=petArtSource(character.selectedCosmeticPetId??'');
  const anchors=profileSceneContentAnchors(frame?8:1,true);
  const className=CLASSES.find(row=>row.id===character.classId)?.name??character.classId;
  const title=character.profileTitle??profileT(language,"New Adventurer");
  const art=scene?<CardBackground sources={personalBackgroundVariants.get(backgroundId)??{wide:scene.source,square:scene.source}}/>:base?<RegionArtwork regionId={base.region}/>:null;
 
  if(collapsed)return <Pressable accessibilityRole="button" accessibilityLabel={profileT(language,"Expand the profile stage")} onPress={onToggle} style={({pressed})=>[s.strip,pressed&&s.pressed]}>
-  <View style={[s.stripArt,!!frame&&s.stripArtFramed]}><ProfileBorderBackdrop borderId={borderArt||directFrame?character.profileBorderId:borderArtworkId} source={frame} existingInset={5}>{art}<View style={s.stripScrim}/>{effectArt?<ProfileSceneEffect art={effectArt} active reduceMotion/>:effectRuntime?<ProceduralProfileSceneEffect runtime={effectRuntime} active reduceMotion/>:null}</ProfileBorderBackdrop></View>
+  <View style={[s.stripArt,!!frame&&s.stripArtFramed]}><ProfileBorderBackdrop borderId={borderArt||directFrame?character.profileBorderId:(borderRuntime?.fallbackBorderId??character.profileBorderId)} source={frame} existingInset={5}>{art}<View style={s.stripScrim}/>{effectArt?<ProfileSceneEffect art={effectArt} active={false} reduceMotion/>:effectRuntime?<ProceduralProfileSceneEffect runtime={effectRuntime} active={false} reduceMotion/>:null}</ProfileBorderBackdrop></View>
   <ProfileIcon id={character.profileIconId} classId={character.classId} size={38} style={[s.stripIcon,!!frame&&s.stripIconFramed]}/>
   <View style={s.stripCopy}>
-   <PlayerStyledName name={character.name} nameStyle={privateName??effectivePlayerNameStyle(state)} reduceMotion={state.settings.reduceMotion} numberOfLines={1} style={s.stripName}/>
+   <PlayerStyledName name={character.name} nameStyle={privateName??effectivePlayerNameStyle(state)} reduceMotion numberOfLines={1} style={s.stripName}/>
    <Text numberOfLines={1} style={[s.stripMeta,ownedUltraLuxeTitleColor(state,title,C.dark)?{color:ownedUltraLuxeTitleColor(state,title,C.dark)}:undefined]}>{title}</Text>
   </View>
   <View style={s.chip}><Text style={s.chipText}>{profileT(language,"Expand")} ▾</Text></View>
   {frame?<ProfileFrameOverlay source={frame} sceneSafe/>:null}
  </Pressable>;
 
+ if(dedicated)return <View style={s.dedicatedRoot}>
+  <ProfileScenePreview state={state} backgroundId={backgroundId} active={active}/>
+  <View style={s.dedicatedTools}>
+   {onAudiencePreview?<Pressable accessibilityRole="button" accessibilityLabel={profileT(language,"Preview as others see me")} onPress={onAudiencePreview} style={({pressed})=>[s.tool,pressed&&s.pressed]}><Text style={s.toolMark}>◎</Text></Pressable>:null}
+   <Pressable accessibilityRole="button" accessibilityLabel={profileT(language,"Collapse the profile stage")} onPress={onToggle} style={({pressed})=>[s.tool,pressed&&s.pressed]}><Text style={s.toolMark}>▴</Text></Pressable>
+  </View>
+ </View>;
  return <View style={s.root}>
   <View style={[s.surface,!!frame&&s.surfaceFramed]}>
-   <ProfileBorderBackdrop borderId={borderArt||directFrame?character.profileBorderId:borderArtworkId} source={frame} existingInset={8}>
+   <ProfileBorderBackdrop borderId={borderArt||directFrame?character.profileBorderId:(borderRuntime?.fallbackBorderId??character.profileBorderId)} source={frame} existingInset={8}>
    {art}
    <View style={s.scrim}/>
-   {effectArt?<ProfileSceneEffect art={effectArt} active reduceMotion={state.settings.reduceMotion}/>:effectRuntime?<ProceduralProfileSceneEffect runtime={effectRuntime} active reduceMotion={state.settings.reduceMotion}/>:null}
+   {effectArt?<ProfileSceneEffect art={effectArt} active={active} reduceMotion={state.settings.reduceMotion}/>:effectRuntime?<ProceduralProfileSceneEffect runtime={effectRuntime} active={active} reduceMotion={state.settings.reduceMotion}/>:null}
    </ProfileBorderBackdrop>
    {pet?<Image accessibilityLabel={profileT(language,"Pet preview")} source={pet} resizeMode="contain" style={[s.pet,{right:anchors.side,bottom:anchors.bottom}]}/>:null}
    <View style={[s.identity,!!frame&&s.identityFramed,!!pet&&{right:anchors.guildRightWithPet}]}>
     <ProfileIcon id={character.profileIconId} classId={character.classId} size={62} style={s.avatar}/>
     <View style={s.copy}>
      <View style={s.nameRow}>
-      <PlayerStyledName name={character.name} nameStyle={privateName??effectivePlayerNameStyle(state)} reduceMotion={state.settings.reduceMotion} numberOfLines={1} style={s.name}/>
+      <PlayerStyledName name={character.name} nameStyle={privateName??effectivePlayerNameStyle(state)} reduceMotion={!active||state.settings.reduceMotion} numberOfLines={1} style={s.name}/>
       <PlayerBadges identity={badges.identity}/>
      </View>
      <Text numberOfLines={1} style={[s.title,ownedUltraLuxeTitleColor(state,title,C.dark)?{color:ownedUltraLuxeTitleColor(state,title,C.dark)}:undefined]}>{title}</Text>
@@ -84,7 +100,7 @@ export function ProfileStage({state,collapsed,onToggle,onAudiencePreview,trailin
    </View>
   </View>
   {frame?<ProfileFrameOverlay source={frame} sceneSafe/>:null}
-  {borderArt?<AnimatedProfileBorderGlows art={borderArt} active reduceMotion={state.settings.reduceMotion}/>:borderRuntime?<ProceduralProfileBorderGlows runtime={borderRuntime} active reduceMotion={state.settings.reduceMotion}/>:null}
+  {borderArt?<AnimatedProfileBorderGlows art={borderArt} active={active} reduceMotion={state.settings.reduceMotion}/>:borderRuntime?<ProceduralProfileBorderGlows runtime={borderRuntime} active={active} reduceMotion={state.settings.reduceMotion}/>:null}
   <View style={[s.tools,!!frame&&s.toolsFramed]}>
    {onAudiencePreview?<Pressable accessibilityRole="button" accessibilityLabel={profileT(language,"Preview as others see me")} onPress={onAudiencePreview} style={({pressed})=>[s.tool,pressed&&s.pressed]}><Text style={s.toolMark}>◎</Text></Pressable>:null}
    <Pressable accessibilityRole="button" accessibilityLabel={profileT(language,"Collapse the profile stage")} onPress={onToggle} style={({pressed})=>[s.tool,pressed&&s.pressed]}><Text style={s.toolMark}>▴</Text></Pressable>
@@ -93,6 +109,8 @@ export function ProfileStage({state,collapsed,onToggle,onAudiencePreview,trailin
 }
 
 function makeStyles(C:ThemeColors){return StyleSheet.create({
+ dedicatedRoot:{width:'100%',position:'relative',gap:4},
+ dedicatedTools:{flexDirection:'row',justifyContent:'flex-end',gap:6},
  root:{width:'100%',height:168,position:'relative'},
  surface:{...StyleSheet.absoluteFill,borderRadius:radii.lg,overflow:'hidden',borderWidth:1,borderColor:C.lineStrong,backgroundColor:C.stage},
  surfaceFramed:{top:7,left:7,right:7,bottom:7,borderRadius:5,borderColor:C.line},

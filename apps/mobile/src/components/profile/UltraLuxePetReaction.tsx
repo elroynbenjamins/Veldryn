@@ -1,5 +1,6 @@
-import {useCallback,useEffect,useRef} from 'react';
+import {memo,useCallback,useEffect,useMemo,useRef} from 'react';
 import {Animated,Easing,StyleSheet,View,type ImageSourcePropType} from 'react-native';
+import {PET_REACTION_TRAJECTORIES,PET_REACTION_GLOW} from '../../core/ultra-luxe-motion';
 
 /** One short, non-reentrant native reaction. No polling, gameplay change or extra ambient loop.
  * Cancellation follows the parent stage's existing foreground/reduced-motion lifecycle. */
@@ -19,11 +20,17 @@ export function useUltraLuxePetReaction(enabled:boolean){
  return {reaction,trigger};
 }
 /** Localized light response in the pet area. No additional layout or identity animation. */
-export function UltraLuxePetReaction({reaction,scale:k,theme,particle,glow}:{reaction:Animated.Value;scale:number;theme:'celestial'|'draconic';particle:ImageSourcePropType;glow:ImageSourcePropType}){
+function UltraLuxePetReactionLayer({reaction,scale:k,theme,particle,glow}:{reaction:Animated.Value;scale:number;theme:'celestial'|'draconic';particle:ImageSourcePropType;glow:ImageSourcePropType}){
  const celestial=theme==='celestial',cx=celestial?279:266,cy=celestial?99:108;
- const expand=reaction.interpolate({inputRange:[0,1],outputRange:[.72,1.28]});
+ const {expand,opacity,tracks}=useMemo(()=>({
+  expand:reaction.interpolate({inputRange:[0,1],outputRange:[.72,PET_REACTION_GLOW[theme].scale]}),
+  opacity:Animated.multiply(reaction,PET_REACTION_GLOW[theme].opacity),
+  tracks:PET_REACTION_TRAJECTORIES[theme].map(p=>({...p,translateX:Animated.multiply(reaction,p.dx*k),translateY:Animated.multiply(reaction,p.dy*k)})),
+ }),[reaction,k,theme]);
  return <View pointerEvents="none" accessible={false} importantForAccessibility="no-hide-descendants" style={StyleSheet.absoluteFill}>
-  <Animated.Image source={glow} resizeMode="contain" style={{position:'absolute',left:(cx-27)*k,top:(cy-25)*k,width:54*k,height:50*k,opacity:Animated.multiply(reaction,.65),transform:[{scale:expand}]}}/>
-  {[-1,0,1].map(i=><Animated.Image key={i} source={particle} resizeMode="contain" style={{position:'absolute',left:(cx-4+i*10)*k,top:(cy-7)*k,width:8*k,height:8*k,opacity:reaction,transform:[{translateX:Animated.multiply(reaction,i*10*k)},{translateY:Animated.multiply(reaction,-(12+Math.abs(i)*3)*k)}]}}/>)}
+  <Animated.Image source={glow} resizeMode="contain" style={{position:'absolute',left:(cx-27)*k,top:(cy-25)*k,width:54*k,height:50*k,opacity,transform:[{scale:expand}]}}/>
+  {tracks.map((p,i)=><Animated.Image key={i} source={particle} fadeDuration={0} resizeMode="contain" style={{position:'absolute',left:(cx-4+p.x)*k,top:(cy-4+p.y)*k,width:8*k,height:8*k,opacity:reaction,transform:[{translateX:p.translateX},{translateY:p.translateY}]}}/>)}
  </View>;
 }
+
+export const UltraLuxePetReaction=memo(UltraLuxePetReactionLayer);

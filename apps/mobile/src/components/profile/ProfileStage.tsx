@@ -9,7 +9,7 @@ import type {GameState} from '../../core/types';
 import {effectivePlayerNameStyle} from '../../core/player-name-style';
 import {BASE_PROFILE_BACKGROUNDS} from '../../core/profile-cosmetics';
 import {profileBackgroundPreviewById} from '../../theme/profile-background-assets';
-import {profileBorderSourceById} from '../../theme/profile-border-assets';
+import {profileBorderSourceById,resolveProfileBorderArtworkId} from '../../theme/profile-border-assets';
 import {personalBackgroundVariants} from '../../theme/card-background-assets';
 import {petArtSource} from '../../theme/pet-art';
 import {radii,typography,type ThemeColors} from '../../theme/theme';
@@ -43,15 +43,16 @@ export function ProfileStage({state,collapsed,onToggle,onAudiencePreview,trailin
  const animated=profileAnimatedCosmeticsEnabled(state);
  const borderArt=animated?cosmeticArtByBorder.get(character.profileBorderId??''):undefined,effectArt=animated?cosmeticArtByEffect.get(character.profileEffectId??''):undefined;
  const borderRuntime=animated?profileCosmeticRuntimeByBorder.get(character.profileBorderId??''):undefined,effectRuntime=animated?profileCosmeticRuntimeByEffect.get(character.profileEffectId??''):undefined;
+ const borderArtworkId=resolveProfileBorderArtworkId(character.profileBorderId,borderRuntime?.fallbackBorderId);
  const directFrame=profileBorderSourceById.get(character.profileBorderId??'');
- const frame=borderArt?.border??directFrame??(borderRuntime?profileBorderSourceById.get(borderRuntime.fallbackBorderId):undefined),pet=petArtSource(character.selectedCosmeticPetId??'');
+ const frame=borderArt?.border??directFrame??profileBorderSourceById.get(borderArtworkId),pet=petArtSource(character.selectedCosmeticPetId??'');
  const anchors=profileSceneContentAnchors(frame?8:1,true);
  const className=CLASSES.find(row=>row.id===character.classId)?.name??character.classId;
  const title=character.profileTitle??profileT(language,"New Adventurer");
  const art=scene?<CardBackground sources={personalBackgroundVariants.get(backgroundId)??{wide:scene.source,square:scene.source}}/>:base?<RegionArtwork regionId={base.region}/>:null;
 
  if(collapsed)return <Pressable accessibilityRole="button" accessibilityLabel={profileT(language,"Expand the profile stage")} onPress={onToggle} style={({pressed})=>[s.strip,pressed&&s.pressed]}>
-  <View style={[s.stripArt,!!frame&&s.stripArtFramed]}><ProfileBorderBackdrop borderId={borderArt||directFrame?character.profileBorderId:(borderRuntime?.fallbackBorderId??character.profileBorderId)} source={frame} existingInset={5}>{art}<View style={s.stripScrim}/>{effectArt?<ProfileSceneEffect art={effectArt} active reduceMotion/>:effectRuntime?<ProceduralProfileSceneEffect runtime={effectRuntime} active reduceMotion/>:null}</ProfileBorderBackdrop></View>
+  <View style={[s.stripArt,!!frame&&s.stripArtFramed]}><ProfileBorderBackdrop borderId={borderArt||directFrame?character.profileBorderId:borderArtworkId} source={frame} existingInset={5}>{art}<View style={s.stripScrim}/>{effectArt?<ProfileSceneEffect art={effectArt} active reduceMotion/>:effectRuntime?<ProceduralProfileSceneEffect runtime={effectRuntime} active reduceMotion/>:null}</ProfileBorderBackdrop></View>
   <ProfileIcon id={character.profileIconId} classId={character.classId} size={38} style={[s.stripIcon,!!frame&&s.stripIconFramed]}/>
   <View style={s.stripCopy}>
    <PlayerStyledName name={character.name} nameStyle={privateName??effectivePlayerNameStyle(state)} reduceMotion={state.settings.reduceMotion} numberOfLines={1} style={s.stripName}/>
@@ -63,7 +64,7 @@ export function ProfileStage({state,collapsed,onToggle,onAudiencePreview,trailin
 
  return <View style={s.root}>
   <View style={[s.surface,!!frame&&s.surfaceFramed]}>
-   <ProfileBorderBackdrop borderId={borderArt||directFrame?character.profileBorderId:(borderRuntime?.fallbackBorderId??character.profileBorderId)} source={frame} existingInset={8}>
+   <ProfileBorderBackdrop borderId={borderArt||directFrame?character.profileBorderId:borderArtworkId} source={frame} existingInset={8}>
    {art}
    <View style={s.scrim}/>
    {effectArt?<ProfileSceneEffect art={effectArt} active reduceMotion={state.settings.reduceMotion}/>:effectRuntime?<ProceduralProfileSceneEffect runtime={effectRuntime} active reduceMotion={state.settings.reduceMotion}/>:null}

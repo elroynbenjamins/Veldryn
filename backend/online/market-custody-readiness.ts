@@ -77,6 +77,7 @@ export function inspectPlayerMarketCustodySnapshotV1(
       const stack=stacks[index];
       if(!stack||typeof stack.itemId!=='string')continue;
       const problems:string[]=['snapshot_bridge_not_implemented','binding_status_unverified'];
+      if(stack.bound===true)problems.push('account_bound_dungeon_shop_material');
       if(!Number.isSafeInteger(stack.quantity)||stack.quantity<=0)
         problems.push('invalid_quantity');
       if(!marketCatalogCandidate(stack.itemId))

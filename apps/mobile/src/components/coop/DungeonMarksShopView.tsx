@@ -1,5 +1,5 @@
 import {useRef,useState} from 'react';
-import {Image,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {Image,Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {useGameTheme} from '../../theme/ThemeContext';
 import {type ThemeColors,radii,spacing,typography} from '../../theme/theme';
 import {ExpeditionMarkIcon} from '../ExpeditionMarkIcon';
@@ -10,7 +10,7 @@ import {RegionArtwork} from '../RegionArtwork';
 import {GameButton} from '../GameButton';
 import {useGameLanguage} from '../../i18n/GameLanguageProvider';
 import {formatLocalizedNumber} from '../../i18n/translator';
-import {dungeonShopText,dungeonShopOfferName,dungeonShopOfferSummary,dungeonShopOfferBonusDetails,dungeonShopBonusLabel,dungeonShopLockReason} from '../../i18n/dungeon-shop';
+import {dungeonShopText,dungeonShopOfferName,dungeonShopOfferSummary,dungeonShopOfferBonusDetails,dungeonShopBonusLabel,dungeonShopLockReason,dungeonShopCollectionLabel,dungeonShopSupplyGroupLabel} from '../../i18n/dungeon-shop';
 
 import type {DungeonMarksShopSnapshot,DungeonMarksShopCard} from '../../core/dungeon-marks-shop-types';
 import type {UiIconName} from '../../theme/ui-icons';
@@ -19,6 +19,8 @@ import {dungeonShopCosmeticOfferArt} from '../../theme/dungeon-shop-cosmetic-art
 export type {DungeonMarksShopSnapshot,DungeonMarksShopCard,DungeonMarksShopItemStatus} from '../../core/dungeon-marks-shop-types';
 
 type Shelf='Supplies'|'Collections'|'Owned';
+/** Consistent category order: the three regional pets always stay together. */
+const COLLECTION_GROUPS=['pet','border','background','icon'] as const;
 
 /** The server exposes offer SKUs, not material IDs. Map approved catalogue SKUs
  * to existing inventory/companion artwork instead of displaying a generic glyph.
@@ -52,6 +54,8 @@ export function DungeonMarksShopView({snapshot,onPurchase,onRefresh,busy=false}:
  busy?:boolean;
 }){
  const C=useGameTheme(),s=makeStyles(C);
+ const {width:viewportWidth}=useWindowDimensions();
+ const narrowCollections=viewportWidth<360;
  const language=useGameLanguage();
  const t=(source:string,params:Record<string,string|number>={})=>dungeonShopText(language,source,params);
  const [shelf,setShelf]=useState<Shelf>('Supplies');
@@ -87,6 +91,61 @@ export function DungeonMarksShopView({snapshot,onPurchase,onRefresh,busy=false}:
   shelf==='Supplies'?item.category==='supply'||item.category==='companion'||(item.category==='material'&&item.tier===materialTier):
   !['supply','material','companion'].includes(item.category)
  ).sort((a,b)=>Number(b.category==='material')-Number(a.category==='material'));
+ const renderOffer=(item:DungeonMarksShopCard,compact=false)=>{
+   const expanded=selected===item.id;
+   const offerEligible=!!snapshot?.shopEnabled&&item.status==='eligible'&&!!onPurchase;
+   const statusSource=pending===item.id?'Processing purchase':item.owned||item.status==='already_owned'?'Owned'
+    :!snapshot?.shopEnabled?'Not available yet':item.status==='eligible'?(onPurchase?'Available':'Preview only')
+    :item.status==='insufficient_marks'?'Need more Marks':item.status==='region_locked'?'Region locked'
+    :item.status==='weekly_limit'?'Weekly limit reached':item.status==='crafting_tier_locked'?'Crafting tier locked':'Coming soon';
+   const offerStatus=t(statusSource);
+   const localizedName=dungeonShopOfferName(language,item.id,item.name);
+   const localizedMarks=formatLocalizedNumber(language,item.marks);
+   const bonusDetails=dungeonShopOfferBonusDetails(language,item.summary);
+   const previewOnly=!snapshot?.shopEnabled||item.status==='unreleased';
+   // Shop rows use 256px art; expanded pet details always prefer the 512px portrait.
+   const previewArt=dungeonShopPetOfferPortraitArt(item.id)??dungeonShopPetOfferArt(item.id)??dungeonShopCosmeticOfferArt(item.id);
+   const canPurchase=offerEligible&&!busy&&!pending&&!refreshing;
+   return <View key={item.id} style={[s.card,compact&&s.collectionCard,compact&&narrowCollections&&s.collectionCardNarrow,expanded&&s.cardSelected]}>
+    <Pressable accessibilityRole="button" accessibilityLabel={t('{name}, {marks} Expedition Marks, {status}',{name:localizedName,marks:localizedMarks,status:offerStatus})} accessibilityState={{expanded,disabled:busy||!!pending||refreshing}}
+     disabled={busy||!!pending||refreshing} onPress={()=>setSelected(expanded?null:item.id)} style={[s.itemHead,compact&&s.collectionHead]}>
+     <View style={s.art} accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants"><DungeonShopOfferIcon item={item}/></View>
+     <View style={[s.fill,compact&&s.collectionText]}>
+      <Text numberOfLines={2} style={[s.title,compact&&s.collectionName]}>{localizedName}</Text>
+      {compact?<>
+       <Text numberOfLines={1} style={s.collectionRegion}>{item.region?t(item.region):''}</Text>
+       <View style={s.collectionPrice}><ExpeditionMarkIcon size={14}/><Text style={s.priceText}>{localizedMarks}</Text></View>
+       <Text numberOfLines={1} style={[s.collectionStatus,{color:offerEligible?C.good:C.muted}]}>{offerStatus}</Text>
+      </>:<>
+       <Text style={[s.offerStatus,{color:offerEligible?C.good:C.muted}]}>{offerStatus}</Text>
+       <Text numberOfLines={2} style={s.meta}>{[item.rarity,item.region,item.category].filter(Boolean).map(label=>t(label!)).join(' · ')}</Text>
+       <View style={s.price}>{previewOnly?<Text style={s.priceHint}>{dungeonShopBonusLabel(language,'preview')}</Text>:null}<ExpeditionMarkIcon size={16}/><Text style={s.priceText}>{localizedMarks}</Text></View>
+      </>}
+     </View>
+     {compact?null:<Text style={s.chevron}>{expanded?'−':'+'}</Text>}
+    </Pressable>
+    {expanded&&!compact?<View style={s.detail}>
+     {previewArt?<View style={s.cosmeticPreview}>{item.category==='border'
+      ?<View style={s.widePreviewImage}><RegionArtwork regionId="KINGS_ROAD" muted/><ProfileFrameOverlay source={previewArt}/></View>
+      :<Image source={previewArt} resizeMode="contain" style={item.category==='background'?s.widePreviewImage:item.category==='pet'?s.petPortraitPreviewImage:s.petPreviewImage}/>
+     }</View>:null}
+     {bonusDetails?<View style={s.bonusBlock}>
+      <Text style={s.bonusName}>{bonusDetails.stat}</Text>
+      <View style={s.bonusGrid}>
+       <View style={s.bonusCell}><Text style={s.bonusAmount}>{bonusDetails.equipped}</Text><Text style={s.bonusCaption}>{dungeonShopBonusLabel(language,'equipped')}</Text></View>
+       <View style={s.bonusCell}><Text style={s.bonusAmount}>{bonusDetails.owned}</Text><Text style={s.bonusCaption}>{dungeonShopBonusLabel(language,'owned')}</Text></View>
+      </View>
+     </View>:<Text style={s.description}>{dungeonShopOfferSummary(language,item.summary)}</Text>}
+     {item.remainingThisUtcWeek!==undefined&&item.remainingThisUtcWeek!==null?
+      <Text style={s.meta}>{t('{count} purchases left this UTC week',{count:formatLocalizedNumber(language,item.remainingThisUtcWeek)})}</Text>:null}
+     {item.status==='already_owned'||item.owned?<Text style={s.owned}>{t('Owned permanently')}</Text>:null}
+     {previewOnly&&!item.owned?<Text style={s.previewNote}>{t('Not yet released — no Marks can be spent on this offer.')}</Text>
+      :item.lockReason?<Text style={s.meta}>{dungeonShopLockReason(language,item.lockReason)}</Text>:null}
+     {offerEligible?<GameButton title={pending===item.id?t('Processing…'):t('Confirm purchase · {marks} Marks',{marks:localizedMarks})} loading={pending===item.id} disabled={!canPurchase} onPress={()=>void purchase(item.id)}/>:null}
+     {!canPurchase&&item.status==='insufficient_marks'?<Text style={s.meta}>{t('Not enough Expedition Marks.')}</Text>:null}
+    </View>:null}
+   </View>;
+ };
  return <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
   <View style={s.wallet}>
    <ExpeditionMarkIcon size={34}/>
@@ -114,53 +173,25 @@ export function DungeonMarksShopView({snapshot,onPurchase,onRefresh,busy=false}:
   {notice?<Text accessibilityLiveRegion="polite" style={s.notice}>{notice}</Text>:null}
   {!snapshot?<Text style={s.meta}>{t('The server has not supplied a verified Dungeon Shop catalogue.')}</Text>:null}
   {snapshot&&!snapshot.shopEnabled?<Text style={s.meta}>{t('Dungeon Shop is being prepared. Purchases are unavailable.')}</Text>:null}
-  {items.map(item=>{
-   const expanded=selected===item.id;
-   const offerEligible=!!snapshot?.shopEnabled&&item.status==='eligible'&&!!onPurchase;
-   const statusSource=pending===item.id?'Processing purchase':item.owned||item.status==='already_owned'?'Owned'
-    :!snapshot?.shopEnabled?'Not available yet':item.status==='eligible'?(onPurchase?'Available':'Preview only')
-    :item.status==='insufficient_marks'?'Need more Marks':item.status==='region_locked'?'Region locked'
-    :item.status==='weekly_limit'?'Weekly limit reached':'Coming soon';
-   const offerStatus=t(statusSource);
-   const localizedName=dungeonShopOfferName(language,item.id,item.name);
-   const localizedMarks=formatLocalizedNumber(language,item.marks);
-   const bonusDetails=dungeonShopOfferBonusDetails(language,item.summary);
-   const previewOnly=!snapshot?.shopEnabled||item.status==='unreleased';
-   // Shop rows use 256px art; expanded pet details always prefer the 512px portrait.
-   const previewArt=dungeonShopPetOfferPortraitArt(item.id)??dungeonShopPetOfferArt(item.id)??dungeonShopCosmeticOfferArt(item.id);
-   const canPurchase=offerEligible&&!busy&&!pending&&!refreshing;
-   return <View key={item.id} style={[s.card,expanded&&s.cardSelected]}>
-    <Pressable accessibilityRole="button" accessibilityLabel={t('{name}, {marks} Expedition Marks, {status}',{name:localizedName,marks:localizedMarks,status:offerStatus})} accessibilityState={{expanded,disabled:busy||!!pending||refreshing}}
-     disabled={busy||!!pending||refreshing} onPress={()=>setSelected(expanded?null:item.id)} style={s.itemHead}>
-     <View style={s.art} accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants"><DungeonShopOfferIcon item={item}/></View>
-     <View style={s.fill}>
-      <Text numberOfLines={2} style={s.title}>{localizedName}</Text>
-      <Text style={[s.offerStatus,{color:offerEligible?C.good:C.muted}]}>{offerStatus}</Text>
-      <Text numberOfLines={2} style={s.meta}>{[item.rarity,item.region,item.category].filter(Boolean).map(label=>t(label!)).join(' · ')}</Text>
-      <View style={s.price}>{previewOnly?<Text style={s.priceHint}>{dungeonShopBonusLabel(language,'preview')}</Text>:null}<ExpeditionMarkIcon size={16}/><Text style={s.priceText}>{localizedMarks}</Text></View>
-     </View>
-     <Text style={s.chevron}>{expanded?'−':'+'}</Text>
-    </Pressable>
-    {expanded?<View style={s.detail}>
-     {previewArt?<View style={s.cosmeticPreview}>{item.category==='border'
-      ?<View style={s.widePreviewImage}><RegionArtwork regionId="KINGS_ROAD" muted/><ProfileFrameOverlay source={previewArt}/></View>
-      :<Image source={previewArt} resizeMode="contain" style={item.category==='background'?s.widePreviewImage:item.category==='pet'?s.petPortraitPreviewImage:s.petPreviewImage}/>
-     }</View>:null}
-     {bonusDetails?<View style={s.bonusBlock}>
-      <Text style={s.bonusName}>{bonusDetails.stat}</Text>
-      <View style={s.bonusGrid}>
-       <View style={s.bonusCell}><Text style={s.bonusAmount}>{bonusDetails.equipped}</Text><Text style={s.bonusCaption}>{dungeonShopBonusLabel(language,'equipped')}</Text></View>
-       <View style={s.bonusCell}><Text style={s.bonusAmount}>{bonusDetails.owned}</Text><Text style={s.bonusCaption}>{dungeonShopBonusLabel(language,'owned')}</Text></View>
-      </View>
-     </View>:<Text style={s.description}>{dungeonShopOfferSummary(language,item.summary)}</Text>}
-     {item.remainingThisUtcWeek!==undefined&&item.remainingThisUtcWeek!==null?
-      <Text style={s.meta}>{t('{count} purchases left this UTC week',{count:formatLocalizedNumber(language,item.remainingThisUtcWeek)})}</Text>:null}
-     {item.status==='already_owned'||item.owned?<Text style={s.owned}>{t('Owned permanently')}</Text>:null}
-     {previewOnly&&!item.owned?<Text style={s.previewNote}>{t('Not yet released — no Marks can be spent on this offer.')}</Text>
-      :item.lockReason?<Text style={s.meta}>{dungeonShopLockReason(language,item.lockReason)}</Text>:null}
-     {offerEligible?<GameButton title={pending===item.id?t('Processing…'):t('Confirm purchase · {marks} Marks',{marks:localizedMarks})} loading={pending===item.id} disabled={!canPurchase} onPress={()=>void purchase(item.id)}/>:null}
-     {!canPurchase&&item.status==='insufficient_marks'?<Text style={s.meta}>{t('Not enough Expedition Marks.')}</Text>:null}
-    </View>:null}
+  {shelf==='Supplies'?<>
+   {items.filter(item=>item.category==='material').map(item=>renderOffer(item))}
+   {(['companion','supply'] as const).map(category=>{
+    const matching=items.filter(item=>item.category===category);
+    return matching.length?<View key={category} style={s.supplyGroup}>
+     <Text accessibilityRole="header" style={s.groupTitle}>{dungeonShopSupplyGroupLabel(language,category)}</Text>
+     {matching.map(item=>renderOffer(item))}
+    </View>:null;
+   })}
+  </>:COLLECTION_GROUPS.map(category=>{
+   const matching=items.filter(item=>item.category===category);
+   if(!matching.length)return null;
+   const chosen=matching.find(item=>item.id===selected);
+   return <View key={category} style={s.collectionGroup}>
+    <Text accessibilityRole="header" style={s.groupTitle}>{dungeonShopCollectionLabel(language,category)}</Text>
+    {narrowCollections?<ScrollView horizontal nestedScrollEnabled showsHorizontalScrollIndicator={false} contentContainerStyle={s.collectionStrip}>
+     {matching.map(item=>renderOffer(item,true))}
+    </ScrollView>:<View style={s.collectionRow}>{matching.map(item=>renderOffer(item,true))}</View>}
+    {chosen?renderOffer(chosen):null}
    </View>;
   })}
   {snapshot&&items.length===0?<Text style={s.meta}>{t('No offers in this category yet.')}</Text>:null}
@@ -174,6 +205,18 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  tabs:{flexDirection:'row',gap:6},tab:{flex:1,minHeight:44,alignItems:'center',justifyContent:'center',padding:6,borderWidth:1,borderRadius:9,borderColor:C.line,backgroundColor:C.panel},
  selectedTab:{borderColor:C.selectionLine,backgroundColor:C.selection},tabLabel:{...typography.caption,color:C.muted,fontWeight:'800'},activeLabel:{color:C.text},
  card:{borderWidth:1,borderRadius:radii.md,borderColor:C.line,backgroundColor:C.panel,overflow:'hidden'},cardSelected:{borderColor:C.selectionLine},
+ collectionGroup:{gap:8,marginTop:5},supplyGroup:{gap:8,marginTop:5},
+ groupTitle:{...typography.bodyStrong,color:C.text,fontSize:14},
+ collectionRow:{flexDirection:'row',flexWrap:'wrap',gap:6,alignItems:'stretch'},
+ collectionCard:{width:'31.5%',minHeight:152},
+ collectionCardNarrow:{width:132},
+ collectionStrip:{flexDirection:'row',gap:8,paddingRight:8},
+ collectionHead:{minHeight:152,flexDirection:'column',alignItems:'center',justifyContent:'flex-start',padding:6,gap:5},
+ collectionText:{width:'100%',alignItems:'center',justifyContent:'space-between',gap:4},
+ collectionName:{fontSize:12,lineHeight:16,textAlign:'center',minHeight:32},
+ collectionRegion:{...typography.caption,color:C.muted,fontSize:10,textAlign:'center'},
+ collectionPrice:{flexDirection:'row',alignItems:'center',justifyContent:'center',gap:4},
+ collectionStatus:{...typography.caption,fontSize:10,fontWeight:'800',textAlign:'center'},
  itemHead:{minHeight:70,flexDirection:'row',alignItems:'center',gap:11,padding:10},
  art:{width:48,height:48,borderWidth:1,borderColor:C.line,borderRadius:9,backgroundColor:C.panelRaised,alignItems:'center',justifyContent:'center'},
  title:{...typography.bodyStrong,color:C.text},

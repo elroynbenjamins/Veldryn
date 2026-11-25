@@ -56,7 +56,7 @@ export function inventoryWithSalvageRewards(
  const stacks=inventory.stacks.map(stack=>({...stack}));
  for(const reward of rewards){
   if(!Number.isSafeInteger(reward.quantity)||reward.quantity<1)throw new Error('Invalid salvage quantity');
-  const current=stacks.find(stack=>stack.itemId===reward.itemId&&stack.instanceId===undefined);
+  const current=stacks.find(stack=>stack.itemId===reward.itemId&&stack.instanceId===undefined&&!stack.bound);
   if(current){
    const sum=current.quantity+reward.quantity;
    if(!Number.isSafeInteger(sum))throw new Error('Salvage material quantity overflow');

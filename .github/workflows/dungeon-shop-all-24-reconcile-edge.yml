@@ -1,0 +1,76 @@
+# Release-branch only: regenerate exactly the two deployable Edge bundles.
+# Never deploy, change SQL release flags, or push to main.
+name: Dungeon Shop 24-offer candidate Edge reconciliation
+on:
+  push:
+    branches: ['feature/dungeon-shop-all-24-safe-release-20261121']
+    paths:
+      - '.github/workflows/dungeon-shop-all-24-reconcile-edge.yml'
+      - 'apps/mobile/src/**'
+      - 'backend/online/**'
+      - 'backend/src/**'
+      - 'backend/package.json'
+      - 'backend/pnpm-lock.yaml'
+      - 'apps/mobile/package.json'
+      - 'apps/mobile/pnpm-lock.yaml'
+      - 'tools/build-online.mjs'
+      - 'tools/verify-gameplay-edge.mjs'
+permissions:
+  contents: write
+concurrency:
+  group: dungeon-shop-all24-edge-branch
+  cancel-in-progress: false
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/dungeon-shop-all-24-safe-release-20261121
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Install exact locked packages
+        run: |
+          pnpm --dir backend install --frozen-lockfile
+          pnpm --dir apps/mobile install --frozen-lockfile
+      - name: Rebuild and verify canonical gameplay and co-op Edge
+        run: |
+          pnpm --dir backend build:online
+          node tools/verify-gameplay-edge.mjs
+      - name: Reject unrelated generated writes
+        shell: bash
+        run: |
+          set -euo pipefail
+          unexpected=$(git diff --name-only | grep -Ev '^backend/supabase/functions/(gameplay|coop)/index\.ts$' || true)
+          if [ -n "$unexpected" ]; then
+            printf 'Unexpected generated changes:\n%s\n' "$unexpected"
+            exit 1
+          fi
+      - name: Commit generated artifacts to review branch only
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch=feature/dungeon-shop-all-24-safe-release-20261121
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          if git diff --cached --quiet; then
+            echo 'Both generated Edge artifacts already match source.'
+            exit 0
+          fi
+          git commit -m 'build(edge): reconcile Dungeon Shop all-24 candidate bundles'
+          git fetch origin "$branch"
+          if [ "$(git rev-parse HEAD^)" != "$(git rev-parse "origin/$branch")" ]; then
+            echo 'Candidate branch moved; refusing to push stale generated bundles.'
+            exit 1
+          fi
+          git push origin "HEAD:$branch"
+          echo 'Candidate bundles committed to isolated review branch only.'

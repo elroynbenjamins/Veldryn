@@ -851,7 +851,7 @@ var EVENTS_RELEASED = true;
 var FROSTFALL_REWARDS_RELEASED = false;
 var WINTER_HEARTH_GUILD_RELEASED = true;
 var EVENT_COMMUNITY_ENABLED = false;
-var DUNGEON_MARKS_SHOP_RELEASED = false;
+var DUNGEON_MARKS_SHOP_RELEASED = true;
 var EQUIPMENT_RESALE_UPLIFT_RELEASED = false;
 var PROFILE_ANIMATED_COSMETICS_RELEASED = false;
 var PROFILE_COSMETICS_STORE_RELEASED = false;
@@ -50213,7 +50213,7 @@ function inventoryWithSalvageRewards(inventory, rewards, capacity) {
   const stacks = inventory.stacks.map((stack) => ({ ...stack }));
   for (const reward3 of rewards) {
     if (!Number.isSafeInteger(reward3.quantity) || reward3.quantity < 1) throw new Error("Invalid salvage quantity");
-    const current = stacks.find((stack) => stack.itemId === reward3.itemId && stack.instanceId === void 0);
+    const current = stacks.find((stack) => stack.itemId === reward3.itemId && stack.instanceId === void 0 && !stack.bound);
     if (current) {
       const sum = current.quantity + reward3.quantity;
       if (!Number.isSafeInteger(sum)) throw new Error("Salvage material quantity overflow");
@@ -52267,8 +52267,8 @@ function consumeStackV1(stacks, itemId, amount) {
 }
 function addStackV1(stacks, capacity, itemId, quantityToAdd) {
   if (quantityToAdd <= 0) return [...stacks];
-  const existing = stacks.find((row) => row.itemId === itemId);
-  if (existing) return stacks.map((row) => row.itemId === itemId ? { ...row, quantity: row.quantity + quantityToAdd } : row);
+  const existing = stacks.find((row) => row.itemId === itemId && !row.bound);
+  if (existing) return stacks.map((row) => row === existing ? { ...row, quantity: row.quantity + quantityToAdd } : row);
   if (stacks.length >= capacity) throw new Error("Inventory and Bank are full");
   return [...stacks, { itemId, quantity: quantityToAdd }];
 }
@@ -52560,7 +52560,7 @@ function upgradeQuote(state, itemId, instanceId) {
   return { currentRank: current.rank, targetRank, successChance: Math.min(1, SUCCESS_BY_TARGET[targetRank] + pity), dust: DUST_BY_TARGET[targetRank], cores: CORE_BY_TARGET[targetRank], gold: upgradeGoldCost(itemId, targetRank, rarity), materials: upgradeMaterialCosts(itemId, targetRank), maxed: false };
 }
 function qty2(stacks, id) {
-  return stacks.find((s) => s.itemId === id)?.quantity ?? 0;
+  return stacks.filter((s) => s.itemId === id).reduce((sum, s) => sum + s.quantity, 0);
 }
 function combinedQuantity(state, id) {
   return gemStorageQuantity(state, id);
@@ -55038,9 +55038,15 @@ function stackItems(existing, incoming) {
         throw new Error("Duplicate or invalid unique equipment copy");
       seen.add(row.instanceId);
       individual.push({ ...row });
-    } else quantities2.set(row.itemId, (quantities2.get(row.itemId) ?? 0) + row.quantity);
+    } else {
+      const key = row.itemId + "|" + (row.bound === true ? "bound" : "unbound");
+      const previous = quantities2.get(key);
+      const quantity2 = (previous?.quantity ?? 0) + row.quantity;
+      if (!Number.isSafeInteger(quantity2) || quantity2 < 0) throw new Error("Invalid material quantity");
+      quantities2.set(key, { itemId: row.itemId, quantity: quantity2, ...row.bound === true ? { bound: true } : {} });
+    }
   }
-  return [...quantities2.entries()].filter(([, q2]) => q2 > 0).map(([itemId, quantity2]) => ({ itemId, quantity: quantity2 })).concat(individual);
+  return [...quantities2.values()].filter((row) => row.quantity > 0).concat(individual);
 }
 function usedSlots(stacks) {
   return stacks.filter((s) => s.quantity > 0).length;
@@ -55062,7 +55068,7 @@ function addBounded(stacks, capacity, incoming) {
     }
     let remaining = inc.quantity;
     const cap = itemStackCap(inc.itemId);
-    let existing = next.find((s) => s.itemId === inc.itemId && s.instanceId === void 0);
+    let existing = next.find((s) => s.itemId === inc.itemId && s.instanceId === void 0 && Boolean(s.bound) === Boolean(inc.bound));
     if (existing) {
       const room = Math.max(0, cap - existing.quantity);
       const add = Math.min(room, remaining);
@@ -55071,11 +55077,11 @@ function addBounded(stacks, capacity, incoming) {
     }
     while (remaining > 0 && usedSlots(next) < capacity) {
       const add = Math.min(cap, remaining);
-      next.push({ itemId: inc.itemId, quantity: add });
+      next.push({ itemId: inc.itemId, quantity: add, ...inc.bound ? { bound: true } : {} });
       remaining -= add;
       if (cap === 1) break;
     }
-    if (remaining > 0) overflow.push({ itemId: inc.itemId, quantity: remaining });
+    if (remaining > 0) overflow.push({ itemId: inc.itemId, quantity: remaining, ...inc.bound ? { bound: true } : {} });
   }
   return { stacks: next, overflow };
 }
@@ -55118,25 +55124,47 @@ function routeRewards(state, incoming, nowMs) {
     ...stored.character !== state.character ? { character: stored.character } : {}
   };
 }
-function consume2(stacks, itemId, quantity2) {
+function consume2(stacks, itemId, quantity2, allowBound = true) {
   if (!Number.isSafeInteger(quantity2) || quantity2 <= 0) throw new Error("Invalid item quantity");
   let remaining = quantity2;
-  const next = stacks.map((row) => {
-    if (row.itemId !== itemId || row.instanceId !== void 0 || remaining <= 0) return row;
-    const taken = Math.min(remaining, row.quantity);
-    remaining -= taken;
-    return { ...row, quantity: row.quantity - taken };
-  }).filter((row) => row.quantity > 0);
+  let next = [...stacks];
+  for (const bound of allowBound ? [true, false] : [false]) {
+    next = next.map((row) => {
+      if (row.itemId !== itemId || row.instanceId !== void 0 || Boolean(row.bound) !== bound || remaining <= 0) return row;
+      const taken = Math.min(remaining, row.quantity);
+      remaining -= taken;
+      return { ...row, quantity: row.quantity - taken };
+    }).filter((row) => row.quantity > 0);
+  }
   if (remaining > 0) {
+    if (!allowBound && stacks.some((row) => row.itemId === itemId && row.bound))
+      throw new Error("Account-bound Dungeon Shop materials cannot be sold.");
     if (stacks.some((row) => row.itemId === itemId && row.instanceId !== void 0))
       throw new Error("Choose an individual equipment copy; unique equipment cannot be consumed by item type");
     throw new Error("Not enough items");
   }
   return next;
 }
-function stackQty2(stacks, itemId) {
+function stackQty2(stacks, itemId, includeBound = true) {
   if (!itemId) return 0;
-  return stacks.filter((s) => s.itemId === itemId).reduce((n, s) => n + s.quantity, 0);
+  return stacks.filter((s) => s.itemId === itemId && (includeBound || !s.bound)).reduce((n, s) => n + s.quantity, 0);
+}
+function takeOrdinaryStacks(stacks, itemId, quantity2) {
+  let remaining = quantity2;
+  const moved = [];
+  const kept = stacks.flatMap((row) => {
+    if (row.itemId !== itemId || row.instanceId !== void 0 || remaining <= 0) return [row];
+    const taken = Math.min(remaining, row.quantity);
+    remaining -= taken;
+    moved.push({ ...row, quantity: taken });
+    return row.quantity > taken ? [{ ...row, quantity: row.quantity - taken }] : [];
+  });
+  if (remaining > 0) {
+    if (stacks.some((row) => row.itemId === itemId && row.instanceId !== void 0))
+      throw new Error("Choose an individual equipment copy; unique equipment cannot be moved by item type");
+    throw new Error("Not enough items");
+  }
+  return { kept, moved };
 }
 function removeItemStacksPreservingCopies(stacks, itemId, quantity2) {
   if (!Number.isSafeInteger(quantity2) || quantity2 < 1) throw new Error("Invalid tool quantity");
@@ -56025,7 +56053,7 @@ function sellItem(state, itemId, quantity2 = 1) {
     throw new Error("This untracked legacy equipment has a reserved enhanced copy. Keep it until the exact copy can be identified.");
   const proceeds = itemVendorSellGold(d) * quantity2, gold = state.character.gold + proceeds;
   if (!Number.isSafeInteger(proceeds) || !Number.isSafeInteger(gold)) throw new Error("Gold amount exceeds supported limit.");
-  return { ...state, inventory: { ...state.inventory, stacks: consume2(state.inventory.stacks, itemId, quantity2) }, character: { ...state.character, gold } };
+  return { ...state, inventory: { ...state.inventory, stacks: consume2(state.inventory.stacks, itemId, quantity2, false) }, character: { ...state.character, gold } };
 }
 function salvageItem(state, itemId) {
   if (state.settings.favoriteItemIds?.includes(itemId)) throw new Error("Favorite item is protected. Remove it from Favorites before salvaging.");
@@ -56064,7 +56092,7 @@ function sellBankItem(state, itemId, quantity2 = 1) {
   if (def.guildOnly) throw new Error("Guild construction components cannot be sold.");
   if (def.knowledgeUnlockId) throw new Error("Blueprints cannot be sold.");
   if (def.type === "gear" && state.bank.stacks.some((row) => row.itemId === itemId && row.instanceId === void 0 && row.quantity >= quantity2) && !canDisposeLegacyEquipment(state, itemId, "bank", quantity2)) throw new Error("This untracked legacy equipment has a reserved enhanced copy. Keep it until the exact copy can be identified.");
-  const stacks = consume2(state.bank.stacks, itemId, quantity2);
+  const stacks = consume2(state.bank.stacks, itemId, quantity2, false);
   const proceeds = itemVendorSellGold(def) * quantity2;
   if (!Number.isSafeInteger(proceeds) || !Number.isSafeInteger((state.bank.gold ?? 0) + proceeds)) throw new Error("Gold amount exceeds supported limit.");
   return { ...state, bank: { ...state.bank, stacks, gold: (state.bank.gold ?? 0) + proceeds } };
@@ -56094,11 +56122,11 @@ function depositToBank(state, itemId, quantity2) {
     if (added2.overflow.length) throw new Error("Bank is full");
     return { ...state, inventory: { ...state.inventory, stacks: selected2.kept }, bank: { ...state.bank, stacks: added2.stacks } };
   }
-  const removed = consume2(state.inventory.stacks, itemId, quantity2);
-  const remaining = { ...state, inventory: { ...state.inventory, stacks: removed } };
-  const pouchDeposit = tryStoreGemInPouch(remaining, itemId, quantity2);
+  const moved = takeOrdinaryStacks(state.inventory.stacks, itemId, quantity2);
+  const remaining = { ...state, inventory: { ...state.inventory, stacks: moved.kept } };
+  const pouchDeposit = moved.moved.every((row) => !row.bound) ? tryStoreGemInPouch(remaining, itemId, quantity2) : null;
   if (pouchDeposit) return pouchDeposit;
-  const added = addBounded(state.bank.stacks, entitlementStorageCapacity(state, "bank"), [{ itemId, quantity: quantity2 }]);
+  const added = addBounded(state.bank.stacks, entitlementStorageCapacity(state, "bank"), moved.moved);
   if (added.overflow.length) throw new Error(isGemPouchItemId(itemId) ? "Gem Pouch and Bank are full" : "Bank is full");
   return { ...remaining, bank: { ...state.bank, stacks: added.stacks } };
 }
@@ -56112,10 +56140,10 @@ function withdrawFromBank(state, itemId, quantity2) {
     if (added2.overflow.length) throw new Error("Inventory is full");
     return { ...state, bank: { ...state.bank, stacks: selected2.kept }, inventory: { ...state.inventory, stacks: added2.stacks } };
   }
-  const removed = consume2(state.bank.stacks, itemId, quantity2);
-  const added = addBounded(state.inventory.stacks, entitlementStorageCapacity(state, "inventory"), [{ itemId, quantity: quantity2 }]);
+  const moved = takeOrdinaryStacks(state.bank.stacks, itemId, quantity2);
+  const added = addBounded(state.inventory.stacks, entitlementStorageCapacity(state, "inventory"), moved.moved);
   if (added.overflow.length) throw new Error("Inventory is full");
-  return { ...state, bank: { ...state.bank, stacks: removed }, inventory: { ...state.inventory, stacks: added.stacks } };
+  return { ...state, bank: { ...state.bank, stacks: moved.kept }, inventory: { ...state.inventory, stacks: added.stacks } };
 }
 function moveGatheringToolCopy(state, instanceId, to) {
   const copy = state.account.craftedGatheringToolInstances?.find((row) => row.id === instanceId);
@@ -58722,7 +58750,7 @@ function bulkSelectionSummary(state, itemIds2, location) {
   const transferable = stacks.filter((stack) => location === "bank" || stack.itemId !== autoEatId);
   const sellable = stacks.filter((stack) => {
     const item = itemDef(stack.itemId);
-    if (stack.itemId === autoEatId || stack.itemId === HOLY_WATER_ID || item.value <= 0 || item.guildOnly || item.knowledgeUnlockId || goalProtectedIds.has(stack.itemId)) return false;
+    if (stack.bound || stack.itemId === autoEatId || stack.itemId === HOLY_WATER_ID || item.value <= 0 || item.guildOnly || item.knowledgeUnlockId || goalProtectedIds.has(stack.itemId)) return false;
     if (stack.instanceId) {
       if (state.settings.lockedItemIds?.includes(stack.itemId) || state.settings.favoriteItemIds?.includes(stack.itemId)) return false;
       try {
@@ -58793,7 +58821,7 @@ function bulkSellSelected(state, itemIds2, location = "inventory") {
       next = disposeCraftedGearInstance(next, id.slice(5), "sell");
       continue;
     }
-    const quantity2 = next[location].stacks.find((stack) => stack.itemId === id && stack.instanceId === void 0)?.quantity ?? 0;
+    const quantity2 = next[location].stacks.filter((stack) => stack.itemId === id && stack.instanceId === void 0 && !stack.bound).reduce((sum, stack) => sum + stack.quantity, 0);
     if (quantity2 > 0) next = location === "bank" ? sellBankItem(next, id, quantity2) : sellItem(next, id, quantity2);
   }
   return next;

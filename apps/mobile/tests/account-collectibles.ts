@@ -2,6 +2,7 @@ import {COLLECTIBLES,PROFILE_COLLECTIBLES,validateCollectibleCatalog} from '../s
 import {CORE_PET_COLLECTIBLES,validateCorePetCatalog} from '../src/content/core-pets';
 import {EVENT_PET_COLLECTIBLES} from '../src/content/event-collectible-content-active';
 import {GUILD_PET_COLLECTIBLES} from '../src/content/guild-pets-v1';
+import {DUNGEON_SHOP_COLLECTIBLES_V1} from '../src/content/dungeon-shop-collectibles-v1';
 import {collectionBonusBreakdown,selectCollectible,unlockCollectible} from '../src/core/collectibles';
 import {normalizeOwnedPetIds,normalizeSelectedPetId} from '../src/core/pet-collection';
 import {createCharacter,newGame} from '../src/core/game';
@@ -9,7 +10,7 @@ import {migrateSave} from '../src/core/save-migrations';
 import {reconcileAccountCollections} from '../src/core/account-collections';
 import {createAccountCharacter,deleteAccountCharacter,switchAccountCharacter} from '../src/core/account-actions';
 import {profileBackgroundUnlocked,profileTitleUnlocked} from '../src/core/profile-unlocks';
-import {EVENTS_RELEASED,FROSTFALL_REWARDS_RELEASED} from '../src/core/release-flags';
+import {EVENTS_RELEASED,FROSTFALL_REWARDS_RELEASED,DUNGEON_MARKS_SHOP_RELEASED} from '../src/core/release-flags';
 
 const fail=(message:string)=>{throw new Error(message)};
 const equal=(actual:unknown,expected:unknown,message:string)=>{if(actual!==expected)fail(`${message}: expected ${String(expected)}, got ${String(actual)}`)};
@@ -22,7 +23,7 @@ equal(EVENT_PET_COLLECTIBLES.length,FROSTFALL_REWARDS_RELEASED?4:2,'Frostfall pe
 equal(EVENT_PET_COLLECTIBLES.map(row=>row.id).sort().join(','),FROSTFALL_REWARDS_RELEASED?'EVT_PET_013,EVT_PET_014,EVT_PET_015,EVT_PET_017':'EVT_PET_013,EVT_PET_014','only released event pets enter the runtime collection catalog');
 equal(
   COLLECTIBLES.length,
-  CORE_PET_COLLECTIBLES.length+GUILD_PET_COLLECTIBLES.length+(EVENTS_RELEASED?EVENT_PET_COLLECTIBLES.length:0)+PROFILE_COLLECTIBLES.filter(row=>row.collectionGroup!=='event').length,
+  CORE_PET_COLLECTIBLES.length+GUILD_PET_COLLECTIBLES.length+(EVENTS_RELEASED?EVENT_PET_COLLECTIBLES.length:0)+PROFILE_COLLECTIBLES.filter(row=>row.collectionGroup!=='event').length+(DUNGEON_MARKS_SHOP_RELEASED?DUNGEON_SHOP_COLLECTIBLES_V1.length:0),
   'combined collectible catalog count',
 );
 

@@ -131,7 +131,8 @@ export interface CraftedGearInstance{
   equipmentBonuses?:import('./equipment-bonus-rolls').EquipmentBonusRoll[];
   equipmentBonusRollVersion?:import('./equipment-bonus-rolls').EquipmentBonusRollVersion;
 }
-export interface ItemStack { itemId:string; quantity:number; /** Unique physical gear receipt; missing for legacy stacks. */ instanceId?:string; }
+/** Bound stacks are account-only: never merge them with freely tradable materials. */
+export interface ItemStack { itemId:string; quantity:number; /** Unique physical gear receipt; missing for legacy stacks. */ instanceId?:string; /** True for Dungeon Shop materials that must never be sold or traded. */ bound?:true; }
 export interface InventoryState { stacks:ItemStack[]; capacity:number; }
 export interface BankState { stacks:ItemStack[]; capacity:number; gold?:number; }
 export interface OverflowState { stacks:ItemStack[]; expiresAtMs:number|null; }

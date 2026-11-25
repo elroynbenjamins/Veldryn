@@ -389,15 +389,22 @@ export function travelToRegion(state:GameState,regionId:string,nowMs:number){
 }
 
 export function stackItems(existing:ItemStack[],incoming:ItemStack[]):ItemStack[]{
-  const quantities=new Map<string,number>(),individual:ItemStack[]=[],seen=new Set<string>();
+  const quantities=new Map<string,{itemId:string;quantity:number;bound?:true}>(),individual:ItemStack[]=[],seen=new Set<string>();
   for(const row of [...existing,...incoming]){
     if(row.instanceId!==undefined){
       if(typeof row.instanceId!=='string'||!row.instanceId||row.quantity!==1||seen.has(row.instanceId))
         throw new Error('Duplicate or invalid unique equipment copy');
       seen.add(row.instanceId);individual.push({...row});
-    }else quantities.set(row.itemId,(quantities.get(row.itemId)??0)+row.quantity);
+    }else{
+      // Account-bound shop grants never merge into freely transferable stacks.
+      const key=row.itemId+'|'+(row.bound===true?'bound':'unbound');
+      const previous=quantities.get(key);
+      const quantity=(previous?.quantity??0)+row.quantity;
+      if(!Number.isSafeInteger(quantity)||quantity<0)throw new Error('Invalid material quantity');
+      quantities.set(key,{itemId:row.itemId,quantity,...(row.bound===true?{bound:true as const}:{})});
+    }
   }
-  return [...quantities.entries()].filter(([,q])=>q>0).map(([itemId,quantity])=>({itemId,quantity})).concat(individual);
+  return [...quantities.values()].filter(row=>row.quantity>0).concat(individual);
 }
 
 export function usedSlots(stacks:ItemStack[]){return stacks.filter(s=>s.quantity>0).length;}
@@ -414,16 +421,16 @@ function addBounded(stacks:ItemStack[],capacity:number,incoming:ItemStack[]){
     }
     let remaining=inc.quantity;
     const cap=itemStackCap(inc.itemId);
-    let existing=next.find(s=>s.itemId===inc.itemId&&s.instanceId===undefined);
+    let existing=next.find(s=>s.itemId===inc.itemId&&s.instanceId===undefined&&Boolean(s.bound)===Boolean(inc.bound));
     if(existing){
       const room=Math.max(0,cap-existing.quantity);const add=Math.min(room,remaining);existing.quantity+=add;remaining-=add;
     }
     while(remaining>0 && usedSlots(next)<capacity){
-      const add=Math.min(cap,remaining);next.push({itemId:inc.itemId,quantity:add});remaining-=add;
+      const add=Math.min(cap,remaining);next.push({itemId:inc.itemId,quantity:add,...(inc.bound?{bound:true as const}:{})});remaining-=add;
       // Current prototype identifies stacks by itemId, so equipment duplicates are routed to overflow rather than pretending they are one stack.
       if(cap===1)break;
     }
-    if(remaining>0)overflow.push({itemId:inc.itemId,quantity:remaining});
+    if(remaining>0)overflow.push({itemId:inc.itemId,quantity:remaining,...(inc.bound?{bound:true as const}:{})});
   }
   return {stacks:next,overflow};
 }
@@ -462,22 +469,48 @@ export function routeRewards(state:GameState,incoming:ItemStack[],nowMs:number){
   };
 }
 
-function consume(stacks:ItemStack[],itemId:string,quantity:number){
+function consume(stacks:ItemStack[],itemId:string,quantity:number,allowBound=true){
   if(!Number.isSafeInteger(quantity)||quantity<=0)throw new Error('Invalid item quantity');
   let remaining=quantity;
-  const next=stacks.map(row=>{
-    if(row.itemId!==itemId||row.instanceId!==undefined||remaining<=0)return row;
-    const taken=Math.min(remaining,row.quantity);remaining-=taken;
-    return {...row,quantity:row.quantity-taken};
-  }).filter(row=>row.quantity>0);
+  // Spend account-bound materials on crafting first. Sales only touch unbound stock.
+  let next=[...stacks];
+  for(const bound of (allowBound?[true,false]:[false])){
+    next=next.map(row=>{
+      if(row.itemId!==itemId||row.instanceId!==undefined||Boolean(row.bound)!==bound||remaining<=0)return row;
+      const taken=Math.min(remaining,row.quantity);remaining-=taken;
+      return {...row,quantity:row.quantity-taken};
+    }).filter(row=>row.quantity>0);
+  }
   if(remaining>0){
+    if(!allowBound&&stacks.some(row=>row.itemId===itemId&&row.bound))
+      throw new Error('Account-bound Dungeon Shop materials cannot be sold.');
     if(stacks.some(row=>row.itemId===itemId&&row.instanceId!==undefined))
       throw new Error('Choose an individual equipment copy; unique equipment cannot be consumed by item type');
     throw new Error('Not enough items');
   }
   return next;
 }
-function stackQty(stacks:ItemStack[],itemId?:string){if(!itemId)return 0;return stacks.filter(s=>s.itemId===itemId).reduce((n,s)=>n+s.quantity,0);}
+function stackQty(stacks:ItemStack[],itemId?:string,includeBound=true){
+  if(!itemId)return 0;
+  return stacks.filter(s=>s.itemId===itemId&&(includeBound||!s.bound)).reduce((n,s)=>n+s.quantity,0);
+}
+/** Keep the bound flag through account-owned Inventory ↔ Bank moves. */
+function takeOrdinaryStacks(stacks:ItemStack[],itemId:string,quantity:number){
+  let remaining=quantity;
+  const moved:ItemStack[]=[];
+  const kept=stacks.flatMap(row=>{
+    if(row.itemId!==itemId||row.instanceId!==undefined||remaining<=0)return [row];
+    const taken=Math.min(remaining,row.quantity);remaining-=taken;
+    moved.push({...row,quantity:taken});
+    return row.quantity>taken?[{...row,quantity:row.quantity-taken}]:[];
+  });
+  if(remaining>0){
+    if(stacks.some(row=>row.itemId===itemId&&row.instanceId!==undefined))
+      throw new Error('Choose an individual equipment copy; unique equipment cannot be moved by item type');
+    throw new Error('Not enough items');
+  }
+  return {kept,moved};
+}
 /** Preserve physical copy IDs through Inventory/Bank moves. Generic consume()
  * intentionally refuses unique copies, as selling by type must not choose a
  * valuable roll without an explicit choice. */
@@ -1459,7 +1492,7 @@ export function sellItem(state:GameState,itemId:string,quantity=1):GameState{
     throw new Error('This untracked legacy equipment has a reserved enhanced copy. Keep it until the exact copy can be identified.');
   const proceeds=itemVendorSellGold(d)*quantity,gold=state.character.gold+proceeds;
   if(!Number.isSafeInteger(proceeds)||!Number.isSafeInteger(gold))throw new Error('Gold amount exceeds supported limit.');
-  return {...state,inventory:{...state.inventory,stacks:consume(state.inventory.stacks,itemId,quantity)},character:{...state.character,gold}};
+  return {...state,inventory:{...state.inventory,stacks:consume(state.inventory.stacks,itemId,quantity,false)},character:{...state.character,gold}};
 }
 export function salvageItem(state:GameState,itemId:string):GameState{
   if(state.settings.favoriteItemIds?.includes(itemId))throw new Error('Favorite item is protected. Remove it from Favorites before salvaging.');
@@ -1498,7 +1531,7 @@ export function sellBankItem(state:GameState,itemId:string,quantity=1):GameState
   if(def.guildOnly)throw new Error('Guild construction components cannot be sold.');
   if(def.knowledgeUnlockId)throw new Error('Blueprints cannot be sold.');
   if(def.type==='gear'&&state.bank.stacks.some(row=>row.itemId===itemId&&row.instanceId===undefined&&row.quantity>=quantity)&&!canDisposeLegacyEquipment(state,itemId,'bank',quantity))throw new Error('This untracked legacy equipment has a reserved enhanced copy. Keep it until the exact copy can be identified.');
-  const stacks=consume(state.bank.stacks,itemId,quantity);
+  const stacks=consume(state.bank.stacks,itemId,quantity,false);
   const proceeds=itemVendorSellGold(def)*quantity;
   if(!Number.isSafeInteger(proceeds)||!Number.isSafeInteger((state.bank.gold??0)+proceeds))throw new Error('Gold amount exceeds supported limit.');
   return {...state,bank:{...state.bank,stacks,gold:(state.bank.gold??0)+proceeds}};
@@ -1531,13 +1564,14 @@ export function depositToBank(state:GameState,itemId:string,quantity:number):Gam
   }
   // One atomic state mutation: gems always target the shared account pouch first.
   // An existing pouch stack can grow even when all pouch slots are occupied.
-  const removed=consume(state.inventory.stacks,itemId,quantity);
-  const remaining={...state,inventory:{...state.inventory,stacks:removed}};
-  const pouchDeposit=tryStoreGemInPouch(remaining,itemId,quantity);
+  const moved=takeOrdinaryStacks(state.inventory.stacks,itemId,quantity);
+  const remaining={...state,inventory:{...state.inventory,stacks:moved.kept}};
+  // Gem pouch stores ordinary gem copies only; bound Dungeon Shop materials
+  // must retain provenance in Inventory/Bank instead of losing their metadata.
+  const pouchDeposit=moved.moved.every(row=>!row.bound)?tryStoreGemInPouch(remaining,itemId,quantity):null;
   if(pouchDeposit)return pouchDeposit;
-  // If the pouch has no room for this new gem type, use the shared Bank.
-  // If both are full, throw before returning any state so no items are lost.
-  const added=addBounded(state.bank.stacks,entitlementStorageCapacity(state,'bank'),[{itemId,quantity}]);
+  // If the pouch has no room, use shared Bank with each stack's bound flag.
+  const added=addBounded(state.bank.stacks,entitlementStorageCapacity(state,'bank'),moved.moved);
   if(added.overflow.length)throw new Error(isGemPouchItemId(itemId)?'Gem Pouch and Bank are full':'Bank is full');
   return {...remaining,bank:{...state.bank,stacks:added.stacks}};
 }
@@ -1550,10 +1584,10 @@ export function withdrawFromBank(state:GameState,itemId:string,quantity:number):
     if(added.overflow.length)throw new Error('Inventory is full');
     return {...state,bank:{...state.bank,stacks:selected.kept},inventory:{...state.inventory,stacks:added.stacks}};
   }
-  const removed=consume(state.bank.stacks,itemId,quantity);
-  const added=addBounded(state.inventory.stacks,entitlementStorageCapacity(state,'inventory'),[{itemId,quantity}]);
+  const moved=takeOrdinaryStacks(state.bank.stacks,itemId,quantity);
+  const added=addBounded(state.inventory.stacks,entitlementStorageCapacity(state,'inventory'),moved.moved);
   if(added.overflow.length)throw new Error('Inventory is full');
-  return {...state,bank:{...state.bank,stacks:removed},inventory:{...state.inventory,stacks:added.stacks}};
+  return {...state,bank:{...state.bank,stacks:moved.kept},inventory:{...state.inventory,stacks:added.stacks}};
 }
 /** Move an explicitly selected physical tool without converting it to a
  * generic catalog stack or losing its immutable quality / affix receipt. */

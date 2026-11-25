@@ -6,6 +6,8 @@ const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 const foundation=read('backend/supabase/migrations/20261111141514_dungeon_shop_hidden_atomic_foundation_v1.sql');
 const release=read('backend/supabase/migrations/20261113192000_dungeon_shop_account_resources_release_v2.sql');
 const bundles=read('backend/supabase/migrations/20261115220500_dungeon_shop_crafting_bundles_v3.sql');
+const boundGrants=read('backend/supabase/migrations/20261121162500_dungeon_shop_account_bound_material_grants_v4.sql');
+const releaseAll=read('backend/supabase/ops/dungeon-shop-all-24-manual-release-20261121.sql');
 const panel=read('apps/mobile/src/components/ExpeditionShopPanel.tsx');
 const shopView=read('apps/mobile/src/components/coop/DungeonMarksShopView.tsx');
 const resourceArt=read('apps/mobile/src/theme/resource-assets.ts');
@@ -26,6 +28,11 @@ assert(foundation.includes('dungeon_shop_purchase_server_v1'),'purchase RPC must
 assert(foundation.includes('dungeon_shop_snapshot_server_v1'),'server snapshot RPC must exist');
 assert(foundation.includes('dungeon_shop_cleared_regions_server_v1'),'cleared regions must be server verified');
 assert(foundation.includes('dungeon_shop_bound_materials_unavailable'),'tradeable materials must remain blocked');
+assert(boundGrants.includes("elsif v_offer.grant_kind='material'"),'V4 must implement verified bound material grant');
+assert(boundGrants.includes("'bound',true"),'purchases must mint bound material stacks');
+assert(boundGrants.includes("v_stack->>'bound'='true'"),'purchases must never merge bound materials into tradeable stacks');
+assert(releaseAll.includes('DUNGEON_SHOP_BOUND_MATERIAL_V4_REQUIRED'),'release must require safe server material grants');
+assert(releaseAll.includes('v_updated<>15'),'release must target exactly the previously disabled fifteen offers');
 assert(foundation.includes('dungeon_shop_unreleased'),'global shop switch must be checked on every purchase');
 assert(foundation.includes('idempotency_request_mismatch'),'request reuse for another item must fail');
 assert(foundation.includes('for update'),'purchases must lock server account and wallet');
@@ -49,6 +56,21 @@ assert(!client.includes("rpc('expedition_shop_purchase_v1'"),'never call the pha
 assert(panel.includes('<DungeonMarksShopView'),'one visible Shop UI shares the approved catalogue');
 assert(panel.includes('onRewardsChanged'),'successful purchase refreshes GameState');
 assert(panel.includes('snapshot?.shopEnabled'),'purchase controls require server enablement');
+// Collectibles stay in a predictable item-type order; each region's three pets
+// appear together in a compact inline row. Expanded purchase details retain
+// their full-size artwork and are never squeezed into 3-column mini-cards.
+assert(shopView.includes("const COLLECTION_GROUPS=['pet','border','background','icon']"),'collectibles must be grouped by item type');
+assert(shopView.includes("shelf==='Supplies'?<>"),'supplies must retain the existing shelf and full-width item cards');
+assert(shopView.includes("items.filter(item=>item.category==='material').map"),'material tiers must remain in their own section');
+assert(shopView.includes("(['companion','supply'] as const).map"),'companion materials and enhancement supplies must have their own sections');
+assert(shopView.includes('dungeonShopSupplyGroupLabel(language,category)'),'supply categories must be localized');
+assert(shopView.includes('matching.map(item=>renderOffer(item,true))'),'collection groups must render compact tiles');
+assert(shopView.includes('{chosen?renderOffer(chosen):null}'),'selected collectible must show its detail below the entire row');
+assert(shopView.includes('expanded&&!compact'),'expanded collectible details must never be cramped inside a tile');
+assert(shopView.includes("width:'31.5%'"),'mobile layout should show three item tiles inline');
+assert(shopView.includes('viewportWidth<360')&&shopView.includes('horizontal nestedScrollEnabled'),'narrow devices must keep collectibles inline in a swipeable row');
+assert(shopView.includes('dungeonShopCollectionLabel(language,category)'),'all collection group titles must be localized');
+
 assert(screen.includes('<ExpeditionShopPanel'),'the existing Dungeon entry opens the finished shop');
 assert(backend.includes('account.releasedPrices[offer.id]'),'server prices come from the DB');
 assert(backend.includes("published?quote.status:'unreleased'"),'disabled offers cannot render as purchasable');
@@ -93,7 +115,7 @@ assert(petRegistry.includes('??dungeonShopPetPortraitArtSource(id)'),'Pet Collec
 assert(shopView.includes('dungeonShopPetOfferArt(item.id)'),'shop offer rows must use unique medium-sized pet art');
 assert(shopView.includes('dungeonShopPetOfferPortraitArt(item.id)'),'expanded Dungeon Shop previews must prefer 512px portrait art');
 assert(shopView.includes('s.petPortraitPreviewImage'),'pet portraits must not render at the tiny shop icon size');
-assert(read('apps/mobile/src/core/release-flags.ts').includes('DUNGEON_MARKS_SHOP_RELEASED=false'),'new pet art must not bypass collectible release gate');
+assert(read('apps/mobile/src/core/release-flags.ts').includes('DUNGEON_MARKS_SHOP_RELEASED=true'),'new pet art must not bypass collectible release gate');
 
 // Dungeon Shop cosmetics use stable reward IDs throughout the server, gallery
 // and shop; validate their exact runtime dimensions, unlike source art dimensions.
@@ -195,7 +217,7 @@ assert(profileIconsCatalog.includes('DUNGEON_SHOP_PROFILE_ICONS_V1'),'profile ic
 assert(profileIconsCatalog.includes('DUNGEON_MARKS_SHOP_RELEASED||owned.has(row.id)'),'unreleased icons must stay hidden unless owned');
 assert(profileWardrobe.includes("row.group==='Dungeon'?'DUNGEON'"),'Dungeon rewards need distinct wardrobe tagging');
 assert(profileSources.includes('DUNGEON_SHOP_COLLECTIBLES_V1.find'),'Dungeon reward names must be preserved');
-assert(read('apps/mobile/src/core/release-flags.ts').includes('DUNGEON_MARKS_SHOP_RELEASED=false'),'art must not enable purchases or passives');
+assert(read('apps/mobile/src/core/release-flags.ts').includes('DUNGEON_MARKS_SHOP_RELEASED=true'),'art must not enable purchases or passives');
 
 // V3 extends the baseline 17 SKUs with seven one-per-week, x100 crafting inputs.
 // Preserve the baseline resource artwork improvements from main.

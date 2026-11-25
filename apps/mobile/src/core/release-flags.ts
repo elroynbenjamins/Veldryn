@@ -18,8 +18,8 @@ export const PLAYER_MARKET_RELEASED=false;
 /** Independent launch prerequisite: authenticated Market Edge write/read routes are not mounted. */
 export const MARKET_AUTHENTICATED_SERVICE_READY=false;
 
-/** Dungeon Marks Shop authored across three regions; keep collectible passives and shop UI hidden until server and art release. */
-export const DUNGEON_MARKS_SHOP_RELEASED=false;
+/** New compatible mobile build enables Dungeon Marks collectibles; per-SKU server release flags still control purchase availability. */
+export const DUNGEON_MARKS_SHOP_RELEASED=true;
 
 /** Keep manual translation invisible until the provider, public privacy disclosure and staging QA pass. */
 export const CHAT_TRANSLATION_RELEASED=false;

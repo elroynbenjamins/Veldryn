@@ -48,13 +48,13 @@ export function DraconicDominionPreview({assets,equippedPetId,alternatePetSource
  return <View style={s.outer} onLayout={e=>{const next=e.nativeEvent.layout.width;setWidth(old=>Math.abs(old-next)<.5?old:next);}}>
  {!supported?fallback:<View style={[s.card,{height:S.height*k}]}>
   <View pointerEvents="none" accessible={false} importantForAccessibility="no-hide-descendants" style={StyleSheet.absoluteFill}>
-   <Image source={assets.background} resizeMode="cover" style={s.fill}/>
+   <Image source={assets.background} fadeDuration={0} resizeMode="cover" style={s.fill}/>
    <Animated.View style={[s.heat,{opacity:Animated.multiply(pulse,.18)}]}/>
    {running?<UltraLuxeEnvironment clock={clock} scale={k} theme="draconic" particle={assets.ember}/>:null}
    {mode==='matching'?<>
     <Animated.View style={[StyleSheet.absoluteFill,{transform:[{translateY:idle.lift}]}]}>
      <Animated.Image source={assets.fallbackGlow} resizeMode="stretch" style={[box(B.ring),{opacity:ringGlow}]}/>
-     {running&&assets.smoothPoseAtlas?<Animated.View style={[box(B.dragon),{transform:mirroredBody}]}><UltraLuxePetPoseSprite source={assets.smoothPoseAtlas} clock={clock} theme="draconic" width={B.dragon.w*k} height={B.dragon.h*k}/></Animated.View>:<Animated.Image source={assets.dragon} resizeMode="contain" style={[box(B.dragon),{transform:mirroredBody}]}/>}
+     {running&&assets.smoothPoseAtlas?<Animated.View style={[box(B.dragon),{transform:mirroredBody}]}><UltraLuxePetPoseSprite source={assets.smoothPoseAtlas} clock={clock} theme="draconic" width={B.dragon.w*k} height={B.dragon.h*k}/></Animated.View>:<Animated.Image source={assets.dragon} fadeDuration={0} resizeMode="contain" style={[box(B.dragon),{transform:mirroredBody}]}/>}
      <Animated.Image source={assets.flames} resizeMode="contain" style={[box(B.flames),{opacity:Animated.add(Animated.multiply(idle.glow,.08),Animated.multiply(pulse,.55)),transform:mirroredBody}]}/>
      {running?<UltraLuxePetAura clock={clock} scale={k} theme="draconic" particle={assets.ember}/>:null}
      {reactionEnabled?<UltraLuxePetReaction reaction={reaction} scale={k} theme="draconic" particle={assets.ember} glow={assets.fallbackGlow}/>:null}
@@ -70,7 +70,7 @@ export function DraconicDominionPreview({assets,equippedPetId,alternatePetSource
   </UltraLuxeIdentityMotionProvider>
   {guild?<View style={[box(B.guild),s.guild]}>{guild}</View>:null}
   <View pointerEvents="none" accessible={false} importantForAccessibility="no-hide-descendants" style={StyleSheet.absoluteFill}>
-   <Image source={assets.border} resizeMode="stretch" style={s.fill}/>
+   <Image source={assets.border} fadeDuration={0} resizeMode="stretch" style={s.fill}/>
    {running?<UltraLuxeRail clock={clock} scale={k} theme="draconic" particle={assets.ember}/>:null}
     {running&&fullSet?<UltraLuxeAscendantFlourish clock={clock} scale={k} theme="draconic" particle={assets.ember}/>:null}
   </View>

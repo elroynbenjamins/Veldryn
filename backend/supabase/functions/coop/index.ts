@@ -51063,14 +51063,14 @@ var REGIONAL_DUNGEON_BALANCE = Object.freeze({
 });
 var LEGACY_ROOTBOUND_ATTACK_MULTIPLIER = 2.9;
 var ROOTBOUND_TIER_ATTACK = [1.2, 0.95, 0.94];
-function regionalPowerMultipliers(expeditionId, tier, enabled, encounterId) {
+function regionalPowerMultipliers(expeditionId, tier, enabled, encounterId, rootboundT3CalibrationVersion) {
   if (!enabled || ![1, 2, 3].includes(tier)) return void 0;
   const row = REGIONAL_DUNGEON_BALANCE[expeditionId];
   if (!row) return void 0;
   const rootbound = expeditionId === "EXP_001" && (encounterId?.startsWith("ROOT") || encounterId === "BOSS_EXP_ROOT");
   const rootAttack = encounterId === "BOSS_EXP_ROOT" && tier === 2 ? 0.92 : encounterId === "BOSS_EXP_ROOT" && tier === 3 ? 0.88 : ROOTBOUND_TIER_ATTACK[tier - 1];
   const rootCorrection = rootbound ? rootAttack / LEGACY_ROOTBOUND_ATTACK_MULTIPLIER : 1;
-  const bossCorrection = expeditionId === "EXP_001" && encounterId === "BOSS_EXP_ROOT" ? tier === 3 ? 0.95 : tier === 2 ? 0.98 : 1 : expeditionId === "EXP_003" && encounterId === "BOSS_EXP_SOLAR" ? tier === 3 ? 0.759 : tier === 2 ? 0.768 : 0.77 : expeditionId === "EXP_003" && encounterId === "BOSS_EXP_SPHINX" ? tier === 3 ? 1.017 : tier === 2 ? 1.015 : 1 : expeditionId === "EXP_001" && encounterId === "BOSS_EXP_BELL" ? tier === 3 ? 1.025 : tier === 2 ? 1.03 : 1 : 1;
+  const bossCorrection = expeditionId === "EXP_001" && encounterId === "BOSS_EXP_ROOT" ? tier === 3 ? rootboundT3CalibrationVersion === 1 ? 0.975 : 0.95 : tier === 2 ? 0.98 : 1 : expeditionId === "EXP_003" && encounterId === "BOSS_EXP_SOLAR" ? tier === 3 ? 0.759 : tier === 2 ? 0.768 : 0.77 : expeditionId === "EXP_003" && encounterId === "BOSS_EXP_SPHINX" ? tier === 3 ? 1.017 : tier === 2 ? 1.015 : 1 : expeditionId === "EXP_001" && encounterId === "BOSS_EXP_BELL" ? tier === 3 ? 1.025 : tier === 2 ? 1.03 : 1 : 1;
   const bossTierThree = tier === 3 && encounterId?.startsWith("BOSS_");
   const bossHpAdjustment = bossTierThree ? expeditionId === "EXP_001" ? 0.965 : expeditionId === "EXP_003" ? 0.98 : 1 : 1;
   const bossDefenseAdjustment = bossTierThree ? expeditionId === "EXP_001" ? 0.985 : expeditionId === "EXP_003" ? 0.99 : 1 : 1;
@@ -51283,7 +51283,7 @@ var QModeService = class {
       applyRoomArtifact(run, selectedArtifact);
     } else if (input.boonId) throw new Error("invalid_boon_choice");
     const isCombat = selected2.kind === "battle" || selected2.kind === "elite" || selected2.kind === "boss";
-    const regional2 = regionalPowerMultipliers(run.expeditionId, run.tier, run.regionalBalanceVersion === 1, selected2.contentId);
+    const regional2 = regionalPowerMultipliers(run.expeditionId, run.tier, run.regionalBalanceVersion === 1, selected2.contentId, run.rootboundT3CalibrationVersion);
     const encounterDepth = run.enduranceRouteVersion === 1 && selected2.kind === "boss" ? Math.max(1, selected2.depth - DUNGEON_ENDURANCE.checkpointInterval) : selected2.depth;
     const depth = dungeonEncounterDepthMultipliers(encounterDepth, run.enduranceRouteVersion === 1, selected2.kind === "boss", run.bossEnduranceVersion);
     const maxDurationMs = dungeonBossTimeLimitMs(selected2.depth, run.enduranceRouteVersion === 1, selected2.kind === "boss", run.bossEnduranceVersion);
@@ -51314,7 +51314,7 @@ var QModeService = class {
   createRun(input) {
     const endurance = input.balanceVersion === REGIONAL_DUNGEON_BALANCE_VERSION;
     const graph2 = generateCoopRouteGraph(this.serverSecret, input.expeditionId, input.runId, input.contentVersion, input.balanceVersion, endurance ? "endurance" : "legacy");
-    const run = { id: input.runId, requestId: input.requestId, controllerAccountId: input.controllerAccountId, expeditionId: input.expeditionId, tier: input.tier, rewardBaseMarks: currentDungeonBaseMarks(input.expeditionId), graph: graph2, currentNodeId: graph2.entryNodeId, phase: "awaiting_choice", players: input.players, persistentState: initialPersistentRunState(input.players), ...endurance ? { enduranceRouteVersion: 1, bossEnduranceVersion: DUNGEON_BOSS_ENDURANCE_VERSION } : {}, tierScalingVersion: 2, ...input.balanceVersion === REGIONAL_DUNGEON_BALANCE_VERSION ? { regionalBalanceVersion: 1 } : {}, qmodePressureVersion: input.qmodePressureVersion, echoSourceAccountIds: input.echoSourceAccountIds, npcCharacterIds: input.npcCharacterIds ?? [] };
+    const run = { id: input.runId, requestId: input.requestId, controllerAccountId: input.controllerAccountId, expeditionId: input.expeditionId, tier: input.tier, rewardBaseMarks: currentDungeonBaseMarks(input.expeditionId), graph: graph2, currentNodeId: graph2.entryNodeId, phase: "awaiting_choice", players: input.players, persistentState: initialPersistentRunState(input.players), ...endurance ? { enduranceRouteVersion: 1, bossEnduranceVersion: DUNGEON_BOSS_ENDURANCE_VERSION } : {}, tierScalingVersion: 2, ...input.balanceVersion === REGIONAL_DUNGEON_BALANCE_VERSION ? { regionalBalanceVersion: 1 } : {}, ...input.balanceVersion === REGIONAL_DUNGEON_BALANCE_VERSION && input.qmodePressureVersion === 1 && input.expeditionId === "EXP_001" && input.tier === 3 ? { rootboundT3CalibrationVersion: 1 } : {}, qmodePressureVersion: input.qmodePressureVersion, echoSourceAccountIds: input.echoSourceAccountIds, npcCharacterIds: input.npcCharacterIds ?? [] };
     this.repository.save(run);
     return structuredClone(run);
   }

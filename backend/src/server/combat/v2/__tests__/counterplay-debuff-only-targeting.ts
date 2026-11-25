@@ -77,8 +77,8 @@ assert.ok(legacy.players.find(p=>p.definition.id==='QA_TANK')!.modifiers
 const stonecaller=launchPlayer('Stonecaller',25);
 const river=SKILL_IDENTITIES_V2.find(s=>s.classId==='STONECALLER'&&s.name==='River Stone');
 const stoneSpec=SPECIALIZATIONS_V2.find(s=>s.classId==='STONECALLER');
-if(!river||!stoneSpec)throw Error('missing_stonecaller_research_skill_or_specialization');
 function stoneBuild(index:0|1):VerifiedSkillBuildV2{
+ if(!river||!stoneSpec)throw Error('missing_stonecaller_research_skill_or_specialization');
  return {
   actor:stonecaller,verified:{classId:'STONECALLER',level:25,ownedInstanceIds:new Set()},
   selected:{specializationId:stoneSpec.id,equipment:{},

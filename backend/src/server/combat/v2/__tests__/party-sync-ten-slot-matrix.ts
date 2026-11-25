@@ -38,7 +38,7 @@ for(const specIndex of [0,1] as const){
     const enemy=fixtures[0].input.enemies[0];
     const input={seed:'QA_10S_SYNC_'+specIndex+'_'+boss.id+'_'+ids.join('_'),
       players,enemies:[enemy],maxDurationMs:9000,tickMs:100};
-    const scope={ruleset:PARTY_SYNCHRONIZATION_RULESET_V2,
+    const scope:TrustedPartySyncRehearsalV2['scope']={ruleset:PARTY_SYNCHRONIZATION_RULESET_V2,
       encounterId:'QA_10S_SYNC_ENC_'+cases,partyId:'QA_10S_SYNC_PARTY',
       revision:1,seed:input.seed,mode:'dungeon' as const,
       members:ids.map((classId,i)=>({actorId:players[i].id,

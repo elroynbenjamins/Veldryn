@@ -6,7 +6,7 @@ import type {CombatResult} from '../../types';
 import {CLASS_NAMES_V2} from '../skill-catalog';
 import {CLASS_ROLES_V2,type ClassIdV2} from '../build-contract';
 import {selectReviewSkillLoadoutV2} from '../ability-counterplay-strategies';
-import {simulateUnifiedEquipmentCombatV2} from '../unified-equipment-encounter';
+import {simulateUnifiedEquipmentCombatV2,type TrustedPartySyncRehearsalV2} from '../unified-equipment-encounter';
 import {PARTY_SYNCHRONIZATION_RULESET_V2} from '../party-synchronization';
 import {bosses,profiles,setup} from './ten-slot-boss-fixture';
 
@@ -68,7 +68,7 @@ for(const spec of [0,1] as const)for(const tank of tanks)for(const support of su
   const runtime=fixtures.map(f=>f.runtime);
   const input={seed:'AI_MATRIX_'+spec+'_'+boss.id+'_'+ids.join('_'),players:fixtures.map(f=>f.actor),
    enemies:fixtures[0].input.enemies,maxDurationMs:20000,tickMs:100};
-  const scope={ruleset:PARTY_SYNCHRONIZATION_RULESET_V2,encounterId:'AI_MATRIX_'+cases,partyId:'AI_MATRIX_PARTY',
+  const scope:TrustedPartySyncRehearsalV2['scope']={ruleset:PARTY_SYNCHRONIZATION_RULESET_V2,encounterId:'AI_MATRIX_'+cases,partyId:'AI_MATRIX_PARTY',
    revision:1,seed:input.seed,mode:'dungeon' as const,members:ids.map((classId,i)=>({
     actorId:input.players[i].id,characterId:runtime[i].characterId,classId}))};
   const frozen=JSON.stringify({input,builds:builds.map(b=>b.selected),gear:runtime.map(r=>r.instancesById)});

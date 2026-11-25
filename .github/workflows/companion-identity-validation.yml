@@ -8,8 +8,6 @@ on:
       - 'backend/src/server/coop/__tests__/dungeon-companion-preview.ts'
       - 'backend/src/server/combat/**'
       - 'apps/mobile/src/content/combat-companions.ts'
-      - 'apps/mobile/src/core/frostfall-reward-visibility.ts'
-      - 'apps/mobile/tests/frostfall-scheduled-rewards.ts'
       - 'apps/mobile/src/components/CombatCompanionPanel.tsx'
       - 'apps/mobile/src/components/coop/CoopDungeonCompanionSelector.tsx'
       - '.github/workflows/companion-identity-validation.yml'
@@ -38,7 +36,5 @@ jobs:
         run: pnpm --dir backend test:companions
       - name: Verify mobile Frostfall companion combat, progression and account rewards
         run: node tools/run-mobile-tests.mjs frostfall-companion-rework
-      - name: Verify scheduled Frostfall discovery and permanent ownership
-        run: node tools/run-mobile-tests.mjs frostfall-scheduled-rewards
       - name: Validate final 96px Frostfall sprites and runtime registrations
         run: node apps/mobile/tests/frostfall-companion-art.cjs

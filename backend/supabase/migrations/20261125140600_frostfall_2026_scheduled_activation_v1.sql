@@ -16,6 +16,11 @@ set search_path=pg_catalog,public,private,cron
 as $$
 declare changed integer:=0;
 begin
+ if clock_timestamp()>='2026-12-27 00:00:00+00'::timestamptz then
+  perform cron.unschedule('veldryn-frostfall-2026-activate')
+  where exists(select 1 from cron.job where jobname='veldryn-frostfall-2026-activate');
+  return false;
+ end if;
  update public.live_events
  set enabled=true,
      config=jsonb_set(coalesce(config,'{}'::jsonb),'{autoActivationArmed}','false'::jsonb,true),
@@ -43,6 +48,7 @@ set search_path=pg_catalog,public,private,cron
 as $$
 declare changed integer:=0;
 begin
+ if clock_timestamp()<'2026-12-29 00:00:00+00'::timestamptz then return false;end if;
  update public.live_events
  set enabled=false,
      config=jsonb_set(coalesce(config,'{}'::jsonb),'{autoActivationArmed}','false'::jsonb,true),
@@ -52,9 +58,8 @@ begin
    and grace_ends_at='2026-12-29 00:00:00+00'::timestamptz
    and clock_timestamp()>=grace_ends_at;
  get diagnostics changed=row_count;
- if changed>0 then
-  perform cron.unschedule('veldryn-frostfall-2026-close');
- end if;
+ perform cron.unschedule('veldryn-frostfall-2026-close')
+ where exists(select 1 from cron.job where jobname='veldryn-frostfall-2026-close');
  return changed>0;
 end $$;
 
@@ -72,7 +77,9 @@ begin
  where event_id='EVT_ANNUAL_012_2026';
  perform cron.unschedule('veldryn-frostfall-2026-activate')
  where exists(select 1 from cron.job where jobname='veldryn-frostfall-2026-activate');
-end $$;
+ perform cron.unschedule('veldryn-frostfall-2026-close')
+ where exists(select 1 from cron.job where jobname='veldryn-frostfall-2026-close');
+end $;
 
 revoke all on function private.activate_frostfall_2026_v1() from public,anon,authenticated;
 revoke all on function private.close_frostfall_2026_v1() from public,anon,authenticated;

@@ -25,10 +25,30 @@ export function reviewFrozenForgeSocketsV2(
 ){
  if(!policy||!policy.version||!finite(policy.maxFinalHp)||policy.maxFinalHp<=0||
    !finite(policy.maxFinalDefense))fail('invalid_policy');
- // Pin the whole review request across all three independent callbacks.
- // Do not include the verifier function itself in the canonical digest.
- const snapshot=()=>{const {verifyPersisted: _verify,...data}=source;
-  return enemyV2SnapshotDigest({actor,build,source:data,sidecar,policy});};
+ // The generic persisted digest intentionally rejects Set and executable
+ // objects. Project only the two known non-JSON fields; never relax that
+ // digest or stringify arbitrary source objects. The selected class profile
+ // is the only profile read by the Forge compiler.
+ const classId=build.verified.classId;
+ const classPolicy=source.classBaselinePolicy;
+ const profile=classPolicy.profiles[classId];
+ const levelCurve=profile?.statsAtLevel;
+ const owned=build.verified.ownedInstanceIds;
+ if(!profile||typeof levelCurve!=='function'||!(owned instanceof Set)||
+    Object.getPrototypeOf(owned)!==Set.prototype)throw Error('combat_v2_forge_socket_review_invalid_snapshot');
+ const snapshot=()=>{
+  if(source.classBaselinePolicy!==classPolicy||classPolicy.profiles[classId]!==profile||
+     profile.statsAtLevel!==levelCurve||build.verified.classId!==classId||
+     build.verified.ownedInstanceIds!==owned)fail('mutated_source');
+  const {verifyPersisted:_verify,classBaselinePolicy:_policy,...data}=source;
+  const {statsAtLevel:_curve,...profileData}=profile;
+  const ownedIds=[...owned];
+  if(ownedIds.some(id=>typeof id!=='string'||!id))fail('invalid_snapshot');
+  return enemyV2SnapshotDigest({actor,build:{...build,verified:{...build.verified,
+    ownedInstanceIds:ownedIds.sort()}},source:{...data,classBaselinePolicy:{
+    version:classPolicy.version,profile:profileData,
+    levelStats:levelCurve.call(profile,build.verified.level)}},sidecar,policy});
+ };
  const original=snapshot();
  const verify=source.verifyPersisted;
  if(typeof verify!=='function')fail('invalid_verifier');

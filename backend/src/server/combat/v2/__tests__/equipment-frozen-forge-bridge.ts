@@ -284,6 +284,31 @@ function make(classId:ClassIdV2,specIndex:0|1,
    return true;
   }},sidecar('gem:stat_keen:g5'),mutablePolicy),/mutated_source/);
  }
+ // Ownership Set and executable class curve are projected explicitly, not
+ // discarded by JSON serialization. Reject changes at any verifier boundary.
+ for(const mutateAt of [1,2,3]){
+  const ownedIds=new Set(qa.build.verified.ownedInstanceIds);
+  const mutableBuild={...qa.build,verified:{...qa.build.verified,ownedInstanceIds:ownedIds}};
+  let reads=0;
+  assert.throws(()=>reviewFrozenForgeSocketsV2(qa.actor,mutableBuild,{...source,verifyPersisted:()=>{
+   if(++reads===mutateAt)ownedIds.add('QA_FOREIGN_COPY');
+   return true;
+  }},sidecar('gem:stat_keen:g5'),policy),/mutated_source/);
+ }
+ const profile=source.classBaselinePolicy.profiles.IRONWARDEN;
+ if(!profile)throw Error('missing QA class profile');
+ for(const mutateAt of [1,2,3]){
+  let extra=0,reads=0;
+  const mutableProfile={...profile,statsAtLevel:(level:number)=>{
+   const stats=profile.statsAtLevel(level);
+   return {...stats,maxHp:stats.maxHp+extra};
+  }};
+  const mutableSource={...source,classBaselinePolicy:{...source.classBaselinePolicy,
+   profiles:{...source.classBaselinePolicy.profiles,IRONWARDEN:mutableProfile}},
+   verifyPersisted:()=>{if(++reads===mutateAt)extra++;return true;}};
+  assert.throws(()=>reviewFrozenForgeSocketsV2(qa.actor,qa.build,mutableSource,
+   sidecar('gem:stat_keen:g5'),policy),/mutated_source/);
+ }
  let verifies=0;
  assert.throws(()=>reviewFrozenForgeSocketsV2(qa.actor,qa.build,{...source,verifyPersisted:()=>++verifies<3},sidecar('gem:stat_keen:g5'),policy),/unverified_combined_snapshot/);
 }

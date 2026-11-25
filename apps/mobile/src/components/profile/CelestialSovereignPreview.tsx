@@ -1,10 +1,11 @@
+import {useCosmeticMotionPolicy} from '../anim/motion';
 import {useUltraLuxePetReaction,UltraLuxePetReaction} from './UltraLuxePetReaction';
 import {UltraLuxeIdentityMotionProvider} from './UltraLuxeIdentityMotion';
 import {UltraLuxePetPoseSprite} from './UltraLuxePetPoseSprite';
 import {ULTRA_LUXE_CYCLE_MS,PET_IDLE_PHASE,CELESTIAL_ATLAS_LIFT} from '../../core/ultra-luxe-motion';
 import {UltraLuxeEnvironment,UltraLuxeRail,UltraLuxePetAura,UltraLuxeAscendantFlourish,petIdleMotion,awakeningEnergy,awakeningPetLift} from './UltraLuxeMotion';
-import {useEffect,useMemo,useRef,useState,type ReactNode} from 'react';
-import {AccessibilityInfo,Animated,AppState,Easing,Image,Pressable,StyleSheet,View,useWindowDimensions,type ImageSourcePropType} from 'react-native';
+import {useEffect,useMemo,useState,type ReactNode} from 'react';
+import {Animated,Easing,Image,Pressable,StyleSheet,View,useWindowDimensions,type ImageSourcePropType} from 'react-native';
 import {CELESTIAL_STAGE,CELESTIAL_PET_BOX,CELESTIAL_IDENTITY_BOX,celestialPetMode,celestialStageSupported} from '../../core/celestial-showcase-layout';
 
 /** Preview-only stage. No catalogue IDs, entitlement, equip or bonus changes.
@@ -37,23 +38,14 @@ type Props={
  reduceMotion?:boolean;
 };
 export function CelestialSovereignPreview({assets,equippedPetId,matchingPetId,alternatePetSource,petAccessibilityLabel,portrait,identity,guild,fallback,fullSet=false,active=false,reduceMotion=false}:Props){
- const clock=useRef(new Animated.Value(0)).current;
+ const [clock]=useState(()=>new Animated.Value(0));
  const [width,setWidth]=useState(0);
- const [foreground,setForeground]=useState(AppState.currentState==='active');
  const {fontScale}=useWindowDimensions();
- const [systemReduced,setSystemReduced]=useState(true);
  const supported=celestialStageSupported(width,fontScale);
- const running=supported&&active&&foreground&&!reduceMotion&&!systemReduced;
+ const {running}=useCosmeticMotionPolicy(supported&&active,reduceMotion);
  const petMode=celestialPetMode(equippedPetId,matchingPetId,alternatePetSource!=null);
  const reactionEnabled=running&&petMode==='matching';
  const {reaction,trigger}=useUltraLuxePetReaction(reactionEnabled);
- useEffect(()=>{
-  let live=true,changed=false;
-  const sub=AccessibilityInfo.addEventListener('reduceMotionChanged',value=>{changed=true;if(live)setSystemReduced(value);});
-  AccessibilityInfo.isReduceMotionEnabled().then(value=>{if(live&&!changed)setSystemReduced(value);}).catch(()=>{});
-  return()=>{live=false;sub.remove();};
- },[]);
- useEffect(()=>{const sub=AppState.addEventListener('change',s=>setForeground(s==='active'));return()=>sub.remove();},[]);
  useEffect(()=>{
   clock.stopAnimation();clock.setValue(0);
   if(!running)return;

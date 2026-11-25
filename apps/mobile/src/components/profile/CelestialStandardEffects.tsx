@@ -1,24 +1,17 @@
-import {useEffect,useMemo,useRef,useState} from 'react';
-import {AccessibilityInfo,Animated,AppState,Easing,Image,StyleSheet,View} from 'react-native';
+import {useCosmeticMotionPolicy} from '../anim/motion';
+import {useEffect,useMemo,useState} from 'react';
+import {Animated,Easing,Image,StyleSheet,View} from 'react-native';
 import {getCelestialAssetBundle} from '../../theme/celestial-integration-assets';
 
 function useCelestialClock(active:boolean,reduceMotion:boolean,duration:number){
- const clock=useRef(new Animated.Value(0)).current;
- const [foreground,setForeground]=useState(AppState.currentState==='active');
- const [systemReduced,setSystemReduced]=useState(true);
- useEffect(()=>{const sub=AppState.addEventListener('change',state=>setForeground(state==='active'));return()=>sub.remove();},[]);
- useEffect(()=>{
-  let mounted=true,changed=false;
-  const sub=AccessibilityInfo.addEventListener('reduceMotionChanged',value=>{changed=true;if(mounted)setSystemReduced(value);});
-  AccessibilityInfo.isReduceMotionEnabled().then(value=>{if(mounted&&!changed)setSystemReduced(value);}).catch(()=>{});
-  return()=>{mounted=false;sub.remove();};
- },[]);
+ const [clock]=useState(()=>new Animated.Value(0));
+ const {running}=useCosmeticMotionPolicy(active,reduceMotion);
  useEffect(()=>{
   clock.stopAnimation();clock.setValue(0);
-  if(!active||reduceMotion||systemReduced||!foreground)return;
+  if(!running)return;
   const loop=Animated.loop(Animated.timing(clock,{toValue:1,duration,easing:Easing.linear,useNativeDriver:true,isInteraction:false}));
   loop.start();return()=>{loop.stop();clock.stopAnimation();};
- },[active,clock,duration,foreground,reduceMotion,systemReduced]);
+ },[running,clock,duration]);
  return clock;
 }
 

@@ -1,10 +1,11 @@
+import {useCosmeticMotionPolicy} from '../anim/motion';
 import {useUltraLuxePetReaction,UltraLuxePetReaction} from './UltraLuxePetReaction';
 import {UltraLuxeIdentityMotionProvider} from './UltraLuxeIdentityMotion';
 import {UltraLuxePetPoseSprite} from './UltraLuxePetPoseSprite';
 import {ULTRA_LUXE_CYCLE_MS} from '../../core/ultra-luxe-motion';
 import {UltraLuxeEnvironment,UltraLuxeRail,UltraLuxePetAura,UltraLuxeAscendantFlourish,petIdleMotion,awakeningEnergy,awakeningPetLift} from './UltraLuxeMotion';
-import {useEffect,useMemo,useRef,useState,type ReactNode} from 'react';
-import {AccessibilityInfo,Animated,AppState,Easing,Image,Pressable,StyleSheet,View,useWindowDimensions,type ImageSourcePropType} from 'react-native';
+import {useEffect,useMemo,useState,type ReactNode} from 'react';
+import {Animated,Easing,Image,Pressable,StyleSheet,View,useWindowDimensions,type ImageSourcePropType} from 'react-native';
 import {DRACONIC_BOXES as B,DRACONIC_STAGE as S,draconicPetMode,draconicStageSupported} from '../../core/draconic-showcase-layout';
 
 export type DraconicSceneAssets={
@@ -14,22 +15,15 @@ export type DraconicSceneAssets={
 type Props={assets:DraconicSceneAssets;equippedPetId?:string|null;alternatePetSource?:ImageSourcePropType;petAccessibilityLabel?:string;portrait:ReactNode;identity:ReactNode;badges?:ReactNode;guild?:ReactNode;fallback:ReactNode;fullSet?:boolean;active?:boolean;reduceMotion?:boolean};
 
 function useEmberClock(active:boolean,reduceMotion:boolean){
- const clock=useRef(new Animated.Value(0)).current;
- const [foreground,setForeground]=useState(AppState.currentState==='active');
- const [systemReduced,setSystemReduced]=useState(true);
- useEffect(()=>{let live=true,changed=false;
-  const motion=AccessibilityInfo.addEventListener('reduceMotionChanged',v=>{changed=true;if(live)setSystemReduced(v);});
-  AccessibilityInfo.isReduceMotionEnabled().then(v=>{if(live&&!changed)setSystemReduced(v);}).catch(()=>{});
-  const app=AppState.addEventListener('change',v=>setForeground(v==='active'));
-  return()=>{live=false;motion.remove();app.remove();};
- },[]);
+ const [clock]=useState(()=>new Animated.Value(0));
+ const {running}=useCosmeticMotionPolicy(active,reduceMotion);
  useEffect(()=>{
   clock.stopAnimation();clock.setValue(0);
-  if(!active||reduceMotion||systemReduced||!foreground)return;
+  if(!running)return;
   const loop=Animated.loop(Animated.timing(clock,{toValue:1,duration:ULTRA_LUXE_CYCLE_MS,easing:Easing.linear,useNativeDriver:true,isInteraction:false}));
   loop.start();return()=>{loop.stop();clock.stopAnimation();};
- },[active,reduceMotion,systemReduced,foreground,clock]);
- return {clock,running:active&&!reduceMotion&&!systemReduced&&foreground};
+ },[running,clock]);
+ return {clock,running};
 }
 export function DraconicDominionPreview({assets,equippedPetId,alternatePetSource,petAccessibilityLabel,portrait,identity,badges,guild,fallback,fullSet=false,active=false,reduceMotion=false}:Props){
  const [width,setWidth]=useState(0),{fontScale}=useWindowDimensions();

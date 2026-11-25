@@ -62,7 +62,7 @@ ok(motionSource.includes('const staticItems=useMemo')&&motionSource.includes('()
 ok(motionSource.includes('const glows=useMemo'),'procedural glow interpolation is memoized');
 const collapsed=stageSource.slice(stageSource.indexOf('if(collapsed)return'),stageSource.indexOf('return <View style={s.root}>'));
 ok(collapsed.includes('active reduceMotion')&&!collapsed.includes('reduceMotion={state.settings.reduceMotion}/>:effectRuntime'),'collapsed strip uses static effects');
-ok(audienceSource.includes('cosmeticsActive={visible&&cosmeticViewport.visible}')&&publicSource.includes('active={cosmeticsActive&&(review?.active??true)}'),'hidden audience preview stops cosmetics');
+ok(audienceSource.includes('cosmeticsActive={visible&&cosmeticViewport.visible}')&&publicSource.includes('const active=cosmeticsActive&&(stageActive??true)&&(review?.active??true)')&&publicSource.includes('active={active} reduceMotion={reduceMotion}'),'hidden audience preview stops cosmetics');
 console.log('PASS: cosmetic idle and static rendering contract');
 
 for(const [top,height,scroll,viewport,expected] of [
@@ -92,5 +92,5 @@ for(const name of ['AnimatedProfileBorderGlows','ProfileCosmeticExteriorMatte','
 }
 ok(motionSource.includes('if(!pieces.length)return []')&&motionSource.includes('left:box.left-left,top:box.top-top'),'sprite glows composite only their clipped footprint');
 const selfSource=fs.readFileSync('src/components/ProfileScenePreview.tsx','utf8');
-ok(publicSource.includes('runtimeFallbackBorderId??(review?reviewBorderId:profile.borderId)')&&selfSource.includes('borderRuntime?.fallbackBorderId??character.profileBorderId')&&stageSource.includes('borderRuntime?.fallbackBorderId??character.profileBorderId'),'fallback artwork uses its actual aperture calibration in all three scene renderers');
+ok(publicSource.includes('runtimeFallbackBorderId??(review?reviewBorderId:renderBorderId)')&&selfSource.includes('borderRuntime?.fallbackBorderId??renderBorderId')&&stageSource.includes('borderRuntime?.fallbackBorderId??character.profileBorderId'),'fallback artwork uses its actual aperture calibration in all three scene renderers');
 console.log('PASS: cosmetic re-entry, memo boundaries, clipped compositing and fallback aperture contract');

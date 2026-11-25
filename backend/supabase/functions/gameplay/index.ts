@@ -304,12 +304,63 @@ var init_faith2 = __esm({
   }
 });
 
+// ../apps/mobile/src/core/ultra-luxe-grants.ts
+var ULTRA_LUXE_GRANT_COLLECTIONS = [
+  { id: "ascendant-celestial-sovereign", background: "ascendant-celestial-astral-sanctum", border: "ascendant-celestial-crown-of-the-cosmos", pet: "ascendant-celestial-aetherion", icon: "ascendant-celestial-crown-icon", title: "ascendant-celestial-title", titleName: "Sovereign of the Stars", badge: "ascendant_sovereign_of_stars", nameStyle: "ascendant-celestial-name" },
+  { id: "ascendant-draconic-dominion", background: "ascendant-draconic-dominion-of-ash", border: "ascendant-draconic-throne-of-embers", pet: "ascendant-draconic-vharaxis", icon: "ascendant-draconic-ruby-icon", title: "ascendant-draconic-title", titleName: "Dragon Sovereign", badge: "ascendant_dragon_sovereign", nameStyle: "ascendant-draconic-name" }
+];
+function ultraLuxeGrantProjection(raw2) {
+  const ids2 = new Set(Array.isArray(raw2) ? raw2.filter((id) => typeof id === "string") : []);
+  const rows2 = ULTRA_LUXE_GRANT_COLLECTIONS.filter((row) => ids2.has(row.id));
+  return { collectionIds: rows2.map((row) => row.id), backgrounds: rows2.map((row) => row.background), borders: rows2.map((row) => row.border), pets: rows2.map((row) => row.pet), icons: rows2.map((row) => row.icon), titles: rows2.map((row) => row.title), badges: rows2.map((row) => row.badge), nameStyles: rows2.map((row) => row.nameStyle) };
+}
+var privateId = (id) => id.startsWith("ascendant-") || id.startsWith("ascendant_");
+function replacePrivate(existing, verified) {
+  return [.../* @__PURE__ */ new Set([...(existing ?? []).filter((id) => !privateId(id)), ...verified])];
+}
+function allowed(id, owned) {
+  return !id || !privateId(id) || owned.includes(id);
+}
+function withVerifiedUltraLuxeGrants(state, raw2) {
+  const grants = ultraLuxeGrantProjection(raw2);
+  const sanitize = (c) => {
+    const title2 = ULTRA_LUXE_GRANT_COLLECTIONS.find((row) => row.titleName.toLowerCase() === c.profileTitle?.trim().toLowerCase());
+    return {
+      ...c,
+      profileBackgroundId: allowed(c.profileBackgroundId, grants.backgrounds) ? c.profileBackgroundId : "asterfall-night",
+      profileBorderId: allowed(c.profileBorderId, grants.borders) ? c.profileBorderId : void 0,
+      selectedCosmeticPetId: allowed(c.selectedCosmeticPetId, grants.pets) ? c.selectedCosmeticPetId : void 0,
+      profileIconId: allowed(c.profileIconId, grants.icons) ? c.profileIconId : "class:" + c.classId,
+      profileTitle: title2 && !grants.titles.includes(title2.title) ? "New Adventurer" : c.profileTitle
+    };
+  };
+  return {
+    ...state,
+    account: {
+      ...state.account,
+      unlockedProfileBackgroundIds: replacePrivate(state.account.unlockedProfileBackgroundIds, grants.backgrounds),
+      unlockedProfileBorderIds: replacePrivate(state.account.unlockedProfileBorderIds, grants.borders),
+      unlockedCosmeticPetIds: replacePrivate(state.account.unlockedCosmeticPetIds, grants.pets),
+      unlockedProfileIconIds: replacePrivate(state.account.unlockedProfileIconIds, grants.icons),
+      unlockedTitleIds: replacePrivate(state.account.unlockedTitleIds, grants.titles)
+    },
+    character: state.character ? sanitize(state.character) : state.character,
+    ...state.otherCharacters ? { otherCharacters: state.otherCharacters.map((row) => ({ ...row, character: sanitize(row.character) })) } : {}
+  };
+}
+function canUsePrivateTitleText(state, title2) {
+  const reserved = ULTRA_LUXE_GRANT_COLLECTIONS.find((row) => row.titleName.toLowerCase() === title2?.trim().toLowerCase());
+  return !reserved || (state.account.unlockedTitleIds?.includes(reserved.title) ?? false);
+}
+
 // ../apps/mobile/src/core/release-flags.ts
 var EVENTS_RELEASED = true;
 var FROSTFALL_REWARDS_RELEASED = false;
 var EVENT_COMMUNITY_ENABLED = false;
 var DUNGEON_MARKS_SHOP_RELEASED = false;
 var EQUIPMENT_RESALE_UPLIFT_RELEASED = false;
+var PROFILE_ANIMATED_COSMETICS_RELEASED = false;
+var PROFILE_COSMETICS_STORE_RELEASED = false;
 
 // ../apps/mobile/src/content/crafting-gold-cost.ts
 function increasedCraftingGoldCost(baseGold) {
@@ -50984,7 +51035,7 @@ var QUICK_NAV_DESTINATIONS = [
   "Empty"
 ];
 var DEFAULT_QUICK_NAV_DESTINATIONS = ["Quests", "Dungeon", "Companions", "Guild", "Settings"];
-var allowed = new Set(QUICK_NAV_DESTINATIONS);
+var allowed2 = new Set(QUICK_NAV_DESTINATIONS);
 
 // ../apps/mobile/src/core/account-roster.ts
 init_progression();
@@ -52745,6 +52796,37 @@ function equipmentSetCombatModifiers(state, baseCritChance = 0.05, baseAccuracy 
 init_faith2();
 init_faith();
 
+// ../apps/mobile/src/core/profile-cosmetic-icons.ts
+var PROFILE_COSMETIC_PORTRAITS = [
+  { id: "cosmetic:gloamward:portrait-seer", name: "Gloamward Seer", collectionId: "gloamward", presentation: "female", artworkReady: true },
+  { id: "cosmetic:gloamward:portrait-magus", name: "Gloamward Magus", collectionId: "gloamward", presentation: "male", artworkReady: true },
+  { id: "cosmetic:frostbound:portrait-oracle", name: "Frostbound Oracle", collectionId: "frostbound", presentation: "female", artworkReady: true },
+  { id: "cosmetic:frostbound:portrait-warden", name: "Frostbound Warden", collectionId: "frostbound", presentation: "male", artworkReady: true },
+  { id: "cosmetic:amberglass:portrait-duelist", name: "Amberglass Duelist", collectionId: "amberglass", presentation: "female", artworkReady: true },
+  { id: "cosmetic:amberglass:portrait-vanguard", name: "Amberglass Vanguard", collectionId: "amberglass", presentation: "male", artworkReady: true },
+  { id: "cosmetic:briarbound:portrait-ranger", name: "Briarbound Ranger", collectionId: "briarbound", presentation: "female", artworkReady: true },
+  { id: "cosmetic:briarbound:portrait-warden", name: "Briarbound Warden", collectionId: "briarbound", presentation: "male", artworkReady: true }
+];
+
+// ../apps/mobile/src/core/profile-cosmetic-access.ts
+var PROFILE_COSMETICS_TESTER_ENTITLEMENT = "profile_cosmetics_tester_v1";
+function profileCosmeticsTester(state) {
+  return state.account.entitlements?.[PROFILE_COSMETICS_TESTER_ENTITLEMENT] === true;
+}
+function profileAnimatedCosmeticsEnabled(state) {
+  return PROFILE_ANIMATED_COSMETICS_RELEASED || profileCosmeticsTester(state);
+}
+
+// ../apps/mobile/src/core/ultra-luxe-prestige.ts
+var ULTRA_LUXE_ICONS = [
+  { id: "ascendant-celestial-crown-icon", name: "Crown of the Cosmos" },
+  { id: "ascendant-draconic-ruby-icon", name: "Crest of Eternal Embers" }
+];
+function ownedUltraLuxeIcons(state) {
+  const owned = new Set(state.account.unlockedProfileIconIds ?? []);
+  return ULTRA_LUXE_ICONS.filter((row) => owned.has(row.id));
+}
+
 // ../apps/mobile/src/core/profile-icons.ts
 var EVENT_PROFILE_ICON_ARTWORK_IDS = /* @__PURE__ */ new Set([
   "event:veilbreak-2026-lantern-warden",
@@ -52763,6 +52845,7 @@ var PROFILE_ICON_CATALOG = [
   { id: "starter:dune-warden", name: "Dune Warden", group: "Starter", source: "Available from the start." },
   { id: "creature:FALLEN_KNIGHT", name: "Fallen Knight", group: "Combat", source: "Defeat the Fallen Knight.", bossId: "FALLEN_KNIGHT" },
   { id: "guild:stormwatch-crest", name: "Stormwatch Crest", group: "Guild", source: "Guild Token Shop \xB7 Guild Level 4" },
+  ...PROFILE_COSMETIC_PORTRAITS.map((row) => ({ id: row.id, name: row.name, group: "Cosmetics", source: "Cosmetics set \xB7 Tester access", artworkReady: row.artworkReady })),
   ...DUNGEON_SHOP_PROFILE_ICONS_V1.map((row) => ({ id: row.id, name: row.name, group: "Dungeon", source: "Dungeon Marks Shop \xB7 " + row.region }))
 ];
 function profileIconCollection(state) {
@@ -52771,11 +52854,16 @@ function profileIconCollection(state) {
   const base = CLASSES.filter((row) => row.id === activeClass).map((row) => ({ id: `class:${row.id}`, name: row.name, group: "Class", source: "Your active character class.", unlocked: true, artworkReady: true, selected: selected2 === `class:${row.id}` }));
   const owned = new Set(state.account.unlockedProfileIconIds ?? []);
   const characters = [state.character, ...(state.otherCharacters ?? []).map((row) => row.character)];
-  const portraits = PROFILE_ICON_CATALOG.filter((row) => row.group !== "Dungeon" || DUNGEON_MARKS_SHOP_RELEASED || owned.has(row.id)).map((row) => ({ ...row, artworkReady: true, selected: selected2 === row.id, unlocked: row.group === "Starter" || owned.has(row.id) || row.monsterId !== void 0 && characters.some((c) => (c?.monsterMasteryPoints?.[row.monsterId] ?? 0) >= 10) || row.bossId !== void 0 && state.defeatedBossIds.includes(row.bossId) }));
+  const tester = profileCosmeticsTester(state);
+  const portraits = PROFILE_ICON_CATALOG.filter((row) => (row.group !== "Dungeon" || DUNGEON_MARKS_SHOP_RELEASED || owned.has(row.id)) && (row.group !== "Cosmetics" || PROFILE_COSMETICS_STORE_RELEASED || tester || owned.has(row.id))).map((row) => {
+    const artworkReady = row.group === "Cosmetics" && tester ? true : row.artworkReady ?? true;
+    return { ...row, artworkReady, selected: selected2 === row.id, unlocked: row.group === "Starter" || artworkReady && owned.has(row.id) || row.monsterId !== void 0 && characters.some((c) => (c?.monsterMasteryPoints?.[row.monsterId] ?? 0) >= 10) || row.bossId !== void 0 && state.defeatedBossIds.includes(row.bossId) };
+  });
   const known2 = new Set(portraits.map((row) => row.id));
   const rewards = LIVE_EVENT_CATALOG.flatMap((event) => [...CLASSES.flatMap((c) => event.milestones(c.id).map((row) => row.reward)), ...event.shop.map((row) => row.reward), ...event.communityMilestones.flatMap((row) => row.reward ? [row.reward] : []), ...event.discoveries.map((row) => row.reward)]);
   const events = [...new Map(rewards.filter((row) => row.kind === "profile_icon" && !known2.has(row.id)).map((row) => [row.id, row])).values()];
-  return [...base, ...portraits, ...events.map((row) => ({ id: row.id, name: row.name, group: "Event", source: "Earned festival reward.", unlocked: owned.has(row.id), artworkReady: EVENT_PROFILE_ICON_ARTWORK_IDS.has(row.id), selected: selected2 === row.id }))];
+  const privateIcons = ownedUltraLuxeIcons(state).map((row) => ({ ...row, group: "Ascendant", source: "Private account grant.", unlocked: true, artworkReady: true, selected: selected2 === row.id }));
+  return [...base, ...privateIcons, ...portraits, ...events.map((row) => ({ id: row.id, name: row.name, group: "Event", source: "Earned festival reward.", unlocked: owned.has(row.id), artworkReady: EVENT_PROFILE_ICON_ARTWORK_IDS.has(row.id), selected: selected2 === row.id }))];
 }
 function canUseProfileIcon(state, id) {
   return PROFILE_ICON_CATALOG.some((row) => row.id === id && row.group === "Starter") || profileIconCollection(state).some((row) => row.id === id && row.unlocked);
@@ -56304,6 +56392,31 @@ function migrateRetiredStoryRewards(input, nowMs) {
   return { ...cleaned, ...routed, account };
 }
 
+// ../apps/mobile/src/core/profile-premium-cosmetics.ts
+var PREMIUM_PROFILE_COSMETICS = [
+  { id: "celestial-sovereign", name: "Celestial Sovereign", tier: "ascendant", borderId: "premium:celestial-sovereign:crown-of-cosmos", borderName: "Crown of the Cosmos", fallbackBorderId: "guild-border-royal", effectId: "premium:celestial-sovereign:celestial-alignment", effectName: "Celestial Alignment", backgroundId: "premium:celestial-sovereign:astral-sanctum", backgroundName: "Astral Sanctum", fallbackBackgroundId: "bg_frostfall", petId: "premium:celestial-sovereign:aetherion-starborn", petName: "Aetherion, the Starborn", fallbackPetId: "EVT_PET_009", badgeId: "ascendant_sovereign_of_stars", badgeName: "Sovereign of the Stars", accent: "#F5D982", softAccent: "#7181C8" },
+  { id: "draconic-dominion", name: "Draconic Dominion", tier: "ascendant", borderId: "premium:draconic-dominion:throne-of-embers", borderName: "Throne of Embers", fallbackBorderId: "dungeon:sunscar:amberglass-loop", effectId: "premium:draconic-dominion:awakening-of-the-dragon", effectName: "Awakening of the Dragon", backgroundId: "premium:draconic-dominion:dominion-of-ash", backgroundName: "Dominion of Ash", fallbackBackgroundId: "dungeon:sunscar:buried-observatory", petId: "premium:draconic-dominion:vharaxis-eternal-flame", petName: "Vharaxis, the Eternal Flame", fallbackPetId: "PET_036", badgeId: "ascendant_dragon_sovereign", badgeName: "Dragon Sovereign", accent: "#FF8A45", softAccent: "#9E332D" },
+  { id: "abyssal-majesty", name: "Abyssal Majesty", tier: "ascendant", borderId: "premium:abyssal-majesty:crown-of-the-depths", borderName: "Crown of the Depths", fallbackBorderId: "frame_gloamward", effectId: "premium:abyssal-majesty:call-of-the-deep", effectName: "Call of the Deep", backgroundId: "premium:abyssal-majesty:forgotten-abyss", backgroundName: "The Forgotten Abyss", fallbackBackgroundId: "bg_veilbreak", petId: "premium:abyssal-majesty:nhalzuun-abyssborn", petName: "Nhal'Zuun, the Abyssborn", fallbackPetId: "PET_039", badgeId: "ascendant_monarch_of_deep", badgeName: "Monarch of the Deep", accent: "#6CF2EB", softAccent: "#176F83" },
+  { id: "paradox-eternal", name: "Paradox Eternal", tier: "ascendant", borderId: "premium:paradox-eternal:fractured-eternity", borderName: "Fractured Eternity", fallbackBorderId: "guild-border-silver", effectId: "premium:paradox-eternal:reality-rewritten", effectName: "Reality Rewritten", backgroundId: "premium:paradox-eternal:beyond-the-veil", backgroundName: "Beyond the Veil", fallbackBackgroundId: "dungeon:frostmarch:shiverlake-reflections", petId: "premium:paradox-eternal:aeon-timeless", petName: "Aeon, the Timeless", fallbackPetId: "PET_016", badgeId: "ascendant_beyond_existence", badgeName: "Beyond Existence", accent: "#EDEBFF", softAccent: "#8E71C9" }
+];
+var premiumProfileByBorder = new Map(PREMIUM_PROFILE_COSMETICS.map((row) => [row.borderId, row]));
+var premiumProfileByEffect = new Map(PREMIUM_PROFILE_COSMETICS.map((row) => [row.effectId, row]));
+var premiumProfileByPet = new Map(PREMIUM_PROFILE_COSMETICS.map((row) => [row.petId, row]));
+var PREMIUM_PROFILE_BADGE_IDS = PREMIUM_PROFILE_COSMETICS.map((row) => row.badgeId);
+
+// ../apps/mobile/src/core/profile-effects.ts
+var PROFILE_EFFECTS = [
+  { id: "effect_gloamward_wisps", name: "Arcane Wisps", collection: "Gloamward", borderId: "cosmetic:gloamward:arcane-frame", borderName: "Gloamward Arcane Frame", fallbackBorderId: "frame_gloamward" },
+  { id: "effect_frostbound_winter_veil", name: "Winter Veil", collection: "Frostbound Chime", borderId: "cosmetic:frostbound:chime-frame", borderName: "Frostbound Chime Frame", fallbackBorderId: "dungeon:frostmarch:frostbound-chime" },
+  { id: "effect_amberglass_ember_motes", name: "Ember Motes", collection: "Amberglass Loop", borderId: "cosmetic:amberglass:loop-frame", borderName: "Amberglass Loop Frame", fallbackBorderId: "dungeon:sunscar:amberglass-loop" },
+  { id: "effect_briarbound_verdant_whispers", name: "Verdant Whispers", collection: "Briarbound", borderId: "cosmetic:briarbound:verdant-frame", borderName: "Briarbound Verdant Frame", fallbackBorderId: "dungeon:asterfall:briarbound-frame" }
+];
+var PROFILE_ALL_EFFECTS = [...PROFILE_EFFECTS, ...PREMIUM_PROFILE_COSMETICS.map((row) => ({ id: row.effectId, name: row.effectName, collection: row.name, borderId: row.borderId, borderName: row.borderName, fallbackBorderId: row.fallbackBorderId }))];
+function canUseProfileEffect(state, id) {
+  if (!id) return true;
+  return state.account.unlockedProfileEffectIds?.includes(id) ?? false;
+}
+
 // ../apps/mobile/src/core/equipment-crafting-queue.ts
 init_progression();
 
@@ -59772,7 +59885,7 @@ var fields = {
   inventory_preference: ["id", "kind", "enabled"],
   inventory_preference_bulk: ["ids", "kind", "enabled"],
   inventory_seen_all: [],
-  profile: ["profileIconId", "profileTitle", "profileBackgroundId", "profileBorderId", "selectedCosmeticPetId"],
+  profile: ["profileIconId", "profileTitle", "profileBackgroundId", "profileBorderId", "profileEffectId", "selectedCosmeticPetId"],
   event_daily: [],
   event_cache: [],
   event_milestones: [],
@@ -60549,9 +60662,12 @@ function executeGameCommand(previous, value, now, options = {}) {
         patch[key] = input === null ? void 0 : input;
       }
       if (patch.profileTitle !== void 0 && patch.profileTitle.length > 32) throw new Error("invalid_profile_title");
+      if (!canUsePrivateTitleText(state, patch.profileTitle)) throw new Error("cosmetic_not_owned");
       if (patch.profileIconId && !canUseProfileIcon(state, patch.profileIconId)) throw new Error("cosmetic_not_owned");
       if (patch.profileBackgroundId && !["asterfall-night", "ironwood-dawn", "silverbrook-mist", "oathglass-hall", ...state.account.unlockedProfileBackgroundIds ?? []].includes(patch.profileBackgroundId)) throw new Error("cosmetic_not_owned");
       if (patch.profileBorderId && !state.account.unlockedProfileBorderIds?.includes(patch.profileBorderId)) throw new Error("cosmetic_not_owned");
+      if (patch.profileEffectId && !profileAnimatedCosmeticsEnabled(state) && patch.profileEffectId !== state.character.profileEffectId) throw new Error("feature_not_released");
+      if (patch.profileEffectId && !canUseProfileEffect(state, patch.profileEffectId)) throw new Error("cosmetic_not_owned");
       if (patch.selectedCosmeticPetId && !state.account.unlockedCosmeticPetIds?.includes(patch.selectedCosmeticPetId)) throw new Error("cosmetic_not_owned");
       state = { ...state, character: { ...state.character, ...patch } };
       break;
@@ -60625,6 +60741,9 @@ function gameplayHandler(services2, authenticatePlayer2 = async (token) => {
   const accountId = await services2.authenticate(token);
   return accountId ? { accountId, adminQa: false } : null;
 }) {
+  const privateGrants = services2.ultraLuxeGrantAuthority === true;
+  const receiptRpc = privateGrants ? "read_online_game_receipt_ultra_luxe_v1" : "read_online_game_receipt_server_v1";
+  const loadRpc = privateGrants ? "load_online_game_ultra_luxe_v1" : "load_online_game_server_v1";
   return async (request) => {
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers });
     if (!["GET", "POST"].includes(request.method)) return json({ error: "method_not_allowed" }, 405);
@@ -60670,7 +60789,7 @@ function gameplayHandler(services2, authenticatePlayer2 = async (token) => {
           await services2.rpc("record_player_activity_server_v1", { p_account_id: accountId, p_kind: command.type.startsWith("event_") ? "event_action" : "gameplay_action" });
         } catch {
         }
-        const prior = await services2.rpc("read_online_game_receipt_server_v1", { p_account_id: accountId, p_request_id: body.requestId });
+        const prior = await services2.rpc(receiptRpc, { p_account_id: accountId, p_request_id: body.requestId });
         if (prior) {
           if (prior.requestHash !== requestHash) {
             await recordOutcome("conflict");
@@ -60680,8 +60799,9 @@ function gameplayHandler(services2, authenticatePlayer2 = async (token) => {
           return json(prior.response);
         }
       }
-      const loaded = await services2.rpc("load_online_game_server_v1", { p_account_id: accountId });
-      const storedState = rebaseCombatGameState(loaded.state ?? newGame(loaded.serverNow));
+      const loaded = await services2.rpc(loadRpc, { p_account_id: accountId });
+      if (privateGrants && !Array.isArray(loaded.ultraLuxeCollectionIds)) throw new Error("ultra_luxe_grant_projection_missing");
+      const storedState = rebaseCombatGameState(privateGrants ? withVerifiedUltraLuxeGrants(loaded.state ?? newGame(loaded.serverNow), loaded.ultraLuxeCollectionIds) : loaded.state ?? newGame(loaded.serverNow));
       const trustedState = request.method === "POST" ? snapshotEarnedLegacySeasonalClaims(storedState, loaded.serverNow) : storedState;
       const state = restoreCumulativeMonsterUnlocks(ensurePersonalSeasonalState(trustedState));
       state.account.longTermAccountScopeId = accountId;
@@ -60699,7 +60819,7 @@ function gameplayHandler(services2, authenticatePlayer2 = async (token) => {
       }
       if (!body || !command) return json({ state, version: loaded.version, serverNow: loaded.serverNow, accountId });
       if (body.expectedVersion !== loaded.version) {
-        const committed2 = await services2.rpc("read_online_game_receipt_server_v1", { p_account_id: accountId, p_request_id: body.requestId });
+        const committed2 = await services2.rpc(receiptRpc, { p_account_id: accountId, p_request_id: body.requestId });
         if (committed2) {
           if (committed2.requestHash === requestHash) {
             await recordOutcome("replayed");
@@ -60750,8 +60870,8 @@ function gameplayHandler(services2, authenticatePlayer2 = async (token) => {
         ...projectSegments.some(({ activity }) => activity.kind === "alchemy" || activity.kind === "processing") ? [] : contributions.filter((event) => event.kind === "crafting" && event.units > 0).map((event) => ({ kind: "crafting", units: Math.min(100, event.units) }))
       ];
       const response = { guildProjectEffort, guildPveEffort, state: restoreCumulativeMonsterUnlocks(result.state), version: loaded.version + 1, serverNow: loaded.serverNow, accountId, reward: result.reward, activity: result.activity, message: result.message, won: result.won, storyBossBattle: result.storyBossBattle, upgrade: result.upgrade, forgeResults: result.forgeResults };
-      const commitRpc = "commit_online_game_guild_pve_v1";
-      const committed = await services2.rpc(commitRpc, { p_account_id: accountId, p_expected_version: loaded.version, p_expected_gold: loaded.walletGold, p_request_id: body.requestId, p_request_hash: requestHash, p_response: response, p_contributions: contributions, ...command.type === "roster_delete" ? { p_deleted_character_id: command.args.id } : {} });
+      const commitRpc = privateGrants ? "commit_online_game_ultra_luxe_v1" : "commit_online_game_guild_pve_v1";
+      const committed = await services2.rpc(commitRpc, { p_account_id: accountId, p_expected_version: loaded.version, p_expected_gold: loaded.walletGold, p_request_id: body.requestId, p_request_hash: requestHash, p_response: response, p_contributions: contributions, ...privateGrants ? { p_expected_grants: [...ultraLuxeGrantProjection(loaded.ultraLuxeCollectionIds).collectionIds].sort() } : {}, ...command.type === "roster_delete" ? { p_deleted_character_id: command.args.id } : {} });
       try {
         await services2.rpc("guild_quest_record_contributions_v1", { p_account_id: accountId, p_contributions: contributions.map((e) => ({ ...e, units: e.questUnits ?? e.units })) });
       } catch {

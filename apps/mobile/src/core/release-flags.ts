@@ -31,6 +31,11 @@ export const EQUIPMENT_RESALE_UPLIFT_RELEASED=false;
 /** Account-wide Social Name and independent 3-hero showcases require production RPC/migration + Android approval. */
 export const ACCOUNT_SOCIAL_IDENTITY_RELEASED=false;
 
+/** Ascendant blessing settlement remains disabled until its server/economy implementation is released. */
+export const ASCENDANT_PROGRESSION_BLESSINGS_RELEASED=false;
+/** Separate non-P2W fuse: requires an approved gameplay-earned path to the same 5% pet and 3% background power. */
+export const ASCENDANT_BLESSING_PARITY_APPROVED=false;
+
 /** Animated profile collections are implemented for QA but stay hidden until binary art, public projection and native approval are complete. */
 export const PROFILE_ANIMATED_COSMETICS_RELEASED=false;
 

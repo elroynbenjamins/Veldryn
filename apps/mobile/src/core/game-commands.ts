@@ -1,3 +1,4 @@
+import {canUsePrivateTitleText} from './ultra-luxe-grants';
 import type {BodyPresentation,ClassId,GameState,GearSlot,RewardBundle} from './types';
 import * as game from './game';
 import {migrateRetiredStoryRewards} from './retired-story-rewards';
@@ -433,7 +434,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'deposit':state=game.depositToBank(state,text(a,'id'),integer(a,'quantity'));break;
   case 'withdraw':state=game.withdrawFromBank(state,text(a,'id'),integer(a,'quantity'));break;
   case 'deposit_materials':state=game.depositAllMaterials(state);break;
-  // A copy:<instanceId> selector may be 185 characters (180-char validated instance ID + prefix).
+  // Exact copy selections use the same receipt ID and prefix limit as validation.
   case 'bulk_transfer':state=bulkTransferSelected(state,stringArray(a,'ids',100,INVENTORY_SELECTION_ID_MAX),oneOf(a.location,['inventory','bank']));break;
   case 'bulk_sell':state=bulkSellSelected(state,stringArray(a,'ids',100,INVENTORY_SELECTION_ID_MAX),oneOf(a.location??'inventory',['inventory','bank'] as const));break;
   case 'bulk_salvage':state=bulkSalvageSelected(state,stringArray(a,'ids',100,INVENTORY_SELECTION_ID_MAX),oneOf(a.location??'inventory',['inventory','bank'] as const));break;
@@ -537,6 +538,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
    const patch:Record<string,string|undefined>={};
    for(const [key,input] of Object.entries(a)){if(input!==null&&(typeof input!=='string'||input.length>80))throw new Error('invalid_profile');patch[key]=input===null?undefined:input as string;}
    if(patch.profileTitle!==undefined&&patch.profileTitle.length>32)throw new Error('invalid_profile_title');
+   if(!canUsePrivateTitleText(state,patch.profileTitle))throw new Error('cosmetic_not_owned');
    if(patch.profileIconId&&!canUseProfileIcon(state,patch.profileIconId))throw new Error('cosmetic_not_owned');
    if(patch.profileBackgroundId&&!['asterfall-night','ironwood-dawn','silverbrook-mist','oathglass-hall',...(state.account.unlockedProfileBackgroundIds??[])].includes(patch.profileBackgroundId))throw new Error('cosmetic_not_owned');
    if(patch.profileBorderId&&!state.account.unlockedProfileBorderIds?.includes(patch.profileBorderId))throw new Error('cosmetic_not_owned');

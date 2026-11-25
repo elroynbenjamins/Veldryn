@@ -150,3 +150,22 @@ for(const row of PROFILE_COSMETIC_RUNTIME){
 equal(profileSceneArtworkGlowBounds(340,205,.5,.5,8),null,'transparent interior cannot host border glows');
 equal(profileSceneArtworkGlowBounds(340,205,-.1,.1,8),null,'out-of-source coordinates rejected');
 console.log('PASS: standard frame ornament anchors follow responsive art and preserve safe clipping');
+
+const registrySource=fs.readFileSync('src/theme/profile-border-assets.ts','utf8');
+const storeSource=fs.readFileSync('src/components/StoreCosmeticsCatalog.tsx','utf8');
+const wardrobeSource=fs.readFileSync('src/components/profile/ProfileLookPanel.tsx','utf8');
+for(const [id,asset,reward] of [
+ ['cosmetic:frostbound:chime-frame','animated-frostbound-chime-v2.webp','dungeon:frostmarch:frostbound-chime'],
+ ['cosmetic:amberglass:loop-frame','animated-amberglass-loop-v2.webp','dungeon:sunscar:amberglass-loop'],
+ ['cosmetic:briarbound:verdant-frame','animated-briarbound-v2.webp','dungeon:asterfall:briarbound-frame'],
+] as const){
+ ok(registrySource.includes("['"+id+"',require('../../assets/profile-borders/"+asset+"')]"),id+' has dedicated artwork');
+ ok(registrySource.includes("['"+reward+"',require("),reward+' retains its original artwork');
+}
+ok(storeSource.includes('resolveProfileBorderArtworkId(runtime.borderId,runtime.fallbackBorderId)'),'store resolves dedicated frame artwork');
+ok(wardrobeSource.includes('profileBorderSourceById.get(row.id)'),'wardrobe prefers dedicated frame artwork');
+console.log('PASS: standard frames use dedicated artwork without replacing dungeon reward assets');
+
+ok(selfSource.includes('directBorder=profileBorderSourceById.get(renderBorderId)')&&selfSource.includes('borderArt?.border??directBorder??'),'personal direct artwork takes priority');
+ok(publicSource.includes('profileBorderSourceById.get(renderBorderId)')&&publicSource.includes('borderArt?.border??directBorder??'),'public direct artwork takes priority');
+ok(stageSource.includes('directFrame=profileBorderSourceById.get(character.profileBorderId')&&stageSource.includes('borderArt?.border??directFrame??'),'stage direct artwork takes priority');

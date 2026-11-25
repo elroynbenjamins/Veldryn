@@ -1,6 +1,6 @@
 import {memo,type ReactNode} from 'react';
 import {Animated,StyleSheet,View,type ImageSourcePropType} from 'react-native';
-import {FX_POINTS,RAIL_PATH,LOOP_PHASE,ORBIT_X,ORBIT_Y,SIGNATURE_PHASE,SIGNATURE_CURVE_PHASE,SIGNATURE_CURVE_ENERGY,shiftClosed,PET_IDLE_PHASE,PET_IDLE_POSES,AWAKENING_CURVES,AWAKENING_PET_LIFT,type PetIdleKind} from '../../core/ultra-luxe-motion';
+import {FX_POINTS,RAIL_PATH,LOOP_PHASE,ORBIT_X,ORBIT_Y,SIGNATURE_PHASE,SIGNATURE_CURVE_PHASE,SIGNATURE_CURVE_ENERGY,shiftClosed,PET_IDLE_PHASE,PET_IDLE_POSES,AWAKENING_CURVES,AWAKENING_PET_LIFT,RAIL_GLOW_RADIUS,railGlowPoint,FRAME_ORNAMENTS,type PetIdleKind} from '../../core/ultra-luxe-motion';
 const GLOW=require('../../../assets/ascendant/shared/soft_glow.webp') as ImageSourcePropType;
 const HAZE=require('../../../assets/ascendant/shared/drifting_haze.webp') as ImageSourcePropType;
 const light=(theme:'celestial'|'draconic')=>theme==='celestial'?'#ffdf9b':'#ff6928';
@@ -94,10 +94,14 @@ function UltraLuxeRailLayer({clock,scale:k,theme,particle}:Common){
    const railLight=Animated.add(Animated.multiply(pulse(clock,offset),.55),Animated.multiply(energy,.45));
    const x=clock.interpolate({inputRange:[...LOOP_PHASE],outputRange:path.map(p=>p[0]*k)});
    const y=clock.interpolate({inputRange:[...LOOP_PHASE],outputRange:path.map(p=>p[1]*k)});
-   return <View key={offset} style={StyleSheet.absoluteFill}><Animated.Image source={GLOW} resizeMode="stretch" style={[pos(k,-17,-17,34,34),{tintColor:light(theme),opacity:railLight,transform:[{translateX:x},{translateY:y}]}]}/><Animated.Image source={particle} resizeMode="contain" style={[pos(k,-6,-6,12,12),{opacity:railLight,transform:[{translateX:x},{translateY:y}]}]}/></View>;
+   const glowPath=path.map(railGlowPoint);
+   const gx=clock.interpolate({inputRange:[...LOOP_PHASE],outputRange:glowPath.map(p=>p[0]*k)});
+   const gy=clock.interpolate({inputRange:[...LOOP_PHASE],outputRange:glowPath.map(p=>p[1]*k)});
+   const r=RAIL_GLOW_RADIUS;
+   return <View key={offset} style={StyleSheet.absoluteFill}><Animated.Image source={GLOW} fadeDuration={0} resizeMode="stretch" style={[pos(k,-r,-r,2*r,2*r),{tintColor:light(theme),opacity:railLight,transform:[{translateX:gx},{translateY:gy}]}]}/><Animated.Image source={particle} resizeMode="contain" style={[pos(k,-6,-6,12,12),{opacity:railLight,transform:[{translateX:x},{translateY:y}]}]}/></View>;
   })}
   <Animated.Image source={GLOW} resizeMode="stretch" style={[pos(k,147,2,46,25),{tintColor:light(theme),opacity:Animated.multiply(energy,.95),transform:[{scale:clock.interpolate({inputRange:[...SIGNATURE_PHASE],outputRange:[.8,.8,1,1.35,1,.8]})}]}]}/>
-  {[[10,90],[320,90],[165,184]].map(([x,y],i)=><Animated.Image key={i} source={particle} resizeMode="contain" style={[pos(k,x,y,12,12),{opacity:Animated.multiply(energy,.75)}]}/>)}
+  {FRAME_ORNAMENTS[theme].map(([x,y],i)=><Animated.Image key={i} source={particle} resizeMode="contain" style={[pos(k,x,y,12,12),{opacity:Animated.add(.10,Animated.multiply(energy,.85))}]}/>)}
  </Decorative>;
 }
 /** Matching pet only, synchronized with the same native clock. */

@@ -1,4 +1,3 @@
-import {WINTER_HEARTH_GUILD_RELEASED} from './release-flags';
 export type GuildCosmeticUnlock={type:'default'}|{type:'guild_level';level:number}|{type:'banner_gallery_tier';tier:number}|{type:'guild_pve';achievementId:string;label:string}|{type:'event';cosmeticId:string;label:string}|{type:'construction';unlockId:string;label:string};
 export interface GuildAppearanceEntitlements{guildLevel:number;bannerGalleryTier:number;pveAchievementIds:readonly string[];eventCosmeticIds?:readonly string[];revealedEventColorIds?:readonly string[];releasedEventCosmeticIds?:readonly string[];constructionUnlockIds?:readonly string[];constructionReleasedIds?:readonly string[]}
 export type GuildBannerId='swordwing_blue'|'world_tree_green'|'phoenix_crimson'|'moon_star_indigo'|'wolf_peak_charcoal'|'arcane_eye_purple'|'sun_lion_ivory'|'forge_anvil_teal'|'halloween_pumpkin_lantern'|'halloween_bat_moon'|'guild_banner_stormwatch'|'banner_frostfall_standard_2026';
@@ -37,7 +36,7 @@ export const GUILD_NAME_COLORS:GuildNameColorDefinition[]=[
 GUILD_NAME_COLORS.push({id:'name_frostfall_aurora_2026',name:'Frostfall Aurora',color:'#9fe9dc',unlock:{type:'event',cosmeticId:'name_frostfall_aurora_2026',label:'Frostfall 2026 · 100% guild milestone'}});
 export const FROSTFALL_GUILD_COSMETIC_IDS=['background_frostfall_winter_aurora_2026','banner_frostfall_standard_2026','border_frostfall_frozen_majesty_2026','name_frostfall_aurora_2026'] as const;
 export function isFrostfallGuildCosmetic(id:string){return FROSTFALL_GUILD_COSMETIC_IDS.some(x=>x===id);}
-export function guildCosmeticVisible(id:string,s:GuildAppearanceEntitlements){return !isFrostfallGuildCosmetic(id)||WINTER_HEARTH_GUILD_RELEASED||s.eventCosmeticIds?.includes(id)===true;}
+export function guildCosmeticVisible(id:string,s:GuildAppearanceEntitlements){return !isFrostfallGuildCosmetic(id)||((s.eventCosmeticIds?.includes(id)??false)&&(s.releasedEventCosmeticIds?.includes(id)??false));}
 /** A released event color stays visible; ownership still controls selection. */
 export function visibleGuildNameColors(entitlements:GuildAppearanceEntitlements){return GUILD_NAME_COLORS.filter(entry=>guildCosmeticVisible(entry.id,entitlements)&&(isFrostfallGuildCosmetic(entry.id)||isGuildCosmeticUnlocked(entry.unlock,entitlements)||(entry.unlock.type==='event'&&entitlements.revealedEventColorIds?.includes(entry.id))));}
 export const GUILD_NAMEPLATES:GuildNameplateDefinition[]=[{id:'classic',name:'No Nameplate',accent:'#c19b4d',unlock:DEFAULT},{id:'sapphire_royal',name:'Royal Sapphire',accent:'#4979d5',assetKey:'nameplate_royal_sapphire',unlock:{type:'banner_gallery_tier',tier:4}}];

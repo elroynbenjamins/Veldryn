@@ -1,4 +1,4 @@
--- Staging-only permanent milestone settlement; all catalog releases are off.
+-- Approved Frostfall guild cosmetic definitions. Release metadata may ship before the event; ownership is still milestone-only.
 BEGIN;
 CREATE TABLE IF NOT EXISTS private.guild_event_cosmetic_catalog (
  cosmetic_id text PRIMARY KEY,
@@ -16,6 +16,7 @@ VALUES
  ('border_frostfall_frozen_majesty_2026','EVT_ANNUAL_012_2026','border',100),
  ('name_frostfall_aurora_2026','EVT_ANNUAL_012_2026','name_color',100)
 ON CONFLICT(cosmetic_id) DO NOTHING;
+UPDATE private.guild_event_cosmetic_catalog SET released=true WHERE event_id='EVT_ANNUAL_012_2026';
 
 -- Ownership originates only in the committed joint-track milestone receipt.
 CREATE OR REPLACE FUNCTION private.frostfall_2026_milestone_cosmetics_review()

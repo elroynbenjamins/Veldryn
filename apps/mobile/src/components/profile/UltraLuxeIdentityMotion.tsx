@@ -2,8 +2,8 @@ import {createContext,useContext,useMemo,type ReactNode} from 'react';
 import {Animated,Text,type StyleProp,type TextStyle} from 'react-native';
 type Context={clock:Animated.Value;fullSet:boolean};
 const IdentityMotion=createContext<Context|null>(null);
-export function UltraLuxeIdentityMotionProvider({clock,fullSet,children}:{clock:Animated.Value;fullSet:boolean;children:ReactNode}){
- const value=useMemo(()=>({clock,fullSet}),[clock,fullSet]);
+export function UltraLuxeIdentityMotionProvider({clock,fullSet,active=true,children}:{clock:Animated.Value;fullSet:boolean;active?:boolean;children:ReactNode}){
+ const value=useMemo(()=>active?{clock,fullSet}:null,[clock,fullSet,active]);
  return <IdentityMotion.Provider value={value}>{children}</IdentityMotion.Provider>;
 }
 export function useUltraLuxeIdentityMotion(){return useContext(IdentityMotion);}

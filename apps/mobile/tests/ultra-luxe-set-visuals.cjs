@@ -40,3 +40,13 @@ for(const id of ['premium:abyssal-majesty:forgotten-abyss','premium:paradox-eter
 assert(read('ProfileScenePreview.tsx').includes('profileCosmeticsTester(state)'));
 assert(read('PublicProfileScene.tsx').includes('const testerPreview=profile.cosmeticsPreview===true'));
 console.log('Tester render-only ID bridge passed: per-piece eligibility, no mutation, identity and unrelated items preserved.');
+
+for(const name of ['PublicProfileScene','ProfileScenePreview']){
+ const source=read(name+'.tsx');
+ assert(source.includes('profileBackgroundPreviewById.get(renderBackgroundId)'));
+ assert(source.includes('personalBackgroundVariants.get(renderBackgroundId)'));
+ assert(source.includes('profileBorderSourceById.get(renderBorderId)'));
+ assert(source.includes('petArtSource(renderPetId)'));
+ assert(source.includes('renderBackgroundId===CELESTIAL_IDS.background')&&source.includes('renderBorderId===DRACONIC_IDS.border'));
+}
+console.log('Dedicated artwork preserved on standard and narrow-screen fallback paths.');

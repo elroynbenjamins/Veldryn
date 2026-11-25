@@ -3,7 +3,7 @@ import {UltraLuxeIdentityMotionProvider} from './UltraLuxeIdentityMotion';
 import {UltraLuxePetPoseSprite} from './UltraLuxePetPoseSprite';
 import {ULTRA_LUXE_CYCLE_MS} from '../../core/ultra-luxe-motion';
 import {UltraLuxeEnvironment,UltraLuxeRail,UltraLuxePetAura,UltraLuxeAscendantFlourish,signatureEnergy,petIdleMotion} from './UltraLuxeMotion';
-import {useEffect,useRef,useState,type ReactNode} from 'react';
+import {useEffect,useMemo,useRef,useState,type ReactNode} from 'react';
 import {AccessibilityInfo,Animated,AppState,Easing,Image,Pressable,StyleSheet,View,useWindowDimensions,type ImageSourcePropType} from 'react-native';
 import {CELESTIAL_STAGE,CELESTIAL_PET_BOX,CELESTIAL_IDENTITY_BOX,celestialPetMode,celestialStageSupported} from '../../core/celestial-showcase-layout';
 
@@ -63,15 +63,15 @@ export function CelestialSovereignPreview({assets,equippedPetId,matchingPetId,al
  const scale=width/CELESTIAL_STAGE.width;
  const pos=(x:number,y:number,w:number,h:number)=>({position:'absolute' as const,left:x*scale,top:y*scale,width:w*scale,height:h*scale});
  const box=(b:{x:number;y:number;width:number;height:number})=>pos(b.x,b.y,b.width,b.height);
- const pulse=signatureEnergy(clock);
- const idle=petIdleMotion(clock,scale,petMode==='alternate'?'alternate':'celestial');
+ const pulse=useMemo(()=>signatureEnergy(clock),[clock]);
+ const idle=useMemo(()=>petIdleMotion(clock,scale,petMode==='alternate'?'alternate':'celestial'),[clock,scale,petMode]);
  const matchingLift=clock.interpolate({inputRange:[0,1/12,1/6,1/4,1/3,5/12,.5,7/12,2/3,.75,5/6,11/12,1],outputRange:[0,-1.5*scale,0,-1.5*scale,0,-1.5*scale,0,-1.5*scale,0,-1.5*scale,0,-1.5*scale,0]});
  const orbit=clock.interpolate({inputRange:[0,.25,.5,.75,1],outputRange:['0deg','180deg','360deg','540deg','720deg']});
- return <View style={styles.outer} onLayout={e=>setWidth(e.nativeEvent.layout.width)}>
+ return <View style={styles.outer} onLayout={e=>{const next=e.nativeEvent.layout.width;setWidth(old=>Math.abs(old-next)<.5?old:next);}}>
   {!supported?fallback:<View style={[styles.card,{height:CELESTIAL_STAGE.height*scale}]}>
    <View pointerEvents="none" accessible={false} importantForAccessibility="no-hide-descendants" style={StyleSheet.absoluteFill}>
     <Image source={assets.background} resizeMode="cover" style={styles.fillImage}/>
-    <UltraLuxeEnvironment clock={clock} scale={scale} theme="celestial" particle={assets.star}/>
+    {running?<UltraLuxeEnvironment clock={clock} scale={scale} theme="celestial" particle={assets.star}/>:null}
     <Image source={assets.orrery} resizeMode="contain" style={pos(119,26,102,48)}/>
     <Animated.View style={[pos(129,24,82,55),{transform:[{rotate:orbit}]}]}>
      <Image source={assets.star} resizeMode="contain" style={{position:'absolute',left:0,top:21*scale,width:7*scale,height:7*scale}}/>
@@ -81,8 +81,8 @@ export function CelestialSovereignPreview({assets,equippedPetId,matchingPetId,al
     {petMode==='matching'?<>
      <Animated.View style={[StyleSheet.absoluteFill,{transform:[{translateY:assets.smoothPoseAtlas?matchingLift:idle.lift}]}]}>
       {running&&assets.smoothPoseAtlas?<Animated.View style={box(CELESTIAL_PET_BOX.matching)}><UltraLuxePetPoseSprite source={assets.smoothPoseAtlas} clock={clock} theme="celestial" width={CELESTIAL_PET_BOX.matching.width*scale} height={CELESTIAL_PET_BOX.matching.height*scale}/></Animated.View>:<Animated.Image source={assets.petShowcase} resizeMode="contain" style={[box(CELESTIAL_PET_BOX.matching),{transform:[{rotate:idle.tilt},{scaleX:idle.scaleX},{scaleY:idle.scaleY}]}]}/>}
-      <UltraLuxePetAura clock={clock} scale={scale} theme="celestial" particle={assets.star}/>
-      <UltraLuxePetReaction reaction={reaction} scale={scale} theme="celestial" particle={assets.star} glow={assets.corona}/>
+      {running?<UltraLuxePetAura clock={clock} scale={scale} theme="celestial" particle={assets.star}/>:null}
+      {reactionEnabled?<UltraLuxePetReaction reaction={reaction} scale={scale} theme="celestial" particle={assets.star} glow={assets.corona}/>:null}
       <Animated.Image source={assets.star} resizeMode="contain" style={[pos(258,80,16,16),{opacity:Animated.add(idle.glow,Animated.multiply(pulse,.35))}]}/>
      </Animated.View>
     </>:petMode==='alternate'&&alternatePetSource?<>
@@ -91,7 +91,7 @@ export function CelestialSovereignPreview({assets,equippedPetId,matchingPetId,al
     </>:null}
    </View>
    {reactionEnabled?<Pressable accessibilityRole="button" accessibilityLabel={petAccessibilityLabel??'Aetherion'} onPress={trigger} style={box(CELESTIAL_PET_BOX.matching)}/>:petMode!=='none'&&petAccessibilityLabel?<View accessible accessibilityLabel={petAccessibilityLabel} pointerEvents="none" style={box(CELESTIAL_PET_BOX[petMode])}/>:null}
-   <UltraLuxeIdentityMotionProvider clock={clock} fullSet={fullSet}>
+   <UltraLuxeIdentityMotionProvider clock={clock} fullSet={fullSet} active={running}>
    <View style={[box(CELESTIAL_IDENTITY_BOX.plate),styles.identityPlate]}>
     <View style={pos(4,5,56,56)}>{portrait}</View>
     <View style={pos(66,5,126,60)}>{identity}</View>
@@ -100,8 +100,8 @@ export function CelestialSovereignPreview({assets,equippedPetId,matchingPetId,al
    {guild!=null?<View style={[box(CELESTIAL_IDENTITY_BOX.guild),styles.guildPlate]}>{guild}</View>:null}
    <View pointerEvents="none" accessible={false} importantForAccessibility="no-hide-descendants" style={StyleSheet.absoluteFill}>
     <Image source={assets.border} resizeMode="stretch" style={styles.fillImage}/>
-    <UltraLuxeRail clock={clock} scale={scale} theme="celestial" particle={assets.star}/>
-    {fullSet?<UltraLuxeAscendantFlourish clock={clock} scale={scale} theme="celestial" particle={assets.star}/>:null}
+    {running?<UltraLuxeRail clock={clock} scale={scale} theme="celestial" particle={assets.star}/>:null}
+    {running&&fullSet?<UltraLuxeAscendantFlourish clock={clock} scale={scale} theme="celestial" particle={assets.star}/>:null}
    </View>
   </View>}
  </View>;

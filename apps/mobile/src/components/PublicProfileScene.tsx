@@ -50,35 +50,38 @@ export function PublicProfileScene({profile,height=205,reduceMotion=false,showGu
  const visualSelection=resolveTesterUltraLuxeVisuals({background:profile.backgroundId,border:profile.borderId,pet:profile.petId,verifiedTitleId,displayedBadges},{
   background:testerPreview,border:testerPreview,pet:testerPreview,
  });
- const background=profileBackgroundPreviewById.get(profile.backgroundId),base=BASE_PROFILE_BACKGROUNDS.find(row=>row.id===profile.backgroundId);
+ const renderBackgroundId=visualSelection.background??profile.backgroundId;
+ const renderBorderId=visualSelection.border??profile.borderId??'';
+ const renderPetId=visualSelection.pet??profile.petId??'';
+ const background=profileBackgroundPreviewById.get(renderBackgroundId)??profileBackgroundPreviewById.get(profile.backgroundId),base=BASE_PROFILE_BACKGROUNDS.find(row=>row.id===profile.backgroundId);
  const review=__DEV__?reviewCosmetics:undefined;
  const active=cosmeticsActive&&(stageActive??true)&&(review?.active??true);
  const animated=PROFILE_ANIMATED_COSMETICS_RELEASED||allowUnreleasedCosmetics||profile.cosmeticsPreview===true;
- const equippedBorderArt=!review&&animated&&profile.borderId?cosmeticArtByBorder.get(profile.borderId):undefined;
+ const equippedBorderArt=!review&&animated&&renderBorderId?cosmeticArtByBorder.get(renderBorderId):undefined;
  const borderArt=review?.borderArt??equippedBorderArt,effectArt=review?.effectArt??(!review&&animated&&profile.effectId?cosmeticArtByEffect.get(profile.effectId):undefined);
- const borderRuntime=review?.borderRuntime??(!review&&animated&&profile.borderId?profileCosmeticRuntimeByBorder.get(profile.borderId):undefined),effectRuntime=review?.effectRuntime??(!review&&animated&&profile.effectId?profileCosmeticRuntimeByEffect.get(profile.effectId):undefined);
+ const borderRuntime=review?.borderRuntime??(!review&&animated&&renderBorderId?profileCosmeticRuntimeByBorder.get(renderBorderId):undefined),effectRuntime=review?.effectRuntime??(!review&&animated&&profile.effectId?profileCosmeticRuntimeByEffect.get(profile.effectId):undefined);
  const reviewBorderId=review?.borderRuntime?.borderId;
  const runtimeFallbackBorderId=review?.borderRuntime?.fallbackBorderId??borderRuntime?.fallbackBorderId;
- const border=review?(borderArt?.border??(runtimeFallbackBorderId?profileBorderSourceById.get(runtimeFallbackBorderId):undefined)):borderArt?.border??(borderRuntime?profileBorderSourceById.get(borderRuntime.fallbackBorderId):profile.borderId?profileBorderSourceById.get(profile.borderId):undefined),pet=profile.petId?petArtSource(profile.petId):undefined;
+ const border=review?(borderArt?.border??(runtimeFallbackBorderId?profileBorderSourceById.get(runtimeFallbackBorderId):undefined)):borderArt?.border??(borderRuntime?profileBorderSourceById.get(borderRuntime.fallbackBorderId):renderBorderId?profileBorderSourceById.get(renderBorderId):undefined),pet=renderPetId?(petArtSource(renderPetId)??(profile.petId?petArtSource(profile.petId):undefined)):undefined;
  const anchors=profileSceneContentAnchors(border?8:0);
  const classId=(CLASSES.some(row=>row.id===profile.character.classId)?profile.character.classId:'IRONWARDEN') as ClassId;
  const className=CLASSES.find(row=>row.id===classId)!.name;
  const guild=profile.guild===undefined?(profile.guildTag?{tag:profile.guildTag,tagColorId:profile.guildTagColorId}:null):profile.guild;
  const celestialAssets=getEnabledCelestialAssets();
- const celestialBackground=!!celestialAssets&&profile.backgroundId===CELESTIAL_IDS.background;
- const celestialBorder=!!celestialAssets&&profile.borderId===CELESTIAL_IDS.border;
+ const celestialBackground=!review&&!!celestialAssets&&renderBackgroundId===CELESTIAL_IDS.background;
+ const celestialBorder=!review&&!!celestialAssets&&renderBorderId===CELESTIAL_IDS.border;
  const draconic=getDraconicAssets();
- const draconicBackground=!!draconic&&profile.backgroundId===DRACONIC_IDS.background;
- const draconicBorder=!!draconic&&profile.borderId===DRACONIC_IDS.border;
+ const draconicBackground=!review&&!!draconic&&renderBackgroundId===DRACONIC_IDS.background;
+ const draconicBorder=!review&&!!draconic&&renderBorderId===DRACONIC_IDS.border;
  const standard=<View accessibilityLabel={profileT(language,'{name} profile scene',{name:profile.character.name})} style={s.card}>
   <View style={[s.surface,!!border&&s.framedSurface]}>
   <View style={[s.scene,{height}]}>
-   <ProfileBorderBackdrop borderId={borderArt?(review?reviewBorderId:profile.borderId):(runtimeFallbackBorderId??(review?reviewBorderId:profile.borderId))} source={border} existingInset={8}>
-   {background?<CardBackground sources={personalBackgroundVariants.get(profile.backgroundId)??{wide:background.source,square:background.source}}/>:base?<RegionArtwork regionId={base.region}/>:null}
+   <ProfileBorderBackdrop borderId={borderArt?(review?reviewBorderId:renderBorderId):(runtimeFallbackBorderId??(review?reviewBorderId:renderBorderId))} source={border} existingInset={8}>
+   {background?<CardBackground sources={personalBackgroundVariants.get(renderBackgroundId)??{wide:background.source,square:background.source}}/>:base?<RegionArtwork regionId={base.region}/>:null}
    <View style={s.shade}/>
    {draconicBackground&&draconic?<DraconicStandardEffects ember={draconic.scene.ember} kind="background" active={active} reduceMotion={reduceMotion}/>:null}
    {celestialBackground?<CelestialStandardBackgroundEffects active={active} reduceMotion={reduceMotion}/>:null}
-   {effectArt?<ProfileSceneEffect art={effectArt} active={cosmeticsActive&&(review?.active??true)} reduceMotion={reduceMotion}/>:effectRuntime?<ProceduralProfileSceneEffect runtime={effectRuntime} active={cosmeticsActive&&(review?.active??true)} reduceMotion={reduceMotion}/>:null}
+   {effectArt?<ProfileSceneEffect art={effectArt} active={active} reduceMotion={reduceMotion}/>:effectRuntime?<ProceduralProfileSceneEffect runtime={effectRuntime} active={active} reduceMotion={reduceMotion}/>:null}
    </ProfileBorderBackdrop>
    {borderArt?<View pointerEvents="none" style={{position:'absolute',top:-8,left:-8,right:-8,bottom:-8}}><ProfileCosmeticExteriorMatte source={borderArt.matte} color={review?.surroundColor??C.bg}/></View>:null}
   <View style={[s.identityPlate,s.identityStack]}>
@@ -97,7 +100,7 @@ export function PublicProfileScene({profile,height=205,reduceMotion=false,showGu
   </View>
   </View>
   {border?<ProfileFrameOverlay source={border} sceneSafe/>:null}
-  {borderArt?<AnimatedProfileBorderGlows art={borderArt} active={cosmeticsActive&&(review?.active??true)} reduceMotion={reduceMotion}/>:borderRuntime?<ProceduralProfileBorderGlows runtime={borderRuntime} active={cosmeticsActive&&(review?.active??true)} reduceMotion={reduceMotion}/>:null}
+  {borderArt?<AnimatedProfileBorderGlows art={borderArt} active={active} reduceMotion={reduceMotion}/>:borderRuntime?<ProceduralProfileBorderGlows runtime={borderRuntime} active={active} reduceMotion={reduceMotion}/>:null}
   {draconicBorder&&draconic?<DraconicStandardEffects ember={draconic.scene.ember} kind="border" active={active} reduceMotion={reduceMotion}/>:null}
   {celestialBorder?<CelestialStandardBorderEffects active={active} reduceMotion={reduceMotion}/>:null}
  </View>;

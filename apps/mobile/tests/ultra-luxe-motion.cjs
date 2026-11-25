@@ -61,3 +61,14 @@ for(const name of ['CelestialSovereignPreview','DraconicDominionPreview']){
  assert(source.includes("reactionEnabled=running&&"));
 }
 console.log('Ultra Luxe shared timing, closed paths, native-driver and pet-independent layer contracts passed.');
+
+for(const name of ['CelestialSovereignPreview','DraconicDominionPreview']){
+ const s=read('components/profile/'+name+'.tsx');
+ for(const layer of ['UltraLuxeEnvironment','UltraLuxeRail','UltraLuxePetAura'])assert(s.includes('{running?<'+layer),'inactive scene must not mount '+layer);
+ assert(s.includes('{running&&fullSet?<UltraLuxeAscendantFlourish'));
+ assert(s.includes('{reactionEnabled?<UltraLuxePetReaction'));
+ assert(s.includes('fullSet={fullSet} active={running}'));
+ assert(s.includes('useMemo(()=>petIdleMotion(clock,'));
+}
+assert(read('components/profile/UltraLuxeIdentityMotion.tsx').includes('active?{clock,fullSet}:null'));
+console.log('Inactive and reduced-motion layers remain static; verified identity motion is disabled.');

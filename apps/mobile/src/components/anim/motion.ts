@@ -1,4 +1,4 @@
-import {useEffect,useRef,useSyncExternalStore} from 'react';
+import {useEffect,useRef,useState,useSyncExternalStore} from 'react';
 import {AccessibilityInfo,Animated,AppState,Easing,Platform} from 'react-native';
 import {msUntilNextCycle,type CycleClock} from '../../core/sprite-animation';
 
@@ -13,23 +13,31 @@ import {msUntilNextCycle,type CycleClock} from '../../core/sprite-animation';
 const listeners=new Set<()=>void>();
 let appActive=AppState.currentState!=='background'&&AppState.currentState!=='inactive';
 let systemReduceMotion=false;
+let preferenceKnown=false;
+let subscriptionGeneration=0;
 let subscriptions:{remove():void}[]=[];
 const emit=()=>{for(const listener of listeners)listener();};
-const setReduced=(value:boolean)=>{if(value!==systemReduceMotion){systemReduceMotion=value;emit();}};
+const setReduced=(value:boolean)=>{if(!preferenceKnown||value!==systemReduceMotion){preferenceKnown=true;systemReduceMotion=value;emit();}};
 /** System listeners exist only while something is animating, and are released with the last subscriber. */
 function start(){
   if(subscriptions.length)return;
   appActive=AppState.currentState!=='background'&&AppState.currentState!=='inactive';
+  preferenceKnown=false;
+  const generation=++subscriptionGeneration;
+  let preferenceChanged=false;
   subscriptions=[
     AppState.addEventListener('change',status=>{
       const next=status==='active';
       if(next!==appActive){appActive=next;emit();}
     }),
-    AccessibilityInfo.addEventListener('reduceMotionChanged',setReduced),
+    AccessibilityInfo.addEventListener('reduceMotionChanged',value=>{if(generation!==subscriptionGeneration)return;preferenceChanged=true;setReduced(value);}),
   ];
-  void AccessibilityInfo.isReduceMotionEnabled().then(setReduced).catch(()=>{});
+  // A late initial read cannot overwrite a newer accessibility event or a
+  // preference from a later subscription lifetime.
+  void AccessibilityInfo.isReduceMotionEnabled().then(value=>{if(generation===subscriptionGeneration&&!preferenceChanged)setReduced(value);}).catch(()=>{});
 }
 function stop(){
+  subscriptionGeneration++;
   for(const subscription of subscriptions)subscription.remove();
   subscriptions=[];
 }
@@ -37,8 +45,9 @@ function subscribe(listener:()=>void){
   start();listeners.add(listener);
   return()=>{listeners.delete(listener);if(!listeners.size)stop();};
 }
-const snapshot=()=>(appActive?1:0)|(systemReduceMotion?2:0);
+const snapshot=()=>(appActive?1:0)|(systemReduceMotion?2:0)|(preferenceKnown?4:0);
 const serverSnapshot=()=>1;
+const inactiveSubscribe=(_listener:()=>void)=>()=>{};
 
 /**
  * Loops must run on the native driver on devices. react-native-web has no native driver and
@@ -60,17 +69,24 @@ export function useAppActive():boolean{
 
 /** Whether decorative motion should run right now. */
 export function useMotionEnabled(reduceMotion=false,active=true):boolean{
-  const state=useSyncExternalStore(subscribe,snapshot,serverSnapshot);
+  const state=useSyncExternalStore(active&&!reduceMotion?subscribe:inactiveSubscribe,snapshot,serverSnapshot);
   return active&&!reduceMotion&&(state&1)===1&&(state&2)===0;
+}
+
+/** Cosmetic stages show their static artwork until the system preference is known. */
+export function useCosmeticMotionPolicy(active:boolean,reduceMotion=false){
+  const state=useSyncExternalStore(active&&!reduceMotion?subscribe:inactiveSubscribe,snapshot,serverSnapshot);
+  const reduced=reduceMotion||(state&4)===0||(state&2)!==0;
+  return {reduced,running:active&&!reduced&&(state&1)===1};
 }
 
 /** A 0..1 value that loops on the native driver while enabled and rests at 0 otherwise. */
 export function useLoopProgress(durationMs:number,enabled:boolean):Animated.Value{
-  const value=useRef(new Animated.Value(0)).current;
+  const [value]=useState(()=>new Animated.Value(0));
   useEffect(()=>{
     value.stopAnimation();value.setValue(0);
     if(!enabled||durationMs<=0)return;
-    const loop=Animated.loop(Animated.timing(value,{toValue:1,duration:durationMs,easing:Easing.linear,useNativeDriver:LOOP_NATIVE_DRIVER}));
+    const loop=Animated.loop(Animated.timing(value,{toValue:1,duration:durationMs,easing:Easing.linear,useNativeDriver:LOOP_NATIVE_DRIVER,isInteraction:false}));
     loop.start();
     return()=>loop.stop();
   },[value,durationMs,enabled]);

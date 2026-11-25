@@ -1,6 +1,6 @@
 import {memo,type ReactNode} from 'react';
 import {Animated,StyleSheet,View,type ImageSourcePropType} from 'react-native';
-import {FX_POINTS,RAIL_PATH,LOOP_PHASE,ORBIT_X,ORBIT_Y,SIGNATURE_PHASE,SIGNATURE_CURVE_PHASE,SIGNATURE_CURVE_ENERGY,shiftClosed,PET_IDLE_PHASE,PET_IDLE_POSES,type PetIdleKind} from '../../core/ultra-luxe-motion';
+import {FX_POINTS,RAIL_PATH,LOOP_PHASE,ORBIT_X,ORBIT_Y,SIGNATURE_PHASE,SIGNATURE_CURVE_PHASE,SIGNATURE_CURVE_ENERGY,shiftClosed,PET_IDLE_PHASE,PET_IDLE_POSES,AWAKENING_CURVES,AWAKENING_PET_LIFT,type PetIdleKind} from '../../core/ultra-luxe-motion';
 const GLOW=require('../../../assets/ascendant/shared/soft_glow.webp') as ImageSourcePropType;
 const HAZE=require('../../../assets/ascendant/shared/drifting_haze.webp') as ImageSourcePropType;
 const light=(theme:'celestial'|'draconic')=>theme==='celestial'?'#ffdf9b':'#ff6928';
@@ -8,6 +8,14 @@ type Clock=Animated.Value;
 type Common={clock:Clock;scale:number;theme:'celestial'|'draconic';particle:ImageSourcePropType};
 const pos=(k:number,x:number,y:number,w:number,h:number)=>({position:'absolute' as const,left:x*k,top:y*k,width:w*k,height:h*k});
 export function signatureEnergy(clock:Clock){return clock.interpolate({inputRange:[...SIGNATURE_CURVE_PHASE],outputRange:[...SIGNATURE_CURVE_ENERGY]});}
+/** Distinct scene accents share the one native scene timeline. */
+export function awakeningEnergy(clock:Clock,theme:Common['theme']){
+ const curve=AWAKENING_CURVES[theme];
+ return clock.interpolate({inputRange:curve.phase,outputRange:curve.energy});
+}
+export function awakeningPetLift(clock:Clock,k:number,theme:Common['theme']){
+ return Animated.multiply(awakeningEnergy(clock,theme),-AWAKENING_PET_LIFT[theme]*k);
+}
 /** Reuse the scene clock: no JS frame updates or independent pet timers. */
 export function petIdleMotion(clock:Clock,k:number,kind:PetIdleKind){
  const frames=PET_IDLE_POSES[kind], inputRange=PET_IDLE_PHASE;
@@ -23,12 +31,12 @@ function Decorative({children}:{children:ReactNode}){
 }
 /** Theme-specific awakening layers. No full-screen flash; identities render above these. */
 function SignatureAwakening({clock,scale:k,theme,particle}:Common){
- const celestial=theme==='celestial',energy=signatureEnergy(clock);
+ const celestial=theme==='celestial',energy=awakeningEnergy(clock,theme);
  const haloScale=clock.interpolate({inputRange:[...SIGNATURE_PHASE],outputRange:[.72,.72,1,1.38,1.15,.72]});
  const ascent=clock.interpolate({inputRange:[...SIGNATURE_PHASE],outputRange:[0,0,-5*k,-35*k,-12*k,0]});
  if(celestial)return <Decorative>
-  <Animated.View style={[StyleSheet.absoluteFill,{backgroundColor:'#03071d',opacity:Animated.multiply(energy,.35)}]}/>
-  <Animated.Image source={GLOW} resizeMode="stretch" style={[pos(k,116,18,108,64),{tintColor:'#ffe1a0',opacity:Animated.multiply(energy,.8),transform:[{scale:haloScale}]}]}/>
+  <Animated.View style={[StyleSheet.absoluteFill,{backgroundColor:'#03071d',opacity:Animated.multiply(energy,.12)}]}/>
+  <Animated.Image source={GLOW} resizeMode="stretch" style={[pos(k,116,18,108,64),{tintColor:'#ffe1a0',opacity:Animated.multiply(energy,.95),transform:[{scale:haloScale}]}]}/>
   {[[119,42],[220,42],[151,22],[188,22]].map(([x,y],i)=><Animated.Image key={i} source={particle} resizeMode="contain" style={[pos(k,x,y,9,9),{opacity:energy,transform:[{scale:haloScale}]}]}/>)}
  </Decorative>;
  return <Decorative>
@@ -40,7 +48,7 @@ function SignatureAwakening({clock,scale:k,theme,particle}:Common){
 
 /** Environment is mounted behind the identity plates, in all pet modes. */
 function UltraLuxeEnvironmentLayer({clock,scale:k,theme,particle}:Common){
- const celestial=theme==='celestial',energy=signatureEnergy(clock);
+ const celestial=theme==='celestial',energy=awakeningEnergy(clock,theme);
  const swell=clock.interpolate({inputRange:[...SIGNATURE_PHASE],outputRange:[.85,.85,1.2,1.5,1.12,.85]});
  const drift=clock.interpolate({inputRange:[0,.5,1],outputRange:[-5*k,5*k,-5*k]});
  const glow=clock.interpolate({inputRange:[...SIGNATURE_PHASE],outputRange:[.12,.12,.33,.65,.25,.12]});
@@ -60,26 +68,26 @@ function UltraLuxeEnvironmentLayer({clock,scale:k,theme,particle}:Common){
 }
 /** Fine constellation links illuminate during alignment, always behind identity. */
 function CelestialAlignmentLines({clock,scale:k}:{clock:Clock;scale:number}){
- const energy=signatureEnergy(clock);
+ const energy=awakeningEnergy(clock,'celestial');
  const points=[[42,44],[79,27],[104,51],[128,32],[233,35],[278,30],[302,55]];
  return <>{[[0,1],[1,2],[2,3],[4,5],[5,6]].map(([a,b],i)=>{
   const [x,y]=points[a],[u,v]=points[b],length=Math.hypot(u-x,v-y),angle=Math.atan2(v-y,u-x)*180/Math.PI;
-  return <Animated.View key={i} style={[pos(k,(x+u-length)/2,(y+v)/2,length,1),{backgroundColor:'#f8dca0',opacity:Animated.multiply(energy,.72),transform:[{rotate:angle+'deg'}]}]}/>;
+  return <Animated.View key={i} style={[pos(k,(x+u-length)/2,(y+v)/2,length,1.5),{backgroundColor:'#f8dca0',opacity:Animated.multiply(energy,.95),transform:[{rotate:angle+'deg'}]}]}/>;
  })}</>;
 }
 /** Narrow molten streaks and a rising heat plume in the open right-side scenery.
  * Layered authored ember/glow art supplies the texture; these are light channels, not smoke simulation. */
 function DraconicHeatChannels({clock,scale:k}:{clock:Clock;scale:number}){
- const energy=signatureEnergy(clock);
+ const energy=awakeningEnergy(clock,'draconic');
  const lift=clock.interpolate({inputRange:[...SIGNATURE_PHASE],outputRange:[0,0,-7*k,-23*k,-9*k,0]});
  return <>{[[227,174,29,-50],[261,177,31,-68],[292,169,27,-58]].map(([x,y,w,angle],i)=>
-  <Animated.Image key={i} source={GLOW} resizeMode="stretch" style={[pos(k,x,y,w,6),{tintColor:'#ff782c',opacity:Animated.multiply(energy,.9),transform:[{translateY:lift},{rotate:angle+'deg'},{scaleX:clock.interpolate({inputRange:[...SIGNATURE_PHASE],outputRange:[.65,.65,.95,1.3,.8,.65]})}]}]}/>
+  <Animated.Image key={i} source={GLOW} resizeMode="stretch" style={[pos(k,x,y,w,9),{tintColor:'#ff782c',opacity:Animated.multiply(energy,.9),transform:[{translateY:lift},{rotate:angle+'deg'},{scaleX:clock.interpolate({inputRange:[...SIGNATURE_PHASE],outputRange:[.65,.65,.95,1.3,.8,.65]})}]}]}/>
  )}</>;
 }
 
 /** Closed perimeter paths and crest illumination, not over the readable identity area. */
 function UltraLuxeRailLayer({clock,scale:k,theme,particle}:Common){
- const energy=signatureEnergy(clock);
+ const energy=awakeningEnergy(clock,theme);
  return <Decorative>
   {[0,4].map(offset=>{
    const path=shiftClosed(RAIL_PATH,offset);
@@ -94,9 +102,9 @@ function UltraLuxeRailLayer({clock,scale:k,theme,particle}:Common){
 /** Matching pet only, synchronized with the same native clock. */
 function UltraLuxePetAuraLayer({clock,scale:k,theme,particle}:Common){
  const celestial=theme==='celestial',cx=celestial?279:266,cy=147,rx=celestial?27:33,ry=celestial?8:6;
- const energy=signatureEnergy(clock);
+ const energy=awakeningEnergy(clock,theme);
  return <Decorative>
-  <Animated.Image source={GLOW} resizeMode="stretch" style={[pos(k,cx-34,112,68,36),{tintColor:light(theme),opacity:Animated.multiply(energy,.65)}]}/>
+  <Animated.Image source={GLOW} resizeMode="stretch" style={[pos(k,cx-34,112,68,36),{tintColor:light(theme),opacity:Animated.multiply(energy,.85)}]}/>
   {[0,4].map(offset=>{
    const x=clock.interpolate({inputRange:[...LOOP_PHASE],outputRange:shiftClosed(ORBIT_X,offset).map(v=>v*rx*k)});
    const y=clock.interpolate({inputRange:[...LOOP_PHASE],outputRange:shiftClosed(ORBIT_Y,offset).map(v=>v*ry*k)});

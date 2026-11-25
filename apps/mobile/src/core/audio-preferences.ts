@@ -1,6 +1,6 @@
 /** Device-local audio levels and per-area music choices. No native imports. */
 export type AudioLevel=0|1|2|3;
-export const MUSIC_CONTEXTS=['town','asterfall','sunscar','frostmarch','dungeon','boss','world_boss'] as const;
+export const MUSIC_CONTEXTS=['asterfall','sunscar','frostmarch','dungeon','boss','world_boss'] as const;
 export type MusicContextId=typeof MUSIC_CONTEXTS[number];
 export interface MusicContextPreference{enabled:boolean;track:MusicContextId|null;}
 export interface AudioPreferences{
@@ -15,7 +15,7 @@ const level=(value:unknown,fallback:AudioLevel):AudioLevel=>value===0||value===1
 const record=(value:unknown):value is Record<string,unknown>=>typeof value==='object'&&value!==null&&!Array.isArray(value);
 const isContext=(value:unknown):value is MusicContextId=>typeof value==='string'&&(MUSIC_CONTEXTS as readonly string[]).includes(value);
 
-/** V1 settings migrate without losing volume; unknown and corrupt values are ignored. */
+/** V1 settings migrate without losing volume; retired Town selections fall back to their current region or activity; unknown and corrupt values are ignored. */
 export function parseAudioPreferences(raw:string|null):AudioPreferences{
  if(!raw)return {...DEFAULT_AUDIO_PREFERENCES,musicContexts:{}};
  try{

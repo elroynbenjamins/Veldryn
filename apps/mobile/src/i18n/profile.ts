@@ -9,6 +9,8 @@ import {createTranslator} from './translator';
 export const profileTranslationRows = {
   "Account-wide": ["Kontoweit","Para toda la cuenta","Accountbreed","Per tutto l'account","À l’échelle du compte"],
   "Your account character class.": ["Klasse eines deiner Charaktere.","Clase de un personaje de tu cuenta.","Klasse van een personage op je account.","Classe di un personaggio del tuo account.","Classe d’un personnage de votre compte."],
+  "Ascendant name styles": ["Aszendenten-Namensstile","Estilos de nombre ascendentes","Ascendant-naamstijlen","Stili del nome Ascendente","Styles de nom Ascendant"],
+  "Restore standard name style": ["Standard-Namensstil wiederherstellen","Restaurar estilo de nombre estándar","Standaard naamstijl herstellen","Ripristina stile del nome standard","Rétablir le style de nom standard"],
   "Largest craft result": ["Größtes Herstellungsergebnis","Mayor resultado de fabricación","Grootste vervaardigingsresultaat","Maggior risultato di creazione","Plus grand résultat de fabrication"],
   "Complete Beyond the Green and break the Fallen Knight’s oath.": ["Schließe Beyond the Green ab und brich den Eid des Gefallenen Ritters.","Completa Beyond the Green y rompe el juramento del Caballero Caído.","Voltooi Beyond the Green en verbreek de eed van de Gevallen Ridder.","Completa Beyond the Green e infrangi il giuramento del Cavaliere Caduto.","Terminez Beyond the Green et brisez le serment du Chevalier déchu."],
   // Equipped gear detail viewer.

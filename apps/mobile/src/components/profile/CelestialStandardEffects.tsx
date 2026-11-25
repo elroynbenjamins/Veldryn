@@ -51,7 +51,7 @@ export function CelestialStandardBorderEffects({active,reduceMotion=false}:{acti
  </View>;
 }
 const s=StyleSheet.create({
- borderLayer:{...StyleSheet.absoluteFillObject,zIndex:9},
+ borderLayer:{position:'absolute',top:0,right:0,bottom:0,left:0,zIndex:9},
  bgStar:{position:'absolute',width:13,height:13},bgStarSmall:{position:'absolute',width:8,height:8},
  bgStarA:{right:'10%',top:'18%'},bgStarB:{right:'28%',top:'8%'},bgStarC:{right:'17%',bottom:'20%'},bgStarD:{left:'48%',top:'18%'},
  railStar:{position:'absolute',left:14,top:2,width:14,height:14},

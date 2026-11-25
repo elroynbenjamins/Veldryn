@@ -3,7 +3,7 @@ import {ownedUltraLuxeNamePresets,ultraLuxeNamePresetStyle,type UltraLuxeNamePre
 import {PlayerStyledName} from '../PlayerStyledName';
 import {useGameTheme} from '../../theme/ThemeContext';
 import {useGameLanguage} from '../../i18n/GameLanguageProvider';
-import {profileT,profileText} from '../../i18n/profile';
+import {profileT} from '../../i18n/profile';
 
 /** Mount only with verified server grant IDs and a dedicated preset-ID save handler.
  * This picker intentionally never calls the ordinary Supporter gradient writer. */
@@ -19,7 +19,7 @@ export function UltraLuxeNameStylePicker({verifiedOwnedIds,selectedId,previewNam
    <View style={s.copy}><Text numberOfLines={1} style={[s.label,{color:C.text}]}>{p.name}</Text><PlayerStyledName name={previewName} nameStyle={ultraLuxeNamePresetStyle(p.id)} reduceMotion={reduceMotion||!active} style={s.preview}/></View>
    {selectedId===p.id?<Text style={{color:C.accent,fontSize:11,fontWeight:'800'}}>✓</Text>:null}
   </Pressable>)}
-  {selectedId&&presets.some(p=>p.id===selectedId)?<Pressable accessibilityRole="button" disabled={saving} onPress={()=>onSelect(null)} style={s.clear}><Text style={{color:C.muted,fontSize:12}}>{profileText(language,'Restore standard name style')}</Text></Pressable>:null}
+  {selectedId&&presets.some(p=>p.id===selectedId)?<Pressable accessibilityRole="button" disabled={saving} onPress={()=>onSelect(null)} style={s.clear}><Text style={{color:C.muted,fontSize:12}}>{profileT(language,'Restore standard name style')}</Text></Pressable>:null}
  </View>;
 }
 const s=StyleSheet.create({root:{gap:6},heading:{fontSize:13,fontWeight:'800'},row:{flexDirection:'row',alignItems:'center',padding:9,borderWidth:1,borderRadius:8,minHeight:44},copy:{flex:1,minWidth:0,gap:3},label:{fontSize:10,fontWeight:'700'},preview:{fontSize:16,fontWeight:'800'},pressed:{opacity:.75},clear:{minHeight:44,justifyContent:'center',alignItems:'center'}});

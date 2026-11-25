@@ -101,6 +101,7 @@ import {createCoopDungeonFixtureSource} from './src/dev/coop-dungeon-fixtures';
 import {itemDef} from './src/content/items';
 import {WORLD_ZONES} from './src/content/world-map';
 import {GameTopBar} from './src/components/GameTopBar';
+import {activityRewardPreviewClock} from './src/components/activity-preview-clock';
 import {ChatOverlay} from './src/components/ChatOverlay';
 import {ActiveProfileCharacterContext} from './src/components/ActiveProfileCharacterContext';
 import type {QuickNavDestination} from './src/core/quick-navigation';
@@ -930,7 +931,8 @@ const next=normalizeProfileIcon(migrateGemPouch(migrateRetiredStoryRewards(expli
   // (up to a full AFK reserve). It is a pure function of the authoritative state and the
   // presentation clock, so unrelated root re-renders (tab changes, popups, chat, alerts)
   // reuse the last result instead of re-simulating.
-  const activityPreview=useMemo(()=>state?.character?previewActivityReward(state,now):undefined,[state,now]);
+  const activityPreviewMs=activityRewardPreviewClock(now,state?.activity??undefined,!!state?.character?.classTraining);
+  const activityPreview=useMemo(()=>state?.character?previewActivityReward(state,activityPreviewMs):undefined,[state,activityPreviewMs]);
   const renderApp=()=>{
   if(!versionGateChecked)return <View style={s.startupUnderlay}/>;
   if(versionGate?.maintenanceMode&&versionGate.policy)return <UpdateRequiredScreen maintenance title={appText(languageRef.current,"VELDRYN maintenance")} message={versionGate.policy.maintenanceMessage} currentVersion={versionGate.currentVersion} onUpdate={()=>{}}/>;

@@ -21,7 +21,7 @@ check(ids.every(id=>!COMBAT_COMPANIONS.some(row=>row.id===id)&&!RELEASED_EVENT_C
 const milestones=FROSTFALL_EVENT.milestones('IRONWARDEN');
 const rewards=milestones.filter(row=>row.reward.kind==='companion');
 check(rewards.length===3&&JSON.stringify(rewards.map(row=>[row.points,row.reward.id]))===JSON.stringify([[6000,'EVT_UNIT_012'],[8500,'EVT_UNIT_013'],[10000,'EVT_UNIT_009']]),'Frostfall companion milestones are unique, ordered and preserve the 10k Herald');
-check(FROSTFALL_EVENT.maxProgress===10000&&FROSTFALL_EVENT.shop.length===20,'Frostfall preserves 10k maximum reputation and the 20-offer shop');
+check(FROSTFALL_EVENT.maxProgress===10000&&FROSTFALL_EVENT.shop.length===21,'Frostfall preserves 10k maximum reputation and the 21-offer shop including Aurora Bellframe');
 for(let i=0;i<ids.length;i++){
  const id=ids[i],mobile=EVENT_COMPANIONS.find(row=>row.id===id),server=companionServerDefinition(id);
  check(mobile&&server, `Event companion ${id} must exist on both mobile and server`);

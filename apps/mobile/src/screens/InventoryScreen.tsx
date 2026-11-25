@@ -41,7 +41,7 @@ import {craftedGearInstances,craftedGearDisplayQuality} from '../core/crafted-ge
 import {validateGatheringToolRoll,gatheringToolBonusLabel} from '../core/gathering-tool-rolls';
 import {gatheringToolDef} from '../content/gathering-tools';
 import {gatheringToolContribution,gatheringToolPercent} from '../core/gathering-tool-presentation';
-import {indexInventoryGearCopies} from '../core/inventory-gear-lookup';
+import {indexInventoryGearCopies,inventoryInspectedGearLocations} from '../core/inventory-gear-lookup';
 import {auditCraftedGearOwnership,disposeCraftedGearInstance} from '../core/crafted-gear-ownership';
 import {canDisposeLegacyEquipment} from '../core/equipment-enhancement';
 import type {GameCommand} from '../core/game-commands';
@@ -292,7 +292,7 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
       :'';
   const confirmBulk=()=>{if(!bulkPending||!disposalSelectionValid)return;const action=bulkPending,actionLocation=bulkPending.location,summary=disposalSummary??selectionSummary,request:InventoryFeedbackRequest=action.kind==='transfer'?{kind:'bulk_transfer',direction:actionLocation==='inventory'?"deposit":"withdraw",stacks:selectionSummary.transferableStackCount,units:selectionSummary.transferableUnitCount}:action.kind==='sell'?{kind:'bulk_sell',stacks:summary.sellableStackCount,units:summary.sellableUnitCount,gold:summary.sellGold}:{kind:'bulk_salvage',stacks:summary.salvageableStackCount,units:summary.salvageableUnitCount};setBulkPending(null);exitSelection();scheduleAfterPaint(()=>{if(actionLocation==='bank'&&action.kind!=='transfer'){void beginInventorySubmission(action.kind==='sell'?gt('Selling items…'):gt('Updating inventory…'),()=>onBulkAction(action.kind,actionLocation,action.ids));}else runInventory(request,()=>onBulkAction(action.kind,actionLocation,action.ids));})};
   const overflowCount=useMemo(()=>state.overflow.stacks.reduce((sum,item)=>sum+item.quantity,0),[state.overflow.stacks]);
-  const remaining=useMemo(()=>overflowCount?claimOverflowToBank(state).overflow.stacks.reduce((sum,item)=>sum+item.quantity,0):0,[state,overflowCount]);
+  const remaining=useMemo(()=>state.overflow.stacks.length?claimOverflowToBank(state).overflow.stacks.reduce((sum,item)=>sum+item.quantity,0):0,[state]);
   const inventoryUpgrade=useMemo(()=>storageUpgradePreview(state,'inventory'),[state]),bankUpgrade=useMemo(()=>storageUpgradePreview(state,'bank'),[state]);
    const activeUpgrade=location==='inventory'?inventoryUpgrade:bankUpgrade;
    const canUpgradeStorage=!!activeUpgrade&&inventoryBusyLabel===null&&(state.character?.level??0)>=activeUpgrade.level&&carriedGold>=activeUpgrade.cost;
@@ -307,8 +307,8 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
   // The same fail-closed projection serves both located and legacy-link candidates.
   const inspectingGear=inspected?.type==='gear';
   const linkAudit=useMemo(()=>inspectingGear?auditCraftedGearOwnership(state):undefined,[state,inspectingGear]);
-  const exactCopies=useMemo(()=>inspectingGear&&linkAudit&&!linkAudit.problems.length
-    ?linkAudit.linked.filter(row=>row.itemId===inspectId&&row.place===location&&(location==='bank'||row.holderCharacterId===state.character?.id)).map(row=>exactRecordsById.get(row.instanceId)!).filter(Boolean)
+  const exactCopies=useMemo(()=>inspectingGear&&linkAudit
+    ?inventoryInspectedGearLocations(linkAudit,inspectId,location,state.character?.id).map(row=>exactRecordsById.get(row.instanceId)!).filter(Boolean)
     :[],[inspectingGear,linkAudit,inspectId,location,state.character?.id,exactRecordsById]);
   const selectedCopy=exactCopies.find(row=>row.id===selectedInstanceId)??exactCopies[0];
   const inspectedToolDef=inspected?.type==='tool'?gatheringToolDef(inspected.id):undefined;

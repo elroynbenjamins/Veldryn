@@ -7,6 +7,7 @@ import {createTranslator} from './translator';
 // English source keys are limited to authored UI copy, never player-authored text.
 // Each row contains de, es, nl, it and fr, in SUPPORTED_LANGUAGES order after en.
 export const profileTranslationRows = {
+  "Animated sets": ["Animierte Sets","Conjuntos animados","Geanimeerde sets","Set animati","Ensembles animés","Анимированные наборы","Animasyonlu setler"],
   "Account-wide": ["Kontoweit","Para toda la cuenta","Accountbreed","Per tutto l'account","À l’échelle du compte"],
   "Your account character class.": ["Klasse eines deiner Charaktere.","Clase de un personaje de tu cuenta.","Klasse van een personage op je account.","Classe di un personaggio del tuo account.","Classe d’un personnage de votre compte."],
   "Ascendant name styles": ["Aszendenten-Namensstile","Estilos de nombre ascendentes","Ascendant-naamstijlen","Stili del nome Ascendente","Styles de nom Ascendant"],

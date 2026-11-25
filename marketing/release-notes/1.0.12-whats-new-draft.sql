@@ -19,7 +19,8 @@ VALUES
   'Social: Larger chat emotes and text, unique Party names, improved Social Name consistency and active character profiles.',
   'Economy: Rebalanced Cooking and crafting recipes, resource requirements, Gold costs and skill XP rewards.',
   'Quality of Life: Seamless regional music, refined shortcuts, improved profile cosmetics and cleaner interfaces.',
-  'Performance: Optimized server requests, improved crafting responsiveness, dungeon synchronization, stability and various bug fixes.'
+  'Performance: Optimized server requests, improved crafting responsiveness, dungeon synchronization, stability and various bug fixes.',
+  'Frostfall: The winter festival draws near, with seasonal adventures and festive rewards awaiting.'
  ),now(),false,now())
 ON CONFLICT(platform,version) DO UPDATE
  SET title=excluded.title, highlights=excluded.highlights, updated_at=now()
@@ -38,7 +39,8 @@ BEGIN
         'Social: Larger chat emotes and text, unique Party names, improved Social Name consistency and active character profiles.',
         'Economy: Rebalanced Cooking and crafting recipes, resource requirements, Gold costs and skill XP rewards.',
         'Quality of Life: Seamless regional music, refined shortcuts, improved profile cosmetics and cleaner interfaces.',
-        'Performance: Optimized server requests, improved crafting responsiveness, dungeon synchronization, stability and various bug fixes.'
+        'Performance: Optimized server requests, improved crafting responsiveness, dungeon synchronization, stability and various bug fixes.',
+  'Frostfall: The winter festival draws near, with seasonal adventures and festive rewards awaiting.'
       )
  ) THEN RAISE EXCEPTION 'Unpublished release note verification failed'; END IF;
 END $verify$;

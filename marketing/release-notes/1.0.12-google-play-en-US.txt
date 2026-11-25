@@ -9,3 +9,4 @@ Veldryn 1.0.12 – Smoother Adventures
 • Seamless regional music.
 • Crafting and economy balancing.
 • Performance optimizations and bug fixes.
+• Frostfall Festival is coming soon!

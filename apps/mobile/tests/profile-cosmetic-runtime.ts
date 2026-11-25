@@ -92,7 +92,7 @@ for(const name of ['AnimatedProfileBorderGlows','ProfileCosmeticExteriorMatte','
 }
 ok(motionSource.includes('if(!pieces.length)return []')&&motionSource.includes('left:box.left-left,top:box.top-top'),'sprite glows composite only their clipped footprint');
 const selfSource=fs.readFileSync('src/components/ProfileScenePreview.tsx','utf8');
-ok(publicSource.includes('runtimeFallbackBorderId??(review?reviewBorderId:renderBorderId)')&&selfSource.includes('borderRuntime?.fallbackBorderId??renderBorderId')&&stageSource.includes('borderRuntime?.fallbackBorderId??character.profileBorderId'),'fallback artwork uses its actual aperture calibration in all three scene renderers');
+ok(publicSource.includes('resolveProfileBorderArtworkId(review?reviewBorderId:renderBorderId,runtimeFallbackBorderId)')&&selfSource.includes('resolveProfileBorderArtworkId(renderBorderId,borderRuntime?.fallbackBorderId)')&&stageSource.includes('resolveProfileBorderArtworkId(character.profileBorderId,borderRuntime?.fallbackBorderId)'),'fallback artwork uses its actual aperture calibration in all three scene renderers');
 console.log('PASS: cosmetic re-entry, memo boundaries, clipped compositing and fallback aperture contract');
 
 

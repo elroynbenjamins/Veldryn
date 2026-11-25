@@ -1,6 +1,6 @@
-import {profileSceneBorderZones,profileSceneGlowBounds} from '../src/core/profile-frame-layout';
+import {profileSceneBorderZones,profileSceneGlowBounds,profileSceneArtworkGlowBounds,profileFrameSegments} from '../src/core/profile-frame-layout';
 import {sampleCosmeticTrack,cosmeticGlowOpacity,periodicCosmeticPhase,cosmeticViewportVisible} from '../src/core/profile-cosmetic-motion-v2';
-import {PROFILE_COSMETIC_RUNTIME,profileCosmeticRuntimeByBorder,profileCosmeticRuntimeByEffect} from '../src/theme/profile-cosmetic-runtime-v1';
+import {PROFILE_COSMETIC_RUNTIME,profileCosmeticRuntimeByBorder,profileCosmeticRuntimeByEffect,usesArtworkGlowAnchors} from '../src/theme/profile-cosmetic-runtime-v1';
 function fail(message:string):never{throw new Error(message)}
 function ok(value:unknown,message:string){if(!value)fail(message)}
 function equal(actual:unknown,expected:unknown,message:string){if(actual!==expected)fail(message+': expected '+String(expected)+', got '+String(actual))}
@@ -127,3 +127,26 @@ for(const row of standard){
  }
 }
 console.log('PASS: standard cosmetic visibility improves without adding animation nodes or exceeding scene bounds');
+
+ // Each authored ornament maps through the actual responsive frame segments.
+for(const row of PROFILE_COSMETIC_RUNTIME){
+ equal(usesArtworkGlowAnchors(row.motionProfile),standard.includes(row),row.collection+' keeps premium anchor behavior unchanged');
+ if(!usesArtworkGlowAnchors(row.motionProfile))continue;
+ for(const [w,h] of [[104,72],[260,174],[340,205],[480,270],[640,360]]){
+  const zones=profileSceneBorderZones(w,h);
+  for(const g of row.glows){
+   const d=Math.min(g.size,Math.max(4,w*.035));
+   const box=profileSceneArtworkGlowBounds(w,h,g.x,g.y,d);
+   ok(box,row.collection+' ornament maps to a frame segment');
+   if(!box)continue;
+   ok(zones.some(z=>box.x>=z.x-.001&&box.y>=z.y-.001&&box.x+box.width<=z.x+z.width+.001&&box.y+box.height<=z.y+z.height+.001),row.collection+' mapped ornament stays in perimeter');
+   const p=profileFrameSegments(w,h).find(s=>{const x=g.x*s.imageWidth+s.imageLeft,y=g.y*s.imageHeight+s.imageTop;return x>=-1e-6&&y>=-1e-6&&x<=s.width+1e-6&&y<=s.height+1e-6});
+   if(!p)fail(row.collection+' ornament has no source segment');
+   const expected=profileSceneGlowBounds(w,h,(p.x+g.x*p.imageWidth+p.imageLeft)/w,(p.y+g.y*p.imageHeight+p.imageTop)/h,d);
+   equal(JSON.stringify(box),JSON.stringify(expected),row.collection+' glow follows the same artwork transform');
+  }
+ }
+}
+equal(profileSceneArtworkGlowBounds(340,205,.5,.5,8),null,'transparent interior cannot host border glows');
+equal(profileSceneArtworkGlowBounds(340,205,-.1,.1,8),null,'out-of-source coordinates rejected');
+console.log('PASS: standard frame ornament anchors follow responsive art and preserve safe clipping');

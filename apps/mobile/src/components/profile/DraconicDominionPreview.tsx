@@ -2,7 +2,7 @@ import {useUltraLuxePetReaction,UltraLuxePetReaction} from './UltraLuxePetReacti
 import {UltraLuxeIdentityMotionProvider} from './UltraLuxeIdentityMotion';
 import {UltraLuxePetPoseSprite} from './UltraLuxePetPoseSprite';
 import {ULTRA_LUXE_CYCLE_MS} from '../../core/ultra-luxe-motion';
-import {UltraLuxeEnvironment,UltraLuxeRail,UltraLuxePetAura,UltraLuxeAscendantFlourish,signatureEnergy,petIdleMotion} from './UltraLuxeMotion';
+import {UltraLuxeEnvironment,UltraLuxeRail,UltraLuxePetAura,UltraLuxeAscendantFlourish,petIdleMotion,awakeningEnergy,awakeningPetLift} from './UltraLuxeMotion';
 import {useEffect,useMemo,useRef,useState,type ReactNode} from 'react';
 import {AccessibilityInfo,Animated,AppState,Easing,Image,Pressable,StyleSheet,View,useWindowDimensions,type ImageSourcePropType} from 'react-native';
 import {DRACONIC_BOXES as B,DRACONIC_STAGE as S,draconicPetMode,draconicStageSupported} from '../../core/draconic-showcase-layout';
@@ -40,7 +40,8 @@ export function DraconicDominionPreview({assets,equippedPetId,alternatePetSource
  const mode=draconicPetMode(equippedPetId,!!alternatePetSource);
  const reactionEnabled=running&&mode==='matching';
  const {reaction,trigger}=useUltraLuxePetReaction(reactionEnabled);
- const pulse=useMemo(()=>signatureEnergy(clock),[clock]);
+ const pulse=useMemo(()=>awakeningEnergy(clock,'draconic'),[clock]);
+ const signatureLift=useMemo(()=>awakeningPetLift(clock,k,'draconic'),[clock,k]);
  const idle=useMemo(()=>petIdleMotion(clock,k,mode==='alternate'?'alternate':'draconic'),[clock,k,mode]);
  // Atlas already animates local body parts; do not layer rocking/stretching over it.
  const mirroredBody=assets.smoothPoseAtlas?[{scaleX:-1}]:[{rotate:idle.tilt},{scaleX:Animated.multiply(idle.scaleX,-1)},{scaleY:idle.scaleY}];
@@ -49,13 +50,13 @@ export function DraconicDominionPreview({assets,equippedPetId,alternatePetSource
  {!supported?fallback:<View style={[s.card,{height:S.height*k}]}>
   <View pointerEvents="none" accessible={false} importantForAccessibility="no-hide-descendants" style={StyleSheet.absoluteFill}>
    <Image source={assets.background} fadeDuration={0} resizeMode="cover" style={s.fill}/>
-   <Animated.View style={[s.heat,{opacity:Animated.multiply(pulse,.18)}]}/>
+   <Animated.View style={[s.heat,{opacity:Animated.multiply(pulse,.12)}]}/>
    {running?<UltraLuxeEnvironment clock={clock} scale={k} theme="draconic" particle={assets.ember}/>:null}
    {mode==='matching'?<>
-    <Animated.View style={[StyleSheet.absoluteFill,{transform:[{translateY:idle.lift}]}]}>
+    <Animated.View style={[StyleSheet.absoluteFill,{transform:[{translateY:Animated.add(idle.lift,signatureLift)}]}]}>
      <Animated.Image source={assets.fallbackGlow} resizeMode="stretch" style={[box(B.ring),{opacity:ringGlow}]}/>
      {running&&assets.smoothPoseAtlas?<Animated.View style={[box(B.dragon),{transform:mirroredBody}]}><UltraLuxePetPoseSprite source={assets.smoothPoseAtlas} clock={clock} theme="draconic" width={B.dragon.w*k} height={B.dragon.h*k}/></Animated.View>:<Animated.Image source={assets.dragon} fadeDuration={0} resizeMode="contain" style={[box(B.dragon),{transform:mirroredBody}]}/>}
-     <Animated.Image source={assets.flames} resizeMode="contain" style={[box(B.flames),{opacity:Animated.add(Animated.multiply(idle.glow,.08),Animated.multiply(pulse,.55)),transform:mirroredBody}]}/>
+     <Animated.Image source={assets.flames} resizeMode="contain" style={[box(B.flames),{opacity:Animated.add(Animated.multiply(idle.glow,.18),Animated.multiply(pulse,.82)),transform:mirroredBody}]}/>
      {running?<UltraLuxePetAura clock={clock} scale={k} theme="draconic" particle={assets.ember}/>:null}
      {reactionEnabled?<UltraLuxePetReaction reaction={reaction} scale={k} theme="draconic" particle={assets.ember} glow={assets.fallbackGlow}/>:null}
     </Animated.View>

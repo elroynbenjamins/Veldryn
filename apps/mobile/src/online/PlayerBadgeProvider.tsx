@@ -72,11 +72,13 @@ export function PlayerBadgeProvider({children}:{children:ReactNode}){
   });
   return()=>{alive=false;request++;clearTimeout(batch);clearInterval(timer);foreground.remove();unsubscribe();};
  },[accountId,watchVersion]);
- const refresh=useCallback(()=>{
+ const refresh=useCallback((force=true)=>{
   if(activeAccount.current!==accountId||saving.current)return Promise.resolve();
   if(!accountId){setState(empty);return Promise.resolve();}
   const existing=selfRead.current;
-  if(existing?.accountId===accountId&&existing.version===generation.current)return existing.promise;
+  // A manual refresh may follow an external entitlement write. Never reuse a
+  // read that could predate it; only automatic polls may join the current read.
+  if(!force&&existing?.accountId===accountId&&existing.version===generation.current)return existing.promise;
   const version=++generation.current;
   const current=()=>version===generation.current&&activeAccount.current===accountId;
   const promise=(async()=>{
@@ -93,9 +95,9 @@ export function PlayerBadgeProvider({children}:{children:ReactNode}){
   return promise;
  },[accountId]);
  useEffect(()=>{
-  saving.current=0;selfRead.current=null;setState({...empty,accountId,loading:!!accountId});void refresh();
-  const timer=setInterval(()=>{if(AppState.currentState==='active')void refresh();},60000);
-  const foreground=AppState.addEventListener('change',next=>{if(next==='active')void refresh();else{generation.current++;setState(value=>({...value,identity:undefined}));}});
+  saving.current=0;selfRead.current=null;setState({...empty,accountId,loading:!!accountId});void refresh(false);
+  const timer=setInterval(()=>{if(AppState.currentState==='active')void refresh(false);},60000);
+  const foreground=AppState.addEventListener('change',next=>{if(next==='active')void refresh(false);else{generation.current++;setState(value=>({...value,identity:undefined}));}});
   return()=>{generation.current++;selfRead.current=null;clearInterval(timer);foreground.remove();};
  },[accountId,refresh]);
  const setVisible=useCallback(async(visible:boolean)=>{

@@ -18,15 +18,7 @@ begin
   -- Enforce account ownership for authored Frostfall reactions as well.
   -- Unknown colon-marked words are ordinary text, never a free emote.
   if v_id ~ '^(male|female)_[0-9]{2}$'
-    or v_id ~ '^pet_set_[ab]_[0-9]{2}
-   if not (v_owned ? v_id) then raise exception 'CHAT_EMOTE_LOCKED';end if;
-  end if;
- end loop;
- return new;
-end $$;
-revoke all on function public.enforce_chat_guild_emote_ownership_v1()
- from public,anon,authenticated;
-
+    or v_id ~ '^pet_set_[ab]_[0-9]{2}$'
     or v_id in ('emote_snowbell_ring','emote_frostfall_wave','emote_aurora_chime','emote_cozy_hearth','emote_snowball_attack') then
    if not (v_owned ? v_id) then raise exception 'CHAT_EMOTE_LOCKED';end if;
   end if;

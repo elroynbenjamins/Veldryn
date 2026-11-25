@@ -85,3 +85,28 @@ for(const layer of ['UltraLuxeEnvironment','UltraLuxeRail','UltraLuxePetAura','U
 assert(read('components/profile/UltraLuxeIdentityMotion.tsx').includes('outputRange:SIGNATURE_TITLE_OPACITY'));
 assert(read('components/PlayerBadges.tsx').includes('outputRange:SIGNATURE_BADGE_OPACITY'));
 console.log('Eased native signature, synchronized readable title/badge and memoized layers passed.');
+
+const {AWAKENING_PHASE,AWAKENING_ENERGY,AWAKENING_CURVES,AWAKENING_PET_LIFT}=mod.exports;
+assert.equal(AWAKENING_PHASE[0],0);assert.equal(AWAKENING_PHASE.at(-1),1);
+for(const theme of ['celestial','draconic']){
+ const {phase,energy}=AWAKENING_CURVES[theme],anchors=AWAKENING_ENERGY[theme];
+ assert.equal(anchors.length,AWAKENING_PHASE.length);
+ assert.equal(phase.length,(anchors.length-1)*4+1);
+ assert.equal(energy.length,phase.length);
+ assert.equal(energy[0],0);assert.equal(energy.at(-1),0);
+ assert.equal(Math.max(...energy),1);
+ assert(anchors[2]>=.4,'visible early signature within four seconds');
+ for(let i=0;i<anchors.length;i++){assert.equal(phase[i*4],AWAKENING_PHASE[i]);assert.equal(energy[i*4],anchors[i]);}
+ for(let i=1;i<phase.length;i++){assert(phase[i]>phase[i-1]);assert(energy[i]>=0&&energy[i]<=1);}
+ assert(AWAKENING_PET_LIFT[theme]>0&&AWAKENING_PET_LIFT[theme]<=7);
+}
+assert.notDeepEqual(AWAKENING_CURVES.celestial.energy,AWAKENING_CURVES.draconic.energy);
+assert(AWAKENING_PET_LIFT.celestial>AWAKENING_PET_LIFT.draconic);
+assert(fx.includes('AWAKENING_CURVES[theme]')&&fx.includes('awakeningEnergy(clock,theme)'));
+for(const [name,theme] of [['CelestialSovereignPreview','celestial'],['DraconicDominionPreview','draconic']]){
+ const s=read('components/profile/'+name+'.tsx');
+ assert(s.includes("awakeningEnergy(clock,'"+theme+"')"));
+ assert(s.includes('signatureLift')&&s.includes('Animated.add('));
+ assert.equal((s.match(/Animated.loop\(/g)||[]).length,1,'one ambient native clock per preview');
+}
+console.log('Distinct awakening envelopes, early signature, smooth closed loop and bounded matching-pet lift passed.');

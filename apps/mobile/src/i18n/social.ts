@@ -7,6 +7,7 @@ import {socialEarlyText} from './social-early-coverage';
 
 // Columns are German, Spanish, Dutch, Italian and French; keys are the English catalog.
 export const socialTranslationRows = {
+  "Guild Tokens": ["Gildenmarken","Fichas de gremio","Gildetokens","Gettoni di gilda","Jetons de guilde"],
   // Short Party identity, six-month name cooldown and ranking-ready labels.
   "Party name": ["Gruppenname","Nombre del grupo","Partynaam","Nome del gruppo","Nom du groupe"],
   "Choose Party name": ["Gruppennamen wählen","Elegir nombre del grupo","Partynaam kiezen","Scegli il nome del gruppo","Choisir un nom de groupe"],
@@ -46,6 +47,7 @@ export const socialTranslationRows = {
   // Online roster: compact, accessible social discovery across supported languages.
   "VELDRYN COMMUNITY": ["VELDRYN-GEMEINSCHAFT","COMUNIDAD DE VELDRYN","VELDRYN-GEMEENSCHAP","COMUNITÀ DI VELDRYN","COMMUNAUTÉ VELDRYN"],
   "Online players": ["Spieler online","Jugadores conectados","Online spelers","Giocatori online","Joueurs en ligne"],
+  "Total character level": ["Gesamtcharakterstufe","Nivel total de personajes","Totaal personageniveau","Livello totale personaggi","Niveau total des personnages"],
   "Active (30m)": ["Aktiv (30 Min.)","Activo (30 min)","Actief (30 min)","Attivi (30 min)","Actifs (30 min)"],
   "Active in Last 30 Minutes": ["Aktiv in den letzten 30 Minuten","Activos en los últimos 30 minutos","Actief in de afgelopen 30 minuten","Attivi negli ultimi 30 minuti","Actifs ces 30 dernières minutes"],
   "View players active in the last 30 minutes": ["Spieler ansehen, die in den letzten 30 Minuten aktiv waren","Ver jugadores activos en los últimos 30 minutos","Bekijk spelers die de afgelopen 30 minuten actief waren","Vedi i giocatori attivi negli ultimi 30 minuti","Voir les joueurs actifs ces 30 dernières minutes"],

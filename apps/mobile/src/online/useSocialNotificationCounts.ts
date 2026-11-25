@@ -41,20 +41,26 @@ export function useSocialNotificationCounts(){
     do{
     request.refreshAgain=false;
     try{
-      const [incoming,invites,chat,mine]=await Promise.all([
+      const loadGuildCounts=async()=>{
+        const mine=await myGuild().catch(()=>undefined);
+        // Do not start dependent reads after the owning account has changed.
+        if(inFlight.current!==request||activeAccount.current!==accountId||(mine&&mine.account_id!==accountId))return null;
+        // Start both guild reads as soon as membership is known, rather than
+        // waiting for unrelated friend/invitation/chat requests to finish.
+        const [guildProjectRewards,guildApplicationsCount]=await Promise.all([
+          mine?claimableOnlineGuildProjectRewardCount(mine).catch(()=>undefined):mine===null?0:undefined,
+          mine&&(mine.role==='leader'||mine.role==='officer')?guildApplications(mine.guild_id).then(rows=>rows.length).catch(()=>undefined):mine===undefined?undefined:0,
+        ]);
+        return {mine,guildProjectRewards,guildApplicationsCount};
+      };
+      const [incoming,invites,chat,guildCounts]=await Promise.all([
         incomingFriendRequestCount().catch(()=>undefined),
         socialInvitations().catch(()=>null),
         socialChatAttention().catch(()=>null),
-        myGuild().catch(()=>undefined),
+        loadGuildCounts(),
       ]);
-      // Do not start dependent reads after the owning account has changed.
-      if(inFlight.current!==request||activeAccount.current!==accountId||(mine&&mine.account_id!==accountId))return;
-      // These independent guild reads used to be serialized. Unknown results
-      // retain the last confirmed badge, while confirmed non-membership clears it.
-      const [guildProjectRewards,guildApplicationsCount]=await Promise.all([
-        mine?claimableOnlineGuildProjectRewardCount(mine).catch(()=>undefined):mine===null?0:undefined,
-        mine&&(mine.role==='leader'||mine.role==='officer')?guildApplications(mine.guild_id).then(rows=>rows.length).catch(()=>undefined):mine===undefined?undefined:0,
-      ]);
+      if(!guildCounts||inFlight.current!==request||activeAccount.current!==accountId)return;
+      const {mine,guildProjectRewards,guildApplicationsCount}=guildCounts;
       let guildInvites:number|undefined,partyInvites:number|undefined;
       let chatAttention:{guildUnread:number;guildMentions:number;guildFirstUnreadMessageId?:string;partyUnread:number;partyMentions:number;partyFirstUnreadMessageId?:string}|null=null;
       if(invites){guildInvites=invites.guild.length;partyInvites=invites.party.length;}

@@ -60,8 +60,8 @@ const publicSource=fs.readFileSync('src/components/PublicProfileScene.tsx','utf8
 ok(motionSource.includes("if(!enabled)return;setForeground"),'inactive and static layers skip AppState subscriptions');
 ok(motionSource.includes('const staticItems=useMemo')&&motionSource.includes('()=>!enabled?[]:runtime.tracks.map'),'static effects skip native interpolation graphs');
 ok(motionSource.includes('const glows=useMemo'),'procedural glow interpolation is memoized');
-const collapsed=stageSource.slice(stageSource.indexOf('if(collapsed)return'),stageSource.indexOf('return <View style={s.root}>'));
-ok(collapsed.includes('active reduceMotion')&&!collapsed.includes('reduceMotion={state.settings.reduceMotion}/>:effectRuntime'),'collapsed strip uses static effects');
+const collapsed=stageSource.slice(stageSource.indexOf('if(collapsed)return'),stageSource.indexOf('if(dedicated)return'));
+ok((collapsed.match(/active=\{false\} reduceMotion/g)||[]).length===2&&!collapsed.includes('reduceMotion={state.settings.reduceMotion}/>:effectRuntime'),'collapsed strip uses static effects');
 ok(audienceSource.includes('cosmeticsActive={visible&&cosmeticViewport.visible}')&&publicSource.includes('const active=cosmeticsActive&&(stageActive??true)&&(review?.active??true)')&&publicSource.includes('active={active} reduceMotion={reduceMotion}'),'hidden audience preview stops cosmetics');
 console.log('PASS: cosmetic idle and static rendering contract');
 

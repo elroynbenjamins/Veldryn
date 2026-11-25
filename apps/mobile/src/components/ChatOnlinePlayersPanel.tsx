@@ -12,7 +12,7 @@ type Props={
  count:number|null;players:OnlinePlayer[];loading:boolean;error:string;
  onRefresh:()=>void;onClose:()=>void;reduceMotion?:boolean;
 };
-const classLabel=(id:string)=>id? id.replace(/[_-]/g,' ').replace(/\b\w/g,c=>c.toUpperCase()):'Adventurer';
+const totalLevelText=(level:number|null)=>level===null?'—':String(level);
 
 export function ChatOnlinePlayersPanel({count,players,loading,error,onRefresh,onClose,reduceMotion=false}:Props){
  const st=useSocialText(),C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
@@ -20,9 +20,9 @@ export function ChatOnlinePlayersPanel({count,players,loading,error,onRefresh,on
  const [filter,setFilter]=useState<Filter>('all'),[search,setSearch]=useState('');
  const [selected,setSelected]=useState<ChatPlayerIdentity|null>(null);
  const [blocked,setBlocked]=useState<string[]>([]);
- useEffect(()=>{setBlocked([]);},[session?.user.id]);
+ useEffect(()=>{setBlocked([]);setSelected(null);setSearch('');setFilter('all');},[session?.user.id]);
  const available=useMemo(()=>players.filter(p=>!blocked.includes(p.account_id)),[players,blocked]);
- const counts={all:count===null?available.length:count,friends:available.filter(p=>p.is_friend).length,guild:available.filter(p=>p.is_guildmate).length};
+ const counts=useMemo(()=>({all:count===null?available.length:count,friends:available.filter(p=>p.is_friend).length,guild:available.filter(p=>p.is_guildmate).length}),[available,count]);
  const displayed=useMemo(()=>{
   const query=search.trim().toLocaleLowerCase();
   return available.filter(p=>(filter==='all'||(filter==='friends'?p.is_friend:p.is_guildmate))&&(!query||p.sender_name.toLocaleLowerCase().includes(query)));
@@ -59,12 +59,23 @@ export function ChatOnlinePlayersPanel({count,players,loading,error,onRefresh,on
     showsVerticalScrollIndicator={false}
     showsHorizontalScrollIndicator={false}
     contentContainerStyle={displayed.length===0?s.emptyList:s.list}
-    renderItem={({item})=><Pressable accessibilityRole="button" accessibilityLabel={item.sender_name+', level '+item.level} accessibilityHint={st('View player profile and social actions')} onPress={()=>{Keyboard.dismiss();setSelected({account_id:item.account_id,sender_name:item.sender_name});}} style={({pressed})=>[s.player,pressed&&s.pressed]}>
-     <View style={s.statusDot}/>
-     <View style={s.identity}><Text numberOfLines={1} style={s.playerName}>{item.sender_name}{item.account_id===session?.user.id?st(' (You)'):''}</Text><Text numberOfLines={1} style={s.playerMeta}>{st('Lv.')} {item.level} · {classLabel(item.class_id)}</Text></View>
-     {item.is_friend?<Text style={s.relationship}>{st('Friend')}</Text>:item.is_guildmate?<Text style={s.relationship}>{st('Guild')}</Text>:null}
-     <Text style={s.chevron}>›</Text>
-    </Pressable>}
+    renderItem={({item})=>{
+     const name=item.sender_name+(item.account_id===session?.user.id?st(' (You)'):'');
+     const relationship=item.is_friend?st('Friend'):item.is_guildmate?st('Guild'):'';
+     const level=totalLevelText(item.total_character_level);
+     const levelLabel=st('Total character level');
+     return <Pressable accessibilityRole="button" accessibilityLabel={[name,levelLabel+': '+level,relationship].filter(Boolean).join(', ')} accessibilityHint={st('View player profile and social actions')} onPress={()=>{Keyboard.dismiss();setSelected({account_id:item.account_id,sender_name:item.sender_name});}} style={({pressed})=>[s.player,compact&&s.playerCompact,pressed&&s.pressed]}>
+      <View style={s.statusDot} accessible={false}/>
+      <View style={s.identity}>
+       <Text numberOfLines={2} style={s.playerName}>{name}</Text>
+       <View style={s.playerMetaRow}>
+        <Text style={s.playerMeta}>{levelLabel}: <Text style={s.playerLevel}>{level}</Text></Text>
+        {!!relationship&&<Text style={s.relationship}>{relationship}</Text>}
+       </View>
+      </View>
+      <Text accessible={false} style={s.chevron}>›</Text>
+     </Pressable>;
+    }}
     ListEmptyComponent={<View style={s.empty}><Text style={s.emptyTitle}>{loading&&count===null?st('Loading players...'):error&&count===null?st('Active list unavailable'):search.trim()||filter!=='all'?st('No matching players'):st('No recently active players')}</Text><Text style={s.emptyDetail}>{search.trim()||filter!=='all'?st('Try another search or filter.'):st('Players appear here after activity within the last 30 minutes.')}</Text></View>}
     ListFooterComponent={filter==='all'&&!search.trim()&&count!==null&&count>available.length?<Text style={s.footer}>{st('Showing the first {count} players.',{count:available.length})}</Text>:undefined}
    />
@@ -105,13 +116,16 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  playerList:{flex:1,minHeight:0},
  list:{paddingHorizontal:12,paddingBottom:24},
  emptyList:{flexGrow:1,paddingHorizontal:12},
- player:{minHeight:60,flexDirection:'row',alignItems:'center',gap:10,borderBottomColor:C.line,borderBottomWidth:StyleSheet.hairlineWidth,paddingHorizontal:3,paddingVertical:8},
+ player:{minHeight:54,flexDirection:'row',alignItems:'center',gap:9,borderBottomColor:C.line,borderBottomWidth:StyleSheet.hairlineWidth,paddingHorizontal:3,paddingVertical:8},
+ playerCompact:{gap:6},
  statusDot:{width:7,height:7,borderRadius:4,backgroundColor:C.info},
  identity:{flex:1,minWidth:0,gap:3},
  playerName:{color:C.text,fontSize:14,fontWeight:'800'},
- playerMeta:{color:C.muted,fontSize:11},
- relationship:{fontSize:10,color:C.info,fontWeight:'800'},
- chevron:{color:C.muted,fontSize:24,marginHorizontal:3},
+ playerMetaRow:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',columnGap:8,rowGap:2},
+ playerMeta:{color:C.muted,fontSize:11,flexShrink:1},
+ playerLevel:{color:C.text,fontWeight:'800',fontVariant:['tabular-nums']},
+ relationship:{fontSize:10,color:C.info,fontWeight:'800',flexShrink:1},
+ chevron:{color:C.muted,fontSize:22,marginHorizontal:2,flexShrink:0},
  empty:{flex:1,minHeight:150,alignItems:'center',justifyContent:'center',paddingHorizontal:14,gap:8},
  emptyTitle:{fontSize:14,fontWeight:'900',color:C.text,textAlign:'center'},
  emptyDetail:{fontSize:12,lineHeight:18,color:C.muted,textAlign:'center'},

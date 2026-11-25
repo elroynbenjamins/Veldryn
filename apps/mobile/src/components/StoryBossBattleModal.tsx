@@ -121,7 +121,6 @@ export function StoryBossBattleModal({state,battle,message,onClose}:{state:GameS
                 {damageEvent?.type==='boss_hit'&&<Animated.View pointerEvents="none" style={[s.floatWrap,{opacity:playerImpact,transform:[{translateY:floatY(playerImpact)}]}]}><Text style={s.damageTaken}>{damageEvent.critical?'CRIT ':''}−{displayStat(damageEvent.amount??0).toLocaleString()}</Text></Animated.View>}
               </View>
               <Text numberOfLines={1} style={s.name}>{state.character?.name??gt("Adventurer")}</Text>
-              <Text style={s.sub}>ACC {Math.round(battle.player.hitChance*100)}% · CRIT {Math.round(battle.player.critChance*100)}%</Text>
             </View>
 
             <View style={s.vsWrap}><Text style={s.vs}>VS</Text><Text style={s.timer}>{timeLabel(Math.min(playhead,battle.durationMs))}</Text></View>
@@ -134,7 +133,6 @@ export function StoryBossBattleModal({state,battle,message,onClose}:{state:GameS
                 {damageEvent?.type==='player_hit'&&<Animated.View pointerEvents="none" style={[s.floatWrap,{opacity:enemyImpact,transform:[{translateY:floatY(enemyImpact)}]}]}><Text style={damageEvent.critical?s.critDamage:s.damageDealt}>{damageEvent.critical?'CRIT ':''}−{displayStat(damageEvent.amount??0).toLocaleString()}</Text></Animated.View>}
               </View>
               <Text style={s.name}>Fallen Knight</Text>
-              <Text style={s.sub}>ACC {Math.round(battle.boss.accuracy*100)}% · CRIT {Math.round(battle.boss.critChance*100)}%</Text>
             </View>
           </View>
         </Animated.View>

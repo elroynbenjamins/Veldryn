@@ -2,6 +2,7 @@ import type {SocialMessageKey} from './social';
 
 /** Player-facing Russian/Turkish Social, Guild and Dungeon copy. Unknown keys retain English fallback. */
 export const socialEarlyRows={
+  "Guild Tokens": ["Жетоны гильдии","Lonca Jetonları"],
   // Short Party identity, six-month name cooldown and ranking-ready labels.
   "Party name": ["Название группы","Parti adı"],
   "Choose Party name": ["Выбрать название группы","Parti adı seç"],
@@ -44,6 +45,7 @@ export const socialEarlyRows={
   // Online roster additions.
   "VELDRYN COMMUNITY": ["СООБЩЕСТВО VELDRYN","VELDRYN TOPLULUĞU"],
   "Online players": ["Игроки в сети","Çevrimiçi oyuncular"],
+  "Total character level": ["Суммарный уровень персонажей","Toplam karakter seviyesi"],
   "Active (30m)": ["Активны (30 мин)","Etkin (30 dk)"],
   "Active in Last 30 Minutes": ["Активны за последние 30 минут","Son 30 dakikada aktif"],
   "View players active in the last 30 minutes": ["Посмотреть игроков, активных за последние 30 минут","Son 30 dakikada aktif oyuncuları gör"],

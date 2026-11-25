@@ -79,7 +79,10 @@ export function useSocialNotificationCounts(){
         const partyFirstUnreadMessageId=chatAttention?chatAttention.partyFirstUnreadMessageId:current.partyFirstUnreadMessageId;
         const chatUnread=guildChatUnread+partyChatUnread,chatMentions=guildChatMentions+partyChatMentions;
         const next={...current,friendRequests:incoming??current.friendRequests,chatUnread,chatMentions,guildChatUnread,guildChatMentions,guildFirstUnreadMessageId,partyChatUnread,partyChatMentions,partyFirstUnreadMessageId,guild,guildApplications:applications,guildInvites:guildInviteCount,guildProjectRewards:guildProjectRewards??(guildChanged?0:current.guildProjectRewards),party,partyInvites:partyInviteCount};
-        return {...next,account:next.friendRequests+next.chatUnread+next.guild+next.guildProjectRewards+next.party+next.events};
+        const updated={...next,account:next.friendRequests+next.chatUnread+next.guild+next.guildProjectRewards+next.party+next.events};
+        // An unchanged poll must preserve object identity: the app shell consumes
+        // these counts and should not rerender on every background refresh.
+        return (Object.keys(updated) as (keyof SocialNotificationCounts)[]).every(key=>updated[key]===current[key])?current:updated;
       });
     }catch{
       // Notification polling must never interrupt gameplay or sign-in.

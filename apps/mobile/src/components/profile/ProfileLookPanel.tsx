@@ -5,7 +5,7 @@ import {Image,Pressable,StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../../core/types';
 import type {ProfileCustomizationDestination} from '../../core/profile-customization';
 import {
- applyWardrobeEquipped,profileWardrobe,wardrobeEquipped,wardrobeSelection,
+ applyWardrobeEquipped,profileWardrobe,wardrobeEquipped,wardrobeSelection,wardrobeChanges,
  type WardrobeAssets,type WardrobeEquipped,type WardrobeKind,type WardrobeRow,
 } from '../../core/profile-wardrobe';
 import {PROFILE_BACKGROUND_PREVIEWS,profileBackgroundPreviewById} from '../../theme/profile-background-assets';
@@ -52,7 +52,8 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
  const saved=useMemo(()=>wardrobeEquipped(state),[state]);
  const [selection,setSelection]=useState<WardrobeEquipped>(saved);
  const [customTitle,setCustomTitle]=useState(saved.title);
- const stateRef=useRef(state),pendingRef=useRef<WardrobeEquipped|null>(null),timerRef=useRef<ReturnType<typeof setTimeout>|null>(null);
+ const selectionRef=useRef(saved);
+ const stateRef=useRef(state),pendingRef=useRef<Partial<WardrobeEquipped>|null>(null),timerRef=useRef<ReturnType<typeof setTimeout>|null>(null);
  const onChangeRef=useRef(onChange),sentRef=useRef<string|null>(null),chainRef=useRef<Promise<void>>(Promise.resolve());
  stateRef.current=state;onChangeRef.current=onChange;
 
@@ -64,18 +65,23 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
   if(timerRef.current){clearTimeout(timerRef.current);timerRef.current=null}
   const next=pendingRef.current;pendingRef.current=null;
   if(!next)return;
-  sentRef.current=JSON.stringify(next);
+  const ownerCharacterId=stateRef.current.character?.id;
   chainRef.current=chainRef.current.then(async()=>{
    const base=stateRef.current;
-   if(!base.character)return;
-   await onChangeRef.current(applyWardrobeEquipped(base,next));
+   if(!base.character||base.character.id!==ownerCharacterId)return;
+   const rebased={...wardrobeEquipped(base),...next};
+   sentRef.current=JSON.stringify(rebased);
+   await onChangeRef.current(applyWardrobeEquipped(base,rebased));
 
    // Let the committed state reach this component before the next write reads it.
    await new Promise<void>(resolve=>setTimeout(resolve,0));
   }).catch(()=>{});
  },[accountId]);
  const queueCommit=useCallback((next:WardrobeEquipped)=>{
-  pendingRef.current=next;
+  const changed=wardrobeChanges(selectionRef.current,next);
+  selectionRef.current=next;
+  if(!Object.keys(changed).length)return;
+  pendingRef.current={...pendingRef.current,...changed};
   if(timerRef.current)clearTimeout(timerRef.current);
   timerRef.current=setTimeout(flush,COMMIT_DELAY_MS);
  },[flush]);
@@ -87,7 +93,8 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
   if(pendingRef.current)return;
   if(sentRef.current&&sentRef.current!==savedKey)return;
   sentRef.current=null;
-  setSelection(JSON.parse(savedKey) as WardrobeEquipped);
+  const next=JSON.parse(savedKey) as WardrobeEquipped;
+  selectionRef.current=next;setSelection(next);
  },[savedKey]);
  useEffect(()=>{setCustomTitle(saved.title)},[saved.title]);
 

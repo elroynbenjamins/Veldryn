@@ -132,3 +132,25 @@ assert(badgeSource.includes('width:artSize,height:artSize,alignItems:'));
 assert(fx.includes("theme==='celestial'?RAIL_PATH:[...RAIL_PATH].reverse()"));
 assert(fx.includes('Animated.multiply(pulse(clock,offset),.55),Animated.multiply(energy,.45)'));
 console.log('Identity geometry, distinct pet reactions and synchronized rail energy passed.');
+
+const {CELESTIAL_ATLAS_LIFT,RAIL_GLOW_RADIUS,railGlowPoint,FRAME_ORNAMENTS}=mod.exports;
+assert.equal(CELESTIAL_ATLAS_LIFT.length,PET_IDLE_PHASE.length);
+assert.equal(CELESTIAL_ATLAS_LIFT[0],CELESTIAL_ATLAS_LIFT.at(-1));
+assert(CELESTIAL_ATLAS_LIFT.every(v=>v>=-1.5&&v<=0));
+assert.equal(Math.min(...CELESTIAL_ATLAS_LIFT),-1.5);
+for(let i=1;i<CELESTIAL_ATLAS_LIFT.length;i++)assert(Math.abs(CELESTIAL_ATLAS_LIFT[i]-CELESTIAL_ATLAS_LIFT[i-1])<.30);
+for(const point of RAIL_PATH){
+ const [x,y]=railGlowPoint(point),r=RAIL_GLOW_RADIUS;
+ assert(x-r>=0&&x+r<=340&&y-r>=0&&y+r<=205);
+}
+for(const theme of ['celestial','draconic']){
+ for(const [x,y] of FRAME_ORNAMENTS[theme])assert(x>=0&&x+12<=340&&y>=0&&y+12<=205);
+}
+assert.notDeepEqual(FRAME_ORNAMENTS.celestial,FRAME_ORNAMENTS.draconic);
+const celScene=read('components/profile/CelestialSovereignPreview.tsx'),dragonScene=read('components/profile/DraconicDominionPreview.tsx');
+assert(celScene.includes('CELESTIAL_ATLAS_LIFT.map')&&celScene.includes('translateY:bodyLift'));
+assert(dragonScene.indexOf('style={[box(B.ring),{opacity:ringGlow}]}')<dragonScene.indexOf('translateY:bodyLift'),'ground ring remains independent of moving dragon');
+assert(celScene.includes('hitSlop={{top:10*scale')&&dragonScene.includes('hitSlop={{top:5*k'));
+assert(fx.includes('path.map(railGlowPoint)')&&fx.includes('FRAME_ORNAMENTS[theme]'));
+assert(read('components/profile/UltraLuxePetPoseSprite.tsx').includes('memo(UltraLuxePetPoseSpriteLayer)'));
+console.log('Smooth atlas lift, grounded ring, frame glow bounds and stable sprite rendering passed.');

@@ -65,12 +65,12 @@ export function CelestialSovereignPreview({assets,equippedPetId,matchingPetId,al
  const box=(b:{x:number;y:number;width:number;height:number})=>pos(b.x,b.y,b.width,b.height);
  const pulse=useMemo(()=>signatureEnergy(clock),[clock]);
  const idle=useMemo(()=>petIdleMotion(clock,scale,petMode==='alternate'?'alternate':'celestial'),[clock,scale,petMode]);
- const matchingLift=clock.interpolate({inputRange:[0,1/12,1/6,1/4,1/3,5/12,.5,7/12,2/3,.75,5/6,11/12,1],outputRange:[0,-1.5*scale,0,-1.5*scale,0,-1.5*scale,0,-1.5*scale,0,-1.5*scale,0,-1.5*scale,0]});
+ const matchingLift=useMemo(()=>clock.interpolate({inputRange:[0,1/12,1/6,1/4,1/3,5/12,.5,7/12,2/3,.75,5/6,11/12,1],outputRange:[0,-1.5*scale,0,-1.5*scale,0,-1.5*scale,0,-1.5*scale,0,-1.5*scale,0,-1.5*scale,0]}),[clock,scale]);
  const orbit=useMemo(()=>clock.interpolate({inputRange:[0,.25,.5,.75,1],outputRange:['0deg','180deg','360deg','540deg','720deg']}),[clock]);
  return <View style={styles.outer} onLayout={e=>{const next=e.nativeEvent.layout.width;setWidth(old=>Math.abs(old-next)<.5?old:next);}}>
   {!supported?fallback:<View style={[styles.card,{height:CELESTIAL_STAGE.height*scale}]}>
    <View pointerEvents="none" accessible={false} importantForAccessibility="no-hide-descendants" style={StyleSheet.absoluteFill}>
-    <Image source={assets.background} resizeMode="cover" style={styles.fillImage}/>
+    <Image source={assets.background} fadeDuration={0} resizeMode="cover" style={styles.fillImage}/>
     {running?<UltraLuxeEnvironment clock={clock} scale={scale} theme="celestial" particle={assets.star}/>:null}
     <Image source={assets.orrery} resizeMode="contain" style={pos(119,26,102,48)}/>
     <Animated.View style={[pos(129,24,82,55),{transform:[{rotate:orbit}]}]}>
@@ -80,7 +80,7 @@ export function CelestialSovereignPreview({assets,equippedPetId,matchingPetId,al
     <Animated.Image source={assets.corona} resizeMode="contain" style={[pos(130,26,80,48),{opacity:pulse}]}/>
     {petMode==='matching'?<>
      <Animated.View style={[StyleSheet.absoluteFill,{transform:[{translateY:assets.smoothPoseAtlas?matchingLift:idle.lift}]}]}>
-      {running&&assets.smoothPoseAtlas?<Animated.View style={box(CELESTIAL_PET_BOX.matching)}><UltraLuxePetPoseSprite source={assets.smoothPoseAtlas} clock={clock} theme="celestial" width={CELESTIAL_PET_BOX.matching.width*scale} height={CELESTIAL_PET_BOX.matching.height*scale}/></Animated.View>:<Animated.Image source={assets.petShowcase} resizeMode="contain" style={[box(CELESTIAL_PET_BOX.matching),{transform:[{rotate:idle.tilt},{scaleX:idle.scaleX},{scaleY:idle.scaleY}]}]}/>}
+      {running&&assets.smoothPoseAtlas?<Animated.View style={box(CELESTIAL_PET_BOX.matching)}><UltraLuxePetPoseSprite source={assets.smoothPoseAtlas} clock={clock} theme="celestial" width={CELESTIAL_PET_BOX.matching.width*scale} height={CELESTIAL_PET_BOX.matching.height*scale}/></Animated.View>:<Animated.Image source={assets.petShowcase} fadeDuration={0} resizeMode="contain" style={[box(CELESTIAL_PET_BOX.matching),{transform:[{rotate:idle.tilt},{scaleX:idle.scaleX},{scaleY:idle.scaleY}]}]}/>}
       {running?<UltraLuxePetAura clock={clock} scale={scale} theme="celestial" particle={assets.star}/>:null}
       {reactionEnabled?<UltraLuxePetReaction reaction={reaction} scale={scale} theme="celestial" particle={assets.star} glow={assets.corona}/>:null}
       <Animated.Image source={assets.star} resizeMode="contain" style={[pos(258,80,16,16),{opacity:Animated.add(idle.glow,Animated.multiply(pulse,.35))}]}/>
@@ -99,7 +99,7 @@ export function CelestialSovereignPreview({assets,equippedPetId,matchingPetId,al
    </UltraLuxeIdentityMotionProvider>
    {guild!=null?<View style={[box(CELESTIAL_IDENTITY_BOX.guild),styles.guildPlate]}>{guild}</View>:null}
    <View pointerEvents="none" accessible={false} importantForAccessibility="no-hide-descendants" style={StyleSheet.absoluteFill}>
-    <Image source={assets.border} resizeMode="stretch" style={styles.fillImage}/>
+    <Image source={assets.border} fadeDuration={0} resizeMode="stretch" style={styles.fillImage}/>
     {running?<UltraLuxeRail clock={clock} scale={scale} theme="celestial" particle={assets.star}/>:null}
     {running&&fullSet?<UltraLuxeAscendantFlourish clock={clock} scale={scale} theme="celestial" particle={assets.star}/>:null}
    </View>

@@ -3,7 +3,7 @@ import {random01} from './rng';
 import type {GameState,LiveEventRuntime,RewardBundle} from './types';
 import {unlockCombatCompanion} from './combat-companions';
 import {awardCompanionCandyXp} from './companion-runtime';
-import {eventCurrencyPromotionBps} from '../content/event-currency-promotion';
+import {eventCurrencyBaseBps,eventCurrencyPromotionBps} from '../content/event-currency-promotion';
 import {selectedFaithBlessing} from './faith';
 import {EVENT_COMMUNITY_ENABLED} from './release-flags';
 import {equipmentShopTierUnlocked,equipmentShopTierLockReason,grantMainEquipmentShopResource} from './equipment-shop-tier-unlock';
@@ -22,7 +22,11 @@ export function eventCurrencyBonusBps(state:GameState,eventId:string,earnedAtMs=
  const runtime=state.account.liveEvent;
  return runtime?.enabled&&runtime.eventId===eventId&&earnedAtMs>=runtime.startsAtMs&&earnedAtMs<runtime.endsAtMs?eventCurrencyPromotionBps(eventId,earnedAtMs):0;
 }
-function promotedCommonReward(state:GameState,eventId:string,quantity:number,earnedAtMs:number){return Math.floor(quantity*(10000+eventCurrencyBonusBps(state,eventId,earnedAtMs))/10000);}
+function promotedCommonReward(state:GameState,eventId:string,quantity:number,earnedAtMs:number){
+ const runtime=state.account.liveEvent;
+ const bps=runtime?.enabled&&runtime.eventId===eventId&&earnedAtMs>=runtime.startsAtMs&&earnedAtMs<runtime.endsAtMs?eventCurrencyBaseBps(eventId,earnedAtMs):0;
+ return Math.floor(quantity*(10000+bps)/10000);
+}
 export const EVENT_COMMUNITY_MIN_CONTRIBUTION=100;
 /** Prestige is reserved for optional/high-difficulty event work. */
 export function eventPrestigeReward(source:EventActivitySource,reward:number){return source==='boss'?Math.max(0,Math.floor(reward)):0;}

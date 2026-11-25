@@ -26,12 +26,15 @@ assert.equal(Object.keys(russianCompanionCombatNames).length,40,'Both new Frostf
 // New Frostfall combat descriptions have real player-facing copy in each
 // supported language rather than silently showing the English fallback.
 const frostfallDescriptions=[
- 'A focused claw strike briefly exposes its target to allied attacks.',
- 'Aurora Pursuit: a small increase to combat tempo.',
- 'Bond 10 improves Rimeshard Mark damage without guaranteeing a debuff.',
- 'Shields the owner and reflects a measured share of absorbed hits.',
- 'Woolen Bulwark: improves damage resistance.',
- 'Bond 10 improves Hearthguard Aegis shield strength.',
+ "Heals the lowest-HP ally below 80% HP and reduces damage taken by 2.5% for 4s.",
+ "Winter Cadence: 12% shorter base cooldown; +1% companion haste in standalone combat.",
+ "Grand Bell: +4% Frostbell Cycle healing.",
+ "Claw strike; the target takes 2.5% more damage for 5s.",
+ "Aurora Pursuit: +1% companion haste in standalone combat.",
+ "Shattering Trail: +3% Rimeshard Mark damage.",
+ "Shields the owner (self in standalone combat) and reflects 10% of absorbed damage.",
+ "Woolen Bulwark: +1% companion defense in standalone combat.",
+ "Hearthbound Vow: +4% shield strength and +5 percentage points of absorbed-damage reflection.",
 ];
 for(const key of frostfallDescriptions){
  assert.equal(companionContent('en',key),key,'English source copy must remain canonical');

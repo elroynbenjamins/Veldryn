@@ -41,29 +41,35 @@ export function useSocialNotificationCounts(){
     request.refreshAgain=false;
     try{
       const [incoming,invites,chat,mine]=await Promise.all([
-        incomingFriendRequestCount(),
+        incomingFriendRequestCount().catch(()=>undefined),
         socialInvitations().catch(()=>null),
         socialChatAttention().catch(()=>null),
-        myGuild().catch(()=>null),
+        myGuild().catch(()=>undefined),
       ]);
-      const guildProjectRewards=mine?await claimableOnlineGuildProjectRewardCount(mine).catch(()=>0):0;
-      let guildApplicationsCount=0,guildInvites=0,partyInvites=0;
+      // Do not start dependent reads after the owning account has changed.
+      if(inFlight.current!==request||activeAccount.current!==accountId)return;
+      // These independent guild reads used to be serialized. Unknown results
+      // retain the last confirmed badge, while confirmed non-membership clears it.
+      const [guildProjectRewards,guildApplicationsCount]=await Promise.all([
+        mine?claimableOnlineGuildProjectRewardCount(mine).catch(()=>undefined):mine===null?0:undefined,
+        mine&&(mine.role==='leader'||mine.role==='officer')?guildApplications(mine.guild_id).then(rows=>rows.length).catch(()=>undefined):mine===undefined?undefined:0,
+      ]);
+      let guildInvites:number|undefined,partyInvites:number|undefined;
       let chatAttention:{guildUnread:number;guildMentions:number;guildFirstUnreadMessageId?:string;partyUnread:number;partyMentions:number;partyFirstUnreadMessageId?:string}|null=null;
       if(invites){guildInvites=invites.guild.length;partyInvites=invites.party.length;}
       if(chat)chatAttention={guildUnread:Number(chat.guild?.unread??0),guildMentions:Number(chat.guild?.mentions??0),guildFirstUnreadMessageId:chat.guild?.firstUnreadMessageId??undefined,partyUnread:Number(chat.party?.unread??0),partyMentions:Number(chat.party?.mentions??0),partyFirstUnreadMessageId:chat.party?.firstUnreadMessageId??undefined};
-      try{
-        if(mine&&(mine.role==='leader'||mine.role==='officer'))guildApplicationsCount=(await guildApplications(mine.guild_id)).length;
-      }catch{/* Guild application attention must not suppress other social counts. */}
       if(inFlight.current!==request||activeAccount.current!==accountId)return;
       countsAccount.current=accountId;
       setCounts(current=>{
-        const guild=guildApplicationsCount+guildInvites,party=partyInvites;
+        const applications=guildApplicationsCount??current.guildApplications;
+        const guildInviteCount=guildInvites??current.guildInvites,partyInviteCount=partyInvites??current.partyInvites;
+        const guild=applications+guildInviteCount,party=partyInviteCount;
         const guildChatUnread=chatAttention?.guildUnread??current.guildChatUnread,guildChatMentions=chatAttention?.guildMentions??current.guildChatMentions;
         const guildFirstUnreadMessageId=chatAttention?chatAttention.guildFirstUnreadMessageId:current.guildFirstUnreadMessageId;
         const partyChatUnread=chatAttention?.partyUnread??current.partyChatUnread,partyChatMentions=chatAttention?.partyMentions??current.partyChatMentions;
         const partyFirstUnreadMessageId=chatAttention?chatAttention.partyFirstUnreadMessageId:current.partyFirstUnreadMessageId;
         const chatUnread=guildChatUnread+partyChatUnread,chatMentions=guildChatMentions+partyChatMentions;
-        const next={...current,friendRequests:incoming,chatUnread,chatMentions,guildChatUnread,guildChatMentions,guildFirstUnreadMessageId,partyChatUnread,partyChatMentions,partyFirstUnreadMessageId,guild,guildApplications:guildApplicationsCount,guildInvites,guildProjectRewards,party,partyInvites};
+        const next={...current,friendRequests:incoming??current.friendRequests,chatUnread,chatMentions,guildChatUnread,guildChatMentions,guildFirstUnreadMessageId,partyChatUnread,partyChatMentions,partyFirstUnreadMessageId,guild,guildApplications:applications,guildInvites:guildInviteCount,guildProjectRewards:guildProjectRewards??current.guildProjectRewards,party,partyInvites:partyInviteCount};
         return {...next,account:next.friendRequests+next.chatUnread+next.guild+next.guildProjectRewards+next.party+next.events};
       });
     }catch{

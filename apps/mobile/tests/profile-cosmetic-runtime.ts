@@ -94,3 +94,36 @@ ok(motionSource.includes('if(!pieces.length)return []')&&motionSource.includes('
 const selfSource=fs.readFileSync('src/components/ProfileScenePreview.tsx','utf8');
 ok(publicSource.includes('runtimeFallbackBorderId??(review?reviewBorderId:renderBorderId)')&&selfSource.includes('borderRuntime?.fallbackBorderId??renderBorderId')&&stageSource.includes('borderRuntime?.fallbackBorderId??character.profileBorderId'),'fallback artwork uses its actual aperture calibration in all three scene renderers');
 console.log('PASS: cosmetic re-entry, memo boundaries, clipped compositing and fallback aperture contract');
+
+
+ // Standard animation visibility budget: no new moving nodes, bigger bounded sprites,
+ // stronger sustained glows and unchanged loop/viewport behavior.
+const oldPulsePowers={gloamward:4,frostbound:6,amberglass:2,briarbound:1} as const;
+for(const row of standard){
+ const oldPower=oldPulsePowers[row.motionProfile as keyof typeof oldPulsePowers];
+ equal(row.tracks.length,5,row.collection+' preserves particle count');
+ equal(row.glows.length,8,row.collection+' preserves border light count');
+ ok(row.tracks.every(t=>t.opacity>=.35&&t.opacity<=.78&&t.maxDp<=18),row.collection+' keeps authored particle opacity and size bounded');
+ for(const g of row.glows){
+  equal(g.peakOpacity,.86,row.collection+' has brighter border accents');
+  let before=0,after=0;
+  for(let i=0;i<=120;i++){
+   const clock=i/120;
+   const phase=periodicCosmeticPhase(clock,12000/g.periodMs,g.phaseMs/g.periodMs);
+   before+=.72*(Math.sin(Math.PI*phase)**2)**oldPower;
+   const value=cosmeticGlowOpacity(row.motionProfile,clock,g.periodMs,g.phaseMs,g.peakOpacity);
+   ok(value>=0&&value<=g.peakOpacity,row.collection+' glow remains bounded');
+   after+=value;
+  }
+  ok(after>before*1.15,row.collection+' increases average glow visibility');
+ }
+ for(const t of row.tracks){
+  for(const [w,h] of [[104,72],[260,174],[340,205],[480,270]]){
+   for(let i=0;i<=120;i++){
+    const p=sampleCosmeticTrack(t,i/120,w,h);
+    ok(p.x>=-1e-6&&p.y>=-1e-6&&p.x+p.width<=w+1e-6&&p.y+p.height<=h+1e-6,row.collection+' larger particles stay inside scene');
+   }
+  }
+ }
+}
+console.log('PASS: standard cosmetic visibility improves without adding animation nodes or exceeding scene bounds');

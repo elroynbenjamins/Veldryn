@@ -1,4 +1,4 @@
-import {identityFieldExpired,mergeSocialWithCachedIcon,PLAYER_ICON_REFRESH_MS,PLAYER_SOCIAL_REFRESH_MS} from '../src/core/player-identity-cache-policy';
+import {acceptIdentityIconResponse,identityFieldExpired,mergeSocialWithCachedIcon,PLAYER_ICON_REFRESH_MS,PLAYER_SOCIAL_REFRESH_MS} from '../src/core/player-identity-cache-policy';
 function ok(value:unknown,message:string){if(!value)throw new Error(message);}
 const now=1_800_000_000_000;
 ok(!identityFieldExpired(now-PLAYER_ICON_REFRESH_MS+1,PLAYER_ICON_REFRESH_MS,now),'unchanged icon remains fresh for 24h');
@@ -14,3 +14,8 @@ ok(combined.profile_icon_id==='icon_17'&&combined.class_id==='IRONWARDEN','light
 ok(combined.guild_tag==='NEW','guild metadata must update');
 ok(mergeSocialWithCachedIcon(icon,social,true).profile_icon_id===null,'full appearance lookup may clear removed icon');
 console.log('PASS profile icon 24h cache, social 5m TTL, invalidation, clock rollback and safe metadata merge');
+
+ok(!acceptIdentityIconResponse(true,true,1,2),'pre-save response cannot overwrite newly confirmed own icon');
+ok(acceptIdentityIconResponse(true,true,2,2),'fresh own icon query is accepted');
+ok(acceptIdentityIconResponse(true,false,1,2),'own icon change does not invalidate unrelated account responses');
+ok(!acceptIdentityIconResponse(false,false,2,2),'lightweight fallback never overwrites icon');

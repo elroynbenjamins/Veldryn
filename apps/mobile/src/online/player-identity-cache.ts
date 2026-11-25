@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {identityFieldExpired,mergeSocialWithCachedIcon,PLAYER_ICON_REFRESH_MS,PLAYER_SOCIAL_REFRESH_MS} from '../core/player-identity-cache-policy';
+import {acceptIdentityIconResponse,identityFieldExpired,mergeSocialWithCachedIcon,PLAYER_ICON_REFRESH_MS,PLAYER_SOCIAL_REFRESH_MS} from '../core/player-identity-cache-policy';
 import type {PlayerBadgeIdentity} from '../core/player-badges';
 import type {PlayerNameStylePreference} from '../core/player-name-style';
 
@@ -75,7 +75,7 @@ export function playerIdentityDetailsNeedRefresh(id:string,now=Date.now()){
 export function storePlayerIdentities(rows:ReadonlyMap<string,CachedPlayerIdentity>,now=Date.now(),includesIcon=true,queryIconWriteVersion=ownIconWriteVersion){
  for(const [id,value] of rows){
   const old=entries.get(id);
-  const acceptIcon=includesIcon&&!(id===currentViewer&&old&&queryIconWriteVersion!==ownIconWriteVersion);
+  const acceptIcon=acceptIdentityIconResponse(includesIcon,id===currentViewer&&!!old,queryIconWriteVersion,ownIconWriteVersion);
   const merged=mergeSocialWithCachedIcon(old?.value,value,acceptIcon);
   entries.delete(id);entries.set(id,{value:merged,iconFetchedAt:acceptIcon?now:old?.iconFetchedAt??0,detailsFetchedAt:now});
  }

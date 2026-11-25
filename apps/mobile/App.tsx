@@ -101,6 +101,7 @@ import {itemDef} from './src/content/items';
 import {WORLD_ZONES} from './src/content/world-map';
 import {GameTopBar} from './src/components/GameTopBar';
 import {ChatOverlay} from './src/components/ChatOverlay';
+import {ActiveProfileCharacterContext} from './src/components/ActiveProfileCharacterContext';
 import type {QuickNavDestination} from './src/core/quick-navigation';
 import {CombatScreen} from './src/screens/CombatScreen';
 import type {SkillId} from './src/core/types';
@@ -279,6 +280,8 @@ function VeldrynApp(){
   const [tutorialDismissedId,setTutorialDismissedId]=useState<FirstSessionTutorialId|undefined>();
   const [mainScreenTourIndex,setMainScreenTourIndex]=useState<number|undefined>();
   const stateRef=useRef<GameState|null>(null);
+  const activeProfileCharacterId=state?.character?.id;
+  const activeProfileCharacter=useMemo(()=>({id:activeProfileCharacterId,stateRef}),[activeProfileCharacterId]);
   const previousInventoryTab=useRef<Tab>(tab);
   const inventorySeenAfterExit=useRef<string|null>(null);
   useEffect(()=>{
@@ -1091,7 +1094,7 @@ const next=normalizeProfileIcon(migrateGemPouch(migrateRetiredStoryRewards(expli
   };
   const renderedApp=renderApp();
   return <GameLanguageProvider language={state?.settings.language??recoveryLanguage}><View style={s.appRoot}>
-    <Animated.View style={[s.appRoot,{opacity:appEntranceOpacity,transform:[{translateY:appEntranceY}]}]}>{renderedApp}</Animated.View>
+    <Animated.View style={[s.appRoot,{opacity:appEntranceOpacity,transform:[{translateY:appEntranceY}]}]}><ActiveProfileCharacterContext.Provider value={activeProfileCharacter}>{renderedApp}</ActiveProfileCharacterContext.Provider></Animated.View>
     {(startupOverlayVisible||startupBlocking)&&<Animated.View pointerEvents={startupBlocking?'auto':'none'} style={[s.startupOverlay,{opacity:startupBlocking?1:startupOpacity}]}>
       <StartupScreen scene={startupScene} language={state?.settings.language??recoveryLanguage} themeId={displayedThemeId}/>
     </Animated.View>}

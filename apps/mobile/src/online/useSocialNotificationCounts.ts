@@ -1,6 +1,6 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {AppState} from 'react-native';
-import {friendRequests,guildApplications,myGuild,socialChatAttention,socialInvitations} from './social';
+import {incomingFriendRequestCount,guildApplications,myGuild,socialChatAttention,socialInvitations} from './social';
 import {useAuthSession} from './AuthSessionProvider';
 import {claimableOnlineGuildProjectRewardCount} from './guild-projects-v18';
 
@@ -40,14 +40,13 @@ export function useSocialNotificationCounts(){
     do{
     request.refreshAgain=false;
     try{
-      const [requests,invites,chat,mine]=await Promise.all([
-        friendRequests(),
+      const [incoming,invites,chat,mine]=await Promise.all([
+        incomingFriendRequestCount(),
         socialInvitations().catch(()=>null),
         socialChatAttention().catch(()=>null),
         myGuild().catch(()=>null),
       ]);
       const guildProjectRewards=mine?await claimableOnlineGuildProjectRewardCount(mine).catch(()=>0):0;
-      const incoming=requests.filter(request=>request.direction==='incoming').length;
       let guildApplicationsCount=0,guildInvites=0,partyInvites=0;
       let chatAttention:{guildUnread:number;guildMentions:number;guildFirstUnreadMessageId?:string;partyUnread:number;partyMentions:number;partyFirstUnreadMessageId?:string}|null=null;
       if(invites){guildInvites=invites.guild.length;partyInvites=invites.party.length;}
@@ -77,11 +76,20 @@ export function useSocialNotificationCounts(){
     request.promise=promise;return promise;
   },[accountId]);
   useEffect(()=>{
-    inFlight.current=null;countsAccount.current=accountId;setCounts(ZERO);void refresh(false);
-    let previous=AppState.currentState;
-    const id=setInterval(()=>{if(AppState.currentState==='active')void refresh(false);},30000);
-    const sub=AppState.addEventListener('change',status=>{const resumed=previous!=='active'&&status==='active';previous=status;if(resumed)void refresh();});
-    return()=>{inFlight.current=null;clearInterval(id);sub.remove();};
+    inFlight.current=null;countsAccount.current=accountId;setCounts(ZERO);
+    let previous=AppState.currentState,stopped=false,generation=0;
+    let timer:ReturnType<typeof setTimeout>|undefined;
+    const clearTimer=()=>{if(timer!==undefined){clearTimeout(timer);timer=undefined;}};
+    const active=()=>AppState.currentState==='active'||AppState.currentState===null;
+    const poll=async(force=false)=>{
+      clearTimer();const current=++generation;
+      if(stopped||!accountId||!active())return;
+      await refresh(force);
+      if(!stopped&&current===generation&&active())timer=setTimeout(()=>void poll(),30000);
+    };
+    void poll();
+    const sub=AppState.addEventListener('change',status=>{const resumed=previous!=='active'&&status==='active';previous=status;if(status!=='active'){generation++;clearTimer();}else if(resumed)void poll(true);});
+    return()=>{stopped=true;generation++;inFlight.current=null;clearTimer();sub.remove();};
   },[accountId,refresh]);
   return {counts:countsAccount.current===accountId?counts:ZERO,refresh};
 }

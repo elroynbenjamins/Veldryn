@@ -64,7 +64,7 @@ export function ProfileStage({state,collapsed,onToggle,onAudiencePreview,trailin
   <View style={[s.stripArt,!!frame&&s.stripArtFramed]}><ProfileBorderBackdrop borderId={borderArt||directFrame?character.profileBorderId:(borderRuntime?.fallbackBorderId??character.profileBorderId)} source={frame} existingInset={5}>{art}<View style={s.stripScrim}/>{effectArt?<ProfileSceneEffect art={effectArt} active={false} reduceMotion/>:effectRuntime?<ProceduralProfileSceneEffect runtime={effectRuntime} active={false} reduceMotion/>:null}</ProfileBorderBackdrop></View>
   <ProfileIcon id={character.profileIconId} classId={character.classId} size={38} style={[s.stripIcon,!!frame&&s.stripIconFramed]}/>
   <View style={s.stripCopy}>
-   <PlayerStyledName name={character.name} nameStyle={privateName??effectivePlayerNameStyle(state)} reduceMotion={state.settings.reduceMotion} numberOfLines={1} style={s.stripName}/>
+   <PlayerStyledName name={character.name} nameStyle={privateName??effectivePlayerNameStyle(state)} reduceMotion numberOfLines={1} style={s.stripName}/>
    <Text numberOfLines={1} style={[s.stripMeta,ownedUltraLuxeTitleColor(state,title,C.dark)?{color:ownedUltraLuxeTitleColor(state,title,C.dark)}:undefined]}>{title}</Text>
   </View>
   <View style={s.chip}><Text style={s.chipText}>{profileT(language,"Expand")} ▾</Text></View>
@@ -90,7 +90,7 @@ export function ProfileStage({state,collapsed,onToggle,onAudiencePreview,trailin
     <ProfileIcon id={character.profileIconId} classId={character.classId} size={62} style={s.avatar}/>
     <View style={s.copy}>
      <View style={s.nameRow}>
-      <PlayerStyledName name={character.name} nameStyle={privateName??effectivePlayerNameStyle(state)} reduceMotion={state.settings.reduceMotion} numberOfLines={1} style={s.name}/>
+      <PlayerStyledName name={character.name} nameStyle={privateName??effectivePlayerNameStyle(state)} reduceMotion={!active||state.settings.reduceMotion} numberOfLines={1} style={s.name}/>
       <PlayerBadges identity={badges.identity}/>
      </View>
      <Text numberOfLines={1} style={[s.title,ownedUltraLuxeTitleColor(state,title,C.dark)?{color:ownedUltraLuxeTitleColor(state,title,C.dark)}:undefined]}>{title}</Text>

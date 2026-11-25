@@ -10,6 +10,7 @@ const scene:CelestialPreviewAssets={
  background,
  border:require('../../assets/ascendant/celestial/celestial_border.webp'),
  petShowcase:require('../../assets/ascendant/celestial/celestial_pet_showcase.webp'),
+ smoothPoseAtlas:require('../../assets/ascendant/celestial/aetherion_smooth_pose_atlas.webp'),
  orrery:require('../../assets/ascendant/celestial/celestial_orrery.webp'),
  star:require('../../assets/ascendant/celestial/celestial_star.webp'),
  corona:require('../../assets/ascendant/celestial/celestial_corona.webp'),

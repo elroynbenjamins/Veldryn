@@ -93,7 +93,7 @@ function RunningActivityBar({state,nowMs,onOpen,compact=false}:ActiveActivityBar
  const cycleProgressSeconds=bankedProgressSeconds+cycleElapsedSeconds;
  const faithRemaining=faithPractice?.remaining??activity.faithPractice?.remainingPractices??0;
  const faithFinishing=activity.kind==='faith'&&faithRemaining>0&&cycleProgressSeconds>=cycleSeconds*faithRemaining;
- const completedCycles=Math.floor(cycleProgressSeconds/cycleSeconds),progressPct=faithFinishing?100:Math.round((cycleProgressSeconds%cycleSeconds)/cycleSeconds*100),progress=`${progressPct}%` as `${number}%`;
+ const progressPct=faithFinishing?100:Math.round((cycleProgressSeconds%cycleSeconds)/cycleSeconds*100),progress=`${progressPct}%` as `${number}%`;
  const progressKind=activity.kind==='alchemy'||activity.kind==='processing'?'crafting':activity.kind==='faith'?'faith':activity.kind==='training'?'training':activity.kind==='exploration'?'exploration':'gathering',phase=activityProgressFeedback(progressKind,progressPct/100),cycleRemaining=Math.max(1,Math.ceil(cycleSeconds-(cycleProgressSeconds%cycleSeconds)));
  const cycleCopy=faithFinishing?gl(phase).replace('…','').toLocaleUpperCase(language):`${gl(phase).replace('…','').toLocaleUpperCase(language)} · ${cycleRemaining}s`;
  if(compact)return <Pressable accessibilityRole="button" accessibilityLabel={gt('{kind} {name}, active for {duration}',{kind:gl(labels[activity.kind]),name,duration:elapsed(activity.startedAtMs,displayNowMs)})} accessibilityHint={gt("Opens the active activity")} onPress={onOpen} style={({pressed})=>[s.compactRoot,pressed&&s.pressed]}>

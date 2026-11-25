@@ -53,7 +53,12 @@ assert.ok(bar.includes('useLiveHuntProjection(props.state,'));
 assert.ok(hunt.includes('useLiveHuntProjection(state,active)'));
 assert.ok(shared.includes('new WeakMap<GameState'));
 assert.ok(shared.includes('activeCombatHitProjection(state,clock,snapshot.fight?.cursor)'));
-assert.ok(shared.includes('clearInterval(timer)'));
+// Timer ownership now belongs to the shared foreground lifecycle helper.
+const foreground=read('../online/foreground-tasks.ts');
+assert.ok(shared.includes('runWhileForeground(tick,750)'));
+assert.ok(shared.includes('if(!listeners.size&&stopForegroundTicks){stopForegroundTicks();stopForegroundTicks=undefined;}'));
+assert.ok(foreground.includes('clearInterval(timer)')&&foreground.includes("if(status==='active')start();else stop();"));
+
 assert.ok(combatBar.includes('fight.enemyHp/Math.max(1,fight.enemyMaxHp)'));
 assert.ok(combatBar.includes('fight&&!fight.searching?'));
 assert.ok(combatBar.includes('projectedKills??combatKills'));

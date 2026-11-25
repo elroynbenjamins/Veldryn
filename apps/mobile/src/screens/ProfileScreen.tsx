@@ -95,7 +95,7 @@ export function ProfileScreen({state,onNavigate}:{state:GameState;onNavigate?:(d
    <View style={s.customizeAction}><GameButton compact title={profileT(language,"Customize")} onPress={()=>onNavigate?.('Customize')}/></View>
   </View>
 
-  {publicSelf?<><PublicProfileScene profile={publicSelf} showGuild={false}/>{ACCOUNT_SOCIAL_IDENTITY_RELEASED?<ProfileCharacterSelector choices={publicSelf.characterChoices} selectedId={publicSelf.character.id} onSelect={id=>void selectPublicHero(id)} disabled={loadingPublic}/>:null}</>:<ProfileScenePreview state={state} backgroundId={background}/>}
+  {publicSelf?<><PublicProfileScene profile={publicSelf} showGuild={false} active/>{ACCOUNT_SOCIAL_IDENTITY_RELEASED?<ProfileCharacterSelector choices={publicSelf.characterChoices} selectedId={publicSelf.character.id} onSelect={id=>void selectPublicHero(id)} disabled={loadingPublic}/>:null}</>:<ProfileScenePreview state={state} backgroundId={background} active/>}
   {publicError?<View accessibilityRole="alert" style={s.syncCard}><View style={s.flex}><Text style={s.syncTitle}>{profileT(language,"Online profile could not refresh")}</Text><Text style={s.syncText}>{profileT(language,"Your local identity is still shown safely. Retry to refresh privacy and showcase selections.")}</Text></View><View style={s.syncButton}><GameButton compact title={profileT(language,"Retry")} tone="secondary" onPress={()=>refreshPublic()}/></View></View>:null}
 
   <Panel>

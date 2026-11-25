@@ -58,7 +58,7 @@ const testerFrames=profileWardrobe(testerOwned,assets).find(row=>row.kind==='fra
 equal(testerFrames.total,assets.frames.length,'owned tester frames are visible, excluding the clear choice');
 ok(testerFrames.rows.filter(row=>row.id.startsWith('cosmetic:')).every(row=>row.unlocked),'tester frames remain independently ownership gated');
 const effects=categories.find(row=>row.kind==='effect')!;
-equal(effects.total,assets.effects.length,'the clear choice is excluded from the effect total');
+equal(effects.total,assets.effects?.length??0,'the clear choice is excluded from the effect total');
 ok(effects.rows.find(row=>row.clear)?.equipped,'no-effect is the equipped default');
 ok(effects.rows.filter(row=>!row.clear).every(row=>!row.unlocked),'effects start locked until account ownership is granted');
 const progress=wardrobeProgress(categories);

@@ -90,10 +90,11 @@ function UltraLuxeRailLayer({clock,scale:k,theme,particle}:Common){
  const energy=awakeningEnergy(clock,theme);
  return <Decorative>
   {[0,4].map(offset=>{
-   const path=shiftClosed(RAIL_PATH,offset);
+   const path=shiftClosed(theme==='celestial'?RAIL_PATH:[...RAIL_PATH].reverse(),offset);
+   const railLight=Animated.add(Animated.multiply(pulse(clock,offset),.55),Animated.multiply(energy,.45));
    const x=clock.interpolate({inputRange:[...LOOP_PHASE],outputRange:path.map(p=>p[0]*k)});
    const y=clock.interpolate({inputRange:[...LOOP_PHASE],outputRange:path.map(p=>p[1]*k)});
-   return <View key={offset} style={StyleSheet.absoluteFill}><Animated.Image source={GLOW} resizeMode="stretch" style={[pos(k,-15,-15,30,30),{tintColor:light(theme),opacity:Animated.multiply(pulse(clock,offset),.85),transform:[{translateX:x},{translateY:y}]}]}/><Animated.Image source={particle} resizeMode="contain" style={[pos(k,-6,-6,12,12),{opacity:pulse(clock,offset),transform:[{translateX:x},{translateY:y}]}]}/></View>;
+   return <View key={offset} style={StyleSheet.absoluteFill}><Animated.Image source={GLOW} resizeMode="stretch" style={[pos(k,-17,-17,34,34),{tintColor:light(theme),opacity:railLight,transform:[{translateX:x},{translateY:y}]}]}/><Animated.Image source={particle} resizeMode="contain" style={[pos(k,-6,-6,12,12),{opacity:railLight,transform:[{translateX:x},{translateY:y}]}]}/></View>;
   })}
   <Animated.Image source={GLOW} resizeMode="stretch" style={[pos(k,147,2,46,25),{tintColor:light(theme),opacity:Animated.multiply(energy,.95),transform:[{scale:clock.interpolate({inputRange:[...SIGNATURE_PHASE],outputRange:[.8,.8,1,1.35,1,.8]})}]}]}/>
   {[[10,90],[320,90],[165,184]].map(([x,y],i)=><Animated.Image key={i} source={particle} resizeMode="contain" style={[pos(k,x,y,12,12),{opacity:Animated.multiply(energy,.75)}]}/>)}
@@ -120,7 +121,7 @@ function UltraLuxeAscendantFlourishLayer({clock,scale:k,theme,particle}:Common){
  const spread=clock.interpolate({inputRange:[...SIGNATURE_PHASE],outputRange:[0,0,3*k,11*k,6*k,0]});
  return <Decorative>
   {[[136,13],[203,13],[30,181],[309,181]].map(([x,y],i)=><Animated.Image key={i} source={particle} resizeMode="contain" style={[pos(k,x,y,9,9),{opacity:energy,transform:[{translateX:Animated.multiply(spread,i%2?1:-1)},{translateY:Animated.multiply(spread,i<2?.35:-.35)}]}]}/>)}
-  <Animated.Image source={GLOW} resizeMode="stretch" style={[pos(k,133,0,74,32),{tintColor:light(theme),opacity:Animated.multiply(energy,.7)}]}/>
+  <Animated.Image source={GLOW} resizeMode="stretch" style={[pos(k,133,0,74,32),{tintColor:light(theme),opacity:Animated.multiply(energy,.9)}]}/>
  </Decorative>;
 }
 

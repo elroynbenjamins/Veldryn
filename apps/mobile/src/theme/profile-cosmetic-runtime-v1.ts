@@ -21,7 +21,7 @@ export const PROFILE_COSMETIC_RUNTIME:readonly ProfileCosmeticRuntime[]=[
    T('firefly',[[.63,.76],[.73,.64],[.78,.47],[.86,.35]],81,.022,10,.442,0,1.1),
   ]},
  {borderId:'cosmetic:frostbound:chime-frame',fallbackBorderId:'dungeon:frostmarch:frostbound-chime',effectId:'effect_frostbound_winter_veil',collection:'Frostbound Chime',effectName:'Winter Veil',motionProfile:'frostbound',accent:'#D8F3FF',softAccent:'#73BEE6',effectPeriodMs:12600,
-  glows:[G(0.105,0.085,8,3000,0,.86),G(0.25,0.205,7,2600,550,.86),G(0.5,0.075,8,3200,1000,.86),G(0.75,0.205,7,2700,1600,.86),G(0.895,0.085,9,3500,2200,.86),G(0.875,0.75,8,2800,2800,.86),G(0.5,0.86,9,3300,3500,.86),G(0.125,0.75,8,3000,4200,.86)],
+  glows:[G(0.075,0.11,8,3000,0,.86),G(0.25,0.1,7,2600,550,.86),G(0.5,0.08,8,3200,1000,.86),G(0.75,0.1,7,2700,1600,.86),G(0.925,0.11,9,3500,2200,.86),G(0.925,0.86,8,2800,2800,.86),G(0.5,0.9,9,3300,3500,.86),G(0.075,0.86,8,3000,4200,.86)],
   tracks:[
    T('snowflake',[[.13,-.06],[.18,.30],[.15,.68],[.20,1.05]],7,.039,17,.715,190,1),
    T('snowflake',[[.36,-.10],[.42,.28],[.38,.66],[.44,1.04]],28,.0293,13,.572,-230,1.15),
@@ -30,7 +30,7 @@ export const PROFILE_COSMETIC_RUNTIME:readonly ProfileCosmeticRuntime[]=[
    T('snowflake',[[.72,.02],[.80,.19],[.88,.36],[.93,.58]],88,.022,10,.39,150,.8),
   ]},
  {borderId:'cosmetic:amberglass:loop-frame',fallbackBorderId:'dungeon:sunscar:amberglass-loop',effectId:'effect_amberglass_ember_motes',collection:'Amberglass Loop',effectName:'Ember Motes',motionProfile:'amberglass',accent:'#FFD58A',softAccent:'#D47A27',effectPeriodMs:10800,
-  glows:[G(0.05,0.16,8,3000,0,.86),G(0.045,0.51,9,2600,500,.86),G(0.22,0.91,8,3300,1100,.86),G(0.5,0.91,9,2800,1700,.86),G(0.78,0.91,8,3500,2300,.86),G(0.955,0.51,9,3000,2900,.86),G(0.95,0.16,8,2700,3500,.86),G(0.5,0.1,7,3200,4100,.86)],
+  glows:[G(0.09,0.13,8,3000,0,.86),G(0.04,0.51,9,2600,500,.86),G(0.09,0.87,8,3300,1100,.86),G(0.5,0.9,9,2800,1700,.86),G(0.91,0.87,8,3500,2300,.86),G(0.96,0.51,9,3000,2900,.86),G(0.91,0.13,8,2700,3500,.86),G(0.5,0.1,7,3200,4100,.86)],
   tracks:[
    T('ember',[[.18,1.02],[.23,.78],[.30,.52],[.38,.28]],5,.0342,15,.715,-120,1),
    T('ember',[[.42,1.03],[.47,.76],[.55,.48],[.65,.18]],24,.0268,12,.585,160,1.15),
@@ -39,7 +39,7 @@ export const PROFILE_COSMETIC_RUNTIME:readonly ProfileCosmeticRuntime[]=[
    T('arcane',[[.58,.80],[.69,.63],[.78,.42],[.88,.30]],87,.0195,9,.351,80,.75),
   ]},
  {borderId:'cosmetic:briarbound:verdant-frame',fallbackBorderId:'dungeon:asterfall:briarbound-frame',effectId:'effect_briarbound_verdant_whispers',collection:'Briarbound',effectName:'Verdant Whispers',motionProfile:'briarbound',accent:'#9DE59A',softAccent:'#3E9D63',effectPeriodMs:13200,
-  glows:[G(0.105,0.075,8,3500,0,.86),G(0.05,0.49,9,2900,600,.86),G(0.085,0.89,8,3300,1200,.86),G(0.32,0.91,9,2800,1800,.86),G(0.68,0.91,8,3600,2500,.86),G(0.915,0.89,9,3100,3100,.86),G(0.95,0.49,8,3400,3800,.86),G(0.895,0.075,9,3000,4400,.86)],
+  glows:[G(0.095,0.1,8,3500,0,.86),G(0.052,0.5,9,2900,600,.86),G(0.06,0.88,8,3300,1200,.86),G(0.5,0.9,9,2800,1800,.86),G(0.94,0.88,8,3600,2500,.86),G(0.948,0.5,9,3100,3100,.86),G(0.905,0.1,8,3400,3800,.86),G(0.5,0.1,9,3000,4400,.86)],
   tracks:[
    T('leaf',[[.08,.10],[.24,.27],[.43,.44],[.60,.65]],8,.0415,18,.65,240,.75),
    T('leaf',[[.34,-.04],[.47,.22],[.60,.48],[.74,.78]],31,.0342,16,.585,-260,.85),

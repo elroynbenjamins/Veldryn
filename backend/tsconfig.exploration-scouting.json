@@ -1,0 +1,5 @@
+{
+  "extends":"./tsconfig.json",
+  "compilerOptions":{"outDir":".scouting-review-build"},
+  "include":["src/server/exploration/**/*.ts"]
+}

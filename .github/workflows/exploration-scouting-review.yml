@@ -1,0 +1,104 @@
+name: Hidden Exploration 2.0 scouting validation
+on:
+  pull_request:
+    paths:
+      - 'apps/mobile/src/core/exploration-scouting-review.ts'
+      - 'apps/mobile/src/core/exploration-scouting-tutorial-review.ts'
+      - 'apps/mobile/tests/exploration-scouting-tutorial-review.ts'
+      - 'apps/mobile/src/core/exploration-scouting-missions-review.ts'
+      - 'apps/mobile/tests/exploration-scouting-missions-review.ts'
+      - 'apps/mobile/src/core/exploration-scouting-cutover-review.ts'
+      - 'apps/mobile/tests/exploration-scouting-cutover-review.ts'
+      - 'apps/mobile/src/core/exploration-scouting-economy-review.ts'
+      - 'apps/mobile/tests/exploration-scouting-economy-review.ts'
+      - 'apps/mobile/src/core/exploration-scouting-board-review.ts'
+      - 'apps/mobile/src/components/ExplorationScoutingBoardReview.tsx'
+      - 'apps/mobile/tests/exploration-scouting-board-review.ts'
+      - 'apps/mobile/src/core/exploration-account-review.ts'
+      - 'apps/mobile/src/core/exploration-scouting-settlement-review.ts'
+      - 'apps/mobile/tests/exploration-account-settlement-review.ts'
+      - 'apps/mobile/src/core/exploration-scouting-balance-review.ts'
+      - 'apps/mobile/src/core/exploration-discovery-review.ts'
+      - 'apps/mobile/tests/exploration-scouting-balance-review.ts'
+      - 'apps/mobile/tests/exploration-scouting-duration-review.ts'
+      - 'apps/mobile/src/core/exploration-scouting-companion-reward-review.ts'
+      - 'apps/mobile/tests/exploration-scouting-companion-reward-review.ts'
+      - 'apps/mobile/src/core/exploration-scouting-ui-review.ts'
+      - 'apps/mobile/src/components/ExplorationScoutingAssignmentReview.tsx'
+      - 'apps/mobile/src/core/exploration-scouting-content-review.ts'
+      - 'apps/mobile/tests/exploration-scouting-ui-content-review.ts'
+      - 'apps/mobile/src/components/ExplorationScoutingReportsReview.tsx'
+      - 'apps/mobile/src/core/exploration-scouting-release-guard-review.ts'
+      - 'apps/mobile/tests/exploration-scouting-reports-release-review.ts'
+      - 'apps/mobile/src/core/exploration-scouting-cutover-ui-review.ts'
+      - 'apps/mobile/src/core/exploration-scouting-achievements-review.ts'
+      - 'apps/mobile/src/i18n/exploration-scouting-review.ts'
+      - 'apps/mobile/tests/exploration-scouting-cutover-localization-achievements-review.ts'
+      - 'backend/src/server/exploration/**'
+      - 'backend/tsconfig.exploration-scouting.json'
+      - 'backend/supabase/migrations/20261124123857_exploration_scouting_2_hidden_foundation_v1.sql'
+      - 'backend/supabase/migrations/20261124123959_exploration_scouting_2_hidden_foundation_indexes_v1.sql'
+      - 'backend/supabase/tests/exploration_scouting_2_hidden_foundation_v1.sql'
+      - 'backend/supabase/release-gates/exploration_scouting_2_release_check.sql'
+      - 'tools/verify-exploration-scouting-2-release-gate.mjs'
+      - 'apps/mobile/src/components/CombatCompanionPanel.tsx'
+      - 'apps/mobile/src/online/scouting-client.ts'
+      - 'apps/mobile/src/core/exploration-scouting-online-review.ts'
+      - 'apps/mobile/src/components/ExplorationScoutingOnlineReview.tsx'
+      - 'apps/mobile/src/screens/SkillsScreen.tsx'
+      - 'apps/mobile/tests/exploration-scouting-online-review.ts'
+      - 'backend/src/server/exploration/scouting-http-application.ts'
+      - 'apps/mobile/tests/exploration-scouting-review.ts'
+      - 'apps/mobile/tsconfig.exploration-scouting-review.json'
+      - '.github/workflows/exploration-scouting-review.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  scouting:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/mobile/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --dir ../../backend install --frozen-lockfile
+      - run: pnpm exec tsc -p tsconfig.exploration-scouting-review.json --outDir .core-build
+      - run: pnpm --dir ../../backend exec tsc -p tsconfig.exploration-scouting.json
+      - run: node ../../backend/.scouting-review-build/server/exploration/__tests__/scouting-application.js
+      - run: node ../../tools/verify-exploration-scouting-2-release-gate.mjs
+      - run: node .core-build/apps/mobile/tests/exploration-scouting-review.js
+      - run: node .core-build/apps/mobile/tests/exploration-scouting-tutorial-review.js
+
+      - run: node .core-build/apps/mobile/tests/exploration-scouting-missions-review.js
+
+      - run: node .core-build/apps/mobile/tests/exploration-scouting-cutover-review.js
+
+      - run: node .core-build/apps/mobile/tests/exploration-scouting-economy-review.js
+
+      - run: node .core-build/apps/mobile/tests/exploration-scouting-board-review.js
+
+      - run: node .core-build/apps/mobile/tests/exploration-account-settlement-review.js
+
+      - run: node .core-build/apps/mobile/tests/exploration-scouting-balance-review.js
+
+      - run: node .core-build/apps/mobile/tests/exploration-scouting-duration-review.js
+
+      - run: node .core-build/apps/mobile/tests/exploration-scouting-companion-reward-review.js
+
+      - run: node .core-build/apps/mobile/tests/exploration-scouting-ui-content-review.js
+
+      - run: node .core-build/apps/mobile/tests/exploration-scouting-reports-release-review.js
+
+      - run: node .core-build/apps/mobile/tests/exploration-scouting-cutover-localization-achievements-review.js
+
+      - run: node .core-build/apps/mobile/tests/exploration-scouting-online-review.js

@@ -1,0 +1,40 @@
+import assert from 'node:assert/strict';
+import {levelFromXp} from '../src/core/progression';
+import {reserveScout,scoutClaimPreview,SCOUT_ROUTES,type ScoutAuthority,type ScoutState,type ScoutReceipt} from '../src/core/exploration-scouting-review';
+import {firstSessionScoutingReview,scoutingGuide,normalizeScoutingGuideAcknowledgements,SCOUT_TUTORIAL_RELEASED,SCOUTING_COMPANION_TOUR} from '../src/core/exploration-scouting-tutorial-review';
+import type {FirstSessionTutorialHost} from '../src/core/first-session-tutorial';
+const authority:ScoutAuthority={owned:{},legacyAssignments:[],equipped:new Set(),trialLocked:new Set(),unavailable:new Set()};
+let state:ScoutState={accountId:'a',characterId:'c',explorationLevel:1,explorationXp:0,discoveredRouteIds:[],visitedZoneIds:['GREENFIELDS']};
+let receipts:ScoutReceipt[]=[],now=1000,seq=0;
+const guide=()=>scoutingGuide({state,receipts,now,ownedCompanionCount:0,acknowledged:['scouting2_intro']});
+assert.equal(SCOUT_TUTORIAL_RELEASED,false);
+assert.equal(scoutingGuide({state,receipts,now,ownedCompanionCount:0})?.id,'scouting2_intro');
+const dispatch=guide()!;assert.equal(dispatch.id,'scouting2_dispatch');assert.equal(dispatch.routeId,'scout2:SCOUT_GREENFIELDS');
+// Simulate an entire no-companion, no-combat-level starter chain using actual XP thresholds.
+for(let i=0;i<30&&!state.discoveredRouteIds.includes('SCOUT_IRONWOOD');i++){
+ const next=guide()!;assert.ok(next.routeId);
+ const r=reserveScout({state,authority,receipts,routeId:next.routeId!,kind:next.id==='scouting2_practice'?'practice':'route',companionIds:[],requestId:'starter_'+String(++seq),now});
+ receipts.push(r);assert.equal(guide()?.id,'scouting2_wait');now=r.endsAt;
+ assert.equal(guide()?.id,'scouting2_claim');
+ const result=scoutClaimPreview(r,state,now);
+ receipts=receipts.map(x=>x===r?result.receipt:x);
+ const xp=state.explorationXp+result.explorationXp;
+ state={...state,explorationXp:xp,explorationLevel:levelFromXp(xp),discoveredRouteIds:result.discoveredRouteIds};
+ now++;
+}
+assert.ok(state.discoveredRouteIds.includes('SCOUT_IRONWOOD'));
+assert.ok(state.explorationLevel>=3);
+assert.ok(receipts.some(r=>r.kind==='practice'));
+assert.ok(receipts.every(r=>r.loanedGuide&&r.status==='claimed'));
+const returning=scoutingGuide({state,receipts,now,ownedCompanionCount:0,returningPlayer:true});
+assert.equal(returning?.id,'scouting2_returning');
+assert.deepEqual(normalizeScoutingGuideAcknowledgements(['ironwood_scout','scouting2_intro','scouting2_intro','unknown']),['scouting2_intro']);
+const host:FirstSessionTutorialHost={character:{level:7},quests:[{questId:'QST_001',status:'claimed',progress:5},{questId:'QST_002',status:'claimed',progress:2},{questId:'QST_003',status:'active',progress:0}]};
+const initial={...state,explorationXp:0,explorationLevel:1,discoveredRouteIds:[]};
+const view=firstSessionScoutingReview(host,{state:initial,receipts:[],now,ownedCompanionCount:0},['ironwood_scout']);
+assert.equal(view?.destination,'Skills');assert.equal(view?.highlightBeacon,'scouting-overview');
+assert.equal(firstSessionScoutingReview(host,{state,receipts,now,ownedCompanionCount:0}),undefined);
+assert.equal(firstSessionScoutingReview({...host,quests:host.quests.map(q=>q.questId==='QST_003'?{...q,status:'complete'}:q)},{state,receipts,now,ownedCompanionCount:0})?.id,'claim_qst003');
+assert.ok(SCOUTING_COMPANION_TOUR.some(s=>s.section==='Scouting'));
+assert.ok(!SCOUTING_COMPANION_TOUR.some(s=>String(s.section)==='Expeditions'));
+console.log('PASS scouting tutorial: complete guide-only starter route chain, versioned acknowledgment, returning players, existing quest claims');

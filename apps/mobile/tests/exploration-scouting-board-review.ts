@@ -1,0 +1,21 @@
+import assert from 'node:assert/strict';
+import {scoutingBoardReview} from '../src/core/exploration-scouting-board-review';
+import type {ScoutState,ScoutAuthority,ScoutReceipt} from '../src/core/exploration-scouting-review';
+const state:ScoutState={accountId:'a',characterId:'c',explorationLevel:20,explorationXp:20000,discoveredRouteIds:['SCOUT_GREENFIELDS'],visitedZoneIds:['GREENFIELDS'],retainedPrerequisiteRouteIds:['SCOUT_IRONWOOD']};
+const authority:ScoutAuthority={owned:{},legacyAssignments:[],equipped:new Set(),trialLocked:new Set(),unavailable:new Set()};
+const receipt:ScoutReceipt={accountId:'a',characterId:'alt',requestId:'alt_report',routeId:'scout2:SCOUT_GREENFIELDS',kind:'practice',companionIds:[],loanedGuide:true,startedAt:0,endsAt:100,status:'active',xp:24,policyVersion:'exploration-2-review-v1',discovery:false};
+const b=scoutingBoardReview(state,authority,[receipt,{...receipt,accountId:'other',requestId:'private'}],2,200);
+assert.equal(b.released,false);assert.equal(b.routes.length,13);assert.equal(b.missions.length,14);
+assert.ok(b.routes.find(r=>r.id==='scout2:SCOUT_IRONWOOD')?.retained);assert.equal(b.routes.find(r=>r.id==='scout2:SCOUT_IRONWOOD')?.discovered,false);
+assert.equal(b.active.length,1);assert.equal(b.active[0].claimable,false);assert.equal(b.active[0].otherCharacter,true);
+assert.equal(b.camp.xpSlotBusy,true);assert.equal(b.camp.capacity,2);assert.equal(b.missions.find(m=>m.id==='MISSION_SCOUT_2H')?.requirement,'choose_team');
+assert.equal(b.missions.find(m=>m.id==='MISSION_IRONWOOD_TRACK_4H')?.requirement,'discover_route_first');
+assert.ok(!b.routes.some(r=>r.region==='ASHLANDS'));
+console.log('PASS unified scouting board: retained access, mission requirements, account isolation, reports');
+
+import {ACCOUNT_EXPLORATION_VERSION} from '../src/core/exploration-account-review';
+const account={version:ACCOUNT_EXPLORATION_VERSION,accountId:'a',xp:20000,level:20,retainedSlots:1,sourceCharacterIds:['c'],creditedDiscoveryIds:['SCOUT_GREENFIELDS','SCOUT_SILVERBROOK']};
+const collection=scoutingBoardReview(state,authority,[],2,200,account).collection;
+assert.equal(collection?.count,2);
+assert.equal(collection?.regions[0].count,2);
+assert.equal(scoutingBoardReview(state,authority,[],2,200,{...account,accountId:'other'}).collection,undefined);

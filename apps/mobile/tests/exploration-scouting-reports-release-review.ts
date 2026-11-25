@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import {scoutingReportsReview,type ScoutLedger} from '../src/core/exploration-scouting-settlement-review';
+import {SCOUTING_2_REVIEW_EVIDENCE,SCOUTING_2_REQUIRED_GATES,scouting2ReleaseGuard} from '../src/core/exploration-scouting-release-guard-review';
+import {ACCOUNT_EXPLORATION_VERSION} from '../src/core/exploration-account-review';
+import type {ScoutState,ScoutReceipt} from '../src/core/exploration-scouting-review';
+const state:ScoutState={accountId:'a',characterId:'c',explorationLevel:10,explorationXp:1000,discoveredRouteIds:['SCOUT_GREENFIELDS'],visitedZoneIds:['GREENFIELDS']};
+const training:ScoutReceipt={accountId:'a',characterId:'c',requestId:'train_001',routeId:'scout2:SCOUT_GREENFIELDS',kind:'practice',companionIds:[],loanedGuide:true,trainingMinutes:60,startedAt:0,endsAt:1000,xp:1800,policyVersion:'exploration-2-review-v1',status:'active',discovery:false};
+const ledger:ScoutLedger={account:{version:ACCOUNT_EXPLORATION_VERSION,accountId:'a',xp:1000,level:10,creditedDiscoveryIds:['SCOUT_GREENFIELDS'],retainedSlots:1,sourceCharacterIds:['c']},characters:{c:state},wallets:{c:{gold:0,materials:{}}},authority:{owned:{},legacyAssignments:[],equipped:new Set(),trialLocked:new Set(),unavailable:new Set()},pensLevel:1,training:[training],camps:[],claims:[],essence:0,companionXp:{},bondXp:{}};
+const reports=scoutingReportsReview(ledger,'a','c',1000);
+assert.equal(reports.training[0].claimable,true);assert.equal(reports.training[0].trainingMinutes,60);
+assert.equal(reports.camps.length,0);assert.equal(reports.legacy.length,0);
+assert.throws(()=>scoutingReportsReview(ledger,'other','c',1000),/owner_mismatch/);
+const guard=scouting2ReleaseGuard(SCOUTING_2_REVIEW_EVIDENCE);assert.equal(guard.ready,false);assert.equal(guard.missing.length,SCOUTING_2_REQUIRED_GATES.length);
+const ready=scouting2ReleaseGuard(Object.fromEntries(SCOUTING_2_REQUIRED_GATES.map(k=>[k,true])) as any);assert.equal(ready.ready,true);assert.deepEqual(ready.missing,[]);
+console.log('PASS report projection, owner guard and fail-closed coordinated 2.0 release checklist');

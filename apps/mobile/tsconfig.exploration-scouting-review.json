@@ -1,0 +1,26 @@
+{
+  "extends": "./tsconfig.world-boss-v12.json",
+  "include": [
+    "tests/exploration-scouting-review.ts",
+    "tests/exploration-scouting-tutorial-review.ts",
+    "tests/exploration-scouting-missions-review.ts",
+    "tests/exploration-scouting-cutover-review.ts",
+    "tests/exploration-scouting-economy-review.ts",
+    "tests/exploration-scouting-board-review.ts",
+    "src/components/ExplorationScoutingBoardReview.tsx",
+    "tests/exploration-account-settlement-review.ts",
+    "tests/exploration-scouting-balance-review.ts",
+    "tests/exploration-scouting-duration-review.ts",
+    "tests/exploration-scouting-companion-reward-review.ts",
+    "tests/exploration-scouting-ui-content-review.ts",
+    "src/components/ExplorationScoutingAssignmentReview.tsx",
+    "tests/exploration-scouting-reports-release-review.ts",
+    "src/components/ExplorationScoutingReportsReview.tsx",
+    "tests/exploration-scouting-cutover-localization-achievements-review.ts",
+    "src/online/scouting-client.ts",
+    "tests/exploration-scouting-online-review.ts",
+    "src/components/ExplorationScoutingOnlineReview.tsx",
+    "src/screens/SkillsScreen.tsx"
+  ],
+  "exclude": []
+}

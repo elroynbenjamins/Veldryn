@@ -41,6 +41,8 @@ import type {ForgeCraftResult} from '../core/game-commands';
 import {progressWithinLevel,classCombatSkillProgressWithinLevel} from '../core/progression';
 import {GameModalHeader,GameModalSurface} from '../components/GameModalSurface';
 import {ExplorationPanel} from '../components/ExplorationPanel';
+import {ExplorationScoutingOnlineReview} from '../components/ExplorationScoutingOnlineReview';
+import {SCOUTING_2_UI_CUTOVER_RELEASED} from '../core/exploration-scouting-cutover-ui-review';
 import {GatheringActivityList} from '../components/GatheringActivityList';
 import {ZoneSceneArtwork} from '../components/ZoneSceneArtwork';
 import {CraftingRecipeBrowser} from '../components/CraftingRecipeBrowser';
@@ -123,6 +125,7 @@ export function SkillsScreen({state,now=Date.now(),onGather,onQueueGather,onQueu
     <ConsumableWorkshop state={state} skillId={initialSkill} preferredRecipeId={initialRecipeId} onStart={(id,batches)=>onCommand({type:initialSkill==='alchemy'?'alchemy_start':'processing_start',args:{id,batches,batchMode:'selected'}})}/>
   </ScrollView>;
   if(!initialSkill||initialSkill==='companion-mastery')return <SkillHub state={state} now={now} onSelect={onSelectSkill??(()=>{})} onCombat={onOpenCombat} onCommand={onCommand} initialMasteryInfoOpen={initialSkill==='companion-mastery'} onMasteryClosed={onBackToHub}/>;
+  if(initialSkill==='exploration'&&SCOUTING_2_UI_CUTOVER_RELEASED)return <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}><ExplorationScoutingOnlineReview state={state}/></ScrollView>;
   if(initialSkill==='exploration')return <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}><SkillHero state={state} skillId="exploration" kind={gt("Discovery skill")}/><ExplorationPanel state={state} onCommand={onCommand}/></ScrollView>;
   const detailKind=initialSkill==='faith'?gt("Devotion skill"):(["mining","woodcutting","fishing","herbalism"] as string[]).includes(initialSkill)?gt("Gathering skill"):gt("Crafting skill");
   return <ScrollView contentContainerStyle={s.root} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>

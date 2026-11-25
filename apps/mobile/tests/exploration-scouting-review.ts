@@ -1,0 +1,44 @@
+import assert from 'node:assert/strict';
+import {EXPLORATION_2_RELEASED,SCOUT_ROUTES,reserveScout,scoutClaimPreview,scoutingMigrationPreview,scoutingAvailability,type ScoutAuthority,type ScoutState} from '../src/core/exploration-scouting-review';
+const state:ScoutState={accountId:'account',characterId:'char',explorationLevel:1,explorationXp:123,discoveredRouteIds:[],visitedZoneIds:['GREENFIELDS']};
+const authority:ScoutAuthority={owned:{UNIT_001:{companionId:'UNIT_001',level:10,xp:0,ascensionTier:0,bondLevel:1,bondXp:0,bondTraitUnlocked:false}},legacyAssignments:[],equipped:new Set(),trialLocked:new Set(),unavailable:new Set()};
+const start={state,authority,receipts:[],routeId:'scout2:SCOUT_GREENFIELDS',kind:'route' as const,companionIds:[],requestId:'request_01',now:1000};
+assert.equal(EXPLORATION_2_RELEASED,false);
+assert.equal(SCOUT_ROUTES.length,14);
+assert.equal(SCOUT_ROUTES.find(r=>r.legacyId==='SCOUT_ASHLANDS')?.released,false);
+const a=reserveScout(start);
+assert.equal(a.loanedGuide,true);assert.equal(a.xp,24);assert.equal(a.endsAt,61000);
+assert.throws(()=>scoutClaimPreview(a,state,a.endsAt-1),/not_ready/);
+const claim=scoutClaimPreview(a,state,a.endsAt);
+assert.equal(claim.newDiscovery,'SCOUT_GREENFIELDS');assert.equal(claim.travelUnlocked,false);assert.equal(claim.rewardsGranted,false);
+assert.throws(()=>scoutClaimPreview(claim.receipt,state,a.endsAt),/already_claimed/);
+assert.throws(()=>scoutClaimPreview(a,{...state,characterId:'other'},a.endsAt),/owner_mismatch/);
+assert.deepEqual(reserveScout({...start,receipts:[a],now:2000}),a);
+assert.throws(()=>reserveScout({...start,receipts:[a],requestId:'request_02',state:{...state,characterId:'other'}}),/scout_slot_busy/);
+assert.throws(()=>reserveScout({...start,receipts:[a],companionIds:['UNIT_001']}),/nonce_conflict/);
+const b=reserveScout({...start,companionIds:['UNIT_001']});
+assert.ok(b.endsAt<a.endsAt);
+assert.throws(()=>reserveScout({...start,companionIds:['UNIT_001'],authority:{...authority,equipped:new Set(['UNIT_001'])}}),/companion_unavailable/);
+assert.throws(()=>reserveScout({...start,companionIds:['UNIT_001','UNIT_001']}),/invalid_team/);
+assert.throws(()=>reserveScout({...start,companionIds:['UNKNOWN']}),/not_owned/);
+const known={...state,discoveredRouteIds:['SCOUT_GREENFIELDS']};
+assert.throws(()=>reserveScout({...start,state:known}),/already_discovered/);
+const survey=reserveScout({...start,state:known,kind:'survey',companionIds:['UNIT_001']});
+assert.equal(survey.xp,3600);assert.ok(survey.endsAt>a.endsAt);
+assert.equal(scoutClaimPreview(survey,known,survey.endsAt).newDiscovery,null);
+const future=SCOUT_ROUTES.find(r=>r.legacyId==='SCOUT_ASHLANDS')!;
+assert.equal(scoutingAvailability({...state,explorationLevel:100},future,'route'),'unreleased');
+const next=SCOUT_ROUTES.find(r=>r.legacyId==='SCOUT_SUNSCAR')!;
+assert.equal(scoutingAvailability({...state,explorationLevel:100},next,'route'),'prerequisite');
+const migrated=scoutingMigrationPreview({...state,explorationLevel:50,discoveredRouteIds:['SCOUT_SUNSCAR','SCOUT_SUNSCAR']});
+assert.equal(migrated.explorationXp,123);assert.equal(migrated.gatheringBonus,.05);assert.deepEqual(migrated.discoveredRouteIds,['SCOUT_SUNSCAR']);
+console.log('PASS hidden scouting: legacy routes, ownership, shared account slot, guide, repeat surveys, migration, no grants');
+
+assert.equal(scoutClaimPreview(a,known,a.endsAt).explorationXp,0);
+const iron=SCOUT_ROUTES.find(r=>r.legacyId==='SCOUT_IRONWOOD')!;
+assert.equal(scoutingAvailability({...state,explorationLevel:3},iron,'route'),'prerequisite');
+assert.equal(scoutingAvailability({...state,explorationLevel:3,discoveredRouteIds:['SCOUT_SILVERBROOK']},iron,'route'),'available');
+
+assert.deepEqual(SCOUT_ROUTES.filter(r=>r.zoneId==='FROSTMARCH').map(r=>r.areaId),['ZONE_011','ZONE_012','ZONE_013','ZONE_015']);
+assert.equal(new Set(SCOUT_ROUTES.map(r=>r.id)).size,SCOUT_ROUTES.length);
+for(const route of SCOUT_ROUTES.filter(r=>r.released)){if(route.prerequisite)assert.ok(SCOUT_ROUTES.some(r=>r.legacyId===route.prerequisite&&r.released));}

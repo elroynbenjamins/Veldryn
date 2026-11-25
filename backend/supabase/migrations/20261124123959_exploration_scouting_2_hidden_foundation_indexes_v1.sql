@@ -1,0 +1,1 @@
+create index if not exists achievement_claims_achievement_idx_v1 on public.achievement_claims(achievement_id);

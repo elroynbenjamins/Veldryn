@@ -7,7 +7,7 @@ import {Image,Pressable,StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../../core/types';
 import type {ProfileCustomizationDestination} from '../../core/profile-customization';
 import {
- applyWardrobeEquipped,profileWardrobe,wardrobeEquipped,wardrobeSelection,wardrobeChanges,
+ applyWardrobeEquipped,profileWardrobe,wardrobeEquipped,wardrobeSelection,wardrobeChanges,wardrobeDisplaySections,
  type WardrobeAssets,type WardrobeEquipped,type WardrobeKind,type WardrobeRow,
 } from '../../core/profile-wardrobe';
 import {PROFILE_BACKGROUND_PREVIEWS,profileBackgroundPreviewById} from '../../theme/profile-background-assets';
@@ -126,6 +126,7 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
 
  if(!character)return null;
  const category=categories.find(row=>row.kind===chip);
+ const sections=wardrobeDisplaySections(category?.rows??[]);
  const artwork=(row:WardrobeRow,size:number):ReactNode=>{
   if(row.kind==='icon')return <ProfileIcon id={row.id} classId={character.classId} size={size}/>;
   if(row.kind==='scene'){const scene=profileBackgroundPreviewById.get(row.id),base=BASE_PROFILE_BACKGROUNDS.find(item=>item.id===row.id);
@@ -161,10 +162,23 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
       :row.unlocked?<Text style={s.useMark}>{profileT(language,"USE")}</Text>
       :<Text style={s.sourceMark}>{row.lockTag} ›</Text>}
     </Pressable>)}
-   </View>:<View style={s.grid} onLayout={({nativeEvent:{layout}})=>setGridWidth(previous=>previous===layout.width?previous:layout.width)}>
-    {category.rows.map(row=><WardrobeTile key={row.kind+':'+row.id} row={row} width={tileWidth}
+   </View>:<View style={s.wardrobeSections} onLayout={({nativeEvent:{layout}})=>setGridWidth(previous=>previous===layout.width?previous:layout.width)}>
+    {sections.standard.length>0?<View style={s.grid}>
+     {sections.standard.map(row=><WardrobeTile key={row.kind+':'+row.id} row={row} width={tileWidth}
       equipped={selectedId===row.id} tryingOn={tryOn?.kind===row.kind&&tryOn?.id===row.id}
       onPress={()=>equip(row)}>{artwork(row,Math.round(tileWidth*.72))}</WardrobeTile>)}
+    </View>:null}
+    {sections.animated.length>0?<>
+     <View style={s.sectionDivider} accessibilityRole="header">
+      <Text style={s.sectionLabel}>✦ {profileT(language,"Animated sets")}</Text>
+      <View style={s.sectionLine}/>
+     </View>
+     <View style={s.grid}>
+      {sections.animated.map(row=><WardrobeTile key={row.kind+':'+row.id} row={row} width={tileWidth}
+       equipped={selectedId===row.id} tryingOn={tryOn?.kind===row.kind&&tryOn?.id===row.id}
+       onPress={()=>equip(row)}>{artwork(row,Math.round(tileWidth*.72))}</WardrobeTile>)}
+     </View>
+    </>:null}
    </View>}
   </>:null}
 
@@ -196,7 +210,11 @@ const WardrobeTile=memo(function WardrobeTile({row,width,equipped,tryingOn,onPre
 
 function makeStyles(C:ThemeColors){return StyleSheet.create({
  root:{gap:10},flex:{flex:1,minWidth:0},pressed:{opacity:.74},
+ wardrobeSections:{gap:8},
  grid:{flexDirection:'row',flexWrap:'wrap',gap:8},
+ sectionDivider:{flexDirection:'row',alignItems:'center',gap:8,paddingTop:3},
+ sectionLabel:{fontSize:10.5,lineHeight:15,fontWeight:'800',color:C.accent},
+ sectionLine:{flex:1,height:StyleSheet.hairlineWidth,backgroundColor:C.lineStrong},
  tile:{padding:5,gap:4,borderRadius:radii.md,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2},
  tileOn:{borderColor:C.selectionLine,backgroundColor:C.selection},
  tileTry:{borderColor:C.warning,backgroundColor:C.warningSurface},

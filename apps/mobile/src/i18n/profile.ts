@@ -7,8 +7,8 @@ import {createTranslator} from './translator';
 // English source keys are limited to authored UI copy, never player-authored text.
 // Each row contains de, es, nl, it and fr, in SUPPORTED_LANGUAGES order after en.
 export const profileTranslationRows = {
-  "Ascendant name styles": ["Aszendenten-Namensstile","Estilos de nombre ascendentes","Ascendant-naamstijlen","Stili del nome Ascendente","Styles de nom Ascendant","Стили имени Вознесённых","Yüceliş isim stilleri"],
-  "Restore standard name style": ["Standard-Namensstil wiederherstellen","Restaurar estilo de nombre estándar","Standaard naamstijl herstellen","Ripristina stile del nome standard","Rétablir le style de nom standard","Восстановить стандартный стиль имени","Standart isim stilini geri yükle"],
+  "Ascendant name styles": ["Aszendenten-Namensstile","Estilos de nombre ascendentes","Ascendant-naamstijlen","Stili del nome Ascendente","Styles de nom Ascendant"],
+  "Restore standard name style": ["Standard-Namensstil wiederherstellen","Restaurar estilo de nombre estándar","Standaard naamstijl herstellen","Ripristina stile del nome standard","Rétablir le style de nom standard"],
   "Largest craft result": ["Größtes Herstellungsergebnis","Mayor resultado de fabricación","Grootste vervaardigingsresultaat","Maggior risultato di creazione","Plus grand résultat de fabrication"],
   "Complete Beyond the Green and break the Fallen Knight’s oath.": ["Schließe Beyond the Green ab und brich den Eid des Gefallenen Ritters.","Completa Beyond the Green y rompe el juramento del Caballero Caído.","Voltooi Beyond the Green en verbreek de eed van de Gevallen Ridder.","Completa Beyond the Green e infrangi il giuramento del Cavaliere Caduto.","Terminez Beyond the Green et brisez le serment du Chevalier déchu."],
   // Equipped gear detail viewer.

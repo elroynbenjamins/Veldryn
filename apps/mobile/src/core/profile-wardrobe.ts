@@ -120,6 +120,12 @@ export function wardrobeEquipped(state:GameState):WardrobeEquipped{
  return {icon:character?.profileIconId??`class:${character?.classId??'IRONWARDEN'}`,scene:character?.profileBackgroundId??'asterfall-night',
   frame:character?.profileBorderId??'',effect:character?.profileEffectId??'',pet:character?.selectedCosmeticPetId??'',title:character?.profileTitle??'New Adventurer'};
 }
+/** Rebase only explicitly edited families onto the latest authoritative appearance. */
+export function wardrobeChanges(before:WardrobeEquipped,after:WardrobeEquipped):Partial<WardrobeEquipped>{
+ const patch:Partial<WardrobeEquipped>={};
+ for(const key of Object.keys(before) as (keyof WardrobeEquipped)[])if(before[key]!==after[key])patch[key]=after[key];
+ return patch;
+}
 export function applyWardrobeEquipped(state:GameState,equipped:WardrobeEquipped):GameState{
  if(!state.character)return state;
  return {...state,character:{...state.character,profileIconId:equipped.icon,profileBackgroundId:equipped.scene,

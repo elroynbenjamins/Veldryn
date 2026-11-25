@@ -87,7 +87,8 @@ import {ActionFeedback} from './src/components/ActionFeedback';
 import {LoadingState} from './src/components/LoadingState';
 import {equipNoviceSet} from './src/core/game';
 import {noviceSetProgress} from './src/core/character-appearance';
-import {normalizeProfileIcon,newlyUnlockedProfileIcons} from './src/core/profile-icons';
+import {normalizeProfileIcon,newlyUnlockedProfileIcons,selectProfileIcon,accountProfileIconId} from './src/core/profile-icons';
+import {publishOwnProfileIcon} from './src/online/player-identity-cache';
 import {normalizePlayerNameStyle,savePlayerNameStyle,type PlayerNameStylePreference} from './src/core/player-name-style';
 import {createSaveBackup,parseSaveBackup} from './src/core/save-transfer';
 import {SaveRecoveryScreen} from './src/components/SaveRecoveryScreen';
@@ -768,7 +769,7 @@ function VeldrynApp(){
       if(candidate.activity===null&&JSON.stringify(candidate)===JSON.stringify({...current,activity:null})){await perform({type:'stop'});return;}
       const profileKeys=['profileIconId','profileTitle','profileBackgroundId','profileBorderId','profileEffectId','selectedCosmeticPetId'] as const;
       if(current.character&&candidate.character){const patch=Object.fromEntries(profileKeys.map(key=>[key,candidate.character![key]]));
-        if(JSON.stringify(candidate)===JSON.stringify({...current,character:{...current.character,...patch}})){await perform({type:'profile',args:Object.fromEntries(Object.entries(patch).map(([key,value])=>[key,value??null]))});return;}}
+        if(JSON.stringify(candidate)===JSON.stringify({...current,character:{...current.character,...patch}})){const changed=profileKeys.filter(key=>current.character![key]!==candidate.character![key]);if(!changed.length)return;const result=await perform({type:'profile',args:Object.fromEntries(changed.map(key=>[key,patch[key]??null]))});if(result&&changed.includes('profileIconId')&&auth.session?.user.id&&result.state.character)publishOwnProfileIcon(result.accountId,accountProfileIconId(result.state),result.state.character.classId);return;}}
       showAlert('Server-owned progress','This change requires an online gameplay action.');return;
     }
     if(current?.character&&candidate.character&&current.character.selectedCosmeticPetId!==candidate.character.selectedCosmeticPetId){
@@ -778,7 +779,8 @@ function VeldrynApp(){
         const settled=claimActivity(current,Date.now());candidate={...settled.state,character:{...settled.state.character!,...patch}};
       }
     }
-const next=normalizeProfileIcon(migrateGemPouch(migrateRetiredStoryRewards(candidate,Date.now())));
+const explicitLocalIcon=current?.character&&candidate.character&&current.character.id===candidate.character.id&&candidate.character.profileIconId&&candidate.character.profileIconId!==current.character.profileIconId;
+const next=normalizeProfileIcon(migrateGemPouch(migrateRetiredStoryRewards(explicitLocalIcon?selectProfileIcon(candidate,candidate.character!.profileIconId!):candidate,Date.now())));
  // For crafting, save before claiming success or updating the visible queue; a failed
  // local save must not look like a completed transaction.
  if(options?.confirmSaved)await repo.save(next);

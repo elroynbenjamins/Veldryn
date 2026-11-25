@@ -15,6 +15,8 @@ import {RUSSIAN_RELEASE_POLISH_ROWS} from './russian-release-polish';
 
 // Extended RU/TR copy; missing phrases deliberately fall back to English.
 export const EARLY_LOCALE_ROWS={
+  "Your account character class.": ["Класс одного из ваших персонажей.","Hesabındaki bir karakterin sınıfı."],
+  "Account-wide": ["Для всей учётной записи","Hesap genelinde"],
   "Ascendant name styles": ["Стили имени Вознесённых","Yüceliş isim stilleri"],
   "Restore standard name style": ["Восстановить стандартный стиль имени","Standart isim stilini geri yükle"],
   // Compact tool and inspection display in the newer two locales.

@@ -1,7 +1,7 @@
 import {supabase} from './supabase';
 import {ACCOUNT_SOCIAL_IDENTITY_RELEASED} from './social-identity-client-gate';
 import {projectChatSenderNames,type CurrentChatSenderName} from '../core/chat-sender-projection';
-import {currentPlayerIdentityViewer,ensurePlayerIdentityViewer,peekPlayerIdentity,playerIdentityDetailsNeedRefresh,playerIdentityNeedsRefresh,storePlayerIdentities,type CachedPlayerIdentity} from './player-identity-cache';
+import {currentPlayerIdentityViewer,ensurePlayerIdentityViewer,peekPlayerIdentity,playerIdentityDetailsNeedRefresh,playerIdentityNeedsRefresh,storePlayerIdentities,playerIdentityIconWriteVersion,type CachedPlayerIdentity} from './player-identity-cache';
 import {CHAT_RECENT_MESSAGE_LIMIT,GUILD_CHAT_RECENT_MESSAGE_LIMIT} from './chat-history';
 import {socialListIdentityIds,withSocialListIdentities} from '../core/social-list-projection';
 import {normalizePlayerBadges,type PlayerBadgeIdentity} from '../core/player-badges';
@@ -81,10 +81,11 @@ export async function guildIdentities(accountIds:readonly string[]):Promise<Map<
   for(let i=0;i<missing.length;i+=100){
    const batch=missing.slice(i,i+100);
    const query=(async()=>{
-    const args={p_account_ids:batch};
+    const args={p_account_ids:batch},iconWriteVersion=playerIdentityIconWriteVersion();
+    let hasIcon=includeIcon;
     let result=await client.rpc(includeIcon?'guild_identities_v3':'guild_identities_v2',args);
-    if(result.error?.code==='PGRST202')result=await client.rpc('guild_identities_v2',args);
-    if(result.error?.code==='PGRST202')result=await client.rpc('guild_identities',args);
+    if(result.error?.code==='PGRST202'){hasIcon=false;result=await client.rpc('guild_identities_v2',args);}
+    if(result.error?.code==='PGRST202'){hasIcon=false;result=await client.rpc('guild_identities',args);}
     if(result.error)throw result.error;
     if(currentPlayerIdentityViewer()!==viewer)return;
     const found=new Map<string,CachedPlayerIdentity>();
@@ -95,7 +96,7 @@ export async function guildIdentities(accountIds:readonly string[]):Promise<Map<
       player_name_style:row.player_name_style??null,player_badges:normalizePlayerBadges(row.player_badges),
      });
     }
-    storePlayerIdentities(found,Date.now(),includeIcon);
+    storePlayerIdentities(found,Date.now(),hasIcon,iconWriteVersion);
    })();
    for(const id of batch)pendingIdentityQueries.set(viewer+':'+id,query);
    void query.finally(()=>{for(const id of batch){if(pendingIdentityQueries.get(viewer+':'+id)===query)pendingIdentityQueries.delete(viewer+':'+id);}}).catch(()=>{});

@@ -1,4 +1,5 @@
 import {ownedUltraLuxeTitleColor} from '../../core/ultra-luxe-titles';
+import {AscendantBlessingPicker} from './AscendantBlessingPicker';
 import {profileT,profileText,profileSourceText} from '../../i18n/profile';
 import {useGameLanguage} from '../../i18n/GameLanguageProvider';
 import {memo,useCallback,useEffect,useMemo,useRef,useState,type ReactNode} from 'react';
@@ -6,7 +7,7 @@ import {Image,Pressable,StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../../core/types';
 import type {ProfileCustomizationDestination} from '../../core/profile-customization';
 import {
- applyWardrobeEquipped,profileWardrobe,wardrobeEquipped,wardrobeSelection,
+ applyWardrobeEquipped,profileWardrobe,wardrobeEquipped,wardrobeSelection,wardrobeChanges,
  type WardrobeAssets,type WardrobeEquipped,type WardrobeKind,type WardrobeRow,
 } from '../../core/profile-wardrobe';
 import {PROFILE_BACKGROUND_PREVIEWS,profileBackgroundPreviewById} from '../../theme/profile-background-assets';
@@ -14,7 +15,7 @@ import {profileBorderSourceById} from '../../theme/profile-border-assets';
 import {BASE_PROFILE_BACKGROUNDS} from '../../core/profile-cosmetics';
 import {petArtSource} from '../../theme/pet-art';
 import {useAuthSession} from '../../online/AuthSessionProvider';
-import {invalidatePlayerIdentity,publishOwnProfileIcon} from '../../online/player-identity-cache';
+
 import {radii,typography,type ThemeColors} from '../../theme/theme';
 import {useGameTheme} from '../../theme/ThemeContext';
 import {GameButton} from '../GameButton';
@@ -24,7 +25,6 @@ import {ProfileFrameOverlay} from '../ProfileFrameOverlay';
 import {ProfileIcon} from '../ProfileIcon';
 import {RegionArtwork} from '../RegionArtwork';
 import {ProfileUnlockSheet} from './ProfileUnlockSheet';
-import {AscendantBlessingPicker} from './AscendantBlessingPicker';
 import {PROFILE_ALL_EFFECTS,profileAnimatedBorderDefinition} from '../../core/profile-effects';
 import {cosmeticArtByBorder,cosmeticArtByEffect} from '../../theme/profile-cosmetic-art-v1';
 import {profileCosmeticRuntimeByEffect} from '../../theme/profile-cosmetic-runtime-v1';
@@ -54,7 +54,8 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
  const saved=useMemo(()=>wardrobeEquipped(state),[state]);
  const [selection,setSelection]=useState<WardrobeEquipped>(saved);
  const [customTitle,setCustomTitle]=useState(saved.title);
- const stateRef=useRef(state),pendingRef=useRef<WardrobeEquipped|null>(null),timerRef=useRef<ReturnType<typeof setTimeout>|null>(null);
+ const selectionRef=useRef(saved);
+ const stateRef=useRef(state),pendingRef=useRef<Partial<WardrobeEquipped>|null>(null),timerRef=useRef<ReturnType<typeof setTimeout>|null>(null);
  const onChangeRef=useRef(onChange),sentRef=useRef<string|null>(null),chainRef=useRef<Promise<void>>(Promise.resolve());
  stateRef.current=state;onChangeRef.current=onChange;
 
@@ -66,18 +67,23 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
   if(timerRef.current){clearTimeout(timerRef.current);timerRef.current=null}
   const next=pendingRef.current;pendingRef.current=null;
   if(!next)return;
-  sentRef.current=JSON.stringify(next);
+  const ownerCharacterId=stateRef.current.character?.id;
   chainRef.current=chainRef.current.then(async()=>{
    const base=stateRef.current;
-   if(!base.character)return;
-   await onChangeRef.current(applyWardrobeEquipped(base,next));
-   if(accountId){publishOwnProfileIcon(accountId,next.icon,base.character.classId);invalidatePlayerIdentity(accountId)}
+   if(!base.character||base.character.id!==ownerCharacterId)return;
+   const rebased={...wardrobeEquipped(base),...next};
+   sentRef.current=JSON.stringify(rebased);
+   await onChangeRef.current(applyWardrobeEquipped(base,rebased));
+
    // Let the committed state reach this component before the next write reads it.
    await new Promise<void>(resolve=>setTimeout(resolve,0));
   }).catch(()=>{});
  },[accountId]);
  const queueCommit=useCallback((next:WardrobeEquipped)=>{
-  pendingRef.current=next;
+  const changed=wardrobeChanges(selectionRef.current,next);
+  selectionRef.current=next;
+  if(!Object.keys(changed).length)return;
+  pendingRef.current={...pendingRef.current,...changed};
   if(timerRef.current)clearTimeout(timerRef.current);
   timerRef.current=setTimeout(flush,COMMIT_DELAY_MS);
  },[flush]);
@@ -89,7 +95,8 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
   if(pendingRef.current)return;
   if(sentRef.current&&sentRef.current!==savedKey)return;
   sentRef.current=null;
-  setSelection(JSON.parse(savedKey) as WardrobeEquipped);
+  const next=JSON.parse(savedKey) as WardrobeEquipped;
+  selectionRef.current=next;setSelection(next);
  },[savedKey]);
  useEffect(()=>{setCustomTitle(saved.title)},[saved.title]);
 
@@ -136,6 +143,7 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
 
  return <View style={s.root}>
   {chip==='badge'?<PlayerBadgeSettings/>:category?<>
+   {chip==='icon'?<Text style={s.label}>{profileText(language,'Account-wide')}</Text>:null}
    {chip==='title'?<View style={s.titleList}>
     <View style={s.customTitle}>
      <Text style={s.label}>{profileT(language,"CUSTOM TITLE")}</Text>
@@ -159,8 +167,8 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
       onPress={()=>equip(row)}>{artwork(row,Math.round(tileWidth*.72))}</WardrobeTile>)}
    </View>}
   </>:null}
-  {chip==='pet'?<AscendantBlessingPicker state={state} slot="pet" onChange={onChange}/>:chip==='scene'?<AscendantBlessingPicker state={state} slot="background" onChange={onChange}/>:null}
 
+  {chip==='pet'?<AscendantBlessingPicker state={state} slot="pet" onChange={onChange}/>:chip==='scene'?<AscendantBlessingPicker state={state} slot="background" onChange={onChange}/>:null}
   <ProfileUnlockSheet row={sheet} reduceMotion={state.settings.reduceMotion||!active} tryingOn={!!sheet&&tryOn?.id===sheet.id&&tryOn?.kind===sheet.kind}
    artwork={sheet?artwork(sheet,70):null} onClose={()=>setSheet(null)}
    onTryOn={()=>{setTryOn(current=>current&&sheet&&current.id===sheet.id&&current.kind===sheet.kind?null:sheet);setSheet(null)}}

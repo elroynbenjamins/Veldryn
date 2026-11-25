@@ -18,7 +18,7 @@ type Saved={version:1;entries:[string,Entry][]};
 export const PLAYER_IDENTITY_TTL_MS=PLAYER_ICON_REFRESH_MS;
 export const PLAYER_IDENTITY_DETAILS_TTL_MS=PLAYER_SOCIAL_REFRESH_MS;
 const MAX_ENTRIES=500;
-const STORAGE_PREFIX='veldryn:public-player-identities:v1:';
+const STORAGE_PREFIX='veldryn:public-player-identities:v2:';
 const entries=new Map<string,Entry>();
 const listeners=new Set<(accountId:string)=>void>();
 let currentViewer='',ready:Promise<void>=Promise.resolve(),saveTimer:ReturnType<typeof setTimeout>|undefined;

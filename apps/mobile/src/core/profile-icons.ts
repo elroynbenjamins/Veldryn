@@ -31,10 +31,31 @@ export const PROFILE_ICON_CATALOG:readonly ProfileIconCatalogRow[] = [
  ...DUNGEON_SHOP_PROFILE_ICONS_V1.map(row=>({id:row.id,name:row.name,group:'Dungeon',source:'Dungeon Marks Shop · '+row.region})),
 ];
 export interface ProfileIconEntry {id:string;name:string;group:string;source:string;unlocked:boolean;artworkReady:boolean;selected:boolean;}
+/** Online legacy rosters require the trusted created_at backfill. Offline rosters use
+ * their monotonically allocated LOCAL_CHAR ids, never active/featured order. */
+function initialIconCharacter(state:GameState){
+ const roster=[state.character,...(state.otherCharacters??[]).map(row=>row.character)].filter((row):row is NonNullable<GameState['character']>=>!!row);
+ if(roster.length<=1)return roster[0];
+ const sequence=(id:string)=>/^LOCAL_CHAR_(\d+)$/.exec(id);
+ if(!roster.every(row=>sequence(row.id)))return undefined;
+ return [...roster].sort((a,b)=>Number(sequence(a.id)![1])-Number(sequence(b.id)![1]))[0];
+}
+export function accountProfileIconId(state:GameState):string{
+ const first=initialIconCharacter(state);
+ return state.account.profileIconId??first?.profileIconId??(first?'class:'+first.classId:state.character?.profileIconId??'class:'+(state.character?.classId??'IRONWARDEN'));
+}
+/** Preserve the account choice across all character projections and legacy clients. */
+function mirrorProfileIcon(state:GameState,id:string):GameState{
+ const active=state.character,others=state.otherCharacters;
+ if(state.account.profileIconId===id&&(!active||active.profileIconId===id)&&!others?.some(row=>row.character.profileIconId!==id))return state;
+ return {...state,account:{...state.account,profileIconId:id},
+  character:active?{...active,profileIconId:id}:null,
+  ...(others?{otherCharacters:others.map(row=>row.character.profileIconId===id?row:{...row,character:{...row.character,profileIconId:id}})}:{})};
+}
 export function profileIconCollection(state:GameState):ProfileIconEntry[]{
- const selected=state.character?.profileIconId??`class:${state.character?.classId??'IRONWARDEN'}`;
- const activeClass=state.character?.classId??'IRONWARDEN';
- const base=CLASSES.filter(row=>row.id===activeClass).map(row=>({id:`class:${row.id}`,name:row.name,group:'Class',source:'Your active character class.',unlocked:true,artworkReady:true,selected:selected===`class:${row.id}`}));
+ const selected=accountProfileIconId(state);
+ const rosterClasses=new Set([state.character?.classId??'IRONWARDEN',...(state.otherCharacters??[]).map(row=>row.character.classId)]);
+ const base=CLASSES.filter(row=>rosterClasses.has(row.id)||selected===`class:${row.id}`).map(row=>({id:`class:${row.id}`,name:row.name,group:'Class',source:'Your account character class.',unlocked:true,artworkReady:true,selected:selected===`class:${row.id}`}));
  const owned=new Set(state.account.unlockedProfileIconIds??[]);
  const characters=[state.character,...(state.otherCharacters??[]).map(row=>row.character)];
  const tester=profileCosmeticsTester(state);
@@ -51,11 +72,15 @@ export function canUseProfileIcon(state:GameState,id:string){return PROFILE_ICON
 export function selectProfileIcon(state:GameState,id:string):GameState{
  if(!state.character)throw new Error('Create a character before choosing a profile icon.');
  if(!canUseProfileIcon(state,id))throw new Error('This profile icon is not unlocked.');
- return {...state,character:{...state.character,profileIconId:id}};
+ return mirrorProfileIcon(state,id);
 }
 export function normalizeProfileIcon(state:GameState):GameState{
- if(!state.character||canUseProfileIcon(state,state.character.profileIconId??''))return state;
- return {...state,character:{...state.character,profileIconId:`class:${state.character.classId}`}};
+ if(!state.character)return state;
+ const first=initialIconCharacter(state);
+ // Never silently seed an online multi-character account from its active hero.
+ if(!state.account.profileIconId&&!first)return state;
+ const id=accountProfileIconId(state);
+ return mirrorProfileIcon(state,canUseProfileIcon(state,id)?id:`class:${first?.classId??state.character.classId}`);
 }
 export function newlyUnlockedProfileIcons(before:GameState|null,after:GameState){
  if(!before)return [];

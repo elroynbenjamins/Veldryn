@@ -13,7 +13,7 @@ import {profileBorderSourceById} from '../../theme/profile-border-assets';
 import {BASE_PROFILE_BACKGROUNDS} from '../../core/profile-cosmetics';
 import {petArtSource} from '../../theme/pet-art';
 import {useAuthSession} from '../../online/AuthSessionProvider';
-import {invalidatePlayerIdentity,publishOwnProfileIcon} from '../../online/player-identity-cache';
+
 import {radii,typography,type ThemeColors} from '../../theme/theme';
 import {useGameTheme} from '../../theme/ThemeContext';
 import {GameButton} from '../GameButton';
@@ -69,7 +69,7 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
    const base=stateRef.current;
    if(!base.character)return;
    await onChangeRef.current(applyWardrobeEquipped(base,next));
-   if(accountId){publishOwnProfileIcon(accountId,next.icon,base.character.classId);invalidatePlayerIdentity(accountId)}
+
    // Let the committed state reach this component before the next write reads it.
    await new Promise<void>(resolve=>setTimeout(resolve,0));
   }).catch(()=>{});
@@ -134,6 +134,7 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
 
  return <View style={s.root}>
   {chip==='badge'?<PlayerBadgeSettings/>:category?<>
+   {chip==='icon'?<Text style={s.label}>{profileText(language,'Account-wide')}</Text>:null}
    {chip==='title'?<View style={s.titleList}>
     <View style={s.customTitle}>
      <Text style={s.label}>{profileT(language,"CUSTOM TITLE")}</Text>

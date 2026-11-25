@@ -4,7 +4,8 @@ import {VEILBREAK_EVENT,FROSTFALL_EVENT} from '../src/content/annual-events-v2';
 LIVE_EVENT_CATALOG.splice(0,LIVE_EVENT_CATALOG.length,VEILBREAK_EVENT,FROSTFALL_EVENT);
 import {createCharacter,newGame} from '../src/core/game';
 import type {GameState} from '../src/core/types';
-import {applyEventDiscoveries,applyEventDrops,claimEventDiscovery,claimEventReward,eventLifecycle,eventShopOffers,purchaseEventOffer} from '../src/core/live-events';
+import {availableChatEmotes,chatUnavailableEmoteIds} from '../src/core/chat-emotes';
+import {applyEventDiscoveries,applyEventDrops,claimEventDiscovery,claimEventReward,eventLifecycle,eventShopOffers,purchaseEventOffer,eventOfferPurchaseCount,eventCollectionJournal} from '../src/core/live-events';
 
 function fail(message:string):never{throw new Error(message)}
 function ok(value:unknown,message:string){if(!value)fail(message)}
@@ -49,5 +50,21 @@ ok(frost.account.unlockedCosmeticPetIds?.includes('EVT_PET_017'),'Frostfall pres
 frost=applyEventDrops(frost,[{eventId:'EVT_ANNUAL_012_2026',currencyId:'FROSTBELL_TOKEN',name:'FROSTBELL_TOKEN',quantity:6000}]);
 frost=claimEventReward(frost,'EVT_UNIT_009',now);
 ok(frost.account.unlockedCombatCompanionIds?.includes('EVT_UNIT_009'),'Frostfall final milestone grants Frostbell Herald');
+
+// Frostfall emotes are locked until an account earns or purchases them.
+const emoteOffers=FROSTFALL_EVENT.shop.filter(row=>row.reward.kind==='emote');
+equal(emoteOffers.length,5,'Five Frostfall emotes are purchasable');
+let emoteState=withEvent('EVT_ANNUAL_012_2026');
+emoteState=applyEventDrops(emoteState,[{eventId:'EVT_ANNUAL_012_2026',currencyId:'FROSTBELL_TOKEN',name:'Frostbell Tokens',quantity:10000}]);
+const ids=emoteOffers.map(offer=>offer.reward.id);
+ok(ids.every(id=>chatUnavailableEmoteIds(':'+id+':',[]).includes(id)),'All event emotes require ownership');
+emoteState=claimEventReward(emoteState,'emote_snowbell_ring',now);
+equal(eventOfferPurchaseCount(emoteState,'EVT_ANNUAL_012_2026','frostfall_frostbell_cheer',now),1,'Milestone unlock marks matching shop offer owned');
+let blocked=false;
+try{purchaseEventOffer(emoteState,'frostfall_frostbell_cheer',now);}catch{blocked=true;}
+ok(blocked,'Already owned emote cannot consume tokens');
+for(const offer of emoteOffers.filter(row=>row.reward.id!=='emote_snowbell_ring'))emoteState=purchaseEventOffer(emoteState,offer.id,now);
+ok(ids.every(id=>availableChatEmotes(emoteState.account.unlockedEmoteIds??[]).some(row=>row.id===id)),'All five unlock in account chat picker');
+equal(eventCollectionJournal(emoteState,now).filter(row=>ids.includes(row.reward.id)).length,5,'Alternate reward sources do not duplicate journal items');
 
 console.log('PASS: Veilbreak and Frostfall activate and grant their canonical event collectibles');

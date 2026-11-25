@@ -24,7 +24,7 @@ function useAbyssalClock(enabled:boolean){
  const [foreground,setForeground]=useState(false);
  const [systemReduced,setSystemReduced]=useState(true);
  useEffect(()=>{
-  if(!enabled)return;
+  if(!enabled){setForeground(false);setSystemReduced(true);return;}
   let live=true,changed=false;
   setSystemReduced(true);
   setForeground(AppState.currentState==='active');
@@ -55,7 +55,7 @@ const AbyssalTide=memo(function AbyssalTide({clock,k,assets,fullSet}:{clock:Anim
    const inputRange=p.map((_,j)=>j/(p.length-1));
    return {x:clock.interpolate({inputRange,outputRange:p.map(([x])=>x*k)}),y:clock.interpolate({inputRange,outputRange:p.map(([,y])=>y*k)}),opacity:clock.interpolate({inputRange:CURVE.phase,outputRange:CURVE.energy.map(e=>.38+e*(.42-i*.04))})};
   });
-  return {energy,opacity,rise,motes,crest:Animated.multiply(energy,fullSet?.78:.45)};
+  return {energy,opacity,rise,motes,crest:Animated.multiply(energy,fullSet ? .78 : .45)};
  },[clock,k,fullSet]);
  const r=Q.moteRadius;
  return <Decorative>
@@ -66,13 +66,13 @@ const AbyssalTide=memo(function AbyssalTide({clock,k,assets,fullSet}:{clock:Anim
 });
 const AbyssalPet=memo(function AbyssalPet({clock,k,assets,running,mode,alternatePetSource}:{clock:Animated.Value;k:number;assets:AbyssalSceneAssets;running:boolean;mode:'matching'|'alternate'|'none';alternatePetSource?:ImageSourcePropType}){
  const motion=useMemo(()=>{
-  if(!running)return null;
+  if(!running||mode!=='matching')return null;
   const lift=clock.interpolate({inputRange:IDLE_PHASE,outputRange:IDLE_LIFT.map(v=>v*k)});
   const tideLift=clock.interpolate({inputRange:CURVE.phase,outputRange:CURVE.energy.map(e=>-1.5*e*k)});
   const tilt=clock.interpolate({inputRange:IDLE_PHASE,outputRange:IDLE_TILT});
   const aura=clock.interpolate({inputRange:CURVE.phase,outputRange:CURVE.energy.map(e=>.28+.55*e)});
   return {lift:Animated.add(lift,tideLift),tilt,aura};
- },[running,clock,k]);
+ },[running,clock,k,mode]);
  if(mode==='none')return null;
  if(mode==='alternate'&&alternatePetSource)return <Image source={alternatePetSource} fadeDuration={0} resizeMode="contain" style={box(k,B.alternate)}/>;
  if(mode!=='matching')return null;

@@ -55589,34 +55589,41 @@ function projectedIdleContext(state, reward3, settleAtMs) {
 }
 function idleRuleSettlementWindow(state, nowMs) {
   const rule = activeIdleRuleForState(state), activity = state.activity;
-  if (!activity || !state.character) return { settleAtMs: nowMs, shouldStop: false, safety: false, combatRecovery: false };
+  if (!activity || !state.character) return { supply: previewStandardActivityRewardWithSupplies(state, nowMs), settleAtMs: nowMs, shouldStop: false, safety: false, combatRecovery: false };
   const node = [...GATHERING, ...HERB_NODES].find((row) => row.id === activity.targetId), queueGoal = activity.queueGoal;
   const condition = queueGoal ? { id: "queue-goal", kind: queueGoal.kind, targetId: queueGoal.kind === "item_quantity" ? node?.itemId : queueGoal.kind === "skill_level" ? node?.skillId : void 0, value: queueGoal.value, enabled: true } : activity.kind === "combat" && activity.huntGoal ? { id: "hunt-goal-condition", kind: activity.huntGoal.kind, targetId: activity.targetId, value: activity.huntGoal.value, enabled: true } : void 0;
   const goalRule = condition && activity.queueGoalCompletedAtMs === void 0 ? { id: "activity-goal", characterId: state.character.id, name: "Activity goal", conditions: [condition], stopIfOutOfFood: false, stopIfRewardsWouldOverflow: false, finishCurrentCycle: true } : void 0;
-  if (!rule && !goalRule && !activity.queueManaged && !state.character.activityQueue?.length) return { settleAtMs: nowMs, shouldStop: false, safety: false, combatRecovery: false };
+  if (!rule && !goalRule && !activity.queueManaged && !state.character.activityQueue?.length) return { supply: previewStandardActivityRewardWithSupplies(state, nowMs), settleAtMs: nowMs, shouldStop: false, safety: false, combatRecovery: false };
   const capAtMs = activity.lastClaimAtMs + offlineCapSeconds(state) * 1e3, upper = Math.max(activity.lastClaimAtMs, Math.min(nowMs, capAtMs));
   const evaluateAt = (time) => {
-    const reward3 = previewStandardActivityRewardWithSupplies(state, time).reward, ctx = projectedIdleContext(state, reward3, time), saved = rule ? evaluateIdleRuleSet(rule, ctx) : { shouldStop: false, safety: false }, goal = goalRule ? evaluateIdleRuleSet(goalRule, ctx) : { shouldStop: false, safety: false };
+    const supply2 = previewStandardActivityRewardWithSupplies(state, time);
+    const reward3 = supply2.reward, ctx = projectedIdleContext(state, reward3, time), saved = rule ? evaluateIdleRuleSet(rule, ctx) : { shouldStop: false, safety: false }, goal = goalRule ? evaluateIdleRuleSet(goalRule, ctx) : { shouldStop: false, safety: false };
     const evaluation = reward3.stoppedReason ? { shouldStop: true, safety: true, reason: reward3.stoppedReason } : saved.safety ? saved : goal.shouldStop ? { ...goal, reason: queueGoal ? "Queue goal reached." : `Hunt goal reached: ${activity.huntGoal?.label ?? "target"}.` } : saved;
     const combatRecovery = activity.kind === "combat" && (!!reward3.stoppedReason?.toLowerCase().includes("injured") || saved.safety && (saved.reason === "Food reserve is empty." || rule?.conditions.some((row) => row.id === saved.conditionId && row.kind === "food_below") === true));
-    return { reward: reward3, evaluation, combatRecovery };
+    return { supply: supply2, evaluation, combatRecovery };
   };
   const upperResult = evaluateAt(upper);
-  if (!upperResult.evaluation.shouldStop) return { settleAtMs: upper, shouldStop: false, safety: false, combatRecovery: false };
-  const atStart = evaluateAt(activity.lastClaimAtMs);
-  if (atStart.evaluation.shouldStop) return { settleAtMs: activity.lastClaimAtMs, shouldStop: true, safety: atStart.evaluation.safety, combatRecovery: atStart.combatRecovery, reason: atStart.evaluation.reason ?? "Idle Rule target already reached." };
+  if (!upperResult.evaluation.shouldStop) return { supply: upperResult.supply, settleAtMs: upper, shouldStop: false, safety: false, combatRecovery: false };
+  const atStart = upper === activity.lastClaimAtMs ? upperResult : evaluateAt(activity.lastClaimAtMs);
+  if (atStart.evaluation.shouldStop) return { supply: atStart.supply, settleAtMs: activity.lastClaimAtMs, shouldStop: true, safety: atStart.evaluation.safety, combatRecovery: atStart.combatRecovery, reason: atStart.evaluation.reason ?? "Idle Rule target already reached." };
   let low = activity.lastClaimAtMs, high = upper;
+  let final = upperResult, below = atStart;
   while (high - low > 1) {
-    const mid = low + Math.floor((high - low) / 2);
-    if (evaluateAt(mid).evaluation.shouldStop) high = mid;
-    else low = mid;
+    const mid = low + Math.floor((high - low) / 2), candidate = evaluateAt(mid);
+    if (candidate.evaluation.shouldStop) {
+      high = mid;
+      final = candidate;
+    } else {
+      low = mid;
+      below = candidate;
+    }
   }
-  let settleAtMs = high;
-  let final = evaluateAt(settleAtMs);
+  let settleAtMs = high, supply = final.supply;
   if (final.evaluation.safety && final.evaluation.reason === "Storage cannot safely accept the next reward." && settleAtMs > activity.lastClaimAtMs) {
     settleAtMs = Math.max(activity.lastClaimAtMs, settleAtMs - 1);
+    supply = settleAtMs === low ? below.supply : previewStandardActivityRewardWithSupplies(state, settleAtMs);
   }
-  return { settleAtMs, shouldStop: true, safety: final.evaluation.safety, combatRecovery: final.combatRecovery, reason: final.evaluation.reason ?? "Configured Idle Rule target reached." };
+  return { supply, settleAtMs, shouldStop: true, safety: final.evaluation.safety, combatRecovery: final.combatRecovery, reason: final.evaluation.reason ?? "Configured Idle Rule target reached." };
 }
 function processingSettlementWindow(state, nowMs) {
   const activity = state.activity, processing = activity.processing;
@@ -55645,7 +55652,7 @@ function previewActivityReward(state, nowMs) {
     return window.expired ? { ...reward4, stoppedReason: "Winter Hearth crafting ended. Unfinished reservations are refunded." } : reward4;
   }
   if (!state.activity || !state.character) return { xp: 0, gold: 0, items: [], kills: 0, elapsedSeconds: 0 };
-  const idleWindow = idleRuleSettlementWindow(state, nowMs), reward3 = previewStandardActivityRewardWithSupplies(state, idleWindow.settleAtMs).reward;
+  const idleWindow = idleRuleSettlementWindow(state, nowMs), reward3 = idleWindow.supply.reward;
   return idleWindow.shouldStop && !reward3.stoppedReason ? { ...reward3, stoppedReason: idleWindow.reason } : reward3;
 }
 function refreshQuests(state, lastCombatTarget, lastKills = 0) {
@@ -55839,7 +55846,7 @@ function claimActivitySegmentRaw(state, nowMs) {
     const recovered2 = settleOutOfCombatRecovery(state, nowMs);
     return { state: recovered2, reward: previewActivityReward(state, nowMs) };
   }
-  const idleWindow = idleRuleSettlementWindow(state, nowMs), settledAtMs = idleWindow.settleAtMs, idleStopReason = idleWindow.shouldStop ? idleWindow.reason : void 0, supply = previewStandardActivityRewardWithSupplies(state, settledAtMs), boosted = supply.reward;
+  const idleWindow = idleRuleSettlementWindow(state, nowMs), settledAtMs = idleWindow.settleAtMs, idleStopReason = idleWindow.shouldStop ? idleWindow.reason : void 0, supply = idleWindow.supply, boosted = supply.reward;
   const reward3 = idleWindow.shouldStop && !boosted.stoppedReason ? { ...boosted, stoppedReason: idleStopReason, goalReached: !idleWindow.safety } : boosted;
   if (state.activity.kind !== "combat") {
     const skills2 = state.skills.map((x) => x.skillId === state.activity.kind ? { ...x, xp: x.xp + reward3.xp, level: levelFromXp(x.xp + reward3.xp) } : x);

@@ -38,6 +38,7 @@ const COMPACT_COLLECTION_NAMES:Readonly<Record<string,string>>={
  'Frostbound Chime':'Frostbound','Amberglass Loop':'Amberglass',
  'Clockwork Covenant':'Clockwork','Celestial Sovereign':'Celestial',
  'Draconic Dominion':'Draconic','Abyssal Majesty':'Abyssal','Paradox Eternal':'Paradox',
+ 'Sakura Enchantment':'Sakura','Stormforged Sovereign':'Stormforged',
 };
 type SetLabelRow=Pick<WardrobeRow,'kind'|'id'|'name'|'clear'>;
 export function wardrobeCollectionName(row:Pick<WardrobeRow,'kind'|'id'|'clear'>):string|undefined{

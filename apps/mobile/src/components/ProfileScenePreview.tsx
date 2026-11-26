@@ -1,5 +1,6 @@
 import {useAuthSession} from '../online/AuthSessionProvider';
 import {useUltraLuxeCollectionProjection} from '../online/useUltraLuxeCollectionProjection';
+import {sixLuxeNamesEnabled} from '../online/ultra-luxe-name-readback';
 import {candidateAppearanceIds,candidateAppearanceHint,candidateShowcase,ownedNewUltraLuxeCollections} from '../core/ultra-luxe-owned-wardrobe';
 import {newLuxeBackground,newLuxeBorder,newLuxePet} from '../theme/ultra-luxe-candidate-art';
 import {VerifiedCandidateShowcase,VerifiedCandidateBorderEffects} from './profile/VerifiedCandidateShowcase';
@@ -53,7 +54,7 @@ export function ProfileScenePreview({state,backgroundId,active=false}:{state:Gam
  const character=state.character!;
  const accountId=useAuthSession().session?.user.id??'';
  const raw={background:backgroundId,border:character.profileBorderId,pet:character.selectedCosmeticPetId};
- const projection=useUltraLuxeCollectionProjection(candidateAppearanceHint(raw));
+ const projection=useUltraLuxeCollectionProjection(active&&candidateAppearanceHint(raw),sixLuxeNamesEnabled);
  const owned=ownedNewUltraLuxeCollections(state,{accountId,characterId:character.id},projection);
  const allowed=owned.map(c=>c.id);
  const safe=candidateAppearanceIds({...raw,displayedBadges:[]},allowed);

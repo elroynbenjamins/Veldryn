@@ -52,6 +52,8 @@ for(const f of ['components/PublicProfileScene.tsx','components/ProfileScenePrev
 console.log('PASS: four-set isolated projection, scoped quick equip, mixed pieces, revocation, static badges and production isolation');
 
 const wardrobe=load(path.join(root,'core/ultra-luxe-owned-wardrobe.ts'));
+assert.equal(wardrobe.NEW_ULTRA_LUXE_WARDROBE.length,4);
+assert.equal(wardrobe.LEGACY_PUBLIC_LUXE_WARDROBE.length,2);
 const blank=['icon','scene','frame','effect','pet','title'].map(kind=>({kind,label:kind,owned:0,total:0,rows:[]}));
 for(const row of wardrobe.NEW_ULTRA_LUXE_WARDROBE){
  const state={character:{id:scope.characterId},account:{unlockedProfileBackgroundIds:[row.ids.background],unlockedProfileBorderIds:[row.ids.border],unlockedCosmeticPetIds:[row.ids.pet],unlockedTitleIds:[row.titleId]}};
@@ -113,7 +115,20 @@ for(const route of [self,pub]){
  assert(route.includes('VerifiedCandidateBorderEffects'));
 }
 assert(self.includes('ownedNewUltraLuxeCollections(state,{accountId,characterId:character.id},projection)'));
-assert(pub.includes('profile.ultraLuxeAppearanceVerified===true'));
+assert(pub.includes('profile.ultraLuxeAppearanceVerified===true?LEGACY_PUBLIC_LUXE_WARDROBE.map'));
+assert(self.includes('candidateAppearanceHint(raw),sixLuxeNamesEnabled)'));
+assert(stage.includes('collapsed&&candidate,sixLuxeNamesEnabled)'));
+for(const row of wardrobe.NEW_ULTRA_LUXE_WARDROBE.slice(2)){
+ const selection={background:row.ids.background,border:row.ids.border,pet:row.ids.pet,displayedBadges:[]};
+ const oldPublic=wardrobe.LEGACY_PUBLIC_LUXE_WARDROBE.map(c=>c.id);
+ assert.equal(wardrobe.candidateAppearanceIds(selection,oldPublic).border,undefined);
+ assert.equal(wardrobe.candidateShowcase(selection,oldPublic),undefined);
+}
+const {NEXT_PREMIUM_SETS}=load(path.join(root,'core/next-premium-set-review.ts'));
+for(const set of NEXT_PREMIUM_SETS){
+ assert(!wardrobe.newUltraLuxePatchAllowed({character:{id:'hero1'},account:{}},scope,undefined,{icon:set.icon}));
+ assert(!wardrobe.newUltraLuxePatchAllowed({character:{id:'hero1'},account:{}},scope,undefined,{effect:set.showcase}));
+}
 assert(stage.includes('if(dedicated||candidate)'));
 const badgesArt=read('components/player-badge-artwork.ts');
 assert(badgesArt.includes("ascendant_monarch_of_deep:require(")&&badgesArt.includes("ascendant_beyond_existence:require("));

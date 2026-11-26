@@ -3,12 +3,18 @@ import type {WardrobeCategory,WardrobeRow,WardrobeEquipped} from './profile-ward
 import type {QuickCosmeticSet} from './profile-quick-set-equip';
 import {ABYSSAL_COLLECTION,ABYSSAL_IDS} from './abyssal-showcase-layout';
 import {PARADOX_COLLECTION,PARADOX_IDS} from './paradox-showcase-layout';
-import {eligibleReviewCollections,type ReviewGrantSnapshot,type ReviewScope} from './ultra-luxe-review-integration';
+import {reviewGrantAllowsFullSet,type ReviewGrantSnapshot,type ReviewScope} from './ultra-luxe-review-integration';
+import {NEXT_PREMIUM_SETS} from './next-premium-set-review';
 
-export const NEW_ULTRA_LUXE_WARDROBE=[
+/** The legacy public boolean only certifies the original candidate pair. */
+export const LEGACY_PUBLIC_LUXE_WARDROBE=[
  {id:ABYSSAL_COLLECTION.id,name:ABYSSAL_COLLECTION.name,accent:ABYSSAL_COLLECTION.accent,ids:ABYSSAL_IDS,backgroundName:ABYSSAL_COLLECTION.backgroundName,borderName:ABYSSAL_COLLECTION.borderName,petName:ABYSSAL_COLLECTION.petName,titleId:'ascendant-abyssal-title',titleName:ABYSSAL_COLLECTION.badgeName},
  {id:PARADOX_COLLECTION.id,name:PARADOX_COLLECTION.name,accent:PARADOX_COLLECTION.accent,ids:PARADOX_IDS,backgroundName:PARADOX_COLLECTION.backgroundName,borderName:PARADOX_COLLECTION.borderName,petName:PARADOX_COLLECTION.petName,titleId:'ascendant-paradox-title',titleName:PARADOX_COLLECTION.badgeName},
 ] as const;
+export const NEW_ULTRA_LUXE_WARDROBE=[...LEGACY_PUBLIC_LUXE_WARDROBE,...NEXT_PREMIUM_SETS.map(set=>({
+ id:set.id,name:set.name,accent:set.colors[0],ids:{background:set.background,border:set.border,pet:set.pet,badge:set.badge},
+ backgroundName:set.backgroundName,borderName:set.borderName,petName:set.petName,titleId:set.title,titleName:set.titleName,
+}))] as const;
 /** Discovery hint only. A verified, self-only RPC is independently required. */
 export function newUltraLuxeHint(state:GameState){
  const a=state.account;
@@ -16,8 +22,9 @@ export function newUltraLuxeHint(state:GameState){
 }
 export function ownedNewUltraLuxeCollections(state:GameState,scope:ReviewScope,projection:ReviewGrantSnapshot|undefined){
  if(state.character?.id!==scope.characterId)return [];
- const allowed=eligibleReviewCollections(true,scope,projection).map(c=>c.id),a=state.account;
- return NEW_ULTRA_LUXE_WARDROBE.filter(c=>allowed.includes(c.id)&&a.unlockedProfileBackgroundIds?.includes(c.ids.background)&&a.unlockedProfileBorderIds?.includes(c.ids.border)&&a.unlockedCosmeticPetIds?.includes(c.ids.pet)&&a.unlockedTitleIds?.includes(c.titleId));
+ const a=state.account;
+ if(!Array.isArray(projection?.collectionIds))return [];
+ return NEW_ULTRA_LUXE_WARDROBE.filter(c=>reviewGrantAllowsFullSet(projection,scope,c.id)&&a.unlockedProfileBackgroundIds?.includes(c.ids.background)&&a.unlockedProfileBorderIds?.includes(c.ids.border)&&a.unlockedCosmeticPetIds?.includes(c.ids.pet)&&a.unlockedTitleIds?.includes(c.titleId));
 }
 /** Existing live categories remain unchanged unless the new set is verified and complete.
  * No locked tiles or total-count inflation for non-owners. */
@@ -47,6 +54,8 @@ export function isNewUltraLuxeWardrobePiece(row:Pick<WardrobeRow,'kind'|'id'>){
 }
 /** Recheck candidate pieces at the queued write boundary. Server commit remains authority. */
 export function newUltraLuxePatchAllowed(state:GameState,scope:ReviewScope,projection:ReviewGrantSnapshot|undefined,patch:Partial<WardrobeEquipped>){
+ // The two newest icon designs and implicit signature effects are not equipable pieces.
+ if(NEXT_PREMIUM_SETS.some(set=>patch.icon===set.icon||patch.effect===set.showcase))return false;
  const owned=ownedNewUltraLuxeCollections(state,scope,projection);
  return NEW_ULTRA_LUXE_WARDROBE.every(c=>!(
   patch.scene===c.ids.background||patch.frame===c.ids.border||patch.pet===c.ids.pet||patch.title?.trim().toLowerCase()===c.titleName.toLowerCase()
@@ -77,6 +86,8 @@ export function candidateShowcase(selection:NewLuxeAppearance,allowed:readonly s
 const ULTRA_LUXE_EFFECTS={
  'ascendant-abyssal-majesty':'premium:abyssal-majesty:call-of-the-deep',
  'ascendant-paradox-eternal':'premium:paradox-eternal:reality-rewritten',
+ 'ascendant-sakura-enchantment':'ascendant-sakura-petal-waltz',
+ 'ascendant-stormforged-sovereign':'ascendant-stormforged-thunder-pulse',
 } as const;
 export function candidateVerifiedTitle(title:string|undefined|null,id:unknown,allowed:readonly string[]){
  return NEW_ULTRA_LUXE_WARDROBE.find(c=>allowed.includes(c.id)&&c.titleId===id&&c.titleName===title);

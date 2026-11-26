@@ -42,6 +42,10 @@ jobs:
           psql -X -v ON_ERROR_STOP=1 -f tools/market-review/pg17/00_disposable_settlement.sql
       - name: Run rollback settlement and bank tests
         run: psql -X -v ON_ERROR_STOP=1 -f tools/market-review/pg17/01_settlement_regression.sql
+      - name: Extend disposable schema and run bulk regressions
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -f tools/market-review/pg17/03_bulk_resources.sql
+          psql -X -v ON_ERROR_STOP=1 -f tools/market-review/pg17/04_bulk_regressions.sql
       - name: Run concurrent purchase and cancellation tests
         run: bash tools/market-review/pg17/02_concurrency.sh
       - name: Verify absence of live schema

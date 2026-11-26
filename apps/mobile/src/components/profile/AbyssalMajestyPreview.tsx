@@ -1,7 +1,8 @@
 import {memo,useEffect,useMemo,useRef,useState,type ReactNode} from 'react';
 import {AccessibilityInfo,Animated,AppState,Easing,Image,StyleSheet,View,useWindowDimensions,type ImageSourcePropType} from 'react-native';
+import {AbyssalBorderLight} from './AbyssalBorderLight';
 import {UltraLuxeIdentityMotionProvider} from './UltraLuxeIdentityMotion';
-import {ABYSSAL_BOXES as B,ABYSSAL_STAGE as S,ABYSSAL_BUDGET as Q,ABYSSAL_CYCLE_MS,ABYSSAL_MOTE_PATHS,ABYSSAL_RAIL_PHASE,ABYSSAL_RAIL_PATHS,ABYSSAL_RAIL_OPACITY,ABYSSAL_POSE_ATLAS,abyssalPoseTimeline,abyssalPoseCell,abyssalAwakeningCurve,abyssalPetMode,abyssalStageSupported} from '../../core/abyssal-showcase-layout';
+import {ABYSSAL_BOXES as B,ABYSSAL_STAGE as S,ABYSSAL_BUDGET as Q,ABYSSAL_CYCLE_MS,ABYSSAL_MOTE_PATHS,ABYSSAL_POSE_ATLAS,abyssalPoseTimeline,abyssalPoseCell,abyssalAwakeningCurve,abyssalPetMode,abyssalStageSupported} from '../../core/abyssal-showcase-layout';
 
 /** Review component only. All artwork is supplied by its caller; no release registration. */
 export type AbyssalSceneAssets={
@@ -79,20 +80,6 @@ const AbyssalTide=memo(function AbyssalTide({clock,k,assets}:{clock:Animated.Val
   {motion.motes.map((m,i)=><Animated.Image key={i} source={assets.mote} fadeDuration={0} resizeMode="contain" style={[pos(k,-r,-r,2*r,2*r),{opacity:m.opacity,transform:[{translateX:m.x},{translateY:m.y}]}]}/>)}
  </Decorative>;
 });
-/** Crest and pearl illumination above the actual frame, not hidden beneath it.
- * Two small fixed-footprint ornaments; no extra clock or full-screen overlay. */
-const AbyssalFrameLight=memo(function AbyssalFrameLight({clock,k,source,mote,fullSet}:{clock:Animated.Value;k:number;source:ImageSourcePropType;mote:ImageSourcePropType;fullSet:boolean}){
- const light=useMemo(()=>({
-  crest:clock.interpolate({inputRange:CURVE.phase,outputRange:CURVE.energy.map(e=>.10+(fullSet ? .78 : .52)*e)}),
-  pearl:clock.interpolate({inputRange:CURVE.phase,outputRange:CURVE.energy.map(e=>.08+(fullSet ? .68 : .44)*e)}),
- }),[clock,fullSet]);
- const rails=useMemo(()=>fullSet?ABYSSAL_RAIL_PATHS.map(path=>({x:clock.interpolate({inputRange:[...ABYSSAL_RAIL_PHASE],outputRange:path.map(([x])=>x*k)}),y:clock.interpolate({inputRange:[...ABYSSAL_RAIL_PHASE],outputRange:path.map(([,y])=>y*k)}),opacity:clock.interpolate({inputRange:[...ABYSSAL_RAIL_PHASE],outputRange:[...ABYSSAL_RAIL_OPACITY]})})):[],[clock,k,fullSet]);
- return <Decorative>
-  <Animated.Image source={source} fadeDuration={0} resizeMode="contain" style={[pos(k,157,5,26,26),{opacity:light.crest}]}/>
-  <Animated.Image source={source} fadeDuration={0} resizeMode="contain" style={[pos(k,158,176,24,24),{opacity:light.pearl}]}/>
-  {rails.map((r,i)=><Animated.Image key={i} source={mote} fadeDuration={0} resizeMode="contain" style={[pos(k,-4,-4,8,8),{opacity:r.opacity,transform:[{translateX:r.x},{translateY:r.y}]}]}/>)}
- </Decorative>;
-});
 const AbyssalPet=memo(function AbyssalPet({clock,k,assets,running,mode,alternatePetSource}:{clock:Animated.Value;k:number;assets:AbyssalSceneAssets;running:boolean;mode:'matching'|'alternate'|'none';alternatePetSource?:ImageSourcePropType}){
  const motion=useMemo(()=>{
   if(!running||mode!=='matching')return null;
@@ -131,7 +118,7 @@ export const AbyssalMajestyPreview=memo(function AbyssalMajestyPreview({assets,e
     {badges?<View style={[box(k,B.badges),s.badges]}>{badges}</View>:null}
    </UltraLuxeIdentityMotionProvider>
    {guild?<View style={[box(k,B.guild),s.guild]}>{guild}</View>:null}
-   <Decorative><Image source={assets.border} fadeDuration={0} resizeMode="stretch" style={s.fill}/>{running?<AbyssalFrameLight clock={clock} k={k} source={assets.aura} mote={assets.mote} fullSet={verifiedFullSet}/>:null}</Decorative>
+   <Decorative><Image source={assets.border} fadeDuration={0} resizeMode="stretch" style={s.fill}/>{running?<AbyssalBorderLight clock={clock} width={width} height={S.height*k} art={assets} showcase fullSet={verifiedFullSet}/>:null}</Decorative>
   </View>}
  </View>;
 });

@@ -61,3 +61,17 @@ export const PARADOX_AMBIENT_PATHS=[
  [[239,165],[261,174],[287,165],[310,164],[287,165],[261,174],[239,165]],
  [[35,42],[75,37],[110,43],[145,36],[110,43],[75,37],[35,42]],
 ] as const;
+
+/** One 3-second idle cycle repeated eight times by the existing scene clock. */
+export const PARADOX_POSE_ATLAS={frameWidth:112,frameHeight:128,columns:6,rows:6,frames:36,seconds:3,cycles:8} as const;
+export function paradoxPoseTimeline(){
+ const a=PARADOX_POSE_ATLAS,inputRange=[0],frames=[0];
+ for(let i=1;i<=a.frames;i++){
+  inputRange.push(i/a.frames-.0005/a.seconds,i/a.frames);
+  frames.push(i-1,i%a.frames);
+ }
+ return {inputRange,frames};
+}
+export function paradoxPoseCell(frame:number){
+ return {column:frame%PARADOX_POSE_ATLAS.columns,row:Math.floor(frame/PARADOX_POSE_ATLAS.columns)};
+}

@@ -1,26 +1,26 @@
-name: Production latency candidate bundle and regression validation
+name: Empty contribution candidate bundle and regression validation
 on:
   push:
-    branches: ['fix/production-latency-20261125']
+    branches: ['perf/skip-empty-guild-contributions-20261126']
     paths:
-      - '.github/workflows/production-latency-candidate.yml'
+      - '.github/workflows/skip-empty-guild-contributions-candidate.yml'
       - 'backend/online/**'
       - 'apps/mobile/src/online/live-events.ts'
   workflow_dispatch:
 permissions:
   contents: write
 concurrency:
-  group: production-latency-candidate
+  group: skip-empty-guild-contributions-candidate
   cancel-in-progress: false
 jobs:
   rebuild:
-    if: github.ref == 'refs/heads/fix/production-latency-20261125'
+    if: github.ref == 'refs/heads/perf/skip-empty-guild-contributions-20261126'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: fix/production-latency-20261125
+          ref: perf/skip-empty-guild-contributions-20261126
           fetch-depth: 0
       - uses: pnpm/action-setup@v4
         with:
@@ -44,7 +44,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          branch=fix/production-latency-20261125
+          branch=perf/skip-empty-guild-contributions-20261126
           unexpected=$(git diff --name-only | grep -Ev '^backend/supabase/functions/(gameplay|coop)/index\.ts$' || true)
           if [ -n "$unexpected" ]; then
             printf 'Unexpected tracked changes:\n%s\n' "$unexpected"

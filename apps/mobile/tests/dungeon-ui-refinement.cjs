@@ -53,7 +53,13 @@ test('weekly quest is compact, accessible, and claims without entering detail mo
 test('Echo selection retains automatic role fills and gives explicit disabled reasons',()=>{
  const source=read('src/components/coop/CoopSocialEchoPicker.tsx');
  const loadout=read('src/components/coop/CoopLoadoutSelection.tsx');
- assert.match(source,/roleSlots\(hostRole,candidates,selectedIds\)/);
+ assert.match(source,/roleSlots\(hostRole,candidates,selectedIds,hostCombatPower\)/);
+ assert.match(source,/kind:'host' as const,combatPower:hostCombatPower/);
+ assert.match(source,/kind:'chosen' as const,combatPower:person\.combatPower/);
+ assert.match(source,/kind:'auto' as const,combatPower:null/);
+ assert.match(source,/slot\.combatPower===null\?'CP —':'CP '\+displayCombatPower\(slot\.combatPower,true\)/);
+ assert.match(source,/CP \{displayCombatPower\(candidate\.combatPower\)\}/);
+ assert.match(loadout,/hostCombatPower=\{combatPowerRating\(state\)\.total\}/);
  assert.match(source,/accessibilityRole="checkbox"/);
  assert.match(source,/reasonLabel=disabled\?disabledReason\(why\)/);
  assert.match(source,/accessibilityHint=\{disabled\?reasonLabel/);

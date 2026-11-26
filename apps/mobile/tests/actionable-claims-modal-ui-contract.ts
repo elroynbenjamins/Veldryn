@@ -1,4 +1,4 @@
-export {};
+import {QUICK_NAV_DESTINATIONS} from '../src/core/quick-navigation';
 const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string};
 function ok(value:unknown,message:string):asserts value{if(!value)throw new Error(message);}
 const read=(path:string)=>fs.readFileSync(path,'utf8');
@@ -21,7 +21,7 @@ ok(attention.includes("story_reward_ready:'Quests'")&&attention.includes("class_
  'All earned quest claim types lead to existing Quests, with overflow only in Inventory');
 ok(account.includes("if(id==='Quests'&&questRewardCount>0)")&&!account.includes('eventRewardCount'),
  'Account hub highlights earned quest claims without adding event claim badges');
-ok(quickNav.includes("([...QUICK_NAV_DESTINATIONS,'Events'] as QuickNavDestination[])"),
+ok(QUICK_NAV_DESTINATIONS.some(id=>id==='Events')&&quickNav.includes('QUICK_NAV_DESTINATIONS.filter(item=>!draft.includes(item))')&&quickNav.includes('[...QUICK_NAV_DESTINATIONS] as QuickNavDestination[]'),
  'Event remains reachable in quick navigation without a claim-notification badge');
 ok(!account.includes("const attentionPriority:MoreDestination[]=['Quests','Events'")&&account.includes("const attentionPriority:MoreDestination[]=['NewUnlocks','Quests','DailySupplies'")&&account.includes("attentionDestinations.slice(0,3)"),
  'Event rewards no longer enter the Account attention rail');

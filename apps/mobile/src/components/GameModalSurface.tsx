@@ -5,7 +5,7 @@ import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {sharedText} from '../i18n/shared';
-import {resolveModalBottomInset} from './modal-safe-area';
+import {resolveModalBottomInset,resolveModalKeyboardOverlap} from './modal-safe-area';
 
 type Presentation='sheet'|'dialog'|'fullscreen';
 type GameModalSurfaceProps=PropsWithChildren<{visible:boolean;onClose:()=>void;reduceMotion?:boolean;presentation?:Presentation;surfaceStyle?:StyleProp<ViewStyle>;backdropLabel?:string;dismissOnBackdrop?:boolean}>;
@@ -28,13 +28,14 @@ function GameModalWindow({visible,onClose,presentation='sheet',children,surfaceS
   const [androidKeyboardTop,setAndroidKeyboardTop]=useState<number|null>(null);
   useEffect(()=>{
     if(Platform.OS!=='android'||!visible){setAndroidKeyboardTop(null);return;}
+    setAndroidKeyboardTop(Keyboard.metrics()?.screenY??null);
     const show=Keyboard.addListener('keyboardDidShow',event=>setAndroidKeyboardTop(event.endCoordinates.screenY));
     const hide=Keyboard.addListener('keyboardDidHide',()=>setAndroidKeyboardTop(null));
     return ()=>{show.remove();hide.remove();};
   },[visible]);
   // Some Android transparent modals do not resize with the IME. Reserve its
   // overlap rather than stacking it on top of the system navigation inset.
-  const keyboardOverlap=Platform.OS==='android'&&androidKeyboardTop!==null?Math.max(0,windowHeight-androidKeyboardTop):0;
+  const keyboardOverlap=resolveModalKeyboardOverlap({android:Platform.OS==='android',keyboardTop:androidKeyboardTop,frameY:frame.y,frameHeight:frame.height,windowHeight,screenHeight:Dimensions.get('screen').height});
   // For sheets the navigation inset belongs OUTSIDE the surface, so the
   // footer and its last buttons sit entirely above three-button navigation.
   // Dialogs already reserve extra breathing room; fullscreens pad internally.

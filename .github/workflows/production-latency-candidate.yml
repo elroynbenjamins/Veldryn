@@ -1,27 +1,26 @@
-name: Idle reward reuse candidate bundle and regression validation
+name: Production latency candidate bundle and regression validation
 on:
   push:
-    branches: ['perf/idle-reward-reuse-20261126']
+    branches: ['fix/production-latency-20261125']
     paths:
       - '.github/workflows/production-latency-candidate.yml'
       - 'backend/online/**'
-      - 'apps/mobile/src/core/game.ts'
-      - 'apps/mobile/src/core/release-flags.ts'
+      - 'apps/mobile/src/online/live-events.ts'
   workflow_dispatch:
 permissions:
   contents: write
 concurrency:
-  group: idle-reward-reuse-candidate
+  group: production-latency-candidate
   cancel-in-progress: false
 jobs:
   rebuild:
-    if: github.ref == 'refs/heads/perf/idle-reward-reuse-20261126'
+    if: github.ref == 'refs/heads/fix/production-latency-20261125'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: perf/idle-reward-reuse-20261126
+          ref: fix/production-latency-20261125
           fetch-depth: 0
       - uses: pnpm/action-setup@v4
         with:
@@ -45,7 +44,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          branch=perf/idle-reward-reuse-20261126
+          branch=fix/production-latency-20261125
           unexpected=$(git diff --name-only | grep -Ev '^backend/supabase/functions/(gameplay|coop)/index\.ts$' || true)
           if [ -n "$unexpected" ]; then
             printf 'Unexpected tracked changes:\n%s\n' "$unexpected"
@@ -55,7 +54,7 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
           if git diff --cached --quiet; then exit 0; fi
-          git commit -m 'build(edge): synchronize validated idle reward reuse bundles'
+          git commit -m 'build(edge): synchronize validated latency candidate bundles'
           git fetch origin "$branch"
           if [ "$(git rev-parse HEAD^)" != "$(git rev-parse "origin/$branch")" ]; then
             echo 'Candidate advanced; refusing to push stale bundles.'

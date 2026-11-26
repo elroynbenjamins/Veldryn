@@ -8,6 +8,7 @@ import {inspectSocketStackingCapReviewV2,SOCKET_CAP_DIMINISHING_V2,SOCKET_CAP_GE
 import {reviewUtilityGemSemanticsV2,UTILITY_GEM_REVIEW_V2} from '../socket-utility-gem-review';
 import {reviewEffectGemResonanceV2,EFFECT_RESONANCE_REVIEW_V2} from '../effect-gem-resonance-review';
 import {runEffectTriggerBoundaryReviewV2} from './effect-gem-trigger-review';
+import {inspectEffectGemInteractionsV2,EFFECT_INTERACTION_REVIEW_V2,type EffectInteractionActionV2} from '../effect-gem-interaction-review';
 import {STAT_GEMS_V1,EFFECT_GEMS_V1,gemItemId,type GemGrade,GEM_BALANCE_REVIEW_V2,STAT_GEMS_REVIEW_V2,EFFECT_GEMS_REVIEW_V2,EFFECT_GEM_REVIEW_MULTIPLIERS_V2} from '../../../equipment/gems/gem-catalog-v1';
 import type {V2GemSidecarState} from '../../../equipment/equipment-crafting-v2-gem-sidecar-types';
 import {writeFileSync} from 'node:fs';
@@ -1800,6 +1801,63 @@ function makeV21Loadout(classId:ClassIdV2,specIndex:0|1,targetTier:1|2|3|4,targe
  assert.equal(mixed.effectResonanceReview!.copyCount,9);
  assert.ok(mixed.effectResonanceReview!.families.every(g=>g.resonance===3));
  assert.deepEqual(mixed.stats,empty.stats);assert.deepEqual(mixed.advanced,empty.advanced);
+ // All 190 distinct two-family pairs at maximum legal resonance.
+ // Six exact worn copies per pair, plus four nine/ten-copy builds.
+ const contexts:EffectInteractionActionV2[]=['authored_direct_damage','basic_damage','authored_periodic_damage',
+  'authored_direct_heal','authored_periodic_heal','authored_barrier','secondary_proc','companion_action'];
+ const peaks=new Map<string,{familyIds:string[];action:string;raw:number;combined:number;alternative:number|null}>();
+ let pairs=0,fullBuilds=0,contextCases=0;
+ const exercise=(families:readonly string[],counts:readonly number[])=>{
+  const gems=families.flatMap((family,i)=>Array.from({length:counts[i]},()=>({family,grade:5 as const,roll:120})));
+  assert.ok(gems.length<=qa.ids.length);
+  const out=reviewFrozenForgeSocketsV2(qa.actor,qa.build,source,sidecar(gems),policy);
+  assert.deepEqual(out.stats,empty.stats);assert.deepEqual(out.advanced,empty.advanced);
+  const original=JSON.stringify(out);
+  for(const action of contexts){
+   const report=inspectEffectGemInteractionsV2(out,action);
+   assert.equal(report.version,EFFECT_INTERACTION_REVIEW_V2);
+   assert.equal(report.copyCount,gems.length);assert.equal(report.sourceDigest,out.digest);
+   assert.equal(report.canExecuteEffects,false);assert.equal(report.secondaryOutputMayReproc,false);
+   const excluded=action==='secondary_proc'||action==='companion_action';
+   assert.equal(report.mayGenerateSecondaryEffects,!excluded);
+   for(const c of report.channels){
+    assert.ok(c.sources.every(r=>families.includes(r.familyId)));
+    assert.equal(new Set(c.sources.map(r=>r.familyId)).size,c.sources.length);
+    assert.ok(Math.abs(c.raw-c.sources.reduce((n,r)=>n+r.fraction,0))<1e-8);
+    assert.ok(c.combined>=0&&c.combined<=c.raw+1e-9);
+    if(c.lane==='damageReduction')assert.ok(c.combined<1);
+    else assert.equal(c.combined,c.raw);
+    if(c.multiplicativeAlternative!==null)assert.ok(c.multiplicativeAlternative>=c.raw-1e-9);
+    if(excluded&&['damage','healing','barrier','overhealConversion','renewal','killHeal','retaliationHeal'].includes(c.lane))
+     assert.equal(c.raw,0);
+    if(action==='authored_periodic_heal'&&['overhealConversion','renewal'].includes(c.lane))assert.equal(c.raw,0);
+    if(action==='basic_damage'&&c.lane==='damage')
+     assert.ok(c.sources.every(r=>r.familyId!=='effect_retaliation'&&r.familyId!=='effect_battle_rhythm'));
+    if(action==='authored_periodic_damage'&&c.lane==='damage')
+     assert.ok(c.sources.every(r=>!['effect_retaliation','effect_momentum','effect_opportunist','effect_battle_rhythm'].includes(r.familyId)));
+    const prior=peaks.get(c.lane);
+    if(!prior||prior.combined<c.combined)peaks.set(c.lane,{familyIds:[...families],action,raw:c.raw,
+     combined:c.combined,alternative:c.multiplicativeAlternative});
+   }
+   contextCases++;
+  }
+  assert.equal(JSON.stringify(out),original);
+ };
+ const ids=EFFECT_GEMS_REVIEW_V2.map(d=>d.familyId);
+ for(let i=0;i<ids.length;i++)for(let j=i+1;j<ids.length;j++){
+  exercise([ids[i],ids[j]],[3,3]);pairs++;
+ }
+ for(const families of [
+  ['effect_retaliation','effect_execution','effect_momentum','effect_predator'],
+  ['effect_last_stand','effect_bulwark','effect_guardians_gift','effect_unyielding'],
+  ['effect_aegis','effect_benediction','effect_shared_resolve','effect_renewal'],
+  ['effect_critical_surge','effect_flow','effect_battle_rhythm','effect_opportunist'],
+ ]){
+  exercise(families,[3,3,3,qa.ids.length>=10?1:0]);fullBuilds++;
+ }
+ assert.equal(pairs,190);assert.equal(fullBuilds,4);assert.equal(contextCases,(190+4)*8);
+ console.log('EFFECT_GEM_INTERACTION_PEAK_REVIEW '+JSON.stringify({policy:EFFECT_INTERACTION_REVIEW_V2,
+  pairs,fullBuilds,contextCases,peaks:Object.fromEntries(peaks),canExecuteEffects:false,releaseEnabled:false}));
  const sample=mixed.deferredEffectSources[0];
  assert.throws(()=>reviewEffectGemResonanceV2([{...sample,candidateFraction:99}],qa.ids),/invalid_copy/);
  assert.throws(()=>reviewEffectGemResonanceV2([sample,sample],qa.ids),/invalid_copy/);

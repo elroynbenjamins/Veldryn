@@ -5,7 +5,9 @@ import type {FrozenLoadoutSnapshot} from '../../../coop/loadout-snapshots';
 import type {ReadyCheckRecord,ReadyRosterMember} from '../../../coop/ready-checks';
 import type {ClassIdV2} from '../build-contract';
 import {CLASS_ROLES_V2} from '../build-contract';
-import {CLASS_NAMES_V2,SPECIALIZATIONS_V2} from '../skill-catalog';
+import {CLASS_NAMES_V2,SPECIALIZATIONS_V2,SKILL_IDENTITIES_V2,SKILLS_V2} from '../skill-catalog';
+import type {BuildSelectionV2} from '../build-contract';
+import {enemyV2SnapshotDigest} from '../enemy-engine-authority';
 import {launchPlayer} from '../../content/launch-combat';
 import {ACTION_STREAM_RNG_QA_V1} from '../../deterministic-rng';
 import {observeRoleCalibrationV2,summarizeRoleCalibrationV2,type RoleCalibrationObservationV2} from '../role-power-calibration-review';
@@ -48,7 +50,28 @@ function measure(r:CombatResult){
 type Metric=ReturnType<typeof measure>;
 type Row={boss:string;party:number;spec:number;band:string;seedIndex:number;metrics:Metric};
 const rows:Row[]=[];
+const reviewLoadouts=process.argv.includes('--matched-loadouts');
+assert.ok(process.argv.slice(2).every(a=>a==='--matched-loadouts'),'unknown matrix argument');
 const observations=new Map<string,RoleCalibrationObservationV2[]>();
+type FocusArm='generic'|'alternative'|'role-specialized';
+type FocusRow={caseId:string;boss:string;band:string;classId:ClassIdV2;spec:string;arm:FocusArm;
+ sameLoadout:boolean;before:{party:Metric;actor:RoleCalibrationObservationV2};
+ after:{party:Metric;actor:RoleCalibrationObservationV2};};
+const focusRows:FocusRow[]=[];
+const explicitSkills:Partial<Record<ClassIdV2,readonly [string,string]>>={
+ HEXWEAVER:['Black Thread','Hex Detonation'],
+ BASTION:['Layered Fortress','Fortress Rebuff'],
+ DREADGUARD:['Grim Resolve','Dark Mantle'],
+ IRONWARDEN:['Oathwall','Rune Bash'],
+};
+function roleSpecialized(classId:ClassIdV2,level:number):BuildSelectionV2['activeSkills']{
+ const names=explicitSkills[classId];assert.ok(names);
+ return names.map(name=>{
+  const skill=SKILL_IDENTITIES_V2.find(x=>x.classId===classId&&x.name===name);
+  assert.ok(skill&&SKILLS_V2.some(x=>x.id===skill.id&&x.unlockLevel<=level),'unlocked explicit skill '+classId+':'+name);
+  return {skillId:skill.id,variantId:skill.variants[0].id};
+ });
+}
 const fixedReference=new Map(bosses.map(boss=>{
  const roster=classes.map(c=>launchPlayer(CLASS_NAMES_V2[c],boss.level));
  return [boss.id,{averageHp:roster.reduce((n,p)=>n+p.stats.maxHp,0)/roster.length,
@@ -56,6 +79,10 @@ const fixedReference=new Map(bosses.map(boss=>{
 }));
 for(const [partyIndex,ids] of parties.entries())for(const spec of [0,1] as const)
  for(const boss of bosses)for(const band of bands)for(const seedIndex of [0,1]){
+  const focusIndices=ids.flatMap((id,i)=>
+   (id==='HEXWEAVER'&&band.id!=='moderate')||
+   (i===0&&boss.id==='BOSS_EXP_ROOT'&&band.id==='severe')?[i]:[]);
+  if(reviewLoadouts&&focusIndices.length===0)continue;
   const f=ids.map(c=>setup(c,spec,boss,profiles[1]));
   const players=f.map(x=>x.actor),runtime=f.map(x=>x.runtime),traitPorts=f.map(x=>x.signedPort);
   const builds=f.map((x,i)=>({...x.build,selected:{...x.build.selected,
@@ -90,8 +117,8 @@ for(const [partyIndex,ids] of parties.entries())for(const spec of [0,1] as const
    verifyPersisted:(binding,_sources,digest)=>binding.runId===runId&&digest===binding.combatInputDigest};
   const frozen=JSON.stringify({input,builds:builds.map(x=>x.selected),snapshot,
    items:runtime.map(r=>r.instancesById)});
-  const run=()=>simulateUnifiedEquipmentPersistedPartyCombatV2(
-   input,builds,runtime,party,true,false,'tactical',ACTION_STREAM_RNG_QA_V1);
+  const run=(chosen:typeof builds=builds)=>simulateUnifiedEquipmentPersistedPartyCombatV2(
+   input,chosen,runtime,party,true,false,'tactical',ACTION_STREAM_RNG_QA_V1);
   const result=run();
   // One fixed replay sample per boss/band/spec; all original RNG matrix
   // cases already verify the full deterministic replay contract.
@@ -114,6 +141,34 @@ for(const [partyIndex,ids] of parties.entries())for(const spec of [0,1] as const
   }
   const metrics=measure(result.combat);
   assert.ok(Object.values(metrics).every(Number.isFinite));
+  if(reviewLoadouts){
+   for(const i of focusIndices){
+    const classId=ids[i],build=builds[i],specializationId=build.selected.specializationId!;
+    const identity={caseId:suffix,bossId:boss.id,classId,specializationId,actorId:players[i].id};
+    const before={party:metrics,actor:observeRoleCalibrationV2(result.combat,identity)};
+    for(const arm of ['generic','alternative','role-specialized'] as const){
+     const activeSkills=arm==='role-specialized'?roleSpecialized(classId,players[i].level):
+      selectReviewSkillLoadoutV2(classId,specializationId,players[i],boss.id,arm).activeSkills;
+     const sameLoadout=JSON.stringify(activeSkills)===JSON.stringify(build.selected.activeSkills);
+     const chosen=builds.map((row,index)=>index===i?{...row,selected:{...row.selected,activeSkills}}:row);
+     const next=sameLoadout?result:run(chosen);
+     // Skill choice changes the bound combat digest, but not gear ownership,
+     // stat contributions or other players' definitions. Each arm rebinds.
+     assert.deepEqual(next.equipmentEvidence,result.equipmentEvidence);
+     assert.deepEqual(next.combat.enemies.map(e=>e.definition),result.combat.enemies.map(e=>e.definition));
+     assert.deepEqual(next.combat.players.filter((_,j)=>i!==j).map(p=>p.definition),
+      result.combat.players.filter((_,j)=>i!==j).map(p=>p.definition));
+     assert.equal(next.partyPersistenceReview?.binding.combatInputDigest,
+      enemyV2SnapshotDigest({...input,players:next.combat.players.map(p=>p.definition),
+       enemies:next.combat.enemies.map(e=>e.definition)}));
+     assert.equal(next.combat.events[0].detail,ACTION_STREAM_RNG_QA_V1);
+     const after={party:measure(next.combat),actor:observeRoleCalibrationV2(next.combat,identity)};
+     assert.ok(Object.values(after.party).every(Number.isFinite));
+     focusRows.push({caseId:suffix,boss:boss.id,band:band.id,classId,spec:specializationId,arm,sameLoadout,before,after});
+    }
+   }
+   continue;
+  }
   rows.push({boss:boss.id,party:partyIndex,spec,band:band.id,seedIndex,metrics});
   const bandRows=observations.get(band.id)??[];
   for(const [i,classId] of ids.entries()){
@@ -124,6 +179,42 @@ for(const [partyIndex,ids] of parties.entries())for(const spec of [0,1] as const
   }
   observations.set(band.id,bandRows);
  }
+if(reviewLoadouts){
+ const expectedHex=18*2*6*2*2,expectedTank=36*2*2;
+ assert.equal(focusRows.length,(expectedHex+expectedTank)*3);
+ assert.equal(focusRows.filter(r=>r.classId==='HEXWEAVER').length,expectedHex*3);
+ const summarize=(group:FocusRow[])=>{
+  const mean=(f:(r:FocusRow)=>number)=>group.reduce((n,r)=>n+f(r),0)/group.length;
+  return {cases:group.length,changedLoadouts:group.filter(r=>!r.sameLoadout).length,
+   lostVictories:group.filter(r=>r.before.party.victory>r.after.party.victory).length,
+   gainedVictories:group.filter(r=>r.before.party.victory<r.after.party.victory).length,
+   lostSurvivors:group.filter(r=>r.before.party.alive>r.after.party.alive).length,
+   gainedSurvivors:group.filter(r=>r.before.party.alive<r.after.party.alive).length,
+   actorDownsBefore:group.filter(r=>r.before.actor.downed).length,
+   actorDownsAfter:group.filter(r=>r.after.actor.downed).length,
+   meanActorDpsDelta:mean(r=>r.after.actor.values.damagePerSecond-r.before.actor.values.damagePerSecond),
+   meanActorInterruptDelta:mean(r=>r.after.actor.values.interruptsPerSecond-r.before.actor.values.interruptsPerSecond),
+   meanActorHealingDelta:mean(r=>r.after.actor.values.effectiveHealingPerSecond-r.before.actor.values.effectiveHealingPerSecond),
+   meanActorShieldGrantDelta:mean(r=>r.after.actor.values.shieldGrantedPerSecond-r.before.actor.values.shieldGrantedPerSecond),
+   meanActorHpFractionDelta:mean(r=>r.after.actor.values.survivingHpFraction-r.before.actor.values.survivingHpFraction),
+   meanPartyDurationDeltaMs:mean(r=>r.after.party.duration-r.before.party.duration),
+   meanPartyHpFractionDelta:mean(r=>r.after.party.hp-r.before.party.hp),
+   meanPartyInterruptDelta:mean(r=>r.after.party.interrupts-r.before.party.interrupts),
+   meanPartyAbsorbedDelta:mean(r=>r.after.party.absorbed-r.before.party.absorbed)};
+ };
+ const groups=new Map<string,FocusRow[]>();
+ for(const row of focusRows){
+  const key=[row.classId,row.spec,row.boss,row.band,row.arm].join('|');
+  (groups.get(key)??(groups.set(key,[]),groups.get(key)!)).push(row);
+ }
+ console.log('MATCHED_ROLE_LOADOUTS '+JSON.stringify({kind:'SINGLE_ACTOR_LOADOUT_COUNTERFACTUAL_NOT_RELEASE',
+  comparisons:focusRows.length,hexCases:expectedHex,tankCases:expectedTank,arms:3,
+  byStratum:Object.fromEntries([...groups.entries()].sort(([a],[b])=>a.localeCompare(b)).map(([k,g])=>[k,summarize(g)])),
+  caveat:'one character changes two authored skills only; no coefficients or personal stat budgets changed'}));
+ for(const row of focusRows.filter(r=>r.before.party.victory>r.after.party.victory||
+  r.before.party.alive!==r.after.party.alive||r.before.actor.downed!==r.after.actor.downed))
+  console.log('MATCHED_ROLE_SURVIVAL_CHANGE '+JSON.stringify(row));
+}else{
 assert.equal(rows.length,36*2*6*3*2);
 const fields=Object.keys(rows[0].metrics) as (keyof Metric)[];
 function summary(key:string,group:Row[]){
@@ -144,4 +235,6 @@ for(const band of bands){
  assert.ok(report.cells.every(c=>c.peerClassSpecs===(c.role==='tank'?6:c.role==='damage'?8:4)));
  assert.equal(report.cpApproved,false);
  console.log('ROLE_PRESSURE_CALIBRATION '+JSON.stringify({band:band.id,...report}));
+}
+
 }

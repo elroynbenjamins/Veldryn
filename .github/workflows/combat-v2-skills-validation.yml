@@ -102,6 +102,8 @@ jobs:
             echo 'Unreleased Enemy 2.0 authority is referenced by a public runtime'
             exit 1
           fi
+      - name: Verify named Synchronization authority and deterministic combat mechanics
+        run: node backend/dist/server/combat/v2/__tests__/party-sync-mechanics.js
       - name: Validate source-owned affix ranges and typed combat modifiers
         run: node backend/dist/server/combat/v2/__tests__/equipment-affixes.js
       - name: Validate approved quality and rarity scaling policy

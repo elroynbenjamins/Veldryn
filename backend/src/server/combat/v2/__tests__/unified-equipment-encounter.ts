@@ -118,7 +118,7 @@ assert.equal(evidence.statStages.classOnly.attackPower,fixtureClassStats.attackP
 
 assert.equal(evidence.composition,undefined,'No unapproved CP weighting may be assumed');
 assert.deepEqual(simulateCombatWithServerAuthoritiesV2(input,{}),simulateCombat(input));
-assert.throws(()=>simulateCombatWithServerAuthoritiesV2(input,{partySync:{}} as never),/unknown_authority_channel/);
+assert.throws(()=>simulateCombatWithServerAuthoritiesV2(input,{notAChannel:{}} as never),/unknown_authority_channel/);
 const weights=Object.fromEntries(keys.map(x=>[x,x==='attackPower'?1:0])) as Record<keyof CombatStats,number>;
 const policy={
  targetClassShare:{min:.15,max:.18},weights,requiredEquipmentSlots:10,

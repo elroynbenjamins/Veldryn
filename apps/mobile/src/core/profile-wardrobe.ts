@@ -11,7 +11,7 @@ import {JOURNAL_TITLES_V42} from './adventurers-journal-v42';
 import {collectibleJournal} from './collectibles';
 import {LIVE_EVENT_CATALOG} from '../content/live-events';
 import {frostfallRewardsDiscoverable,FROSTFALL_2026_EVENT_ID} from './frostfall-reward-visibility';
-import {canUseProfileEffect} from './profile-effects';
+import {canUseProfileEffect,profileAnimatedBorderDefinition,profileEffectDefinition} from './profile-effects';
 import {profileAnimatedCosmeticsEnabled} from './profile-cosmetic-access';
 import {PREMIUM_PROFILE_COSMETICS} from './profile-premium-cosmetics';
 
@@ -33,6 +33,22 @@ export interface WardrobeRow{
 }
 export interface WardrobeCategory{kind:WardrobeKind;label:string;owned:number;total:number;rows:WardrobeRow[]}
 export interface WardrobeProgress{owned:number;total:number;percent:number}
+
+/** Classify visible wardrobe rows, not entitlements. Scene and pet pieces
+ * belong to animated sets even when their standalone thumbnail is static. */
+export function wardrobeAnimatedSetPiece(row:Pick<WardrobeRow,'kind'|'id'|'clear'>):boolean{
+ if(row.clear||!row.id)return false;
+ if(row.kind==='effect')return !!profileEffectDefinition(row.id);
+ if(row.kind==='frame')return !!profileAnimatedBorderDefinition(row.id)||row.id===CELESTIAL_IDS.border||row.id===DRACONIC_IDS.border;
+ if(row.kind==='scene')return row.id===CELESTIAL_IDS.background||row.id===DRACONIC_IDS.background||PREMIUM_PROFILE_COSMETICS.some(set=>set.backgroundId===row.id);
+ if(row.kind==='pet')return row.id===CELESTIAL_IDS.pet||row.id===DRACONIC_IDS.pet||PREMIUM_PROFILE_COSMETICS.some(set=>set.petId===row.id);
+ return false;
+}
+export function wardrobeDisplaySections(rows:readonly WardrobeRow[]){
+ const standard:WardrobeRow[]=[],animated:WardrobeRow[]=[];
+ for(const row of rows)(wardrobeAnimatedSetPiece(row)?animated:standard).push(row);
+ return {standard,animated};
+}
 
 export function wardrobeLockTag(destination:ProfileCustomizationDestination|undefined){return destination?DESTINATION_TAGS[destination]:'LOCKED'}
 

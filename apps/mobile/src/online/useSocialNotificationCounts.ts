@@ -95,6 +95,7 @@ export function useSocialNotificationCounts(pollEnabled=true){
   },[accountId]);
   useEffect(()=>{
     inFlight.current=null;confirmedGuild.current=null;countsAccount.current=accountId;setCounts(ZERO);
+    return()=>{inFlight.current=null;};
   },[accountId]);
   useEffect(()=>{
     // Optional background reads wait for the first usable gameplay screen.

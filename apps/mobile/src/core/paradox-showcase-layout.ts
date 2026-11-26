@@ -75,3 +75,9 @@ export function paradoxPoseTimeline(){
 export function paradoxPoseCell(frame:number){
  return {column:frame%PARADOX_POSE_ATLAS.columns,row:Math.floor(frame/PARADOX_POSE_ATLAS.columns)};
 }
+
+/** Matching pet tap: three local shards orbit outward within the aura, plus
+ * a single subtle halo. No extra ambient loop; the shared one-shot drives it. */
+export const PARADOX_REACTION={center:{x:268,y:105},halo:{w:50,h:48,maxScale:1.20},moteRadius:3,shards:[
+ {x:-13,y:-13,dx:-10,dy:-10},{x:13,y:-11,dx:11,dy:-12},{x:0,y:13,dx:0,dy:13},
+]} as const;

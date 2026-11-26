@@ -182,18 +182,18 @@ var init_meal_buffs = __esm({
 });
 
 // ../apps/mobile/src/content/faith.ts
-var HOLY_WATER_ID, FAITH_TIERS, FAITH_BLESSINGS, HOLY_WATER_SOURCES, faithBlessingDef;
+var HOLY_WATER_ID, FAITH_TIERS, FAITH_BLESSINGS, FAITH_BLESSING_GROUPS, HOLY_WATER_SOURCES, faithBlessingDef, faithBlessingGroup;
 var init_faith = __esm({
   "../apps/mobile/src/content/faith.ts"() {
     "use strict";
     HOLY_WATER_ID = "HOLY_WATER";
     FAITH_TIERS = [
-      { id: "FAITH_QUIET", name: "Quiet prayer", level: 1, water: 1, xp: 96, seconds: 30 },
-      { id: "FAITH_CANDLE", name: "Candle vigil", level: 10, water: 2, xp: 208, seconds: 30 },
-      { id: "FAITH_LITANY", name: "Sacred litany", level: 25, water: 4, xp: 448, seconds: 30 },
-      { id: "FAITH_DEVOTION", name: "Devotion", level: 40, water: 8, xp: 960, seconds: 30 },
-      { id: "FAITH_COMMUNION", name: "Communion", level: 60, water: 16, xp: 2048, seconds: 30 },
-      { id: "FAITH_ASCENDANT", name: "Ascendant prayer", level: 80, water: 32, xp: 4352, seconds: 30 }
+      { id: "FAITH_QUIET", name: "Quiet prayer", level: 1, water: 1, xp: 90, seconds: 30 },
+      { id: "FAITH_CANDLE", name: "Candle vigil", level: 10, water: 2, xp: 192, seconds: 30 },
+      { id: "FAITH_LITANY", name: "Sacred litany", level: 25, water: 4, xp: 408, seconds: 30 },
+      { id: "FAITH_DEVOTION", name: "Devotion", level: 40, water: 8, xp: 864, seconds: 30 },
+      { id: "FAITH_COMMUNION", name: "Communion", level: 60, water: 16, xp: 1824, seconds: 30 },
+      { id: "FAITH_ASCENDANT", name: "Ascendant prayer", level: 80, water: 32, xp: 3840, seconds: 30 }
     ];
     FAITH_BLESSINGS = [
       { id: "EMBER_VOW", name: "Ember Vow", level: 1, family: "attack", bonus: 2 / 100 },
@@ -203,7 +203,6 @@ var init_faith = __esm({
       { id: "WELLSPRING", name: "Wellspring", level: 15, family: "hp", bonus: 4 / 100 },
       { id: "QUICKENED_STEP", name: "Quickened Step", level: 18, family: "combatSpeed", bonus: 3 / 100 },
       { id: "LANTERN_OF_WISDOM", name: "Lantern of Wisdom", level: 20, family: "xp", bonus: 2 / 100 },
-      { id: "FESTIVAL_FAVOR", name: "Festival Favor", level: 30, family: "eventCurrency", bonus: 10 / 100 },
       { id: "NATURES_COVENANT", name: "Nature's Covenant", level: 35, family: "gathering", bonus: 4 / 100 },
       { id: "SUNFIRE_VOW", name: "Sunfire Vow", level: 40, family: "attack", bonus: 4 / 100 },
       { id: "IRON_SANCTUARY", name: "Iron Sanctuary", level: 45, family: "defense", bonus: 6 / 100 },
@@ -219,6 +218,12 @@ var init_faith = __esm({
       { id: "UNDYING_LIGHT", name: "Undying Light", level: 90, family: "hp", bonus: 12 / 100 },
       { id: "ETERNAL_ENLIGHTENMENT", name: "Eternal Enlightenment", level: 95, family: "xp", bonus: 6 / 100 }
     ];
+    FAITH_BLESSING_GROUPS = [
+      { id: "combat", label: "Combat", families: ["attack", "defense", "hp", "combatSpeed"] },
+      { id: "gathering", label: "Gathering", families: ["gathering"] },
+      { id: "production", label: "Production", families: ["production"] },
+      { id: "experience", label: "Experience", families: ["xp"] }
+    ];
     HOLY_WATER_SOURCES = [
       { monsterId: "FIELD_WISP", chance: 0.16, min: 1, max: 2 },
       { monsterId: "DROWNED_PILGRIM", chance: 0.32, min: 2, max: 4 },
@@ -228,25 +233,57 @@ var init_faith = __esm({
       { monsterId: "ASHEN_REVENANT", chance: 0.5, min: 6, max: 10 }
     ];
     faithBlessingDef = (id) => FAITH_BLESSINGS.find((b) => b.id === id);
+    faithBlessingGroup = (blessing) => FAITH_BLESSING_GROUPS.find((group) => group.families.includes(blessing.family))?.id;
   }
 });
 
 // ../apps/mobile/src/core/faith.ts
+function validFaithSelections(raw2, level) {
+  const selections = {};
+  if (raw2?.selectedBlessingIds && typeof raw2.selectedBlessingIds === "object") {
+    for (const group of FAITH_BLESSING_GROUPS) {
+      const blessing = faithBlessingDef(raw2.selectedBlessingIds[group.id]);
+      if (blessing && blessing.level <= level && faithBlessingGroup(blessing) === group.id) selections[group.id] = blessing.id;
+    }
+  } else {
+    const blessing = faithBlessingDef(raw2?.selectedBlessingId);
+    if (blessing && blessing.level <= level) {
+      const group = faithBlessingGroup(blessing);
+      if (group) selections[group] = blessing.id;
+    }
+  }
+  return selections;
+}
+function safeFaithXp(xp) {
+  return typeof xp === "number" && Number.isFinite(xp) ? Math.max(0, Math.min(MAX_XP, Math.floor(xp))) : 0;
+}
+function stateFaithXp(state) {
+  return Math.max(safeFaithXp(state.character?.faith?.xp), safeFaithXp(state.skills.find((s) => s.skillId === "faith")?.xp));
+}
 function normalizeFaith(raw2) {
-  const xp = typeof raw2?.xp === "number" && Number.isFinite(raw2.xp) ? Math.max(0, Math.min(MAX_XP, Math.floor(raw2.xp))) : 0;
+  const xp = safeFaithXp(raw2?.xp);
   const selected2 = faithBlessingDef(raw2?.selectedBlessingId), p = raw2?.practice, tier = FAITH_TIERS.find((t) => t.id === p?.tierId);
+  const selectedBlessingIds = validFaithSelections(raw2, levelFromXp(xp));
+  const legacy = selected2 && Object.values(selectedBlessingIds).includes(selected2.id) ? selected2.id : Object.values(selectedBlessingIds)[0];
   const practice = tier && Number.isSafeInteger(p.remaining) && p.remaining > 0 && p.remaining <= MAX_FAITH_PRACTICES && Number.isSafeInteger(p.lastClaimAtMs) && p.lastClaimAtMs >= 0 && Number.isSafeInteger(p.progressMs) && p.progressMs >= 0 && p.progressMs < tier.seconds * 1e3 ? { tierId: tier.id, remaining: p.remaining, lastClaimAtMs: p.lastClaimAtMs, progressMs: p.progressMs } : void 0;
-  return { xp, selectedBlessingId: selected2 && selected2.level <= levelFromXp(xp) ? selected2.id : void 0, favoriteBlessingIds: Array.isArray(raw2?.favoriteBlessingIds) ? [...new Set(raw2.favoriteBlessingIds.filter((id) => typeof id === "string" && faithBlessingDef(id)))] : [], hideWeakerBlessings: raw2?.hideWeakerBlessings !== false, practice };
+  return { xp, selectedBlessingId: legacy, selectedBlessingIds, favoriteBlessingIds: Array.isArray(raw2?.favoriteBlessingIds) ? [...new Set(raw2.favoriteBlessingIds.filter((id) => typeof id === "string" && faithBlessingDef(id)))] : [], hideWeakerBlessings: raw2?.hideWeakerBlessings !== false, practice };
+}
+function activeFaithPreferences(state) {
+  const raw2 = state.character?.faith;
+  return normalizeFaith({ ...raw2, xp: stateFaithXp(state) });
 }
 function updateFaithPreference(state, kind, id, enabled) {
   if (!state.character) throw new Error("Create a character first.");
-  const faith = normalizeFaith(state.character.faith);
+  const faith = activeFaithPreferences(state);
   if (kind === "hide") faith.hideWeakerBlessings = !!enabled;
   else {
     const blessing = faithBlessingDef(id);
     if (!blessing) throw new Error("Unknown blessing.");
     if (kind === "blessing") {
       if (blessing.level > faithLevel(state)) throw new Error("Requires Faith level " + blessing.level);
+      const group = faithBlessingGroup(blessing);
+      if (!group) throw new Error("Unknown blessing category.");
+      faith.selectedBlessingIds[group] = blessing.id;
       faith.selectedBlessingId = blessing.id;
     } else faith.favoriteBlessingIds = enabled ? [.../* @__PURE__ */ new Set([...faith.favoriteBlessingIds, blessing.id])] : faith.favoriteBlessingIds.filter((b) => b !== blessing.id);
   }
@@ -263,7 +300,7 @@ function removeWater(stacks, quantity2) {
 }
 function reserveFaithPractice(state, tierId, count, now) {
   if (!state.character) throw new Error("Create a character first.");
-  const faith = normalizeFaith(state.character.faith), tier = FAITH_TIERS.find((t) => t.id === tierId);
+  const faith = activeFaithPreferences(state), tier = FAITH_TIERS.find((t) => t.id === tierId);
   if (faith.practice) throw new Error("Stop the current practice first.");
   if (!tier || tier.level > faithLevel(state)) throw new Error("Faith tier is locked.");
   if (faith.xp >= MAX_XP) throw new Error("Faith is mastered.");
@@ -275,7 +312,7 @@ function reserveFaithPractice(state, tierId, count, now) {
 }
 function settleFaithPractice(state, now, capSeconds) {
   const empty2 = { xp: 0, gold: 0, kills: 0, items: [], elapsedSeconds: 0, faithActions: 0, faithXp: 0, holyWaterConsumed: 0 };
-  const normalized = normalizeFaith(state.character?.faith), skillXp = state.skills.find((s) => s.skillId === "faith")?.xp ?? 0, faith = { ...normalized, xp: Math.max(normalized.xp, skillXp) }, reservation = state.activity?.faithPractice, reservationTier = FAITH_TIERS.find((t) => t.id === reservation?.tierId);
+  const faith = activeFaithPreferences(state), reservation = state.activity?.faithPractice, reservationTier = FAITH_TIERS.find((t) => t.id === reservation?.tierId);
   const p = faith.practice ?? (reservation && reservationTier ? { tierId: reservation.tierId, remaining: reservation.remainingPractices, lastClaimAtMs: reservation.lastClaimAtMs, progressMs: Math.floor(Math.max(0, Math.min(0.999999, reservation.progressFraction)) * reservationTier.seconds * 1e3) } : void 0), tier = FAITH_TIERS.find((t) => t.id === p?.tierId);
   if (!state.character || !p || !tier || now < p.lastClaimAtMs) return { state, reward: empty2, refund: 0 };
   const elapsed = Math.min(capSeconds * 1e3, now - p.lastClaimAtMs), speed = mealSpeedFactor(state.character, "noncombat"), total = p.progressMs + elapsed * speed;
@@ -287,7 +324,7 @@ function settleFaithPractice(state, now, capSeconds) {
   return { state: { ...state, activity: nextActivity, character: { ...state.character, faith: { ...faith, xp: faith.xp + xp, practice: nextPractice } } }, refund, reward: { ...empty2, xp, elapsedSeconds: Math.floor(elapsed / 1e3), qualifyingActivitySeconds, faithActions: actions, faithXp: xp, holyWaterConsumed: actions * tier.water, faithWaterRefund: refund } };
 }
 function cancelFaithPractice(state) {
-  const faith = normalizeFaith(state.character?.faith), reservation = state.activity?.faithPractice, p = faith.practice ?? (reservation ? { tierId: reservation.tierId, remaining: reservation.remainingPractices, lastClaimAtMs: reservation.lastClaimAtMs, progressMs: 0 } : void 0), tier = FAITH_TIERS.find((t) => t.id === p?.tierId);
+  const faith = activeFaithPreferences(state), reservation = state.activity?.faithPractice, p = faith.practice ?? (reservation ? { tierId: reservation.tierId, remaining: reservation.remainingPractices, lastClaimAtMs: reservation.lastClaimAtMs, progressMs: 0 } : void 0), tier = FAITH_TIERS.find((t) => t.id === p?.tierId);
   if (!state.character || !p || !tier) return { state, refund: 0 };
   return { state: { ...state, character: { ...state.character, faith: { ...faith, practice: void 0 } } }, refund: p.remaining * tier.water };
 }
@@ -296,7 +333,7 @@ function affordableFaithPracticeCount(state, tierId) {
   if (!tier || tier.level > faithLevel(state) || faithLevel(state) >= 100) return 0;
   return Math.min(MAX_FAITH_PRACTICES, Math.floor(holyWaterAvailable(state) / tier.water));
 }
-var MAX_XP, MAX_FAITH_PRACTICES, faithLevel, selectedFaithBlessing, holyWaterAvailable, faithPracticeAvailability;
+var MAX_XP, MAX_FAITH_PRACTICES, faithLevel, selectedFaithBlessing, selectedFaithBlessings, holyWaterAvailable, faithPracticeAvailability;
 var init_faith2 = __esm({
   "../apps/mobile/src/core/faith.ts"() {
     "use strict";
@@ -305,10 +342,19 @@ var init_faith2 = __esm({
     init_progression();
     MAX_XP = totalXpAtLevel(100);
     MAX_FAITH_PRACTICES = 1e3;
-    faithLevel = (state) => levelFromXp(Array.isArray(state) ? state.find((s) => s.skillId === "faith")?.xp ?? 0 : Math.max(normalizeFaith(state.character?.faith).xp, state.skills.find((s) => s.skillId === "faith")?.xp ?? 0));
-    selectedFaithBlessing = (state) => {
-      const raw2 = state.character?.faith, blessing = faithBlessingDef(raw2?.selectedBlessingId);
-      return blessing && blessing.level <= faithLevel(state) ? blessing : void 0;
+    faithLevel = (state) => levelFromXp(Array.isArray(state) ? safeFaithXp(state.find((s) => s.skillId === "faith")?.xp) : stateFaithXp(state));
+    selectedFaithBlessing = (state, group) => {
+      const raw2 = state.character?.faith;
+      if (!raw2) return void 0;
+      const selections = validFaithSelections(raw2, faithLevel(state));
+      const ids2 = Object.values(selections);
+      return faithBlessingDef(group ? selections[group] : raw2.selectedBlessingId && ids2.includes(raw2.selectedBlessingId) ? raw2.selectedBlessingId : ids2[0]);
+    };
+    selectedFaithBlessings = (state) => {
+      const raw2 = state.character?.faith;
+      if (!raw2) return [];
+      const ids2 = Object.values(validFaithSelections(raw2, faithLevel(state)));
+      return ids2.map((id) => faithBlessingDef(id));
     };
     holyWaterAvailable = (state) => [...state.inventory.stacks, ...state.bank.stacks].filter((s) => s.itemId === HOLY_WATER_ID).reduce((n, s) => n + s.quantity, 0);
     faithPracticeAvailability = (state, tierId, count) => {
@@ -319,6 +365,99 @@ var init_faith2 = __esm({
     };
   }
 });
+
+// ../apps/mobile/src/core/ultra-luxe-name-gradients.ts
+var ULTRA_LUXE_GRADIENTS = [
+  { id: "ascendant-celestial-name", name: "Astral Radiance", colors: ["#F3C86F", "#FFF4D9", "#D6E8FF"], motion: "starlight" },
+  { id: "ascendant-draconic-name", name: "Ember Sovereignty", colors: ["#FF9460", "#FFE0A1", "#EE6651"], motion: "ember" },
+  { id: "ascendant-abyssal-name", name: "Abyssal Luminescence", colors: ["#55C8C9", "#D4FFF4", "#70A9F2"], motion: "tidal" },
+  { id: "ascendant-paradox-name", name: "Eternal Refraction", colors: ["#B9A0F9", "#F4EDFF", "#8FB5F9"], motion: "temporal" },
+  { id: "ascendant-sakura-name", name: "Sakura Radiance", colors: ["#F5A6C8", "#FFF5FA", "#E58BB7"], motion: "petal" },
+  { id: "ascendant-stormforged-name", name: "Stormborn Radiance", colors: ["#63CFFF", "#E0EAF5", "#639AF8"], motion: "storm" }
+];
+function ultraLuxeGradient(id) {
+  return ULTRA_LUXE_GRADIENTS.find((row) => row.id === id);
+}
+
+// ../apps/mobile/src/core/ultra-luxe-full-set-name.ts
+var SET_PRESETS = [
+  ["celestial-sovereign", "ascendant-celestial-name"],
+  ["draconic-dominion", "ascendant-draconic-name"],
+  ["abyssal-majesty", "ascendant-abyssal-name"],
+  ["paradox-eternal", "ascendant-paradox-name"],
+  ["sakura-enchantment", "ascendant-sakura-name"],
+  ["stormforged-sovereign", "ascendant-stormforged-name"]
+];
+function ultraLuxeFullSetNamePreset(setId) {
+  return SET_PRESETS.find(([id]) => setId === id || setId === "ascendant-" + id)?.[1];
+}
+
+// ../apps/mobile/src/core/ultra-luxe-full-set-command.ts
+var ULTRA_LUXE_FULL_SET_COMMAND = "ultra_luxe_full_set";
+var ULTRA_LUXE_REQUEST_PREFIX = "luxe_full_set_";
+function canonicalUltraLuxeCollection(id) {
+  if (typeof id !== "string" || !ultraLuxeFullSetNamePreset(id)) return void 0;
+  return id.startsWith("ascendant-") ? id : "ascendant-" + id;
+}
+var ULTRA_LUXE_FULL_SET_DEFINITIONS = [
+  ["ascendant-celestial-sovereign", "ascendant-celestial-astral-sanctum", "ascendant-celestial-crown-of-the-cosmos", "ascendant-celestial-aetherion", "Sovereign of the Stars"],
+  ["ascendant-draconic-dominion", "ascendant-draconic-dominion-of-ash", "ascendant-draconic-throne-of-embers", "ascendant-draconic-vharaxis", "Dragon Sovereign"],
+  ["ascendant-abyssal-majesty", "ascendant-abyssal-forgotten-abyss", "ascendant-abyssal-crown-of-the-depths", "ascendant-abyssal-nhalzuun", "Monarch of the Deep"],
+  ["ascendant-paradox-eternal", "ascendant-paradox-beyond-the-veil", "ascendant-paradox-fractured-eternity", "ascendant-paradox-aeon", "Beyond Existence"],
+  ["ascendant-sakura-enchantment", "ascendant-sakura-petal-sanctuary", "ascendant-sakura-blossom-crown", "ascendant-sakura-spirit-fox", "Sakura Dreamkeeper"],
+  ["ascendant-stormforged-sovereign", "ascendant-stormforged-thunderkeep", "ascendant-stormforged-steel-crown", "ascendant-stormforged-direwolf", "Stormforged Warden"]
+];
+
+// online/ultra-luxe-full-set-command.ts
+var object = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : void 0;
+var FullSetCommandError = class extends Error {
+  constructor(message, status = 400) {
+    super(message);
+    this.status = status;
+  }
+  status;
+};
+var exactKeys = (v, keys) => Object.keys(v).length === keys.length && keys.every((k) => Object.prototype.hasOwnProperty.call(v, k));
+async function executeUltraLuxeFullSetCommand(services2, accountId, raw2) {
+  if (!services2.enabled) throw new FullSetCommandError("feature_not_released", 403);
+  if (!accountId) throw new FullSetCommandError("auth_required", 401);
+  const body = object(raw2), cmd = object(body?.command), a = object(cmd?.args);
+  if (!body || !cmd || !a || !exactKeys(body, ["requestId", "expectedVersion", "command"]) || !exactKeys(cmd, ["type", "args"]) || !exactKeys(a, ["collectionId", "characterId", "expectedNameId"]) || cmd.type !== ULTRA_LUXE_FULL_SET_COMMAND || typeof body.requestId !== "string" || !body.requestId.startsWith(ULTRA_LUXE_REQUEST_PREFIX) || !/^luxe_full_set_[A-Za-z0-9_-]{16,80}$/.test(body.requestId) || typeof body.expectedVersion !== "number" || !Number.isSafeInteger(body.expectedVersion) || body.expectedVersion < 0 || typeof a.characterId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(a.characterId) || !(a.expectedNameId === null || ultraLuxeGradient(a.expectedNameId))) throw new FullSetCommandError("invalid_full_set_request");
+  const collection = canonicalUltraLuxeCollection(a.collectionId);
+  const definition = ULTRA_LUXE_FULL_SET_DEFINITIONS.find((d) => d[0] === collection);
+  if (!definition || a.collectionId !== collection) throw new FullSetCommandError("invalid_full_set_collection");
+  const requestHash = await services2.hash(JSON.stringify([ULTRA_LUXE_FULL_SET_COMMAND, body.expectedVersion, collection, a.characterId, a.expectedNameId]));
+  const loaded = await services2.rpc("load_online_game_ultra_luxe_v1", { p_account_id: accountId });
+  if (!loaded || !Array.isArray(loaded.ultraLuxeCollectionIds) || !Number.isSafeInteger(loaded.walletGold) || !loaded.state) throw new FullSetCommandError("full_set_authority_unavailable", 503);
+  const state = structuredClone(loaded.state);
+  if (state.character) {
+    state.character = {
+      ...state.character,
+      profileBackgroundId: definition[1],
+      profileBorderId: definition[2],
+      selectedCosmeticPetId: definition[3],
+      profileTitle: definition[4],
+      profileEffectId: void 0,
+      gold: loaded.walletGold
+    };
+  }
+  const response = { accountId, state, version: body.expectedVersion + 1, serverNow: loaded.serverNow };
+  const result = object(await services2.rpc("commit_ultra_luxe_full_set_server_v1", {
+    p_account_id: accountId,
+    p_character_id: a.characterId,
+    p_collection_id: collection,
+    p_expected_version: body.expectedVersion,
+    p_expected_gold: loaded.walletGold,
+    p_expected_grants: loaded.ultraLuxeCollectionIds,
+    p_expected_name_id: a.expectedNameId,
+    p_request_id: body.requestId,
+    p_request_hash: requestHash,
+    p_response: response
+  }));
+  const gameplay2 = object(result?.gameplay), names = object(result?.nameSelection);
+  if (!result || !gameplay2 || !names || names.accountId !== accountId || gameplay2.accountId !== void 0 && gameplay2.accountId !== accountId || typeof result.replayed !== "boolean" || !Number.isSafeInteger(gameplay2.version) || !object(gameplay2.state)) throw new FullSetCommandError("full_set_readback_invalid", 503);
+  return { replayed: result.replayed, gameplay: { ...gameplay2, accountId }, nameSelection: names };
+}
 
 // ../apps/mobile/src/core/ultra-luxe-prestige.ts
 var ULTRA_LUXE_ICONS = [
@@ -863,7 +1002,7 @@ var WAVE2_SETS = [
   { id: "stormforged", name: "Stormforged", borderId: "cosmetic:stormforged:thunderframe", borderName: "Stormforged Thunderframe", effectId: "effect_stormforged_static_surge", effectName: "Static Surge", iconIds: ["cosmetic:stormforged:portrait-tempest", "cosmetic:stormforged:portrait-sentinel"], iconNames: ["Stormforged Tempest", "Stormforged Sentinel"] },
   { id: "crimson-oath", name: "Crimson Oath", borderId: "cosmetic:crimson-oath:oathguard", borderName: "Crimson Oathguard", effectId: "effect_crimson_oath_scarlet_reverence", effectName: "Scarlet Reverence", iconIds: ["cosmetic:crimson-oath:portrait-justicar", "cosmetic:crimson-oath:portrait-knight"], iconNames: ["Crimson Justicar", "Crimson Knight"] }
 ];
-var WAVE2_READY_SET_IDS = [];
+var WAVE2_READY_SET_IDS = ["tideborne", "clockwork", "stormforged", "crimson-oath"];
 function wave2SetFor(kind, id) {
   return WAVE2_SETS.find((row) => kind === "border" ? row.borderId === id : kind === "effect" ? row.effectId === id : row.iconIds.some((icon) => icon === id));
 }
@@ -48733,9 +48872,6 @@ function eventCurrencyPromotionBps(eventId, earnedAtMs) {
   return Math.round((1e4 + base) * frostfallHolidayMultiplierBps(eventId, earnedAtMs) / 1e4) - 1e4;
 }
 
-// ../apps/mobile/src/core/live-events.ts
-init_faith2();
-
 // ../apps/mobile/src/core/equipment-shop-tier-unlock.ts
 function equipmentShopTierUnlocked(state, tier) {
   if (!state.character) return false;
@@ -48906,9 +49042,7 @@ function eventEffectiveDropRate(state, eventId, source, nowMs = Date.now()) {
   const event = liveEventDef(eventId);
   if (!event) return 0;
   const blessing = eventDailyFestivalBlessing2(state, nowMs), blessingMultiplier = blessing?.source === source ? 1 + blessing.bonusBps / 1e4 : 1;
-  const active2 = activeLiveEvent(state, nowMs), faith = active2?.definition.id === eventId ? selectedFaithBlessing(state) : void 0;
-  const faithMultiplier = faith?.family === "eventCurrency" ? 1 + faith.bonus : 1;
-  return event.dropRates[source] * (eventProjectChoice(state, eventId)?.dropMultipliers?.[source] ?? 1) * blessingMultiplier * (1 + eventCurrencyBonusBps(state, eventId, nowMs) / 1e4) * faithMultiplier;
+  return event.dropRates[source] * (eventProjectChoice(state, eventId)?.dropMultipliers?.[source] ?? 1) * blessingMultiplier * (1 + eventCurrencyBonusBps(state, eventId, nowMs) / 1e4);
 }
 function eventContributionValue(state, eventId, spent) {
   const multiplier = eventProjectChoice(state, eventId)?.contributionMultiplier ?? 1;
@@ -49965,8 +50099,7 @@ function characterPermanentMultipliers(state) {
   if (!c) return result;
   const explorationLevel = state.skills.find((skill2) => skill2.skillId === "exploration")?.level ?? 1;
   result = merge(result, { ...BASE, gatheringSpeedMultiplier: 1 + explorationGatheringSpeedBonus(explorationLevel) });
-  const blessing = selectedFaithBlessing(state);
-  if (blessing) {
+  for (const blessing of selectedFaithBlessings(state)) {
     if (blessing.family === "attack") result = merge(result, { ...BASE, attackMultiplier: 1 + blessing.bonus, combatPowerMultiplier: 1 + blessing.bonus });
     if (blessing.family === "combatSpeed") result = merge(result, { ...BASE, combatSpeedMultiplier: 1 + blessing.bonus });
     if (blessing.family === "defense") result = merge(result, { ...BASE, incomingDamageMultiplier: 1 - blessing.bonus });
@@ -50121,7 +50254,7 @@ function professionActionPace(state, recipe2, mode) {
   const permanent = characterPermanentMultipliers(state);
   const mastery = professionMasteryMultipliers(recipe2.id, state.account.professionMasteryByAction?.[recipe2.id]);
   const affinity = skillAffinityModifiers(state.character?.classId, recipe2.skillId);
-  const faith = selectedFaithBlessing(state);
+  const faith = selectedFaithBlessing(state, "experience");
   const forgeXp = faith?.family === "xp" ? 1 + faith.bonus : 1;
   const rawXpPerAction = recipe2.xp * mastery.xp * (mode === "forge" ? forgeXp : permanent.skillXpMultiplier) * affinity.xpMultiplier;
   const xpPerAction = recipe2.skillId === "cooking" && mode === "batch" ? Math.round(rawXpPerAction / 10) * 10 : rawXpPerAction;
@@ -54916,7 +55049,7 @@ function effectiveStats(state) {
   defense *= mastery.defense;
   const permanent = characterPermanentMultipliers(state);
   attack *= permanent.combatPowerMultiplier;
-  const faithBlessing = selectedFaithBlessing(state);
+  const faithBlessing = selectedFaithBlessing(state, "combat");
   if (faithBlessing?.family === "hp") hp = Math.ceil(hp * (1 + faithBlessing.bonus));
   const prep = c.preparation ? preparationEffects(c.preparation) : void 0;
   if (prep) attack *= prep.attack;
@@ -54967,7 +55100,7 @@ function startCombat(state, monsterId, nowMs, combatTacticId = "balanced", huntG
   if (!cumulativeMonsterUnlockIds(state).includes(monsterId) && !(m.regionalAreaAutoUnlock && state.character.level >= areaUnlockLevel)) throw new Error("Monster not unlocked");
   if (m.boss) throw new Error("Bosses use challengeFallenKnight");
   if (zoneIdForTarget(monsterId) !== currentRegionId(state)) throw new Error(`Travel to ${m.zone} before fighting ${m.name}`);
-  return { ...state, outOfCombatSinceMs: void 0, character: { ...state.character, activityQueuePausedReason: void 0 }, activity: { kind: "combat", targetId: monsterId, combatTacticId: normalizeCombatTactic(combatTacticId), ...huntGoalSnapshot(normalizeHuntGoalId(huntGoalId)) ? { huntGoal: huntGoalSnapshot(normalizeHuntGoalId(huntGoalId)) } : {}, sessionKills: 0, sessionChampions: 0, startedAtMs: nowMs, lastClaimAtMs: nowMs, classFocus: normalizeTrainingFocus(state.character.trainingFocus), classTrainingSnapshot: { faithBlessingId: selectedFaithBlessing(state)?.id }, environment: captureActivityEnvironment(monsterId, nowMs) } };
+  return { ...state, outOfCombatSinceMs: void 0, character: { ...state.character, activityQueuePausedReason: void 0 }, activity: { kind: "combat", targetId: monsterId, combatTacticId: normalizeCombatTactic(combatTacticId), ...huntGoalSnapshot(normalizeHuntGoalId(huntGoalId)) ? { huntGoal: huntGoalSnapshot(normalizeHuntGoalId(huntGoalId)) } : {}, sessionKills: 0, sessionChampions: 0, startedAtMs: nowMs, lastClaimAtMs: nowMs, classFocus: normalizeTrainingFocus(state.character.trainingFocus), classTrainingSnapshot: { faithBlessingId: selectedFaithBlessing(state, "combat")?.id }, environment: captureActivityEnvironment(monsterId, nowMs) } };
 }
 function regionalEquippedTierGap(state, expectedTier) {
   if (!state.character || expectedTier <= 0) return 0;
@@ -61114,6 +61247,7 @@ function gameplayHandler(services2, authenticatePlayer2 = async (token) => {
   return accountId ? { accountId, adminQa: false } : null;
 }) {
   const privateGrants = services2.ultraLuxeGrantAuthority === true;
+  const fullSetAuthority = privateGrants && services2.ultraLuxeFullSetAuthority === true;
   const receiptRpc = privateGrants ? "read_online_game_receipt_ultra_luxe_v1" : "read_online_game_receipt_server_v1";
   const loadRpc = privateGrants ? "load_online_game_ultra_luxe_v1" : "load_online_game_server_v1";
   return async (request) => {
@@ -61144,6 +61278,13 @@ function gameplayHandler(services2, authenticatePlayer2 = async (token) => {
         }
         if (!body || typeof body !== "object" || Array.isArray(body) || Object.keys(body).some((key) => !["requestId", "expectedVersion", "command"].includes(key))) throw new GameplayError("invalid_request");
         if (typeof body.requestId !== "string" || !/^[a-zA-Z0-9_-]{8,128}$/.test(body.requestId) || !Number.isSafeInteger(body.expectedVersion) || body.expectedVersion < 0) throw new GameplayError("invalid_request");
+        if (body.command?.type === ULTRA_LUXE_FULL_SET_COMMAND) {
+          telemetryCommandType = ULTRA_LUXE_FULL_SET_COMMAND;
+          const result2 = await executeUltraLuxeFullSetCommand({ enabled: fullSetAuthority, rpc: services2.rpc, hash: hash2 }, accountId, body);
+          await recordOutcome(result2.replayed ? "replayed" : "committed");
+          return json(result2);
+        }
+        if (body.requestId.startsWith(ULTRA_LUXE_REQUEST_PREFIX)) throw new GameplayError("invalid_request");
         try {
           command = validateGameCommand(body.command);
           telemetryCommandType = command.type;
@@ -61170,7 +61311,7 @@ function gameplayHandler(services2, authenticatePlayer2 = async (token) => {
         request.method === "GET" ? recordActivity("foreground") : Promise.resolve()
       ]);
       if (privateGrants && !Array.isArray(loaded.ultraLuxeCollectionIds)) throw new Error("ultra_luxe_grant_projection_missing");
-      const storedState = rebaseCombatGameState(privateGrants ? withVerifiedUltraLuxeGrants(loaded.state ?? newGame(loaded.serverNow), loaded.ultraLuxeCollectionIds) : loaded.state ?? newGame(loaded.serverNow));
+      const storedState = rebaseCombatGameState(privateGrants && !fullSetAuthority ? withVerifiedUltraLuxeGrants(loaded.state ?? newGame(loaded.serverNow), loaded.ultraLuxeCollectionIds) : loaded.state ?? newGame(loaded.serverNow));
       const trustedState = request.method === "POST" ? snapshotEarnedLegacySeasonalClaims(storedState, loaded.serverNow) : storedState;
       const state = reconcileAccountProfileIcon(restoreCumulativeMonsterUnlocks(ensurePersonalSeasonalState(trustedState)));
       state.account.longTermAccountScopeId = accountId;
@@ -61254,7 +61395,11 @@ function gameplayHandler(services2, authenticatePlayer2 = async (token) => {
       ];
       const response = { guildProjectEffort, guildPveEffort, state: restoreCumulativeMonsterUnlocks(result.state), version: loaded.version + 1, serverNow: loaded.serverNow, accountId, reward: result.reward, activity: result.activity, message: result.message, won: result.won, storyBossBattle: result.storyBossBattle, upgrade: result.upgrade, forgeResults: result.forgeResults };
       const commitRpc = privateGrants ? "commit_online_game_ultra_luxe_v1" : "commit_online_game_guild_pve_v1";
-      const committed = await services2.rpc(commitRpc, { p_account_id: accountId, p_expected_version: loaded.version, p_expected_gold: loaded.walletGold, p_request_id: body.requestId, p_request_hash: requestHash, p_response: response, p_contributions: contributions, ...privateGrants ? { p_expected_grants: [...ultraLuxeGrantProjection(loaded.ultraLuxeCollectionIds).collectionIds].sort() } : {}, ...command.type === "roster_delete" ? { p_deleted_character_id: command.args.id } : {} });
+      const committed = await services2.rpc(commitRpc, { p_account_id: accountId, p_expected_version: loaded.version, p_expected_gold: loaded.walletGold, p_request_id: body.requestId, p_request_hash: requestHash, p_response: response, p_contributions: contributions, ...privateGrants ? { p_expected_grants: (fullSetAuthority ? loaded.ultraLuxeCollectionIds.map((id) => {
+        const canonicalId = canonicalUltraLuxeCollection(id);
+        if (!canonicalId || canonicalId !== id) throw Error("ultra_luxe_grant_projection_invalid");
+        return canonicalId;
+      }) : [...ultraLuxeGrantProjection(loaded.ultraLuxeCollectionIds).collectionIds]).sort() } : {}, ...command.type === "roster_delete" ? { p_deleted_character_id: command.args.id } : {} });
       if (contributions.length > 0) try {
         await services2.rpc("guild_quest_record_contributions_v1", { p_account_id: accountId, p_contributions: contributions.map((e) => ({ ...e, units: e.questUnits ?? e.units })) });
       } catch {
@@ -61263,8 +61408,8 @@ function gameplayHandler(services2, authenticatePlayer2 = async (token) => {
       return json(committed);
     } catch (error) {
       const message = error instanceof Error ? error.message : "server_error";
-      const conflict = /stale_state|idempotency_key_conflict/.test(message);
-      const status = conflict ? 409 : error instanceof GameplayError ? error.status : 503;
+      const conflict = /stale_state|idempotency_key_conflict|^STALE_ULTRA_LUXE_|^ULTRA_LUXE_REQUEST_HASH_MISMATCH$/.test(message);
+      const status = conflict ? 409 : error instanceof GameplayError || error instanceof FullSetCommandError ? error.status : 503;
       await recordOutcome(conflict ? "conflict" : status === 503 ? "retryable_failure" : "rejected");
       return json({ error: status === 503 ? "Server temporarily unavailable. Retry the pending action." : message }, status);
     }
@@ -62611,6 +62756,9 @@ async function authenticatePlayer(token) {
   return { accountId: user.id, adminQa: meta?.admin_qa === true || Array.isArray(meta?.roles) && meta.roles.includes("admin_qa") };
 }
 var services = {
+  // Both opt-in flags require the unified server schema and completed rendering QA.
+  ultraLuxeGrantAuthority: Deno.env.get("ULTRA_LUXE_GRANT_AUTHORITY") === "true",
+  ultraLuxeFullSetAuthority: Deno.env.get("ULTRA_LUXE_FULL_SET_AUTHORITY") === "true",
   authenticate: async (token) => (await authenticatePlayer(token))?.accountId ?? null,
   rpc: async (name, args) => {
     const response = await fetch(`${url}/rest/v1/rpc/${name}`, { method: "POST", headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json" }, body: JSON.stringify(args) });

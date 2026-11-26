@@ -1,7 +1,8 @@
 import {createCharacter,newGame} from '../src/core/game';
+import {WAVE2_READY_SET_IDS,WAVE2_SETS} from '../src/core/profile-cosmetic-wave2';
 import {PROFILE_EFFECTS} from '../src/core/profile-effects';
 import {PROFILE_COSMETIC_PORTRAITS} from '../src/core/profile-cosmetic-icons';
-import {PROFILE_COSMETIC_STORE_COLLECTIONS,PROFILE_COSMETIC_STORE_PRODUCTS,profileCosmeticCollectionOwnership} from '../src/content/profile-cosmetic-store';
+import {PROFILE_COSMETIC_STORE_COLLECTIONS,PROFILE_COSMETIC_STORE_PRODUCTS,PROFILE_COSMETIC_WARDROBE_COLLECTIONS,profileCosmeticCollectionOwnership} from '../src/content/profile-cosmetic-store';
 
 function fail(message:string):never{throw new Error(message)}
 function ok(value:unknown,message:string){if(!value)fail(message)}
@@ -9,14 +10,19 @@ function equal(actual:unknown,expected:unknown,message:string){if(actual!==expec
 
 equal(PROFILE_COSMETIC_STORE_COLLECTIONS.length,4,'four approved standard profile cosmetic sets');
 equal(PROFILE_COSMETIC_STORE_PRODUCTS.length,4,'the Store has one product per complete cosmetic set');
-equal(PROFILE_COSMETIC_PORTRAITS.length,8,'each set has a female and male human portrait choice');
-equal(new Set(PROFILE_COSMETIC_PORTRAITS.map(row=>row.id)).size,8,'portrait ids are unique');
+equal(PROFILE_COSMETIC_PORTRAITS.length,8+2*WAVE2_READY_SET_IDS.length,'each available set has two portraits');
+equal(PROFILE_COSMETIC_WARDROBE_COLLECTIONS.length,4+WAVE2_READY_SET_IDS.length,'wardrobe has legacy plus certified owner-only sets');
+equal(new Set(PROFILE_COSMETIC_PORTRAITS.map(row=>row.id)).size,PROFILE_COSMETIC_PORTRAITS.length,'portrait ids are unique');
 equal(new Set(PROFILE_COSMETIC_STORE_PRODUCTS.map(row=>row.sku)).size,4,'set sku ids are unique');
 ok(PROFILE_COSMETIC_STORE_PRODUCTS.every(row=>row.kind==='set'),'standard collections are never individual Store products');
 ok(PROFILE_COSMETIC_STORE_PRODUCTS.every(row=>row.checkoutEnabled===false),'no hidden set can checkout');
 ok(PROFILE_COSMETIC_STORE_PRODUCTS.every(row=>row.billing==='one_time'),'prepared cosmetic sets use one-time ownership semantics');
 ok(PROFILE_COSMETIC_STORE_PRODUCTS.every(row=>row.tier==='standard'),'these four sets are standard, not premium');
-for(const collection of PROFILE_COSMETIC_STORE_COLLECTIONS){
+for(const set of WAVE2_SETS){
+ ok(!PROFILE_COSMETIC_STORE_COLLECTIONS.some(row=>row.border.itemId===set.borderId),'Wave 2 excluded from store');
+ equal(PROFILE_COSMETIC_WARDROBE_COLLECTIONS.some(row=>row.id===set.id),WAVE2_READY_SET_IDS.includes(set.id),'Wave 2 wardrobe follows readiness');
+}
+for(const collection of PROFILE_COSMETIC_WARDROBE_COLLECTIONS){
  const definition=PROFILE_EFFECTS.find(row=>row.id===collection.effect.itemId);
  ok(!!definition,collection.name+' effect uses an approved effect id');
  equal(collection.portraits.length,2,collection.name+' has exactly two portrait choices');

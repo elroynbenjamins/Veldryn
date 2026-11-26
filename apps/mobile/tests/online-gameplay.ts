@@ -170,6 +170,32 @@ async function main(){
   if(scenario==='stale'||scenario==='second-stale')ok(requestIds[0]!==requestIds[1]&&ids===2,'definitive conflict generates exactly one new receipt');
   if(scenario==='pending')ok(requestIds[0]==='prior'&&ids===0,'pending receipt cannot trigger a fresh automatic retry');
  }
+ // A fresh durable receipt or a new foreground snapshot may appear while the
+ // automatic retry is checking storage. Neither may be overwritten.
+ for(const race of ['pending-appeared','snapshot-changed'] as const){
+  let reads=0,refreshes=0,sends=0,generated=0;
+  let durable:PendingGameCommand|null=null;
+  const external:PendingGameCommand={requestId:'external-pending',expectedVersion:5,command:{type:'claim'}};
+  const guarded:OnlineGameRepository=new OnlineGameRepository('alice',{
+   read:async()=>({...snapshot,version:++refreshes===1?5:6}),
+   send:async()=>{sends++;throw new OnlineCommandError('stale_state',true);},
+  },{
+   read:async()=>{
+    if(++reads===2){
+     if(race==='pending-appeared')durable=external;
+     else await guarded.refresh();
+    }
+    return durable;
+   },
+   write:async value=>{durable=value;},
+  },()=>`guarded-${++generated}`);
+  guarded.snapshot=snapshot;
+  let rejected=false;
+  try{await guarded.execute({type:'claim'},true);}catch{rejected=true;}
+  ok(rejected&&sends===1&&generated===1,'automatic claim cannot issue a second receipt during '+race);
+  ok(race==='pending-appeared'?durable===external:durable===null,'automatic claim preserves durable storage during '+race);
+  ok(guarded.snapshot?.version===(race==='pending-appeared'?5:6),'automatic claim keeps freshest snapshot during '+race);
+ }
  let releaseRead:(value:OnlineSnapshot)=>void=()=>{};
  const racing=new OnlineGameRepository('alice',{read:()=>new Promise(resolve=>{releaseRead=resolve;}),send:async()=>({...snapshot,version:2,serverNow:now+2})},{read:async()=>null,write:async()=>{}},()=> 'race-key');
  const initial=racing.refresh();releaseRead({...snapshot,version:1});await initial;

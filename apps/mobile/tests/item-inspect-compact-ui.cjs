@@ -17,7 +17,25 @@ const provider=modal.indexOf('<SafeAreaProvider style={{flex:1}}>',modalHost);
 const insetRead=modal.indexOf('insets=useSafeAreaInsets()',provider);
 assert(modalHost>=0&&provider>modalHost&&insetRead>provider,'A nested provider must measure safe-area insets in the modal window');
 assert(modal.includes("navigationBarTranslucent={Platform.OS==='android'}"),'Android navigation must be consistently edge-to-edge for insets to be measured');
-assert(modal.includes('const bottomClearance=sheet?Math.max(insets.bottom,keyboardOverlap)'),'Sheet clearance must include the native bottom inset without double-counting keyboard overlap');
+assert(modal.includes('const bottomClearance=sheet?Math.max(safeBottom,keyboardOverlap)'),'Sheet clearance must include the resolved bottom inset without double-counting keyboard overlap');
+assert(modal.includes('const rootInsets=useSafeAreaInsets()')&&modal.includes('frame=useSafeAreaFrame()')&&modal.includes('screenHeight:Dimensions.get(\'screen\').height'),'Use both native windows and real screen geometry to recover missing modal insets');
+const ts=require('typescript');
+const safeAreaExports={};
+new Function('exports',ts.transpileModule(source('src/components/modal-safe-area.ts'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText)(safeAreaExports);
+const {resolveModalBottomInset}=safeAreaExports;
+const geometry={android:true,modalBottom:0,modalTop:24,rootBottom:0,rootTop:24,screenHeight:800,frameHeight:800};
+const clearance=overrides=>resolveModalBottomInset({...geometry,...overrides});
+assert.equal(clearance({}),48,'Zero insets on a full-screen Android window must reserve the three-button fallback');
+assert.equal(clearance({modalBottom:48,rootBottom:48}),48,'A valid three-button inset is not added twice');
+assert.equal(clearance({modalBottom:24,rootBottom:24}),24,'Normal gesture navigation stays compact');
+assert.equal(clearance({rootBottom:48}),48,'A missing modal inset recovers the app inset');
+assert.equal(clearance({modalBottom:24,rootBottom:48}),48,'A larger app inset protects against an underreported modal inset');
+assert.equal(clearance({frameHeight:728}),0,'Do not add clearance when status and navigation bars already occupy the excluded window space');
+assert.equal(clearance({frameHeight:776}),48,'A status-only exclusion must not consume the navigation allowance');
+assert.equal(clearance({frameHeight:752}),24,'Partially excluded space reduces the conservative fallback');
+assert.equal(clearance({frameHeight:728,modalBottom:24}),24,'A positive native modal inset still applies inside its own window');
+assert.equal(clearance({android:false,modalBottom:34}),34,'Non-Android layout continues to use the native modal inset');
+assert.equal(clearance({android:false}),0,'No Android fallback on iOS or web');
 assert(modal.includes('paddingBottom:bottomClearance'),'Sheet clearance must apply to the backdrop outside action controls');
 assert(modal.includes('sheet&&{paddingBottom:spacing.lg}'),'Keep a constant touch-safe gap inside the sheet, not a duplicate safe-area inset');
 assert(!modal.includes('sheet&&{paddingBottom:Math.max(spacing.lg,insets.bottom+spacing.sm)}'),'Do not consume the native bar inset twice');
@@ -33,6 +51,11 @@ assert(!sheet.includes("gt('BONUS STATS')")&&!sheet.includes('s.bonusNote}>{gt('
 assert(sheet.includes('disposalActions?<View style={s.footerDisposal}')&&sheet.includes('footerDisposal:{borderTopWidth:StyleSheet.hairlineWidth'),'Keep Sell/Salvage visible below a clear divider');
 assert(!sheet.includes('actionsOpen')&&!sheet.includes('footerActionScroll'),'No equipment action may be hidden behind a More actions disclosure');
 assert(sheet.includes('compactHeader=width<390||fontScale>=1.25')&&controls.includes('button:{width:40,height:44'),'Header must accommodate compact phones and accessible target heights');
+assert(sheet.includes('scrollWholeSheet=height<650||fontScale>=1.25')&&sheet.includes('{scrollWholeSheet?header:null}')&&sheet.includes('{scrollWholeSheet?footer:null}')&&sheet.includes('{!scrollWholeSheet?footer:null}'),'Short or scaled layouts must scroll every control while normal layouts retain the fixed action footer');
+assert(sheet.includes('keyboardShouldPersistTaps="handled"'),'Action buttons remain reachable with the quantity keyboard open');
+assert(inventory.includes("inspectQuickButtonStacked:{flex:0,flexShrink:0,width:'100%'}"),'Stacked buttons must use intrinsic heights, not divide the available column space');
+assert((inventory.match(/stackInspectorActions&&s\.inspectQuickButtonStacked/g)||[]).length===4,'Material and gear disposal buttons must all use the non-shrinking stacked style');
+assert(inventory.includes("inspectAmountLabelStacked:{flexBasis:'100%'}")&&inventory.includes("maxWidth:'100%',flexShrink:1,flexWrap:'wrap'"),'Long amount labels and scaled steppers must wrap within the available width');
 
 // Stackable resources must inherit the toolbar amount and use one clamped value for both actions.
 assert(inventory.includes('setInspectQuantity(stack.instanceId?1:transferAmount(stack.quantity,quantity))'),'Opening a stack must inherit the selected amount, including All, without changing exact-copy actions');

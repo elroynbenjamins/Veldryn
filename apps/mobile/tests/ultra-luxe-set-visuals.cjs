@@ -84,5 +84,6 @@ for(const name of ['ProfileScenePreview','PublicProfileScene']){
 }
 assert(stage.includes('reduceMotion numberOfLines={1} style={s.stripName}'));
 const ambient=read('profile/CelestialStandardEffects.tsx');
-assert(ambient.includes('outputRange:[0,Math.max(0,width-42),0]'),'ordinary celestial rail must return without a jump');
+assert(ambient.includes('running?<CelestialBorderLight'),'ordinary celestial rail uses the responsive closed-track renderer');
+assert(read('profile/CelestialBorderLight.tsx').includes('celestialBorderTracks(width,height,showcase)'),'ordinary rail and showcase share numerically tested closed trajectories');
 console.log('Direct artwork, inactive scene cleanup and closed ordinary border motion passed.');

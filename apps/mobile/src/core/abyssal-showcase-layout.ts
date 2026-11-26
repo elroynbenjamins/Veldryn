@@ -68,3 +68,24 @@ export function abyssalPoseTimeline(){
 export function abyssalPoseCell(frame:number){
  return {column:frame%ABYSSAL_POSE_ATLAS.columns,row:Math.floor(frame/ABYSSAL_POSE_ATLAS.columns)};
 }
+
+/** Candidate identifiers only; not a production grant catalogue entry. */
+export const ABYSSAL_PRIVATE_REVIEW={
+ collectionId:ABYSSAL_COLLECTION.id,
+ titleId:'ascendant-abyssal-title',
+ effectId:'premium:abyssal-majesty:call-of-the-deep',
+} as const;
+export type AbyssalReviewSelection={
+ background?:string|null;border?:string|null;pet?:string|null;effect?:string|null;
+ verifiedTitleId?:string|null;displayedBadges?:readonly string[];
+};
+/** Review-only selection contract. Caller supplies verified collection IDs from
+ * a trusted projection; raw save ownership and legacy tester aliases are not proof.
+ * This does not create grants or authorize persistence. */
+export function abyssalReviewTier(enabled:boolean,verifiedCollectionIds:readonly string[],actual:AbyssalReviewSelection):'hidden'|'paired'|'awakened'|'ascendant'{
+ if(!enabled||!verifiedCollectionIds.includes(ABYSSAL_PRIVATE_REVIEW.collectionId))return 'hidden';
+ if(!abyssalPair(actual.background,actual.border))return 'hidden';
+ if(actual.effect&&actual.effect!==ABYSSAL_PRIVATE_REVIEW.effectId)return 'hidden';
+ if(actual.pet!==ABYSSAL_IDS.pet)return 'paired';
+ return actual.verifiedTitleId===ABYSSAL_PRIVATE_REVIEW.titleId&&actual.displayedBadges?.includes(ABYSSAL_IDS.badge)?'ascendant':'awakened';
+}

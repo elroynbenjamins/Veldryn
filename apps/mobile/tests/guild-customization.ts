@@ -1,4 +1,4 @@
-import {DEFAULT_GUILD_BANNER_ID,GUILD_BANNERS,GUILD_FRAMES,GUILD_NAME_COLORS,visibleGuildNameColors,guildCosmeticUnlockLabel,isGuildCosmeticUnlocked,normalizeGuildBannerId,normalizeGuildFrameId,normalizeGuildMotto,normalizeGuildNameColorId,normalizeGuildNameplateId} from '../src/core/guild-customization';
+import {FROSTFALL_GUILD_COSMETIC_IDS,GUILD_BACKGROUNDS,guildCosmeticVisible,normalizeGuildBackgroundId,DEFAULT_GUILD_BANNER_ID,GUILD_BANNERS,GUILD_FRAMES,GUILD_NAME_COLORS,visibleGuildNameColors,guildCosmeticUnlockLabel,isGuildCosmeticUnlocked,normalizeGuildBannerId,normalizeGuildFrameId,normalizeGuildMotto,normalizeGuildNameColorId,normalizeGuildNameplateId} from '../src/core/guild-customization';
 
 function equal(actual:unknown,expected:unknown,message:string){if(actual!==expected)throw new Error(`${message}: expected ${String(expected)}, got ${String(actual)}`)}
 equal(normalizeGuildBannerId('phoenix_crimson'),'phoenix_crimson','Valid banner must be preserved');
@@ -12,7 +12,7 @@ equal(normalizeGuildMotto(''),'Stronger together.','Empty motto must fall back')
 equal(normalizeGuildMotto('x'.repeat(100)).length,80,'Motto must cap at 80 characters');
 equal(GUILD_BANNERS.filter(x=>x.unlock.type!=='event'&&x.unlock.type!=='construction').length,8,'All supplied base banners must be present');
 equal(GUILD_FRAMES.filter(x=>x.unlock.type!=='event'&&x.unlock.type!=='construction').length,9,'All supplied progression borders must be present');
-equal(GUILD_NAME_COLORS.length,2,'Only basic and implemented event color exist');
+equal(GUILD_NAME_COLORS.length,3,'Basic, Veilbreak and release-gated Frostfall colors exist');
 equal(normalizeGuildNameColorId('name_amethyst'),'name_ivory','Valid name color must be preserved');
 equal(isGuildCosmeticUnlocked({type:'guild_level',level:5},{guildLevel:4,bannerGalleryTier:0,pveAchievementIds:[]}),false,'Level cosmetic must stay locked');
 equal(isGuildCosmeticUnlocked({type:'guild_level',level:5},{guildLevel:5,bannerGalleryTier:0,pveAchievementIds:[]}),true,'Level cosmetic unlock boundary');
@@ -37,3 +37,16 @@ const revealed={...base,revealedEventColorIds:['name_halloween_orange']};
 equal(visibleGuildNameColors(revealed).length,2,'Previously released event color is shown');
 equal(isGuildCosmeticUnlocked(GUILD_NAME_COLORS[1].unlock,revealed),false,'Showing a released color does not unlock it');
 equal(isGuildCosmeticUnlocked(GUILD_NAME_COLORS[1].unlock,{...revealed,eventCosmeticIds:['name_halloween_orange']}),true,'Milestone ownership permits selection');
+
+const seasonal=[...GUILD_BACKGROUNDS,...GUILD_BANNERS,...GUILD_FRAMES,...GUILD_NAME_COLORS].filter(row=>FROSTFALL_GUILD_COSMETIC_IDS.some(id=>id===row.id));
+equal(seasonal.length,4,'Four independent Frostfall slots');
+for(const row of seasonal){
+ equal(guildCosmeticVisible(row.id,base),false,'Unreleased, unowned reward stays hidden');
+ equal(isGuildCosmeticUnlocked(row.unlock,{...base,eventCosmeticIds:[row.id]}),false,'Ownership without art release stays locked');
+ equal(isGuildCosmeticUnlocked(row.unlock,{...base,releasedEventCosmeticIds:[row.id]}),false,'Art release without ownership stays locked');
+ equal(isGuildCosmeticUnlocked(row.unlock,{...base,eventCosmeticIds:[row.id],releasedEventCosmeticIds:[row.id]}),true,'Owned released reward is equippable');
+}
+equal(normalizeGuildBackgroundId('background_frostfall_winter_aurora_2026'),'background_frostfall_winter_aurora_2026','Permanent background round trip');
+equal(normalizeGuildBannerId('banner_frostfall_standard_2026'),'banner_frostfall_standard_2026','Permanent banner round trip');
+equal(normalizeGuildFrameId('border_frostfall_frozen_majesty_2026'),'border_frostfall_frozen_majesty_2026','Permanent frame round trip');
+equal(normalizeGuildNameColorId('name_frostfall_aurora_2026'),'name_frostfall_aurora_2026','Permanent color round trip');

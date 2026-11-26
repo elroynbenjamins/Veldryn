@@ -11,4 +11,6 @@ assert.match(modal,/potionsUsedSoFar>0\?/,'Potion usage stays hidden until the f
 assert.match(modal,/phasesReachedSoFar=Math\.min\(3,1\+visible\.filter\(event=>event\.type==='phase'\)\.length\)/,'Phase count advances only on played phase events');
 assert.doesNotMatch(modal,/\{battle\.potionConsumed\}|\{battle\.phasesReached\.length\}/,'Live feed must not reveal final simulated totals');
 assert.match(simulation,/push\(\{atMs:atMs\+40,type:'heal'/,'Potion usage has a distinct timeline event');
+assert.doesNotMatch(modal,/ACC\s*\{|battle\.(?:player\.(?:hitChance|critChance)|boss\.(?:accuracy|critChance))/, 'Live battle should not display accuracy or critical chance for either combatant');
+assert.match(modal,/damageEvent\.critical/, 'Actual critical hits retain their combat feedback');
 console.log('PASS story boss combat feed shows only elapsed potions and phases');

@@ -5,7 +5,7 @@ const read=(path:string)=>fs.readFileSync(path,'utf8');
 
 const gathering=read('src/components/GatheringActivityList.tsx');
 ok(gathering.includes('gatheringBalanceProjection'),'Gathering UI must use the shared balance projection instead of duplicating rate math');
-ok(gathering.includes("gt('Have: {count} {resource} · {seconds}s'")&&gathering.includes('formatGameNumber(available')&&gathering.includes('Math.ceil(view.cycleSeconds)'),'Simple gathering rows must show resource count and current rounded action duration');
+ok(gathering.includes("gt('Have: {count} {resource} · {seconds}s'")&&gathering.includes('count:formatGameNumber(stock(activity.itemId),state.settings.numberMode,language)')&&gathering.includes('seconds:cycleSeconds')&&gathering.includes('cycleSeconds:entry.readyHere&&!entry.active?Math.ceil(gatheringBalanceProjection(state,entry.activity,0).cycleSeconds):0')&&gathering.includes('[state,skillId,skillLevel,currentRegionOnly,region.id,areaId,preferredActionId]'),'Simple gathering rows must show resource count and current rounded action duration');
 ok(gathering.includes('onPress={start}')&&gathering.includes('onGather(activity.id)'),'Gathering rows must start the selected resource directly');
 
 const activity=read('src/components/ActivityCard.tsx');
@@ -18,10 +18,13 @@ ok(home.includes('activeActivityLevelPace(state,rate.xpPerHour)'),'Home must der
 ok(home.includes('levelPace={levelPace}'),'Home must pass live level pace into the active activity card');
 
 const activeBar=read('src/components/ActiveActivityBar.tsx');
-ok(activeBar.includes('activeCombatRuntimeProjection(state)'),'Active combat bar must use the authoritative regional hunt cycle');
+const liveHunt=read('src/components/useLiveHuntProjection.ts');
+const huntTab=read('src/components/HuntingPreview.tsx');
+ok(activeBar.includes('useLiveHuntProjection(props.state,')&&huntTab.includes('useLiveHuntProjection(state,active)')&&liveHunt.includes('activeCombatHitProjection(state,clock,snapshot.fight?.cursor)'),'Active combat bar and combat tab must use the same incremental hit projection');
 ok(activeBar.includes('activeGatheringRuntimeProjection(state)'),'Active gathering bar must use runtime-equivalent gathering pace');
-ok(activeBar.includes('activeCombatRuntimeProjection(state)')&&activeBar.includes("gt('Next kill {seconds}s'"),'Active combat feedback must synchronize its countdown with the authoritative hunt cycle');
-ok(activeBar.includes("gt('{count} kills'")&&activeBar.includes('combatTrack'),'Active combat feedback must keep compact kill progress and a visual hunt-cycle bar');
+const combatBar=activeBar.slice(activeBar.indexOf('function CombatActivityBar('),activeBar.indexOf('function RunningActivityBar('));
+ok(combatBar.includes('fight.enemyHp/Math.max(1,fight.enemyMaxHp)')&&combatBar.includes('fight&&!fight.searching?')&&!combatBar.includes('cycleRemaining')&&!combatBar.includes('elapsed(')&&!activeBar.includes('Next kill {seconds}s'),'Combat feedback must show remaining HP, not a countdown, and clear the track while searching');
+ok(activeBar.includes("gt('{count} kills'")&&activeBar.includes('combatTrack'),'Active combat feedback must keep compact kill progress and an enemy HP bar');
 
 const battleStage=read('src/components/BattleStage.tsx');
 ok(battleStage.includes('slashBright')&&battleStage.includes('sparkTravel'),'Expanded combat preview must include slash and particle hit feedback');

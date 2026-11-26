@@ -7,7 +7,7 @@ import {Panel} from './Panel';
 import {GuildIdentitySummary} from './GuildIdentitySummary';
 import {GuildBannerArtwork,GuildFrameSwatch} from './GuildHeraldry';
 import {GameState} from '../core/types';
-import {normalizeGuildBackgroundId,GUILD_BANNERS,GUILD_FRAMES,normalizeGuildBannerId,normalizeGuildFrameId,normalizeGuildMotto,normalizeGuildNameplateId} from '../core/guild-customization';
+import {isFrostfallGuildCosmetic,normalizeGuildBackgroundId,GUILD_BANNERS,GUILD_FRAMES,normalizeGuildBannerId,normalizeGuildFrameId,normalizeGuildMotto,normalizeGuildNameplateId} from '../core/guild-customization';
 import {C,radii,spacing,typography} from '../theme/theme';
 
 export function GuildCustomizationPanel({state,onChange,readOnly=false}:{state:GameState;onChange:(next:GameState)=>void;readOnly?:boolean}){
@@ -30,7 +30,7 @@ export function GuildCustomizationPanel({state,onChange,readOnly=false}:{state:G
     <Panel>
       <Text style={s.title}>{st("Banner / Emblem")}</Text>
       <Text style={s.help}>Choose the heraldry shown on your guild profile, recruitment posts and guild cards.</Text>
-      <View style={s.grid}>{GUILD_BANNERS.map(entry=><Pressable key={entry.id} disabled={readOnly} accessibilityRole="button" accessibilityState={{selected:entry.id===bannerId,disabled:readOnly}} onPress={()=>patch({guildBannerId:entry.id})} style={[s.bannerCard,entry.id===bannerId&&s.selected]}>
+      <View style={s.grid}>{GUILD_BANNERS.filter(entry=>!isFrostfallGuildCosmetic(entry.id)).map(entry=><Pressable key={entry.id} disabled={readOnly} accessibilityRole="button" accessibilityState={{selected:entry.id===bannerId,disabled:readOnly}} onPress={()=>patch({guildBannerId:entry.id})} style={[s.bannerCard,entry.id===bannerId&&s.selected]}>
         <View style={{alignItems:'center'}}><GuildBannerArtwork height={88} bannerId={entry.id}/></View>
         <Text numberOfLines={1} style={s.cardName}>{entry.name}</Text>
         {entry.id===bannerId?<Text style={s.selectedText}>{st("Selected")}</Text>:null}
@@ -43,7 +43,7 @@ export function GuildCustomizationPanel({state,onChange,readOnly=false}:{state:G
     </Panel>
     <Panel>
       <Text style={s.title}>{st("Guild profile border")}</Text>
-      <View style={s.row}>{GUILD_FRAMES.map(entry=><Pressable key={entry.id} disabled={readOnly} onPress={()=>patch({guildProfileFrameId:entry.id})} style={[s.option,entry.id===frameId&&s.selected,{borderColor:entry.id===frameId?entry.accent:C.line}]}>
+      <View style={s.row}>{GUILD_FRAMES.filter(entry=>!isFrostfallGuildCosmetic(entry.id)).map(entry=><Pressable key={entry.id} disabled={readOnly} onPress={()=>patch({guildProfileFrameId:entry.id})} style={[s.option,entry.id===frameId&&s.selected,{borderColor:entry.id===frameId?entry.accent:C.line}]}>
         <GuildFrameSwatch frameId={entry.id}/><Text style={s.optionText}>{entry.name}</Text>
       </Pressable>)}</View>
     </Panel>

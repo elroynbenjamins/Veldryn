@@ -1,8 +1,10 @@
 /** Device-local audio levels and per-area music choices. No native imports. */
 export type AudioLevel=0|1|2|3;
-export const MUSIC_CONTEXTS=['town','asterfall','sunscar','frostmarch','dungeon','boss','world_boss'] as const;
+export const MUSIC_CONTEXTS=['asterfall','sunscar','frostmarch','dungeon','boss','world_boss'] as const;
 export type MusicContextId=typeof MUSIC_CONTEXTS[number];
-export interface MusicContextPreference{enabled:boolean;track:MusicContextId|null;}
+export const MUSIC_TRACKS=[...MUSIC_CONTEXTS,'boss_A','boss_B','dungeon_A','dungeon_B','frostfall_dungeon','world_boss_A','world_boss_B'] as const;
+export type MusicSelectionId=typeof MUSIC_TRACKS[number];
+export interface MusicContextPreference{enabled:boolean;track:MusicSelectionId|null;}
 export interface AudioPreferences{
  music:AudioLevel;
  effects:AudioLevel;
@@ -13,9 +15,9 @@ export const AUDIO_LEVEL_VOLUME:Readonly<Record<AudioLevel,number>>={0:0,1:.35,2
 export const DEFAULT_AUDIO_PREFERENCES:AudioPreferences={music:2,effects:2,musicContexts:{}};
 const level=(value:unknown,fallback:AudioLevel):AudioLevel=>value===0||value===1||value===2||value===3?value:fallback;
 const record=(value:unknown):value is Record<string,unknown>=>typeof value==='object'&&value!==null&&!Array.isArray(value);
-const isContext=(value:unknown):value is MusicContextId=>typeof value==='string'&&(MUSIC_CONTEXTS as readonly string[]).includes(value);
+const isTrack=(value:unknown):value is MusicSelectionId=>typeof value==='string'&&(MUSIC_TRACKS as readonly string[]).includes(value);
 
-/** V1 settings migrate without losing volume; unknown and corrupt values are ignored. */
+/** V1 settings migrate without losing volume; retired Town selections fall back to their current region or activity; unknown and corrupt values are ignored. */
 export function parseAudioPreferences(raw:string|null):AudioPreferences{
  if(!raw)return {...DEFAULT_AUDIO_PREFERENCES,musicContexts:{}};
  try{
@@ -27,7 +29,7 @@ export function parseAudioPreferences(raw:string|null):AudioPreferences{
    const entry=stored[id];
    if(!record(entry))continue;
    const enabled=entry.enabled!==false;
-   const track=isContext(entry.track)?entry.track:null;
+   const track=isTrack(entry.track)?entry.track:null;
    if(!enabled||track!==null)contexts[id]={enabled,track};
   }
   return {music:level(value.music,DEFAULT_AUDIO_PREFERENCES.music),effects:level(value.effects,DEFAULT_AUDIO_PREFERENCES.effects),musicContexts:contexts};
@@ -37,10 +39,10 @@ export function musicContextPreference(prefs:AudioPreferences,context:MusicConte
  return prefs.musicContexts[context]??{enabled:true,track:null};
 }
 /** A muted context stays silent, even while a scene override is mounted. */
-export function resolvePreferredMusicTrack(context:MusicContextId|null,prefs:AudioPreferences):MusicContextId|null{
+export function resolvePreferredMusicTrack(context:MusicContextId|null,prefs:AudioPreferences,encounterDefault?:MusicSelectionId):MusicSelectionId|null{
  if(context===null)return null;
  const choice=musicContextPreference(prefs,context);
- return choice.enabled?(choice.track??context):null;
+ return choice.enabled?(choice.track??encounterDefault??context):null;
 }
 
 /** Restore only audio channels: independent per-area preferences are never replaced. */

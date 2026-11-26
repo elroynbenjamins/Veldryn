@@ -1,5 +1,5 @@
 import type {GameState} from './types';
-export type CosmeticUnlockKind='background'|'border'|'title'|'profile_icon'|'pet'|'emote'|'guild_cosmetic';
+export type CosmeticUnlockKind='background'|'border'|'effect'|'title'|'profile_icon'|'pet'|'emote'|'guild_cosmetic';
 export interface CosmeticUnlockNotice{key:string;kind:CosmeticUnlockKind;name:string;detail?:string;}
 import {profileRewardSource} from './profile-customization';
 import {profileIconCollection} from './profile-icons';
@@ -11,7 +11,7 @@ import {CORE_PET_COLLECTIBLES} from '../content/core-pets';
 
 export type UnlockInboxEntry=CosmeticUnlockNotice&{unlockedAtMs:number;seen:boolean};
 export const UNLOCK_INBOX_LIMIT=100;
-const kinds=new Set(['title','background','border','profile_icon','pet','emote','guild_cosmetic']);
+const kinds=new Set(['title','background','border','effect','profile_icon','pet','emote','guild_cosmetic']);
 function valid(row:unknown):row is UnlockInboxEntry{
  if(!row||typeof row!=='object')return false;
  const value=row as Partial<UnlockInboxEntry>;
@@ -97,8 +97,8 @@ export function legacyUnreadUnlockEntries(keys:readonly string[],state:GameState
    const icon=icons.get(id);
    return icon?[{key,kind:'profile_icon' as const,name:icon.name,detail:icon.source,unlockedAtMs:atMs,seen:false}]:[];
   }
-  const source=profileRewardSource(state,kind as 'title'|'background'|'border',id);
+  const source=profileRewardSource(state,kind as 'title'|'background'|'border'|'effect',id);
   const name=source?.name??(kind==='title'?titles.get(id):undefined)??id.replace(/[_:-]+/g,' ');
-  return [{key,kind:kind as 'title'|'background'|'border',name,detail:source?.label,unlockedAtMs:atMs,seen:false}];
+  return [{key,kind:kind as 'title'|'background'|'border'|'effect',name,detail:source?.label,unlockedAtMs:atMs,seen:false}];
  }));
 }

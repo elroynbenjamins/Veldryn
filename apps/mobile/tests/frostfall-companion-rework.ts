@@ -21,7 +21,7 @@ check(ids.every(id=>!COMBAT_COMPANIONS.some(row=>row.id===id)&&!RELEASED_EVENT_C
 const milestones=FROSTFALL_EVENT.milestones('IRONWARDEN');
 const rewards=milestones.filter(row=>row.reward.kind==='companion');
 check(rewards.length===3&&JSON.stringify(rewards.map(row=>[row.points,row.reward.id]))===JSON.stringify([[6000,'EVT_UNIT_012'],[8500,'EVT_UNIT_013'],[10000,'EVT_UNIT_009']]),'Frostfall companion milestones are unique, ordered and preserve the 10k Herald');
-check(FROSTFALL_EVENT.maxProgress===10000&&FROSTFALL_EVENT.shop.length===20,'Frostfall preserves 10k maximum reputation and the 20-offer shop');
+check(FROSTFALL_EVENT.maxProgress===10000&&FROSTFALL_EVENT.shop.length===27&&FROSTFALL_EVENT.shop.filter(row=>row.reward.kind==='emote').length===5&&FROSTFALL_EVENT.shop.filter(row=>row.reward.kind==='profile_icon').length===3,'Frostfall preserves 10k reputation, five emote offers and three seasonal profile icons');
 for(let i=0;i<ids.length;i++){
  const id=ids[i],mobile=EVENT_COMPANIONS.find(row=>row.id===id),server=companionServerDefinition(id);
  check(mobile&&server, `Event companion ${id} must exist on both mobile and server`);
@@ -35,13 +35,15 @@ for(let i=0;i<ids.length;i++){
  const owner={id:'frostfall_test_owner',classId:'WAYFINDER',stats:{maxHp:1000,haste:.1,defense:100},abilities:[],tags:[],basicAttackMs:1800,basicAttackCoeff:1} as unknown as Parameters<typeof applyCharacterCompanionAssist>[0];
  const assisted=applyCharacterCompanionAssist(owner,progress);
  const soloEffects=solo.abilities[0].effects,assistEffects=assisted.abilities[0].effects;
+ check(mobile!.passiveAbility.value===(id==='EVT_UNIT_009'?1-server!.identity!.activeCooldownMultiplier!:id==='EVT_UNIT_012'?server!.identity!.hasteBonus!:server!.identity!.defenseMultiplier!-1)||Math.abs(mobile!.passiveAbility.value-(id==='EVT_UNIT_009'?1-server!.identity!.activeCooldownMultiplier!:id==='EVT_UNIT_012'?server!.identity!.hasteBonus!:server!.identity!.defenseMultiplier!-1))<1e-9,`Passive display value matches server identity: ${id}`);
+ check(Math.abs(mobile!.bondTrait.effect.value-((id==='EVT_UNIT_009'?server!.identity!.bond!.activeHealMultiplier!:id==='EVT_UNIT_012'?server!.identity!.bond!.activeDamageMultiplier!:server!.identity!.bond!.activeShieldMultiplier!)-1))<1e-9,`Bond display value matches server identity: ${id}`);
  check(assisted.abilities.length===1,`Exactly one assist, not an extra party member: ${id}`);
  if(id==='EVT_UNIT_009'){
   check(soloEffects.some(e=>e.kind==='heal')&&soloEffects.some(e=>e.kind==='buff'&&e.tag==='damage_taken'), 'Herald heals and mitigates in Companion Trials');
   check(assistEffects.some(e=>e.kind==='heal')&&assistEffects.some(e=>e.kind==='buff'&&e.tag==='damage_taken'), 'Herald really heals and mitigates in character combat');
  }else if(id==='EVT_UNIT_012'){
-  check(soloEffects.some(e=>e.kind==='damage')&&soloEffects.some(e=>e.kind==='debuff'&&e.tag==='damage_taken'), 'Lynx provides damage and short vulnerability in Trials');
-  check(assistEffects.some(e=>e.kind==='damage')&&assistEffects.some(e=>e.kind==='debuff'&&e.tag==='damage_taken'), 'Lynx provides damage and short vulnerability in character combat');
+  check(soloEffects.some(e=>e.kind==='damage')&&soloEffects.some(e=>e.kind==='debuff'&&e.tag==='damage_taken'), 'Wolverine provides damage and short vulnerability in Trials');
+  check(assistEffects.some(e=>e.kind==='damage')&&assistEffects.some(e=>e.kind==='debuff'&&e.tag==='damage_taken'), 'Wolverine provides damage and short vulnerability in character combat');
  }else{
   check(soloEffects.some(e=>e.kind==='shield'&&(e.shieldReflectPct??0)>0), 'Ram reflects absorbed shield damage in Trials');
   check(assistEffects.some(e=>e.kind==='shield'&&(e.shieldReflectPct??0)>0), 'Ram reflects absorbed shield damage in character combat');
@@ -49,7 +51,17 @@ for(let i=0;i<ids.length;i++){
 }
 // Simulate a server-authorized milestone snapshot without changing production flags.
 const now=Date.UTC(2026,11,10,12),initial=createCharacter(newGame(now),'IRONWARDEN','Frostfall QA');
-let state:GameState={...initial,account:{...initial.account,eventProgressById:{...initial.account.eventProgressById,[FROSTFALL_EVENT.id]:10000}}};
+const startsAtMs=Date.UTC(2026,11,3),endsAtMs=Date.UTC(2026,11,27),graceEndsAtMs=Date.UTC(2026,11,29);
+const runtime={eventId:FROSTFALL_EVENT.id,enabled:true,startsAtMs,endsAtMs,graceEndsAtMs};
+let state:GameState={...initial,account:{...initial.account,liveEvent:runtime,eventProgressById:{...initial.account.eventProgressById,[FROSTFALL_EVENT.id]:10000}}};
+// Single-claim endpoint must honor the seasonal window, even with earned reputation.
+for(const at of [startsAtMs-1,graceEndsAtMs]){
+ let denied=false;try{claimEventReward(state,ids[0],at);}catch{denied=true;}check(denied,'Milestone rejected outside event/grace at '+at);
+}
+for(const liveEvent of [undefined,{...runtime,enabled:false},{...runtime,eventId:'other'}]){
+ let denied=false;try{claimEventReward({...state,account:{...state.account,liveEvent}},ids[0],now);}catch{denied=true;}check(denied,'Milestone requires matching enabled runtime');
+}
+check(claimEventReward(state,ids[0],endsAtMs).account.unlockedCombatCompanionIds?.includes(ids[0]),'Previously earned milestone remains claimable during grace');
 for(const id of ids){
  const reward=rewards.find(row=>row.reward.id===id)?.reward;
  check(!!reward,`Authoritative reward exists for ${id}`);

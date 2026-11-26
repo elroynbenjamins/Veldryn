@@ -1,3 +1,4 @@
+import {ultraLuxeTitleById} from './ultra-luxe-titles';
 import {GameState} from './types';
 import {rebasedCombatLevelFromLegacyLevel as rebaseLevel} from './progression';
 export const PROFILE_BACKGROUNDS=[{id:'asterfall-night',name:'Asterfall Night',requiredLevel:1},{id:'ironwood-dawn',name:'Ironwood Dawn',requiredLevel:rebaseLevel(10)},{id:'silverbrook-mist',name:'Silverbrook Mist',requiredLevel:rebaseLevel(20)},{id:'oathglass-hall',name:'Oathglass Hall',requiredLevel:rebaseLevel(25)}];
@@ -11,9 +12,11 @@ export function profileBackgroundUnlocked(state:GameState,id:string){
 }
 export function setProfileBackground(state:GameState,id:string):GameState{if(!profileBackgroundUnlocked(state,id))throw new Error('Profile background is locked');return state.character?{...state,character:{...state.character,profileBackgroundId:id}}:state}
 export function profileTitleUnlocked(state:GameState,id:string){
+ const privateTitle=ultraLuxeTitleById(id);
+ if(privateTitle)return state.account.unlockedTitleIds?.includes(privateTitle.id)??false;
  const title=PROFILE_TITLES.find(x=>x.id===id);
  if(!title)return false;
  if(state.account.unlockedTitleIds?.includes(id))return true;
  return highestAccountCharacterLevel(state)>=(title.requiredLevel??1)&&(!title.requiredGuild||state.account.guildMember);
 }
-export function setProfileTitle(state:GameState,id:string):GameState{if(!profileTitleUnlocked(state,id))throw new Error('Profile title is locked');const title=PROFILE_TITLES.find(x=>x.id===id)!;return state.character?{...state,character:{...state.character,profileTitle:title.name}}:state}
+export function setProfileTitle(state:GameState,id:string):GameState{if(!profileTitleUnlocked(state,id))throw new Error('Profile title is locked');const title=ultraLuxeTitleById(id)??PROFILE_TITLES.find(x=>x.id===id)!;return state.character?{...state,character:{...state.character,profileTitle:title.name}}:state}

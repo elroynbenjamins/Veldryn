@@ -19,17 +19,48 @@ import {onlineConfigured} from '../online/supabase';
 import {useChatFeed} from '../online/useChatFeed';
 import {CHAT_MAX_EMOTES_PER_MESSAGE,chatEmoteCount,chatUnavailableEmoteIds} from '../core/chat-emotes';
 import {guildChatCommandKey,guildChatState,guildRoster,markSocialChatRead,sendGuildChat,type GuildChatMessage,type GuildChatState} from '../online/social';
+import {chatMentionQueryAtEnd} from '../core/chat-mentions';
 
 export function GuildChat({language,currentPlayerName,unlockedEmoteIds=[],trayIds=[],bodyPresentation='male',onTrayChange,onManageEmotes,firstUnreadMessageId,onRead,reduceMotion=false,active=true,embedded=false,onTitleChange}:{language:Language;currentPlayerName?:string;unlockedEmoteIds?:readonly string[];trayIds?:readonly string[];bodyPresentation?:'male'|'female';onTrayChange?:(ids:string[])=>void|Promise<void>;onManageEmotes?:()=>void;firstUnreadMessageId?:string;onRead?:()=>void;reduceMotion?:boolean;active?:boolean;embedded?:boolean;onTitleChange?:(title:string)=>void}){
  const st=useSocialText(),viewportStyle=useChatViewportStyle();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const {value:snapshot,error:loadError,accountId,refresh:load,setValue:setSnapshot}=useChatFeed<GuildChatState|null>({key:'guild:current',read:()=>guildChatState(),initial:null,active,channelType:'guild',channelIdFromValue:value=>value?.guild?.id});
- const [selected,setSelected]=useState<GuildChatMessage|null>(null),[body,setBody]=useState(''),[mentionNames,setMentionNames]=useState<string[]>([]),[busy,setBusy]=useState(false),[sendError,setError]=useState('');
+ const [selected,setSelected]=useState<GuildChatMessage|null>(null),[body,setBody]=useState(''),[mentionRoster,setMentionRoster]=useState<{scope:string;names:string[]}|null>(null),[busy,setBusy]=useState(false),[sendError,setError]=useState('');
+ const mentionFlight=useRef<{scope:string;promise:Promise<string[]>}|null>(null),mentionCache=useRef<{scope:string;names:string[];loadedAt:number}|null>(null);
  const pending=useRef<{body:string;key:string}|null>(null),sending=useRef(false),activeRef=useRef(active),onReadRef=useRef(onRead);activeRef.current=active;onReadRef.current=onRead;
  const guild=snapshot?.guild??null,messages=snapshot?.messages??[],error=sendError||loadError,scope=`${accountId}:${guild?.id??''}`,currentScope=useRef(scope);currentScope.current=scope;
  useEffect(()=>{onTitleChange?.(guild?`${guild.tag?'['+guild.tag+'] ':''}${guild.name}`:'');},[guild?.name,guild?.tag,onTitleChange]);
  useEffect(()=>{setSelected(null);setBody('');setError('');pending.current=null;},[scope]);
- useEffect(()=>{const guildId=guild?.id;if(!guildId){setMentionNames([]);return;}if(!active)return;let alive=true;const loadRoster=()=>{if(AppState.currentState==='active'||AppState.currentState===null)void guildRoster(guildId).then(rows=>{if(alive)setMentionNames(rows.map(row=>row.display_name))}).catch(()=>{});};loadRoster();const timer=setInterval(loadRoster,60000);return()=>{alive=false;clearInterval(timer)};},[guild?.id,accountId,active]);
+ // A roster is required only for an actual mention query, not for reading chat.
+ const wantsMention=chatMentionQueryAtEnd(body)!==null;
+ const mentionNames=mentionRoster?.scope===scope?mentionRoster.names:[];
+ useEffect(()=>{mentionCache.current=null;mentionFlight.current=null;setMentionRoster(null);},[scope]);
+ useEffect(()=>{
+  const guildId=guild?.id;if(!guildId||!accountId||!active||!wantsMention)return;
+  let alive=true;
+  const loadRoster=async()=>{
+   if(!alive||currentScope.current!==scope||(AppState.currentState!=='active'&&AppState.currentState!==null))return;
+   const cached=mentionCache.current;
+   if(cached?.scope===scope&&Date.now()-cached.loadedAt<60_000){setMentionRoster(cached);return;}
+   let flight=mentionFlight.current;
+   if(flight?.scope!==scope){
+    const promise=guildRoster(guildId).then(rows=>rows.map(row=>row.display_name));
+    const request={scope,promise};flight=request;mentionFlight.current=request;
+    // Cache once for all waiters; a prior guild/account must never publish.
+    void promise.then(names=>{
+     if(currentScope.current===scope&&mentionFlight.current===request)mentionCache.current={scope,names,loadedAt:Date.now()};
+    }).finally(()=>{if(mentionFlight.current===request)mentionFlight.current=null;}).catch(()=>{});
+   }
+   try{
+    await flight.promise;
+    const next=mentionCache.current;
+    if(alive&&currentScope.current===scope&&next?.scope===scope)setMentionRoster(next);
+   }catch{/* Mention suggestions are optional; retain confirmed names on error. */}
+  };
+  void loadRoster();
+  const foreground=AppState.addEventListener('change',next=>{if(next==='active')void loadRoster();});
+  return()=>{alive=false;foreground.remove();};
+ },[guild?.id,accountId,scope,active,wantsMention]);
 
  if(!onlineConfigured)return <View style={s.unavailable}><Text style={s.title}>{ot(language,'chat.guild')}</Text><Text style={s.note}>{st("Guild Chat requires online services. No simulated chat is shown.")}</Text></View>;
  const send=async()=>{

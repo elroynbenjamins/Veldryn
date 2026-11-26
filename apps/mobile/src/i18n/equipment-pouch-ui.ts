@@ -8,6 +8,14 @@ import {interpolateTranslation,type TranslationParams} from './translator';
 type SevenLanguages=readonly [string,string,string,string,string,string,string];
 export const equipmentPouchUiRows={
   "Details & sources": ["Details & Quellen","Detalles y fuentes","Details en bronnen","Dettagli e fonti","Détails et sources","Сведения и источники","Ayrıntılar ve kaynaklar"],
+  // Stat-first equipment inspection: all seven non-English locales.
+  "INNATE TRAIT": ["ANGEBORENE EIGENSCHAFT","RASGO INNATO","AANGEBOREN EIGENSCHAP","TRATTO INNATO","TRAIT INNÉ","ВРОЖДЁННОЕ СВОЙСТВО","DOĞUŞTAN ÖZELLİK"],
+  "RANDOM BONUS ROLLS": ["ZUFÄLLIGE BONUSWERTE","BONIFICACIONES ALEATORIAS","WILLEKEURIGE BONUSWAARDEN","BONUS CASUALI","BONUS ALÉATOIRES","СЛУЧАЙНЫЕ БОНУСЫ","RASTGELE BONUSLAR"],
+  "EQUIPMENT IMPACT": ["AUSRÜSTUNGSVERGLEICH","IMPACTO DEL EQUIPO","EFFECT OP UITRUSTING","IMPATTO EQUIPAGGIAMENTO","IMPACT DE L'ÉQUIPEMENT","ВЛИЯНИЕ СНАРЯЖЕНИЯ","EKİPMAN ETKİSİ"],
+  "POWER CHANGE": ["KRAFTÄNDERUNG","CAMBIO DE PODER","KRACHTVERSCHIL","VARIAZIONE POTENZA","VARIATION DE PUISSANCE","ИЗМЕНЕНИЕ СИЛЫ","GÜÇ DEĞİŞİMİ"],
+  "SET PIECES": ["SET-TEILE","PIEZAS DEL CONJUNTO","SETONDERDELEN","PEZZI DEL SET","PIÈCES D'ENSEMBLE","ПРЕДМЕТЫ КОМПЛЕКТА","SET PARÇALARI"],
+  "Replacing equipped item": ["Ersetzt angelegten Gegenstand","Reemplaza el objeto equipado","Vervangt huidige uitrusting","Sostituisce l'oggetto equipaggiato","Remplace l'objet équipé","Заменит надетый предмет","Kuşanılan eşyanın yerine geçer"],
+  "Withdraw to compare & equip.": ["Zum Vergleichen und Anlegen erst entnehmen.","Retira el objeto para compararlo y equiparlo.","Neem op om te vergelijken en uit te rusten.","Preleva per confrontare ed equipaggiare.","Retirez l'objet pour le comparer et l'équiper.","Заберите предмет, чтобы сравнить и надеть.","Karşılaştırıp kuşanmak için önce bankadan çekin."],
   "More actions": ["Weitere Aktionen","Más acciones","Meer acties","Altre azioni","Autres actions","Другие действия","Diğer işlemler"],
   "Less actions": ["Weniger Aktionen","Menos acciones","Minder acties","Meno azioni","Moins d’actions","Меньше действий","Daha az işlem"],
   "Store in Gear": ["In Ausrüstung lagern","Guardar en equipo","Opbergen bij uitrusting","Riponi nell'equipaggiamento","Ranger dans l'équipement","Убрать в снаряжение","Ekipmana koy"],

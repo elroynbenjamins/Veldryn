@@ -54,10 +54,13 @@ check(MONSTERS.some(m=>m.drops.some(d=>d.itemId==='THORN_SAP')),'Thorn Sap still
 check(MONSTERS.some(m=>m.drops.some(d=>d.itemId==='IRONWOOD_LOG')),'Ironwood Log still available elsewhere');
 check(MONSTERS.some(m=>m.drops.some(d=>d.itemId==='COPPER_ORE')),'Copper Ore still available elsewhere');
 check(MONSTERS.every(m=>m.drops.every(drop=>drop.itemId!=='FALLEN_KNIGHT_SIGIL')),'Retired Sigil is not obtainable from any monster');
+check(dropChance('ECHO_BAT','ECHO_BAT_WING')===undefined,'Retired Echo Bat Wing is not obtainable from Echo Bat');
+check(dropChance('ECHO_BAT','WISP_DUST')!==undefined,'Echo Bat retains Wisp Dust after wing retirement');
+check(dropChance('ECHO_BAT','OATHGLASS_SHARD')!==undefined,'Echo Bat retains Oathglass Shard after wing retirement');
 check(dropChance('FALLEN_KNIGHT','ECHO_TOUCHED_PELT')===1,'Fallen Knight keeps guaranteed pelts');
 check(dropChance('FALLEN_KNIGHT','TORN_OATHCLOTH')===1,'Fallen Knight keeps guaranteed oathcloth');
 for(const bossDrop of monster('FALLEN_KNIGHT').drops.filter(drop=>drop.chance===1)){
  closeTo(bossDrop.chance,1,`Guaranteed boss drop ${bossDrop.itemId} remains guaranteed`);
 }
 check(MONSTERS.every(m=>m.drops.every(d=>d.chance>=0&&d.chance<=1)),'All combat drop probabilities stay valid');
-console.log('PASS monster loot balance: final Faith Holy Water odds, -5% other random chances, three enemy removals, guaranteed bosses protected');
+console.log('PASS monster loot balance: final Faith Holy Water odds, -5% other random chances, three enemy removals, Echo Bat Wing retired, guaranteed bosses protected');

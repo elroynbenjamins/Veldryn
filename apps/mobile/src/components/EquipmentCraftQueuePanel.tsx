@@ -1,6 +1,6 @@
 import {useGameplayText} from '../i18n/gameplay';
 import {useEffect,useMemo,useState} from 'react';
-import {Pressable,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
+import {AppState,Pressable,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import type {GameState} from '../core/types';
 import type {ForgeCraftResult} from '../core/game-commands';
 import {equipmentCraftQueueModel} from '../core/equipment-crafting-queue';
@@ -24,10 +24,38 @@ function duration(seconds:number){
 export function EquipmentCraftQueuePanel({state,onClaim,onClaimAll,onCancel,onMoveWaiting,forgeResults,onDismissForgeResults,onSetAutoSell}:{state:GameState;onClaim:(jobId:string)=>void;onClaimAll:()=>void;onSetAutoSell?:(enabled:boolean)=>void|Promise<unknown>;onCancel:(jobId:string)=>void;onMoveWaiting:(jobId:string,direction:'up'|'down')=>void;forgeResults?:readonly ForgeCraftResult[]|null;onDismissForgeResults?:()=>void}){
  const {gt,gl,language}=useGameplayText();
   const C=useGameTheme(),E=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
-  const [now,setNow]=useState(Date.now()),[showUnlocks,setShowUnlocks]=useState(false),[showAutoSell,setShowAutoSell]=useState(false);
+  const [now,setNow]=useState(Date.now),[projectionVersion,setProjectionVersion]=useState(0),[showUnlocks,setShowUnlocks]=useState(false),[showAutoSell,setShowAutoSell]=useState(false);
    const {width}=useWindowDimensions(),narrow=width<380;
-  useEffect(()=>{const timer=setInterval(()=>setNow(Date.now()),1000);return()=>clearInterval(timer)},[]);
-  const model=equipmentCraftQueueModel(state,now),earnedBonus=model.slotInfo.sources.filter(row=>row.id!=='base'&&row.earned).length;
+  const model=useMemo(()=>equipmentCraftQueueModel(state,Date.now()),[state,projectionVersion]);
+  const nextTransition=Math.min(...model.jobs.flatMap(job=>job.waiting?[job.startedAtMs]:job.active?[job.completesAtMs]:[]));
+  useEffect(()=>{
+    if(!Number.isFinite(nextTransition))return;
+    let timer:ReturnType<typeof setInterval>|undefined;
+    function stop(){
+      if(timer!==undefined)clearInterval(timer);
+      timer=undefined;
+    }
+    function tick(){
+      const current=Date.now();
+      setNow(current);
+      if(current>=nextTransition){
+        stop();
+        setProjectionVersion(version=>version+1);
+      }
+    }
+    function start(){
+      stop();
+      timer=setInterval(tick,1000);
+      tick();
+    }
+    const subscription=AppState.addEventListener('change',status=>{
+      if(status==='active')start();
+      else stop();
+    });
+    if(AppState.currentState===null||AppState.currentState==='active')start();
+    return ()=>{stop();subscription.remove();};
+  },[nextTransition]);
+  const earnedBonus=model.slotInfo.sources.filter(row=>row.id!=='base'&&row.earned).length;
   const readyJobs=model.jobs.filter(job=>job.status==='ready'),activeJobs=model.jobs.filter(job=>job.status==='active'),waitingJobs=model.jobs.filter(job=>job.status==='waiting');
   const mergeOdds=(job:{recipeId:string;combineSuccessChancePercent?:number})=>job.recipeId.startsWith('gem_combine:')
     ?<Text style={[s.mergeOdds,{color:(job.combineSuccessChancePercent??100)>=70?C.good:C.warning}]}>{job.combineSuccessChancePercent??100}% {gt("success chance")}</Text>
@@ -39,9 +67,9 @@ export function EquipmentCraftQueuePanel({state,onClaim,onClaimAll,onCancel,onMo
       <View key={job.id} style={[s.job,narrow&&s.jobNarrow,s.jobReady]}>{job.outputItemId?<ItemArtwork itemId={job.outputItemId} size={narrow?34:44}/>:null}<View style={s.flex}><Text numberOfLines={2} style={s.jobName}>{job.name}</Text>{mergeOdds(job)}<Text style={s.meta}>{gt("Finished · ready to claim")}{job.forgeKind==='equipment'?' · '+gt("Rarity revealed on claim"):job.forgeKind==='tool'?' · '+gt('Tool bonus revealed on claim'):''}</Text></View><GameButton compact title={gt("Claim")} onPress={()=>onClaim(job.id)}/></View>
     )}</View>}
 
-    {activeJobs.length>0&&<View style={s.group}><Text style={s.groupLabel}>{gt("CRAFTING NOW")}</Text>{activeJobs.map(job=>{const progress=Math.max(2,Math.min(100,100-(job.remainingSeconds/job.durationSeconds)*100)),anticipation=forgeAnticipation(job.remainingSeconds,job.durationSeconds),near=anticipation.band!=='none';return <View key={job.id} style={[s.job,narrow&&s.jobNarrow,near&&s.jobNear]}>{job.outputItemId?<ItemArtwork itemId={job.outputItemId} size={narrow?34:44}/>:null}<View style={s.flex}><Text style={s.jobName}>{job.name}</Text>{mergeOdds(job)}<Text style={[s.meta,near&&s.nearText]}>{near?(anticipation.band==='urgent'?gt("ALMOST DONE ·"):gt("FINISHING SOON ·")):''}{duration(job.remainingSeconds)} remaining · {duration(job.durationSeconds)} craft</Text><View style={s.track}><View style={[s.fill,near&&s.fillNear,{width:(progress+'%') as `${number}%`}]}/></View></View><View style={s.jobActions}><Text style={[s.running,near&&s.runningNear]}>{near?gt("SOON"):gt("Crafting").toLocaleUpperCase(language)}</Text><GameButton compact title={gt("Cancel")} tone="secondary" onPress={()=>onCancel(job.id)}/><Text style={s.refundHint}>{gt('No Gold refunded')}</Text></View></View>})}</View>}
+    {activeJobs.length>0&&<View style={s.group}><Text style={s.groupLabel}>{gt("CRAFTING NOW")}</Text>{activeJobs.map(job=>{const remainingSeconds=Math.max(0,Math.ceil((job.completesAtMs-now)/1000));const progress=Math.max(2,Math.min(100,100-(remainingSeconds/job.durationSeconds)*100)),anticipation=forgeAnticipation(remainingSeconds,job.durationSeconds),near=anticipation.band!=='none';return <View key={job.id} style={[s.job,narrow&&s.jobNarrow,near&&s.jobNear]}>{job.outputItemId?<ItemArtwork itemId={job.outputItemId} size={narrow?34:44}/>:null}<View style={s.flex}><Text style={s.jobName}>{job.name}</Text>{mergeOdds(job)}<Text style={[s.meta,near&&s.nearText]}>{near?(anticipation.band==='urgent'?gt("ALMOST DONE ·"):gt("FINISHING SOON ·")):''}{duration(remainingSeconds)} remaining · {duration(job.durationSeconds)} craft</Text><View style={s.track}><View style={[s.fill,near&&s.fillNear,{width:(progress+'%') as `${number}%`}]}/></View></View><View style={s.jobActions}><Text style={[s.running,near&&s.runningNear]}>{near?gt("SOON"):gt("Crafting").toLocaleUpperCase(language)}</Text><GameButton compact title={gt("Cancel")} tone="secondary" onPress={()=>onCancel(job.id)}/><Text style={s.refundHint}>{gt('No Gold refunded')}</Text></View></View>})}</View>}
 
-    {waitingJobs.length>0&&<View style={s.group}><View style={s.groupHead}><Text style={s.groupLabel}>{gt("WAITING BACKLOG")}</Text><Text style={s.meta}>{waitingJobs.length}/{model.waitingCapacity}</Text></View>{waitingJobs.map((job,index)=><View key={job.id} style={[s.job,narrow&&s.jobNarrow,s.jobWaiting]}>{job.outputItemId?<ItemArtwork itemId={job.outputItemId} size={narrow?34:44}/>:null}<View style={s.waitBadge}><Text style={s.waitNumber}>#{job.waitingPosition}</Text><Text style={s.waitText}>{gt("WAIT")}</Text></View><View style={s.flex}><Text style={s.jobName}>{job.name}</Text>{mergeOdds(job)}<Text style={s.meta}>Starts in ~{duration(job.startInSeconds)} · {duration(job.durationSeconds)} craft</Text><Text style={s.waitRefund}>{gt("Reserved · materials returned on cancel; no Gold")}</Text></View><View style={s.waitActions}><View style={s.priorityRow}><Pressable accessibilityRole="button" accessibilityLabel={'Move '+job.name+' earlier'} disabled={index===0} onPress={()=>onMoveWaiting(job.id,'up')} style={[s.priority,index===0&&s.disabled]}><Text style={s.priorityText}>↑</Text></Pressable><Pressable accessibilityRole="button" accessibilityLabel={'Move '+job.name+' later'} disabled={index===waitingJobs.length-1} onPress={()=>onMoveWaiting(job.id,'down')} style={[s.priority,index===waitingJobs.length-1&&s.disabled]}><Text style={s.priorityText}>↓</Text></Pressable></View><GameButton compact title={gt("Cancel")} tone="secondary" onPress={()=>onCancel(job.id)}/></View></View>)}</View>}
+    {waitingJobs.length>0&&<View style={s.group}><View style={s.groupHead}><Text style={s.groupLabel}>{gt("WAITING BACKLOG")}</Text><Text style={s.meta}>{waitingJobs.length}/{model.waitingCapacity}</Text></View>{waitingJobs.map((job,index)=><View key={job.id} style={[s.job,narrow&&s.jobNarrow,s.jobWaiting]}>{job.outputItemId?<ItemArtwork itemId={job.outputItemId} size={narrow?34:44}/>:null}<View style={s.waitBadge}><Text style={s.waitNumber}>#{job.waitingPosition}</Text><Text style={s.waitText}>{gt("WAIT")}</Text></View><View style={s.flex}><Text style={s.jobName}>{job.name}</Text>{mergeOdds(job)}<Text style={s.meta}>Starts in ~{duration(Math.max(0,(job.startedAtMs-now)/1000))} · {duration(job.durationSeconds)} craft</Text><Text style={s.waitRefund}>{gt("Reserved · materials returned on cancel; no Gold")}</Text></View><View style={s.waitActions}><View style={s.priorityRow}><Pressable accessibilityRole="button" accessibilityLabel={'Move '+job.name+' earlier'} disabled={index===0} onPress={()=>onMoveWaiting(job.id,'up')} style={[s.priority,index===0&&s.disabled]}><Text style={s.priorityText}>↑</Text></Pressable><Pressable accessibilityRole="button" accessibilityLabel={'Move '+job.name+' later'} disabled={index===waitingJobs.length-1} onPress={()=>onMoveWaiting(job.id,'down')} style={[s.priority,index===waitingJobs.length-1&&s.disabled]}><Text style={s.priorityText}>↓</Text></Pressable></View><GameButton compact title={gt("Cancel")} tone="secondary" onPress={()=>onCancel(job.id)}/></View></View>)}</View>}
 
     {!model.jobs.length?<Text style={s.empty}>{gt("No equipment or tools are being crafted. Start a gear or tool recipe in Smithing or Tailoring.")}</Text>:null}
     {activeJobs.length+waitingJobs.length>0?<Text style={s.cancelNote}>{gt("Cancelling returns all reserved materials and no Gold.")}</Text>:null}

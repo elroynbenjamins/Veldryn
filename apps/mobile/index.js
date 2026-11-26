@@ -12,8 +12,16 @@ const App=Platform.OS==='web'&&process.env.EXPO_PUBLIC_BROWSER_REVIEW==='1'
     ?require('./src/dev/GuildPveReview').default
     :process.env.EXPO_PUBLIC_VISUAL_QA_SCREEN==='event-rewards'
     ?require('./src/dev/EventRewardReview').default
+    :process.env.EXPO_PUBLIC_VISUAL_QA_SCREEN==='draconic-dominion'
+    ?require('./src/dev/DraconicDominionReview').default
+    :process.env.EXPO_PUBLIC_VISUAL_QA_SCREEN==='celestial-sovereign'
+    ?require('./src/dev/CelestialSovereignReview').default
     :process.env.EXPO_PUBLIC_VISUAL_QA_SCREEN==='profile-frame'
     ?require('./src/dev/GloamwardProfileReview').default
+    :process.env.EXPO_PUBLIC_VISUAL_QA_SCREEN==='profile-cosmetics'
+    ?require('./src/dev/ProfileCosmeticsReview').default
+    :process.env.EXPO_PUBLIC_VISUAL_QA_SCREEN==='profile-cosmetics-store'
+    ?require('./src/dev/ProfileCosmeticsStoreReview').default
     :process.env.EXPO_PUBLIC_VISUAL_QA_SCREEN==='companions'
     ?require('./src/dev/CompanionScreenReview').default
     :process.env.EXPO_PUBLIC_VISUAL_QA_SCREEN==='crafting'

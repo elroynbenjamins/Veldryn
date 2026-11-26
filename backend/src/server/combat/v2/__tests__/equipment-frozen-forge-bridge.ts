@@ -10,6 +10,7 @@ import {reviewEffectGemResonanceV2,EFFECT_RESONANCE_REVIEW_V2} from '../effect-g
 import {runEffectTriggerBoundaryReviewV2} from './effect-gem-trigger-review';
 import {inspectEffectGemInteractionsV2,EFFECT_INTERACTION_REVIEW_V2,type EffectInteractionActionV2} from '../effect-gem-interaction-review';
 import {runEffectEventProvenanceReviewV2} from './effect-gem-event-provenance-review';
+import {runEffectLifecycleReviewV2} from './effect-gem-lifecycle-review';
 import {STAT_GEMS_V1,EFFECT_GEMS_V1,gemItemId,type GemGrade,GEM_BALANCE_REVIEW_V2,STAT_GEMS_REVIEW_V2,EFFECT_GEMS_REVIEW_V2,EFFECT_GEM_REVIEW_MULTIPLIERS_V2} from '../../../equipment/gems/gem-catalog-v1';
 import type {V2GemSidecarState} from '../../../equipment/equipment-crafting-v2-gem-sidecar-types';
 import {writeFileSync} from 'node:fs';
@@ -1868,6 +1869,14 @@ function makeV21Loadout(classId:ClassIdV2,specIndex:0|1,targetTier:1|2|3|4,targe
   provenanceCases.push({roll,...runEffectEventProvenanceReviewV2(support,damage)});
  }
  console.log('EFFECT_GEM_EVENT_PROVENANCE_REVIEW '+JSON.stringify({cases:provenanceCases.length,results:provenanceCases,releaseEnabled:false}));
+ const lifecycleCases=[];
+ for(const rank of [1,2,3])for(const roll of [80,100,120]){
+  const gems=['effect_aegis','effect_mercy','effect_renewal'].flatMap(family=>Array.from({length:rank},()=>({family,grade:5 as const,roll})));
+  const out=reviewFrozenForgeSocketsV2(qa.actor,qa.build,source,sidecar(gems),policy);
+  lifecycleCases.push({roll,...runEffectLifecycleReviewV2(out)});
+ }
+ assert.equal(lifecycleCases.length,9);
+ console.log('EFFECT_GEM_LIFECYCLE_REVIEW '+JSON.stringify({cases:lifecycleCases.length,results:lifecycleCases,releaseEnabled:false}));
  const sample=mixed.deferredEffectSources[0];
  assert.throws(()=>reviewEffectGemResonanceV2([{...sample,candidateFraction:99}],qa.ids),/invalid_copy/);
  assert.throws(()=>reviewEffectGemResonanceV2([sample,sample],qa.ids),/invalid_copy/);

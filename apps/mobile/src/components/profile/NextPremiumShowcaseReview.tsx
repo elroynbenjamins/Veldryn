@@ -17,7 +17,7 @@ type Props={
  setId:string;width:number;fontScale:number;clock:Animated.Value;running:boolean;
  /** Review fixture explicitly supplies selections. This is not ownership validation. */
  petId?:string;alternatePetArt?:ImageSourcePropType;badgeId?:string;fullSet:boolean;
- identity:ReactNode;guild?:ReactNode;fallback:ReactNode;
+ identity:ReactNode;portrait?:ReactNode;badges?:ReactNode;guild?:ReactNode;fallback:ReactNode;
 };
 type LayerProps={clock:Animated.Value;track:Track;phase:number[];source:ImageSourcePropType;ratio:number};
 const FxNode=memo(function FxNode({clock,track,phase,source,ratio}:LayerProps){
@@ -45,7 +45,7 @@ const FxLayer=memo(function FxLayer({set,art,clock,ratio,fullSet,environment}:{s
  </View>;
 });
 const Stage=memo(function Stage({set,props,background,border,pet,art}:{set:NextPremiumSet;props:Props;background:ImageSourcePropType;border:ImageSourcePropType;pet:NonNullable<ReturnType<typeof getNextPremiumReviewPet>>;art:Art}){
- const {width,clock,running,petId,alternatePetArt,badgeId,fullSet,identity,guild}=props;
+ const {width,clock,running,petId,alternatePetArt,badgeId,fullSet,identity,portrait,badges,guild}=props;
  const ratio=width/NEXT_PREMIUM_STAGE.width,height=NEXT_PREMIUM_STAGE.height*ratio;
  const b=nextPremiumBoxes(set);
  const box=(v:{x:number;y:number;w:number;h:number})=>({position:'absolute' as const,left:v.x*ratio,top:v.y*ratio,width:v.w*ratio,height:v.h*ratio});
@@ -59,8 +59,9 @@ const Stage=memo(function Stage({set,props,background,border,pet,art}:{set:NextP
   </View>}
   {mode==='alternate'&&alternatePetArt&&<Image accessible={false} source={alternatePetArt} resizeMode="contain" fadeDuration={0} style={box(b.alternatePet)}/>}
   <View style={[box(b.identity),s.identity]}>
-   <View style={s.identityContent}>{identity}</View>
-   {badgeId===set.badge&&<Image accessible accessibilityLabel={set.badgeName} source={art.badge} resizeMode="contain" fadeDuration={0} style={{width:24*ratio,height:24*ratio}}/>}
+   {portrait!=null&&<View style={{width:36*ratio,height:36*ratio,flexShrink:0}}>{portrait}</View>}
+   <View style={s.identityContent}>{identity}{badges!=null&&<View style={s.badges}>{badges}</View>}</View>
+   {badges==null&&badgeId===set.badge&&<Image accessible accessibilityLabel={set.badgeName} source={art.badge} resizeMode="contain" fadeDuration={0} style={{width:24*ratio,height:24*ratio}}/>}
   </View>
   {guild!=null&&<View style={[box(b.guild),s.guild]}>{guild}</View>}
   <View pointerEvents="none" accessible={false} style={StyleSheet.absoluteFill}>
@@ -69,9 +70,9 @@ const Stage=memo(function Stage({set,props,background,border,pet,art}:{set:NextP
   </View>
  </View>;
 });
-/** Complete isolated review composition, not a live profile route.
- * Caller owns native clock (linear 0..1 over 24s), visibility, foreground and motion preference.
- * Never mount in production until ownership, fallback, native parity and lifecycle are verified. */
+/** Composition only: the verified adapter supplies authenticated selections,
+ * native clock (linear 0..1 over 24s), visibility and motion policy. This is
+ * not an ownership authority; unverified callers must use the static fallback. */
 export const NextPremiumShowcaseReview=memo(function NextPremiumShowcaseReview(props:Props){
  const set=NEXT_PREMIUM_SETS.find(s=>s.id===props.setId);
  if(!set||!nextPremiumStageSupported(props.width,props.fontScale))return <>{props.fallback}</>;
@@ -88,5 +89,6 @@ const s=StyleSheet.create({
  fx:{position:'absolute',top:0,left:0},
  identity:{flexDirection:'row',alignItems:'center',paddingHorizontal:4,backgroundColor:'rgba(8,10,20,0.70)',borderRadius:5},
  identityContent:{flex:1,minWidth:0},
+ badges:{alignItems:'flex-start'},
  guild:{justifyContent:'center',paddingHorizontal:4,backgroundColor:'rgba(8,10,20,0.70)',borderRadius:4},
 });

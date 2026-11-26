@@ -57,6 +57,10 @@ for(const [i,set] of sets.entries()){
  assert.equal(count(still,'Animated.Image'),0);assert.equal(count(still,'Pressable'),0);
  assert.equal(bySource(still,stem+'_showcase').length,1);
  assert.equal(bySource(still,badge).length,1);
+ const realIdentity=render({...p,portrait:{type:'Portrait',props:{}},badges:{type:'BadgeShelf',props:{}}});
+ assert.equal(count(realIdentity,'Portrait'),1);assert.equal(count(realIdentity,'BadgeShelf'),1);
+ assert.equal(bySource(realIdentity,badge).length,0); // real badge shelf, no synthetic duplicate
+ assert.equal(count(realIdentity,'Animated.Image'),15);
  const alternate=render({...p,petId:'other',alternatePetArt:'other.webp'});
  assert.equal(count(alternate,'Animated.Image'),14);assert.equal(count(alternate,'Pressable'),0);
  assert.equal(bySource(alternate,'other.webp').length,1);
@@ -72,9 +76,11 @@ for(const [i,set] of sets.entries()){
 }
 function walk(dir){return fs.existsSync(dir)?fs.readdirSync(dir,{withFileTypes:true}).flatMap(e=>e.isDirectory()?walk(path.join(dir,e.name)):[path.join(dir,e.name)]):[];}
 for(const file of [...walk(src),...walk(path.join(mobile,'app'))]){
- if(!/\.[jt]sx?$/.test(file)||file===component)continue;
+ if(!/\.[jt]sx?$/.test(file)||file===component||file===path.join(src,'components/profile/VerifiedCandidateShowcase.tsx'))continue;
  assert(!fs.readFileSync(file,'utf8').includes('NextPremiumShowcaseReview'),'isolated showcase cannot be imported by '+file);
 }
+const adapter=fs.readFileSync(path.join(src,'components/profile/VerifiedCandidateShowcase.tsx'),'utf8');
+assert(adapter.includes('useCosmeticMotionPolicy(active&&supported,reduceMotion)')&&adapter.includes('useLoopProgress(NEXT_PREMIUM_STAGE.loopMs,running)')&&adapter.includes('badgeId={fullSet?set.badge:undefined}')&&adapter.includes('portrait={portrait}')&&adapter.includes('badges={badges}'));
 const source=fs.readFileSync(component,'utf8');
 assert(!/Animated\.loop\(|setInterval\(|setTimeout\(|\.start\(/.test(source));
 console.log('Both isolated showcase trees, 14 FX nodes + atlas, static badge, fallback and import isolation passed in mocked host.');

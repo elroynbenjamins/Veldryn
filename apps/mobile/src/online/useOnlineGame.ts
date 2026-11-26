@@ -54,13 +54,17 @@ export function useOnlineGame(){
   if(!repo||!supabase)return;
   let disposed=false,inFlight=false;
   const poll=async()=>{
-   if(disposed||inFlight||AppState.currentState!=='active'||active.current!==repo||commandSaving.current===repo||nameStyleSaving.current===repo)return;
+   if(disposed||inFlight||AppState.currentState!=='active'||active.current!==repo||refreshInFlight.current?.repo===repo||commandSaving.current===repo||nameStyleSaving.current===repo)return;
    inFlight=true;
    try{
     const current=repo.snapshot;
     if(!current)return;
+    // A recent authoritative gameplay read/command already includes the event
+    // window. Do not add an immediate duplicate public schedule request.
+    const age=Date.now()-current.serverNow;
+    if(age>=0&&age<30_000)return;
     const runtime=await fetchActiveEventRuntime();
-    if(disposed||active.current!==repo||commandSaving.current===repo||nameStyleSaving.current===repo)return;
+    if(disposed||AppState.currentState!=='active'||active.current!==repo||refreshInFlight.current?.repo===repo||commandSaving.current===repo||nameStyleSaving.current===repo)return;
     const previous=repo.snapshot;
     if(!previous)return;
     const stored=previous.state.account.liveEvent;
@@ -74,10 +78,14 @@ export function useOnlineGame(){
    }catch{/* Retry on next foreground tick; never clear ownership on a network error. */}
    finally{inFlight=false;}
   };
-  void poll();
-  const timer=setInterval(()=>void poll(),120_000);
-  const sub=AppState.addEventListener('change',next=>{if(next==='active')void poll();});
-  return()=>{disposed=true;clearInterval(timer);sub.remove();};
+  let timer:ReturnType<typeof setInterval>|undefined;
+  const stop=()=>{if(timer!==undefined){clearInterval(timer);timer=undefined;}};
+  const start=()=>{if(timer===undefined)timer=setInterval(()=>void poll(),120_000);};
+  // Initial load and foreground return already perform an authoritative GET.
+  // The independent schedule check is only needed during continued play.
+  if(AppState.currentState==='active')start();
+  const sub=AppState.addEventListener('change',next=>{if(next==='active')start();else stop();});
+  return()=>{disposed=true;stop();sub.remove();};
  },[repo,refresh]);
  const execute=async(command?:GameCommand,returnClaim=false)=>{if(!repo)throw new Error('Sign in before playing online.');if(nameStyleSaving.current===repo)throw new Error('Your name style is still saving. Please wait.');if(commandSaving.current===repo)throw new Error('A gameplay action is already being saved.');// Reserve the per-account command slot synchronously; the repository serializes and safely replays durable actions.
  commandSaving.current=repo;setBusy(true);setError('');

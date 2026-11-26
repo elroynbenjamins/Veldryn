@@ -10,7 +10,7 @@ import {profileAnimatedPieceEnabled} from './profile-cosmetic-access';
 import {wave2SetFor,wave2Owned} from './profile-cosmetic-wave2';
 import {transitionActivity} from './playability';
 import {SUPPORTED_LANGUAGES} from '../i18n/languages';
-import {QUICK_NAV_DESTINATIONS} from './quick-navigation';
+import {normalizeQuickNavDestinations,QUICK_NAV_DESTINATIONS} from './quick-navigation';
 import * as companions from './combat-companions';
 import {normalizeTrainingFocus} from './class-skills';
 import {reserveFaithPractice,affordableFaithPracticeCount,updateFaithPreference} from './faith';
@@ -129,7 +129,8 @@ export function validateGameSettings(value:unknown):GameState['settings']{
  oneOf(result.language,SUPPORTED_LANGUAGES);oneOf(result.numberMode,['abbreviated','exact']);oneOf(result.uiTheme??'obsidian',['obsidian','ember','ivory']);
  if(![1,1.15,1.3,1.5].includes(result.textScale)||!Number.isFinite(result.autoEatThresholdPct)||result.autoEatThresholdPct<0||result.autoEatThresholdPct>100)throw new Error('invalid_settings');
  for(const key of ['reduceMotion','stopCombatWhenOutOfFood','autoTravelQueuedActivities','autoJoinWorldChat'] as const)if(typeof result[key]!=='boolean')throw new Error('invalid_settings');
- if(![1,2,3,4].includes(result.defaultWorldChat??0)||![1,2,3].includes(result.chatDockLines??0)||!Array.isArray(result.quickNavDestinations)||result.quickNavDestinations.length>8||result.quickNavDestinations.some(id=>!QUICK_NAV_DESTINATIONS.some(destination=>destination===id)))throw new Error('invalid_settings');
+ if(![1,2,3,4].includes(result.defaultWorldChat??0)||![1,2,3].includes(result.chatDockLines??0)||!Array.isArray(result.quickNavDestinations)||result.quickNavDestinations.length>8||result.quickNavDestinations.some(id=>!QUICK_NAV_DESTINATIONS.some(destination=>destination===id)&&!['Home','Character','Skills','World','Inventory','More','Account','Empty'].includes(id)))throw new Error('invalid_settings');
+ result.quickNavDestinations=normalizeQuickNavDestinations(result.quickNavDestinations);
  const favoriteItemIds=result.favoriteItemIds,lockedItemIds=result.lockedItemIds,seenItemIds=result.seenItemIds,chatEmoteTrayIds=result.chatEmoteTrayIds;
  if(!Array.isArray(chatEmoteTrayIds)||(chatEmoteTrayIds.length!==0&&chatEmoteTrayIds.length!==CHAT_EMOTE_TRAY_SIZE)||normalizeChatEmoteTrayIds(chatEmoteTrayIds).length!==chatEmoteTrayIds.length)throw new Error('invalid_settings');
  if(!Array.isArray(favoriteItemIds)||favoriteItemIds.length>100||favoriteItemIds.some(id=>typeof id!=='string'||!id||id.length>120))throw new Error('invalid_settings');
@@ -157,7 +158,7 @@ export function settingsForOnlineCommand(value:GameState['settings']):GameState[
  for(const key of ['reduceMotion','stopCombatWhenOutOfFood','autoTravelQueuedActivities','autoJoinWorldChat'] as const)if(typeof projected[key]!=='boolean')projected[key]=defaults[key]??false;
  if(![1,2,3,4].includes(projected.defaultWorldChat??0))projected.defaultWorldChat=defaults.defaultWorldChat;
  if(![1,2,3].includes(projected.chatDockLines??0))projected.chatDockLines=defaults.chatDockLines;
- if(!Array.isArray(projected.quickNavDestinations)||projected.quickNavDestinations.length>8||projected.quickNavDestinations.some(id=>!QUICK_NAV_DESTINATIONS.some(destination=>destination===id)))projected.quickNavDestinations=[...(defaults.quickNavDestinations??[])];
+ projected.quickNavDestinations=normalizeQuickNavDestinations(projected.quickNavDestinations);
  const cleanIds=(ids:unknown,max:number)=>Array.isArray(ids)?[...new Set(ids.filter((id):id is string=>typeof id==='string'&&id.length>0&&id.length<=120))].slice(-max):[];
  projected.favoriteItemIds=cleanIds(projected.favoriteItemIds,100);
  projected.lockedItemIds=cleanIds(projected.lockedItemIds,100);

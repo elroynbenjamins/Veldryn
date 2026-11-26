@@ -1,14 +1,28 @@
 export const QUICK_NAV_DESTINATIONS=[
-  'Home','Character','Skills','World','Inventory','More','Guild','Dungeon','Quests','Companions','Friends','Settings','Social','Party','Empty',
+  'Guild','Quests','ResourceCodex','Party','Activity','Forge','Dungeon','Companions','Pets','Collections','Friends','Social','Events','Settings',
 ] as const;
-/** Account is retained as a legacy save value; new shortcut choices use More. */
-export type QuickNavDestination=typeof QUICK_NAV_DESTINATIONS[number]|'Account'|'Events';
-export const DEFAULT_QUICK_NAV_DESTINATIONS:QuickNavDestination[]=['Quests','Dungeon','Companions','Guild','Settings'];
+type SelectableQuickNavDestination=typeof QUICK_NAV_DESTINATIONS[number];
+/** Permanent navigation and Empty remain valid internal/legacy route values, not shortcut choices. */
+export type QuickNavDestination=SelectableQuickNavDestination|'Home'|'Character'|'Skills'|'World'|'Inventory'|'More'|'Account'|'Empty';
+export const DEFAULT_QUICK_NAV_DESTINATIONS:QuickNavDestination[]=['Guild','Quests','ResourceCodex','Party','Activity'];
+const LEGACY_DEFAULT=['Quests','Dungeon','Companions','Guild','Settings'];
 const allowed=new Set<string>(QUICK_NAV_DESTINATIONS);
 export function normalizeQuickNavDestinations(value:unknown):QuickNavDestination[]{
- if(!Array.isArray(value))return [...DEFAULT_QUICK_NAV_DESTINATIONS];
- const cleaned=value.map(v=>{if(v==='Account')return 'More';return typeof v==='string'&&allowed.has(v)?v:'Empty'}) as QuickNavDestination[];
- const unique=cleaned.filter((destination,index)=>destination==='Empty'||cleaned.indexOf(destination)===index);
- while(unique.length<5)unique.push('Empty');
- return unique.slice(0,5);
+ if(!Array.isArray(value)||value.length===LEGACY_DEFAULT.length&&value.every((entry,index)=>entry===LEGACY_DEFAULT[index]))return [...DEFAULT_QUICK_NAV_DESTINATIONS];
+ // Keep valid custom choices in their original slots; fill invalid or duplicate slots
+ // with unused recommended destinations, then unused available destinations.
+ const used=new Set<QuickNavDestination>();
+ const slots=Array.from({length:5},(_,index)=>{
+   const entry=value[index];
+   if(typeof entry!=='string'||!allowed.has(entry)||used.has(entry as QuickNavDestination))return undefined;
+   const destination=entry as QuickNavDestination;
+   used.add(destination);
+   return destination;
+ });
+ return slots.map(destination=>{
+   if(destination)return destination;
+   const next=[...DEFAULT_QUICK_NAV_DESTINATIONS,...QUICK_NAV_DESTINATIONS].find(candidate=>!used.has(candidate))!;
+   used.add(next);
+   return next;
+ });
 }

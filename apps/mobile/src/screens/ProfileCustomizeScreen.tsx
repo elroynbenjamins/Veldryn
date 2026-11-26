@@ -14,6 +14,9 @@ import {normalizePlayerNameStyle,savePlayerNameStyle,type PlayerNameStylePrefere
 import type {SavePlayerNameStyle} from '../core/player-name-style-save';
 import type {ProfileCustomizationDestination} from '../core/profile-customization';
 import {profileWardrobe,wardrobeProgress} from '../core/profile-wardrobe';
+import {useUltraLuxeNameSelection} from '../online/useUltraLuxeNameSelection';
+import type {FullSetPlan} from '../core/ultra-luxe-full-set-name';
+import type {OnlineSnapshot} from '../core/online-game-repository';
 import {useAuthSession} from '../online/AuthSessionProvider';
 import {invalidatePlayerIdentity} from '../online/player-identity-cache';
 import {useProfileExtensionDraft} from '../online/useProfileExtensionDraft';
@@ -27,13 +30,15 @@ const TABS:readonly Tab[]=['Look','Identity','Showcase'];
 const resolveTab=(section:Section):Tab=>section==='Appearance'?'Look':section;
 const COLLAPSE_AT=56,NOTICE_MS=6000;
 
-export function ProfileCustomizeScreen({state,onChange,onSaveNameStyle,onNavigateSource,onDirtyChange,fullSetPort,initialSection='Look'}:{
- state:GameState;onChange:(next:GameState)=>void|Promise<void>;onSaveNameStyle:SavePlayerNameStyle;fullSetPort?:UltraLuxeFullSetPort;
+export function ProfileCustomizeScreen({state,onChange,onSaveNameStyle,onNavigateSource,onDirtyChange,fullSetPort,onEquipUltraLuxe,initialSection='Look'}:{
+ state:GameState;onChange:(next:GameState)=>void|Promise<void>;onSaveNameStyle:SavePlayerNameStyle;fullSetPort?:UltraLuxeFullSetPort;onEquipUltraLuxe?:(plan:FullSetPlan)=>Promise<OnlineSnapshot>;
  onNavigateSource?:(destination:ProfileCustomizationDestination)=>void;onDirtyChange?:(dirty:boolean)=>void;initialSection?:Section;
 }){
  const language=useGameLanguage();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const accountId=useAuthSession().session?.user.id??'';
+ const verifiedNames=useUltraLuxeNameSelection(!!onEquipUltraLuxe&&!!state.account.unlockedTitleIds?.some(id=>id.startsWith('ascendant-')));
+ const combinedPort=fullSetPort??(onEquipUltraLuxe&&verifiedNames.projection&&!verifiedNames.saving?{names:verifiedNames.projection,apply:onEquipUltraLuxe}:undefined);
  const [tab,setTab]=useState<Tab>(resolveTab(initialSection));
  useEffect(()=>{setTab(resolveTab(initialSection))},[initialSection]);
  const [appearanceDirty,setAppearanceDirty]=useState(false),[nameInputDirty,setNameInputDirty]=useState(false);
@@ -97,7 +102,7 @@ export function ProfileCustomizeScreen({state,onChange,onSaveNameStyle,onNavigat
   </View>
 
   <View style={tab==='Look'?s.sectionShown:s.sectionHidden} pointerEvents={tab==='Look'?'auto':'none'}>
-   <ProfileLookPanel fullSetPort={fullSetPort} state={state} chip={chip} onChange={onChange} active={tab==='Look'} onNavigateSource={onNavigateSource}
+   <ProfileLookPanel fullSetEnabled={!!onEquipUltraLuxe||!!fullSetPort} fullSetPort={combinedPort} state={state} chip={chip} onChange={onChange} active={tab==='Look'} onNavigateSource={onNavigateSource}
     onDirtyChange={setAppearanceDirty} onPreviewStateChange={setAppearancePreview} onNotice={setNotice}/>
   </View>
   <View style={tab==='Identity'?s.sectionShown:s.sectionHidden} pointerEvents={tab==='Identity'?'auto':'none'}>

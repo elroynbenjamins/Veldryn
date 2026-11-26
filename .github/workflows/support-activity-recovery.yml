@@ -2,7 +2,7 @@ name: Support activity recovery validation
 on:
   pull_request:
     paths:
-      - 'backend/online/support-activity-recovery.ts'
+      - 'backend/online/support-activity-*.ts'
       - 'backend/online/tests/support-activity-recovery.ts'
       - 'backend/package.json'
       - '.github/workflows/support-activity-recovery.yml'

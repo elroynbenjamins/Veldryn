@@ -160,8 +160,10 @@ export async function partyChatMessages(id:string){const {data,error}=await clie
 
 export async function activePartyEvent(): Promise<PartyEventView|null>{
  const identity=await partySocialIdentity(); if(!identity)return null;
- const c=client(); const partyState=await partySocialSnapshot(); const {data:instances,error}=await c.from('liveops_event_instances').select('id,event_id,definition_snapshot,status,starts_at,ends_at').in('status',['scheduled','active','settling']).order('starts_at',{ascending:false}).limit(1); if(error)throw error;
+ const c=client(); const {data:instances,error}=await c.from('liveops_event_instances').select('id,event_id,definition_snapshot,status,starts_at,ends_at').in('status',['scheduled','active','settling']).order('starts_at',{ascending:false}).limit(1); if(error)throw error;
  const instance=instances?.[0] as any; if(!instance)return null;
+ // No active event means no party snapshot, contracts or cosmetic enrichment.
+ const partyState=await partySocialSnapshot();
  const partyId=partyState?.party?.id??null;
  const [{data:account,error:accountError},{data:todayRows,error:todayError},{data:party,error:partyError}]=await Promise.all([
    c.from('liveops_event_account_progress').select('personal_points').eq('event_instance_id',instance.id).eq('account_id',identity.accountId).maybeSingle(),

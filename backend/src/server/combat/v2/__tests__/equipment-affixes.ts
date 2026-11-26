@@ -10,7 +10,12 @@ const ready={
  combatV2:{version:2 as const,resource:'guard' as const,specializationId:'v2:spec:ironwarden:sentinel'},
  tags:[...(actor.tags??[]),'combat-v2','combat-v2-gear-base-resolved'],
 };
-assert.equal(Object.keys(EQUIPMENT_AFFIXES_V2).length,13);
+assert.deepEqual(Object.keys(EQUIPMENT_AFFIXES_V2).sort(),[
+ 'attack_pct','defense_pct','max_hp_pct','haste_pp','crit_rate_pp','crit_damage_pct',
+ 'accuracy_pp','evasion_pp','penetration_pp','ward_pp','shield_strength_pct',
+ 'class_healing_pct','hex_potency_pct','tenacity_pp','ability_damage_pct',
+ 'forge_healing_power_pct',
+].sort(),'Exact original 13 + 3 verified Forge channels; no arbitrary expansion');
 const limits=Object.fromEntries(Object.keys(EQUIPMENT_AFFIXES_V2).map(x=>[x,{min:.01,max:.10}]));
 const policy:ServerAffixPolicyV2={
  limits:limits as unknown as ServerAffixPolicyV2['limits'],
@@ -76,9 +81,34 @@ assert.equal(advanced.sources.length,6);
 assert.deepEqual(advanced.actor.combatV2?.equipmentEffects,{
  accuracyPp:.04,evasionPp:.05,penetrationPp:.03,
  wardPp:.06,shieldStrengthPct:.07,hexPotencyPct:.08,
+ tenacityPp:0,abilityDamagePct:0,forgeHealingPowerPct:0,
 });
 assert.equal(JSON.stringify(ready),original,
  'Six advanced affixes must not mutate the raw equipment or actor');
+const forgeChannels=[
+ item('tenacity','helmet',[{id:'tenacity_pp',value:.02}]),
+ item('ability','weapon',[{id:'ability_damage_pct',value:.03}]),
+ item('healing','offhand',[{id:'forge_healing_power_pct',value:.04}]),
+];
+const forgeCaps={...advancedCaps,tenacityPp:.10,abilityDamagePct:.10,forgeHealingPowerPct:.10};
+const forgeCompiled=compileTrustedEquipmentAffixesV2(ready,forgeChannels,{
+ ...advancedPolicy,maxAdvancedEffects:forgeCaps,
+},true);
+assert.deepEqual(forgeCompiled.actor.combatV2?.equipmentEffects,{
+ accuracyPp:0,evasionPp:0,penetrationPp:0,wardPp:0,
+ shieldStrengthPct:0,hexPotencyPct:0,tenacityPp:.02,
+ abilityDamagePct:.03,forgeHealingPowerPct:.04,
+});
+for(const key of ['tenacityPp','abilityDamagePct','forgeHealingPowerPct'] as const){
+ assert.throws(()=>compileTrustedEquipmentAffixesV2(ready,forgeChannels,{
+  ...advancedPolicy,maxAdvancedEffects:{...forgeCaps,[key]:undefined},
+ },true),new RegExp('invalid_approved_advanced_affix_cap:'+key));
+ assert.throws(()=>compileTrustedEquipmentAffixesV2(ready,forgeChannels,{
+  ...advancedPolicy,maxAdvancedEffects:{...forgeCaps,[key]:.001},
+ },true),new RegExp('advanced_affix_exceeds_approved_cap:'+key));
+}
+assert.deepEqual(forgeCompiled.actor.stats,ready.stats,'advanced channels are not double-applied to personal stats');
+
 assert.throws(()=>compileTrustedEquipmentAffixesV2(ready,sourceItems,{
  ...advancedPolicy,maxAdvancedEffects:{...advancedCaps,wardPp:.04},
 },true),/advanced_affix_exceeds_approved_cap:wardPp/);
@@ -106,4 +136,4 @@ assert.throws(()=>validateTrustedAffixesV2({...items[0],tier:'T6'},policy),
 assert.throws(()=>validateTrustedAffixesV2(item('x','weapon',[{id:'attack_pct',value:.02}]),{
  ...policy,limits:{...policy.limits,attack_pct:{min:.06,max:.05}},
 }),/missing_approved_roll_limit/);
-console.log('PASS: all 13 affix types, six bounded advanced effects, per-slot/per-rarity source guards');
+console.log('PASS: all 16 affix types, nine bounded advanced effects, per-slot/per-rarity source guards');

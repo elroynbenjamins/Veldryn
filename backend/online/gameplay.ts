@@ -72,7 +72,7 @@ export function gameplayHandler(services:GameplayServices,authenticatePlayer:Aut
   // A stored legacy claim must be frozen using trusted server data BEFORE the
   // old account projection is migrated to the currently active character.
   if(privateGrants&&!Array.isArray(loaded.ultraLuxeCollectionIds))throw new Error('ultra_luxe_grant_projection_missing');
-  const storedState=rebaseCombatGameState(privateGrants?withVerifiedUltraLuxeGrants(loaded.state??newGame(loaded.serverNow),loaded.ultraLuxeCollectionIds):loaded.state??newGame(loaded.serverNow));
+  const storedState=rebaseCombatGameState(privateGrants?withVerifiedUltraLuxeGrants(loaded.state??newGame(loaded.serverNow),loaded.ultraLuxeCollectionIds,true):loaded.state??newGame(loaded.serverNow));
   const trustedState=request.method==='POST'
     ?snapshotEarnedLegacySeasonalClaims(storedState,loaded.serverNow)
     :storedState;
@@ -144,7 +144,7 @@ export function gameplayHandler(services:GameplayServices,authenticatePlayer:Aut
   ];
   const response={guildProjectEffort,guildPveEffort,state:restoreCumulativeMonsterUnlocks(result.state),version:loaded.version+1,serverNow:loaded.serverNow,accountId,reward:result.reward,activity:result.activity,message:result.message,won:result.won,storyBossBattle:result.storyBossBattle,upgrade:result.upgrade,forgeResults:result.forgeResults};
   const commitRpc=privateGrants?'commit_online_game_ultra_luxe_v1':'commit_online_game_guild_pve_v1';
-  const committed=await services.rpc(commitRpc,{p_account_id:accountId,p_expected_version:loaded.version,p_expected_gold:loaded.walletGold,p_request_id:body.requestId,p_request_hash:requestHash,p_response:response,p_contributions:contributions,...(privateGrants?{p_expected_grants:[...ultraLuxeGrantProjection(loaded.ultraLuxeCollectionIds).collectionIds].sort()}:{}),...(command.type==='roster_delete'?{p_deleted_character_id:(command.args as {id:string}).id}: {})});
+  const committed=await services.rpc(commitRpc,{p_account_id:accountId,p_expected_version:loaded.version,p_expected_gold:loaded.walletGold,p_request_id:body.requestId,p_request_hash:requestHash,p_response:response,p_contributions:contributions,...(privateGrants?{p_expected_grants:[...ultraLuxeGrantProjection(loaded.ultraLuxeCollectionIds,true).collectionIds].sort()}:{}),...(command.type==='roster_delete'?{p_deleted_character_id:(command.args as {id:string}).id}: {})});
   try{await services.rpc('guild_quest_record_contributions_v1',{p_account_id:accountId,p_contributions:contributions.map(e=>({...e,units:(e as typeof e&{questUnits?:number}).questUnits??e.units}))});}catch{/* Quest telemetry must not invalidate an already committed gameplay action. */}
   await recordOutcome('committed');
   return json(committed);

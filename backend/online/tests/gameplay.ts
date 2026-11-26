@@ -19,7 +19,7 @@ async function latencyReadOverlap(){
  const nextTurn=()=>new Promise<void>(resolve=>setImmediate(resolve));
  const state=createCharacter(newGame(0),'IRONWARDEN','Latency Fixture');
  const saved={accountId:'alice',state,version:7,serverNow:1000};
- const requestHash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode('{"type":"claim"}')))).map(b=>b.toString(16).padStart(2,'0')).join('');
+ const requestHash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode('{"args":{},"type":"claim"}')))).map(b=>b.toString(16).padStart(2,'0')).join('');
  let analyticsActive=false,readActive=false,overlaps=0,analyticsCalls=0,authoritativeCalls=0;
  const services:GameplayServices={
   authenticate:async token=>token==='alice-token'?'alice':null,
@@ -52,7 +52,7 @@ async function latencyReadOverlap(){
  assert.equal(overlaps,1,'GET analytics and authoritative snapshot read must overlap');
  const replay=await handle(new Request('https://example.invalid/gameplay',{method:'POST',headers,body:JSON.stringify({requestId:'replay-overlap-01',expectedVersion:6,command:{type:'claim'}})}));
  assert.equal(replay.status,200,'Receipt replay remains available when analytics fails');
- assert.deepEqual(await replay.json(),saved,'Replay returns the committed response without another settlement');
+ assert.deepEqual(await replay.json(),JSON.parse(JSON.stringify(saved)),'Replay returns the committed wire response without another settlement');
  assert.equal(overlaps,2,'POST analytics and receipt read must overlap');
  assert.equal(authoritativeCalls,2,'Replay avoids a second full game read');
  assert.equal(analyticsCalls,2);

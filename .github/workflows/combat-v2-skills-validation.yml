@@ -6,6 +6,8 @@ on:
       - feature/combat-v2-foundation-contract-20261118
     paths:
       - 'backend/src/server/combat/**'
+      - 'backend/src/server/coop/loadout-snapshots.ts'
+      - 'backend/src/server/coop/__tests__/frozen-loadout-digest-parity.ts'
       - 'backend/supabase/migrations/20261118124500_combat_v2_build_persistence_hidden_v1.sql'
       - 'backend/tests/combat-v2-build-sql-contract.cjs'
       - 'backend/tests/combat-v2-solo-snapshot-sql-contract.cjs'
@@ -29,6 +31,8 @@ on:
   pull_request:
     paths:
       - 'backend/src/server/combat/**'
+      - 'backend/src/server/coop/loadout-snapshots.ts'
+      - 'backend/src/server/coop/__tests__/frozen-loadout-digest-parity.ts'
       - 'backend/supabase/migrations/20261118124500_combat_v2_build_persistence_hidden_v1.sql'
       - 'backend/tests/combat-v2-build-sql-contract.cjs'
       - 'backend/tests/combat-v2-solo-snapshot-sql-contract.cjs'
@@ -68,6 +72,8 @@ jobs:
       - run: pnpm --dir backend install --frozen-lockfile
       - name: Compile authoritative backend
         run: pnpm --dir backend build
+      - name: Verify frozen loadout SHA-256 byte compatibility with Node
+        run: node backend/dist/server/coop/__tests__/frozen-loadout-digest-parity.js
       - name: Validate Combat 2.0 build contract
         run: node backend/dist/server/combat/v2/__tests__/build-contract.js
       - name: Validate Combat 2.0 set catalogue

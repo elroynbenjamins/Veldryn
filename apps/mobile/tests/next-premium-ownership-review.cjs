@@ -11,6 +11,7 @@ function load(name){
  });return mod.exports;
 }
 const m=load('next-premium-ownership-review'),{NEXT_PREMIUM_SETS:sets}=load('next-premium-set-review');
+const {ultraLuxeGradient}=load('ultra-luxe-name-gradients');
 const scope={accountId:'a',characterId:'c'},other={accountId:'b',characterId:'c'},switched={accountId:'a',characterId:'d'};
 const ready={wardrobe:true,iconArt:true,namePresets:true};
 const current={icon:'class:IRONWARDEN',scene:'asterfall-night',frame:'old-frame',effect:'old-effect',pet:'old-pet',title:'New Adventurer'};
@@ -57,7 +58,7 @@ for(const s of sets){
  assert.equal(wardrobe.reduce((n,c)=>n+c.owned,0),5);
  assert.equal(m.appendNextPremiumWardrobe(wardrobe,draft,scope,grant,pieces,ready).reduce((n,c)=>n+c.total,0),5);
  assert.equal(m.appendNextPremiumWardrobe(categories,draft,scope,grant,pieces,{...ready,iconArt:false}).reduce((n,c)=>n+c.total,0),4);
- assert.deepEqual(m.nextPremiumNameStyle(s.nameStyle,scope,grant,pieces,ready),{mode:'gradient',gradientColors:[...s.colors],animation:'flow'});
+ assert.deepEqual(m.nextPremiumNameStyle(s.nameStyle,scope,grant,pieces,ready),{mode:'gradient',gradientColors:[...ultraLuxeGradient(s.nameStyle).colors],animation:'flow'});
  assert.equal(m.nextPremiumNameStyle(s.colors,scope,grant,pieces,ready),undefined);
  assert.equal(m.nextPremiumNameStyle(s.nameStyle,scope,grant,{...pieces,nameStyles:[]},ready),undefined);
  const title=' '+s.titleName.toUpperCase()+' ';

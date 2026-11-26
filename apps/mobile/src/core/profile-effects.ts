@@ -1,4 +1,5 @@
 import type {GameState} from './types';
+import {wave2SetFor,wave2Owned} from './profile-cosmetic-wave2';
 import {PREMIUM_PROFILE_COSMETICS} from './profile-premium-cosmetics';
 
 export const PROFILE_EFFECTS=[
@@ -14,5 +15,6 @@ export function profileAnimatedBorderDefinition(id:string){return PROFILE_ALL_EF
 /** Ownership is account-wide; the equipped choice remains character-scoped. */
 export function canUseProfileEffect(state:GameState,id:string){
  if(!id)return true;
+ if(wave2SetFor('effect',id))return wave2Owned(state.account,'effect',id);
  return state.account.unlockedProfileEffectIds?.includes(id)??false;
 }

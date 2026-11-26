@@ -64,6 +64,27 @@ export const WAVE2_ART:readonly Wave2CosmeticArt[]=[{
   {source:require('../../assets/profile-cosmetics-wave2/stormforged/charged-shard.png'),points:[[0.67,0.88],[0.77,0.72],[0.73,0.51],[0.87,0.34]],phase:72,width:0.026,maxDp:12,opacity:0.48,rotation:-90,cycles:0.95},
   {source:require('../../assets/profile-cosmetics-wave2/stormforged/storm-glint.png'),points:[[0.56,0.22],[0.65,0.29],[0.75,0.18],[0.86,0.26]],phase:96,width:0.022,maxDp:10,opacity:0.42,rotation:0,cycles:0.85},
  ],
+},{
+ borderId:'cosmetic:crimson-oath:oathguard',effectId:'effect_crimson_oath_scarlet_reverence',
+ border:require('../../assets/profile-cosmetics-wave2/crimson-oath/oathguard.png'),wisp:require('../../assets/profile-cosmetics-wave2/crimson-oath/scarlet-petal.png'),particle:require('../../assets/profile-cosmetics-wave2/crimson-oath/ruby-mote.png'),staticEffect:require('../../assets/profile-cosmetics-wave2/crimson-oath/static-effect.png'),
+ motion:'rise',motionProfile:'crimson-oath',effectPeriodMs:13200,
+ glows:[
+  {source:require('../../assets/profile-cosmetics-wave2/crimson-oath/oath-glint.png'),sourceRect:[373,17,20,20],periodMs:3300,phaseMs:0,peakOpacity:0.86},
+  {source:require('../../assets/profile-cosmetics-wave2/crimson-oath/oath-glint.png'),sourceRect:[724,24,20,20],periodMs:2900,phaseMs:620,peakOpacity:0.86},
+  {source:require('../../assets/profile-cosmetics-wave2/crimson-oath/oath-glint.png'),sourceRect:[735,206,20,20],periodMs:3400,phaseMs:1190,peakOpacity:0.86},
+  {source:require('../../assets/profile-cosmetics-wave2/crimson-oath/oath-glint.png'),sourceRect:[725,394,20,20],periodMs:3100,phaseMs:1740,peakOpacity:0.86},
+  {source:require('../../assets/profile-cosmetics-wave2/crimson-oath/oath-glint.png'),sourceRect:[377,402,20,20],periodMs:3300,phaseMs:2380,peakOpacity:0.86},
+  {source:require('../../assets/profile-cosmetics-wave2/crimson-oath/oath-glint.png'),sourceRect:[18,395,20,20],periodMs:3100,phaseMs:2960,peakOpacity:0.86},
+  {source:require('../../assets/profile-cosmetics-wave2/crimson-oath/oath-glint.png'),sourceRect:[13,212,20,20],periodMs:3400,phaseMs:3560,peakOpacity:0.86},
+  {source:require('../../assets/profile-cosmetics-wave2/crimson-oath/oath-glint.png'),sourceRect:[19,25,20,20],periodMs:2900,phaseMs:4240,peakOpacity:0.86},
+ ],
+ tracks:[
+  {source:require('../../assets/profile-cosmetics-wave2/crimson-oath/scarlet-petal.png'),points:[[0.1,0.12],[0.18,0.33],[0.14,0.58],[0.28,0.91]],phase:5,width:0.037,maxDp:17,opacity:0.68,rotation:145,cycles:0.9},
+  {source:require('../../assets/profile-cosmetics-wave2/crimson-oath/scarlet-petal.png'),points:[[0.88,0.03],[0.76,0.26],[0.82,0.51],[0.7,0.89]],phase:29,width:0.033,maxDp:15,opacity:0.6,rotation:-160,cycles:1.05},
+  {source:require('../../assets/profile-cosmetics-wave2/crimson-oath/scarlet-petal.png'),points:[[0.4,0.1],[0.3,0.34],[0.41,0.58],[0.36,0.84]],phase:52,width:0.03,maxDp:13,opacity:0.56,rotation:180,cycles:0.8},
+  {source:require('../../assets/profile-cosmetics-wave2/crimson-oath/ruby-mote.png'),points:[[0.78,0.82],[0.84,0.64],[0.75,0.42],[0.9,0.23]],phase:76,width:0.026,maxDp:12,opacity:0.52,rotation:-60,cycles:1.1},
+  {source:require('../../assets/profile-cosmetics-wave2/crimson-oath/oath-glint.png'),points:[[0.15,0.75],[0.24,0.58],[0.17,0.38],[0.3,0.25]],phase:96,width:0.022,maxDp:10,opacity:0.46,rotation:0,cycles:1.0},
+ ],
 }];
 export const WAVE2_PORTRAIT_ART:Readonly<Record<string,ImageSourcePropType>>={
  'cosmetic:tideborne:portrait-siren':require('../../assets/profile-cosmetics-wave2/tideborne/siren.png'),
@@ -72,4 +93,6 @@ export const WAVE2_PORTRAIT_ART:Readonly<Record<string,ImageSourcePropType>>={
  'cosmetic:clockwork:portrait-engineer':require('../../assets/profile-cosmetics-wave2/clockwork/engineer.png'),
  'cosmetic:stormforged:portrait-tempest':require('../../assets/profile-cosmetics-wave2/stormforged/tempest.png'),
  'cosmetic:stormforged:portrait-sentinel':require('../../assets/profile-cosmetics-wave2/stormforged/sentinel.png'),
+ 'cosmetic:crimson-oath:portrait-justicar':require('../../assets/profile-cosmetics-wave2/crimson-oath/justicar.png'),
+ 'cosmetic:crimson-oath:portrait-knight':require('../../assets/profile-cosmetics-wave2/crimson-oath/knight.png'),
 };

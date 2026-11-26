@@ -1,3 +1,4 @@
+import {sixLuxeNamesEnabled} from '../../online/ultra-luxe-name-readback';
 import {useUltraLuxeNameSelection} from '../../online/useUltraLuxeNameSelection';
 import {ownedUltraLuxeTitleColor,ownedUltraLuxeTitles} from '../../core/ultra-luxe-titles';
 import {profileT} from '../../i18n/profile';
@@ -40,7 +41,7 @@ export function ProfileStage({state,collapsed,onToggle,onAudiencePreview,trailin
  state:GameState;collapsed:boolean;onToggle:()=>void;onAudiencePreview?:()=>void;trailing?:string;active?:boolean;
 }){
  const language=useGameLanguage();
- const privateName=useUltraLuxeNameSelection(active&&!collapsed&&ownedUltraLuxeTitles(state).length>0).style;
+ const privateName=useUltraLuxeNameSelection(active&&(ownedUltraLuxeTitles(state).length>0||sixLuxeNamesEnabled&&!!state.account.unlockedTitleIds?.some(id=>id.startsWith('ascendant-')))).style;
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),badges=usePlayerBadges();
  const character=state.character;
  if(!character)return null;

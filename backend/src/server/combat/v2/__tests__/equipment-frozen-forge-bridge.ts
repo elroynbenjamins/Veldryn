@@ -5,6 +5,7 @@
 import {strict as assert} from 'node:assert';
 import {reviewFrozenForgeSocketsV2,FORGE_SOCKET_MECHANICS_REVIEW_V2,type ForgeSocketReviewPolicyV2} from '../frozen-forge-socket-review';
 import {inspectSocketStackingCapReviewV2,SOCKET_CAP_DIMINISHING_V2,SOCKET_CAP_GENTLE_V2,diminishingSocketContributionV2,type SocketStackLaneV2} from '../socket-stacking-cap-review';
+import {reviewUtilityGemSemanticsV2,UTILITY_GEM_REVIEW_V2} from '../socket-utility-gem-review';
 import {STAT_GEMS_V1,EFFECT_GEMS_V1,gemItemId,type GemGrade,GEM_BALANCE_REVIEW_V2,STAT_GEMS_REVIEW_V2,EFFECT_GEMS_REVIEW_V2,EFFECT_GEM_REVIEW_MULTIPLIERS_V2} from '../../../equipment/gems/gem-catalog-v1';
 import type {V2GemSidecarState} from '../../../equipment/equipment-crafting-v2-gem-sidecar-types';
 import {writeFileSync} from 'node:fs';
@@ -1594,7 +1595,7 @@ function makeV21Loadout(classId:ClassIdV2,specIndex:0|1,targetTier:1|2|3|4,targe
   maxFinalHp:1e8,maxFinalDefense:1e8};
  const families=STAT_GEMS_REVIEW_V2.map(d=>d.familyId);
  assert.equal(families.length,11);
- const rows:{classId:ClassIdV2;spec:number;slots:number;arm:string;channels:ReturnType<typeof inspectSocketStackingCapReviewV2>['channels'];diminishing:ReturnType<typeof inspectSocketStackingCapReviewV2>['channels'];gentle:ReturnType<typeof inspectSocketStackingCapReviewV2>['channels'];hasteDelta:number;attackDelta:number}[]=[];
+ const rows:{classId:ClassIdV2;spec:number;slots:number;arm:string;channels:ReturnType<typeof inspectSocketStackingCapReviewV2>['channels'];diminishing:ReturnType<typeof inspectSocketStackingCapReviewV2>['channels'];gentle:ReturnType<typeof inspectSocketStackingCapReviewV2>['channels'];utility:ReturnType<typeof reviewUtilityGemSemanticsV2>;hasteDelta:number;attackDelta:number}[]=[];
  const coverage:{classId:ClassIdV2;spec:number;slots:number;missing:string[];downgraded:number}[]=[];
  for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[])for(const spec of [0,1] as const){
   const qa=makeV21Loadout(classId,spec,4,55);
@@ -1605,6 +1606,9 @@ function makeV21Loadout(classId:ClassIdV2,specIndex:0|1,targetTier:1|2|3|4,targe
   const source={...qa.source,ledgerRevision:revision,verifyPersisted:(digest:string,rev:number)=>rev===revision&&/^[a-f0-9]{64}$/.test(digest)};
   const original=JSON.stringify(source.items);
   const baseline=reviewFrozenForgeSocketsV2(qa.actor,qa.build,source,{slots:[],receipts:[]},policy);
+  const baselineUtility=reviewUtilityGemSemanticsV2(baseline);
+  assert.equal(baselineUtility.haste.incrementalGem,0);
+  assert.ok(baselineUtility.potency.every(c=>c.incrementalGem===0));
   const arms=[...families,'mixed-role','mixed-all'];
   for(const arm of arms){
    const role=CLASS_ROLES_V2[classId];
@@ -1626,6 +1630,20 @@ function makeV21Loadout(classId:ClassIdV2,specIndex:0|1,targetTier:1|2|3|4,targe
    const report=inspectSocketStackingCapReviewV2(out);
    const continuous=inspectSocketStackingCapReviewV2(out,SOCKET_CAP_DIMINISHING_V2);
    const gentle=inspectSocketStackingCapReviewV2(out,SOCKET_CAP_GENTLE_V2);
+   const utility=reviewUtilityGemSemanticsV2(out);
+   assert.equal(utility.sourceDigest,out.digest);
+   assert.equal(utility.version,UTILITY_GEM_REVIEW_V2);
+   assert.equal(utility.canExecuteCombat,false);assert.equal(utility.cpApproved,false);assert.equal(utility.releaseEnabled,false);
+   assert.equal(utility.haste.baselineHaste,baselineUtility.haste.projectedHaste);
+   assert.ok(utility.haste.incrementalGem>=0&&utility.haste.incrementalGem<=utility.haste.gem+1e-9);
+   if(utility.haste.gem>0){assert.ok(utility.haste.incrementalGem>0);assert.ok(utility.haste.incrementalGem>utility.haste.historicalRelativeGem);}
+   for(const [i,c] of utility.potency.entries()){
+    assert.equal(c.baseline,baselineUtility.potency[i].effective);
+    assert.ok(c.incrementalGem>=0&&c.incrementalGem<=c.gem+1e-9);
+    if(c.gem>0)assert.ok(c.incrementalGem>0);
+   }
+   if(arm==='stat_swift')assert.ok(utility.potency.every(c=>c.incrementalGem===0));
+   if(arm==='stat_potent')assert.equal(utility.haste.incrementalGem,0);
    assert.equal(continuous.socketCount,n);assert.equal(gentle.socketCount,n);
    for(const [i,c] of gentle.channels.entries()){
     const prior=continuous.channels[i];
@@ -1676,7 +1694,7 @@ function makeV21Loadout(classId:ClassIdV2,specIndex:0|1,targetTier:1|2|3|4,targe
     assert.ok(Math.abs(c.gem-n*def.values[5]*1.2)<1e-8);
     assert.equal(report.channels.filter(c=>c.gem>0).length,1);
    }
-   rows.push({classId,spec,slots:n,arm,channels:report.channels,diminishing:continuous.channels,gentle:gentle.channels,
+   rows.push({classId,spec,slots:n,arm,channels:report.channels,diminishing:continuous.channels,gentle:gentle.channels,utility,
     hasteDelta:out.stats.haste-baseline.stats.haste,attackDelta:out.stats.attackPower-baseline.stats.attackPower});
   }
   assert.equal(JSON.stringify(source.items),original);
@@ -1707,6 +1725,14 @@ function makeV21Loadout(classId:ClassIdV2,specIndex:0|1,targetTier:1|2|3|4,targe
     previousMeanRetained:old.reduce((n,x)=>n+x.incrementalGem/x.gem,0)/old.length};
   }),swiftDelta:rows.filter(r=>r.arm==='stat_swift').map(r=>({classId:r.classId,spec:r.spec,delta:r.hasteDelta})),
   cpApproved:false,releaseEnabled:false}));
+ const swift=rows.filter(r=>r.arm==='stat_swift'),potent=rows.filter(r=>r.arm==='stat_potent');
+ console.log('UTILITY_GEM_SEMANTICS_CALIBRATION '+JSON.stringify({policy:UTILITY_GEM_REVIEW_V2,cases:rows.length,
+  swift:swift.map(r=>({classId:r.classId,spec:r.spec,raw:r.utility.haste.gem,
+   old:r.utility.haste.historicalRelativeGem,next:r.utility.haste.incrementalGem})),
+  potent:potent[0].utility.potency.map((c,i)=>({scope:c.scope,
+   min:Math.min(...potent.map(r=>r.utility.potency[i].incrementalGem)),
+   max:Math.max(...potent.map(r=>r.utility.potency[i].incrementalGem))})),
+  requiresMigrationApproval:true,cpApproved:false,releaseEnabled:false}));
 }
 const v19SensitivityRows: {bossId:string;classId:string;specIndex:number;strategy:string;channel:string;pct:number;
  baseline:{victory:boolean;reason:string;durationMs:number;damage:number;healing:number;hp:number};

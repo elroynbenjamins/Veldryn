@@ -6,6 +6,7 @@ import {strict as assert} from 'node:assert';
 import {reviewFrozenForgeSocketsV2,FORGE_SOCKET_MECHANICS_REVIEW_V2,type ForgeSocketReviewPolicyV2} from '../frozen-forge-socket-review';
 import {inspectSocketStackingCapReviewV2,SOCKET_CAP_DIMINISHING_V2,SOCKET_CAP_GENTLE_V2,diminishingSocketContributionV2,type SocketStackLaneV2} from '../socket-stacking-cap-review';
 import {reviewUtilityGemSemanticsV2,UTILITY_GEM_REVIEW_V2} from '../socket-utility-gem-review';
+import {reviewEffectGemResonanceV2,EFFECT_RESONANCE_REVIEW_V2} from '../effect-gem-resonance-review';
 import {STAT_GEMS_V1,EFFECT_GEMS_V1,gemItemId,type GemGrade,GEM_BALANCE_REVIEW_V2,STAT_GEMS_REVIEW_V2,EFFECT_GEMS_REVIEW_V2,EFFECT_GEM_REVIEW_MULTIPLIERS_V2} from '../../../equipment/gems/gem-catalog-v1';
 import type {V2GemSidecarState} from '../../../equipment/equipment-crafting-v2-gem-sidecar-types';
 import {writeFileSync} from 'node:fs';
@@ -1733,6 +1734,78 @@ function makeV21Loadout(classId:ClassIdV2,specIndex:0|1,targetTier:1|2|3|4,targe
    min:Math.min(...potent.map(r=>r.utility.potency[i].incrementalGem)),
    max:Math.max(...potent.map(r=>r.utility.potency[i].incrementalGem))})),
   requiresMigrationApproval:true,cpApproved:false,releaseEnabled:false}));
+}
+// Exact-copy effect magnitude and resonance: every family at 1/2/3
+// copies, low, mixed and max strength. No execution of effect hooks here.
+{
+ const policy:ForgeSocketReviewPolicyV2={version:'QA_EFFECT_RESONANCE_V2',gemBalancePolicy:GEM_BALANCE_REVIEW_V2,
+  mechanicsReview:{version:FORGE_SOCKET_MECHANICS_REVIEW_V2,maxFinalAttackPower:1e8},
+  maxFinalHp:1e8,maxFinalDefense:1e8};
+ const qa=makeV21Loadout('IRONWARDEN',0,4,55);
+ assert.ok(qa.ids.length>=4);
+ const source={...qa.source,ledgerRevision:qa.source.ledgerRevision+qa.ids.length,
+  verifyPersisted:(digest:string,rev:number)=>rev===qa.source.ledgerRevision+qa.ids.length&&/^[a-f0-9]{64}$/.test(digest)};
+ const empty=reviewFrozenForgeSocketsV2(qa.actor,qa.build,source,{slots:[],receipts:[]},policy);
+ const original=JSON.stringify(source.items);
+ const sidecar=(gems:{family:string;grade:GemGrade;roll:number}[]):V2GemSidecarState=>{
+  const slots:V2GemSidecarState['slots']=[],receipts:V2GemSidecarState['receipts']=[];
+  for(const [i,g] of gems.entries()){
+   const instanceId=qa.ids[i],gemId=gemItemId(g.family,g.grade);
+   slots.push({instanceId,effect:{gemId,rollPercent:g.roll}});
+   receipts.push({requestId:'QA_RESONANCE_'+i,fingerprint:'gem:'+instanceId+':'+gemId,
+    instanceId,socket:'effect',gemId,source:'gem_pouch',rollPercent:g.roll,burnedGemId:null,
+    version:qa.source.ledgerRevision+i+1});
+  }
+  return {slots,receipts};
+ };
+ const profiles=[
+  {id:'low',grades:[1,1,1] as const,rolls:[80,80,80]},
+  {id:'mixed',grades:[2,4,5] as const,rolls:[85,100,115]},
+  {id:'max',grades:[5,5,5] as const,rolls:[120,120,120]},
+ ];
+ const rows:{family:string;profile:string;copies:number;total:number;legacy:number;peak:number;unit:string}[]=[];
+ for(const def of EFFECT_GEMS_REVIEW_V2){
+  const legacy=EFFECT_GEMS_V1.find(x=>x.familyId===def.familyId)!;
+  for(const profile of profiles)for(const copies of [1,2,3] as const){
+   const gems=Array.from({length:copies},(_,i)=>({family:def.familyId,grade:profile.grades[i],roll:profile.rolls[i]}));
+   const state=sidecar(gems);
+   const out=reviewFrozenForgeSocketsV2(qa.actor,qa.build,source,state,policy);
+   assert.deepEqual(out.stats,empty.stats);assert.deepEqual(out.advanced,empty.advanced);
+   const report=out.effectResonanceReview!;
+   assert.equal(report.version,EFFECT_RESONANCE_REVIEW_V2);
+   assert.equal(report.copyCount,copies);assert.equal(report.families.length,1);
+   const group=report.families[0];
+   assert.equal(group.copies,copies);assert.equal(group.resonance,copies);
+   assert.equal(group.unlockedResonance.length,copies-1);
+   assert.equal(group.runtimeEnabled,false);assert.equal(report.canExecuteEffects,false);
+   const expected=gems.reduce((n,g)=>n+Math.round(def.values[g.grade]*g.roll/100*1e9)/1e9,0);
+   const expectedLegacy=gems.reduce((n,g)=>n+Math.round(legacy.values[g.grade]*g.roll/100*1e9)/1e9,0);
+   assert.ok(Math.abs(group.totalValue-expected)<1e-9);
+   assert.ok(Math.abs(group.legacyTotalValue-expectedLegacy)<1e-9);
+   assert.equal(group.sources.length,copies);assert.ok(group.peak.candidate>=group.totalValue);
+   assert.ok(Math.abs(group.peak.candidate-group.peak.legacy*EFFECT_GEM_REVIEW_MULTIPLIERS_V2[def.familyId])<1e-8);
+   rows.push({family:def.familyId,profile:profile.id,copies,total:group.totalValue,legacy:group.legacyTotalValue,
+    peak:group.peak.candidate,unit:group.peak.unit});
+  }
+  const four=sidecar(Array.from({length:4},()=>({family:def.familyId,grade:5 as const,roll:120})));
+  assert.throws(()=>reviewFrozenForgeSocketsV2(qa.actor,qa.build,source,four,policy),/family_copy_cap/);
+ }
+ const combo=sidecar(EFFECT_GEMS_REVIEW_V2.slice(0,3).flatMap(def=>Array.from({length:3},()=>({family:def.familyId,grade:5 as const,roll:120}))));
+ const mixed=reviewFrozenForgeSocketsV2(qa.actor,qa.build,source,combo,policy);
+ assert.equal(mixed.effectResonanceReview!.families.length,3);
+ assert.equal(mixed.effectResonanceReview!.copyCount,9);
+ assert.ok(mixed.effectResonanceReview!.families.every(g=>g.resonance===3));
+ assert.deepEqual(mixed.stats,empty.stats);assert.deepEqual(mixed.advanced,empty.advanced);
+ const sample=mixed.deferredEffectSources[0];
+ assert.throws(()=>reviewEffectGemResonanceV2([{...sample,candidateFraction:99}],qa.ids),/invalid_copy/);
+ assert.throws(()=>reviewEffectGemResonanceV2([sample,sample],qa.ids),/invalid_copy/);
+ assert.throws(()=>reviewEffectGemResonanceV2([sample],qa.ids.filter(id=>id!==sample.instanceId)),/invalid_scope|invalid_copy/);
+ assert.equal(JSON.stringify(source.items),original);
+ assert.equal(rows.length,20*3*3);
+ console.log('EFFECT_GEM_RESONANCE_CALIBRATION '+JSON.stringify({policy:EFFECT_RESONANCE_REVIEW_V2,
+  cases:rows.length,fourthCopyRejections:20,mixedFamilies:3,mixedCopies:9,
+  maxRollThreeCopy:rows.filter(r=>r.profile==='max'&&r.copies===3),
+  canExecuteEffects:false,cpApproved:false,releaseEnabled:false}));
 }
 const v19SensitivityRows: {bossId:string;classId:string;specIndex:number;strategy:string;channel:string;pct:number;
  baseline:{victory:boolean;reason:string;durationMs:number;damage:number;healing:number;hp:number};

@@ -133,7 +133,7 @@ export function reviewFrozenForgeSocketsV2(
   fail('combined_stat_cap');
  return {scope:'PRIVATE_EXACT_FORGE_SOCKET_PROJECTION_V1' as const,digest,
   equippedInstanceIds:ids,stats,advanced,gemSources:gems.statSources,
-  deferredEffectSources:gems.effectSources,forgeEvidence:compiled.evidence,
+  deferredEffectSources:gems.effectSources,...(gems.resonance?{effectResonanceReview:gems.resonance}:{}),forgeEvidence:compiled.evidence,
   policyVersion:policy.version,...(mechanics?{mechanicsReview:mechanics.version,requiresMigrationApproval:true as const}:{}),
   canExecuteCombat:false as const,cpApproved:false as const,
   releaseEnabled:false as const};

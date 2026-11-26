@@ -1,0 +1,7 @@
+# Pass 7E — class-specific mechanics
+
+Pinned Forge integration 0c0f801c99a30c261e6b59b1bbe8a40a9a5a08c2 (#1852), Combat source 6954b04e01bb11e37c7bec615f6aec07cccae816 (#1848). #1852 strict backend compilation, named Sync resource/potency/recovery behavior, live Edge isolation, synthetic class/spec matrix, hidden build transport and PG17 passed. Skills workflow stopped on a mismatched expected error regex: wrong-channel token correctly failed with dungeon_v2_engine_not_server_issued. Correct test, not authority.
+
+Port authored variant-added effect scaling, critical support thresholds, River Stone cleansing target, exact-source status refresh, three-pulse Thunder Totem with expiration capstone, Iron Riposte cooldown and resource exclusions. Preserve Forge Tenacity duration, Sync harmful potency, private equipment hooks and dungeon reward tick route. Ordinary legacy status stacking and legacy targeting stay unchanged. Skills-only private simulator explicitly selects tactical policy; existing Forge combined encounter callers continue their authored-priority default. No newly invented balance coefficients; use previously authored values from Combat lane. Add existing expanded Skills and boss/four-player cleanse test suite to this lane. No claims of exact-head CI until complete.
+
+Remaining: persisted-party assembly, combined engine authority and full matrix calibration, 0.8429306526262472 prior damage outlier, generated Edge byte parity, Forge mobile economy/tool/projection checks. No production changes, deployment, flags, migrations or main merge.

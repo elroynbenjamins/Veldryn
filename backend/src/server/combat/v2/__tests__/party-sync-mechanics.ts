@@ -129,6 +129,6 @@ assert.deepEqual(interruptBase,simulateCombat(interruptInput));
 console.log('PASS: resource generation, harmful resistance and interrupt recovery synchronization mechanics');
 
 // Named API rejects a token in the wrong channel and permits tactical review only explicitly.
-assert.throws(()=>simulateCombatWithServerAuthoritiesV2(resourceInput,{dungeonReward:resourceToken as never}),/dungeon_reward/);
+assert.throws(()=>simulateCombatWithServerAuthoritiesV2(resourceInput,{dungeonReward:resourceToken as never}),/dungeon_v2_engine_not_server_issued/);
 assert.throws(()=>simulateCombatWithServerAuthoritiesV2(resourceInput,{aiPolicy:'unknown' as never}),/unknown_ai_policy/);
 assert.throws(()=>simulateCombatWithServerAuthoritiesV2(resourceInput,{partySync:{} as never}),/party_sync_authority_/);

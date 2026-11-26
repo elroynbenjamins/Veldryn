@@ -111,8 +111,18 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
     if(resolved.event){events.push(resolved.event);
       const spent=Math.max(0,(resolved.event.resourceBefore??0)-(resolved.event.resourceAfter??0));
       runCapstone(actor,'spend',now,undefined,{spent});runReactive(actor,'spend',now,undefined,{spent});}
-    if(actor.definition.combatV2?.capstoneId?.endsWith(':ritual_surge')&&ability.name==='Thunder Totem')
-      actor.combatV2?.scheduledTotemAt.push(now+4000);
+    // A physical totem persists for three deterministic 2-second pulses.
+    // A new cast refreshes (never stacks) the one owned totem. Only a verified
+    // Stonecaller V2 ability can schedule it; neither it nor its pulses can
+    // write class resources or trigger secondary skill/capstone proc chains.
+    if(actor.combatV2&&actor.definition.combatV2?.resource==='resonance'&&
+       ability.name==='Thunder Totem'&&ability.id.includes(':v2:')){
+      actor.combatV2.activeTotem={
+        abilityId:ability.id,nextPulseAtMs:now+2000,pulsesRemaining:3,pulseCoeff:.18,
+      };
+      actor.combatV2.scheduledTotemAt=actor.definition.combatV2.capstoneId?.endsWith(':ritual_surge')
+        ?[now+6000]:[];
+    }
     return resolved.ability;
   };
   // Stable priority and phase ordering are immutable within one fight.
@@ -192,7 +202,7 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
     const hc=clamp(hitChance(source.definition.stats.accuracy*(1+sync(source,'accuracy_pct')),
       target.definition.stats.evasion*(1+sync(target,'evasion_rating_pct'))+v2Evasion,accuracyScale)+
       (sourceGear?.accuracyPp??0)-(targetGear?.evasionPp??0),0,1);
-    if(rng.next(`${now}:${source.definition.id}:${abilityId}:hit`)>hc){if(eventType==='damage'){if(source.definition.team==='players'){equipmentTraitRuntime?.miss(source.definition.id,abilityId);eq2PrivateHit?.miss(source.definition.id,abilityId);}events.push({atMs:now,type:'miss',actorId:source.definition.id,targetId:target.definition.id,abilityId});if(source.definition.team==='enemies'){resource(target,'evade',now,abilityId);
+    if(rng.next(`${now}:${source.definition.id}:${abilityId}:hit`)>hc){if(eventType==='damage'){if(source.definition.team==='players'){if(!abilityId.startsWith('V2_COUNTER:')){equipmentTraitRuntime?.miss(source.definition.id,abilityId);eq2PrivateHit?.miss(source.definition.id,abilityId);}}events.push({atMs:now,type:'miss',actorId:source.definition.id,targetId:target.definition.id,abilityId});if(source.definition.team==='enemies'){resource(target,'evade',now,abilityId);
       if(!abilityId.startsWith('V2_')){
         runCapstone(target,'evade',now,source);runReactive(target,'evade',now,source);
       }}}return;}
@@ -293,7 +303,7 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
     // direct player hits. No periodic, gem, capstone, companion or trait
     // secondary damage can enter these hooks.
     if(eventType==='damage'&&source.definition.team==='players'&&
-       source.combatV2&&equipmentTraitRuntime){
+       source.combatV2&&equipmentTraitRuntime&&!abilityId.startsWith('V2_COUNTER:')){
       const adjusted=equipmentTraitRuntime.directHit(now,source.definition.id,
         target.definition.id,abilityId,raw);
       raw=adjusted.damage;
@@ -304,7 +314,7 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
     }
     // Private QA only. Receipt object is shared across pre-hit and post-HP
     // phases, never exposed in CombatInput or reused by secondary effects.
-    const eq2Event=eq2PrivateHit&&source.definition.team==='players'&&target.definition.team==='enemies'?{
+    const eq2Event=eq2PrivateHit&&!abilityId.startsWith('V2_COUNTER:')&&source.definition.team==='players'&&target.definition.team==='enemies'?{
       now,actorId:source.definition.id,targetId:target.definition.id,abilityId,
       originalClassAbility:source.definition.abilities.some(a=>a.id===abilityId&&a.effects.some(e=>e.kind==='damage')),
       direct:eventType==='damage',physical:effect.damageType==='physical',nontrue:effect.damageType!==undefined&&effect.damageType!=='true',
@@ -397,7 +407,7 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
           abilityId:'V2_LIFESTEAL:'+abilityId,amount:Number(healed.toFixed(2))});}
     }
     gemOnDamageTakenV1(now,target,dealt);emitGemState(now);
-    if(eventType==='damage'){const proc=gemOnDirectHitV1(now,source,target,abilityId,crit);emitGemState(now);if(proc.selfHeal>0&&source.alive){const amount=Math.min(source.definition.stats.maxHp-source.hp,source.definition.stats.maxHp*proc.selfHeal);source.hp+=amount;if(amount>0)events.push({atMs:now,type:'heal',actorId:source.definition.id,targetId:source.definition.id,abilityId:'GEM_RETALIATION',amount:Number(amount.toFixed(2))});}}
+    if(eventType==='damage'&&!abilityId.startsWith('V2_COUNTER:')){const proc=gemOnDirectHitV1(now,source,target,abilityId,crit);emitGemState(now);if(proc.selfHeal>0&&source.alive){const amount=Math.min(source.definition.stats.maxHp-source.hp,source.definition.stats.maxHp*proc.selfHeal);source.hp+=amount;if(amount>0)events.push({atMs:now,type:'heal',actorId:source.definition.id,targetId:source.definition.id,abilityId:'GEM_RETALIATION',amount:Number(amount.toFixed(2))});}}
     addThreat(target,source,dealt*(effect.threatMultiplier??1)); events.push({atMs:now,type:eventType,actorId:source.definition.id,targetId:target.definition.id,abilityId,amount:Number(dealt.toFixed(2)),...(eventType==='damage'?{critical:crit}:{}),...(heavyHit?{detail:'heavy_hit'}:{}),...(absorbed>0?{absorbed:Number(absorbed.toFixed(2))}:{})});
     // Hidden runtime is gated by an exact signed reward token and original
     // ability provenance. Secondary effects never call this path recursively.
@@ -489,9 +499,39 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
       if(source.combatV2&&target.definition.team==='enemies'&&!abilityId.startsWith('V2_'))
         runReactive(source,'kill',now,target);
     }
+    // Iron Riposte is an actual reactive counter window, not only an on-cast
+    // attack: a surviving Ironwarden retaliates once per 8s after an enemy
+    // hit while its own server-authored Riposte ward is active. No counter
+    // may mint Guard, proc direct-hit gems, or chain into another counter.
+    if(eventType==='damage'&&source.definition.team==='enemies'&&
+      target.definition.team==='players'&&target.alive&&target.hp>0&&
+      source.alive&&target.combatV2&&target.combatV2.resource==='guard'&&
+      target.modifiers.some(m=>m.sourceId===target.definition.id&&
+        m.v2SourceAbilityId?.startsWith('SK2_IRON_RIPOSTE:v2:')&&
+        m.kind==='buff'&&m.tag==='damage_taken'&&m.expiresAt>now)){
+      const key='skill:iron_riposte_counter';
+      const v2=target.combatV2;
+      if(now-(v2.procCooldownAt[key]??-Infinity)>=8000){
+        v2.procCooldownAt[key]=now;
+        applyDamage(now,target,source,{kind:'damage',coeff:.32,damageType:'physical'},
+          'V2_COUNTER:IRON_RIPOSTE');
+      }
+    }
   };
-  const applyHeal=(now:number, source:CombatantState,target:CombatantState,effect:AbilityEffect,abilityId:string,eventType:'heal'|'hot_tick'='heal')=>{ if(!target.alive)return; const direct=eventType==='heal',sourceMult=direct?gemHealingMultiplierV1(source,now):1,receivedMult=Math.max(0,1+modifier(target,'healing_received',now)); const v2HealBonus=v2Encounter&&effect.healBelowHpPct!==undefined&&hpPct(target)<effect.healBelowHpPct
-      ?1+clamp(effect.healBonus??0,0,.40):1;
+  // Evaluate the recipient's current HP at effect resolution, never at cast
+  // selection or as a party-wide snapshot. Only original V2 player class
+  // techniques may use authored threshold fields; periodic/proc/legacy paths
+  // cannot inherit a bonus merely because a V2 ally is in the encounter.
+  const thresholdSupportMultiplier=(source:CombatantState,target:CombatantState,
+    abilityId:string,threshold:number|undefined,bonus:number|undefined)=>{
+    if(!source.alive||!target.alive||!source.combatV2||
+      source.definition.team!=='players'||target.definition.team!=='players'||
+      !abilityId.includes(':v2:')||!source.definition.abilities.some(a=>a.id===abilityId)||
+      threshold===undefined||bonus===undefined||!Number.isFinite(threshold)||
+      !Number.isFinite(bonus)||threshold<=0||threshold>.75||hpPct(target)>=threshold)return 1;
+    return 1+clamp(bonus,0,.40);
+  };
+  const applyHeal=(now:number, source:CombatantState,target:CombatantState,effect:AbilityEffect,abilityId:string,eventType:'heal'|'hot_tick'='heal')=>{ if(!target.alive)return; const direct=eventType==='heal',sourceMult=direct?gemHealingMultiplierV1(source,now):1,receivedMult=Math.max(0,1+modifier(target,'healing_received',now)); const v2HealBonus=direct?thresholdSupportMultiplier(source,target,abilityId,effect.healBelowHpPct,effect.healBonus):1;
     // Original Forge Healing Power boosts authored class heals and class HoTs
     // only, not shields, potion/leech/trait or GEM secondary effects.
     const authoredClassHeal=v2Encounter&&source.definition.team==='players'&&
@@ -580,7 +620,8 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
   const applyEffect=(now:number, source:CombatantState,target:CombatantState,effect:AbilityEffect,abilityId:string)=>{
     if(effect.kind==='damage')return applyDamage(now,source,target,effect,abilityId);
     if(effect.kind==='heal')return applyHeal(now,source,target,effect,abilityId);
-    if(effect.kind==='shield'){const requested=Math.max(0,(source.definition.stats.healingPower*(effect.coeff??0)+(effect.flat??0))*gemShieldMultiplierV1(source,now)*(source.definition.alchemyModifiers?.shielding??1)*
+    if(effect.kind==='shield'){if(v2Encounter&&!target.alive)return;const requested=Math.max(0,(source.definition.stats.healingPower*(effect.coeff??0)+(effect.flat??0))*gemShieldMultiplierV1(source,now)*(source.definition.alchemyModifiers?.shielding??1)*
+      thresholdSupportMultiplier(source,target,abilityId,effect.shieldBelowHpPct,effect.shieldBonus)*
       (source.combatV2?reactiveShieldMultiplierV2(source,target,now):1)*
       (v2Encounter?1+clamp(source.definition.combatV2?.equipmentEffects?.shieldStrengthPct??0,0,1):1)*
       (1+sync(source,'shield_strength_pct')));
@@ -607,18 +648,36 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
       const periodic:CombatantState['periodic'][number]={sourceId:source.definition.id,effectId:abilityId,kind:effect.kind,
         coeff:(effect.coeff??0)*(1+hexBonus)*(1-harmfulResist),flat:(effect.flat??0)*(1+hexBonus)*(1-harmfulResist),
         damageType:effect.damageType,tag:effect.tag??effect.damageType??effect.kind,
-        nextTickAt:now+(effect.tickMs??1000),expiresAt,tickMs:effect.tickMs??1000};
+        nextTickAt:now+(effect.tickMs??1000),expiresAt,tickMs:effect.tickMs??1000,
+        ...(source.combatV2&&abilityId.includes(':v2:')?{v2AppliedAtMs:now}:{})};
       if(enemyV2Effects&&source.definition.team==='enemies')
         target.periodic=applyEnemyV2Periodic(target.periodic,periodic).entries;
-      else target.periodic.push(periodic);
+      else {
+        // A V2 class skill refreshes its own previously cast DoT/HoT instead
+        // of multiplying periodic instances indefinitely. Preserve distinct
+        // sources and any separately authored same-cast ticks.
+        if(source.combatV2&&abilityId.includes(':v2:')){
+          target.periodic=target.periodic.filter(p=>
+            p.sourceId!==source.definition.id||p.effectId!==abilityId||
+            p.kind!==periodic.kind||p.tag!==periodic.tag||
+            p.v2AppliedAtMs===now);
+        }
+        target.periodic.push(periodic);
+      }
       events.push({atMs:now,type:'status_apply',actorId:source.definition.id,targetId:target.definition.id,abilityId,statusKind:effect.kind,statusTag:effect.tag??effect.damageType??effect.kind,expiresAtMs:expiresAt});return;}
     if(effect.kind==='cleanse'){
-      // Remove harmful periodic effects/debuffs only. Never wipe beneficial HoTs,
-      // shield amounts, buffs or boss phase state. The replay identifies the cure.
+      // Legacy cleanse removes DoTs only. A server-compiled V2 class cleanse
+      // additionally removes active debuffs; beneficial buffs/HoTs, gems,
+      // shields and boss phase state must survive. Never change legacy replay.
       const removed=target.periodic.filter(p=>p.kind==='dot');
       target.periodic=target.periodic.filter(p=>p.kind!=='dot');
+      const removedDebuffs=source.combatV2
+        ?target.modifiers.filter(m=>m.kind==='debuff'&&m.expiresAt>now):[];
+      if(source.combatV2)
+        target.modifiers=target.modifiers.filter(m=>m.kind!=='debuff');
       for(const p of removed)events.push({atMs:now,type:'status_remove',actorId:source.definition.id,targetId:target.definition.id,abilityId,statusKind:'dot',statusTag:p.tag??'dot'});
-      if(removed.length&&source.combatV2&&!abilityId.startsWith('V2_'))
+      for(const m of removedDebuffs)events.push({atMs:now,type:'status_remove',actorId:source.definition.id,targetId:target.definition.id,abilityId,statusKind:'debuff',statusTag:m.tag,detail:'combat_v2_cleanse'});
+      if((removed.length||removedDebuffs.length)&&source.combatV2&&!abilityId.startsWith('V2_'))
         runReactive(source,'cleanse',now,target);
       return;
     }
@@ -641,10 +700,20 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
         forgeStatusDuration(source,target,abilityId,effect.durationMs??5000):
         effect.durationMs??5000);const capstoneId=abilityId.startsWith('V2_CAPSTONE:')||abilityId.startsWith('V2_PASSIVE:')?abilityId:undefined;
       if(capstoneId&&effect.kind==='buff')target.modifiers=target.modifiers.filter(m=>m.v2CapstoneId!==capstoneId||m.tag!==tag);
+      const classSkillId=source.combatV2&&abilityId.includes(':v2:')?abilityId:undefined;
+      if(classSkillId){
+        // Refresh only an older copy of this exact authored buff/debuff.
+        // Distinct abilities, party sources and separate effects in one cast
+        // remain independent. Legacy status stacking stays unchanged.
+        target.modifiers=target.modifiers.filter(m=>
+          m.v2SourceAbilityId!==classSkillId||m.sourceId!==source.definition.id||
+          m.kind!==effect.kind||m.tag!==tag||m.createdAt===now);
+      }
       const harmfulResist=effect.kind==='debuff'&&source.definition.team==='enemies'&&target.definition.team==='players'
         ?sync(target,'harmful_effect_resist_pct'):0;
       const modifierEntry:CombatantState['modifiers'][number]={sourceId:source.definition.id,tag,value:(effect.value??0)*(1-harmfulResist),expiresAt,createdAt:now,kind:effect.kind,
-        ...(capstoneId?{v2CapstoneId:capstoneId}:{})};
+        ...(capstoneId?{v2CapstoneId:capstoneId}:{}),
+        ...(classSkillId?{v2SourceAbilityId:classSkillId}:{})};
       if(enemyV2Effects&&source.definition.team==='enemies')
         target.modifiers=applyEnemyV2Modifier(target.modifiers,modifierEntry).entries;
       else target.modifiers.push(modifierEntry);
@@ -704,6 +773,19 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
         abilityId:'V2_QA_SHIELD:'+expired.id,amount:expired.remaining,detail:'private_qa_shield_expired'});
     if(v2Encounter)for(const actor of players){
       const v2=actor.combatV2;if(!actor.alive||!v2)continue;
+      // Catch up to three pulses on coarser deterministic tick settings.
+      // Totem pulses are periodic nature damage: no direct-hit gem or combo proc.
+      let resolved=0;
+      while(v2.activeTotem&&now>=v2.activeTotem.nextPulseAtMs&&resolved++<3){
+        const totem=v2.activeTotem;
+        const target=living(enemies)[0];
+        if(target)applyDamage(now,actor,target,{
+          kind:'damage',coeff:totem.pulseCoeff,damageType:'nature',
+        },'V2_TOTEM:'+totem.abilityId,'dot_tick');
+        totem.pulsesRemaining--;
+        totem.nextPulseAtMs+=2000;
+        if(totem.pulsesRemaining<=0)v2.activeTotem=undefined;
+      }
       const due=v2.scheduledTotemAt.filter(at=>at<=now);
       v2.scheduledTotemAt=v2.scheduledTotemAt.filter(at=>at>now);
       for(const at of due)runCapstone(actor,'totem_expires',now);

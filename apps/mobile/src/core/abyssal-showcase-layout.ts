@@ -53,3 +53,18 @@ export const ABYSSAL_MOTE_PATHS=[
  [[28,33],[61,27],[91,35],[122,27],[91,35],[61,27],[28,33]],
 ] as const;
 export const ABYSSAL_BUDGET={maxAmbientMotes:3,maxRailMotes:2,maxPetMotes:3,petAtlasFps:12,maxPetFrames:48,moteRadius:4,maxPetLift:3} as const;
+
+/** Candidate idle atlas: one padded 672x768 texture, 36 poses at 12 fps.
+ * Each 3s cycle closes exactly eight times per 24s showcase. */
+export const ABYSSAL_POSE_ATLAS={frameWidth:112,frameHeight:128,columns:6,rows:6,frames:36,seconds:3,cycles:8} as const;
+export function abyssalPoseTimeline(){
+ const a=ABYSSAL_POSE_ATLAS,inputRange=[0],frames=[0];
+ for(let i=1;i<=a.frames;i++){
+  inputRange.push(i/a.frames-.0005/a.seconds,i/a.frames);
+  frames.push(i-1,i%a.frames);
+ }
+ return {inputRange,frames};
+}
+export function abyssalPoseCell(frame:number){
+ return {column:frame%ABYSSAL_POSE_ATLAS.columns,row:Math.floor(frame/ABYSSAL_POSE_ATLAS.columns)};
+}

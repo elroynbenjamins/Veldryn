@@ -50,7 +50,7 @@ ok(qty(cookingAfterFishing,'MEADOW_PERCH')>0,'earned Fishing resources are settl
 let stackedFish=createCharacter(newGame(now),'IRONWARDEN','Stacked Fish');
 stackedFish={...stackedFish,character:{...stackedFish.character!,gold:10000},
   inventory:{...stackedFish.inventory,stacks:[{itemId:'SILVERFIN',quantity:6},{itemId:'GREENWOOD_LOG',quantity:5}]},
-  bank:{...stackedFish.bank,stacks:[{itemId:'SILVERFIN',quantity:100},{itemId:'SILVERFIN',quantity:100},{itemId:'GREENWOOD_LOG',quantity:200}]}};
+  bank:{...stackedFish.bank,stacks:[{itemId:'SILVERFIN',quantity:100},{itemId:'SILVERFIN',quantity:100},{itemId:'GREENWOOD_LOG',quantity:100},{itemId:'GREENWOOD_LOG',quantity:100}]}};
 const fishCapacity=processingRunCapacity(stackedFish,'COOK_SILVERFIN',offlineCapSeconds(stackedFish),true);
 equal(fishCapacity.inputs.find(row=>row.itemId==='SILVERFIN')?.inventory,6,'recipe capacity sees the six fish in Inventory');
 equal(fishCapacity.inputs.find(row=>row.itemId==='SILVERFIN')?.bank,200,'recipe capacity totals multiple full Bank stacks');
@@ -163,6 +163,18 @@ equal(qty(preFuelCancelled,'COPPER_ORE'),100,'old processing returns reserved un
 equal(qty(preFuelCancelled,'GREENWOOD_LOG'),20,'old ore-only reservation neither consumes nor refunds unreserved wood');
 equal(preFuelCancelled.character!.gold,beforeGold,'old reservation refunds its original Gold, not the new fee');
 equal(preFuelRestored.activity!.processing!.xpPerBatch,105,'old reserved XP is unchanged');
+// Immediately preceding recipe version reserved both ore and fuel at the old prices.
+const previousRecipeState={...state,character:{...state.character!,gold:beforeGold-5*36},inventory:{...state.inventory,stacks:[{itemId:'COPPER_ORE',quantity:100},{itemId:'GREENWOOD_LOG',quantity:40}]},
+ activity:{...state.activity!,processing:{...state.activity!.processing!,goldPerBatch:36,xpPerBatch:105,inputsPerBatch:[{itemId:'COPPER_ORE',quantity:10},{itemId:'GREENWOOD_LOG',quantity:2}]}}};
+const previousRestored=normalizeSave(structuredClone(previousRecipeState));
+const previousClaim=claimActivity(previousRestored,at(1));
+equal(previousClaim.reward.craftingActions,1,'old two-input reservation can settle one original batch');
+equal(qty(previousClaim.state,'COPPER_INGOT'),5,'old two-input reservation keeps its original output');
+equal(previousClaim.state.skills.find(row=>row.skillId==='smithing')?.xp,105,'old two-input reservation keeps its original XP');
+const previousCancelled=stopActivity(previousClaim.state);
+equal(qty(previousCancelled,'COPPER_ORE'),140,'old two-input reservation refunds four original ore batches');
+equal(qty(previousCancelled,'GREENWOOD_LOG'),48,'old two-input reservation refunds four original fuel batches');
+equal(previousCancelled.character!.gold,beforeGold-36,'old two-input reservation charges only the original completed fee');
 const malformedLegacy=structuredClone(preFuelState);
 malformedLegacy.activity!.processing!.inputsPerBatch[0].quantity=1;
 throws(()=>normalizeSave(malformedLegacy),'only exact pre-fuel ore-only ingredient snapshots may be restored');

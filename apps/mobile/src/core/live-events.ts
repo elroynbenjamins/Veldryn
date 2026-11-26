@@ -4,7 +4,6 @@ import type {GameState,LiveEventRuntime,RewardBundle} from './types';
 import {unlockCombatCompanion} from './combat-companions';
 import {awardCompanionCandyXp} from './companion-runtime';
 import {eventCurrencyBaseBps,eventCurrencyPromotionBps} from '../content/event-currency-promotion';
-import {selectedFaithBlessing} from './faith';
 import {EVENT_COMMUNITY_ENABLED} from './release-flags';
 import {FROSTFALL_2026_EVENT_ID,frostfallRewardsDiscoverable} from './frostfall-reward-visibility';
 import {equipmentShopTierUnlocked,equipmentShopTierLockReason,grantMainEquipmentShopResource} from './equipment-shop-tier-unlock';
@@ -122,9 +121,7 @@ export function eventDailyFestivalBlessing(state:GameState,nowMs=Date.now()){con
 export function eventEffectiveDropRate(state:GameState,eventId:string,source:EventActivitySource,nowMs=Date.now()){
  const event=liveEventDef(eventId);if(!event)return 0;
  const blessing=eventDailyFestivalBlessing(state,nowMs),blessingMultiplier=blessing?.source===source?1+blessing.bonusBps/10000:1;
- const active=activeLiveEvent(state,nowMs),faith=active?.definition.id===eventId?selectedFaithBlessing(state,'events'):undefined;
- const faithMultiplier=faith?.family==='eventCurrency'?1+faith.bonus:1;
- return event.dropRates[source]*(eventProjectChoice(state,eventId)?.dropMultipliers?.[source]??1)*blessingMultiplier*(1+eventCurrencyBonusBps(state,eventId,nowMs)/10000)*faithMultiplier;
+ return event.dropRates[source]*(eventProjectChoice(state,eventId)?.dropMultipliers?.[source]??1)*blessingMultiplier*(1+eventCurrencyBonusBps(state,eventId,nowMs)/10000);
 }
 export function eventContributionValue(state:GameState,eventId:string,spent:number){const multiplier=eventProjectChoice(state,eventId)?.contributionMultiplier??1;return Math.max(0,Math.floor(spent*multiplier));}
 function eventDropQuantity(state:GameState,source:EventActivitySource,units:number,nowMs:number){const event=activeLiveEvent(state,nowMs);if(!event||units<=0)return 0;const expected=units*eventEffectiveDropRate(state,event.definition.id,source,nowMs),whole=Math.floor(expected),fraction=expected-whole;return whole+(random01(`${state.character?.id}:${event.definition.id}:${source}:${nowMs}`,0)<fraction?1:0);}

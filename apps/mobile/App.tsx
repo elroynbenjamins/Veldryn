@@ -210,7 +210,6 @@ function VeldrynApp(){
   const hasBlockingAlert=useSyncExternalStore(gameAlerts.subscribe,gameAlerts.getSnapshot,gameAlerts.getSnapshot).queue.length>0;
   const {width:viewportWidth}=useWindowDimensions();
   const adminQa=auth.session?.user.app_metadata?.admin_qa===true||(Array.isArray(auth.session?.user.app_metadata?.roles)&&auth.session!.user.app_metadata.roles.includes('admin_qa'));
-  const {counts:notificationCounts,refresh:refreshSocialNotifications}=useSocialNotificationCounts();
   const [state,setState]=useState<GameState|null>(null);
   // A visual-only preview must not wait for server settings or full-save serialization.
   const [themePreviewId,setThemePreviewId]=useState<UiThemeId|undefined>();
@@ -393,6 +392,8 @@ function VeldrynApp(){
     return()=>{active=false};
   },[optionalUpdateSeenKey]);
   const loadOptionalContent=!startupBlocking&&!startupOverlayVisible&&!versionGateOwnsScreen;
+  const socialPollingReady=loadOptionalContent&&ready&&!auth.recovering&&!!state?.character&&(!serverGameplayEnabled||online.snapshot?.accountId===auth.session?.user.id);
+  const {counts:notificationCounts,refresh:refreshSocialNotifications}=useSocialNotificationCounts(socialPollingReady);
   // Optional reminder registration must not compete with startup gameplay/auth reads.
   useDungeonWeeklyReminder(loadOptionalContent&&ready&&!auth.recovering?auth.session?.user.id:undefined,()=>setCurrentTab('Coop'));
   useEffect(()=>{

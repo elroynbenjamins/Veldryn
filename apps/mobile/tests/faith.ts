@@ -6,7 +6,7 @@ import {EXPLORATION_ROUTES} from '../src/content/exploration';
 import {activityTargetLabel} from '../src/core/activity-target-label';
 import {activityQueueLabel} from '../src/core/activity-queue';
 import {createCharacter,newGame,claimActivity,previewActivityReward,stopActivity,sellItem,startCombat,effectiveStats} from '../src/core/game';
-import {faithPracticeAvailability,startFaithPractice,normalizeFaith} from '../src/core/faith';
+import {faithPracticeAvailability,startFaithPractice,normalizeFaith,selectedFaithBlessing,selectedFaithBlessings} from '../src/core/faith';
 import {blessingRows,faithLevel,selectFaithBlessing,setFaithFavorite,setFaithHideWeaker} from '../src/core/faith-effects';
 import {accountSkillLevel} from '../src/core/account-roster';
 import {totalXpAtLevel} from '../src/core/progression';
@@ -14,7 +14,7 @@ import {eventEffectiveDropRate} from '../src/core/live-events';
 import {LIVE_EVENT_CATALOG} from '../src/content/live-events';
 import {combatBaselineProjection,dropExpectation} from '../src/core/balance-projection';
 import {migrateSave} from '../src/core/save-migrations';
-import {transitionAccountFaithPractice,setAccountFaithBlessing} from '../src/core/account-actions';
+import {transitionAccountFaithPractice,setAccountFaithBlessing,switchAccountCharacter} from '../src/core/account-actions';
 import {characterPermanentMultipliers} from '../src/core/permanent-boosts';
 import {professionActionPace} from '../src/core/profession-action-pace';
 import {executeGameCommand} from '../src/core/game-commands';
@@ -259,4 +259,40 @@ test('legacy selection migrates once; invalid or locked group entries do not gra
  equal(legacy.selectedBlessingIds,{combat:'WARD_OF_STONE'},'legacy combat migration');
  const corrupt=normalizeFaith({xp,selectedBlessingIds:{combat:'HARVESTS_GRACE',gathering:'VERDANT_WHISPER',production:'MASTERS_BENEDICTION',events:'FESTIVAL_FAVOR',bogus:'EMBER_VOW'}});
  equal(corrupt.selectedBlessingIds,{gathering:'VERDANT_WHISPER'},'invalid entries discarded');
+});
+
+test('Faith selections remain valid when only the skill row has authoritative earned XP',()=>{
+ let s=faithAt(water(fresh(),4),95);
+ s=selectFaithBlessing(s,'HARVESTS_GRACE');
+ s=selectFaithBlessing(s,'ETERNAL_ENLIGHTENMENT');
+ s={...s,character:{...s.character!,faith:{...s.character!.faith!,xp:0}}};
+ equal(selectedFaithBlessing(s,'gathering')?.id,'HARVESTS_GRACE','read path uses skill XP');
+ equal(selectedFaithBlessings(s).length,2,'both groups active');
+ const started=startFaithPractice(s,'FAITH_QUIET',2,T);
+ const claimed=claimActivity(started,T+30_000).state;
+ equal(claimed.character!.faith!.selectedBlessingIds,s.character!.faith!.selectedBlessingIds,'practice does not discard selected groups');
+ equal(claimed.skills.find(k=>k.skillId==='faith')!.xp,totalXpAtLevel(95)+90,'earned XP preserved and new XP awarded');
+});
+test('Authoritative Faith command preserves other categories and clamps HP only when necessary',()=>{
+ let s=faithAt(fresh(),95);
+ for(const id of ['UNDYING_LIGHT','HARVESTS_GRACE','MASTERS_BENEDICTION','ETERNAL_ENLIGHTENMENT']){
+  s=executeGameCommand(s,{type:'faith_blessing',args:{id}},T).state;
+ }
+ s.character!.currentHp=effectiveStats(s).hp;
+ const switched=executeGameCommand(s,{type:'faith_blessing',args:{id:'DAWN_COVENANT'}},T).state;
+ equal(switched.character!.faith!.selectedBlessingIds,{combat:'DAWN_COVENANT',gathering:'HARVESTS_GRACE',production:'MASTERS_BENEDICTION',experience:'ETERNAL_ENLIGHTENMENT'},'only combat changes');
+ ok(switched.character!.currentHp<=effectiveStats(switched).hp,'HP remains within new cap');
+});
+test('Faith preferences are character-local across roster switches and save normalization',()=>{
+ const a=selectFaithBlessing(selectFaithBlessing(faithAt(fresh(),95),'HARVESTS_GRACE'),'ETERNAL_ENLIGHTENMENT');
+ const b=selectFaithBlessing(faithAt(fresh(),40),'SUNFIRE_VOW');
+ const entry={character:{...b.character!,id:'FAITH_ROSTER_B'},inventory:b.inventory,overflow:b.overflow,activity:b.activity,skills:b.skills,quests:b.quests,currentRegionId:b.currentRegionId};
+ const roster={...a,otherCharacters:[entry]} as GameState;
+ const restored=migrateSave(JSON.parse(JSON.stringify(roster)));
+ const switched=switchAccountCharacter(restored,'FAITH_ROSTER_B',T);
+ equal(selectedFaithBlessing(switched,'combat')?.id,'SUNFIRE_VOW','second character keeps combat');
+ equal(selectedFaithBlessing(switched,'gathering'),undefined,'first character bonus not shared');
+ const back=switchAccountCharacter(switched,a.character!.id,T);
+ equal(selectedFaithBlessing(back,'gathering')?.id,'HARVESTS_GRACE','first character gathering restored');
+ equal(selectedFaithBlessing(back,'experience')?.id,'ETERNAL_ENLIGHTENMENT','first character experience restored');
 });

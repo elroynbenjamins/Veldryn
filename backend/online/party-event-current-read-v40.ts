@@ -11,6 +11,7 @@ import {
  type PartyEventReadOnlyStatusV33,
 } from './party-event-readonly-status-v33';
 import type {PartyEventTrustedStatusReaderV34} from './party-event-authenticated-read-v34';
+import {partyEventCadenceAt,WEEKLY_PARTY_EVENT_FAMILIES} from '../src/server/party/weekly-party-events-v2';
 
 export const PARTY_EVENT_CURRENT_READ_V40_RELEASED=false;
 export const PARTY_EVENT_DAY8_READ_WINDOW_MS_V40=86_400_000;
@@ -36,6 +37,12 @@ export function checkPartyEventCurrentStatusV40(
  // A past event's final claim is a separate Inbox concern.
  if(trustedServerNowMs<begins||trustedServerNowMs>=ends+PARTY_EVENT_DAY8_READ_WINDOW_MS_V40)
   return null;
+ // Validate the persisted start, not today's cadence: Day 8 is a rest week.
+ const cadence=partyEventCadenceAt(begins);
+ if(!cadence.active||cadence.eventStartsAtMs!==begins||cadence.eventEndsAtMs!==ends||
+  cadence.family!==status.family||
+  !WEEKLY_PARTY_EVENT_FAMILIES[cadence.family].variations.some(v=>v===status.variation))
+  throw Error('party_event_v40_noncanonical_event_calendar');
  if(trustedServerNowMs<ends){
   if(status.status!=='active')
    throw Error('party_event_v40_premature_event_closure');

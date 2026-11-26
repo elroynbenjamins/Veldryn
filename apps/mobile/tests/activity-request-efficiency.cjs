@@ -29,3 +29,11 @@ assert.ok(hall.includes('if(shopFlight.current)return shopFlight.current'));
 assert.ok(hall.includes('if(needsSupplies&&!previewMode)void refreshShop()'));
 assert.ok(hall.includes('onRefresh();if(needsSupplies)void refreshShop()'));
 assert.ok(hall.includes("section==='Shop'?(previewMode?shopFallback():<OnlineGuildTokenShopPanel"));
+
+const guildChat=fs.readFileSync(path.join(__dirname,'../src/components/GuildChat.tsx'),'utf8');
+assert.ok(guildChat.includes('const wantsMention=chatMentionQueryAtEnd(body)!==null'));
+assert.ok(guildChat.includes('if(!guildId||!accountId||!active||!wantsMention)return'));
+assert.ok(guildChat.includes('Date.now()-cached.loadedAt<60_000'));
+assert.ok(guildChat.includes('currentScope.current===scope&&mentionFlight.current===request'));
+assert.ok(guildChat.includes('mentionRoster?.scope===scope?mentionRoster.names:[]'));
+assert.ok(!guildChat.includes('setInterval(loadRoster'));

@@ -48,7 +48,7 @@ const review=read('components/profile/UltraLuxeFourSetReview.tsx');
 for(const name of ['CelestialSovereignPreview','DraconicDominionPreview','AbyssalReviewScene','ParadoxReviewScene'])assert(review.includes('<'+name));
 assert(review.includes('reviewEnabled=false')&&review.includes('reviewEquippedTier('));
 assert(!read('components/PlayerBadges.tsx').includes('Animated.'));
-for(const f of ['components/PublicProfileScene.tsx','components/ProfileScenePreview.tsx','components/profile/ProfileStage.tsx','components/profile/ProfileLookPanel.tsx','core/profile-quick-set-equip.ts'])assert(!read(f).includes('ultra-luxe-review-integration')&&!read(f).includes('UltraLuxeFourSetReview'));
+for(const f of ['components/PublicProfileScene.tsx','components/ProfileScenePreview.tsx','components/profile/ProfileStage.tsx','components/profile/ProfileLookPanel.tsx','core/profile-quick-set-equip.ts'])assert(!read(f).includes('UltraLuxeFourSetReview'));
 console.log('PASS: four-set isolated projection, scoped quick equip, mixed pieces, revocation, static badges and production isolation');
 
 const wardrobe=load(path.join(root,'core/ultra-luxe-owned-wardrobe.ts'));
@@ -78,12 +78,13 @@ for(const row of wardrobe.NEW_ULTRA_LUXE_WARDROBE){
  }
 }
 const panel=read('components/profile/ProfileLookPanel.tsx');
-assert(panel.includes('useUltraLuxeCollectionProjection(!!character&&newUltraLuxeHint(state))'));
+assert(panel.includes('useUltraLuxeCollectionProjection(!!character&&(newUltraLuxeHint(state)')&&panel.includes('reviewGrantAllowsFullSet(verifiedRef.current'));
+assert(panel.includes('reviewGrantAllowsFullSet(verifiedCollections,scope,def[0])'));
 assert(panel.includes('appendOwnedUltraLuxeWardrobe(profileWardrobe(state,WARDROBE_ASSETS),state,grantScope,verifiedCollections)'));
 assert(panel.includes('newUltraLuxePatchAllowed(base,{accountId:next.accountId,characterId:next.characterId},verifiedRef.current,next.patch)'));
 assert(panel.includes('newUltraLuxeQuickSelection(stateRef.current'));
 const hook=read('online/useUltraLuxeCollectionProjection.ts');
-assert(hook.includes("rpc('ultra_luxe_collection_self_v1')")&&hook.includes('scopeRef.current!==scope')&&hook.includes('row.accountId!==accountId'));
+assert(hook.includes("rpc('ultra_luxe_collection_self_v1')")&&hook.includes('scopeRef.current!==key')&&hook.includes('serial.current!==request'));
 console.log('PASS: actual wardrobe candidate rows, independent readback, quick equip and queued grant revalidation');
 
 for(const row of wardrobe.NEW_ULTRA_LUXE_WARDROBE){
@@ -120,3 +121,22 @@ assert(!read('components/PlayerBadges.tsx').includes('Animated.'));
 const tiers=read('components/profile/wardrobe-visual-tiers.ts');
 assert(tiers.includes('isNewUltraLuxeWardrobePiece(row)')&&tiers.includes('candidate?.name'));
 console.log('PASS: private self appearance, sanitized public appearance, mixed-piece fallback, exact pair, premium tier and static badge art');
+
+const {normalizeReviewGrantSnapshot,reviewGrantAllowsFullSet}=load(path.join(root,'core/ultra-luxe-review-integration.ts'));
+const all=load(path.join(root,'core/ultra-luxe-full-set-command.ts')).ULTRA_LUXE_FULL_SET_DEFINITIONS.map(d=>d[0]);
+const raw={accountId:'a',collectionIds:[...all.slice().reverse(),all[0],'unknown',null,7]};
+assert.deepEqual(normalizeReviewGrantSnapshot(raw,'a',true),{accountId:'a',collectionIds:all});
+assert.deepEqual(normalizeReviewGrantSnapshot(raw,'a'),{accountId:'a',collectionIds:all.slice(0,4)});
+assert.equal(normalizeReviewGrantSnapshot(raw,'b',true),undefined);
+assert.equal(normalizeReviewGrantSnapshot({accountId:'a',collectionIds:'all'},'a',true),undefined);
+for(const id of all){
+ const verified=normalizeReviewGrantSnapshot({accountId:'a',collectionIds:[id]},'a',true);
+ assert(reviewGrantAllowsFullSet(verified,scope,id));
+ assert(reviewGrantAllowsFullSet(verified,scope,id.slice('ascendant-'.length)));
+ assert(!reviewGrantAllowsFullSet(verified,other,id));
+ assert(!reviewGrantAllowsFullSet(verified,{...scope,characterId:''},id));
+ assert(!reviewGrantAllowsFullSet(undefined,scope,id));
+ assert(!reviewGrantAllowsFullSet({accountId:'a',collectionIds:[]},scope,id));
+ assert(!reviewGrantAllowsFullSet(verified,scope,'unknown'));
+}
+console.log('PASS: gated six-set self projection, exact canonical IDs, cross-account rejection and revoked/missing collection guards');

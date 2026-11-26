@@ -1,3 +1,4 @@
+import {ULTRA_LUXE_FULL_SET_DEFINITIONS,canonicalUltraLuxeCollection} from './ultra-luxe-full-set-command';
 import type {WardrobeEquipped} from './profile-wardrobe';
 import {ULTRA_LUXE_GRANT_COLLECTIONS} from './ultra-luxe-grants';
 import {ABYSSAL_IDS,ABYSSAL_PRIVATE_REVIEW,ABYSSAL_COLLECTION} from './abyssal-showcase-layout';
@@ -41,4 +42,21 @@ export function reviewQuickSetSelection(enabled:boolean,scope:ReviewScope,reques
 export function reviewEquippedTier(enabled:boolean,scope:ReviewScope,snapshot:ReviewGrantSnapshot|undefined,actual:{background?:string|null;border?:string|null;pet?:string|null;effect?:string|null;verifiedTitleId?:string|null;displayedBadges:readonly string[]}){
  const row=eligibleReviewCollections(enabled,scope,snapshot).find(c=>c.background===actual.background&&c.border===actual.border&&ultraLuxeSceneEffectCompatible(actual.effect,c.effect));
  return row?{id:row.id,tier:ultraLuxeVisualTier(row,actual)}:null;
+}
+
+/** Normalize only authenticated self-RPC collection IDs. Keep the existing four-set
+ * behavior unless the explicitly gated combined equip path requests all six. */
+export function normalizeReviewGrantSnapshot(raw:unknown,accountId:string,allowSix=false):ReviewGrantSnapshot|undefined{
+ if(!accountId||!raw||typeof raw!=='object'||Array.isArray(raw))return undefined;
+ const row=raw as {accountId?:unknown;collectionIds?:unknown};
+ if(row.accountId!==accountId||!Array.isArray(row.collectionIds))return undefined;
+ const ids=new Set(row.collectionIds.filter((id):id is string=>typeof id==='string'));
+ const canonical=allowSix?ULTRA_LUXE_FULL_SET_DEFINITIONS.map(c=>c[0]):ULTRA_LUXE_REVIEW_COLLECTIONS.map(c=>c.id);
+ return {accountId,collectionIds:canonical.filter(id=>ids.has(id))};
+}
+/** A verified name preset and save projection alone are insufficient for the
+ * combined wardrobe action: require the matching authenticated collection too. */
+export function reviewGrantAllowsFullSet(snapshot:ReviewGrantSnapshot|undefined,scope:ReviewScope,setId:unknown){
+ const id=canonicalUltraLuxeCollection(setId);
+ return !!id&&!!scope.accountId&&!!scope.characterId&&snapshot?.accountId===scope.accountId&&snapshot.collectionIds.includes(id);
 }

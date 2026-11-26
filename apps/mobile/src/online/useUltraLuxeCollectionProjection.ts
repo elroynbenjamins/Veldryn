@@ -3,40 +3,38 @@ import {AppState} from 'react-native';
 import {useAuthSession} from './AuthSessionProvider';
 import {supabase} from './supabase';
 import {subscribePlayerIdentityChanges} from './player-identity-cache';
-import {ULTRA_LUXE_REVIEW_COLLECTIONS,type ReviewGrantSnapshot} from '../core/ultra-luxe-review-integration';
+import {normalizeReviewGrantSnapshot,type ReviewGrantSnapshot} from '../core/ultra-luxe-review-integration';
 
-export function normalizeUltraLuxeCollectionProjection(raw:unknown,accountId:string):ReviewGrantSnapshot|undefined{
- if(!accountId||!raw||typeof raw!=='object')return undefined;
- const row=raw as {accountId?:unknown;collectionIds?:unknown};
- if(row.accountId!==accountId||!Array.isArray(row.collectionIds))return undefined;
- const ids=new Set(row.collectionIds.filter((id):id is string=>typeof id==='string'));
- return {accountId,collectionIds:ULTRA_LUXE_REVIEW_COLLECTIONS.filter(c=>ids.has(c.id)).map(c=>c.id)};
-}
+export const normalizeUltraLuxeCollectionProjection=normalizeReviewGrantSnapshot;
 /** Only query when a candidate ID was projected into the current gameplay state.
  * Missing RPC, failed request, wrong account, or hidden screen = no candidate choices.
  * State unlock lists are discovery hints, not proof of grants. */
-export function useUltraLuxeCollectionProjection(enabled:boolean){
+export function useUltraLuxeCollectionProjection(enabled:boolean,allowSix=false){
  const accountId=useAuthSession().session?.user.id??'';
- const scope=enabled?accountId:'',scopeRef=useRef(scope);scopeRef.current=scope;
- const [projection,setProjection]=useState<ReviewGrantSnapshot>();
+ const scope=enabled?accountId:'',key=scope?JSON.stringify([scope,allowSix]):'',scopeRef=useRef(key);scopeRef.current=key;
+ const serial=useRef(0);
+ const [projection,setProjection]=useState<{key:string;value:ReviewGrantSnapshot}>();
  const [refresh,setRefresh]=useState(0);
  useEffect(()=>{
   let cancelled=false;
+  const request=++serial.current;
   setProjection(undefined);
   if(!scope||!supabase)return;
   const db=supabase;
   void (async()=>{
    try{
     const {data,error}=await db.auth.getSession();
-    if(error||data.session?.user.id!==scope||cancelled)return;
+    if(error||data.session?.user.id!==scope||cancelled||scopeRef.current!==key||serial.current!==request)return;
     const result=await db.rpc('ultra_luxe_collection_self_v1').setHeader('Authorization',`Bearer ${data.session.access_token}`);
-    if(result.error||cancelled||scopeRef.current!==scope)return;
-    setProjection(normalizeUltraLuxeCollectionProjection(result.data,scope));
+    if(result.error||cancelled||scopeRef.current!==key||serial.current!==request)return;
+    const value=normalizeUltraLuxeCollectionProjection(result.data,scope,allowSix);
+    if(value)setProjection({key,value});
    }catch{/* Older servers and failed reads remain closed. */}
   })();
-  const app=AppState.addEventListener('change',s=>{if(s==='active'){setProjection(undefined);setRefresh(v=>v+1);}});
-  const unsubscribe=subscribePlayerIdentityChanges(id=>{if(id===scope){setProjection(undefined);setRefresh(v=>v+1);}});
-  return()=>{cancelled=true;app.remove();unsubscribe();};
- },[scope,refresh]);
- return projection?.accountId===scope?projection:undefined;
+  const invalidate=()=>{serial.current++;setProjection(undefined);setRefresh(v=>v+1);};
+  const app=AppState.addEventListener('change',s=>{if(s==='active')invalidate();});
+  const unsubscribe=subscribePlayerIdentityChanges(id=>{if(id===scope)invalidate();});
+  return()=>{cancelled=true;serial.current++;app.remove();unsubscribe();};
+ },[scope,key,allowSix,refresh]);
+ return projection?.key===key&&projection.value.accountId===scope?projection.value:undefined;
 }

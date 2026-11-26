@@ -1,3 +1,4 @@
+import {reviewGrantAllowsFullSet} from '../../core/ultra-luxe-review-integration';
 import {ULTRA_LUXE_FULL_SET_DEFINITIONS,verifiedUltraLuxeFullSetPlan} from '../../core/ultra-luxe-full-set-command';
 import {confirmUltraLuxeFullSetReadback,ultraLuxeFullSetEquipped,ultraLuxeFullSetNamePreset,type FullSetPlan,type VerifiedFullSetNames} from '../../core/ultra-luxe-full-set-name';
 import type {OnlineSnapshot} from '../../core/online-game-repository';
@@ -64,7 +65,8 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const character=state.character;
  const accountId=useAuthSession().session?.user.id??'';
- const verifiedCollections=useUltraLuxeCollectionProjection(!!character&&newUltraLuxeHint(state));
+ const combinedEnabled=fullSetEnabled||!!fullSetPort;
+ const verifiedCollections=useUltraLuxeCollectionProjection(!!character&&(newUltraLuxeHint(state)||combinedEnabled&&!!state.account.unlockedTitleIds?.some(id=>id.startsWith('ascendant-'))),combinedEnabled);
  const verifiedRef=useRef(verifiedCollections);verifiedRef.current=verifiedCollections;
  const grantScope=useMemo(()=>({accountId,characterId:character?.id??''}),[accountId,character?.id]);
  const [tryOn,setTryOn]=useState<WardrobeRow|null>(null),[sheet,setSheet]=useState<WardrobeRow|null>(null);
@@ -141,6 +143,7 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
   const scope={accountId,characterId:state.character.id},current=wardrobeEquipped(state);
   const ordinary=legacy.filter(set=>!ultraLuxeFullSetNamePreset(set.id));
   const canonical=ULTRA_LUXE_FULL_SET_DEFINITIONS.flatMap((def,i)=>{
+   if(!reviewGrantAllowsFullSet(verifiedCollections,scope,def[0]))return [];
    const plan=verifiedUltraLuxeFullSetPlan(state,scope,def[0],current,fullSetPort.names);
    if(!plan)return [];
    const {scene,frame,pet,title,effect}=plan.after.wardrobe;
@@ -173,6 +176,7 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
   if(fullSetPort&&ultraLuxeFullSetNamePreset(setId)){
    const owner=accountRef.current,characterId=stateRef.current.character?.id;
    if(!characterId||selectionScopeRef.current!==scope||pendingRef.current||sentRef.current){setFullSetStatus('Finish saving your current look first.');return;}
+   if(!reviewGrantAllowsFullSet(verifiedRef.current,{accountId:owner,characterId},setId)){setFullSetStatus('Full set ownership could not be confirmed.');return;}
    const plan=verifiedUltraLuxeFullSetPlan(stateRef.current,{accountId:owner,characterId},setId,wardrobeEquipped(stateRef.current),fullSetPort.names);
    if(!plan){setFullSetStatus('Full set ownership could not be confirmed.');return;}
    fullSetInFlight.current=true;setFullSetBusy(true);setFullSetStatus('');setTryOn(null);setSheet(null);onNotice?.(null);

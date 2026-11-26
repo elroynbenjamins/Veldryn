@@ -1,6 +1,8 @@
-import {memo,useMemo} from 'react';
-import {Animated,Image,View,StyleSheet,type ImageSourcePropType} from 'react-native';
+import {memo,useMemo,useRef,useEffect} from 'react';
+import {Animated,Image,View,StyleSheet,Pressable,Easing,type ImageSourcePropType} from 'react-native';
 import {NEXT_PREMIUM_PET_ATLAS,nextPremiumPetAtlasTimeline,nextPremiumPetAtlasCell} from '../../core/next-premium-pet-review';
+
+import {NEXT_PREMIUM_REACTION,type SignatureTheme} from '../../core/next-premium-signature-review';
 
 const A=NEXT_PREMIUM_PET_ATLAS;
 const TIMELINE=nextPremiumPetAtlasTimeline();
@@ -16,6 +18,8 @@ type Props={
  width:number;
  height:number;
  running:boolean;
+ reactionTheme?:SignatureTheme;
+ reactionLabel?:string;
 };
 type AtlasProps={source:ImageSourcePropType;clock:Animated.Value;width:number;height:number};
 /** Isolated review player. The parent must supply its own visibility, reduced-motion
@@ -34,10 +38,41 @@ const NextPremiumAtlas=memo(function NextPremiumAtlas({source,clock,width,height
   </View>
  </View>;
 });
+/** Finite user-triggered native reaction. Never loops, ignores repeated presses
+ * while active and stops on unmount (including parent motion/visibility change). */
+const ReactingAtlas=memo(function ReactingAtlas({source,clock,width,height,theme,label}:AtlasProps&{theme:SignatureTheme;label:string}){
+ const value=useRef(new Animated.Value(0)).current;
+ const animation=useRef<Animated.CompositeAnimation|null>(null);
+ const active=useRef(false);
+ const cfg=NEXT_PREMIUM_REACTION[theme];
+ useEffect(()=>()=>{const current=animation.current;animation.current=null;active.current=false;current?.stop();},[theme]);
+ const style=useMemo(()=>{
+  const inputRange=[...cfg.phase],ratio=Math.min(width/74,height/76);
+  return {transform:[
+   {translateY:value.interpolate({inputRange,outputRange:cfg.lift.map(y=>y*ratio),extrapolate:'clamp'})},
+   {scale:value.interpolate({inputRange,outputRange:[...cfg.scale],extrapolate:'clamp'})},
+   {rotate:value.interpolate({inputRange,outputRange:cfg.tilt.map(x=>x+'deg'),extrapolate:'clamp'})},
+  ]};
+ },[value,cfg,width,height]);
+ const react=()=>{
+  if(active.current)return;
+  active.current=true;value.setValue(0);
+  const next=Animated.timing(value,{toValue:1,duration:cfg.duration,easing:Easing.linear,useNativeDriver:true,isInteraction:false});
+  animation.current=next;
+  next.start(()=>{if(animation.current!==next)return;animation.current=null;active.current=false;value.setValue(0);});
+ };
+ return <Pressable accessibilityRole="button" accessibilityLabel={label} accessibilityHint="Play pet reaction" onPress={react}
+  style={{width,height,overflow:'hidden'}}>
+  <Animated.View pointerEvents="none" style={[{width,height},style]}>
+   <NextPremiumAtlas source={source} clock={clock} width={width} height={height}/>
+  </Animated.View>
+ </Pressable>;
+});
 /** Mount atlas animation nodes only while the parent authorizes motion.
  * Static source is required; a missing atlas is never replaced by another pet. */
-export const NextPremiumPetReviewSprite=memo(function NextPremiumPetReviewSprite({source,atlas,clock,width,height,running}:Props){
+export const NextPremiumPetReviewSprite=memo(function NextPremiumPetReviewSprite({source,atlas,clock,width,height,running,reactionTheme,reactionLabel}:Props){
  if(!Number.isFinite(width)||!Number.isFinite(height)||width<=0||height<=0)return null;
+ if(running&&atlas&&reactionTheme&&reactionLabel)return <ReactingAtlas source={atlas} clock={clock} width={width} height={height} theme={reactionTheme} label={reactionLabel}/>;
  if(running&&atlas)return <NextPremiumAtlas source={atlas} clock={clock} width={width} height={height}/>;
  return <Image accessible={false} pointerEvents="none" source={source} resizeMode="contain" fadeDuration={0} style={{width,height}}/>;
 });

@@ -102,3 +102,36 @@ for(const theme of ['petal-waltz','thunder-pulse']){
   assert(track.frames.every(f=>f.x===xy[0]&&f.y===xy[1]),'fixed wide artwork landmark');
  }
 }
+
+const sig=load('next-premium-signature-review');
+let signatureChecks=0;
+for(const theme of ['petal-waltz','thunder-pulse']){
+ for(const layer of ['border','environment']){
+  const base=layer==='border'?(theme==='petal-waltz'?m.sakuraV2OrnamentTracks('showcase',true):m.stormforgedV2OrnamentTracks('showcase',true)):env.nextPremiumEnvironmentTracks(theme,true);
+  const accented=sig.nextPremiumSignatureTracks(theme,base,layer,true);
+  assert.equal(accented.length,base.length);assert.equal(sig.nextPremiumSignatureTracks(theme,base,layer,false),base);
+  assert(accented.some((track,k)=>track.frames.some((f,i)=>f.opacity>base[k].frames[i].opacity+.01)));
+  for(const [k,track] of accented.entries()){
+   assert.deepEqual(track.frames[0],track.frames.at(-1));
+   for(const [i,f] of track.frames.entries()){
+    const original=base[k].frames[i];
+    assert.deepEqual({...f,opacity:0},{...original,opacity:0});
+    const cap=layer==='border'?.84:track.kind==='haze'?.10:track.kind==='light'?.23:theme==='petal-waltz'?.68:.52;
+    assert(f.opacity>=original.opacity-1e-9&&f.opacity<=cap+1e-9);
+    assert(layer==='border'?m.nextPremiumOrnamentFits(f,track.radius):env.nextPremiumEnvironmentFits(f,track.radius));
+    signatureChecks+=3;
+   }
+  }
+ }
+ const cfg=sig.NEXT_PREMIUM_REACTION[theme];
+ assert(cfg.duration>=600&&cfg.duration<=1000);
+ assert.deepEqual([cfg.lift[0],cfg.scale[0],cfg.tilt[0]],[0,1,0]);
+ assert.deepEqual([cfg.lift.at(-1),cfg.scale.at(-1),cfg.tilt.at(-1)],[0,1,0]);
+ for(let i=1;i<cfg.phase.length;i++){
+  assert(cfg.phase[i]>cfg.phase[i-1]);
+  assert(cfg.lift[i]>=-2.3&&cfg.lift[i]<=0&&cfg.scale[i]>=1&&cfg.scale[i]<=1.035&&Math.abs(cfg.tilt[i])<=3);
+ }
+}
+assert.notEqual(sig.NEXT_PREMIUM_REACTION['petal-waltz'].duration,sig.NEXT_PREMIUM_REACTION['thunder-pulse'].duration);
+assert.equal(sig.nextPremiumSignatureEnvelope('petal-waltz',NaN,0,'border'),0);
+console.log('Next premium signature: '+signatureChecks+' sample geometry/opacity assertions passed.');

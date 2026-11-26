@@ -304,11 +304,12 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
     // Private QA conditional damage lane, additive across equipped
     // families. Applied to original output before derived rupture.
     if(privateDamageGem){
-      const bonuses=privateDamageGem.onSuccessfulHit(now,source,target,effect,abilityId,eventType);
+      const bonuses=privateDamageGem.onSuccessfulHit(now,source,target,effect,abilityId,eventType,crit);
       raw*=1+bonuses.reduce((n,x)=>n+x.fraction,0);
       for(const row of bonuses)events.push({atMs:now,type:'gem_state',actorId:source.definition.id,
         targetId:target.definition.id,abilityId,amount:row.fraction,detail:'private_qa_damage_gem:'+row.familyId});
     }
+    const privateRecovery=privateDamageGem?.takeRecovery()??0;
     const hpBeforeReactive=hpPct(target);
     if(v2Encounter&&eventType==='damage'&&!abilityId.startsWith('V2_')){
       if(source.combatV2)raw*=outgoingReactiveMultiplierV2(source,target,now);
@@ -450,8 +451,19 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
         events.push({atMs:now,type:'heal',actorId:source.definition.id,targetId:source.definition.id,
           abilityId:'V2_LIFESTEAL:'+abilityId,amount:Number(healed.toFixed(2))});}
     }
-    if(privateDamageGem&&eventType==='damage')emitPrivateStack(now,source,abilityId,
-      privateDamageGem.afterDirectHit(now,source,target,abilityId,crit,dealt));
+    if(privateDamageGem&&eventType==='damage'){
+      emitPrivateStack(now,source,abilityId,privateDamageGem.afterDirectHit(now,source,target,abilityId,crit,dealt));
+      if(privateDamageGem.onIncoming(now,source,target,abilityId,Math.max(0,hpBeforeReactive*target.definition.stats.maxHp-target.hp)))
+        events.push({atMs:now,type:'gem_state',actorId:target.definition.id,targetId:source.definition.id,
+          abilityId,detail:'private_qa_retaliation_armed'});
+      // Terminal recovery: not applyHeal, no charge/trait/secondary triggers.
+      if(privateRecovery>0&&source.alive&&source.hp>0){
+        const heal=Math.min(privateRecovery,source.definition.stats.maxHp-source.hp);
+        if(heal>0){source.hp+=heal;source.healingDone+=heal;
+          events.push({atMs:now,type:'heal',actorId:source.definition.id,targetId:source.definition.id,
+            abilityId:'V2_QA_GEM_RETALIATION',amount:Number(heal.toFixed(2)),detail:'private_qa_terminal_recovery'});}
+      }
+    }
     gemOnDamageTakenV1(now,target,dealt);emitGemState(now);
     if(eventType==='damage'&&!abilityId.startsWith('V2_COUNTER:')){const proc=gemOnDirectHitV1(now,source,target,abilityId,crit);emitGemState(now);if(proc.selfHeal>0&&source.alive){const amount=Math.min(source.definition.stats.maxHp-source.hp,source.definition.stats.maxHp*proc.selfHeal);source.hp+=amount;if(amount>0)events.push({atMs:now,type:'heal',actorId:source.definition.id,targetId:source.definition.id,abilityId:'GEM_RETALIATION',amount:Number(amount.toFixed(2))});}}
     addThreat(target,source,dealt*(effect.threatMultiplier??1)); events.push({atMs:now,type:eventType,actorId:source.definition.id,targetId:target.definition.id,abilityId,amount:Number(dealt.toFixed(2)),...(eventType==='damage'?{critical:crit}:{}),...(heavyHit?{detail:'heavy_hit'}:{}),...(absorbed>0?{absorbed:Number(absorbed.toFixed(2))}:{})});
@@ -747,6 +759,8 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
         effect.durationMs??5000);const capstoneId=abilityId.startsWith('V2_CAPSTONE:')||abilityId.startsWith('V2_PASSIVE:')?abilityId:undefined;
       if(capstoneId&&effect.kind==='buff')target.modifiers=target.modifiers.filter(m=>m.v2CapstoneId!==capstoneId||m.tag!==tag);
       const classSkillId=source.combatV2&&abilityId.includes(':v2:')?abilityId:undefined;
+      const privateFreshDebuff=privateDamageGem&&effect.kind==='debuff'&&!target.modifiers.some(m=>
+        m.kind==='debuff'&&m.sourceId===source.definition.id&&m.tag===tag&&m.expiresAt>now);
       if(classSkillId){
         // Refresh only an older copy of this exact authored buff/debuff.
         // Distinct abilities, party sources and separate effects in one cast
@@ -763,6 +777,7 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
       if(enemyV2Effects&&source.definition.team==='enemies')
         target.modifiers=applyEnemyV2Modifier(target.modifiers,modifierEntry).entries;
       else target.modifiers.push(modifierEntry);
+      if(privateDamageGem&&effect.kind==='debuff')privateDamageGem.onDebuff(now,source,target,abilityId,modifierEntry,!!privateFreshDebuff);
       events.push({atMs:now,type:'status_apply',actorId:source.definition.id,targetId:target.definition.id,abilityId,statusKind:effect.kind,statusTag:tag,expiresAtMs:expiresAt});if(effect.kind==='debuff')gemOnDebuffAppliedV1(now,source,target);else gemOnBuffAppliedV1(now,source,target);emitGemState(now);return;}
   };
 

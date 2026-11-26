@@ -49,3 +49,7 @@ assert.ok(dungeon.includes('if(!foreground||!id||!liveChatVisible'));
 assert.ok(dungeon.includes("enabled:foreground&&entrySource.kind==='real'"),'run watchdog remains authoritative');
 assert.ok(dungeon.includes('const items=await coopClient.rewards(terminalRunId)'), 'terminal rewards retained');
 assert.ok(dungeon.includes('weeklyQuestRequest.current===request'),'obsolete quest reads cannot publish');
+
+const chatOverlay=fs.readFileSync(path.join(__dirname,'../src/components/ChatOverlay.tsx'),'utf8');
+assert.ok(chatOverlay.includes('if(!visible||!chatEnabled||partyOnly)return'),'party-only or disabled chat must not request guild membership');
+assert.ok(chatOverlay.includes('if(active&&mounted.current)'),'retired guild membership reads cannot publish');

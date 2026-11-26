@@ -1,5 +1,5 @@
 import { clamp, defenseMitigation, damageAfterMitigation, hitChance, roleAdjustedAttackPower } from './calculations';
-import { CombatRng } from './deterministic-rng';
+import { CombatRng,ActionStreamRngReview,ACTION_STREAM_RNG_QA_V1,type ActionStreamRngReviewPolicy } from './deterministic-rng';
 import {applyEnemyV2Periodic,applyEnemyV2Modifier,enemyV2AllowedShieldAmount} from './enemy-v2-status-rules';
 import {authorizeEnemyV2EngineExecution,type EnemyV2EngineAuthority} from './v2/enemy-engine-authority';
 import {authorizeEquipmentV2TraitEngine,type EquipmentV2TraitEngineAuthority} from './v2/equipment-trait-engine-authority';
@@ -45,21 +45,23 @@ export interface ServerCombatAuthoritiesV2 {
  readonly partySync?:PartySyncAuthorityV2;
  /** Explicit private review policy; omission retains Forge's authored-priority execution. */
  readonly aiPolicy?:'tactical'|'authored-priority';
+ /** Private matched experiment only, never a client or persisted live policy. */
+ readonly rngReviewPolicy?:ActionStreamRngReviewPolicy;
 }
 export function simulateCombatWithServerAuthoritiesV2(
  input:CombatInput,authorities:ServerCombatAuthoritiesV2,
 ):CombatResult{
  if(!authorities||typeof authorities!=='object'||Array.isArray(authorities)||
-   Object.keys(authorities).some(key=>!['enemy','equipmentTrait','dungeonReward','privateHit','partySync','aiPolicy'].includes(key)))
+   Object.keys(authorities).some(key=>!['enemy','equipmentTrait','dungeonReward','privateHit','partySync','aiPolicy','rngReviewPolicy'].includes(key)))
   throw Error('combat_v2_unknown_authority_channel');
  if(authorities.aiPolicy!==undefined&&authorities.aiPolicy!=='tactical'&&authorities.aiPolicy!=='authored-priority')
   throw Error('combat_v2_unknown_ai_policy');
  return simulateCombat(input,authorities.enemy,authorities.equipmentTrait,
-  authorities.dungeonReward,authorities.privateHit,authorities.partySync,authorities.aiPolicy);
+  authorities.dungeonReward,authorities.privateHit,authorities.partySync,authorities.aiPolicy,authorities.rngReviewPolicy);
 }
 
 /** Optional server-issued second parameter is never parsed from CombatInput JSON. */
-export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2EngineAuthority, equipmentTraitAuthority?:EquipmentV2TraitEngineAuthority, dungeonRewardAuthority?:DungeonRewardEngineAuthorityV2, eq2PrivateHitAuthority?:Eq2PrivateHitAuthorityV22, partySyncAuthority?:PartySyncAuthorityV2, reviewAiPolicy?:'tactical'|'authored-priority'): CombatResult {
+export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2EngineAuthority, equipmentTraitAuthority?:EquipmentV2TraitEngineAuthority, dungeonRewardAuthority?:DungeonRewardEngineAuthorityV2, eq2PrivateHitAuthority?:Eq2PrivateHitAuthorityV22, partySyncAuthority?:PartySyncAuthorityV2, reviewAiPolicy?:'tactical'|'authored-priority', rngReviewPolicy?:ActionStreamRngReviewPolicy): CombatResult {
   if (!input.players.length || !input.enemies.length) throw new Error('combat_requires_both_teams');
   const enemyV2Effects=authorizeEnemyV2EngineExecution(input,enemyV2Authority);
   // No token -> no equipment trait runtime actions, preserving every legacy
@@ -72,13 +74,22 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
   const eq2PrivateHit=authorizeEq2PrivateHitQaV22(input,eq2PrivateHitAuthority);
   if(dungeonRewardAuthority!==undefined&&partySyncAuthority!==undefined)throw Error('combat_v2_dungeon_reward_party_sync_unreconciled');
   const syncSources=authorizePartySyncV2(input,partySyncAuthority);
+  if(rngReviewPolicy!==undefined){
+    if(rngReviewPolicy!==ACTION_STREAM_RNG_QA_V1)throw Error('combat_v2_unknown_rng_review_policy');
+    if(!enemyV2Authority||!equipmentTraitAuthority||input.players.length!==4||
+       input.players.some(p=>p.team!=='players'||p.combatV2?.version!==2)||
+       input.enemyDamageProfile!==undefined||dungeonRewardAuthority!==undefined||
+       eq2PrivateHitAuthority!==undefined||reviewAiPolicy!=='tactical')
+      throw Error('combat_v2_rng_review_scope');
+  }
+  const actionRng=rngReviewPolicy===ACTION_STREAM_RNG_QA_V1?new ActionStreamRngReview(input.seed):undefined;
   const sync=(a:CombatantState,k:SyncStatV2)=>(syncSources.get(a.definition.id)?.[k]??0)/10000;
   const maxMs=input.maxDurationMs ?? 180_000; const tick=input.tickMs ?? 100; const mitigationConstant=input.mitigationConstant ?? 1200; const accuracyScale=input.accuracyScale ?? 1400;
   const players=input.players.map(def=>init(def,input.initialPlayerState?.[def.id])), enemies=input.enemies.map(def=>init(def)), all=[...players,...enemies];
   const v2Encounter=players.some(player=>Boolean(player.definition.combatV2));
   const tacticalAi=v2Encounter&&reviewAiPolicy==='tactical';
   const sequenceHoldsV2=new Map<string,number>();
-  const rng=new CombatRng(input.seed); const events:CombatEvent[]=[{atMs:0,type:'combat_start'}];
+  const rng=new CombatRng(input.seed); const events:CombatEvent[]=[{atMs:0,type:'combat_start',...(actionRng?{detail:ACTION_STREAM_RNG_QA_V1}:{})}];
   let runCapstone:(actor:CombatantState,kind:CapstoneTriggerV2,now:number,target?:CombatantState,ctx?:CapstoneContextV2)=>void=()=>{};
   let runReactive:(actor:CombatantState,kind:ReactiveTriggerV2,now:number,target?:CombatantState,ctx?:ReactiveContextV2)=>void=()=>{};
   const resource=(actor:CombatantState,kind:Parameters<typeof awardCombatResourceV2>[1],now:number,id:string)=>{
@@ -195,6 +206,7 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
   };
   const applyDamage=(now:number, source:CombatantState, target:CombatantState, effect:AbilityEffect, abilityId:string, eventType:'damage'|'dot_tick'='damage')=>{
     if(!target.alive)return;
+    const actionRoll=actionRng?.begin(source.definition.id,target.definition.id,abilityId,eventType);
     // Tactical mark is a percentage-point accuracy window, not a raw accuracy-rating increase.
     const v2Evasion=target.definition.tags?.includes('combat-v2')?modifier(target,'evasion',now):0;
     const sourceGear=v2Encounter?source.definition.combatV2?.equipmentEffects:undefined;
@@ -202,7 +214,7 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
     const hc=clamp(hitChance(source.definition.stats.accuracy*(1+sync(source,'accuracy_pct')),
       target.definition.stats.evasion*(1+sync(target,'evasion_rating_pct'))+v2Evasion,accuracyScale)+
       (sourceGear?.accuracyPp??0)-(targetGear?.evasionPp??0),0,1);
-    if(rng.next(`${now}:${source.definition.id}:${abilityId}:hit`)>hc){if(eventType==='damage'){if(source.definition.team==='players'){if(!abilityId.startsWith('V2_COUNTER:')){equipmentTraitRuntime?.miss(source.definition.id,abilityId);eq2PrivateHit?.miss(source.definition.id,abilityId);}}events.push({atMs:now,type:'miss',actorId:source.definition.id,targetId:target.definition.id,abilityId});if(source.definition.team==='enemies'){resource(target,'evade',now,abilityId);
+    if((actionRoll?actionRoll('hit'):rng.next(`${now}:${source.definition.id}:${abilityId}:hit`))>hc){if(eventType==='damage'){if(source.definition.team==='players'){if(!abilityId.startsWith('V2_COUNTER:')){equipmentTraitRuntime?.miss(source.definition.id,abilityId);eq2PrivateHit?.miss(source.definition.id,abilityId);}}events.push({atMs:now,type:'miss',actorId:source.definition.id,targetId:target.definition.id,abilityId});if(source.definition.team==='enemies'){resource(target,'evade',now,abilityId);
       if(!abilityId.startsWith('V2_')){
         runCapstone(target,'evade',now,source);runReactive(target,'evade',now,source);
       }}}return;}
@@ -222,7 +234,7 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
     if(eq2TimedDefense?.pct&&mit>defenseMitigation(effectiveDefense,mitigationConstant))
       events.push({atMs:now,type:'equipment_trait_trigger',actorId:target.definition.id,targetId:source.definition.id,
         abilityId:'V2_QA_TIMED:'+eq2TimedDefense.ids.join('+'),amount:eq2TimedDefense.pct,detail:'private_qa_timed_defense_used'});
-    const crit=rng.next(`${now}:${source.definition.id}:${abilityId}:crit`)<clamp(source.definition.stats.critChance+sync(source,'crit_chance_pp')+modifier(source,'crit',now)+modifier(target,'crit_taken',now),0,.75);
+    const crit=(actionRoll?actionRoll('crit'):rng.next(`${now}:${source.definition.id}:${abilityId}:crit`))<clamp(source.definition.stats.critChance+sync(source,'crit_chance_pp')+modifier(source,'crit',now)+modifier(target,'crit_taken',now),0,.75);
     const qmodeStrike=input.enemyDamageProfile==='qmode-v1'&&source.definition.team==='enemies'&&target.definition.team==='players'&&eventType==='damage';
     // Preserve all legacy RNG draws for Live, ordinary hunts and in-flight runs.
     // New Q-Mode has a wider hit spread around the legacy average and a rare heavy blow
@@ -230,7 +242,7 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
     // The legacy CombatRng returns [0, .5) with its existing portable
     // denominator. Scale Q-Mode-only draws by two to reach the intended
     // probabilities; changing that RNG globally would invalidate old replays.
-    const varianceRoll=rng.next(`${now}:${abilityId}:var`);
+    const varianceRoll=actionRoll?actionRoll('var'):rng.next(`${now}:${abilityId}:var`);
     const variance=qmodeStrike?.925+varianceRoll*.20:.95+varianceRoll*.10;
     const heavyHit=qmodeStrike&&!crit&&rng.next(`${now}:${source.definition.id}:${target.definition.id}:${abilityId}:heavy`)*2<.04;
     const roleAttack=roleAdjustedAttackPower({team:source.definition.team,role:source.definition.role,attackPower:source.definition.stats.attackPower,defense:source.definition.stats.defense,maxHp:source.definition.stats.maxHp,healingPower:source.definition.stats.healingPower});

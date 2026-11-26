@@ -8,6 +8,7 @@
  * PRODUCTION OFF: no router imports this module.
  */
 import {simulateCombat,simulateCombatWithServerAuthoritiesV2} from '../engine';
+import type {ActionStreamRngReviewPolicy} from '../deterministic-rng';
 import {compileDraftDungeonRewardCombatV2,type VerifiedDungeonRewardSnapshotV2} from './dungeon-rewards-v2';
 import {issueDungeonRewardEngineAuthorityV2} from './dungeon-reward-engine-v2';
 import {issueEquipmentV2TraitAuthority,issuePersistedPartyEquipmentV2TraitAuthority,
@@ -391,6 +392,7 @@ export function simulateUnifiedEquipmentPersistedPartyCombatV2(
  serverEnabled=false,
  synchronizationEnabled=true,
  reviewAiPolicy:'tactical'|'authored-priority'='tactical',
+ rngReviewPolicy?:ActionStreamRngReviewPolicy,
 ):UnifiedEquipmentEncounterResultV2{
  if(!serverEnabled)throw Error('combat_v2_persisted_party_disabled');
  if(!party||typeof party.verifyPersisted!=='function'||input.players.length!==4||
@@ -466,7 +468,7 @@ export function simulateUnifiedEquipmentPersistedPartyCombatV2(
    enemyV2SnapshotDigest(kit.snapshot)===kitDigest);
  const synchronizationReview=planPartySynchronizationV2('dungeon',scope.members);
  return {
-  combat:simulateCombatWithServerAuthoritiesV2(finalInput,{enemy:enemyAuthority,equipmentTrait:traitAuthority,partySync:syncAuthority,aiPolicy:reviewAiPolicy}),
+  combat:simulateCombatWithServerAuthoritiesV2(finalInput,{enemy:enemyAuthority,equipmentTrait:traitAuthority,partySync:syncAuthority,aiPolicy:reviewAiPolicy,rngReviewPolicy}),
   enemyMechanicLabels,
   equipmentEvidence:evidence,
   synchronizationReview,

@@ -26,3 +26,25 @@ export class CombatRng {
     return values[Math.min(values.length - 1, Math.floor(this.next(label) * values.length))];
   }
 }
+
+/** Diagnostic-only V2 damage-roll policy. Keep the legacy numerical range
+ * deliberately unchanged: this experiment isolates sequencing, not RNG
+ * probability calibration. Counters are encounter-local and independent for
+ * each source/target/ability/event-kind. No timestamp or party buff enters
+ * the stream key. An attempted hit (including miss) consumes one ordinal. */
+export const ACTION_STREAM_RNG_QA_V1='action-stream-qa-v1' as const;
+export type ActionStreamRngReviewPolicy=typeof ACTION_STREAM_RNG_QA_V1;
+export class ActionStreamRngReview {
+ private readonly key:Uint8Array;
+ private readonly counts=new Map<string,number>();
+ constructor(seed:string){this.key=utf8(seed);}
+ begin(sourceId:string,targetId:string,abilityId:string,eventKind:'damage'|'dot_tick'){
+  const stream=JSON.stringify([sourceId,targetId,abilityId,eventKind]);
+  const ordinal=this.counts.get(stream)??0;
+  this.counts.set(stream,ordinal+1);
+  return (channel:'hit'|'crit'|'var'|'heavy'):number=>{
+   const payload=JSON.stringify([ACTION_STREAM_RNG_QA_V1,stream,ordinal,channel]);
+   return parseInt(bytesToHex(hmac(sha256,this.key,utf8(payload))).slice(0,13),16)/0x1fffffffffffff;
+  };
+ }
+}

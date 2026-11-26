@@ -5,6 +5,7 @@ import {CELESTIAL_IDS} from '../../core/ascendant-cosmetics';
 import {DRACONIC_IDS} from '../../core/draconic-showcase-layout';
 import {PROFILE_COSMETIC_STORE_COLLECTIONS} from '../../content/profile-cosmetic-store';
 import {WAVE2_SETS} from '../../core/profile-cosmetic-wave2';
+import {isNewUltraLuxeWardrobePiece,NEW_ULTRA_LUXE_WARDROBE} from '../../core/ultra-luxe-owned-wardrobe';
 import {isUltraLuxeIcon} from '../../core/ultra-luxe-prestige';
 
 /** Visual grouping only: never add rows or infer ownership from artwork.
@@ -20,7 +21,7 @@ export function wardrobeVisualTier(row:Pick<WardrobeRow,'kind'|'id'|'clear'>):'s
   row.kind==='frame'?ids.border===row.id:
   row.kind==='scene'?ids.background===row.id:
   row.kind==='pet'?ids.pet===row.id:false);
- if(premium||dedicated||(row.kind==='icon'&&isUltraLuxeIcon(row.id)))return 'premium';
+ if(premium||dedicated||isNewUltraLuxeWardrobePiece(row)||(row.kind==='icon'&&isUltraLuxeIcon(row.id)))return 'premium';
  if(wardrobeAnimatedSetPiece(row)||(row.kind==='icon'&&PROFILE_COSMETIC_PORTRAITS.some(icon=>icon.id===row.id)))return 'animated';
  return 'standard';
 }
@@ -56,7 +57,8 @@ export function wardrobeCollectionName(row:Pick<WardrobeRow,'kind'|'id'|'clear'>
  ] as const){
   if((row.kind==='frame'&&row.id===ids.border)||(row.kind==='scene'&&row.id===ids.background)||(row.kind==='pet'&&row.id===ids.pet)||(row.kind==='icon'&&row.id===icon)||(row.kind==='title'&&row.id===title))return name;
  }
- return undefined;
+ const candidate=NEW_ULTRA_LUXE_WARDROBE.find(c=>row.kind==='frame'&&row.id===c.ids.border||row.kind==='scene'&&row.id===c.ids.background||row.kind==='pet'&&row.id===c.ids.pet||row.kind==='title'&&row.id===c.titleId);
+ return candidate?.name;
 }
 export function wardrobeCollectionLabel(row:SetLabelRow){
  const collection=wardrobeCollectionName(row);

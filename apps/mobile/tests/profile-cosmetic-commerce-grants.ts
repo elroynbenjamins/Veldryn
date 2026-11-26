@@ -1,4 +1,5 @@
 import {PROFILE_COSMETIC_STORE_PRODUCTS} from '../src/content/profile-cosmetic-store';
+import {WAVE2_SETS} from '../src/core/profile-cosmetic-wave2';
 import {PROFILE_EFFECTS} from '../src/core/profile-effects';
 import {
  PROFILE_COSMETIC_FORBIDDEN_COMMERCE_IDS,PROFILE_COSMETIC_GRANTS,
@@ -15,7 +16,7 @@ equal(new Set(PROFILE_COSMETIC_GRANTS.map(row=>row.sku)).size,4,'server set SKUs
 equal(new Set(PROFILE_COSMETIC_STORE_PRODUCTS.map(row=>row.sku)).size,4,'mobile set SKUs are unique');
 equal([...PROFILE_COSMETIC_GRANTS].map(row=>row.sku).sort().join('|'),[...PROFILE_COSMETIC_STORE_PRODUCTS].map(row=>row.sku).sort().join('|'),'mobile and server set SKU lists cannot drift');
 
-const fallbackIds=new Set(PROFILE_EFFECTS.map(row=>row.fallbackBorderId));
+const fallbackIds=new Set(PROFILE_EFFECTS.map(row=>row.fallbackBorderId).filter(Boolean));
 equal(new Set(PROFILE_COSMETIC_FORBIDDEN_COMMERCE_IDS).size,4,'all four fallback reward identities are deny-listed');
 for(const id of fallbackIds)ok(PROFILE_COSMETIC_FORBIDDEN_COMMERCE_IDS.includes(id as never),'every visual fallback reward id is explicitly commerce-forbidden');
 for(const row of PROFILE_COSMETIC_GRANTS){
@@ -36,6 +37,10 @@ for(const retired of [
 }
 throws(()=>assertProfileCosmeticGrantDefinition('dungeon:frostmarch:frostbound-chime'),'exclusive reward identity is not accepted as a SKU');
 throws(()=>assertProfileCosmeticGrantDefinition('unknown'),'unknown cosmetic SKU fails closed');
+for(const set of WAVE2_SETS){
+ throws(()=>assertProfileCosmeticGrantDefinition('profile_cosmetic_'+set.id.replace(/-/g,'_')+'_set_v1'),'owner-only Wave 2 SKU cannot be purchased');
+ ok(!PROFILE_COSMETIC_GRANTS.some(row=>row.grants.some(g=>[set.borderId,set.effectId,...set.iconIds].includes(g.id as never))),'Wave 2 items absent from commerce grants');
+}
 
 const setSku='profile_cosmetic_frostbound_set_v1';
 let first=applyProfileCosmeticGrant({},setSku);

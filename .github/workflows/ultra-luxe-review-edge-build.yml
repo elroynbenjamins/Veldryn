@@ -1,0 +1,35 @@
+name: Build Ultra Luxe review Edge bundles
+on:
+  push:
+    branches: [review/sakura-stormforged-premium]
+    paths: [.github/workflows/ultra-luxe-review-edge-build.yml]
+permissions:
+  contents: read
+jobs:
+  canonical:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - run: pnpm --dir backend install --frozen-lockfile
+      - name: Typecheck backend and regenerate only canonical Edge bundles
+        run: |
+          pnpm --dir backend exec tsc -p tsconfig.online.json --noEmit
+          node tools/build-online.mjs
+      - name: Print canonical generated patch and exact blob digests
+        run: |
+          git diff --check -- backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          echo BEGIN_GENERATED_PATCH
+          git -c color.ui=false diff --no-ext-diff --unified=3 -- backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          echo END_GENERATED_PATCH
+          sha256sum backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          git hash-object backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts

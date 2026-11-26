@@ -18,7 +18,7 @@ for(const path of [
  './v2/resource-runtime','./v2/capstone-runtime','./v2/reactive-passive-runtime',
  './v2/enemy-engine-authority','./v2/equipment-trait-engine-authority',
  './v2/equipment-trait-engine-runtime','./v2/party-sync-authority','./v2/tactical-ai',
- './v2/dungeon-reward-engine-v2','./v2/equipment-private-hit-qa-v22','./enemy-v2-status-rules',
+ './v2/dungeon-reward-engine-v2','./v2/equipment-private-hit-qa-v22','./v2/effect-gem-private-damage-authority','./enemy-v2-status-rules',
 ]){
  const redirected=resolve({path,importer:engine});
  assert.equal(redirected?.namespace,'live-edge-v2-disabled');
@@ -52,6 +52,11 @@ for(const path of [
   assert.equal(m.authorizeEq2PrivateHitQaV22({players:[{}]}),undefined);
   for(const token of [{},null,false,0])assert.throws(()=>m.authorizeEq2PrivateHitQaV22({players:[{}]},token),/not_available_in_live/);
   assert.throws(()=>m.authorizeEq2PrivateHitQaV22({players:[{combatV2:{version:2}}]}),/not_available_in_live/);
+ }
+ if(path==='./v2/effect-gem-private-damage-authority'){
+  assert.equal(m.authorizePrivateDamageGemReviewV2({players:[{}]},undefined,new Map()),undefined);
+  for(const token of [{},null,false,0])assert.throws(()=>m.authorizePrivateDamageGemReviewV2({players:[{}]},token,new Map()),/not_available_in_live/);
+  assert.throws(()=>m.authorizePrivateDamageGemReviewV2({players:[{combatV2:{version:2}}]},undefined,new Map()),/not_available_in_live/);
  }
  if(path==='./v2/party-sync-authority'){
   assert.equal(m.authorizePartySyncV2({players:[{}]}).size,0);
@@ -90,6 +95,7 @@ for(const secret of [
  'backend/src/server/combat/v2/tactical-ai.ts',
  'backend/src/server/combat/v2/dungeon-reward-engine-v2.ts',
  'backend/src/server/combat/v2/equipment-private-hit-qa-v22.ts',
+ 'backend/src/server/combat/v2/effect-gem-private-damage-authority.ts',
  'backend/src/server/combat/enemy-v2-status-rules.ts',
 ]){
  assert.throws(()=>assertLegacyEdgeIsolation(fake(secret),'gameplay'),
@@ -102,7 +108,8 @@ for(const leak of ['issueEnemyV2EngineAuthority','combat_v2_solo_test',
  'issuePersistedPartyEnemyV2EngineAuthority','preparePartyEnemyKitsV2',
  'projectPartySynchronizationLobbyV2','previewPartySynchronizationCandidateV2',
  'eq2-traits-hidden-engine-pass1','issueDungeonRewardEngineAuthorityV2','dungeon-reward-reactive-hidden-v1',
- 'issueEq2PrivateHitQaV22','eq2-v22-private-current-hit-qa']){
+ 'issueEq2PrivateHitQaV22','eq2-v22-private-current-hit-qa',
+ 'issuePrivateDamageGemAuthorityV2','private-damage-gem-review-v2-20261126','private_damage_gem_review_token_mismatch']){
  assert.throws(()=>assertLegacyEdgeIsolation(fake('backend/online/edge.ts',leak),'gameplay'),
  /private_token_in_bundle/);
 }

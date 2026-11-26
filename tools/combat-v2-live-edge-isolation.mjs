@@ -19,6 +19,7 @@ const ALLOWED=new Set([
  './v2/tactical-ai',
  './v2/equipment-private-hit-qa-v22',
  './v2/dungeon-reward-engine-v2',
+ './v2/effect-gem-private-damage-authority',
  './enemy-v2-status-rules',
 ]);
 const DISABLED='throw Error("combat_v2_not_available_in_live_edge_bundle");';
@@ -76,6 +77,12 @@ export function authorizeEq2PrivateHitQaV22(input,authority){
 `,
  './v2/dungeon-reward-engine-v2':`
 export function authorizeDungeonRewardEngineV2(input,authority){
+ if(authority!==undefined||input?.players?.some(player=>player.combatV2)) ${DISABLED}
+ return undefined;
+}
+`,
+ './v2/effect-gem-private-damage-authority':`
+export function authorizePrivateDamageGemReviewV2(input,authority){
  if(authority!==undefined||input?.players?.some(player=>player.combatV2)) ${DISABLED}
  return undefined;
 }
@@ -138,6 +145,8 @@ export function assertLegacyEdgeIsolation(result,outputName){
   'issueEquipmentV2TraitAuthority','compileExactEquipmentTraitSourceV2','eq2-traits-hidden-engine-pass1',
   'issueDungeonRewardEngineAuthorityV2','dungeon-reward-reactive-hidden-v1',
   'issueEq2PrivateHitQaV22','eq2-v22-private-current-hit-qa',
+  'issuePrivateDamageGemAuthorityV2','private-damage-gem-review-v2-20261126',
+  'private_damage_gem_review_token_mismatch',
   'issuePartySyncAuthorityV2','party_sync_authority_',
   'issuePersistedPartyEquipmentV2TraitAuthority','party-v2-run-binding-review-1',
   'issuePersistedPartyEnemyV2EngineAuthority','preparePartyEnemyKitsV2',

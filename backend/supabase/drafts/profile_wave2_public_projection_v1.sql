@@ -1,11 +1,18 @@
 -- REVIEW ONLY: do not execute until release QA and deployment approval.
 -- Private, pure helpers; no table access and no new public RPC.
 begin;
+-- Fail on definition drift rather than overwrite newer privacy or profile fixes.
+do $
+begin
+ if current_user <> 'postgres' then raise exception 'expected migration owner postgres';end if;
+ if md5(pg_get_functiondef('public.profile_public_v43(uuid)'::regprocedure)) is distinct from '390a61c7bc25d3b6c053f66043a2ab64' then raise exception 'profile_public_v43 definition drift; rebase draft';end if;
+ if md5(pg_get_functiondef('public.profile_character_public_v1(uuid,uuid)'::regprocedure)) is distinct from '6f189d262a2a7cef60097d309befabd8' then raise exception 'profile_character_public_v1 definition drift; rebase draft';end if;
+end $;
 create or replace function private.wave2_profile_owned_id_v1(p_account jsonb,p_kind text,p_id text)
 returns text language sql immutable security invoker set search_path = '' as $$
  select case
  when p_id is null then null
- when p_kind not in ('border','effect','icon') then null
+ when p_kind is null or p_kind not in ('border','effect','icon') then null
  when not (p_id = any(case p_kind
   when 'border' then array['cosmetic:tideborne:pearlframe','cosmetic:clockwork:mechanism','cosmetic:stormforged:thunderframe','cosmetic:crimson-oath:oathguard']::text[]
   when 'effect' then array['effect_tideborne_tidal_reverie','effect_clockwork_aetherwork_pulse','effect_stormforged_static_surge','effect_crimson_oath_scarlet_reverence']::text[]
@@ -197,6 +204,8 @@ begin
   a:=jsonb_build_object(field,jsonb_build_array(id));
   if private.wave2_profile_owned_id_v1(a,k,id) is distinct from id then raise exception 'owned item rejected: %',id; end if;
  end loop;
+ if private.wave2_profile_owned_id_v1('{}',null,'frame_gloamward') is not null then raise exception 'null kind accepted';end if;
+ if private.wave2_profile_owned_id_v1('{}','unknown','frame_gloamward') is not null then raise exception 'invalid kind accepted';end if;
  if private.wave2_profile_owned_id_v1('{}','border','frame_gloamward') is distinct from 'frame_gloamward' then raise exception 'legacy changed';end if;
  if private.wave2_profile_icon_v1('{"profileIconId":"cosmetic:tideborne:portrait-siren","unlockedProfileIconIds":["cosmetic:tideborne:portrait-siren"]}','class:IRONWARDEN','class:IRONWARDEN') is distinct from 'cosmetic:tideborne:portrait-siren' then raise exception 'account portrait not projected';end if;
  if private.wave2_profile_icon_v1('{"profileIconId":"cosmetic:tideborne:portrait-siren"}','cosmetic:tideborne:portrait-siren','class:IRONWARDEN') is distinct from 'class:IRONWARDEN' then raise exception 'unowned portrait exposed';end if;

@@ -36,12 +36,15 @@ UPDATE market_review.resource_policy SET approved=true WHERE item='ore';
 SELECT market_review.act('list','a','eqcap','x',0,'equipment-cap',125,100);
 DO $$ BEGIN
  FOR i IN 1..19 LOOP
-  PERFORM market_review.resource_act('list','a','cap-'||i,'cap-'||i,0,'ore',10,1,100);
+  PERFORM market_review.resource_act('list','a','cap-'||i,'cap-'||i,0,'ore',CASE WHEN i=1 THEN 30 ELSE 10 END,1,100);
  END LOOP;
 END $$;
 SELECT market_review.expect_error($q$SELECT market_review.resource_act('list','a','cap20','cap20',0,'ore',10,1,100)$q$,'account_listing_cap');
 SELECT market_review.expect_error($q$SELECT market_review.act('list','a','eqcap2','y',0,'equipment-cap2',125,100)$q$,'account_listing_cap');
-SELECT market_review.resource_act('cancel','a','freecap','cap-1',0);
+-- A partial fill of an existing listing must work even at the shared cap.
+SELECT market_review.resource_act('buy','b','cap-partial','cap-1',0,p_quantity=>10,p_price=>1,p_now=>101);
+SELECT market_review.expect_error($q$SELECT market_review.resource_act('list','a','cap-still-full','cap-still-full',0,'ore',10,1,100)$q$,'account_listing_cap');
+SELECT market_review.resource_act('cancel','a','freecap','cap-1',1);
 SELECT market_review.act('list','a','eqcap2','y',0,'equipment-cap2',125,100);
 DO $$ BEGIN
  IF (SELECT count(*) FROM market_review.offer WHERE seller='a' AND status='active')+

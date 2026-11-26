@@ -44,7 +44,10 @@ for(const [needle,label] of [
  ["await refresh(force);",'await previous attention refresh'],
  ["if(!stopped&&current===generation&&active())timer=setTimeout(()=>void poll(),30000);",'completion-driven 30-second attention polling'],
  ["if(status!=='active'){generation++;clearTimer();}",'background cancellation'],
- ["stopped=true;generation++;inFlight.current=null;clearTimer();sub.remove();",'cleanup prevents stale polls'],
+ ["if(!pollEnabled||!accountId)return;",'startup readiness gates automatic polling'],
+ ["stopped=true;generation++;clearTimer();sub.remove();",'poll cleanup stops stale timers and listeners'],
+ ["return()=>{inFlight.current=null;};\n  },[accountId]);",'account cleanup invalidates in-flight requests'],
+ ["if(inFlight.current!==request||activeAccount.current!==accountId)return;",'stale requests cannot publish badges'],
  ["const resumed=previous!=='active'&&status==='active'",'social attention catch-up on resume'],
  ['if(resumed)void poll(true)','immediate social attention resume refresh'],
 ])need(hook,needle,label);

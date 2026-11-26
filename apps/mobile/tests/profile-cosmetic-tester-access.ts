@@ -2,7 +2,9 @@ import {createCharacter,newGame} from '../src/core/game';
 import {profileAnimatedCosmeticsEnabled,profileCosmeticsTester,PROFILE_COSMETICS_TESTER_ENTITLEMENT} from '../src/core/profile-cosmetic-access';
 import {PREMIUM_PROFILE_COSMETICS} from '../src/core/profile-premium-cosmetics';
 import {PROFILE_ALL_EFFECTS} from '../src/core/profile-effects';
-import {profileWardrobe} from '../src/core/profile-wardrobe';
+import {profileWardrobe,wardrobeAnimatedSetPiece,wardrobeDisplaySections,type WardrobeRow} from '../src/core/profile-wardrobe';
+import {CELESTIAL_IDS} from '../src/core/ascendant-cosmetics';
+import {DRACONIC_IDS} from '../src/core/draconic-showcase-layout';
 const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string};
 const backgroundAssetSource=fs.readFileSync('src/theme/profile-background-assets.ts','utf8');
 import {profileCosmeticRuntimeByBorder,profileCosmeticRuntimeByEffect} from '../src/theme/profile-cosmetic-runtime-v1';
@@ -48,3 +50,29 @@ for(const set of PREMIUM_PROFILE_COSMETICS.slice(0,2)){
 ok(lookPanel.includes('new Set([...profileBorderSourceById.keys(),...PROFILE_ALL_EFFECTS.map'), 'art registry aliases must not duplicate frame rows');
 ok(lookPanel.includes('row.clear?profileT(language,"Solo")'), 'only the explicit no-pet choice may say Solo');
 ok(stage.includes('borderArt?.border??directFrame??'), 'customization preview must prefer actual frame art over runtime fallback');
+
+
+// Sectioning is a presentation-only partition: never manufacture hidden rows or change ownership.
+const row=(kind:WardrobeRow['kind'],id:string,unlocked=true,clear=false):WardrobeRow=>({kind,id,name:id,group:'Fixture',unlocked,equipped:false,clear});
+for(const set of PREMIUM_PROFILE_COSMETICS){
+ for(const piece of [row('scene',set.backgroundId),row('frame',set.borderId),row('effect',set.effectId),row('pet',set.petId)])ok(wardrobeAnimatedSetPiece(piece),set.name+' animated set piece '+piece.kind);
+ for(const fallback of [row('scene',set.fallbackBackgroundId),row('frame',set.fallbackBorderId),row('pet',set.fallbackPetId)])ok(!wardrobeAnimatedSetPiece(fallback),'ordinary fallback artwork is not labeled animated');
+}
+for(const ids of [CELESTIAL_IDS,DRACONIC_IDS]){
+ ok(wardrobeAnimatedSetPiece(row('scene',ids.background)),'private scene alias is grouped');
+ ok(wardrobeAnimatedSetPiece(row('frame',ids.border)),'private frame alias is grouped');
+ ok(wardrobeAnimatedSetPiece(row('pet',ids.pet)),'private pet alias is grouped');
+}
+for(const effect of PROFILE_ALL_EFFECTS){
+ ok(wardrobeAnimatedSetPiece(row('frame',effect.borderId)),'animated border definition is grouped');
+ ok(wardrobeAnimatedSetPiece(row('effect',effect.id)),'animated effect definition is grouped');
+}
+const ordinary=row('frame','frame_gloamward'),clear=row('frame','',true,true),locked=row('frame',PREMIUM_PROFILE_COSMETICS[0].borderId,false);
+const partition=wardrobeDisplaySections([clear,locked,ordinary]);
+equal(partition.standard.length,2,'standard section preserves clear and ordinary rows');
+equal(partition.standard[0],clear,'clear remains first');
+equal(partition.standard[1],ordinary,'ordinary row identity is preserved');
+equal(partition.animated[0],locked,'animated row identity and locked state are preserved');
+equal(partition.animated[0].unlocked,false,'partition does not unlock an item');
+equal(wardrobeDisplaySections([ordinary]).animated.length,0,'no animated items means no animated section');
+ok(lookPanel.includes('sections.animated.length>0?')&&lookPanel.includes('profileT(language,"Animated sets")'),'inline divider appears only for visible animated rows');

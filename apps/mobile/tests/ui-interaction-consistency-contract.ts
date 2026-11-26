@@ -98,6 +98,12 @@ for(const path of ['src/screens/HomeScreen.tsx','src/screens/WorldScreen.tsx','s
  ok(!source.includes('EnvironmentBanner')&&!source.includes('EnvironmentDetailsModal')&&!source.includes('weatherName'),'Weather detail panels must stay out of '+path);
 }
 ok(top.includes('<EnvironmentDetailsModal')&&top.includes('onPress={()=>setEnvironmentOpen(true)}'),'The top-left bar must remain the weather details entry');
+const weather=read('src/components/EnvironmentDetailsModal.tsx');
+ok(weather.includes('memo(EnvironmentDetailsContent,(previous,next)=>!previous.visible&&!next.visible)'),'Only two consecutive closed renders may skip weather content updates');
+ok(weather.includes('<GameModalSurface visible={visible}')&&weather.includes('environment,nowMs,locked,activityKind'),'Weather reopening retains the native modal and reads current conditions');
+ok(top.includes("const healthClock=state.activity?.kind==='combat'&&combatReward?0:nowMs")&&top.includes('liveHealthState(state,healthClock,combatReward),[state,healthClock,combatReward]'),'Combat health reuses its reward projection while passive recovery keeps the live clock');
+ok(top.includes('useMemo(()=>normalizeQuickNavDestinations(state.settings.quickNavDestinations),[state.settings.quickNavDestinations])'),'Shortcut normalization is stable until settings change');
+
 
 const inventory=read('src/screens/InventoryScreen.tsx');
 ok(inventory.includes('<GameModalSurface visible={filterOpen}'),'Inventory filter must use the shared modal shell');

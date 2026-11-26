@@ -438,7 +438,7 @@ var GUILD_COMBAT_COMPANIONS = seeds2.map((seed) => {
 // ../apps/mobile/src/core/release-flags.ts
 var EVENTS_RELEASED = true;
 var FROSTFALL_REWARDS_RELEASED = false;
-var DUNGEON_MARKS_SHOP_RELEASED = false;
+var DUNGEON_MARKS_SHOP_RELEASED = true;
 
 // ../apps/mobile/src/content/event-companions-active.ts
 var RELEASED_EVENT_COMPANION_IDS = /* @__PURE__ */ new Set(["EVT_UNIT_007", "EVT_UNIT_008", "EVT_UNIT_011"]);
@@ -51982,9 +51982,16 @@ var OnlineQModeRuntime = class {
     return this.services.rpc("purchase_online_qmode_merchant_server_v1", { p_account_id: accountId, p_run_id: runId, p_expected_version: loaded.stateVersion, p_request_id: request.requestId, p_request_hash: hash, p_offer_id: request.offerId, p_actor_id: actorId, p_private_state: { run: next, seed }, p_client_projection: client });
   }
   async choose(accountId, runId, request) {
-    const hash = digest(request), prior = await this.receipt(accountId, "qmode_choose_v1", runId, request.requestId, hash);
+    const hash = digest(request);
+    const [receiptRead, snapshotRead] = await Promise.allSettled([
+      this.receipt(accountId, "qmode_choose_v1", runId, request.requestId, hash),
+      this.services.rpc("load_online_qmode_server_v1", { p_account_id: accountId, p_run_id: runId })
+    ]);
+    if (receiptRead.status === "rejected") throw receiptRead.reason;
+    const prior = receiptRead.value;
     if (prior) return prior.response;
-    const loaded = await this.services.rpc("load_online_qmode_server_v1", { p_account_id: accountId, p_run_id: runId });
+    if (snapshotRead.status === "rejected") throw snapshotRead.reason;
+    const loaded = snapshotRead.value;
     if (loaded.privateState.pending) {
       const replay = await this.receipt(accountId, "qmode_choose_v1", runId, request.requestId, hash);
       if (replay) return replay.response;
@@ -52383,12 +52390,18 @@ var OnlineLiveRuntime = class {
   }
   async choose(accountId, runId, request) {
     const hash = hashRequest(request);
-    const prior = await this.services.rpc("read_online_coop_receipt_server_v1", { p_account_id: accountId, p_operation: "live_choose_v1", p_resource_id: runId, p_request_id: request.requestId });
+    const [receiptRead, snapshotRead] = await Promise.allSettled([
+      this.services.rpc("read_online_coop_receipt_server_v1", { p_account_id: accountId, p_operation: "live_choose_v1", p_resource_id: runId, p_request_id: request.requestId }),
+      this.services.rpc("load_coop_runtime_server_v1", { p_run_id: runId, p_actor_account_id: accountId })
+    ]);
+    if (receiptRead.status === "rejected") throw receiptRead.reason;
+    const prior = receiptRead.value;
     if (prior) {
       if (prior.requestHash !== hash) throw new GameplayError("idempotency_key_conflict", 409);
       return prior.response;
     }
-    const loaded = await this.services.rpc("load_coop_runtime_server_v1", { p_run_id: runId, p_actor_account_id: accountId });
+    if (snapshotRead.status === "rejected") throw snapshotRead.reason;
+    const loaded = snapshotRead.value;
     if (loaded.clientProjection?.mode !== "live") throw new GameplayError("not_live_run", 404);
     if (loaded.privateState.pending) throw new GameplayError("node_resolving", 409);
     const current = loaded.privateState.run.graph.nodes.find((node) => node.nodeId === loaded.privateState.run.currentNodeId);
@@ -52400,12 +52413,18 @@ var OnlineLiveRuntime = class {
   }
   async vote(accountId, runId, request) {
     const hash = hashRequest(request);
-    const prior = await this.services.rpc("read_online_coop_receipt_server_v1", { p_account_id: accountId, p_operation: "live_vote_v1", p_resource_id: runId, p_request_id: request.requestId });
+    const [receiptRead, snapshotRead] = await Promise.allSettled([
+      this.services.rpc("read_online_coop_receipt_server_v1", { p_account_id: accountId, p_operation: "live_vote_v1", p_resource_id: runId, p_request_id: request.requestId }),
+      this.services.rpc("load_coop_runtime_server_v1", { p_run_id: runId, p_actor_account_id: accountId })
+    ]);
+    if (receiptRead.status === "rejected") throw receiptRead.reason;
+    const prior = receiptRead.value;
     if (prior) {
       if (prior.requestHash !== hash) throw new GameplayError("idempotency_key_conflict", 409);
       return prior.response;
     }
-    const loaded = await this.services.rpc("load_coop_runtime_server_v1", { p_run_id: runId, p_actor_account_id: accountId });
+    if (snapshotRead.status === "rejected") throw snapshotRead.reason;
+    const loaded = snapshotRead.value;
     if (loaded.clientProjection?.mode !== "live") throw new GameplayError("not_live_run", 404);
     if (loaded.privateState.pending) throw new GameplayError("node_resolving", 409);
     const presence = await this.touch(accountId, runId, loaded);

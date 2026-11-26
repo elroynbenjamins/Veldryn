@@ -21,3 +21,11 @@ assert.ok(game.includes('if(returned)void refresh()'),'authoritative foreground 
 const event=events.slice(events.indexOf('export async function activePartyEvent'));
 assert.ok(event.indexOf('if(!instance)return null')<event.indexOf('await partySocialSnapshot()'));
 console.log('PASS activity request efficiency: foreground polling, party cadence, event fetch ordering, authoritative refresh and forced actions');
+
+const hall=fs.readFileSync(path.join(__dirname,'../src/components/OnlineGuildHallPanel.tsx'),'utf8');
+assert.ok(hall.includes("const needsSupplies=section==='Overview'||section==='Construction'||section==='Bank'"));
+assert.ok(hall.includes('if(previewMode||!needsSupplies)return Promise.resolve()'));
+assert.ok(hall.includes('if(shopFlight.current)return shopFlight.current'));
+assert.ok(hall.includes('if(needsSupplies&&!previewMode)void refreshShop()'));
+assert.ok(hall.includes('onRefresh();if(needsSupplies)void refreshShop()'));
+assert.ok(hall.includes("section==='Shop'?(previewMode?shopFallback():<OnlineGuildTokenShopPanel"));

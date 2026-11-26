@@ -54,3 +54,23 @@ for(const name of ['PublicProfileScene.tsx','ProfileScenePreview.tsx','profile/P
  assert(!live.includes('AbyssalMajestyPreview'),'review-only preview stays out of live renderers');
 }
 console.log('PASS: isolated native preview, lifecycle, matching pet and static fallback contracts');
+
+const {ABYSSAL_POSE_ATLAS:A,abyssalPoseTimeline,abyssalPoseCell}=mod.exports;
+assert.equal(A.frames,A.columns*A.rows);
+assert.equal(A.frames/A.seconds,12);
+assert.equal(A.seconds*A.cycles*1000,ABYSSAL_CYCLE_MS);
+assert(A.frames<=Q.maxPetFrames);
+const timeline=abyssalPoseTimeline();
+assert.equal(timeline.inputRange.length,73);
+assert.equal(timeline.frames.length,73);
+assert.equal(timeline.frames[0],0);assert.equal(timeline.frames.at(-1),0);
+assert(timeline.inputRange.every((t,i)=>!i||t>timeline.inputRange[i-1]));
+for(const i of timeline.frames){
+ const cell=abyssalPoseCell(i);
+ assert(i>=0&&i<A.frames&&cell.column<A.columns&&cell.row<A.rows);
+}
+assert(A.frameWidth*A.frameHeight*A.frames*4<=2100000);
+assert(preview.includes('motion&&assets.idleAtlas?'));
+assert(preview.includes('Animated.modulo(Animated.multiply(clock,a.cycles),1)'));
+assert(preview.includes("width:w,height:h,overflow:'hidden'"));
+console.log('PASS: bounded single-clock Abyssal pet atlas and static fallback');

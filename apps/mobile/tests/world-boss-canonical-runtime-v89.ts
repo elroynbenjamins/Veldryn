@@ -177,3 +177,42 @@ bad90({...r90,members:[r90.members[0],r90.members[0],r90.members[2]]},
  p90,'invalid_or_duplicate_reserved_member');
 bad90(r90,{...p90,runtime:{...p90.runtime,eventTimeResolutionMs:5000}},'v89:subsecond_or_1s_timing_required');
 console.log('WORLD_BOSS_ROSTER_V90A_STRUCTURAL_OK: 45 scope cases and mismatch regressions; no authorization');
+
+
+import {reviewWorldBossOwnedRosterV90,type WorldBossOwnedRosterSourceV90} from '../../../backend/src/server/combat/world-boss-roster-reconciliation-v90';
+const owned90:WorldBossOwnedRosterSourceV90={
+ accountId:r90.accountId,reservationId:r90.reservationId,rosterDigest:r90.rosterDigest,
+ entitlementRevision:9,unlockedCharacterSlots:3,
+ eligibleCharacters:r90.members.map(m=>({...m,accountId:r90.accountId})),
+};
+const goodOwned90=reviewWorldBossOwnedRosterV90(r90,p90,owned90);
+assert.equal(goodOwned90.structurallyCompatible,true);
+assert.equal(goodOwned90.canAuthorizeCombat,false);
+assert.equal(goodOwned90.canGrantRewards,false);
+const badOwned90=(owned:WorldBossOwnedRosterSourceV90,code:string)=>{
+ const result=reviewWorldBossOwnedRosterV90(r90,p90,owned);
+ assert.equal(result.structurallyCompatible,false);
+ assert.ok(result.blockers.includes(code),JSON.stringify(result.blockers));
+ assert.equal(result.releaseReady,false);
+};
+badOwned90({...owned90,unlockedCharacterSlots:2},'unlocked_character_slots_exceeded');
+badOwned90({...owned90,unlockedCharacterSlots:0},'invalid_owned_roster_source');
+badOwned90({...owned90,unlockedCharacterSlots:6},'invalid_owned_roster_source');
+badOwned90({...owned90,entitlementRevision:0},'invalid_owned_roster_source');
+badOwned90({...owned90,accountId:'foreign'},'invalid_owned_roster_source');
+badOwned90({...owned90,reservationId:'other'},'invalid_owned_roster_source');
+badOwned90({...owned90,rosterDigest:'b'.repeat(64)},'invalid_owned_roster_source');
+badOwned90({...owned90,eligibleCharacters:owned90.eligibleCharacters.slice(1)},'eligible_roster_not_exact');
+badOwned90({...owned90,eligibleCharacters:[owned90.eligibleCharacters[0],owned90.eligibleCharacters[0],
+ owned90.eligibleCharacters[2]]},'foreign_or_duplicate_owned_character');
+badOwned90({...owned90,eligibleCharacters:[{...owned90.eligibleCharacters[0],accountId:'foreign'},
+ ...owned90.eligibleCharacters.slice(1)]},'foreign_or_duplicate_owned_character');
+badOwned90({...owned90,eligibleCharacters:[{...owned90.eligibleCharacters[0],sourceRevision:10},
+ ...owned90.eligibleCharacters.slice(1)]},'owned_character_snapshot_mismatch');
+badOwned90({...owned90,eligibleCharacters:[{...owned90.eligibleCharacters[0],equipmentReceiptRevision:4},
+ ...owned90.eligibleCharacters.slice(1)]},'owned_character_snapshot_mismatch');
+const sourceSparse={...base(),restorativeBloomOffsetsMs:Array<number>(4)};
+has(sourceSparse,'restorative_bloom_four_real_ticks_required');
+has({...base(),actors:[{...base().actors[0],equippedCopyIds:Array<string>(1),activeTraits:[]}]},
+ 'invalid_equipped_copies');
+console.log('WORLD_BOSS_V90B_OWNED_ROSTER_REVIEW_OK: frozen slot limits and ownership mismatches; no database or authority');

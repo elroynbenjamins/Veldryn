@@ -43,13 +43,13 @@ function project(piece,r,q,healingWeapon=false){
   return {attack:round(budget*a),defense:round(budget*d),hp:round(budget*h*4),healingPower:0};
 }
 const weight=s=>s.attack+s.defense+s.hp/4+s.healingPower;
-export function choose(profile,tier){
+export function choose(profile,tier,defenseOriented=false){
   const pool=pieces.filter(p=>p.tier===tier&&p.role===profile.role&&(!p.classRestriction||p.classRestriction===profile.id));
   const weapon=pool.find(p=>p.slot==='weapon'&&p.classRestriction===profile.id);
   assert.ok(weapon);
   return Object.keys(slots).flatMap(slot=>{
     if(slot==='offhand'&&weapon.hands!=='one')return [];
-    const p=slot==='weapon'?weapon:pool.filter(p=>p.slot===slot).sort((a,b)=>a.id.localeCompare(b.id))[0];
+    const p=slot==='weapon'?weapon:pool.filter(p=>p.slot===slot).sort((a,b)=>(defenseOriented?project(b,'common',50).defense-project(a,'common',50).defense:0)||a.id.localeCompare(b.id))[0];
     assert.ok(p,profile.id+':'+tier+':'+slot);
     return [p];
   });
@@ -159,4 +159,15 @@ test('equal support armament healing budget regardless of hand configuration',()
     checked++;
   }
   assert.equal(checked,72);
+});
+
+test('role-oriented tank reference retains defensive lead through all three tested tiers',()=>{
+  for(const [tier,level] of [[2,25],[3,40],[4,60]]){
+    const rows=compactClassProfiles.map(p=>{
+      const c=compactFullStats(p.id,level),g=sum(choose(p,tier,p.role==='tank'),'common',50,true);
+      return {...p,defense:c.defense+g.defense};
+    });
+    for(const t of rows.filter(r=>r.role==='tank'))for(const o of rows.filter(r=>r.role!=='tank'))
+      assert.ok(t.defense>o.defense,t.id+':'+o.id+':'+tier);
+  }
 });

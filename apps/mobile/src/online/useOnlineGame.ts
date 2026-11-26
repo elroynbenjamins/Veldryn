@@ -3,6 +3,7 @@ import {AppState} from 'react-native';
 import {useAuthSession} from './AuthSessionProvider';
 import {createOnlineGameRepository,serverGameplayEnabled} from './gameplay';
 import {supabase} from './supabase';
+import {fetchActiveEventRuntime} from './live-events';
 import type {GameCommand} from '../core/game-commands';
 import type {OnlineSnapshot} from '../core/online-game-repository';
 import {saveAndRefreshPlayerNameStyle} from '../core/player-name-style-save';
@@ -46,7 +47,47 @@ export function useOnlineGame(){
   const sub=AppState.addEventListener('change',next=>{foreground=next==='active';if(foreground)heartbeat();});
   return()=>{clearInterval(timer);sub.remove();};
  },[accountId]);
- const execute=async(command?:GameCommand)=>{if(!repo)throw new Error('Sign in before playing online.');if(nameStyleSaving.current===repo)throw new Error('Your name style is still saving. Please wait.');if(commandSaving.current===repo)throw new Error('A gameplay action is already being saved.');// Reserve the per-account command slot synchronously; the repository serializes and safely replays durable actions.
+ // Poll the lightweight public event window only while foregrounded. Refresh the
+ // authoritative account snapshot when its schedule or lifecycle changes;
+ // never inject a public RPC response into a saved account snapshot.
+ useEffect(()=>{
+  if(!repo||!supabase)return;
+  let disposed=false,inFlight=false;
+  const poll=async()=>{
+   if(disposed||inFlight||AppState.currentState!=='active'||active.current!==repo||refreshInFlight.current?.repo===repo||commandSaving.current===repo||nameStyleSaving.current===repo)return;
+   inFlight=true;
+   try{
+    const current=repo.snapshot;
+    if(!current)return;
+    // A recent authoritative gameplay read/command already includes the event
+    // window. Do not add an immediate duplicate public schedule request.
+    const age=Date.now()-current.serverNow;
+    if(age>=0&&age<30_000)return;
+    const runtime=await fetchActiveEventRuntime();
+    if(disposed||AppState.currentState!=='active'||active.current!==repo||refreshInFlight.current?.repo===repo||commandSaving.current===repo||nameStyleSaving.current===repo)return;
+    const previous=repo.snapshot;
+    if(!previous)return;
+    const stored=previous.state.account.liveEvent;
+    const key=(r:typeof stored)=>r?JSON.stringify([r.eventId,r.enabled,r.startsAtMs,r.endsAtMs,r.graceEndsAtMs??null,r.priority??null,r.modules??[]]):'';
+    const now=Date.now();
+    const boundaryCrossed=!!runtime&&[runtime.startsAtMs,runtime.endsAtMs,runtime.graceEndsAtMs].some(at=>typeof at==='number'&&previous.serverNow<at&&at<=now);
+    // The gameplay service may retain an expired runtime for historical
+    // claims. Ignore that expected difference after its grace window closes.
+    const expired=!!stored&&now>=(stored.graceEndsAtMs??stored.endsAtMs);
+    if((key(runtime)!==key(stored)&&!(runtime===undefined&&expired))||boundaryCrossed)await refresh();
+   }catch{/* Retry on next foreground tick; never clear ownership on a network error. */}
+   finally{inFlight=false;}
+  };
+  let timer:ReturnType<typeof setInterval>|undefined;
+  const stop=()=>{if(timer!==undefined){clearInterval(timer);timer=undefined;}};
+  const start=()=>{if(timer===undefined)timer=setInterval(()=>void poll(),120_000);};
+  // Initial load and foreground return already perform an authoritative GET.
+  // The independent schedule check is only needed during continued play.
+  if(AppState.currentState==='active')start();
+  const sub=AppState.addEventListener('change',next=>{if(next==='active')start();else stop();});
+  return()=>{disposed=true;stop();sub.remove();};
+ },[repo,refresh]);
+ const execute=async(command?:GameCommand,returnClaim=false)=>{if(!repo)throw new Error('Sign in before playing online.');if(nameStyleSaving.current===repo)throw new Error('Your name style is still saving. Please wait.');if(commandSaving.current===repo)throw new Error('A gameplay action is already being saved.');// Reserve the per-account command slot synchronously; the repository serializes and safely replays durable actions.
  commandSaving.current=repo;setBusy(true);setError('');
  // Preview only a validated weapon swap while a hunt is running. This is NOT
  // written to the repository, pending-command store or server; a failed
@@ -54,7 +95,7 @@ export function useOnlineGame(){
  const authoritative=repo.snapshot;
  const projected=command&&!pending&&authoritative?.state?previewCombatEquipmentCommand(authoritative.state,command):null;
  if(projected&&authoritative&&active.current===repo)setSnapshot({...authoritative,state:projected,reward:undefined});
- try{const next=await repo.execute(command);if(active.current!==repo)throw new Error('Account changed while saving.');rememberOnlineSnapshot(next);setSnapshot(next);setPending(false);return next;}catch(e){if(active.current===repo){setPending(await repo.hasPending());if(repo.snapshot)setSnapshot(repo.snapshot);setError(e instanceof Error?e.message:'Unable to save. Retry the pending action.');}throw e;}finally{if(commandSaving.current===repo)commandSaving.current=null;if(active.current===repo)setBusy(false);}};
+ try{const next=await repo.execute(command,returnClaim);if(active.current!==repo)throw new Error('Account changed while saving.');rememberOnlineSnapshot(next);setSnapshot(next);setPending(false);return next;}catch(e){if(active.current===repo){setPending(await repo.hasPending());if(repo.snapshot)setSnapshot(repo.snapshot);setError(e instanceof Error?e.message:'Unable to save. Retry the pending action.');}throw e;}finally{if(commandSaving.current===repo)commandSaving.current=null;if(active.current===repo)setBusy(false);}};
  const saveNameStyle=async(style:PlayerNameStylePreference)=>{
   if(!repo||active.current!==repo)throw new Error('Sign in before changing your name style.');
   if(busy||commandSaving.current===repo||nameStyleSaving.current===repo)throw new Error('Another change is still saving. Please wait.');
@@ -67,5 +108,11 @@ export function useOnlineGame(){
   finally{if(nameStyleSaving.current===repo)nameStyleSaving.current=null;if(active.current===repo)setBusy(false);}
  };
  const refreshSnapshot=useCallback(async()=>{await refresh();},[refresh]);
- return {snapshot:snapshot?.accountId===accountId? snapshot:null,loading,busy,error,pending,foregroundRevision,refresh:refreshSnapshot,refreshCommerce,execute,saveNameStyle};
+ // After an external guild inventory mutation, do not reuse a read started before the receipt.
+ const refreshAfterExternalWrite=useCallback(async()=>{
+  if(refreshInFlight.current?.repo===repo)await refreshInFlight.current.promise;
+  if(!repo||active.current!==repo||commandSaving.current===repo)throw new Error('Gameplay state is changing. Refresh again.');
+  const next=await refresh();if(!next||active.current!==repo||await repo.hasPending())throw new Error('Inventory refresh was not confirmed.');
+ },[repo,refresh]);
+ return {snapshot:snapshot?.accountId===accountId? snapshot:null,loading,busy,error,pending,foregroundRevision,refresh:refreshSnapshot,refreshAfterExternalWrite,refreshCommerce,execute,saveNameStyle};
 }

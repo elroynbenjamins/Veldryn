@@ -6,11 +6,13 @@ const read=(path:string)=>fs.readFileSync(path,'utf8');
 const listing=read('src/components/RecruitmentListing.tsx');
 const filters=read('src/components/RecruitmentFiltersPanel.tsx');
 const composer=read('src/components/RecruitmentComposer.tsx');
+const partyComposer=read('src/components/PartyRecruitmentComposer.tsx');
+const choices=read('src/components/RecruitmentQuickPostChoices.tsx');
 const seeker=read('src/components/GuildSeekerPanel.tsx');
 const guilds=read('src/components/OnlineGuildBrowser.tsx');
 const social=read('src/screens/SocialScreen.tsx');
 
-for(const [name,source] of [['RecruitmentListing',listing],['RecruitmentFiltersPanel',filters],['RecruitmentComposer',composer],['GuildSeekerPanel',seeker],['OnlineGuildBrowser',guilds]] as const){
+for(const [name,source] of [['RecruitmentListing',listing],['RecruitmentFiltersPanel',filters],['RecruitmentComposer',composer],['PartyRecruitmentComposer',partyComposer],['RecruitmentQuickPostChoices',choices],['GuildSeekerPanel',seeker],['OnlineGuildBrowser',guilds]] as const){
  ok(source.includes('useGameTheme'),name+' must use the active UI theme');
  ok(source.includes('ThemeColors'),name+' must build theme-aware styling');
  ok(!source.includes("import {C,")&&!source.includes("import {C}"),name+' must not use the static Veldryn palette');
@@ -29,7 +31,15 @@ ok(filters.includes('{st("Clear")} {count}')&&filters.includes('onPress={()=>onC
 
 ok(composer.includes('NEW RECRUITMENT POST'),'Recruitment composer must have clear creation hierarchy');
 ok(composer.includes('AUTO-EXPIRES'),'Recruitment composer must explain automatic expiry');
-ok(composer.includes("([1,3] as const)"),'Guild recruitment duration must keep the 1- or 3-day choice');
+ok(composer.includes('durationDays:3')&&composer.includes('Automatically expires after 3 days'),'Guild posts default to three days without extra expiry controls');
+ok(partyComposer.includes('durationDays:1')&&partyComposer.includes('Automatically expires after 24 hours'),'Party posts still expire after one day');
+ok(composer.includes('RecruitmentQuickPostChoices')&&partyComposer.includes('RecruitmentQuickPostChoices'),'Guild and Party adverts must share the same quick-post selector');
+ok(composer.includes('recruitmentStoredInterest')&&partyComposer.includes('recruitmentStoredInterest'),'Both composers must persist Crafting distinctly');
+ok(choices.includes("['combat','skilling','crafting','mixed']")&&choices.includes("['casual','regular','active','hardcore']"),'Quick post must offer the approved interest and activity choices');
+ok(choices.includes("flexWrap:'nowrap'")&&choices.includes('minHeight:44'),'Both selectors must stay on one accessible touch-target row');
+ok(choices.includes('Expected activity')&&choices.includes('Main interest'),'Selections must be clearly labeled');
+ok(!composer.includes('Advanced details')&&!partyComposer.includes('Advanced details'),'Quick post must not expose the old lengthy advanced form');
+ok(partyComposer.includes('prefs.minimumLevel')&&partyComposer.includes('prefs.language'),'Party adverts must inherit existing Party settings');
 ok(composer.includes('Publish advert'),'Publish action must remain explicit');
 
 ok(seeker.includes('RecruitmentListing'),'Guild seekers must use the same recruitment card language');

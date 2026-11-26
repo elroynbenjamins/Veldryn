@@ -67,6 +67,8 @@ export function SkillGuideScreen({state,onClose,onOpenSkill,onOpenCombat,onOpenM
  };
  const needle=query.trim().toLocaleLowerCase(language);
  const filtered=useMemo(()=>SKILL_GUIDE_IDS.filter(id=>{
+  // Training Ground is a Sanctuary facility, not a skill; keep it out of every guide filter and search.
+  if(id==='companion')return false;
   if(filter!=='All'&&CATEGORIES[id]!==filter)return false;
   if(!needle)return true;
   const row=skillGuideCopy(language,id);

@@ -7,30 +7,76 @@
       "rights_status": "original-synthesis-no-third-party-samples"
     },
     "boss": {
-      "bpm": 144,
-      "seconds": 26.67
+      "bpm": 168,
+      "seconds": 102.92,
+      "selection": "Break the Sigil V9 — extended original instruments",
+      "rights_status": "creator-permission-received-owner-approved"
+    },
+    "boss_A": {
+      "bpm": 164,
+      "seconds": 46.872,
+      "selection": "Shatter the Crown",
+      "rights_status": "creator-permission-received-owner-approved"
+    },
+    "boss_B": {
+      "bpm": 172,
+      "seconds": 44.712,
+      "selection": "No Retreat",
+      "rights_status": "creator-permission-received-owner-approved"
     },
     "dungeon": {
-      "bpm": 126,
-      "seconds": 30.48
+      "bpm": 146,
+      "seconds": 105.26,
+      "selection": "Midnight Machinery V9 — extended original instruments",
+      "rights_status": "creator-permission-received-owner-approved"
+    },
+    "dungeon_A": {
+      "bpm": 142,
+      "seconds": 54.144,
+      "selection": "Iron Cathedral",
+      "rights_status": "creator-permission-received-owner-approved"
+    },
+    "dungeon_B": {
+      "bpm": 154,
+      "seconds": 49.932,
+      "selection": "Clockwork Descent",
+      "rights_status": "creator-permission-received-owner-approved"
+    },
+    "frostfall_dungeon": {
+      "bpm": 144,
+      "seconds": 53.388,
+      "selection": "Bells of the Frozen Citadel",
+      "rights_status": "creator-permission-received-owner-approved"
     },
     "frostmarch": {
-      "bpm": 84,
-      "seconds": 45.71
+      "bpm": 78,
+      "seconds": 50.04,
+      "selection": "Soft Snowfall V2",
+      "rights_status": "creator-permission-received-owner-approved"
     },
     "sunscar": {
-      "bpm": 104,
-      "seconds": 36.92
-    },
-    "town": {
-      "bpm": 88,
-      "seconds": 44.1,
-      "selection": "Lanterns at Hearth",
-      "rights_status": "original-synthesis-no-third-party-samples"
+      "bpm": 84,
+      "seconds": 46.51,
+      "selection": "Evening Oasis V3",
+      "rights_status": "creator-permission-received-owner-approved"
     },
     "world_boss": {
-      "bpm": 112,
-      "seconds": 34.29
+      "bpm": 154,
+      "seconds": 99.79,
+      "selection": "Eclipse Protocol V9 — extended original instruments",
+      "rights_status": "creator-permission-received-owner-approved"
+    },
+    "world_boss_A": {
+      "bpm": 148,
+      "seconds": 51.948,
+      "selection": "Heavenfall Engine",
+      "rights_status": "creator-permission-received-owner-approved"
+    },
+    "world_boss_B": {
+      "bpm": 156,
+      "seconds": 49.284,
+      "selection": "Last Light of Eternity",
+      "rights_status": "creator-permission-received-owner-approved"
     }
   },
   "sfx": {

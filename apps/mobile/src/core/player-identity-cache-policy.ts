@@ -10,3 +10,8 @@ export function mergeSocialWithCachedIcon<T extends {profile_icon_id:string|null
 ):T{
  return includesIcon?incoming:{...incoming,profile_icon_id:previous?.profile_icon_id??null,class_id:previous?.class_id??null};
 }
+
+/** Only the viewer's own icon can be superseded by a confirmed local save. */
+export function acceptIdentityIconResponse(includesIcon:boolean,isOwnCachedRow:boolean,requestVersion:number,currentVersion:number){
+ return includesIcon&&(!isOwnCachedRow||requestVersion===currentVersion);
+}

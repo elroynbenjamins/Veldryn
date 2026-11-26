@@ -144,6 +144,26 @@ ok(liveEventDef('EVT_ANNUAL_012_2027')?.name==='Frostfall Festival','Frostfall c
 ok(EQUIPMENT_MAIN_RESOURCE_BUNDLES.length===7,'Both shops use seven reviewed equipment resource inputs');
 ok(eventShopOffers(frost,frostTime).filter(offer=>offer.reward.kind==='crafting_material').length===7,'Frostfall offers all seven selectable main materials');
 ok(eventShopOffers(frost,frostTime).length>=20,'Frostfall has a full holiday catalogue beyond the original five rewards');
+const bellframeId='frame_frostfall_aurora_bellframe',bellframeOffer='frostfall_aurora_bellframe';
+const bellframeStart=Date.UTC(2026,11,3),bellframeEnd=Date.UTC(2026,11,27),bellframeGrace=Date.UTC(2026,11,29);
+const frameState={...frost,account:{...frost.account,liveEvent:{eventId:frostId,enabled:true,startsAtMs:bellframeStart,endsAtMs:bellframeEnd,graceEndsAtMs:bellframeGrace},eventCurrencyBalanceById:{[frostId]:6000}}};
+ok(!profileCosmeticReleased(frameState,'border',bellframeId,bellframeStart-1),'Unowned frame is hidden before Frostfall');
+ok(profileCosmeticReleased(frameState,'border',bellframeId,bellframeStart),'Frame previews during Frostfall');
+ok(!canUseProfileCosmetic(frameState,'border',bellframeId),'Unowned border cannot be equipped');
+const framePurchased=purchaseEventOffer(frameState,bellframeOffer,bellframeEnd);
+ok(framePurchased.account.eventCurrencyBalanceById?.[frostId]===3000,'Frame costs exactly 3000 Frostbell Tokens in claim grace');
+ok(canUseProfileCosmetic(framePurchased,'border',bellframeId),'Frame ownership is stored on the account');
+ok(profileCosmeticReleased(framePurchased,'border',bellframeId,bellframeGrace),'Earned frame persists after the festival');
+ok(!profileCosmeticReleased(frameState,'border',bellframeId,bellframeGrace),'Unowned frame is hidden after the grace period');
+ok(!profileCosmeticReleased(frameState,'background','bg_frostfall',bellframeStart-1),'Unowned Frostfall background hidden before launch');
+ok(profileCosmeticReleased(frameState,'background','bg_frostfall',bellframeStart),'Unowned Frostfall background becomes discoverable at launch');
+ok(!profileCosmeticReleased(frameState,'background','bg_frostfall',bellframeGrace),'Unowned Frostfall background hidden after grace');
+const backgroundOwner={...frameState,account:{...frameState.account,liveEvent:undefined,unlockedProfileBackgroundIds:['bg_frostfall']}};
+ok(profileCosmeticReleased(backgroundOwner,'background','bg_frostfall',bellframeGrace)&&canUseProfileCosmetic(backgroundOwner,'background','bg_frostfall'),'Owned Frostfall background remains available after closure');
+let frameReplayBlocked=false;try{purchaseEventOffer(framePurchased,bellframeOffer,bellframeEnd)}catch{frameReplayBlocked=true}
+ok(frameReplayBlocked,'One-time frame purchase cannot spend currency twice');
+let frameLateBlocked=false;try{purchaseEventOffer(frameState,bellframeOffer,bellframeGrace)}catch{frameLateBlocked=true}
+ok(frameLateBlocked,'Frame purchase closes at the exact claim deadline');
 ok(!equipmentShopTierUnlocked(frost,4),'New characters cannot buy T4 equipment materials');
 const bundleId='frostfall_sunstone_ingot_100';
 let earlyMaterialBlocked=false;

@@ -1,5 +1,7 @@
+import {isUltraLuxeBadge} from './ultra-luxe-cosmetics';
+
 /** Player badges are verified by server identity, never by a client-chosen unlock. */
-export const COLLECTIBLE_PLAYER_BADGE_IDS=['founder','veteran','guild_leader','community_champion','event_champion'] as const;
+export const COLLECTIBLE_PLAYER_BADGE_IDS=['founder','veteran','guild_leader','community_champion','event_champion','ascendant_sovereign_of_stars','ascendant_dragon_sovereign','ascendant_monarch_of_deep','ascendant_beyond_existence'] as const;
 export const VIP_BADGE_IDS=['vip','vip_plus'] as const;
 export const SUPPORTER_BADGE_IDS=['supporter','supporter_3m','supporter_6m','supporter_12m'] as const;
 export type CollectiblePlayerBadgeId=typeof COLLECTIBLE_PLAYER_BADGE_IDS[number];
@@ -29,6 +31,7 @@ export const PLAYER_BADGE_LABELS:Record<PlayerBadgeId,string>={
  supporter:'Supporter',supporter_3m:'Supporter · 3 Months',supporter_6m:'Supporter · 6 Months',supporter_12m:'Supporter · 12 Months',
  founder:'Founder',veteran:'Veteran',guild_leader:'Guild Leader',
  community_champion:'Community Champion',event_champion:'Event Champion',
+ ascendant_sovereign_of_stars:'Sovereign of the Stars',ascendant_dragon_sovereign:'Dragon Sovereign',ascendant_monarch_of_deep:'Monarch of the Deep',ascendant_beyond_existence:'Beyond Existence',
 };
 /** Friendly explanations for badge info bubbles, independent of ownership or unlock state. */
 export const PLAYER_BADGE_DESCRIPTIONS:Record<PlayerBadgeId,string>={
@@ -45,6 +48,7 @@ export const PLAYER_BADGE_DESCRIPTIONS:Record<PlayerBadgeId,string>={
  guild_leader:'Recognizes leadership of an active guild.',
  community_champion:'Awarded for outstanding community contributions.',
  event_champion:'Awarded for special event achievements.',
+ ascendant_sovereign_of_stars:'Ascendant badge from the Celestial Sovereign collection.',ascendant_dragon_sovereign:'Ascendant badge from the Draconic Dominion collection.',ascendant_monarch_of_deep:'Ascendant badge from the Abyssal Majesty collection.',ascendant_beyond_existence:'Ascendant badge from the Paradox Eternal collection.',
 };
 export const PLAYER_BADGE_UNLOCK_HINTS:Record<CollectiblePlayerBadgeId,string>={
  founder:'Awarded to founding players.',
@@ -52,6 +56,7 @@ export const PLAYER_BADGE_UNLOCK_HINTS:Record<CollectiblePlayerBadgeId,string>={
  guild_leader:'Lead an active guild.',
  community_champion:'Awarded for outstanding community contributions.',
  event_champion:'Awarded for special event achievements.',
+ ascendant_sovereign_of_stars:'Ascendant collection entitlement.',ascendant_dragon_sovereign:'Ascendant collection entitlement.',ascendant_monarch_of_deep:'Ascendant collection entitlement.',ascendant_beyond_existence:'Ascendant collection entitlement.',
 };
 export const VIP_BADGE_UNLOCK_HINTS:Record<VipBadgeId,string>={
  vip:'Unlock with VIP or VIP+ on your account.',
@@ -63,6 +68,12 @@ export const SUPPORTER_BADGE_UNLOCK_HINTS:Record<SupporterBadgeId,string>={
  supporter_6m:'Unlock after 6 total verified months of Supporter.',
  supporter_12m:'Unlock after 12 total verified months of Supporter.',
 };
+/** Public rendering trusts the verified server projection. Private ultra-luxe badges
+ * are visible in the chooser only to accounts whose owned badge projection includes them. */
+export function playerBadgeReleased(_id:EquippablePlayerBadgeId){return true;}
+export function visibleCollectiblePlayerBadgeIds(owned:readonly CollectiblePlayerBadgeId[]=[]):readonly CollectiblePlayerBadgeId[]{
+ return COLLECTIBLE_PLAYER_BADGE_IDS.filter(id=>!isUltraLuxeBadge(id)||owned.includes(id));
+}
 /** One elective earned or Supporter badge beside the name, in chat and every name row.
  * Staff role is shown independently and never costs the player a slot. */
 export const MAX_EQUIPPED_PLAYER_BADGES=1;

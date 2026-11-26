@@ -49,12 +49,12 @@ function GameModalWindow({visible,onClose,presentation='sheet',children,surfaceS
     </View>;
 }
 
-export function GameModalHeader({eyebrow,title,onClose,closeDisabled=false,leading,trailing}:{eyebrow?:string;title:string;onClose:()=>void;closeDisabled?:boolean;leading?:ReactNode;trailing?:ReactNode}){
+export function GameModalHeader({eyebrow,title,onClose,closeDisabled=false,leading,trailing,titleColor}:{eyebrow?:string;title:string;titleColor?:string;onClose:()=>void;closeDisabled?:boolean;leading?:ReactNode;trailing?:ReactNode}){
   const language=useGameLanguage();
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
   return <View style={s.header}>
     {leading}
-    <View style={s.headerCopy}>{eyebrow?<Text style={s.eyebrow}>{eyebrow}</Text>:null}<Text accessibilityRole="header" style={s.title}>{title}</Text></View>
+    <View style={s.headerCopy}>{eyebrow?<Text style={s.eyebrow}>{eyebrow}</Text>:null}<Text accessibilityRole="header" style={[s.title,titleColor?{color:titleColor}:undefined]}>{title}</Text></View>
     {trailing}
     <Pressable accessibilityRole="button" accessibilityLabel={sharedText(language,'Close')} accessibilityState={{disabled:closeDisabled}} disabled={closeDisabled} onPress={onClose} style={({pressed})=>[s.close,pressed&&!closeDisabled&&s.pressed,closeDisabled&&s.disabled]}>
       <Text style={s.closeText}>×</Text>

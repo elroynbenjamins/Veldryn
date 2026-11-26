@@ -17,6 +17,7 @@ import {ChatMessageRow} from './ChatMessageRow';
 import {ChatLog} from './ChatLog';
 import {ChatMentionSuggestions} from './ChatMentionSuggestions';
 import {visibleWorldChatIndex} from '../core/world-chat-visibility';
+import {useOwnChatSocialName} from '../online/useOwnChatSocialName';
 
 export function OnlineWorldChat({playerName,language,unlockedEmoteIds=[],trayIds=[],bodyPresentation='male',onTrayChange,onManageEmotes,embedded=false,reduceMotion=false,selectedChannel,active=true}:{playerName:string;language:Language;unlockedEmoteIds?:readonly string[];trayIds?:readonly string[];bodyPresentation?:'male'|'female';onTrayChange?:(ids:string[])=>void|Promise<void>;onManageEmotes?:()=>void;embedded?:boolean;reduceMotion?:boolean;selectedChannel?:number;active?:boolean}){
  const st=useSocialText();
@@ -25,6 +26,7 @@ export function OnlineWorldChat({playerName,language,unlockedEmoteIds=[],trayIds
  const channel=visibleWorldChatIndex(selectedChannel??localChannel),channelId=VISIBLE_WORLD_CHANNELS[channel].id;
  const {value:rows,error,accountId,refresh,setValue:setRows}=useChatFeed<WorldMessage[]>({key:`world:${channelId}`,read:()=>worldMessages(channelId),initial:[],active:active&&(open||embedded),channelType:'world',channelId});
  const draftKey=`${accountId}:${channelId}`,text=drafts[draftKey]??'',currentAccount=useRef(accountId),sending=useRef(false),pending=useRef(new Map<string,{body:string;key:string}>());currentAccount.current=accountId;
+ const chatPlayerName=useOwnChatSocialName(accountId,active&&(open||embedded))??playerName;
  const setText=(update:string|((previous:string)=>string))=>setDrafts(previous=>({...previous,[draftKey]:typeof update==='function'?update(previous[draftKey]??''):update}));
  useEffect(()=>{setDrafts({});setSelected(null);pending.current.clear();},[accountId]);
  useEffect(()=>setSelected(null),[channelId]);
@@ -38,7 +40,7 @@ export function OnlineWorldChat({playerName,language,unlockedEmoteIds=[],trayIds
   if(!request||request.body!==body){request={body,key:worldChatCommandKey()};pending.current.set(draftKey,request);}
   sending.current=true;setBusy(true);
   try{
-   await postWorldMessage(channelId,body,playerName,request.key);
+   await postWorldMessage(channelId,body,chatPlayerName,request.key);
    if(currentAccount.current!==accountId||pending.current.get(draftKey)!==request)return;
    pending.current.delete(draftKey);
    // Clear only the draft actually acknowledged by the server. Switching
@@ -51,9 +53,9 @@ export function OnlineWorldChat({playerName,language,unlockedEmoteIds=[],trayIds
  const mentionNames=[...new Map(rows.map(row=>[row.sender_name.toLocaleLowerCase(),row.sender_name])).values()];
  const content=<View style={[s.root,embedded&&s.expandedRoot]}>
   {selectedChannel===undefined&&<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.channels} showsVerticalScrollIndicator={false}>{VISIBLE_WORLD_CHANNELS.map((item,index)=><Pressable key={item.id} accessibilityRole="tab" accessibilityState={{selected:channel===index}} onPress={()=>setChannel(index)} style={[s.channel,channel===index&&s.channelActive]}><Text style={[s.channelText,channel===index&&s.channelTextActive]}>{item.name}</Text><Text style={s.language}>{item.language}</Text></Pressable>)}</ScrollView>}
-  <ChatLog expanded={embedded} active={active&&(open||embedded)} channelKey={draftKey} items={rows} emptyText={ot(language,'chat.none')} renderItem={row=><ChatMessageRow accountId={row.account_id} name={row.sender_name} body={row.body} createdAt={row.created_at} guildTag={row.guild_tag} tagColorId={row.guild_tag_color_id} nameStyle={row.player_name_style} badges={row.player_badges} mentionName={playerName} onPress={()=>setSelected(row)} reduceMotion={reduceMotion} compact={embedded} messageId={row.id}/>} />
+  <ChatLog expanded={embedded} active={active&&(open||embedded)} channelKey={draftKey} items={rows} emptyText={ot(language,'chat.none')} renderItem={row=><ChatMessageRow accountId={row.account_id} name={row.sender_name} body={row.body} createdAt={row.created_at} guildTag={row.guild_tag} tagColorId={row.guild_tag_color_id} nameStyle={row.player_name_style} badges={row.player_badges} mentionName={chatPlayerName} onPress={()=>setSelected(row)} reduceMotion={reduceMotion} compact={embedded} messageId={row.id}/>} />
   {!!error&&<View accessibilityRole="alert" style={s.errorCard}><Text style={s.errorLabel}>{st("CHAT UNAVAILABLE")}</Text><Text style={s.error}>{error}</Text><GameButton compact title={st("Retry")} tone="secondary" onPress={()=>refresh()}/></View>}
-  <ChatMentionSuggestions value={text} names={mentionNames} currentName={playerName} onChange={setText}/>
+  <ChatMentionSuggestions value={text} names={mentionNames} currentName={chatPlayerName} onChange={setText}/>
   <ChatComposer accessibilityLabel={st("World chat message")} value={text} onChangeText={setText} onSend={()=>send()} placeholder={ot(language,'chat.placeholder')} busy={busy} disabled={!accountId} emotes={{unlockedIds:unlockedEmoteIds,trayIds,bodyPresentation,onTrayChange,onManageEmotes,onPick:token=>setText(value=>(value+token).slice(0,300))}}/>
   {!embedded&&<Pressable accessibilityRole="button" onPress={()=>setOpen(false)} style={s.closeInline}><Text style={s.closeText}>{ot(language,'chat.close')}</Text></Pressable>}
   <ChatPlayerSheet reduceMotion={reduceMotion} message={selected?{...selected,message_id:selected.id}:null} onClose={()=>setSelected(null)} onBlocked={accountId=>setRows(current=>current.filter(message=>message.account_id!==accountId))}/>

@@ -2,6 +2,8 @@
 export const EVENTS_RELEASED=true;
 /** Prepared Frostfall rewards stay out of all player catalogs until the seasonal launch is explicitly approved. */
 export const FROSTFALL_REWARDS_RELEASED=false;
+/** Winter Hearth code/art is shipped; the authoritative Frostfall runtime still controls discovery and every live write. */
+export const WINTER_HEARTH_GUILD_RELEASED=true;
 /** Pause shared event-wide contribution goals until the active population can support them.
  * Preserve authored rewards and earned records for a future opt-in release. */
 export const EVENT_COMMUNITY_ENABLED=false;
@@ -16,8 +18,8 @@ export const PLAYER_MARKET_RELEASED=false;
 /** Independent launch prerequisite: authenticated Market Edge write/read routes are not mounted. */
 export const MARKET_AUTHENTICATED_SERVICE_READY=false;
 
-/** Dungeon Marks Shop authored across three regions; keep collectible passives and shop UI hidden until server and art release. */
-export const DUNGEON_MARKS_SHOP_RELEASED=false;
+/** Regional Dungeon Marks collectibles are released. Server per-offer gates still own purchases. */
+export const DUNGEON_MARKS_SHOP_RELEASED=true;
 
 /** Keep manual translation invisible until the provider, public privacy disclosure and staging QA pass. */
 export const CHAT_TRANSLATION_RELEASED=false;
@@ -30,3 +32,14 @@ export const EQUIPMENT_RESALE_UPLIFT_RELEASED=false;
 
 /** Account-wide Social Name and independent 3-hero showcases require production RPC/migration + Android approval. */
 export const ACCOUNT_SOCIAL_IDENTITY_RELEASED=false;
+
+/** Ascendant blessing settlement remains disabled until its server/economy implementation is released. */
+export const ASCENDANT_PROGRESSION_BLESSINGS_RELEASED=false;
+/** Separate non-P2W fuse: requires an approved gameplay-earned path to the same 5% pet and 3% background power. */
+export const ASCENDANT_BLESSING_PARITY_APPROVED=false;
+
+/** Animated profile collections are implemented for QA but stay hidden until binary art, public projection and native approval are complete. */
+export const PROFILE_ANIMATED_COSMETICS_RELEASED=false;
+
+/** Cosmetics catalog is authored but checkout/tab exposure stays hidden until commerce products, server grants, migration and native QA are approved. */
+export const PROFILE_COSMETICS_STORE_RELEASED=false;

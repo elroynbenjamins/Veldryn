@@ -55,6 +55,20 @@ const COPY={
   'No se pudo cargar tu nombre social.','Je sociale naam kon niet worden geladen.',
   'Impossibile caricare il nome sociale.','Impossible de charger votre nom social.',
   'Не удалось загрузить имя.','Görünür adın yüklenemedi.'],
+ 'Checking name availability…':[
+  'Checking name availability…','Name wird geprüft…','Comprobando disponibilidad…','Naam wordt gecontroleerd…',
+  'Verifica disponibilità…','Vérification du nom…','Проверка имени…','Ad uygunluğu kontrol ediliyor…'],
+ 'Name available.':[
+  'Name available.','Name ist verfügbar.','Nombre disponible.','Naam beschikbaar.',
+  'Nome disponibile.','Nom disponible.','Имя свободно.','Ad kullanılabilir.'],
+ 'Name already taken.':[
+  'Name already taken.','Name bereits vergeben.','Nombre ya ocupado.','Naam al in gebruik.',
+  'Nome già in uso.','Nom déjà pris.','Имя уже занято.','Ad zaten alınmış.'],
+ 'Unable to check availability. Tap to retry.':[
+  'Unable to check availability. Tap to retry.','Prüfung fehlgeschlagen. Tippe zum Wiederholen.',
+  'No se pudo comprobar. Toca para reintentar.','Controleren mislukt. Tik om opnieuw te proberen.',
+  'Verifica non riuscita. Tocca per riprovare.','Vérification impossible. Touchez pour réessayer.',
+  'Не удалось проверить. Нажмите для повтора.','Kontrol edilemedi. Tekrar denemek için dokun.'],
  'This name is already used by another player.':[
   'This name is already used by another player.',
   'Dieser Name wird bereits verwendet.','Otro jugador ya usa este nombre.','Deze naam is al in gebruik.',

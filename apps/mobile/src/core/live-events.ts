@@ -3,9 +3,9 @@ import {random01} from './rng';
 import type {GameState,LiveEventRuntime,RewardBundle} from './types';
 import {unlockCombatCompanion} from './combat-companions';
 import {awardCompanionCandyXp} from './companion-runtime';
-import {eventCurrencyPromotionBps} from '../content/event-currency-promotion';
-import {selectedFaithBlessing} from './faith';
+import {eventCurrencyBaseBps,eventCurrencyPromotionBps} from '../content/event-currency-promotion';
 import {EVENT_COMMUNITY_ENABLED} from './release-flags';
+import {FROSTFALL_2026_EVENT_ID,frostfallRewardsDiscoverable} from './frostfall-reward-visibility';
 import {equipmentShopTierUnlocked,equipmentShopTierLockReason,grantMainEquipmentShopResource} from './equipment-shop-tier-unlock';
 
 export type EventPhase='upcoming'|'active'|'claiming';
@@ -22,7 +22,11 @@ export function eventCurrencyBonusBps(state:GameState,eventId:string,earnedAtMs=
  const runtime=state.account.liveEvent;
  return runtime?.enabled&&runtime.eventId===eventId&&earnedAtMs>=runtime.startsAtMs&&earnedAtMs<runtime.endsAtMs?eventCurrencyPromotionBps(eventId,earnedAtMs):0;
 }
-function promotedCommonReward(state:GameState,eventId:string,quantity:number,earnedAtMs:number){return Math.floor(quantity*(10000+eventCurrencyBonusBps(state,eventId,earnedAtMs))/10000);}
+function promotedCommonReward(state:GameState,eventId:string,quantity:number,earnedAtMs:number){
+ const runtime=state.account.liveEvent;
+ const bps=runtime?.enabled&&runtime.eventId===eventId&&earnedAtMs>=runtime.startsAtMs&&earnedAtMs<runtime.endsAtMs?eventCurrencyBaseBps(eventId,earnedAtMs):0;
+ return Math.floor(quantity*(10000+bps)/10000);
+}
 export const EVENT_COMMUNITY_MIN_CONTRIBUTION=100;
 /** Prestige is reserved for optional/high-difficulty event work. */
 export function eventPrestigeReward(source:EventActivitySource,reward:number){return source==='boss'?Math.max(0,Math.floor(reward)):0;}
@@ -117,9 +121,7 @@ export function eventDailyFestivalBlessing(state:GameState,nowMs=Date.now()){con
 export function eventEffectiveDropRate(state:GameState,eventId:string,source:EventActivitySource,nowMs=Date.now()){
  const event=liveEventDef(eventId);if(!event)return 0;
  const blessing=eventDailyFestivalBlessing(state,nowMs),blessingMultiplier=blessing?.source===source?1+blessing.bonusBps/10000:1;
- const active=activeLiveEvent(state,nowMs),faith=active?.definition.id===eventId?selectedFaithBlessing(state):undefined;
- const faithMultiplier=faith?.family==='eventCurrency'?1+faith.bonus:1;
- return event.dropRates[source]*(eventProjectChoice(state,eventId)?.dropMultipliers?.[source]??1)*blessingMultiplier*(1+eventCurrencyBonusBps(state,eventId,nowMs)/10000)*faithMultiplier;
+ return event.dropRates[source]*(eventProjectChoice(state,eventId)?.dropMultipliers?.[source]??1)*blessingMultiplier*(1+eventCurrencyBonusBps(state,eventId,nowMs)/10000);
 }
 export function eventContributionValue(state:GameState,eventId:string,spent:number){const multiplier=eventProjectChoice(state,eventId)?.contributionMultiplier??1;return Math.max(0,Math.floor(spent*multiplier));}
 function eventDropQuantity(state:GameState,source:EventActivitySource,units:number,nowMs:number){const event=activeLiveEvent(state,nowMs);if(!event||units<=0)return 0;const expected=units*eventEffectiveDropRate(state,event.definition.id,source,nowMs),whole=Math.floor(expected),fraction=expected-whole;return whole+(random01(`${state.character?.id}:${event.definition.id}:${source}:${nowMs}`,0)<fraction?1:0);}
@@ -204,16 +206,17 @@ function addReward(state:GameState,reward:EventReward,nowMs=Date.now()):GameStat
 }
 function grantEventCurrencies(state:GameState,eventId:string,common:number,prestige:number){return {...state,account:{...state.account,eventProgressById:{...(state.account.eventProgressById??{}),[eventId]:eventProgress(state,eventId)+common},eventCurrencyBalanceById:{...(state.account.eventCurrencyBalanceById??{}),[eventId]:eventCurrencyBalance(state,eventId)+common},eventPrestigeBalanceById:{...(state.account.eventPrestigeBalanceById??{}),[eventId]:eventPrestigeBalance(state,eventId)+prestige}}};}
 export function eventRewardOwned(state:GameState,reward:EventReward){if(reward.kind==='candy'||reward.kind==='gold'||reward.kind==='companion_essence'||reward.kind==='bondstones'||reward.kind==='crafting_material')return false;const ids=reward.kind==='companion'?state.account.unlockedCombatCompanionIds:reward.kind==='profile_icon'?state.account.unlockedProfileIconIds:reward.kind==='pet'?state.account.unlockedCosmeticPetIds:reward.kind==='background'?state.account.unlockedProfileBackgroundIds:reward.kind==='border'?state.account.unlockedProfileBorderIds:reward.kind==='emote'?state.account.unlockedEmoteIds:reward.kind==='guild_name_color'||reward.kind==='guild_frame'||reward.kind==='guild_banner'?state.account.unlockedGuildCosmeticIds:state.account.unlockedTitleIds;return ids?.includes(reward.id)??false;}
-export function eventCollectionJournal(state:GameState,nowMs=Date.now()){const event=claimableLiveEvent(state,nowMs);if(!event||!state.character)return [];const community=EVENT_COMMUNITY_ENABLED&&event.definition.communityEnabled===true?event.definition.communityMilestones.filter(entry=>entry.reward).map(entry=>({source:`Community ${entry.percent}%`,reward:entry.reward!})):[];const entries=[...event.definition.milestones(state.character.classId).map(entry=>({source:`${entry.points.toLocaleString()} reputation`,reward:entry.reward})),...event.definition.shop.map(entry=>({source:entry.currency==='common'?'Event Shop':'Prestige Shop',reward:entry.reward})),...community,...event.definition.discoveries.map(entry=>({source:`${entry.name} discovery`,reward:entry.reward}))].filter(entry=>!['candy','gold','companion_essence','bondstones','crafting_material'].includes(entry.reward.kind));return entries.map(entry=>({...entry,owned:eventRewardOwned(state,entry.reward)}));}
-export function eventInboxRewards(state:GameState){
+export function eventCollectionJournal(state:GameState,nowMs=Date.now()){const event=claimableLiveEvent(state,nowMs);if(!event||!state.character)return [];const community=EVENT_COMMUNITY_ENABLED&&event.definition.communityEnabled===true?event.definition.communityMilestones.filter(entry=>entry.reward).map(entry=>({source:`Community ${entry.percent}%`,reward:entry.reward!})):[];const entries=[...event.definition.milestones(state.character.classId).map(entry=>({source:`${entry.points.toLocaleString()} reputation`,reward:entry.reward})),...event.definition.shop.map(entry=>({source:entry.currency==='common'?'Event Shop':'Prestige Shop',reward:entry.reward})),...community,...event.definition.discoveries.map(entry=>({source:`${entry.name} discovery`,reward:entry.reward}))].filter(entry=>!['candy','gold','companion_essence','bondstones','crafting_material'].includes(entry.reward.kind));const unique=new Map<string,typeof entries[number]>();for(const entry of entries){const key=`${entry.reward.kind}:${entry.reward.id}`,previous=unique.get(key);unique.set(key,previous?{...previous,source:`${previous.source} / ${entry.source}`} : entry);}return [...unique.values()].map(entry=>({...entry,owned:eventRewardOwned(state,entry.reward)}));}
+export function eventInboxRewards(state:GameState,nowMs=Date.now()){
  if(!state.character)return [];
  const classId=state.character.classId;
  return Object.keys(state.account.eventProgressById??{}).flatMap(eventId=>{
+  if(eventId===FROSTFALL_2026_EVENT_ID&&!frostfallRewardsDiscoverable(state.account,nowMs))return [];
   const definition=liveEventDef(eventId);if(!definition)return [];
   return definition.milestones(classId).filter(m=>m.points<=eventProgress(state,eventId)).map(m=>({eventId,eventName:definition.name,reward:m.reward,claimed:eventRewardClaimed(state,eventId,m.reward.id)}));
  });
 }
-export function claimEventReward(state:GameState,rewardId:string,nowMs=Date.now()):GameState{const earned=eventInboxRewards(state).find(row=>row.reward.id===rewardId);if(!earned)throw new Error('This milestone is not complete.');if(earned.claimed)throw new Error('This reward was already claimed.');const rewarded=addReward(state,earned.reward,nowMs),claimId=`${earned.eventId}:${rewardId}`;return {...rewarded,account:{...rewarded.account,eventRewardClaimIds:[...(rewarded.account.eventRewardClaimIds??[]),claimId]}};}
+export function claimEventReward(state:GameState,rewardId:string,nowMs=Date.now()):GameState{const earned=eventInboxRewards(state,nowMs).find(row=>row.reward.id===rewardId);if(!earned)throw new Error('This milestone is not complete.');if(earned.claimed)throw new Error('This reward was already claimed.');const rewarded=addReward(state,earned.reward,nowMs),claimId=`${earned.eventId}:${rewardId}`;return {...rewarded,account:{...rewarded.account,eventRewardClaimIds:[...(rewarded.account.eventRewardClaimIds??[]),claimId]}};}
 export function claimAllEventMilestones(state:GameState,nowMs=Date.now()):GameState{const event=claimableLiveEvent(state,nowMs);if(!event||!state.character)throw new Error('Event rewards are no longer available.');const available=event.definition.milestones(state.character.classId).filter(entry=>entry.points<=eventProgress(state,event.definition.id)&&!eventRewardClaimed(state,event.definition.id,entry.reward.id));if(!available.length)throw new Error('No milestone rewards are ready.');return available.reduce((next,entry)=>claimEventReward(next,entry.reward.id,nowMs),state);}
 
 export function availableEventRepeatCaches(state:GameState,eventId:string){const event=liveEventDef(eventId);if(!event)return 0;const earned=Math.floor(Math.max(0,eventProgress(state,eventId)-event.maxProgress)/1000),claimed=state.account.eventRepeatCacheClaimsById?.[eventId]??0;return Math.max(0,earned-claimed);}
@@ -248,6 +251,8 @@ function eventOfferOwnPurchaseCount(state:GameState,eventId:string,offerId:strin
 export function eventOfferPurchaseCount(state:GameState,eventId:string,offerId:string,nowMs=Date.now()){
  const definition=liveEventDef(eventId),offers=definition?[...definition.shop,...eventPrestigeSupplyOffers(definition)]:[];
  const offer=offers.find(row=>row.id===offerId);
+ // Frostfall emotes can also be earned via milestones/discoveries. Never charge twice for the same permanent unlock.
+ if(offer?.reward.kind==='emote'&&definition?.visualKey==='frostfall'&&eventRewardOwned(state,offer.reward))return offer.limit;
  if(offer?.perUtcWeek)return Math.max(0,Math.floor(state.account.eventShopPurchaseCounts?.[`${eventId}:${offerId}:week:${utcWeekKey(nowMs)}`]??0));
  if(offer?.reward.kind==='candy')return offers.filter(row=>row.currency===offer.currency&&row.reward.kind==='candy'&&row.reward.id===offer.reward.id).reduce((total,row)=>total+eventOfferOwnPurchaseCount(state,eventId,row.id),0);
  return eventOfferOwnPurchaseCount(state,eventId,offerId);

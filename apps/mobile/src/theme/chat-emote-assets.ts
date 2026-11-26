@@ -10,6 +10,11 @@ const art:Record<string,ImageSourcePropType>={
   'emotes/emote_sleeping_scarecrow':require('../../assets/events/veilbreak/emote_sleeping_scarecrow_runtime.webp'),
   'emotes/emote_veil_salute':require('../../assets/events/veilbreak/emote_pumpkin_panic_runtime.webp'),
   'emotes/emote_candle_circle':require('../../assets/events/veilbreak/emote_gloam_facepalm_runtime.webp'),
+  'emotes/emote_snowbell_ring':require('../../assets/events/frostfall/frostfall_emotes_runtime/emote_frostbell_cheer_runtime.webp'),
+  'emotes/emote_frostfall_wave':require('../../assets/events/frostfall/frostfall_emotes_runtime/emote_frozen_shock_runtime.webp'),
+  'emotes/emote_aurora_chime':require('../../assets/events/frostfall/frostfall_emotes_runtime/emote_aurora_hug_runtime.webp'),
+  'emotes/emote_cozy_hearth':require('../../assets/events/frostfall/frostfall_emotes_runtime/emote_cozy_hearth_runtime.webp'),
+  'emotes/emote_snowball_attack':require('../../assets/events/frostfall/frostfall_emotes_runtime/emote_snowball_attack_runtime.webp'),
 };
 
 export function chatEmoteArtwork(id:string):ImageSourcePropType|undefined{

@@ -3,9 +3,11 @@ import type {GameState} from './types';
 import {PROFILE_TITLES,profileTitleUnlocked,profileBackgroundUnlocked} from './profile-unlocks';
 import {JOURNAL_TITLES_V42} from './adventurers-journal-v42';
 import {DUNGEON_SHOP_COLLECTIBLES_V1} from '../content/dungeon-shop-collectibles-v1';
+import {PROFILE_EFFECTS,profileAnimatedBorderDefinition,profileEffectDefinition} from './profile-effects';
+import {PROFILE_ANIMATED_COSMETICS_RELEASED} from './release-flags';
 
-export type ProfileCustomizationDestination='Events'|'Guild'|'Character'|'Collections';
-export type ProfileRewardKind='background'|'border'|'title';
+export type ProfileCustomizationDestination='Events'|'Guild'|'Character'|'Collections'|'Store';
+export type ProfileRewardKind='background'|'border'|'effect'|'title';
 export type ProfilePreviewAudience='public'|'guild'|'self';
 export type ProfilePreviewVisibility='public'|'guild'|'private';
 
@@ -34,7 +36,7 @@ export interface ProfileUnlockNotice{
 }
 
 function humanize(id:string){
- return id.replace(/^(bg_|frame_|title_)/,'').replace(/[_:-]+/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+ return id.replace(/^(bg_|frame_|effect_|title_)/,'').replace(/[_:-]+/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
 }
 
 function milestoneSource(event:LiveEventDef,reward:EventReward,points:number):ProfileRewardSource{
@@ -91,6 +93,14 @@ function eventProfileRewardSource(state:GameState,kind:ProfileRewardKind,id:stri
 }
 
 export function profileRewardSource(state:GameState,kind:ProfileRewardKind,id:string):ProfileRewardSource{
+ if(kind==='effect'){
+  const effect=profileEffectDefinition(id);
+  if(effect)return {kind,id,name:effect.name,label:effect.collection+' Collection',detail:'Animated showcase effect · Account-wide cosmetic ownership.',destination:'Store',actionLabel:'Open Cosmetics'};
+ }
+ if(kind==='border'){
+  const animated=profileAnimatedBorderDefinition(id);
+  if(animated)return {kind,id,name:animated.borderName,label:animated.collection+' Collection',detail:'Animated collection border · Separate from the original reward border.',destination:'Store',actionLabel:'Open Cosmetics'};
+ }
  const dungeon=DUNGEON_SHOP_COLLECTIBLES_V1.find(row=>row.kind===kind&&row.id===id);
  if(dungeon)return {kind,id,name:dungeon.name,label:'Dungeon Marks Shop',
   detail:(dungeon.region??'Dungeon')+' · Permanent Expedition Marks reward',
@@ -143,6 +153,10 @@ export function newlyUnlockedProfileRewards(before:GameState,after:GameState):Pr
  }
  for(const id of addedIds(before.account.unlockedProfileBorderIds,after.account.unlockedProfileBorderIds)){
   notices.push({kind:'border',id,name:eventRewardName(after,'border',id),source:profileRewardSource(after,'border',id)});
+ }
+ if(PROFILE_ANIMATED_COSMETICS_RELEASED)for(const id of addedIds(before.account.unlockedProfileEffectIds,after.account.unlockedProfileEffectIds)){
+  const effect=PROFILE_EFFECTS.find(row=>row.id===id);
+  notices.push({kind:'effect',id,name:effect?.name??humanize(id),source:profileRewardSource(after,'effect',id)});
  }
  for(const id of addedIds(before.account.unlockedTitleIds,after.account.unlockedTitleIds)){
   if(profileTitleUnlocked(before,id))continue; // Existing account-level eligibility predates this command.

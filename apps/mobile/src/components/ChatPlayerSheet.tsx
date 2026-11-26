@@ -1,6 +1,8 @@
 import {gameAlert} from '../core/game-alerts';
 import {useSocialText} from '../i18n/social';
-import {useEffect,useMemo,useRef,useState} from 'react';
+import {useContext,useEffect,useMemo,useRef,useState} from 'react';
+import {ActiveProfileCharacterContext} from './ActiveProfileCharacterContext';
+import {combatPowerRating} from '../core/combat-power';
 import {ActivityIndicator,Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {
  cancelFriendRequest,friendRelationshipState,removeFriend,respondFriendRequest,sendFriendRequest,setPlayerBlocked,
@@ -37,45 +39,32 @@ export function ChatPlayerSheet({
  const st=useSocialText();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions(),stackActions=width<360||fontScale>=1.25;
  const {session}=useAuthSession();
- const activeProfileAccount=useRef(message?.account_id??'');activeProfileAccount.current=message?.account_id??'';
+ const activeCharacter=useContext(ActiveProfileCharacterContext);
+ const profileRequest=useRef(0);
+ const [profileRetry,setProfileRetry]=useState(0);
  const [profile,setProfile]=useState<PublicPlayerProfileV43|null>(null),[combatPower,setCombatPower]=useState<number|undefined>(undefined),[loading,setLoading]=useState(false),[busy,setBusy]=useState(false),[unavailable,setUnavailable]=useState(false),[loadError,setLoadError]=useState('');
  const [featuredCharacterId,setFeaturedCharacterId]=useState(''),[heroLoading,setHeroLoading]=useState(false),[heroError,setHeroError]=useState('');
  const [relationship,setRelationship]=useState<{relationship:FriendRelationship;requestId?:string}>({relationship:'none'}),[relationshipLoading,setRelationshipLoading]=useState(false),[relationshipError,setRelationshipError]=useState('');
  const [inviteCapabilities,setInviteCapabilities]=useState<SocialInviteCapabilities|null>(null),[inviteLoading,setInviteLoading]=useState(false),[inviteError,setInviteError]=useState('');
 
  const isSelf=!!session?.user.id&&!!message&&message.account_id===session.user.id;
+ // A self inspection follows gameplay; other viewers still land on the public featured hero.
+ const selfCharacterId=isSelf&&ACCOUNT_SOCIAL_IDENTITY_RELEASED?activeCharacter?.id:undefined;
  const setRelationshipAndNotify=(next:{relationship:FriendRelationship;requestId?:string})=>{setRelationship(next);if(message)onRelationshipChanged?.(message.account_id,next.relationship);};
- async function loadProfile(){
-  if(!message)return;
-  const account=message.account_id;
-  setLoading(true);setUnavailable(false);setLoadError('');setCombatPower(undefined);
-  try{
-   const row=await publicPlayerProfileV43(account);
-   if(activeProfileAccount.current!==account)return;
-   setProfile(row);setUnavailable(!row);setFeaturedCharacterId(row?.character.id??'');
-   if(row){
-    const power=await coopClient.profilePower(account).catch(()=>null);
-    if(activeProfileAccount.current===account)setCombatPower(power?.combatPower);
-   }
-  }catch(error){
-   if(activeProfileAccount.current===account){setProfile(null);setLoadError(error instanceof Error?error.message:st("Unable to load this player profile."));}
-  }finally{
-   if(activeProfileAccount.current===account)setLoading(false);
-  }
- }
+ function loadProfile(){setProfileRetry(previous=>previous+1);}
  async function chooseCharacter(characterId:string){
   if(!message||!profile||heroLoading||characterId===profile.character.id)return;
-  const account=message.account_id;
+  const account=message.account_id,request=++profileRequest.current;
   setHeroLoading(true);setHeroError('');
   try{
    const next=await publicPlayerProfileV43(account,characterId);
-   if(activeProfileAccount.current!==account)return;
-   if(next?.accountId===account)setProfile(next);
+   if(profileRequest.current!==request)return;
+   if(next?.accountId===account&&next.character.id===characterId)setProfile(next);
    else setHeroError('Character profile is unavailable.');
   }catch{
-   if(activeProfileAccount.current===account)setHeroError('Unable to load this character profile.');
+   if(profileRequest.current===request)setHeroError('Unable to load this character profile.');
   }finally{
-   if(activeProfileAccount.current===account)setHeroLoading(false);
+   if(profileRequest.current===request)setHeroLoading(false);
   }
  }
  async function loadRelationship(){
@@ -93,11 +82,40 @@ export function ChatPlayerSheet({
   finally{setInviteLoading(false)}
  }
  useEffect(()=>{
+  const request=++profileRequest.current;
+  setHeroLoading(false);setHeroError('');setProfile(null);setFeaturedCharacterId('');setCombatPower(undefined);setUnavailable(false);setLoadError('');
+  if(!message){setLoading(false);return;}
+  const account=message.account_id;
+  setLoading(true);
+  void (async()=>{
+   try{
+    const row=await publicPlayerProfileV43(account,selfCharacterId);
+    if(profileRequest.current!==request)return;
+    if(row&&(row.accountId!==account||(selfCharacterId&&row.character.id!==selfCharacterId)))throw new Error(st("Unable to load this player profile."));
+    setProfile(row);setUnavailable(!row);setFeaturedCharacterId(row?.character.id??'');
+    if(row){
+     if(selfCharacterId){
+      // The account-level power endpoint scores the featured hero, not the
+      // explicitly requested hero. Use the matching local gameplay snapshot.
+      const state=activeCharacter?.stateRef.current;
+      if(state?.character?.id===selfCharacterId)setCombatPower(combatPowerRating(state).total);
+     }else{
+      const power=await coopClient.profilePower(account).catch(()=>null);
+      if(profileRequest.current===request)setCombatPower(power?.combatPower);
+     }
+    }
+   }catch(error){
+    if(profileRequest.current===request){setProfile(null);setLoadError(error instanceof Error?error.message:st("Unable to load this player profile."));}
+   }finally{
+    if(profileRequest.current===request)setLoading(false);
+   }
+  })();
+  return()=>{profileRequest.current++;};
+ },[message?.id,message?.account_id,session?.user.id,selfCharacterId,profileRetry]);
+
+ useEffect(()=>{
   let active=true;
-  setHeroLoading(false);setHeroError('');
-  if(!message){setProfile(null);setFeaturedCharacterId('');setHeroError('');setCombatPower(undefined);setUnavailable(false);setLoadError('');setRelationship({relationship:'none'});setRelationshipError('');setInviteCapabilities(null);setInviteError('');return;}
-  setLoading(true);setUnavailable(false);setLoadError('');setCombatPower(undefined);
-  void publicPlayerProfileV43(message.account_id).then(async row=>{if(!active)return;setProfile(row);setUnavailable(!row);setFeaturedCharacterId(row?.character.id??'');if(row){const power=await coopClient.profilePower(message.account_id).catch(()=>null);if(active)setCombatPower(power?.combatPower)}}).catch(error=>{if(active){setProfile(null);setLoadError(error instanceof Error?error.message:st("Unable to load this player profile."))}}).finally(()=>{if(active)setLoading(false)});
+  if(!message){setRelationship({relationship:'none'});setRelationshipError('');setInviteCapabilities(null);setInviteError('');return;}
   if(message.account_id===session?.user.id){setRelationship({relationship:'none'});setRelationshipError('');setInviteCapabilities(null);setInviteError('');}
   else{
    setRelationshipLoading(true);setRelationshipError('');

@@ -1,0 +1,1 @@
+Extract into the Wave 2 draft branch root. Only seven PNG assets, manifest and generated registry are included. Do not activate readiness or grant ownership before server/native approval. The registry intentionally replaces the empty Wave 2 stub.

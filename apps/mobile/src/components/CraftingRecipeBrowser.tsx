@@ -8,6 +8,7 @@ import {recipeMatchesLocalizedSearch} from '../i18n/crafting-recipe-names';
 import {recipeAvailability} from '../core/playability';
 import {alchemyAvailability} from '../core/alchemy';
 import {isTimedProcessingRecipe,processingAvailability} from '../core/processing';
+import {isWinterHearthLightRecipe,winterHearthContentVisible} from '../core/winter-hearth-2026';
 import {equipmentCraftAvailability,timedEquipmentRecipe} from '../core/equipment-crafting-queue';
 import type {WorkingTowardDestination} from '../core/working-toward';
 import {RecipeCard} from './RecipeCard';
@@ -36,12 +37,12 @@ export function CraftingRecipeBrowser({state,skillId,initialQuery='',preferredRe
  const skill=state.skills.find(row=>row.skillId===skillId),skillLevel=skill?.level??1,characterLevel=state.character?.level??1;
  // Filter recipes before expensive inventory, bank, alchemy and equipment checks.
  // Typing into search now evaluates only recipes that can actually be shown.
- const q=query.trim().toLowerCase();
+ const q=query.trim().toLowerCase(),winterHearthVisible=winterHearthContentVisible(state);
  const recipes=useMemo(()=>{
-  const key=skillId+':'+state.character?.classId,cached=recipeGroups.get(key);if(cached)return cached;
-  const group=RECIPES.filter(recipe=>recipe.skillId===skillId&&!recipe.noviceSetId&&(!recipe.classId||!!recipe.v33SetId||recipe.classId===state.character?.classId)).sort((a,b)=>a.level-b.level||a.name.localeCompare(b.name));
+  const key=skillId+':'+state.character?.classId+':'+Number(winterHearthVisible),cached=recipeGroups.get(key);if(cached)return cached;
+  const group=RECIPES.filter(recipe=>recipe.skillId===skillId&&!recipe.noviceSetId&&(!isWinterHearthLightRecipe(recipe.id)||winterHearthVisible)&&(!recipe.classId||!!recipe.v33SetId||recipe.classId===state.character?.classId)).sort((a,b)=>a.level-b.level||a.name.localeCompare(b.name));
   recipeGroups.set(key,group);return group;
- },[skillId,state.character?.classId]);
+ },[skillId,state.character?.classId,winterHearthVisible]);
  const stored=useMemo(()=>{
   const inventory=new Map<string,number>(),bank=new Map<string,number>();
   for(const row of state.inventory.stacks)inventory.set(row.itemId,(inventory.get(row.itemId)??0)+row.quantity);
@@ -74,9 +75,15 @@ export function CraftingRecipeBrowser({state,skillId,initialQuery='',preferredRe
   }
  })})),[visibleGroups,state,skillId,skillLevel,characterLevel,stored,gt,gl]);
  // A craftable stays under READY NOW when either source is craftable.
- const ready=matching.filter(group=>group.rows.some(row=>row.status.ready));
- const locked=matching.filter(group=>!group.rows.some(row=>row.status.ready)&&group.rows.every(row=>row.recipe.level>skillLevel||(row.recipe.characterLevel??1)>characterLevel));
- const needs=matching.filter(group=>!ready.includes(group)&&!locked.includes(group));
+ const {ready,locked,needs}=useMemo(()=>{
+  const ready:GroupedRows[]=[],locked:GroupedRows[]=[],needs:GroupedRows[]=[];
+  for(const group of matching){
+   if(group.rows.some(row=>row.status.ready))ready.push(group);
+   else if(group.rows.every(row=>row.recipe.level>skillLevel||(row.recipe.characterLevel??1)>characterLevel))locked.push(group);
+   else needs.push(group);
+  }
+  return {ready,locked,needs};
+ },[matching,skillLevel,characterLevel]);
  const groups:{label:string;tone:'ready'|'needs'|'locked';rows:GroupedRows[]}[]=readyOnly?[{label:gt("READY NOW"),tone:'ready',rows:ready}]:[{label:gt("READY NOW"),tone:'ready',rows:ready},{label:gt("NEEDS REQUIREMENTS"),tone:'needs',rows:needs},{label:gt("LOCKED"),tone:'locked',rows:locked}].filter(group=>group.rows.length>0) as {label:string;tone:'ready'|'needs'|'locked';rows:GroupedRows[]}[];
  const perGroup=Math.max(4,Math.ceil(limit/Math.max(1,groups.length))),hasMore=groups.some(group=>group.rows.length>perGroup);
  const selectedRow=(group:GroupedRows):Row=>{

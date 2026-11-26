@@ -47,6 +47,9 @@ import {localizedItemName} from '../i18n/starter-item-names';
 import {ResourceArtwork} from '../components/ResourceArtwork';
 import {GUILD_ACTIVITY_MILESTONE_DEFS,guildActivityBonuses} from '../core/guild-activity';
 import {guildXpThresholdForLevelV1} from '../core/guild-progression-v1';
+import {WINTER_HEARTH_GUILD_RELEASED} from '../core/release-flags';
+import {WINTER_HEARTH_2026_ID,WINTER_HEARTH_2026_END_MS} from '../core/winter-hearth-2026';
+import {WinterHearthGuildScreen} from '../components/WinterHearthGuildScreen';
 
 const ROSTER=[['Elowen','Dawnkeeper',28,'Leader'],['Brann','Ironwarden',24,'Officer'],['Mira','Wayfinder',21,'Member'],['Tovan','Ravager',19,'Member'],['Sera','Hexweaver',17,'Member']];
 type GuildSection='Home'|'PvE'|'Roster'|'Skills'|'Bank';
@@ -77,7 +80,7 @@ const GUILD_BANK_RESOURCES=[
  {itemId:'TORN_OATHCLOTH',label:'Torn Oathcloth'},
 ] as const;
 const GUILD_PROJECT_COST={MOSS_FIBER:200,GREENWOOD_LOG:120,IRONWOOD_LOG:60,ASTER_IRON_INGOT:20};
-export function GuildScreen({state,onChange,onlineManagement,onlineBoard,onlineProjects,onlinePve,onlineHall,onlineChat,onlineCustomize,onlineChatUnread=0,onOpenChat,onRecruitment,online=false,membershipRevision=0,onTokenRewardsChanged,initialPve=false,onInitialPveHandled,initialNavigation,onNavigationChange}:{initialNavigation?:GuildNavigationState;onNavigationChange?:(state:GuildNavigationState)=>void;onOpenChat?:()=>void;onRecruitment?:()=>void;onTokenRewardsChanged?:()=>void|Promise<unknown>;online?:boolean;membershipRevision?:number;state:GameState;onChange:(next:GameState)=>void;onlineManagement?:ReactNode;onlineBoard?:ReactNode;onlineProjects?:ReactNode;onlinePve?:ReactNode;onlineHall?:ReactNode;onlineChat?:ReactNode;onlineCustomize?:ReactNode;onlineChatUnread?:number;onlineChatMentions?:number;initialPve?:boolean;onInitialPveHandled?:()=>void}){
+export function GuildScreen({state,onChange,onlineManagement,onlineBoard,onlineProjects,onlinePve,onlineHall,onlineChat,onlineCustomize,onlineChatUnread=0,onOpenChat,onRecruitment,online=false,membershipRevision=0,onTokenRewardsChanged,initialPve=false,onInitialPveHandled,initialNavigation,onNavigationChange,onEventPageChange,onOpenEventCrafting,eventGameplayBusy=false,onRefreshEventInventory}:{eventGameplayBusy?:boolean;onRefreshEventInventory?:()=>Promise<void>;onEventPageChange?:(open:boolean)=>void;onOpenEventCrafting?:(skill:'smithing'|'tailoring')=>void;initialNavigation?:GuildNavigationState;onNavigationChange?:(state:GuildNavigationState)=>void;onOpenChat?:()=>void;onRecruitment?:()=>void;onTokenRewardsChanged?:()=>void|Promise<unknown>;online?:boolean;membershipRevision?:number;state:GameState;onChange:(next:GameState)=>void;onlineManagement?:ReactNode;onlineBoard?:ReactNode;onlineProjects?:ReactNode;onlinePve?:ReactNode;onlineHall?:ReactNode;onlineChat?:ReactNode;onlineCustomize?:ReactNode;onlineChatUnread?:number;onlineChatMentions?:number;initialPve?:boolean;onInitialPveHandled?:()=>void}){
  const st=useSocialText();
   const {gl}=useGameplayText();
   const language=useGameLanguage();
@@ -103,8 +106,14 @@ export function GuildScreen({state,onChange,onlineManagement,onlineBoard,onlineP
     onlineSection==='Manage'||onlineSection==='Appearance'||onlineSection==='Chat'?'Home':onlineSection;
    onNavigationChange?.({section:safeSection,activityView,hallSection,progressTab});
   },[online,onlineSection,activityView,hallSection,progressTab,onNavigationChange]);
-  const [raidGuildId,setRaidGuildId]=useState<string|null>(null);
   const [guildMembership,setGuildMembership]=useState<'loading'|'member'|'none'|'error'>(online?'loading':'member');
+  const [winterHearthOpen,setWinterHearthOpen]=useState(false),[eventGuildId,setEventGuildId]=useState('');
+  const winterHearthAvailable=WINTER_HEARTH_GUILD_RELEASED&&online&&guildMembership==='member'&&state.account.liveEvent?.eventId===WINTER_HEARTH_2026_ID&&state.account.liveEvent.enabled===true;
+  const winterHearthVisible=winterHearthOpen&&winterHearthAvailable;
+  useEffect(()=>{onEventPageChange?.(winterHearthVisible);return()=>onEventPageChange?.(false);},[winterHearthVisible,onEventPageChange]);
+  useEffect(()=>{if(!winterHearthAvailable)setWinterHearthOpen(false);},[winterHearthAvailable]);
+  useEffect(()=>{setWinterHearthOpen(false);},[session?.user.id,membershipRevision,state.character?.id]);
+  useEffect(()=>{if(initialPve)setWinterHearthOpen(false);},[initialPve]);
   const [guildTourJustJoined,setGuildTourJustJoined]=useState(false);
   const [weeklyVotePending,setWeeklyVotePending]=useState(false);
   const [guideLibraryOpen,setGuideLibraryOpen]=useState(false);
@@ -120,18 +129,17 @@ export function GuildScreen({state,onChange,onlineManagement,onlineBoard,onlineP
    const headerGuide=online&&(['Activities','Progress','PvE','Roster','Hall','Manage','Appearance'] as const).some(value=>value===onlineSection)?<SectionGuide scope={session?.user.id??''} area="guild" section={guideSection} guide={localizedGuildDetailedGuide(language,guideSection)??guildGuide} placement="header" translate={value=>guildTutorialText(language,value)}/>:null;
   const reloadGuildMembership=()=>{
    setGuildMembership('loading');setGuildLoadError('');
-   void myGuild().then(membership=>{setRaidGuildId(membership?.guild_id??null);setGuildRole(membership?.role??null);setGuildMembership(membership?'member':'none')})
+   void myGuild().then(membership=>{setEventGuildId(membership?.guild_id??'');setGuildRole(membership?.role??null);setGuildMembership(membership?'member':'none')})
     .catch(reason=>{setGuildLoadError(reason instanceof Error?reason.message:'Unable to check Guild membership.');setGuildMembership('error')});
   };
   useEffect(()=>{
    if(!online)return;
    let mounted=true;
-   setGuildMembership('loading');setRaidGuildId(null);
-   void myGuild().then(membership=>{if(mounted){setRaidGuildId(membership?.guild_id??null);setGuildRole(membership?.role??null);setGuildMembership(membership?'member':'none')}})
+   setGuildMembership('loading');setEventGuildId('');
+   void myGuild().then(membership=>{if(mounted){setEventGuildId(membership?.guild_id??'');setGuildRole(membership?.role??null);setGuildMembership(membership?'member':'none')}})
     .catch(reason=>{if(mounted){setGuildLoadError(reason instanceof Error?reason.message:'Unable to check Guild membership.');setGuildMembership('error')}});
    return()=>{mounted=false};
   },[online,membershipRevision,session?.user.id]);
-  // Warm only the authenticated member's board after Home has painted. No polling from Home.
   const raidCharacterId=state.character?.id;
   useEffect(()=>{if(!online||guildMembership!=='member'||onlineSection!=='Home'||!session?.user.id||!raidCharacterId)return;const timer=setTimeout(()=>{if(AppState.currentState==='active')void prefetchGuildPveBoard(raidCharacterId).catch(()=>{})},700);return()=>clearTimeout(timer)},[online,guildMembership,onlineSection,session?.user.id,raidCharacterId,membershipRevision]);
   useEffect(()=>{if(onlineSection!=='Roster')setRosterSection('Members')},[onlineSection]);
@@ -163,6 +171,7 @@ export function GuildScreen({state,onChange,onlineManagement,onlineBoard,onlineP
    else setOnlineSection('Home');
    guildScroll.current?.scrollTo({y:0,animated:false});
   };
+  if(winterHearthVisible&&session?.user.id&&eventGuildId&&onRefreshEventInventory)return <WinterHearthGuildScreen key={session.user.id+':'+eventGuildId+':'+state.character?.id} state={state} accountId={session.user.id} guildId={eventGuildId} gameplayBusy={eventGameplayBusy} onRefreshInventory={onRefreshEventInventory} endsAtMs={Math.min(state.account.liveEvent?.endsAtMs??WINTER_HEARTH_2026_END_MS,WINTER_HEARTH_2026_END_MS)} scope={String(session?.user.id??'')+':'+membershipRevision} onClose={()=>setWinterHearthOpen(false)} onOpenCrafting={onOpenEventCrafting}/>;
   if(online)return <View style={{flex:1,minHeight:0}}><GuildNavigation value={onlineSection} voteReminder={weeklyVotePending} onChange={next=>{setOnlineSection(next);guildScroll.current?.scrollTo({y:0,animated:false})}}/><ScrollView ref={guildScroll} contentContainerStyle={s.root} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
     <GuildTutorial role={guildRole} autoStart={guildTourJustJoined} home={onlineSection==='Home'}
       destination={tutorialDestination} onNavigate={navigateGuildTutorial}
@@ -171,6 +180,7 @@ export function GuildScreen({state,onChange,onlineManagement,onlineBoard,onlineP
     {(['Roster','Manage'] as const).some(section=>section===onlineSection)?<GuildSectionHeader label={st('Guild')} title={gl(onlineSection==='Roster'?'Guild Roster':'Manage Guild')} copy={gl(onlineSection==='Roster'?'Roster, activity and membership.':'Guild identity and recruitment.')} action={headerGuide}/>:null}
 
 
+    {onlineSection==='Home'&&winterHearthAvailable?<Panel accentColor="#86c9e9" accentSurface={C.panelRaised}><Text style={[s.title,{color:C.text}]}>{gl('Winter Hearth · Guild Christmas Market')}</Text><Text style={s.sub}>{gl('Build the market together and earn permanent guild cosmetics.')}</Text><GameButton title={gl('Open guild event')} onPress={()=>setWinterHearthOpen(true)}/></Panel>:null}
     {onlineSection==='Home'?<GuildOnlineHome votePending={weeklyVotePending} onNavigateProjectVote={()=>{setProgressTab('Projects');setOnlineSection('Progress');guildScroll.current?.scrollTo({y:0,animated:false})}} onNavigateMuster={()=>{setActivityView('Muster');setOnlineSection('Activities')}} onNavigateQuests={()=>{setActivityView('Quests');setOnlineSection('Activities')}} onNavigateShop={()=>{setHallSection('Shop');setOnlineSection('Hall')}} onRewardsChanged={onTokenRewardsChanged} onGuide={()=>setGuideLibraryOpen(true)} canCustomize={canCustomize} onNavigate={next=>{if(next==='Chat'&&onOpenChat){onOpenChat();return;}if((next!=='Manage'&&next!=='Appearance')||canCustomize)setOnlineSection(next)}} board={onlineBoard} chatUnread={onlineChatUnread}/>:null}
     {onlineSection==='Roster'?(isValidElement<{initialView?:'Members'|'Requests'|'Safety'}>(onlineManagement)?cloneElement(onlineManagement,{initialView:rosterSection}):onlineManagement):null}
     {onlineSection==='Activities'?<View style={s.sectionStack}>
@@ -180,7 +190,7 @@ export function GuildScreen({state,onChange,onlineManagement,onlineBoard,onlineP
       {activityView==='Muster'?<><GuildSectionHeader label={st("DAILY & WEEKLY")} title={st("Muster & Rally")} copy={guildTutorialText(language,'Track your daily effort and weekly Guild Rally progress.')}/><OnlineGuildMusterPanel/></>:null}
     </View>:null}
     {onlineSection==='Progress'?<GuildProgressPanel headerHelp={headerGuide} tab={progressTab} onChange={setProgressTab} projects={onlineProjects} onViewBank={()=>{setHallSection('Bank');setOnlineSection('Hall');guildScroll.current?.scrollTo({y:0,animated:false})}}/>:null}
-    {onlineSection==='PvE'?(isValidElement<{headerHelp?:ReactNode;raidScope?:string}>(onlinePve)?cloneElement(onlinePve,{headerHelp:headerGuide,raidScope:JSON.stringify([session?.user.id??'',raidGuildId??'',raidCharacterId??'']),key:`${session?.user.id??''}:${raidGuildId??''}:${raidCharacterId??''}:${membershipRevision}`}):onlinePve):null}
+    {onlineSection==='PvE'?(isValidElement<{headerHelp?:ReactNode;raidScope?:string}>(onlinePve)?cloneElement(onlinePve,{headerHelp:headerGuide,raidScope:JSON.stringify([session?.user.id??'',eventGuildId,raidCharacterId??'']),key:`${session?.user.id??''}:${eventGuildId}:${raidCharacterId??''}:${membershipRevision}`}):onlinePve):null}
     {onlineSection==='Hall'?<View style={s.sectionStack}>
       {isValidElement<{playerState?:GameState;activeSection?:'Overview'|'Construction'|'Bank'|'Skills'|'Legacy'|'Shop';onSectionChange?:(section:GuildNavigationState['hallSection'])=>void;onTokenRewardsChanged?:()=>void|Promise<unknown>;headerHelp?:ReactNode}>(onlineHall)
        ?cloneElement(onlineHall,{activeSection:hallSection,playerState:state,onTokenRewardsChanged,headerHelp:headerGuide,onSectionChange:next=>{if(next==='Skills'){setProgressTab('Skills');setOnlineSection('Progress')}else setHallSection(next);guildScroll.current?.scrollTo({y:0,animated:false})}})

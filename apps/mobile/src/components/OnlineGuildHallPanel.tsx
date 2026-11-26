@@ -55,13 +55,16 @@ export function GuildHallView({projection,loading=false,error='',onRefresh,activ
  const hallTabsRef=useRef<ScrollViewInstance>(null);
  const hallTabOffsets=useRef<Partial<Record<(typeof DESTINATIONS)[number],number>>>({});
  const [shop,setShop]=useState<GuildTokenShopSnapshot|null>(null);
- const [shopLoading,setShopLoading]=useState(true);
+ const [shopLoading,setShopLoading]=useState(false);
+ const shopFlight=useRef<Promise<void>|null>(null),mounted=useRef(false);
  const [shopError,setShopError]=useState('');
  const [bankFocus,setBankFocus]=useState<string|null>(null);
  const [returnBuilding,setReturnBuilding]=useState<string|undefined>(undefined);
  const [returnSelection,setReturnSelection]=useState<{templateId:string;resourceId:string}|undefined>(undefined);
  const requestedSection=activeSection??localSection;
  const section=requestedSection==='Skills'?'Overview':requestedSection;
+ // Shop owns its own refresh, and Legacy needs only Hall progression.
+ const needsSupplies=section==='Overview'||section==='Construction'||section==='Bank';
  // Use measured translated tab positions rather than assuming a fixed width for each tab.
  useEffect(()=>{
   const index=DESTINATIONS.indexOf(section);
@@ -75,13 +78,19 @@ export function GuildHallView({projection,loading=false,error='',onRefresh,activ
   if(next==='Bank'&&!preserveBankReturn){setReturnSelection(undefined);setReturnBuilding(undefined);setBankFocus(null);}
   if(onSectionChange)onSectionChange(next);else setLocalSection(next);
  };
- const refreshShop=useCallback(async()=>{
+ const refreshShop=useCallback(()=>{
+  if(previewMode||!needsSupplies)return Promise.resolve();
+  if(shopFlight.current)return shopFlight.current;
   setShopLoading(true);setShopError('');
-  try{setShop(await loadOnlineGuildTokenShop())}
-  catch(reason){setShopError(reason instanceof Error?reason.message:ui('Could not load guild construction and bank balances.'))}
-  finally{setShopLoading(false)}
- },[ui]);
- useEffect(()=>{if(previewMode)setShopLoading(false);else void refreshShop()},[previewMode,refreshShop]);
+  const flight=(async()=>{
+   try{const next=await loadOnlineGuildTokenShop();if(mounted.current)setShop(next)}
+   catch(reason){if(mounted.current)setShopError(reason instanceof Error?reason.message:ui('Could not load guild construction and bank balances.'))}
+   finally{if(mounted.current)setShopLoading(false)}
+  })().finally(()=>{if(shopFlight.current===flight)shopFlight.current=null;});
+  shopFlight.current=flight;return flight;
+ },[ui,previewMode,needsSupplies]);
+ useEffect(()=>{mounted.current=true;return()=>{mounted.current=false}},[]);
+ useEffect(()=>{if(needsSupplies&&!previewMode)void refreshShop()},[needsSupplies,previewMode,refreshShop]);
  const {state,level,stage}=projection;
  const next=DEFAULT_GUILD_HALL_POLICY.hallLevelThresholds[level]??DEFAULT_GUILD_HALL_POLICY.hallLevelThresholds[9];
  const previous=DEFAULT_GUILD_HALL_POLICY.hallLevelThresholds[Math.max(0,level-1)]??0;
@@ -112,7 +121,7 @@ export function GuildHallView({projection,loading=false,error='',onRefresh,activ
    <View style={s.crest}><Image source={guildFacilityArtwork('banner_gallery')} style={s.crestImage} resizeMode="contain" accessible={false}/></View>
    <View style={s.flex}><Text style={s.kicker}>{ui('GUILD HEADQUARTERS')}</Text><Text accessibilityRole="header" style={s.title}>{ui("Guild Hall")}</Text><Text style={s.note}>{ui('Shared progression and lasting benefits')}</Text></View>
    {headerHelp?<View style={s.helpWrap}>{headerHelp}</View>:null}
-   {onRefresh?<Pressable accessibilityRole="button" accessibilityLabel={ui("Refresh Guild Hall and supplies")} disabled={loading||shopLoading} accessibilityState={{disabled:loading||shopLoading}} onPress={()=>{onRefresh();void refreshShop()}} style={({pressed})=>[s.refresh,pressed&&s.pressed]}><Text style={s.refreshText}>↻</Text></Pressable>:null}
+   {onRefresh?<Pressable accessibilityRole="button" accessibilityLabel={ui("Refresh Guild Hall and supplies")} disabled={loading||(needsSupplies&&shopLoading)} accessibilityState={{disabled:loading||(needsSupplies&&shopLoading)}} onPress={()=>{onRefresh();if(needsSupplies)void refreshShop()}} style={({pressed})=>[s.refresh,pressed&&s.pressed]}><Text style={s.refreshText}>↻</Text></Pressable>:null}
   </View>
   <ScrollView ref={hallTabsRef} horizontal showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} accessibilityRole="tablist" accessibilityLabel={ui("Guild Hall sections")} contentContainerStyle={s.tabs}>
    {DESTINATIONS.map(id=><Pressable key={id} accessibilityRole="tab" accessibilityState={{selected:section===id}} onLayout={({nativeEvent})=>{hallTabOffsets.current[id]=nativeEvent.layout.x;if(section===id)hallTabsRef.current?.scrollTo({x:Math.max(0,nativeEvent.layout.x-12),animated:false})}} onPress={()=>navigate(id)} style={({pressed})=>[s.tab,{backgroundColor:section===id?C.selection:C.panel,borderColor:section===id?C.selectionLine:C.line},pressed&&s.pressed]}><Text style={[s.tabText,{color:section===id?C.text:C.muted}]}>{ui(id)}</Text></Pressable>)}
@@ -172,7 +181,7 @@ export function GuildHallView({projection,loading=false,error='',onRefresh,activ
     {!state.trophies.length?<Text style={s.note}>{ui('No recorded trophies yet.')}</Text>:null}
    </QuestBoard>
   </View>:null}
-  {!!shopError&&shop?<Text accessibilityRole="alert" style={s.error}>{ui('Showing previously loaded supplies. Refresh failed: {error}',{error:shopError})}</Text>:null}
+  {needsSupplies&&!!shopError&&shop?<Text accessibilityRole="alert" style={s.error}>{ui('Showing previously loaded supplies. Refresh failed: {error}',{error:shopError})}</Text>:null}
   {!!error&&<Text accessibilityRole="alert" style={s.error}>{error}</Text>}
  </View>;
 }

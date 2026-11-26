@@ -7,10 +7,25 @@ import {socialEarlyText} from './social-early-coverage';
 
 // Columns are German, Spanish, Dutch, Italian and French; keys are the English catalog.
 export const socialTranslationRows = {
-  "Guild Bank": ["Gildenbank","Banco del gremio","Gildebank","Banca di gilda","Banque de guilde"],
-  "Guild XP": ["Gilden-EP","EXP del gremio","Gilde-XP","PE di gilda","XP de guilde"],
-  "Materials": ["Materialien","Materiales","Materialen","Materiali","Matériaux"],
   "Minimize battle": ["Kampf minimieren","Minimizar combate","Gevecht minimaliseren","Riduci battaglia","Réduire le combat"],
+  "Materials": ["Materialien","Materiales","Materialen","Materiali","Matériaux"],
+  "Guild XP": ["Gilden-EP","EXP del gremio","Gilde-XP","PE di gilda","XP de guilde"],
+  "Guild Bank": ["Gildenbank","Banco del gremio","Gildebank","Banca di gilda","Banque de guilde"],
+  "Title": ["Titel","Título","Titel","Titolo","Titre"],
+  "Party language and minimum level follow your Party settings.": ["Sprache und Mindeststufe entsprechen deinen Gruppeneinstellungen.","El idioma y el nivel mínimo siguen los ajustes de tu grupo.","Taal en minimumniveau volgen je groepsinstellingen.","Lingua e livello minimo seguono le impostazioni del gruppo.","La langue et le niveau minimum suivent les paramètres du groupe."],
+  "Tell others what you're looking for...": ["Sag anderen, wonach du suchst …","Cuéntales a otros qué buscas…","Vertel anderen wat je zoekt…","Spiega agli altri cosa cerchi…","Dis aux autres ce que tu recherches…"],
+  "Automatically expires after 24 hours": ["Verfällt automatisch nach 24 Stunden","Caduca automáticamente tras 24 horas","Verloopt automatisch na 24 uur","Scade automaticamente dopo 24 ore","Expire automatiquement après 24 heures"],
+  "Looking for active adventurers": ["Aktive Abenteurer gesucht","Buscamos aventureros activos","Actieve avonturiers gezocht","Cerchiamo avventurieri attivi","Recherche d’aventuriers actifs"],
+  "Automatically expires after 3 days": ["Verfällt automatisch nach 3 Tagen","Caduca automáticamente tras 3 días","Verloopt automatisch na 3 dagen","Scade automaticamente dopo 3 giorni","Expire automatiquement après 3 jours"],
+  "Main interest": ["Hauptinteresse","Interés principal","Hoofdinteresse","Interesse principale","Intérêt principal"],
+  "Expected activity": ["Erwartete Aktivität","Actividad esperada","Verwachte activiteit","Attività prevista","Activité attendue"],
+  "Crafting": ["Handwerk","Fabricación","Vervaardiging","Creazione","Artisanat"],
+  "Mixed": ["Gemischt","Mixto","Gemengd","Misto","Mixte"],
+  "Occasional play, no pressure.": ["Gelegentlich spielen, ohne Druck.","Juega de vez en cuando, sin presión.","Af en toe spelen, zonder druk.","Gioca occasionalmente, senza pressioni.","Joue de temps en temps, sans pression."],
+  "Plays several times a week.": ["Spielt mehrmals pro Woche.","Juega varias veces por semana.","Speelt meerdere keren per week.","Gioca più volte a settimana.","Joue plusieurs fois par semaine."],
+  "Plays most days.": ["Spielt an den meisten Tagen.","Juega casi todos los días.","Speelt op de meeste dagen.","Gioca quasi tutti i giorni.","Joue la plupart des jours."],
+  "Very dedicated, frequent play.": ["Sehr engagiert, spielt häufig.","Muy dedicado, juega con frecuencia.","Zeer toegewijd, speelt vaak.","Molto impegnato, gioca spesso.","Très investi, joue souvent."],
+  "Guild Tokens": ["Gildenmarken","Fichas de gremio","Gildetokens","Gettoni di gilda","Jetons de guilde"],
   // Short Party identity, six-month name cooldown and ranking-ready labels.
   "Party name": ["Gruppenname","Nombre del grupo","Partynaam","Nome del gruppo","Nom du groupe"],
   "Choose Party name": ["Gruppennamen wählen","Elegir nombre del grupo","Partynaam kiezen","Scegli il nome del gruppo","Choisir un nom de groupe"],
@@ -50,6 +65,7 @@ export const socialTranslationRows = {
   // Online roster: compact, accessible social discovery across supported languages.
   "VELDRYN COMMUNITY": ["VELDRYN-GEMEINSCHAFT","COMUNIDAD DE VELDRYN","VELDRYN-GEMEENSCHAP","COMUNITÀ DI VELDRYN","COMMUNAUTÉ VELDRYN"],
   "Online players": ["Spieler online","Jugadores conectados","Online spelers","Giocatori online","Joueurs en ligne"],
+  "Total character level": ["Gesamtcharakterstufe","Nivel total de personajes","Totaal personageniveau","Livello totale personaggi","Niveau total des personnages"],
   "Active (30m)": ["Aktiv (30 Min.)","Activo (30 min)","Actief (30 min)","Attivi (30 min)","Actifs (30 min)"],
   "Active in Last 30 Minutes": ["Aktiv in den letzten 30 Minuten","Activos en los últimos 30 minutos","Actief in de afgelopen 30 minuten","Attivi negli ultimi 30 minuti","Actifs ces 30 dernières minutes"],
   "View players active in the last 30 minutes": ["Spieler ansehen, die in den letzten 30 Minuten aktiv waren","Ver jugadores activos en los últimos 30 minutos","Bekijk spelers die de afgelopen 30 minuten actief waren","Vedi i giocatori attivi negli ultimi 30 minuti","Voir les joueurs actifs ces 30 dernières minutes"],

@@ -1,3 +1,5 @@
+import {useMusicOverride} from '../../storage/audio';
+import {dungeonMusicFor,dungeonBossMusicFor} from '../../core/encounter-music';
 import {useCoopStyles} from '../../theme/useCoopStyles';
 import {useSocialText} from '../../i18n/social';
 import {useGameplayText} from '../../i18n/gameplay';
@@ -19,6 +21,7 @@ import {GameButton} from '../GameButton';
 import {IdentityArtwork} from '../SocialIdentity';
 import {SeasonalBossTelegraphPanel} from './SeasonalBossTelegraphPanel';
 import {localizedSeasonalDungeonMechanic,localizedSeasonalDungeonObjective} from '../../i18n/seasonal-dungeon-effects';
+import {dungeonUxText} from '../../i18n/dungeon-ux-copy';
 import {dungeonDynamicUiText} from '../../i18n/dungeon-dynamic-ui';
 import {dungeonCombatAvatar} from '../../core/dungeon-combat-avatars';
 import {dungeonEnemyDisplayName} from '../../core/dungeon-enemy-display';
@@ -37,18 +40,18 @@ import {skillIcons} from '../../theme/skill-assets';
 import {dungeonRewardDisplayAmount,dungeonRunMarksBreakdown,type DungeonRewardPreviewBudget,type DungeonCombatMarks} from '../../core/dungeon-reward-display';
 import type {CoopChatMessage} from '../../online/coop-client';
 
-function TerminalRunMoment({phase,rewardsReady,rewardsSecured,reduceMotion}:{phase:CoopRunView['phase'];rewardsReady:boolean;rewardsSecured:boolean;reduceMotion:boolean}){
+function TerminalRunMoment({language,phase,reason,rewardsReady,rewardsSecured,reduceMotion}:{language:Language;phase:CoopRunView['phase'];reason?:NonNullable<CoopRunView['lastCombat']>['reason'];rewardsReady:boolean;rewardsSecured:boolean;reduceMotion:boolean}){
  const {styles:s}=useCoopStyles(makeStyles);
  const st=useSocialText();
   const scale=useRef(new Animated.Value(1)).current,completed=phase==='completed';
   useEffect(()=>{scale.stopAnimation();scale.setValue(1);if(reduceMotion||!completed)return;Animated.sequence([Animated.spring(scale,{toValue:1.025,damping:9,stiffness:220,mass:.65,useNativeDriver:true}),Animated.spring(scale,{toValue:1,damping:16,stiffness:200,mass:.75,useNativeDriver:true})]).start();return()=>scale.stopAnimation()},[phase,rewardsSecured,reduceMotion,scale,completed]);
   const body=completed
     ?rewardsSecured?st("Your expedition rewards are secured. Return when you are ready."):rewardsReady?st("Final encounter cleared. Collect the expedition reward below."):st("Final encounter cleared. Your reward entitlement is being prepared.")
-    :st("This expedition has ended. Review any available rewards before returning.");
+    :dungeonUxText(language,"terminalFailedBody");
   return <Animated.View accessibilityLiveRegion="polite" style={[s.terminal,{transform:[{scale}]}]}>
     <View style={[s.rewardCrest,completed?s.rewardCrestSuccess:s.rewardCrestFailure]}><Text style={[s.rewardCrestText,completed?s.terminalSuccess:s.terminalDanger]}>{completed?'✦':'◇'}</Text></View>
-    <Text style={[s.terminalEyebrow,completed?s.terminalSuccess:s.terminalDanger]}>{completed?st("EXPEDITION CLEARED"):st("EXPEDITION ENDED")}</Text>
-    <Text style={s.terminalTitle}>{completed?st("Victory secured!"):st("Run complete")}</Text>
+    <Text style={[s.terminalEyebrow,completed?s.terminalSuccess:s.terminalDanger]}>{completed?st("EXPEDITION CLEARED"):dungeonUxText(language,"terminalFailed")}</Text>
+    <Text style={s.terminalTitle}>{completed?st("Victory secured!"):reason==="timeout"?dungeonUxText(language,"terminalTimeout"):reason==="wipe"?dungeonUxText(language,"terminalWipe"):dungeonUxText(language,"terminalFailed")}</Text>
     <Text style={s.terminalDescription}>{body}</Text>
   </Animated.View>;
 }
@@ -180,6 +183,14 @@ export function CoopRunOverview({language,run,combatMarks,myVotedNodeId,selfVote
   // Never play the previous room's lastCombat while the new fight is pending.
   const awaitingCombatPlayback=inCombat&&(run.mode==='qmode'?!!run.selectedNodeId&&run.lastCombat?.nodeId!==run.selectedNodeId:!run.pendingCombat?.cues.length);
   const combatName=enteringCombat?(entryCombatKind==='boss'?st('FINAL BOSS'):st('DUNGEON COMBAT')):dungeonEnemyDisplayName(run.bossMechanic?.telegraph?.bossName??(run.pendingCombat??run.lastCombat)?.combatants?.find(member=>member.boss)?.name??st('DUNGEON COMBAT'));
+  // Do not derive music from elapsed time, phases, or unrelated stale replay data.
+  const pendingPresentation=enteringCombat||awaitingCombatPlayback;
+  const activeBoss=pendingPresentation?undefined:(run.pendingCombat??run.lastCombat)?.combatants?.find(member=>member.boss);
+  const bossEncounter=theaterOpen&&(pendingPresentation?(entryCombatKind??run.selectedNodeKind)==='boss':Boolean(activeBoss));
+  const bossIdentity=activeBoss?.name??entryCombatEnemies.find(member=>member.boss)?.name??run.bossMechanic?.telegraph?.bossName;
+  useMusicOverride(bossEncounter?'boss':'dungeon',bossEncounter
+    ?dungeonBossMusicFor(run.expeditionId,activeBoss?.id,bossIdentity)
+    :dungeonMusicFor(run.expeditionId,run.region));
   const closeTheater=()=>{setTheaterOpen(false);if(terminal)setRewardOpen(true);};
   const showBattleAction=battlePresentationReady&&!inCombat&&Boolean(run.lastCombat);
   const marksBreakdown=terminal&&!seasonal?dungeonRunMarksBreakdown(rewards,run,combatMarks,rewardBudget,liveFellowshipRemaining):undefined;
@@ -308,7 +319,7 @@ export function CoopRunOverview({language,run,combatMarks,myVotedNodeId,selfVote
    {terminal?<Modal visible={rewardOpen&&!theaterOpen} transparent animationType={reduceMotion?'none':'fade'} onRequestClose={()=>setRewardOpen(false)}>
     <View style={s.rewardOverlay}>
      <ScrollView style={s.rewardDialog} contentContainerStyle={s.rewardContent} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
-      <TerminalRunMoment phase={run.phase} rewardsReady={rewardSurfaceReady} rewardsSecured={rewardsSecured} reduceMotion={reduceMotion}/>
+      <TerminalRunMoment language={language} phase={run.phase} reason={run.lastCombat?.reason} rewardsReady={rewardSurfaceReady} rewardsSecured={rewardsSecured} reduceMotion={reduceMotion}/>
       <Text style={s.rewardRunCaption}>{run.region?`${run.region} · `:''}{modeLabel}</Text>
       {!rewardSurfaceReady?<Text style={s.copy}>{run.phase==='failed'
        ?st("No failed-run reward receipt yet. Weekly consolation rewards may be exhausted; refresh to check.")
@@ -323,7 +334,7 @@ export function CoopRunOverview({language,run,combatMarks,myVotedNodeId,selfVote
           {rewards.length>0&&unclaimedRewards.length===0&&marksPrimaryAmount!==undefined
            ?<AnimatedMarkAmount value={marksPrimaryAmount} reduceMotion={reduceMotion} style={s.marksHeroAmount}/>
            :<Text style={s.marksHeroAmount}>{marksPrimaryAmount===undefined?'—':(marksPrimaryEstimated?'≈':'')+'+'+marksPrimaryAmount.toLocaleString(language)}</Text>}
-          <Text style={s.marksHeroCaption}>{unclaimedRewards.length>0?st('To claim'):rewards.length>0?st('Claimed'):st('Reward pending')}</Text>
+          <Text style={s.marksHeroCaption}>{run.phase==='failed'&&rewards.length>0?`${dungeonUxText(language,'terminalConsolation')} · `:''}{unclaimedRewards.length>0?st('To claim'):rewards.length>0?st('Claimed'):st('Reward pending')}</Text>
          </View>
          {combatMarks!==undefined?<>
           <View style={s.marksSummaryDivider}/>

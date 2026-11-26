@@ -1,11 +1,14 @@
 import {createCharacter,newGame,claimActivity,offlineCapSeconds} from '../src/core/game';
 import {transitionActivity} from '../src/core/playability';
 import {executeGameCommand} from '../src/core/game-commands';
-import {mealBonusDef,MEAL_BONUSES,eatMealForBonus,normalizeMealBuff,commitMealActivityTime} from '../src/core/meal-buffs';
+import {mealBonusDef,MEAL_BONUSES,eatMealForBonus,normalizeMealBuff,commitMealActivityTime,MAX_MEAL_BUFF_SECONDS,projectedMealDuration} from '../src/core/meal-buffs';
 import {characterPermanentMultipliers} from '../src/core/permanent-boosts';
-import {processingRecipeDef,processingRunCapacity} from '../src/core/processing';
+import {processingRecipeDef,processingRunCapacity,startProcessingBatch} from '../src/core/processing';
 import {normalizeSave} from '../src/core/save-normalization';
 import type {GameState} from '../src/core/types';
+import {recipeDef} from '../src/content/skills';
+import {itemDef} from '../src/content/items';
+import {localizedItemName} from '../src/i18n/starter-item-names';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message);}
 function throws(fn:()=>unknown,message:string){let rejected=false;try{fn()}catch{rejected=true;}ok(rejected,message);}
@@ -19,12 +22,31 @@ const fresh=()=>{
 };
 const expected=[
  ['IRONWOOD_STEW',4,3,'gathering_speed'],
+ ['SUNSCAR_SPICED_PLATTER',6,3,'combat_xp'],
  ['GLASSFIN_FEAST',6,4,'gathering_speed'],
  ['FROSTED_ICEFIN',6,4,'crafting_speed'],
  ['CHARRED_EMBERFIN',8,4,'combat_xp'],
- ['ASHLANDS_EMBER_STEW',10,4,'noncombat_speed'],
+ ['ASHLANDS_EMBER_STEW',8,4,'crafting_speed'],
 ] as const;
-ok(MEAL_BONUSES.length===5,'exactly five special meal buffs');
+ok(MEAL_BONUSES.length===6,'exactly six special meal buffs');
+for(const [recipeId,itemId,level,gold] of [
+ ['COOK_SUNSCAR_SPICED_PLATTER','SUNSCAR_SPICED_PLATTER',30,384],
+] as const){
+ const recipe=recipeDef(recipeId);
+ if(!recipe)throw new Error('Missing recipe: '+recipeId);
+ ok(recipe.level===level&&recipe.gold===gold&&recipe.skillId==='cooking',recipeId+' exact unlock and final Gold');
+ ok(recipe.output.itemId===itemId&&recipe.output.quantity===1&&recipe.repeatableTraining,recipeId+' repeatable meal output');
+ ok(itemDef(itemId).type==='food'&&!!itemDef(itemId).heal,itemId+' valid healing food');
+ for(const input of recipe.inputs)ok(itemDef(input.itemId).id===input.itemId,'valid recipe ingredient');
+ const stocked=fresh();
+ stocked.inventory.stacks=recipe.inputs.map(input=>({...input,quantity:input.quantity*3}));
+ stocked.skills=stocked.skills.map(row=>row.skillId==='cooking'?{...row,level:level-1}:row);
+ throws(()=>startProcessingBatch(stocked,recipeId,1,now),recipeId+' cannot craft below unlock');
+ stocked.skills=stocked.skills.map(row=>row.skillId==='cooking'?{...row,level}:row);
+ const run=startProcessingBatch(stocked,recipeId,1,now);
+ ok(run.activity?.processing?.outputPerBatch.itemId===itemId,recipeId+' uses normal reserved cooking run');
+ for(const lang of ['en','de','es','nl','it','fr','ru','tr'] as const)ok(!!localizedItemName(lang,itemId),itemId+' localized name '+lang);
+}
 for(const [id,percent,hours,kind] of expected){
  const def=mealBonusDef(id);
  if(!def)throw new Error('Missing special meal definition: '+id);
@@ -32,8 +54,8 @@ for(const [id,percent,hours,kind] of expected){
  const before=fresh(),after=executeGameCommand(before,{type:'meal_bonus',args:{id}},now).state,stats=characterPermanentMultipliers(after);
  ok(after.inventory.stacks.find(row=>row.itemId===id)?.quantity===3,'explicit meal consumes one inventory item');
  ok(after.character?.activeMealBuff?.itemId===id&&after.character.activeMealBuff.remainingSeconds===hours*3600,'meal grants exact duration');
- ok((kind==='gathering_speed'||kind==='noncombat_speed')?stats.gatheringSpeedMultiplier>characterPermanentMultipliers(before).gatheringSpeedMultiplier:true,id+' gathering benefit');
- ok((kind==='crafting_speed'||kind==='noncombat_speed')?stats.craftingSpeedMultiplier>characterPermanentMultipliers(before).craftingSpeedMultiplier:true,id+' crafting benefit');
+ ok((kind==='gathering_speed')?stats.gatheringSpeedMultiplier>characterPermanentMultipliers(before).gatheringSpeedMultiplier:true,id+' gathering benefit');
+ ok((kind==='crafting_speed')?stats.craftingSpeedMultiplier>characterPermanentMultipliers(before).craftingSpeedMultiplier:true,id+' crafting benefit');
  ok(kind==='combat_xp'?stats.characterXpMultiplier>characterPermanentMultipliers(before).characterXpMultiplier:true,id+' combat XP benefit');
  const baseline=characterPermanentMultipliers(before),epsilon=.00001;
  const multiplier=kind==='gathering_speed'?stats.gatheringSpeedMultiplier/baseline.gatheringSpeedMultiplier:kind==='crafting_speed'?stats.craftingSpeedMultiplier/baseline.craftingSpeedMultiplier:kind==='combat_xp'?stats.characterXpMultiplier/baseline.characterXpMultiplier:stats.craftingSpeedMultiplier/baseline.craftingSpeedMultiplier;
@@ -42,6 +64,32 @@ for(const [id,percent,hours,kind] of expected){
  const restored=normalizeSave(structuredClone(after));
  ok(restored.character?.activeMealBuff?.remainingSeconds===hours*3600,'active meal persists through save normalization');
 }
+// All bonus meals can accumulate duration, but not strength, to 24 hours.
+for(const def of MEAL_BONUSES){
+ let stacked=fresh();
+ const stock=stacked.inventory.stacks.find(row=>row.itemId===def.itemId)!;
+ stock.quantity=12;
+ const portions=24/def.durationHours;
+ for(let i=1;i<=portions;i++){
+  stacked=executeGameCommand(stacked,{type:'meal_bonus',args:{id:def.itemId}},now).state;
+  ok(stacked.character?.activeMealBuff?.remainingSeconds===i*def.durationHours*3600,'same meal extends time by one portion');
+ }
+ ok(stacked.inventory.stacks.find(row=>row.itemId===def.itemId)?.quantity===12-portions,'one portion per activation');
+ const before=JSON.stringify(stacked);
+ throws(()=>eatMealForBonus(stacked,def.itemId),'full cap rejects extra food');
+ ok(JSON.stringify(stacked)===before,'rejected activation does not consume food');
+ ok(normalizeSave(structuredClone(stacked)).character?.activeMealBuff?.remainingSeconds===MAX_MEAL_BUFF_SECONDS,'24h duration survives save normalization');
+ const one=eatMealForBonus(fresh(),def.itemId);
+ ok(JSON.stringify(characterPermanentMultipliers(one))===JSON.stringify(characterPermanentMultipliers(stacked)),'duration stacking cannot stack bonus strength');
+ const partial={...stacked,character:{...stacked.character!,activeMealBuff:{itemId:def.itemId,remainingSeconds:MAX_MEAL_BUFF_SECONDS-60}}};
+ ok(projectedMealDuration(partial.character,def.itemId)===MAX_MEAL_BUFF_SECONDS,'partial top-up clamps to cap');
+ ok(eatMealForBonus(partial,def.itemId).character?.activeMealBuff?.remainingSeconds===MAX_MEAL_BUFF_SECONDS,'partial top-up never exceeds cap');
+ throws(()=>normalizeMealBuff({itemId:def.itemId,remainingSeconds:MAX_MEAL_BUFF_SECONDS+1}),'save cannot exceed cap');
+ const offline=commitMealActivityTime(stacked,{kind:'combat',targetId:'test',startedAtMs:now,lastClaimAtMs:now},{xp:0,gold:0,items:[],kills:0,elapsedSeconds:3600});
+ ok(offline.character?.activeMealBuff?.remainingSeconds===MAX_MEAL_BUFF_SECONDS-3600,'active time drains stacked duration');
+}
+const resourceCosts:Record<string,number[]>={COOK_IRONWOOD_STEW:[6,3,3],COOK_SUNSCAR_SPICED_PLATTER:[12,4,3],COOK_GLASSFIN_FEAST:[9,3,3],COOK_ICEFISH:[9,3,3],COOK_EMBERFIN:[9,3,3],COOK_ASHLANDS_EMBER_STEW:[6,3,3]};
+for(const [id,quantities] of Object.entries(resourceCosts))ok(JSON.stringify(recipeDef(id)?.inputs.map(row=>row.quantity))===JSON.stringify(quantities),id+' increased bonus meal material costs');
 let state=fresh();
 state=executeGameCommand(state,{type:'meal_bonus',args:{id:'GLASSFIN_FEAST'}},now).state;
 state=executeGameCommand(state,{type:'meal_bonus',args:{id:'FROSTED_ICEFIN'}},now).state;
@@ -89,13 +137,19 @@ ok(oneShot.state.skills.find(row=>row.skillId==='cooking')?.xp===manual.state.sk
 ok((oneShot.reward.craftingActions??0)===(a.reward.craftingActions??0)+(manual.reward.craftingActions??0),'claim summary includes actions from both sides of expiry');
 ok(claimActivity(oneShot.state,now+135000).reward.craftingActions===0,'repeat settlement at the same timestamp is idempotent');
 
-// All noncombat skills include the class-skill drill loop; speed stops at expiry.
+// Crafting meals must not speed class drills; active time still drains normally.
 const noBuffTraining=executeGameCommand(fresh(),{type:'class_training'},now).state;
 const boostedTraining=executeGameCommand(executeGameCommand(fresh(),{type:'meal_bonus',args:{id:'ASHLANDS_EMBER_STEW'}},now).state,{type:'class_training'},now).state;
 const baseline59=claimActivity(noBuffTraining,now+59000);
 const boosted59=claimActivity(boostedTraining,now+59000);
 ok((baseline59.reward.trainingActions??0)===0,'baseline class drills need 60 seconds');
-ok((boosted59.reward.trainingActions??0)>=1,'Ashlands meal increases class drill speed by 10%');
+ok((boosted59.reward.trainingActions??0)===(baseline59.reward.trainingActions??0),'Ashlands crafting meal must not speed class drills');
+const ashlands=executeGameCommand(fresh(),{type:'meal_bonus',args:{id:'ASHLANDS_EMBER_STEW'}},now).state;
+const ashStats=characterPermanentMultipliers(ashlands),baseStats=characterPermanentMultipliers(fresh());
+ok(Math.abs(ashStats.craftingSpeedMultiplier/baseStats.craftingSpeedMultiplier-1.08)<.00001,'Ashlands grants exactly 8% crafting speed');
+ok(ashStats.gatheringSpeedMultiplier===baseStats.gatheringSpeedMultiplier,'Ashlands does not boost gathering');
+ok(ashStats.characterXpMultiplier===baseStats.characterXpMultiplier,'Ashlands does not boost combat XP');
+ok(MEAL_BONUSES.every(meal=>meal.kind!=='noncombat_speed'),'no broad noncombat speed meal remains');
 const shortTraining={...boostedTraining,character:{...boostedTraining.character!,activeMealBuff:{itemId:'ASHLANDS_EMBER_STEW',remainingSeconds:60}}} as GameState;
 const drillOne=claimActivity(shortTraining,now+120000);
 const drillPart=claimActivity(shortTraining,now+60000);

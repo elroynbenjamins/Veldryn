@@ -32,7 +32,7 @@ assert.ok(board.includes('nextResolution-Date.now()') && board.includes('setInte
 assert.ok(board.includes('const receipt=await attemptGuildPve(id,key)') && board.includes('validRaidStartReceipt(receipt)') && board.includes('confirmedStarts.current[id]=receipt') && board.includes('retryKeys.confirm(scope,id,key)') && board.includes('confirmedClaims.current[id]'), 'Only server-confirmed writes may update pending attempt and claim display');
 assert.ok(board.includes('expected===revision.current') && board.includes('reading.current'), 'Stale background reads must not overwrite confirmed writes');
 assert.ok(screen.includes('function RaidCountdown') && screen.includes('setInterval(tick,30000)'), 'Second ticks must not invalidate the whole card');
-assert.ok(app.includes("tab==='Guild'&&(guildInitialPve||guildRaidVisible)"), 'Raid Gate must hide activity bar');
+assert.ok(app.includes("tab==='Guild'&&(guildEventPageOpen||guildInitialPve||guildRaidScope==="), 'Raid Gate must hide activity bar');
 assert.ok(!screen.includes('setPlaybackSpeed(') && !screen.includes('DUNGEON_PLAYBACK_SPEEDS'), 'Guild PvE must not add playback speed controls');
 
 assert.ok(sql.includes("auth.uid()") && sql.includes('a.account_id=uid') && sql.includes('g.account_id=uid'), 'Timeline RPC must only return owned attempts from current guild membership');

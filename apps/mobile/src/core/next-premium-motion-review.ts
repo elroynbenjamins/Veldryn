@@ -47,3 +47,21 @@ export function nextPremiumOrnamentFits(f:OrnamentFrame,radius:number){
  return f.x-r>=0&&f.x+r<=stage.w&&f.y-r>=0&&f.y+r<=stage.h&&
   (f.x+r<=26||f.x-r>=314||f.y+r<=24||f.y-r>=181);
 }
+
+/** Approximate pixel landmarks visually calibrated against verified V2 artwork.
+ * Separate aspect-specific coordinates; stage values are normalized to 340×205,
+ * then the renderer must map x/y to the actual fitted image rectangle.
+ * The rail sparkle tracks remain on the metal/ribbon perimeter. */
+export const SAKURA_V2_ANCHORS={
+ showcase:{width:1020,height:615,railX:[45,975],fixed:[[510,49],[510,570],[62,55],[958,529],[958,55],[62,529]]},
+ standard:{width:1024,height:576,railX:[45,979],fixed:[[512,49],[512,532],[62,55],[962,490],[962,55],[62,490]]},
+} as const;
+export function sakuraV2OrnamentTracks(mode:'showcase'|'standard',fullSet:boolean):OrnamentTrack[]{
+ const a=SAKURA_V2_ANCHORS[mode];
+ const tracks=nextPremiumOrnamentTracks('petal-waltz',mode==='showcase',fullSet);
+ return tracks.map((track,i)=>({...track,frames:track.frames.map(f=>{
+  if(i<2)return {...f,x:a.railX[i]*340/a.width};
+  const [x,y]=a.fixed[i-2];
+  return {...f,x:x*340/a.width,y:y*205/a.height};
+ })}));
+}

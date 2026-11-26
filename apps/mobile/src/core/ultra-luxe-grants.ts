@@ -31,7 +31,7 @@ function allowed(id:string|undefined,owned:readonly string[]){
 export function withVerifiedUltraLuxeGrants(state:GameState,raw:unknown,includeCandidates=false):GameState{
  const grants=ultraLuxeGrantProjection(raw,includeCandidates);
  const sanitize=(c:CharacterState):CharacterState=>{
-  const title=grantRows(includeCandidates).find(row=>row.titleName.toLowerCase()===c.profileTitle?.trim().toLowerCase());
+  const title=ALL_COLLECTIONS.find(row=>row.titleName.toLowerCase()===c.profileTitle?.trim().toLowerCase());
   return {...c,
    profileBackgroundId:allowed(c.profileBackgroundId,grants.backgrounds)?c.profileBackgroundId:'asterfall-night',
    profileBorderId:allowed(c.profileBorderId,grants.borders)?c.profileBorderId:undefined,

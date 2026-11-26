@@ -41,11 +41,11 @@ const NextPremiumAtlas=memo(function NextPremiumAtlas({source,clock,width,height
 /** Finite user-triggered native reaction. Never loops, ignores repeated presses
  * while active and stops on unmount (including parent motion/visibility change). */
 const ReactingAtlas=memo(function ReactingAtlas({source,clock,width,height,theme,label}:AtlasProps&{theme:SignatureTheme;label:string}){
- const value=useRef(new Animated.Value(0)).current;
+ const value=useMemo(()=>new Animated.Value(0),[]);
  const animation=useRef<Animated.CompositeAnimation|null>(null);
  const active=useRef(false);
  const cfg=NEXT_PREMIUM_REACTION[theme];
- useEffect(()=>()=>{const current=animation.current;animation.current=null;active.current=false;current?.stop();},[theme]);
+ useEffect(()=>()=>{const current=animation.current;animation.current=null;active.current=false;current?.stop();value.setValue(0);},[theme,value]);
  const style=useMemo(()=>{
   const inputRange=[...cfg.phase],ratio=Math.min(width/74,height/76);
   return {transform:[

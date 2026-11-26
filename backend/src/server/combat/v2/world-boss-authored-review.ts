@@ -66,10 +66,11 @@ export interface WorldBossAuthoredProfileReviewV2{
  readonly localShieldAmount:number;
 }
 export function buildWorldBossAuthoredReviewV2(profile:WorldBossAuthoredProfileReviewV2){
- if(!profile||!Object.hasOwn(names,profile.bossId)||!['armored','exposed','enraged'].includes(profile.phase)||
+ if(!profile||!Object.prototype.hasOwnProperty.call(names,profile.bossId)||!['armored','exposed','enraged'].includes(profile.phase)||
   !Number.isSafeInteger(profile.level)||profile.level<1||profile.level>100||
   !profile.stats||!Number.isFinite(profile.stats.maxHp)||profile.stats.maxHp<=0||
   !Number.isFinite(profile.stats.attackPower)||profile.stats.attackPower<=0||
+  profile.stats.critMultiplier<1||profile.stats.critChance>1||
   !Number.isFinite(profile.localShieldAmount)||profile.localShieldAmount<0||
   profile.localShieldAmount>profile.stats.maxHp*.10||
   ['maxHp','attackPower','healingPower','defense','accuracy','evasion','critChance','critMultiplier','haste'].some(key=>{

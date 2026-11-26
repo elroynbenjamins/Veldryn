@@ -49,6 +49,7 @@ async function main(){
  const session={user:{id:'account'},access_token:'valid'};
  const services={
   '../core/ultra-luxe-full-set-command':{ULTRA_LUXE_FULL_SET_COMMAND:'ultra_luxe_full_set'},
+  '../core/ultra-luxe-full-set-undo-command':{ULTRA_LUXE_UNDO_COMMAND:'ultra_luxe_full_set_undo'},
   './versioned-fetch':{versionedFetch:async()=>new Response(JSON.stringify({error:'app_update_required'}),{status:426})},
   './supabase':{supabase:{auth:{getSession:async()=>({data:{session}})}}},
   '@react-native-async-storage/async-storage':mocks['@react-native-async-storage/async-storage'],

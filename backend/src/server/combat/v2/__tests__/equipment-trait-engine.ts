@@ -96,7 +96,36 @@ const triggers=(input:ReturnType<typeof simulateCombat>,type:string)=>
  assert.throws(()=>issueEquipmentV2TraitAuthority(input,[{...verified,
   traits:[{instanceId:'OTHER',traitId:'sword_dance'}]}],()=>true),/trait_not_owned_selected_or_supported/);
  assert.throws(()=>issueEquipmentV2TraitAuthority(input,[{...verified,reflectDamagePct:1000}],()=>true),/invalid_persisted_source/);
- const token=issueEquipmentV2TraitAuthority(input,[verified],()=>true);
+ // Deliberately model the divergent Forge branch's fractional channel.
+ const originalForgeEffects={accuracyPp:0,evasionPp:0,penetrationPp:0,
+  wardPp:0,shieldStrengthPct:0,hexPotencyPct:0,abilityDamagePct:.05};
+ const overlapping={...input,players:[{...p,combatV2:{...p.combatV2!,
+  equipmentEffects:originalForgeEffects}}]};
+ assert.throws(()=>issueEquipmentV2TraitAuthority(overlapping,
+  [{...verified,abilityDamagePct:5}],()=>true),/unreconciled_ability_damage_channels/);
+ assert.doesNotThrow(()=>issueEquipmentV2TraitAuthority(overlapping,[verified],()=>true),
+  'A zero sidecar ability bonus does not duplicate the Forge channel');
+ const zeroForge={...input,players:[{...p,combatV2:{...p.combatV2!,
+  equipmentEffects:{...originalForgeEffects,abilityDamagePct:0}}}]};
+ assert.doesNotThrow(()=>issueEquipmentV2TraitAuthority(zeroForge,
+  [{...verified,abilityDamagePct:5}],()=>true));
+ // The approved receipt must be the same immutable receipt that reaches combat.
+ const mutable={...verified};
+ assert.throws(()=>issueEquipmentV2TraitAuthority(input,[mutable],()=>{
+  mutable.basicAttackDamagePct=999;return true;
+ }),/persisted_ledger_not_verified/);
+ const nested={...verified,traits:verified.traits.map(trait=>({...trait}))};
+ assert.throws(()=>issueEquipmentV2TraitAuthority(input,[nested],()=>{
+  nested.traits[0].traitId='mending_echo';return true;
+ }),/persisted_ledger_not_verified/);
+ const changedInput=structuredClone(input);
+ assert.throws(()=>issueEquipmentV2TraitAuthority(changedInput,[verified],()=>{
+  changedInput.seed='CHANGED';return true;
+ }),/persisted_ledger_not_verified/);
+ const token=issueEquipmentV2TraitAuthority(input,[verified],rows=>
+  Object.isFrozen(rows)&&Object.isFrozen(rows[0])&&
+  Object.isFrozen(rows[0].ownedEquippedInstanceIds)&&Object.isFrozen(rows[0].traits)&&
+  Object.isFrozen(rows[0].traits[0]));
  assert.equal(authorizeEquipmentV2TraitEngine(input,token).size,1);
  assert.throws(()=>simulateCombat({...input,seed:'TAMPER'},undefined,token),/not_matching_compiled_encounter/);
  assert.throws(()=>simulateCombat(input,undefined,{} as typeof token),/not_server_issued/);

@@ -3,19 +3,19 @@
 import assert from 'node:assert/strict';
 import type {Wave2Id} from '../src/core/profile-cosmetic-wave2';
 import type {GameState} from '../src/core/types';
-const wave:typeof import('../src/core/profile-cosmetic-wave2')=require('../src/core/profile-cosmetic-wave2');
+const wave=require('../src/core/profile-cosmetic-wave2') as typeof import('../src/core/profile-cosmetic-wave2');
 const ready=wave.WAVE2_READY_SET_IDS as Wave2Id[];
 const prior=[...ready];
 ready.splice(0,ready.length,...wave.WAVE2_SETS.map(s=>s.id));
 try{
- const {createCharacter,newGame}:typeof import('../src/core/game')=require('../src/core/game');
- const {profileWardrobe,wardrobeEquipped}:typeof import('../src/core/profile-wardrobe')=require('../src/core/profile-wardrobe');
- const {quickCosmeticSets,quickSetSelection}:typeof import('../src/core/profile-quick-set-equip')=require('../src/core/profile-quick-set-equip');
- const {executeGameCommand}:typeof import('../src/core/game-commands')=require('../src/core/game-commands');
- const {PROFILE_ALL_EFFECTS}:typeof import('../src/core/profile-effects')=require('../src/core/profile-effects');
- const {profileCosmeticsTester}:typeof import('../src/core/profile-cosmetic-access')=require('../src/core/profile-cosmetic-access');
- const {profileIconCollection}:typeof import('../src/core/profile-icons')=require('../src/core/profile-icons');
- const {PROFILE_COSMETIC_STORE_COLLECTIONS}:typeof import('../src/content/profile-cosmetic-store')=require('../src/content/profile-cosmetic-store');
+ const {createCharacter,newGame}=require('../src/core/game') as typeof import('../src/core/game');
+ const {profileWardrobe,wardrobeEquipped}=require('../src/core/profile-wardrobe') as typeof import('../src/core/profile-wardrobe');
+ const {quickCosmeticSets,quickSetSelection}=require('../src/core/profile-quick-set-equip') as typeof import('../src/core/profile-quick-set-equip');
+ const {executeGameCommand}=require('../src/core/game-commands') as typeof import('../src/core/game-commands');
+ const {PROFILE_ALL_EFFECTS}=require('../src/core/profile-effects') as typeof import('../src/core/profile-effects');
+ const {profileCosmeticsTester}=require('../src/core/profile-cosmetic-access') as typeof import('../src/core/profile-cosmetic-access');
+ const {profileIconCollection}=require('../src/core/profile-icons') as typeof import('../src/core/profile-icons');
+ const {PROFILE_COSMETIC_STORE_COLLECTIONS}=require('../src/content/profile-cosmetic-store') as typeof import('../src/content/profile-cosmetic-store');
  const assets={scenes:[],frames:PROFILE_ALL_EFFECTS.map(s=>s.borderId),effects:PROFILE_ALL_EFFECTS};
  const base=createCharacter(newGame(0),'IRONWARDEN','Wave Two Test');
  const rows=(s:GameState)=>profileWardrobe(s,assets,{nowMs:0}).flatMap(c=>c.rows);

@@ -1,4 +1,5 @@
-import { createHash } from 'node:crypto';
+import {sha256} from '@noble/hashes/sha256';
+import {bytesToHex} from '@noble/hashes/utils';
 import type { AbilityDefinition } from '../combat/types';
 import type { VerifiedCombatSnapshot } from '../combat/snapshot-adapter';
 import type { CapabilityTag, RoleReadinessResult } from './role-readiness';
@@ -58,6 +59,22 @@ function canonical(value: unknown): string {
   return JSON.stringify(value);
 }
 
+/** Portable SHA-256 of the unchanged canonical string. Encode UTF-8 exactly
+ * as Node did, including replacement of isolated surrogate code units.
+ * Do not require Node crypto or a global TextEncoder on Hermes. */
+export function frozenLoadoutDigest(canonicalText:string):string {
+  const bytes:number[]=[];
+  for(const ch of canonicalText){
+    let cp=ch.codePointAt(0)!;
+    if(cp>=0xd800&&cp<=0xdfff)cp=0xfffd;
+    if(cp<0x80)bytes.push(cp);
+    else if(cp<0x800)bytes.push(0xc0|(cp>>6),0x80|(cp&63));
+    else if(cp<0x10000)bytes.push(0xe0|(cp>>12),0x80|((cp>>6)&63),0x80|(cp&63));
+    else bytes.push(0xf0|(cp>>18),0x80|((cp>>12)&63),0x80|((cp>>6)&63),0x80|(cp&63));
+  }
+  return bytesToHex(sha256(new Uint8Array(bytes)));
+}
+
 export function resolveAndFreezeLoadout(input: {
   accountId: string; characterId: string; loadoutId: string; expectedRevision: number;
   minLevel: number; minCombatPower?:number; syncLevel: number; repository: LoadoutRepository;
@@ -84,7 +101,7 @@ export function resolveAndFreezeLoadout(input: {
   const frozen = { accountId: record.accountId, characterId: record.characterId, classId: record.classId, loadoutId: record.loadoutId, revision: record.revision, normalized, readiness,
     dungeonPower: dungeonPowerIndex({ normalized, companion: record.stats.combatCompanion }),
     ...(Number.isFinite(record.combatPower)?{combatPower:record.combatPower}:{}),characterLevel:record.characterLevel };
-  return { ...frozen, snapshotHash: createHash('sha256').update(canonical(frozen)).digest().toString('hex') };
+  return { ...frozen, snapshotHash: frozenLoadoutDigest(canonical(frozen)) };
 }
 
 /** Final commitment boundary. Every selection is reread from the authoritative

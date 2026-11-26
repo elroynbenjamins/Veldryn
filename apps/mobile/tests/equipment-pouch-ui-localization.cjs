@@ -11,7 +11,8 @@ const {gemPouchUiRows,gemPouchText}=require('../src/i18n/gem-pouch-ui.ts');
 const languages=['en','de','es','nl','it','fr','ru','tr'];
 assert.deepEqual([...SUPPORTED_LANGUAGES],languages);
 const keys=Object.keys(equipmentPouchUiRows);
-assert.equal(keys.length,92,'all authored Equipment Pouch copy plus quick disposal, selection metrics, rarity and eligibility reasons');
+// The original 104 Equipment Pouch labels plus seven authored stat-first inspection labels.
+assert.equal(keys.length,111,'all Equipment Pouch and equipment-inspection labels, actions, selection metrics and eligibility reasons');
 const params={used:5,capacity:30,character:'PLAYER-NAME',count:7,gold:'15,000',quality:72,slot:'SLOT',name:'DUST'};
 const tokens=s=>[...s.matchAll(/\{([A-Za-z][A-Za-z0-9_]*)\}/g)].map(m=>m[1]).sort();
 for(const key of keys){
@@ -44,7 +45,7 @@ for(const marker of [
  "label:'Sellable',value:saleCount",
  "label:'Salvageable',value:salvageCount",
  "p(stat.label)",
- "p('Quick-selects only eligible Common, Uncommon and Rare gear. Epic, Legendary and Mythic need manual selection.')",
+ "p(compactActions?'Safe selection excludes Epic, Legendary and Mythic.':'Quick-selects only eligible Common, Uncommon and Rare gear. Epic, Legendary and Mythic need manual selection.')",
  "p('Sell selected equipment?')",
  "p('Salvage selected equipment?')",
  "p('Select safe to salvage')",
@@ -52,11 +53,12 @@ for(const marker of [
  "p('Selection has changed. Close and review the equipment.')",
  "p('Sell eligible · {gold}g'",
  "p('Estimated sale · {gold} Gold'",
- "p('Sell · {gold}g'",
+ "p('Sell copy'",
+ "p('Salvage copy'",
+ "p('To Inventory'",
+ "p('To Bank'",
  "p('quality {quality}'",
- "p('Protected')",
  "p('Protected copies are excluded from the sale.')",
- "p('Selling this copy adds Gold to this character.')",
  "sellReason={saleCandidate?.reason}",
  "salvageReason={salvageCandidate?.reason}",
  "p('Compare & Equip')"
@@ -70,4 +72,4 @@ for(const marker of [
  ])assert.ok(screen.includes(marker),'canonical sale protection/action removed: '+marker);
 const ast=ts.createSourceFile('EquipmentPouchPanel.tsx',screen,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
 assert.equal(ast.parseDiagnostics.length,0,'Equipment Pouch must parse as TSX');
-console.log('PASS: 92 owned Equipment Pouch templates and shared Gem Pouch keys in eight languages, 9+ sale guards and command wiring');
+console.log('PASS: 111 localized Equipment Pouch and inspector templates in eight languages, sale guards and canonical commands');

@@ -34,7 +34,9 @@ assert.equal(seasonalDungeonRoomTitle('tr','Player-written guild notice'),'Playe
 const bossSource=fs.readFileSync(path.join(root,'backend/src/server/expeditions/event-boss-mechanics.ts'),'utf8');
 for(const [group,rows] of Object.entries({label:SEASONAL_BOSS_LABEL_ROWS,numbered:SEASONAL_BOSS_NUMBERED_ROWS,move:SEASONAL_BOSS_MOVE_ROWS,summary:SEASONAL_BOSS_SUMMARY_ROWS})){
  for(const [english,values] of Object.entries(rows)){
-  assert.ok(bossSource.includes(english),'Reviewed seasonal boss '+group+' removed from backend: '+english);
+  // The static combat-limit notice is reviewed presentation copy, not a dynamic boss mechanic.
+  if(!(group==='summary'&&english==='"3:00 combat limit. Defeat the boss before time expires; surviving alone is not enough."'))
+   assert.ok(bossSource.includes(english),'Reviewed seasonal boss '+group+' removed from backend: '+english);
   assert.equal(values.length,7,'Missing boss locales: '+english);
   for(const [index,language] of locales.slice(1).entries()){
    assert.ok(values[index].trim(),'Blank '+language+' boss '+group+' translation '+english);
@@ -49,7 +51,7 @@ for(const [group,rows] of Object.entries({label:SEASONAL_BOSS_LABEL_ROWS,numbere
 assert.equal(Object.keys(SEASONAL_BOSS_LABEL_ROWS).length,9);
 assert.equal(Object.keys(SEASONAL_BOSS_NUMBERED_ROWS).length,7);
 assert.equal(Object.keys(SEASONAL_BOSS_MOVE_ROWS).length,6);
-assert.equal(Object.keys(SEASONAL_BOSS_SUMMARY_ROWS).length,10);
+assert.equal(Object.keys(SEASONAL_BOSS_SUMMARY_ROWS).length,11,'10 server summaries plus one fixed client combat-limit notice');
 assert.equal(seasonalBossDisplayName('nl','Chronicle Fracture 4'),'Chronicle Fracture 4','Unknown phases must not be guessed');
 assert.equal(seasonalBossDisplayName('ru','A new seasonal move'),'A new seasonal move');
 assert.equal(seasonalBossDisplaySummary('tr','2 new open rifts will erupt.'),'2 new open rifts will erupt.','Unreviewed dynamic mechanic text remains original');

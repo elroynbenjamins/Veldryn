@@ -1,0 +1,105 @@
+# Unsigned/test-signed staging QA only. Never publish to Google Play or production.
+name: Veldryn 1.0.11 integrated candidate validation
+on:
+  push:
+    branches: ['release/1.0.11-clean-consolidation-20261120']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  integrated-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Verify release metadata for 1.0.11
+        run: |
+          node -e "const a=require('./apps/mobile/app.json');const p=require('./apps/mobile/package.json');if(a.expo.version!=='1.0.11'||p.version!=='1.0.11')process.exit(1)"
+      - name: Install locked packages
+        run: |
+          pnpm --dir backend install --frozen-lockfile
+          pnpm --dir apps/mobile install --frozen-lockfile
+      - name: Require canonical gameplay/co-op Edge parity
+        run: node tools/verify-gameplay-edge.mjs
+      # Full core and backend online tests immediately below compile+typecheck
+      # their respective TS configs. Keep app-only typechecking here.
+      - name: Typecheck mobile app UI and routes
+        run: pnpm --dir apps/mobile typecheck
+      - name: Full mobile core regressions (equipment rolls, tools, old saves)
+        run: pnpm --dir apps/mobile test:core
+      - name: Dungeon weekly/social UI and route contracts
+        run: |
+          pnpm --dir apps/mobile test:dungeon-weekly-ui
+          pnpm --dir apps/mobile test:dungeon-social-echo-ui
+      - name: Full online server tests (Dungeon Endurance, weekly, Echo, gear)
+        run: pnpm --dir backend test:online
+      - name: Regional dungeon tier rewards and economy
+        run: pnpm --dir backend test:dungeon-tier-balance
+      - name: Preserve hidden and unreleased production feature gates
+        run: node tools/validate-hidden-feature-release-fences.mjs
+
+  unsigned-staging-android-aab:
+    name: Android AAB smoke — CI only, staging endpoints, no store signing
+    needs: integrated-validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    env:
+      NODE_ENV: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/mobile/pnpm-lock.yaml
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+      - name: Install Android API 36 toolchain
+        shell: bash
+        run: |
+          SDKMANAGER="${ANDROID_SDK_ROOT:-$ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+      - name: Pin QA build to staging-only endpoints
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const env=JSON.parse(fs.readFileSync('apps/mobile/eas.json','utf8')).build.staging.env;
+          if(env.EXPO_PUBLIC_RELEASE_CHANNEL!=='staging'||!env.EXPO_PUBLIC_SUPABASE_URL.includes('iqfmmpvwanvvmxcftfxw.supabase.co'))throw new Error('staging_endpoint_required');
+          for(const [key,value] of Object.entries(env))fs.appendFileSync(process.env.GITHUB_ENV,key+'='+value+'\n');
+          NODE
+      - name: Install locked mobile packages
+        run: pnpm --dir apps/mobile install --frozen-lockfile
+      - name: Generate Android native project
+        working-directory: apps/mobile
+        run: npx expo prebuild --platform android --clean --no-install
+      - name: Build CI-only Android AAB
+        working-directory: apps/mobile/android
+        run: ./gradlew :app:bundleRelease --stacktrace --no-daemon
+      - name: Assert AAB artifact exists
+        run: |
+          test -s apps/mobile/android/app/build/outputs/bundle/release/app-release.aab
+          sha256sum apps/mobile/android/app/build/outputs/bundle/release/app-release.aab
+      - name: Archive CI-only QA AAB (not production signed)
+        uses: actions/upload-artifact@v4
+        with:
+          name: veldryn-1-0-11-ci-only-staging-aab
+          path: apps/mobile/android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+          retention-days: 5

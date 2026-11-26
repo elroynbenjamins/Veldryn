@@ -26,10 +26,22 @@ assert(upgrade.includes('<ResourceIcon resourceId={row.resourceId'), 'Cost rows 
 assert(resource.includes("resourceId==='SUPPLIES'"),'Companion Supplies must have a safe icon fallback');
 assert(upgrade.includes("row.owned>=row.required"),'Enough/missing resource state must reflect balances');
 
+// Sanctuary cards explain their actual rewards, with timers instead of disabled buttons.
+assert(panel.includes("t('Daily Companion XP')")&&panel.includes("t('Weekly Companion Essence')"),'Sanctuary rewards have explicit daily XP and weekly Essence labels');
+assert(panel.includes('COMPANION_SANCTUARY_TRAINING_XP_PER_DAY[trainingLevel]')&&panel.includes('COMPANION_SANCTUARY_WEEKLY_ESSENCE[essenceLevel]'),'Sanctuary reward labels must read the same tier configuration used for grants');
+assert(panel.includes("trainingLast===undefined?t('Start timer'):t('Claim XP')")&&panel.includes("essenceLast===undefined?t('Start timer'):t('Claim Essence')"),'First activation is not described as a reward claim');
+assert(!panel.includes("t('Not ready')"),'Unavailable Sanctuary rewards use compact countdowns, not disabled Not ready buttons');
 // Claims should not appear claimable before the underlying reward timer is due.
 assert(panel.includes('now-trainingLast>=86400000'),'Daily rewards must respect the daily timer');
 assert(panel.includes('now-essenceLast>=604800000'),'Weekly rewards must respect the weekly timer');
-assert(panel.includes('disabled={busy||!trainingDue}')&&panel.includes('disabled={busy||!essenceDue}'),'Unavailable rewards must be disabled');
+// Non-due rewards are a countdown, not a disabled button. The actionable
+// button is mounted only while the authoritative ready flag is true.
+assert(panel.includes('!trainingBuilt?<Text')&&panel.includes('trainingDue\n         ?<GameButton compact')&&panel.includes('claimWait(trainingLast,86400000)'),
+ 'Daily rewards must show a countdown instead of a premature claim action');
+assert(panel.includes('!essenceBuilt?<Text')&&panel.includes('essenceDue\n         ?<GameButton compact')&&panel.includes('claimWait(essenceLast,604800000)'),
+ 'Weekly rewards must show a countdown instead of a premature claim action');
+assert(panel.includes('disabled={busy} onPress={()=>act(\'companion_training\')}')&&panel.includes('disabled={busy} onPress={()=>act(\'companion_essence\')}'),
+ 'Only eligible claims should offer a real action and busy state must block duplicates');
 
 // Existing progression and mission validation must survive layout simplification.
 assert(training.includes('costBreakdown(model.nextLevelCost)'),'Training must show resource cost before upgrading');
@@ -64,9 +76,11 @@ assert(expedition.indexOf("t('Entry requirements')")<expedition.indexOf("t('Prep
 assert(expedition.includes('companionStaminaSelectionTotal(foodSelection)'),'Stamina must use real food selection');
 assert(expedition.includes("type:'companion_assignment_start'"),'Starting expeditions must still send the real command');
 assert(/CompanionDisclosure\s+title=\{t\(['"]Mission Details['"]\)\}/.test(expedition),'Detailed requirements must stay accessible');
-// The Skills hub Companion tile is a Sanctuary facility, not a fake levelable skill.
-assert(skills.includes("level:facilityLevel,kind:'Sanctuary facility'"),'Companion skill tile must describe the actual Training Ground facility level, including level zero');
-assert(skills.includes("Math.min(1,card.level/3)")&&skills.includes("gt('Facility Lv {level}/3',{level:card.level})"),'Facility progress must be shown out of 3 upgrades, not a fictitious 100 skill levels');
+// Companion Training is a Sanctuary facility, deliberately hidden from the skill navigator.
+// Keep a real 0–3 facility level and upgrade/claim functionality in its details modal.
+assert(!skills.includes("id:'companion-training',name"),'Do not re-add Companion Training as a levelable skill tile');
+assert(skills.includes("const facilityLevel=Math.max(0,Math.min(3,state.account.companionSanctuary?.trainingGroundLevel??0))"),'Facility must preserve the real persisted level, including zero');
+assert(skills.includes('{facilityLevel}/3'),'Facility detail must show the actual upgrade level out of 3');
 assert(skills.includes('COMPANION_SANCTUARY_TRAINING_XP_PER_DAY[facilityLevel]'),'Training XP/day must follow the authoritative Sanctuary values');
 assert(skills.includes('trainingDaysReady*facilityXpPerDay')&&skills.includes('idleCompanions.length'),'Companion training claim must show accrued XP and eligible companions');
 assert(skills.includes("type:'companion_training'")&&skills.includes('disabled={!trainingClaimReady}'),'Skills hub uses an existing authenticated companion training claim with readiness gating');

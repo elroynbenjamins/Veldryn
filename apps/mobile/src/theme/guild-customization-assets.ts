@@ -5,8 +5,10 @@ export const guildBannerSourceByKey=new Map<string,ImageSourcePropType>([
  ['banner_halloween_pumpkin_lantern',require('../../assets/guild-customization/banners/banner_halloween_pumpkin_lantern_runtime.webp')],
  ['banner_halloween_bat_moon',require('../../assets/guild-customization/banners/banner_halloween_bat_moon_runtime.webp')],
 ]);
+guildBannerSourceByKey.set('banner_frostfall_standard_2026',require('../../assets/events/frostfall/winter-hearth/banner_frostfall_standard_2026.webp'));
 export const guildBorderSourceByKey=new Map<string,ImageSourcePropType>([
  ['border_founder_iron',require('../../assets/guild-customization/borders/border_founder_iron.webp')],['border_bronze_fellowship',require('../../assets/guild-customization/borders/border_bronze_fellowship.webp')],['border_silver_fellowship',require('../../assets/guild-customization/borders/border_silver_fellowship.webp')],['border_grand_gold',require('../../assets/guild-customization/borders/border_grand_gold.webp')],['border_emerald_vanguard',require('../../assets/guild-customization/borders/border_emerald_vanguard.webp')],['border_sapphire_dungeon',require('../../assets/guild-customization/borders/border_sapphire_dungeon.webp')],['border_crimson_bossbreaker',require('../../assets/guild-customization/borders/border_crimson_bossbreaker.webp')],['border_amethyst_raidforged',require('../../assets/guild-customization/borders/border_amethyst_raidforged.webp')],['border_mythic_conqueror',require('../../assets/guild-customization/borders/border_mythic_conqueror.webp')],
  ['border_guild_verdant',require('../../assets/guild-customization/borders/border_guild_verdant.webp')],
 ]);
+guildBorderSourceByKey.set('border_frostfall_frozen_majesty_2026',require('../../assets/events/frostfall/winter-hearth/border_frostfall_frozen_majesty_2026.webp'));
 export const guildNameplateSourceByKey=new Map<string,ImageSourcePropType>([['nameplate_royal_sapphire',require('../../assets/guild-customization/nameplates/nameplate_royal_sapphire.webp')]]);

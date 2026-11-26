@@ -1,7 +1,7 @@
 import {createHash} from 'node:crypto';
 import type {GameState} from '../../apps/mobile/src/core/types';
 import {EXPEDITIONS} from '../src/server/expeditions/content/launch-content';
-import {regularDungeonTierRequiredLevel,regularDungeonTierRequiredPower} from '../src/server/coop/dungeon-entry-policy';
+import {regularDungeonTierRequiredLevel} from '../src/server/coop/dungeon-entry-policy';
 import {regularDungeonEntryError} from '../src/server/coop/dungeon-entry-policy';
 import {isPublishedCoopTier} from '../src/server/coop/config';
 import {MemoryQModeRunRepository,QModeService,type QModeRun} from '../src/server/coop/qmode';
@@ -16,10 +16,12 @@ import {dungeonRewardState} from '../src/server/coop/dungeon-reward-balance';
 import {deriveOnlineCoopLoadout,onlineCoopLoadoutHash,ONLINE_COOP_BALANCE_VERSION} from './coop-loadout';
 import {REGIONAL_DUNGEON_BALANCE_VERSION} from '../src/server/coop/regional-power-balance';
 import {GameplayError,type GameplayServices} from './gameplay';
+import {validateSelectedSocialEchoCharacterIds} from '../../apps/mobile/src/core/coop-social-echoes';
+import {prepareSocialEchoCandidates} from './coop-social-echoes';
 
 interface Game {state:GameState|null;version:number;serverNow:number;}
 interface Echo {profileId:string;sourceAccountId:string;publishedAtMs:number;record:AuthoritativeLoadoutRecord;}
-export interface OnlineQModeState {run:QModeRun;seed:string;pending?:{run:QModeRun;resolvesAtMs:number;startStateHash:string};}
+export interface OnlineQModeState {run:QModeRun;seed:string;pending?:{run:QModeRun;resolvesAtMs:number;startStateHash:string;settlement?:ReturnType<typeof settlement>};}
 interface Loaded {stateVersion:number;eventCursor:number;privateState:OnlineQModeState;clientProjection:unknown;serverNow:number;}
 type Services=Pick<GameplayServices,'rpc'|'randomId'>;
 const digest=(value:unknown)=>createHash('sha256').update(JSON.stringify(value)).digest('hex');
@@ -50,27 +52,58 @@ export class OnlineQModeRuntime{
   const game=await this.services.rpc<Game>('load_online_game_server_v1',{p_account_id:accountId});
   if(!game.state?.character)throw new GameplayError('character_required');
   const record=deriveOnlineCoopLoadout(accountId,game.state,game.version);
-  const entryError=regularDungeonEntryError(definition,game.state,record.characterLevel,record.combatPower,request.tier);
+  const entryError=regularDungeonEntryError(definition,game.state,record.characterLevel,record.combatPower,request.tier,'qmode');
   if(entryError)throw new GameplayError(entryError);
-  const minimum=regularDungeonTierRequiredLevel(definition,request.tier),minimumPower=regularDungeonTierRequiredPower(definition,request.tier),sync=definition.recommendedLevel;
-  const freeze=(source:AuthoritativeLoadoutRecord)=>resolveAndFreezeLoadout({accountId:source.accountId,characterId:source.characterId,loadoutId:source.loadoutId,expectedRevision:source.revision,minLevel:minimum,minCombatPower:minimumPower,syncLevel:sync,repository:{getOwnedLoadout:()=>source}});
+  const minimum=regularDungeonTierRequiredLevel(definition,request.tier),sync=record.characterLevel;
+  const freeze=(source:AuthoritativeLoadoutRecord)=>resolveAndFreezeLoadout({accountId:source.accountId,characterId:source.characterId,loadoutId:source.loadoutId,expectedRevision:source.revision,minLevel:minimum,syncLevel:sync,hostLevelSync:true,repository:{getOwnedLoadout:()=>source}});
   if(record.characterId!==request.characterId||request.loadoutId!=='current')throw new GameplayError('loadout_not_owned');
   // The loadout revision is a UI observation, not a lock on unrelated gathering/combat progress.
   // The actual dungeon snapshot is rebuilt from current authoritative state and checked again
   // by start_online_qmode_server_v1. Do not reject a valid player just for background activity.
   if(request.loadoutRevision>record.revision){const replay=await this.receipt(accountId,'qmode_start_v1',accountId,request.requestId,hash);if(replay)return replay.response;throw new GameplayError('stale_game_version',409);}
   const controller=freeze(record);
+  // The client chooses friend/guild CHARACTERS, not published Echo profiles.
+  // Each selected donor is freshly derived from its server-owned saved game.
+  // This removes the sharing switch and its seven-day opt-in prerequisite.
+  const requestedCharacters=request.preferredEchoCharacterIds??[];
+  const publishedSelections:string[]=[];
+  if(requestedCharacters.length){
+   const sources=await prepareSocialEchoCandidates(this.services,accountId,minimum);
+   validateSelectedSocialEchoCharacterIds(requestedCharacters,sources.map(source=>source.candidate),record.classId,controller.readiness.role);
+   for(const characterId of requestedCharacters){
+    const source=sources.find(item=>item.candidate.characterId===characterId);
+    if(!source)throw new GameplayError('social_echo_unavailable',409);
+    // Recheck role-readiness at the host's authoritative character level.
+    try{freeze(source.record);}
+    catch{throw new GameplayError('social_echo_unavailable',409);}
+    let published:{echoProfileId?:string|null};
+    try{
+     published=await this.services.rpc<{echoProfileId?:string|null}>('publish_online_coop_loadout_server_v1',{
+      p_account_id:source.record.accountId,p_game_version:source.record.revision,
+      p_record:source.record,p_snapshot_hash:onlineCoopLoadoutHash(source.record),
+      p_readiness:source.readiness,p_share_echo:true,
+      p_request_id:'auto-'+digest([accountId,request.requestId,characterId,source.record.revision]).slice(0,58),
+     });
+    }catch{throw new GameplayError('social_echo_unavailable',409);}
+    if(!published?.echoProfileId)throw new GameplayError('social_echo_unavailable',409);
+    publishedSelections.push(published.echoProfileId);
+   }
+  }
+  // Random fallback is restricted by SQL to current friends/guild members;
+  // missing seats use NPCs. Strangers are never published to the controller.
   const raw=await this.services.rpc<Echo[]>('eligible_online_coop_echoes_server_v1',{p_actor_account_id:accountId,p_min_level:minimum});
   const profiles:PublishedEcho[]=[];
   for(const echo of raw){
-   // Old or ineligible profiles cannot turn an entire valid donor pool into a failure.
    if(echo.record.accountId!==echo.sourceAccountId)continue;
    try{profiles.push({profileId:echo.profileId,sourceAccountId:echo.sourceAccountId,publishedAtMs:echo.publishedAtMs,optedIn:true,contentVersion:content,blockedAccountIds:[],snapshot:freeze(echo.record)});}catch{continue;}
   }
-  const npcSnapshots=createQModeNpcAllies({minimumLevel:minimum,minimumCombatPower:minimumPower,syncLevel:sync,controllerLevel:record.characterLevel});
+  const preferredProfileIds=publishedSelections;
+  if(preferredProfileIds.some(id=>!profiles.some(profile=>profile.profileId===id)))throw new GameplayError('social_echo_unavailable',409);
+  // NPC filler power is unchanged: host-level syncing applies to real borrowed builds only.
+   const npcSnapshots=createQModeNpcAllies({minimumLevel:minimum,syncLevel:Math.min(sync,definition.recommendedLevel),controllerLevel:record.characterLevel});
   const seed=this.services.randomId()+this.services.randomId(),id=this.services.randomId();
   const domain=new QModeService(new MemoryQModeRunRepository(),seed);
-  const run=domain.create({requestId:request.requestId,runId:id,controllerAccountId:accountId,controllerSnapshot:controller,expeditionId:definition.id,tier:request.tier,contentVersion:content,balanceVersion:REGIONAL_DUNGEON_BALANCE_VERSION,nowMs:game.serverNow,profiles,npcSnapshots});
+  const run=domain.create({requestId:request.requestId,runId:id,controllerAccountId:accountId,controllerSnapshot:controller,expeditionId:definition.id,tier:request.tier,contentVersion:content,balanceVersion:REGIONAL_DUNGEON_BALANCE_VERSION,nowMs:game.serverNow,profiles,npcSnapshots,preferredProfileIds});
   const members=[{memberKind:'human',snapshot:controller,sourceHash:onlineCoopLoadoutHash(record),profileId:null},...run.players.slice(1).map(player=>{
    const selected=profiles.find(row=>row.snapshot.characterId===player.id&&run.echoSourceAccountIds.includes(row.sourceAccountId));
    if(selected){const source=raw.find(row=>row.profileId===selected.profileId)!;return {memberKind:'echo',snapshot:selected.snapshot,sourceHash:onlineCoopLoadoutHash(source.record),profileId:selected.profileId};}
@@ -85,7 +118,18 @@ export class OnlineQModeRuntime{
   const pending=loaded.privateState.pending;
   if(!pending||loaded.serverNow<pending.resolvesAtMs)return loaded.clientProjection;
   const run=pending.run,last=run.lastResolution!,final=settlement(run,loaded.stateVersion+1,loaded.privateState.seed);
-  return this.services.rpc('finalize_online_qmode_node_server_v1',{p_account_id:accountId,p_run_id:runId,p_expected_version:loaded.stateVersion,p_private_state:{run,seed:loaded.privateState.seed},p_client_projection:final.projection,p_node_id:last.nodeId,p_result:last.result,p_start_state_hash:pending.startStateHash,p_enhanced_marks:final.enhancedMarks,p_assistance_marks:final.assistanceMarks});
+  try{
+   return await this.services.rpc('finalize_online_qmode_node_server_v1',{p_account_id:accountId,p_run_id:runId,p_expected_version:loaded.stateVersion,p_private_state:{run,seed:loaded.privateState.seed},p_client_projection:final.projection,p_node_id:last.nodeId,p_result:last.result,p_start_state_hash:pending.startStateHash,p_enhanced_marks:final.enhancedMarks,p_assistance_marks:final.assistanceMarks});
+  }catch(error){
+   // The due worker may commit this exact node between load and finalize.
+   // A revision conflict is not a failed run: reread the authoritative
+   // snapshot, but never resubmit the same reward or suppress other errors.
+   const reason=error instanceof Error?error.message:String(error);
+   if(!reason.toUpperCase().includes('STALE_STATE'))throw error;
+   const refreshed=await this.services.rpc<Loaded>('load_online_qmode_server_v1',{p_account_id:accountId,p_run_id:runId});
+   if(refreshed.stateVersion>loaded.stateVersion&&!refreshed.privateState.pending)return refreshed.clientProjection;
+   throw error;
+  }
  }
  async purchaseMerchant(accountId:string,runId:string,request:{requestId:string;expectedVersion:number;offerId:string}){
   const hash=digest(request),operation='qmode_merchant_purchase_v1';
@@ -102,8 +146,17 @@ export class OnlineQModeRuntime{
   return this.services.rpc('purchase_online_qmode_merchant_server_v1',{p_account_id:accountId,p_run_id:runId,p_expected_version:loaded.stateVersion,p_request_id:request.requestId,p_request_hash:hash,p_offer_id:request.offerId,p_actor_id:actorId,p_private_state:{run:next,seed},p_client_projection:client});
  }
  async choose(accountId:string,runId:string,request:CoopDecisionCommand){
-  const hash=digest(request),prior=await this.receipt(accountId,'qmode_choose_v1',runId,request.requestId,hash);if(prior)return prior.response;
-  const loaded=await this.services.rpc<Loaded>('load_online_qmode_server_v1',{p_account_id:accountId,p_run_id:runId});
+  const hash=digest(request);
+  // Both reads are account-scoped and non-mutating; keep the receipt authoritative
+  // even if a replay arrives after the run has closed or the snapshot read fails.
+  const [receiptRead,snapshotRead]=await Promise.allSettled([
+   this.receipt(accountId,'qmode_choose_v1',runId,request.requestId,hash),
+   this.services.rpc<Loaded>('load_online_qmode_server_v1',{p_account_id:accountId,p_run_id:runId}),
+  ]);
+  if(receiptRead.status==='rejected')throw receiptRead.reason;
+  const prior=receiptRead.value;if(prior)return prior.response;
+  if(snapshotRead.status==='rejected')throw snapshotRead.reason;
+  const loaded=snapshotRead.value;
   if(loaded.privateState.pending){const replay=await this.receipt(accountId,'qmode_choose_v1',runId,request.requestId,hash);if(replay)return replay.response;throw new GameplayError('node_resolving',409);}
   if(request.decisionRevision!==loaded.stateVersion||request.decisionId!==loaded.privateState.run.currentNodeId){const replay=await this.receipt(accountId,'qmode_choose_v1',runId,request.requestId,hash);if(replay)return replay.response;throw new GameplayError('stale_state',409);}
   const {run:before,seed}=loaded.privateState,repository=new MemoryQModeRunRepository();repository.save(before);
@@ -111,12 +164,14 @@ export class OnlineQModeRuntime{
   // Simulation is already finished when this response is queued. Echo does
   // not need to wait through the entire simulated 30–180s battle before
   // the server commits its result. Live keeps separate synchronized pacing.
-  // Only persist the authoritative result once: its public replay/settlement
-  // projection is built at finalization, not duplicated inside private state.
+  // The offline worker needs the final projection even if the app disconnects.
+  // This is server-authored and stored privately; only the preparing view is
+  // exposed until the persisted node result is finalized.
+  const final=settlement(run,loaded.stateVersion+2,seed);
   const chosen=run.graph.nodes.find(node=>node.nodeId===request.optionId);
   const duration=chosen?.kind==='boss'?1_800:chosen?.kind==='elite'?1_400:chosen?.kind==='battle'?900:0;
   const resolvesAtMs=loaded.serverNow+duration;
-  const client={...projection(before,loaded.stateVersion+1,seed),phase:'resolving_node',options:[],selectedNodeId:request.optionId,resolvesAtMs,boonOffers:undefined};
-  return this.services.rpc('queue_online_qmode_node_server_v1',{p_account_id:accountId,p_run_id:runId,p_expected_version:loaded.stateVersion,p_request_id:request.requestId,p_request_hash:hash,p_private_state:{run:before,seed,pending:{run,resolvesAtMs,startStateHash:digest(before.persistentState)}},p_client_projection:client});
+  const client={...projection(before,loaded.stateVersion+1,seed),phase:'resolving_node',options:[],selectedNodeId:request.optionId,resolvesAtMs,boonOffers:undefined,artifactOffers:undefined};
+  return this.services.rpc('queue_online_qmode_node_server_v1',{p_account_id:accountId,p_run_id:runId,p_expected_version:loaded.stateVersion,p_request_id:request.requestId,p_request_hash:hash,p_private_state:{run:before,seed,pending:{run,resolvesAtMs,startStateHash:digest(before.persistentState),settlement:final}},p_client_projection:client});
  }
 }

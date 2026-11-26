@@ -5,6 +5,8 @@ import {spanishUiGap} from './spanish-ui-gaps';
 // Each row contains English, German, Spanish, Dutch, Italian and French.
 // English source keys also let owned views translate core-generated presentation text.
 export const accountTranslationRows = {
+ "Monster Codex": ["Monster Codex","Monsterkodex","Códice de monstruos","Monstercodex","Codice dei mostri","Codex des monstres"],
+ "Creatures, enemy types, drops and mastery": ["Creatures, enemy types, drops and mastery","Kreaturen, Gegnertypen, Beute und Meisterschaft","Criaturas, tipos de enemigos, botín y maestría","Monsters, vijandtypes, buit en meesterschap","Creature, tipi di nemici, bottini e maestria","Créatures, types d’ennemis, butin et maîtrise"],
   // Guides introduced by the refreshed learning library (source-exact, five localized variants).
   "Equipment & Inventory": ["Equipment & Inventory","Ausrüstung & Inventar","Equipo e inventario","Uitrusting en inventaris","Equipaggiamento e inventario","Équipement et inventaire"],
   "Equip stronger gear, compare stats and keep your materials organized.": ["Equip stronger gear, compare stats and keep your materials organized.","Rüste stärkere Ausrüstung aus, vergleiche Werte und organisiere deine Materialien.","Equipa objetos más potentes, compara estadísticas y organiza tus materiales.","Draag sterkere uitrusting, vergelijk statistieken en orden je materialen.","Equipaggia oggetti più potenti, confronta le statistiche e organizza i materiali.","Équipez du matériel plus puissant, comparez les caractéristiques et organisez vos matériaux."],
@@ -852,6 +854,7 @@ export const accountTranslationRows = {
   "Could not load account benefits. Please try again.": ["Could not load account benefits. Please try again.","Kontovorteile konnten nicht geladen werden. Bitte versuche es erneut.","No se pudieron cargar los beneficios de la cuenta. Inténtalo de nuevo.","De accountvoordelen konden niet worden geladen. Probeer het opnieuw.","Impossibile caricare i benefici dell'account. Riprova.","Impossible de charger les avantages du compte. Veuillez réessayer."],
   "OWNED": ["OWNED","IM BESITZ","ADQUIRIDO","IN BEZIT","POSSEDUTO","ACQUIS"],
   "Buy VIP": ["Buy VIP","VIP kaufen","Comprar VIP","VIP kopen","Acquista VIP","Acheter VIP"],
+  "2× Dungeon Combat Replay Speed": ["2× Dungeon Combat Replay Speed","2× Geschwindigkeit für Dungeon-Kampfwiederholungen","Velocidad 2× de repetición de combates de mazmorra","2× snelheid voor het herhalen van kerkergevechten","Velocità 2× per i replay dei combattimenti nei dungeon","Vitesse 2× des replays de combat en donjon"],
   "Buy VIP+": ["Buy VIP+","VIP+ kaufen","Comprar VIP+","VIP+ kopen","Acquista VIP+","Acheter VIP+"],
   "BUY VIP": ["BUY VIP","VIP KAUFEN","COMPRAR VIP","VIP KOPEN","ACQUISTA VIP","ACHETER VIP"],
   "Upgrade to VIP+": ["Upgrade to VIP+","Auf VIP+ upgraden","Mejorar a VIP+","Upgraden naar VIP+","Passa a VIP+","Passer à VIP+"],

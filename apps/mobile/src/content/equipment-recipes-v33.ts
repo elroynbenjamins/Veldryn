@@ -1,5 +1,5 @@
 import type {ClassId,GearSlot} from '../core/types';
-import {increasedCraftingGoldCost,roundEquipmentCraftingGoldCost} from './crafting-gold-cost';
+import {increasedCraftingGoldCost,roundEquipmentCraftingGoldCost,reducedEquipmentCraftingGoldCost} from './crafting-gold-cost';
 import {rebasedCombatLevelFromLegacyLevel as rebaseLevel} from '../core/progression';
 import catalog from './equipment_catalog_t1_t9_v33.json';
 
@@ -195,7 +195,7 @@ export const V33_EQUIPMENT_RECIPES:V33EquipmentRecipeDef[]=(catalog.pieces as Ar
     skillId,
     level,
     xp:boostedCraftXp,
-    gold:roundEquipmentCraftingGoldCost(increasedCraftingGoldCost(q(tierGold[tier]??120,multiplier)*EQUIPMENT_FORGE_GOLD_MULTIPLIER)*(['T3','T4'].includes(tier)?2:1)),
+    gold:reducedEquipmentCraftingGoldCost(roundEquipmentCraftingGoldCost(increasedCraftingGoldCost(q(tierGold[tier]??120,multiplier)*EQUIPMENT_FORGE_GOLD_MULTIPLIER)*(['T3','T4'].includes(tier)?2:1))),
     seconds:baseSeconds,
     inputs:mergeInputs([...reducePrimaryEquipmentMaterial(ingredients(tier,String(piece.Path),multiplier,skillId)),...crossProfessionAssemblyInput(tier,skillId,multiplier,String(piece.Path)),infusionByTier[tier]]),
     output:{itemId:String(piece['Piece ID']),quantity:1},

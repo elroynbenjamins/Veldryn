@@ -18,7 +18,7 @@ export interface QueuedActivity {kind:'combat'|'gathering'|'faith'|'exploration'
 export type GatheringSkillId='mining'|'woodcutting'|'fishing'|'herbalism';
 export type SeasonId='spring'|'summer'|'autumn'|'winter';
 export type WeatherId='clear'|'rain'|'mist'|'storm'|'bloomwind'|'heatwave'|'harvest_wind'|'snow'|'frost';
-export type SkillId=GatheringSkillId|'smithing'|'cooking'|'alchemy'|'exploration'|'tailoring'|'enchanting'|'faith';
+export type SkillId=GatheringSkillId|'smithing'|'cooking'|'alchemy'|'exploration'|'tailoring'|'enchanting'|'faith'|'forge';
 export interface SkillState{skillId:SkillId;xp:number;level:number;}
 export interface CharacterState {
   /** Own daily, weekly and monthly challenge progress, claims and reward selections. */
@@ -48,15 +48,26 @@ export interface CharacterState {
   gearEnhancements?:Record<string,GearEnhancementState>;
   /** Character-only equipment storage: separate from Inventory, shared Bank and account Gem Pouch. */
   equipmentPouch?:InventoryState;
-  /** One character-bound gathering tool per skill. Equipped tools are removed from Inventory. */
+  /** Legacy best-tool pointer kept for existing character saves and older readers. */
   equippedToolIds?:Partial<Record<GatheringSkillId,string>>;
+  /** All equipped tools, one per tier per gathering skill. Tools leave Inventory when equipped. */
+  equippedToolIdsByTier?:Partial<Record<GatheringSkillId,Partial<Record<1|2|3|4,string>>>>;
+  /** Exact physical copy in each tier. Missing IDs are pre-affix legacy tools. */
+  equippedToolInstanceIdsByTier?:Partial<Record<GatheringSkillId,Partial<Record<1|2|3|4,string>>>>;
+  /** Dedicated character-bound reserve: one extra physical tool per gathering tier, outside Inventory and Bank. Active copies remain in equippedTool*ByTier for save compatibility. */
+  savedToolIdsByTier?:Partial<Record<GatheringSkillId,Partial<Record<1|2|3|4,string>>>>;
+  /** Immutable crafted-copy receipt for the reserve; absent for pre-affix legacy tools. */
+  savedToolInstanceIdsByTier?:Partial<Record<GatheringSkillId,Partial<Record<1|2|3|4,string>>>>;
   equippedFoodId?:string;
   /** Auto-eat backup order (up to four different food types); never consumes bank food. */
   foodQueueIds?:string[];
   /** Character-bound boss healing potion; selected in the HP menu, consumed only in eligible boss battles. */
   equippedHealingPotionId?:string;
   bodyPresentation?:BodyPresentation;
-  craftedNoviceItemIds?:string[]; profileTitle?:string; profileBackgroundId?:string; profileBorderId?:string; selectedCosmeticPetId?:string;
+  craftedNoviceItemIds?:string[]; profileTitle?:string; profileBackgroundId?:string; profileBorderId?:string; profileEffectId?:string; selectedCosmeticPetId?:string;
+  /** Per-character preference; inert unless an eligible owned Ascendant cosmetic is equipped and the progression gate is released. */
+  ascendantPetBlessing?:import('./ascendant-blessings').AscendantBlessing;
+  ascendantBackgroundBlessing?:import('./ascendant-blessings').AscendantBlessing;
   /** Permanently collected pets that provide permanent boosts. */
   ownedPetIds?: string[];
   /** Permanently bought boosts that provide permanent boosts. */
@@ -94,6 +105,8 @@ export interface EquipmentCraftJob{
   reservedInputs?:ItemStack[];
   /** Frozen odds for new gem merges; missing means a legacy, guaranteed combine. */
   combineSuccessChancePercent?:number;
+  /** Relative rarity bonus captured at job reservation. */
+  forgeRarityBonusPercent?:0|5|10|15;
 }
 export interface CraftedGearInstance{
   id:string;
@@ -110,10 +123,13 @@ export interface CraftedGearInstance{
   enhancement:GearEnhancementState;
   /** Per-instance stat variance in [0,1); maps to roughly ±5% multiplier. 0.5 is "average". */
   statRoll?:number;
-  /** T3+ weapon-only permanent per-copy secondary stat rolls; absent on legacy gear. */
+  /** T2+ weapon-only permanent per-copy secondary stat rolls; absent on legacy gear. */
   weaponBonuses?:import('./weapon-bonus-rolls').WeaponBonusRoll[];
   /** Roll table version recorded at mint, so later balance revisions cannot invalidate earned copies. */
   weaponBonusRollVersion?:import('./weapon-bonus-rolls').WeaponBonusRollVersion;
+  /** T2+ non-weapon per-copy secondary rolls; never inferred for legacy gear. */
+  equipmentBonuses?:import('./equipment-bonus-rolls').EquipmentBonusRoll[];
+  equipmentBonusRollVersion?:import('./equipment-bonus-rolls').EquipmentBonusRollVersion;
 }
 export interface ItemStack { itemId:string; quantity:number; /** Unique physical gear receipt; missing for legacy stacks. */ instanceId?:string; }
 export interface InventoryState { stacks:ItemStack[]; capacity:number; }
@@ -138,8 +154,10 @@ export interface GameState {
   /** Transient, server-injected authoritative Guild Skill bonuses for one
    * resolution. Not persisted; absent means no bonus (skills unreleased). */
   guildSkillEffects?:import('./guild-skill-effects').GuildSkillEffects;
+  /** Transient authoritative Frostfall guild milestone history. Never saved or trusted from client input. */
+  winterHearthBonusWindows?:import('./winter-hearth-bonus-windows').WinterHearthBonusWindow[];
   quests:QuestState[]; unlockedMonsterIds:string[]; exploredRouteIds?:string[]; defeatedBossIds:string[]; skills:SkillState[];
-  account:CompanionAccountState & {longTermAccountScopeId?:string;entitlements?:Record<string,boolean>;playerNameStyle?:import('./player-name-style').PlayerNameStylePreference;vipPlusNameColor?:string;equipmentCraftingQueue?:EquipmentCraftJob[];gemPouch?:InventoryState;gemPouchMigrationDone?:boolean;craftedGearInstances?:CraftedGearInstance[];craftedGearAutoSellMode?:import('./crafted-gear-retention').CraftedGearAutoSellMode;forgeMastery1050Earned?:boolean;unlockedCharacterSlots?:number;earnedAfkRegionIds?:Array<'SUNSCAR'|'FROSTMARCH'|'ASHLANDS'>;premiumCurrencyBalance?:number;ownedBoostIds?:string[];eventCommunityProgressById?:Record<string,number>;createdCharacterCount:number;guildMember:boolean;patronTier:'none'|'bloom'|'crown';guildBackgroundId?:import('./guild-customization').GuildBackgroundId;guildBannerId?:import('./guild-customization').GuildBannerId;guildProfileFrameId?:import('./guild-customization').GuildFrameId;guildNameplateId?:import('./guild-customization').GuildNameplateId;guildMotto?:string;
+  account:CompanionAccountState & {/** Canonical account-wide social portrait. Character fields are compatibility mirrors. */profileIconId?:string;longTermAccountScopeId?:string;entitlements?:Record<string,boolean>;playerNameStyle?:import('./player-name-style').PlayerNameStylePreference;vipPlusNameColor?:string;equipmentCraftingQueue?:EquipmentCraftJob[];gemPouch?:InventoryState;gemPouchMigrationDone?:boolean;craftedGearInstances?:CraftedGearInstance[];craftedGatheringToolInstances?:import('./gathering-tool-rolls').CraftedGatheringTool[];craftedGearAutoSellMode?:import('./crafted-gear-retention').CraftedGearAutoSellMode;forgeMastery1050Earned?:boolean;unlockedCharacterSlots?:number;earnedAfkRegionIds?:Array<'SUNSCAR'|'FROSTMARCH'|'ASHLANDS'>;premiumCurrencyBalance?:number;ownedBoostIds?:string[];eventCommunityProgressById?:Record<string,number>;createdCharacterCount:number;guildMember:boolean;patronTier:'none'|'bloom'|'crown';guildBackgroundId?:import('./guild-customization').GuildBackgroundId;guildBannerId?:import('./guild-customization').GuildBannerId;guildProfileFrameId?:import('./guild-customization').GuildFrameId;guildNameplateId?:import('./guild-customization').GuildNameplateId;guildMotto?:string;
   unlockedGuildCosmeticIds?:string[];
   professionMasteryByAction?:Record<string,import('./profession-mastery-v40').ProfessionMasteryRecord>;
   weeklyOrders?:import('./weekly-orders-v41').WeeklyOrdersState;
@@ -158,7 +176,7 @@ export interface GameState {
   /** Current UTC-week Live co-op Resonance Cache projection and pre-rolled reward choices. */
   resonanceCache?:ResonanceCacheStateV1;
   unlockedCollectionRewardIds?:string[];
-  guildContribution?:number;guildProjectProgress?:number;guildBossHp?:number;guildProjectClaimed?:boolean;guildJoinPolicy?:'open'|'apply'|'invite';guildMinimumLevel?:number;guildApplicationStatus?:'none'|'pending'|'accepted'|'declined';seasonalContractClaimIds?:string[];seasonalContractRewardChoices?:Record<string,string>;personalSeasonalClaimLedger?:Record<string,string[]>;legacySeasonalGrantSnapshot?:import('./legacy-seasonal-claim').LegacySeasonalGrantSnapshot;liveEvent?:LiveEventRuntime;eventCandyChargesById?:Record<string,number>;eventProgressById?:Record<string,number>;eventCurrencyBalanceById?:Record<string,number>;eventPrestigeBalanceById?:Record<string,number>;eventRepeatCacheClaimsById?:Record<string,number>;eventActivityById?:Record<string,Partial<Record<'combat'|'gathering'|'crafting'|'boss',number>>>;eventPeriodActivityById?:Record<string,Partial<Record<'combat'|'gathering'|'crafting'|'boss',number>>>;eventAcceptedContractIds?:string[];eventContractBaselines?:Record<string,number>;eventObjectiveClaimIds?:string[];eventWeeklyClaimIds?:string[];eventDailyGiftClaimIds?:string[];eventCommunityClaimIds?:string[];eventDiscoveryCounts?:Record<string,number>;eventDiscoveryClaimIds?:string[];eventShopPurchaseCounts?:Record<string,number>;eventChoiceById?:Record<string,string>;eventContributionById?:Record<string,number>;eventRewardClaimIds?:string[];unlockedProfileIconIds?:string[];unlockedCosmeticPetIds?:string[];unlockedProfileBackgroundIds?:string[];unlockedProfileBorderIds?:string[];unlockedEmoteIds?:string[];unlockedTitleIds?:string[]};
+  guildContribution?:number;guildProjectProgress?:number;guildBossHp?:number;guildProjectClaimed?:boolean;guildJoinPolicy?:'open'|'apply'|'invite';guildMinimumLevel?:number;guildApplicationStatus?:'none'|'pending'|'accepted'|'declined';seasonalContractClaimIds?:string[];seasonalContractRewardChoices?:Record<string,string>;personalSeasonalClaimLedger?:Record<string,string[]>;legacySeasonalGrantSnapshot?:import('./legacy-seasonal-claim').LegacySeasonalGrantSnapshot;liveEvent?:LiveEventRuntime;eventCandyChargesById?:Record<string,number>;eventProgressById?:Record<string,number>;eventCurrencyBalanceById?:Record<string,number>;eventPrestigeBalanceById?:Record<string,number>;eventRepeatCacheClaimsById?:Record<string,number>;eventActivityById?:Record<string,Partial<Record<'combat'|'gathering'|'crafting'|'boss',number>>>;eventPeriodActivityById?:Record<string,Partial<Record<'combat'|'gathering'|'crafting'|'boss',number>>>;eventAcceptedContractIds?:string[];eventContractBaselines?:Record<string,number>;eventObjectiveClaimIds?:string[];eventWeeklyClaimIds?:string[];eventDailyGiftClaimIds?:string[];eventCommunityClaimIds?:string[];eventDiscoveryCounts?:Record<string,number>;eventDiscoveryClaimIds?:string[];eventShopPurchaseCounts?:Record<string,number>;eventChoiceById?:Record<string,string>;eventContributionById?:Record<string,number>;eventRewardClaimIds?:string[];unlockedProfileIconIds?:string[];unlockedCosmeticPetIds?:string[];unlockedProfileBackgroundIds?:string[];unlockedProfileBorderIds?:string[];unlockedProfileEffectIds?:string[];unlockedEmoteIds?:string[];unlockedTitleIds?:string[]};
   settings:{language:Language;uiTheme?:UiThemeId;numberMode:'abbreviated'|'exact';reduceMotion:boolean;textScale:1|1.15|1.3|1.5;autoEatThresholdPct:number;stopCombatWhenOutOfFood:boolean;autoTravelQueuedActivities?:boolean;autoJoinWorldChat?:boolean;defaultWorldChat?:1|2|3|4;chatDockLines?:1|2|3;chatEmoteTrayIds?:string[];quickNavDestinations?:QuickNavDestination[];favoriteItemIds?:string[];lockedItemIds?:string[];seenItemIds?:string[];};
 }
 export interface RewardBundle {

@@ -51,12 +51,12 @@ const craftingProfessionBrowser=read('src/components/CraftingRecipeBrowser.tsx')
 const skills=read('src/screens/SkillsScreen.tsx');
 ok(!skills.includes('this workshop has no trainable recipes available yet'),'Tailoring and Enchanting must not regress to placeholder-only skill screens');
 
-ok(skills.includes("minHeight:112"),'Skills hub cards must remain compact');
-ok(skills.includes('skillTop:'),'Skills hub cards must keep the compact icon/copy row');
+ok(skills.includes("navigatorRow:{width:'48%',minWidth:138,minHeight:122")&&skills.includes("cardGrid:{flexDirection:'row',flexWrap:'wrap'"),'Skills hub must restore compact responsive two-column cards');
+ok(skills.includes('navigatorTop:')&&skills.includes('navigatorLevelRow:')&&skills.includes('navigatorProgress:'),'Skills cards must keep icon, identity, level and progress visible together');
 ok(!skills.includes('Tap to open'),'Skills cards must not waste a line on redundant tap instructions');
-ok(skills.includes('TRAINING FOCUS · RECOMMENDED')&&skills.includes('skillTrainingFocus(state)'),'Skills hub must surface one deterministic recommended training target from authored milestones');
+ok(!skills.includes('TRAINING FOCUS · RECOMMENDED')&&!skills.includes('skillTrainingFocus(state)'),'Skills navigator must not force a training recommendation');
 ok(skills.includes("gt('NEXT LV {level} · {title}',{level:milestone.nextLevel,title:gl(milestone.next[0].title)})")&&skills.includes('skillMilestoneOverview(state,skillRow.skillId)'),"Skill cards must preview their next meaningful authored unlock instead of showing XP progress alone");
-ok(skills.includes('focusCard:{minHeight:82')&&skills.includes('backgroundColor:C.infoSurface'),'Skills training focus must remain compact and theme-semantic');
+ok(skills.includes('navigatorToolbar:')&&skills.includes('categoryPickerOpen')&&skills.includes('<SearchField style={hubStyles.navigatorSearch}'),'Skills navigator must use a single-row category picker and search');
 
 ok(!skills.includes('<SkillMilestoneStrip'),'Skill detail screens must stay focused without milestone panels');
 
@@ -87,7 +87,7 @@ ok(masteryCore.includes("{rank:10,kind:'xp'")&&masteryCore.includes("{rank:20,ki
 const gatheringSkills=read('src/components/GatheringActivityList.tsx');
 ok(gatheringSkills.includes('Ready resources appear first. Travel to other unlocked regions for more.')&&gatheringSkills.includes('if(readyHere){onGather(activity.id);return;}'),'Gathering should describe location readiness and immediately start a tapped available resource');
 ok(gatheringSkills.includes('accessibilityRole="button"')&&gatheringSkills.includes('onPress={start}'),'Each gathering resource must begin directly from its row');
-ok(gatheringSkills.includes("gt('Have: {count} {resource} · {seconds}s'")&&gatheringSkills.includes('formatGameNumber(available')&&gatheringSkills.includes('Math.ceil(view.cycleSeconds)'),'Gathering rows must show stored resource count and an easy-to-scan rounded action duration');
+ok(gatheringSkills.includes("gt('Have: {count} {resource} · {seconds}s'")&&gatheringSkills.includes('count:formatGameNumber(stock(activity.itemId),state.settings.numberMode,language)')&&gatheringSkills.includes('seconds:cycleSeconds')&&gatheringSkills.includes('cycleSeconds:entry.readyHere&&!entry.active?Math.ceil(gatheringBalanceProjection(state,entry.activity,0).cycleSeconds):0')&&gatheringSkills.includes('[state,skillId,skillLevel,currentRegionOnly,region.id,areaId,preferredActionId]'),'Gathering rows must show stored resource count and an easy-to-scan rounded action duration');
 ok(gatheringSkills.includes('gatheringProgressionAction'),'Locked gathering rows must still route to the useful training destination');
 ok(gatheringSkills.includes('gatheringBalanceProjection'),'Gathering duration must continue using the shared rate projection');
 const balanceProjection=read('src/core/balance-projection.ts');
@@ -99,15 +99,15 @@ ok(craftingBrowser.includes('label:gt("READY NOW"),tone:\'ready\'')&&craftingBro
 ok(craftingBrowser.includes("filterToggle:{minHeight:44"),'Crafting filters must use a compact accessible dropdown control');
 ok(craftingBrowser.includes('alchemyAvailability')&&craftingBrowser.includes('processingAvailability(state,recipe.id,undefined,true)'),'Timed skill recipes must remain startable while another activity is settled and replaced');
 ok(craftingBrowser.includes('preferredRecipeId'),'Crafting lists must preserve exact deep-linked recipe selection');
-ok(craftingBrowser.includes('initialExpanded={recipe.id===preferredRecipeId}')||craftingBrowser.includes('initialExpanded={recipeGroup.rows.some(row=>row.recipe.id===preferredRecipeId)}'),'Deep-linked crafting targets must arrive already expanded, including the selected route of a grouped material recipe');
+ok(craftingBrowser.includes('const initialExpandedKey=variantGroups.find(group=>group.recipes.some(recipe=>recipe.id===preferredRecipeId))?.key??null')&&craftingBrowser.includes('controlledExpanded={openRecipeKey===recipeGroup.key}'),'Deep-linked crafting targets must arrive already expanded, including the selected route of a grouped material recipe');
 ok(craftingBrowser.includes('processingAvailability')&&craftingBrowser.includes('onProcessingStart'),'Repeatable stackable recipes must route through reserved timed processing');
 ok(craftingBrowser.includes('equipmentCraftAvailability')&&craftingBrowser.includes('timedEquipmentRecipe'),'Crafting groups must use real forge-start semantics for timed equipment');
 
 const recipeCard=read('src/components/RecipeCard.tsx');
-ok(recipeCard.includes("processing?gl('Process available resources')")&&recipeCard.includes("gl('Runs until materials, Gold, or your AFK time runs out.')")&&recipeCard.includes('outputPerHour'),'Processing cards must expose its continuous offline rule and material throughput');
+ok(recipeCard.includes("processing?gt('Process')+' '+f(quantity)")&&recipeCard.includes('CraftQuantitySelector')&&recipeCard.includes('outputPerHour'),'Processing cards must expose selected batch quantity, resource-aware controls and material throughput');
 ok(recipeCard.includes("head:{minHeight:96"),'Recipe rows must remain compact');
-ok(recipeCard.includes("statusText=starting?")&&recipeCard.includes("gt(\"Forge + backlog full\")")&&recipeCard.includes('craftText(effectiveStatus.reason)'),'Collapsed recipe cards must expose starting and blocking states');
-ok(recipeCard.includes("alchemy?ct('Brew · {time}'")&&recipeCard.includes('instantStart=craftReady&&(alchemy||processing)')&&recipeCard.includes('startInstant')&&recipeCard.includes('expandToggle'),'Alchemy recipe cards must immediately start a continuous brew while retaining a separate details control');
+ok(recipeCard.includes("matchingCraftFeedback?.phase==='error'")&&recipeCard.includes("starting?gt('Starting…')")&&recipeCard.includes("gt(\"Forge + backlog full\")")&&recipeCard.includes('craftText(effectiveStatus.reason)'),'Collapsed recipe cards must expose starting and blocking states');
+ok(recipeCard.includes("alchemy?gt('Brew')+' '+f(quantity)")&&recipeCard.includes('onAlchemyStart(recipe.id,quantity)')&&recipeCard.includes('expandToggle'),'Alchemy recipe cards must first expose quantity controls and start the explicitly selected number of brews');
 ok(skills.includes("type:'alchemy_start'"),'Skills must route Alchemy through the authoritative alchemy_start command');
 ok(recipeCard.includes('recipeProgressionSources')&&recipeCard.includes('MISSING SOURCES'),'All recipe types must expose actionable material/prerequisite sources');
 ok(recipeCard.includes('Other sources ·')&&recipeCard.includes('sourceTypeLabel')&&recipeCard.includes('accessibilityState={{expanded:!!openSources[row.key]}}'),'Recipe material sources must keep one primary route compact and disclose typed alternatives on demand');
@@ -204,8 +204,8 @@ for(const path of [
 }
 
 const activeActivityBar=read('src/components/ActiveActivityBar.tsx');
-ok(activeActivityBar.includes('activityProgressFeedback')&&activeActivityBar.includes("gl(phase).replace('…','').toLocaleUpperCase(language)")&&activeActivityBar.includes('cycleRemaining'),"Collapsed active-activity strip must show the same real cycle phase and next-action countdown as Home");
-ok(activeActivityBar.includes("activity.kind==='exploration'?explorationRoute(activity.targetId)")&&activeActivityBar.includes('route?.seconds??faithTier?.seconds')&&activityTargetNames.includes('EXPLORATION_ROUTES.find'),'Active Exploration must render its authored route name and cycle duration instead of a frozen one-second fallback');
+ok(activeActivityBar.includes('activityProgressFeedback')&&activeActivityBar.includes("gl(phase).replace('…','').toLocaleUpperCase(language)")&&activeActivityBar.includes('cycleRemaining'),"Collapsed timed-activity strip must show the real cycle phase and next-action countdown");
+ok(activeActivityBar.includes("activity?.kind==='exploration'?explorationRoute(activity.targetId)")&&activeActivityBar.includes('route?.seconds??faithTier?.seconds')&&activityTargetNames.includes('EXPLORATION_ROUTES.find'),'Active Exploration must render its authored route name and cycle duration instead of a frozen one-second fallback');
 
 const encounterLockCards=read('src/components/RegionEncounterList.tsx');
 ok(encounterLockCards.includes('encounterLockRequirement(state,monster)')&&encounterLockCards.includes("lock?.kind==='exploration'?t(\"SCOUT\")+' '+lock.routeName"),'Locked encounter cards must show their actual scouting requirement after the level requirement is met');
@@ -324,7 +324,7 @@ const activityOverview=read('src/screens/ActivityOverviewScreen.tsx');
 ok(activityOverview.includes('combatTone:{color:C.bad}'),'Character Activity combat emphasis must use the active theme');
 ok(activityOverview.includes('faithTone:{color:C.special}'),'Character Activity Faith emphasis must use the active theme');
 
-ok(activityOverview.includes('stackRows=width<380||fontScale>=1.2')&&activityOverview.includes('s.actionsStack'),'Character roster actions must remain accessible with larger text');
+ok(activityOverview.includes('stackRows=width<390||fontScale>=1.25||state.settings.textScale>=1.25')&&activityOverview.includes('s.actionsStack')&&activityOverview.includes('s.activityRowStack'),'Character roster actions must remain accessible with larger text');
 ok(activityOverview.includes('characterDeleteBlockReason(state,target.character.id)')&&activityOverview.includes('characterDeleteConfirmation(target.character.name)')&&activityOverview.includes('onDelete(target.character.id,confirmation)'),'Character management must preserve permanent deletion validation and server action');
 const unlockHistory=read('src/screens/NewUnlocksScreen.tsx');
 ok(unlockHistory.includes("filter==='title'?row.kind==='title'")&&unlockHistory.includes('entries.slice')===false&&unlockHistory.includes('filtered.slice(0,20)'),'Unlock categories must filter owned entries before bounded rendering');
@@ -337,7 +337,7 @@ ok(milestoneFeed.includes("row.display_name")&&milestoneFeed.includes("row.occur
 const dailySupplies=read('src/screens/DailySuppliesScreen.tsx');
 // Supply Journey 2.0 shows the 28 days as four seven-day chapters.
 ok(dailySupplies.includes('Array.from({length:7}')&&dailySupplies.includes("days:{flexDirection:'row',gap:4}")&&dailySupplies.includes('day:{flex:1,minWidth:0,height:51'),"Daily Supplies track must fit seven compact columns on narrow phones");
-ok(dailySupplies.includes('choice:{minHeight:44'),'Daily Supplies Blessing rows must remain compact');
+ok(/choice:\{[^\n]*minHeight:44/.test(dailySupplies),'Daily Supplies Blessing rows must remain compact');
 ok(dailySupplies.includes('accessibilityState={{expanded:showRules}}')&&dailySupplies.includes('HOW SUPPLY BUFFS WORK'),'Daily Supplies reference rules must stay collapsed until requested instead of lengthening the main claim/boost workflow');
 
 const accountBonuses=read('src/screens/AccountBonusesScreen.tsx');

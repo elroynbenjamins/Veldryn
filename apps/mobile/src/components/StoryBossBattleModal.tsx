@@ -1,7 +1,7 @@
 import {useGameplayText,type GameplayKey} from '../i18n/gameplay';
 import {useEffect,useMemo,useRef,useState} from 'react';
 import {useMusicOverride} from '../storage/audio';
-import {Animated,AppState,Easing,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
+import {Animated,AppState,Easing,Image,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {MONSTERS} from '../content/monsters';
 import {ITEMS} from '../content/items';
 import {displayStat} from '../core/stat-display';
@@ -121,7 +121,6 @@ export function StoryBossBattleModal({state,battle,message,onClose}:{state:GameS
                 {damageEvent?.type==='boss_hit'&&<Animated.View pointerEvents="none" style={[s.floatWrap,{opacity:playerImpact,transform:[{translateY:floatY(playerImpact)}]}]}><Text style={s.damageTaken}>{damageEvent.critical?'CRIT ':''}−{displayStat(damageEvent.amount??0).toLocaleString()}</Text></Animated.View>}
               </View>
               <Text numberOfLines={1} style={s.name}>{state.character?.name??gt("Adventurer")}</Text>
-              <Text style={s.sub}>ACC {Math.round(battle.player.hitChance*100)}% · CRIT {Math.round(battle.player.critChance*100)}%</Text>
             </View>
 
             <View style={s.vsWrap}><Text style={s.vs}>VS</Text><Text style={s.timer}>{timeLabel(Math.min(playhead,battle.durationMs))}</Text></View>
@@ -134,7 +133,6 @@ export function StoryBossBattleModal({state,battle,message,onClose}:{state:GameS
                 {damageEvent?.type==='player_hit'&&<Animated.View pointerEvents="none" style={[s.floatWrap,{opacity:enemyImpact,transform:[{translateY:floatY(enemyImpact)}]}]}><Text style={damageEvent.critical?s.critDamage:s.damageDealt}>{damageEvent.critical?'CRIT ':''}−{displayStat(damageEvent.amount??0).toLocaleString()}</Text></Animated.View>}
               </View>
               <Text style={s.name}>Fallen Knight</Text>
-              <Text style={s.sub}>ACC {Math.round(battle.boss.accuracy*100)}% · CRIT {Math.round(battle.boss.critChance*100)}%</Text>
             </View>
           </View>
         </Animated.View>
@@ -230,7 +228,7 @@ function StoryBossResult({battle,message,onClose}:{battle:FallenKnightBattleResu
           </View>)}
         </View>:null}
         {rewards.bondstones!==null?<View style={s.bondstoneBonus}>
-          <Text style={s.bondstoneIcon}>✧</Text>
+          <Image source={require("../../assets/companion-resources/bondstones.webp")} style={s.bondstoneIcon} resizeMode="contain" accessible={false}/>
           <View style={s.bondstoneCopy}><Text style={s.bondstoneHeading}>{gt("BONUS REWARD")}</Text><Text style={s.bondstoneText}>{gt("Bondstone")}</Text></View>
           <Text style={s.bondstoneValue}>+{rewards.bondstones.toLocaleString()}</Text>
         </View>:rewards.bondstoneCapped?<Text style={s.rewardNote}>{gt("Weekly Bondstone limit reached")}</Text>:null}
@@ -278,7 +276,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
   rewardCurrencyMark:{fontSize:12,color:C.accent,fontWeight:'900'},
   rewardCurrencyText:{fontSize:9,color:C.muted,fontWeight:'900',letterSpacing:.4},
   bondstoneBonus:{flexDirection:'row',alignItems:'center',gap:10,borderWidth:1,borderColor:C.special,borderRadius:radii.sm,backgroundColor:C.specialSurface,paddingVertical:10,paddingHorizontal:12},
-  bondstoneIcon:{fontSize:24,color:C.special,fontWeight:'900'},
+  bondstoneIcon:{width:31,height:31},
   bondstoneCopy:{flex:1,gap:2},bondstoneHeading:{fontSize:9,color:C.special,fontWeight:'900',letterSpacing:.7},bondstoneText:{...typography.bodyStrong,color:C.text},
   bondstoneValue:{...typography.title,color:C.special,fontWeight:'900'},
   rewardNote:{...typography.caption,color:C.muted},

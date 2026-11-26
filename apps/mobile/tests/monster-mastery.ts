@@ -189,7 +189,8 @@ let rejected=false;try{validateGameCommand({type:'mastery',args:{rank:30}});}cat
 const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string};
 const screen=fs.readFileSync('src/screens/CombatScreen.tsx','utf8');
 const familyUi=fs.readFileSync('src/components/EnemyFamilyMasteryPanel.tsx','utf8');
-ok(screen.includes('<EnemyFamilyMasteryPanel state={state}/>')&&familyUi.includes('ENEMY_FAMILY_MASTERY_MILESTONES'),'type mastery appears next to species mastery');
+const codexUi=fs.readFileSync('src/screens/BestiaryScreen.tsx','utf8');
+ok(!screen.includes('<EnemyFamilyMasteryPanel')&&screen.includes('onOpenCodex')&&codexUi.includes('enemyFamilyMasteryGuidance')&&codexUi.includes('monsterMasteryGuidance')&&familyUi.includes('ENEMY_FAMILY_MASTERY_MILESTONES'),'species and type mastery now coexist in the Codex, reached from compact Combat shortcut');
 ok(familyUi.includes('m.dropKnowledge')&&familyUi.includes('m.badgeUnlocked'),'family knowledge and cosmetic milestone are visible');
 ok(familyUi.includes('m.currentRankProgress')&&familyUi.includes('m.currentRankTarget'),'family progress bar tracks the variable rank threshold');
 ok(familyUi.includes('m.pointsToNextRank')&&!familyUi.includes('kills to next rank'),'family progress labels count earned points rather than incorrectly estimating kills');

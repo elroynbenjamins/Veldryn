@@ -16,7 +16,7 @@ check(panel.includes('readyJobs.length>1?<GameButton compact title={gt("Claim Al
 check(panel.includes('readyJobs.map(job=>')&&panel.includes('onClaim(job.id)'),'Individual claim must remain available');
 check(panel.includes('showAutoSell?<View')&&panel.includes('state.account.craftedGearAutoSellMode'),'Auto-sell must be collapsed by default but retain existing protection toggle');
 check(panel.includes("onMoveWaiting(job.id,'up')")&&panel.includes("onMoveWaiting(job.id,'down')"),'Existing backlog controls must remain intact');
-check(collection.includes('queueOpen?<EquipmentCraftQueuePanel {...queueProps}/>:<>'),'Forge management must be separate from Smithing/Tailoring recipe selection');
+check(collection.includes('onPress={onOpenForge??(()=>setQueueOpen(value=>!value))}')&&screen.includes('<ForgeScreen state={state}')&&read('src/screens/ForgeScreen.tsx').includes('<EquipmentCraftQueuePanel {...queueProps}/>'),'Dedicated Forge must own queue management while keeping Smithing/Tailoring crafting available');
 check(collection.includes('equipmentCraftQueueModel(state,Date.now()).ready>0'),'Finished crafts must open directly into the collection flow');
 check(collection.includes('ownedEquipmentDefinitionIds(state)'),'Ownership badges must recognize Equipment Pouch contents');
 check(collection.includes('+{displayStat(Number(value))}'),'Forge equipment stats must display whole numbers rather than raw decimals');
@@ -24,9 +24,18 @@ const card=read('src/components/RecipeCard.tsx');
 check(card.includes('ATK {displayStat(output.attack??0)}'),'Recipe details must also show whole-number gear stats');
 const novice=read('src/components/NoviceWorkshop.tsx');
 check(novice.includes('ATK {displayStat(item.attack??0)}'),'Novice gear previews must also show whole-number gear stats');
-check(collection.includes('workingTowardItemSourceEntries(state,input.itemId)')&&collection.includes('props.onNavigate(source.destination)'),'Missing material tiles must route to a valid material source');
-check(collection.indexOf('onCraft(recipe.id)')<collection.indexOf('status.inputs.map(input=>'),'Craft CTA must be visible before long material details');
+check(collection.includes('detailsOnly externalQuantity={craftCount}')&&card.includes('onNavigate(row.destination)')&&card.includes('sourceHelpOpen?<>{preparationRoute'),'Missing material routes must stay available in the shared compact source panel');
+check(collection.indexOf('void onCraft(recipe.id,craftCount)')>0&&collection.indexOf('void onCraft(recipe.id,craftCount)')<collection.indexOf('<RecipeCard key={recipe.id}'),'Craft CTA must remain above compact material details');
 check(screen.includes('<SmithingCollection state={state} skillId={initialSkill}'),'Smithing and Tailoring must continue sharing the same refined component');
+
+// Focused Forge layout is queue-first while the mastery overview remains accessible.
+const forgeScreen=read('src/screens/ForgeScreen.tsx');
+check(forgeScreen.includes("label:gt('Professions')"),'Forge should describe its profession handoffs accurately');
+check(forgeScreen.includes('showQueueMastery?masteryOverview:null'),'Queue mastery must be optional, without hiding it permanently');
+check(forgeScreen.includes("section==='mastery'?masteryOverview"),'Mastery tab must still show full milestones');
+check(forgeScreen.indexOf('<EquipmentCraftQueuePanel {...queueProps}/>')<forgeScreen.indexOf('showQueueMastery?masteryOverview:null'),'Queue should precede optional mastery details');
+check(panel.includes('narrow=width<380')&&panel.includes('narrow?34:44'),'Small-screen queue refinement must not alter larger layouts');
+check(panel.includes("gt('No Gold refunded')"),'Active cancellation must disclose Gold loss next to its action');
 
 // Nine tiers used to wrap into three rows of buttons above the set browser.
 const tierMemory=read('src/core/equipment-tier-memory.ts');

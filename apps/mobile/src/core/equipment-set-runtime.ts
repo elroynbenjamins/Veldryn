@@ -2,15 +2,15 @@ import {EQUIPMENT_SETS,equipmentSetDef,equippedSetPieceCount,type EquipmentSetDe
 import {itemDef} from '../content/items';
 import {equippedCanonicalStatGemBonusesV1} from './equipment-enhancement';
 import {normalizeCraftedGearInstances} from './crafted-gear-instances';
-import type {GameState} from './types';
+import type {GameState,GearSlot} from './types';
 
 export type EquipmentSetStatKey=
-  'maxHp'|'armor'|'ward'|'tenacity'|'haste'|'power'|'accuracy'|'penetration'|'potency'|'critRate'|'critDamage'|'evasion';
+  'maxHp'|'armor'|'ward'|'tenacity'|'haste'|'power'|'attack'|'accuracy'|'penetration'|'potency'|'critRate'|'critDamage'|'evasion'|'abilityDamage'|'healingPower';
 
 export type EquipmentSetStats=Record<EquipmentSetStatKey,number>;
 
 const EMPTY_STATS:EquipmentSetStats={
-  maxHp:0,armor:0,ward:0,tenacity:0,haste:0,power:0,accuracy:0,penetration:0,potency:0,critRate:0,critDamage:0,evasion:0,
+  maxHp:0,armor:0,ward:0,tenacity:0,haste:0,power:0,attack:0,accuracy:0,penetration:0,potency:0,critRate:0,critDamage:0,evasion:0,abilityDamage:0,healingPower:0,
 };
 const STAT_KEY_BY_LABEL:Record<string,EquipmentSetStatKey>={
   'max hp':'maxHp',armor:'armor',ward:'ward',tenacity:'tenacity',haste:'haste',power:'power',accuracy:'accuracy',
@@ -38,6 +38,23 @@ export function equippedWeaponBonusStats(state:GameState):Partial<EquipmentSetSt
   if(!copy?.weaponBonuses?.length)return {};
   const stats:Partial<EquipmentSetStats>={};
   for(const bonus of copy.weaponBonuses)stats[bonus.stat]=(stats[bonus.stat]??0)+bonus.basisPoints/10_000;
+  return stats;
+}
+
+/** Only exact equipped non-weapon receipts contribute their validated permanent bonuses.
+ * No fallback to another owned copy, no automatic backfill for legacy items. */
+export function equippedEquipmentBonusStats(state:GameState):Partial<EquipmentSetStats>{
+  const character=state.character;if(!character)return {};
+  const stats:Partial<EquipmentSetStats>={};
+  for(const [slot,itemId] of Object.entries(character.equipment)){
+    if(!itemId||slot==='weapon')continue;
+    const instanceId=character.equipmentInstanceIds?.[slot as GearSlot];
+    if(!instanceId)continue;
+    const raw=state.account.craftedGearInstances?.find(row=>row?.id===instanceId&&row?.itemId===itemId);
+    const copy=raw?normalizeCraftedGearInstances([raw])[0]:undefined;
+    if(!copy?.equipmentBonuses?.length)continue;
+    for(const bonus of copy.equipmentBonuses)stats[bonus.stat]=(stats[bonus.stat]??0)+bonus.basisPoints/10_000;
+  }
   return stats;
 }
 
@@ -86,7 +103,7 @@ export function activeEquipmentSetRuntime(state:GameState):EquipmentSetRuntimeSu
   const setIds=new Set<string>();
   for(const itemId of Object.values(state.character.equipment)){
     if(!itemId)continue;
-    // A retired or unknown item id in an old save must not break every combat stat read.
+    // Legacy saved item IDs may outlive catalog entries.
     let setId:string|undefined;
     try{setId=itemDef(itemId).equipmentSetId;}catch{continue;}
     if(setId)setIds.add(setId);
@@ -135,21 +152,26 @@ export function activeEquipmentBuildStats(state:GameState):EquipmentSetStats{
   const sets=activeEquipmentSetRuntime(state).stats;
   const gems=equippedCanonicalStatGemBonusesV1(state);
   const weapon=equippedWeaponBonusStats(state);
+  const equipment=equippedEquipmentBonusStats(state);
+  const rolled=(stat:EquipmentSetStatKey)=>(weapon[stat]??0)+(equipment[stat]??0);
   const p=gems.statPercent,pp=gems.statPercentagePoints;
   const multiplied=(bonus:number,percent:number|undefined)=>(1+bonus)*(1+(percent??0))-1;
   return {
-    maxHp:multiplied(sets.maxHp,p.maxHp)+(weapon.maxHp??0),
-    armor:multiplied(sets.armor,p.armor)+(weapon.armor??0),
-    ward:multiplied(sets.ward,p.ward)+(weapon.ward??0),
-    tenacity:multiplied(sets.tenacity,p.tenacity)+(weapon.tenacity??0),
-    haste:multiplied(sets.haste,p.haste)+(weapon.haste??0),
-    power:multiplied(sets.power,p.power),
-    accuracy:sets.accuracy+(pp.accuracy??0)+(weapon.accuracy??0),
-    penetration:sets.penetration+(pp.penetration??0)+(weapon.penetration??0),
-    potency:multiplied(sets.potency,p.potency)+(weapon.potency??0),
-    critRate:sets.critRate+(pp.critRate??0)+(weapon.critRate??0),
-    critDamage:(.5+sets.critDamage)*(1+(p.critDamage??0))-.5,
-    evasion:sets.evasion+(pp.evasion??0),
+    maxHp:multiplied(sets.maxHp,p.maxHp)+rolled('maxHp'),
+    armor:multiplied(sets.armor,p.armor)+rolled('armor'),
+    ward:multiplied(sets.ward,p.ward)+rolled('ward'),
+    tenacity:multiplied(sets.tenacity,p.tenacity)+rolled('tenacity'),
+    haste:multiplied(sets.haste,p.haste)+rolled('haste'),
+    power:sets.power+rolled('power'), // Power still belongs to sets/affixes; there is no Power Stat Gem in 2.0.
+    attack:multiplied(sets.attack,p.attack)+rolled('attack'),
+    accuracy:sets.accuracy+(pp.accuracy??0)+rolled('accuracy'),
+    penetration:sets.penetration+(pp.penetration??0)+rolled('penetration'),
+    potency:multiplied(sets.potency,p.potency)+rolled('potency'),
+    critRate:sets.critRate+(pp.critRate??0)+rolled('critRate'),
+    critDamage:(.5+sets.critDamage)*(1+(p.critDamage??0))-.5+rolled('critDamage'),
+    evasion:sets.evasion+(pp.evasion??0)+rolled('evasion'),
+    abilityDamage:rolled('abilityDamage'),
+    healingPower:rolled('healingPower'),
   };
 }
 
@@ -163,7 +185,7 @@ export function equipmentSetCombatModifiers(state:GameState,baseCritChance=.05,b
   const baseCritDamage=0.50;
   const accuracyMultiplier=Math.min(.99,baseAccuracy+stats.accuracy)/baseAccuracy;
   const baseCritExpected=1+baseCritChance*baseCritDamage;
-  // Crit chance is a probability: stacked set, gem and weapon bonuses cannot exceed 100%.
+  // Crit chance must remain a probability even after rolled affixes and sets.
   const critChance=Math.max(0,Math.min(1,baseCritChance+stats.critRate));
   const setCritExpected=1+critChance*(baseCritDamage+stats.critDamage);
   return {
@@ -172,10 +194,13 @@ export function equipmentSetCombatModifiers(state:GameState,baseCritChance=.05,b
     incomingDamageMultiplier:Math.max(.5,(1-stats.ward)*(1-stats.evasion)),
     speedMultiplier:1+stats.haste,
     powerMultiplier:1+stats.power,
+    attackMultiplier:1+stats.attack,
     accuracyMultiplier,
     critExpectedMultiplier:setCritExpected/baseCritExpected,
     penetrationMultiplier:1+stats.penetration,
     recoveryMultiplier:1+stats.potency,
+    abilityDamageMultiplier:1+stats.abilityDamage,
+    healingPowerMultiplier:1+stats.healingPower,
     tenacity:stats.tenacity,
     stats,
   };

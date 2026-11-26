@@ -8,6 +8,9 @@ on:
       - 'apps/mobile/src/core/game.ts'
       - 'apps/mobile/src/core/ordinary-hunt.ts'
       - 'apps/mobile/src/core/combat-hit-timeline.ts'
+      - 'apps/mobile/src/components/HuntingPreview.tsx'
+      - 'apps/mobile/src/components/BattleStage.tsx'
+      - 'apps/mobile/tests/hunt-live-damage-feedback.cjs'
       - 'apps/mobile/src/core/hunt-active-abilities.ts'
       - 'apps/mobile/src/core/hunt-class-identity.ts'
       - 'apps/mobile/tests/hunt-active-abilities.ts'
@@ -82,3 +85,5 @@ jobs:
             fi
           done
           exit "$failed"
+      - name: Check live hunt float text and impact animation contracts
+        run: node tests/hunt-live-damage-feedback.cjs

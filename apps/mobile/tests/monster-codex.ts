@@ -1,0 +1,30 @@
+import {createCharacter,newGame} from '../src/core/game';
+import {bestiaryProjection} from '../src/core/bestiary-v40';
+import {monsterCodexRegions,monsterCodexRegionForLocation} from '../src/core/monster-codex';
+import {MONSTERS} from '../src/content/monsters';
+import {monsterMasteryGuidance} from '../src/core/monster-mastery-presentation';
+import {enemyFamilyMasteryGuidance} from '../src/core/enemy-family-mastery';
+
+function assert(condition:unknown,message:string):asserts condition{if(!condition)throw new Error(message)}
+const state=createCharacter(newGame(Date.UTC(2026,10,21)),'WAYFINDER','Codex Test');
+const projection=bestiaryProjection(state);
+const regions=monsterCodexRegions(projection);
+assert(regions.map(region=>region.id).join(',')==='ASTERFALL,SUNSCAR,FROSTMARCH,ASHLANDS','Regions follow world progression');
+assert(monsterCodexRegionForLocation('GREENFIELDS')==='ASTERFALL','Asterfall subregions share one Codex accordion');
+assert(monsterCodexRegionForLocation('SUNSCAR')==='SUNSCAR','Sunscar opens from regional location');
+assert(monsterCodexRegionForLocation('FROSTMARCH')==='FROSTMARCH','Frostmarch opens from regional location');
+const asterfall=regions[0],sunscar=regions[1],frostmarch=regions[2],ashlands=regions[3];
+assert(asterfall.available&&sunscar.available&&frostmarch.available,'Released chapters are browsable');
+assert(!ashlands.available&&ashlands.zones.length===0&&ashlands.total===0,'Unreleased chapter must not spoil creature identities or count toward completion');
+assert(asterfall.zones.some(zone=>zone.name==='Ironwood Forest'&&zone.monsters.some(row=>row.monster.id==='IRONWOOD_WOLF')),'Asterfall groups creatures by their actual local zone');
+assert(asterfall.zones.some(zone=>zone.name==="King's Road"&&zone.monsters.some(row=>row.monster.id==='FALLEN_KNIGHT'&&row.monster.boss)),'Original story boss remains in Codex');
+assert(sunscar.zones.some(zone=>zone.name==='Saffron Gate'&&zone.monsters.some(row=>row.monster.id==='SUNSCAR_SCORPION')),'Sunscar uses authored area names');
+assert(frostmarch.zones.some(zone=>zone.name==='Thawgate'&&zone.monsters.some(row=>row.monster.id==='FROSTWOLF')),'Frostmarch uses authored area names');
+const rows=regions.flatMap(region=>region.zones.flatMap(zone=>zone.monsters));
+const released=MONSTERS.filter(monster=>monster.zone!=='Ashlands');
+assert(rows.length===released.length&&new Set(rows.map(row=>row.monster.id)).size===rows.length,'Each released monster appears exactly once');
+assert(rows.every(row=>row.entry.id===row.monster.id),'Bestiary and monster identity remain linked');
+assert(asterfall.total===asterfall.zones.reduce((sum,zone)=>sum+zone.monsters.length,0),'Region total reflects only visible entries');
+assert(asterfall.zones.every(zone=>zone.monsters.every((row,i)=>i===0||zone.monsters[i-1].monster.level<=row.monster.level)),'Monster rows are sorted by combat level');
+assert(monsterMasteryGuidance(state,'MOSS_RAT').rank===0&&enemyFamilyMasteryGuidance(state,'BEAST').rank===0,'Codex grouping must never write mastery points');
+console.log('PASS: Monster Codex region grouping, zones, released-only discovery and canonical mastery parity');

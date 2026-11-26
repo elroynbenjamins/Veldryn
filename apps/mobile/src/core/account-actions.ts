@@ -5,14 +5,15 @@ import {accountCharacters,unlockedCharacterSlots,occupiedCharacterRoles,MAX_NEW_
 import {CLASSES} from '../content/classes';
 import {equipmentCraftingQueue} from './equipment-crafting-queue';
 import {reconcileAccountCollections} from './account-collections';
+import {normalizeProfileIcon} from './profile-icons';
 import {auditCraftedGearOwnership} from './crafted-gear-ownership';
 import {snapshotCharacterWorldProgress,restoreCharacterWorldProgress} from './character-world-progress';
 import {ensurePersonalSeasonalState,personalSeasonalAccountView} from './personal-seasonal-state';
 
 function snapshot(state:GameState){return {character:structuredClone(state.character!),inventory:structuredClone(state.inventory),overflow:structuredClone(state.overflow),activity:structuredClone(state.activity),skills:structuredClone(state.skills),quests:structuredClone(state.quests),currentRegionId:state.currentRegionId,...snapshotCharacterWorldProgress(state)};}
 export function createAccountCharacter(state:GameState,classId:ClassId,name:string,body:BodyPresentation,now:number){
- state=ensurePersonalSeasonalState(reconcileAccountCollections(state));
- if(!state.character) return createCharacter(state,classId,name,body);
+ state=normalizeProfileIcon(ensurePersonalSeasonalState(reconcileAccountCollections(state)));
+ if(!state.character) return normalizeProfileIcon(createCharacter(state,classId,name,body));
  if(accountCharacters(state).length>=MAX_NEW_ACCOUNT_CHARACTERS)throw new Error('Maximum 3 characters: one Tank, one Damage and one Support.');
  if(accountCharacters(state).length>=unlockedCharacterSlots(state))throw new Error('Character slot is locked.');
  const candidate=CLASSES.find(def=>def.id===classId);
@@ -25,12 +26,12 @@ export function createAccountCharacter(state:GameState,classId:ClassId,name:stri
  // Persist the earned-slot watermark when a character is created so a later
  // progression recalculation or character deletion cannot revoke that slot.
  const account={...state.account,createdCharacterCount:sequence,unlockedCharacterSlots:Math.max(state.account.unlockedCharacterSlots??1,unlockedCharacterSlots(state))};
- return {...next,version:state.version,createdAtMs:state.createdAtMs,settings:state.settings,bank:state.bank,account:personalSeasonalAccountView(account,next.character),otherCharacters:[...(state.otherCharacters??[]),active]};
+ return normalizeProfileIcon({...next,version:state.version,createdAtMs:state.createdAtMs,settings:state.settings,bank:state.bank,account:personalSeasonalAccountView(account,next.character),otherCharacters:[...(state.otherCharacters??[]),active]});
 }
 export function transitionAccountFaithPractice(state:GameState,now:number,tierId:string,count:number){const {reserveFaithPractice}=require('./faith') as typeof import('./faith');return {state:reserveFaithPractice(state,tierId,count,now)};}
 export function setAccountFaithBlessing(state:GameState,id:string,now:number){const {updateFaithPreference}=require('./faith') as typeof import('./faith');return updateFaithPreference(state,'blessing',id);}
 export function switchAccountCharacter(state:GameState,id:string,now:number){
- state=ensurePersonalSeasonalState(reconcileAccountCollections(state));
+ state=normalizeProfileIcon(ensurePersonalSeasonalState(reconcileAccountCollections(state)));
  if(!state.character)return state;if(state.character.id===id)return state;const target=state.otherCharacters?.find(x=>x.character.id===id);if(!target)throw new Error('Character is not owned.');
  const remaining=(state.otherCharacters??[]).filter(x=>x.character.id!==id);const active=snapshot(state);
  return {...state,...restoreCharacterWorldProgress(target),character:target.character,inventory:target.inventory,overflow:target.overflow,activity:target.activity,skills:target.skills,quests:target.quests,currentRegionId:target.currentRegionId,otherCharacters:[...remaining,active],account:personalSeasonalAccountView(state.account,target.character)};
@@ -83,8 +84,29 @@ function deletionRecoveryItems(entry:CharacterSnapshot,sharedBank:GameState['ban
  const equipped=Object.entries(entry.character.equipment)
   .filter((entry):entry is [string,string]=>typeof entry[1]==='string'&&!!entry[1])
   .map(([slot,itemId])=>{const instanceId=entry.character.equipmentInstanceIds?.[slot as GearSlot];return {itemId,quantity:1,...(instanceId?{instanceId}:{})};});
- const tools=[...new Set(Object.values(entry.character.equippedToolIds??{}).filter((id):id is string=>typeof id==='string'&&!!id))];
- const held=[...equipped,...tools.map(itemId=>({itemId,quantity:1}))];
+ // Recover EVERY character-bound gathering tool, including all four active
+ // tiers and their second saved copies. The old best-tool pointer is only a
+ // fallback when no modern per-tier slots exist for a given skill.
+ const tools:ItemStack[]=[];
+ for(const skill of ['mining','woodcutting','fishing'] as const){
+  const active=entry.character.equippedToolIdsByTier?.[skill];
+  if(active!==undefined){
+   for(const [tier,id] of Object.entries(active)){
+    if(!id)continue;
+    const instanceId=entry.character.equippedToolInstanceIdsByTier?.[skill]?.[Number(tier) as 1|2|3|4];
+    tools.push({itemId:id,quantity:1,...(instanceId?{instanceId}:{})});
+   }
+  }else{
+   const legacy=entry.character.equippedToolIds?.[skill];
+   if(legacy)tools.push({itemId:legacy,quantity:1});
+  }
+  for(const [tier,id] of Object.entries(entry.character.savedToolIdsByTier?.[skill]??{})){
+   if(!id)continue;
+   const instanceId=entry.character.savedToolInstanceIdsByTier?.[skill]?.[Number(tier) as 1|2|3|4];
+   tools.push({itemId:id,quantity:1,...(instanceId?{instanceId}:{})});
+  }
+ }
+ const held=[...equipped,...tools];
  const ownedGearIds=new Set<string>([
   ...equipped.map(row=>row.itemId),
   ...entry.inventory.stacks.map(row=>row.itemId),
@@ -124,7 +146,7 @@ export function characterDeleteBlockReason(state:GameState,id:string){
 }
 export function deleteAccountCharacter(state:GameState,id:string,confirmation:string,now:number){
  // Freeze earned region rewards before removing the character that originally unlocked them.
- state=recordAccountProgress(ensurePersonalSeasonalState(reconcileAccountCollections(state)));
+ state=normalizeProfileIcon(recordAccountProgress(ensurePersonalSeasonalState(reconcileAccountCollections(state))));
  if(!state.character)throw new Error('Create a character first.');
  const active=state.character.id===id;
  const stored=active?snapshot(state):(state.otherCharacters??[]).find(entry=>entry.character.id===id);

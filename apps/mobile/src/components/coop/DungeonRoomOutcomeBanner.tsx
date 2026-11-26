@@ -5,11 +5,10 @@ import {useSocialText} from '../../i18n/social';
 import {useCoopStyles} from '../../theme/useCoopStyles';
 import {type CoopColors,coopSpacing} from '../../theme/coop-ui-theme';
 import {dungeonRoomPresentation} from './dungeon-room-presentation';
-import {GameButton} from '../GameButton';
 
-/** Server-confirmed room rewards stay readable until the player progresses.
- * Solo rooms require acknowledgement; Live voting stays non-blocking. */
-export function DungeonRoomOutcomeBanner({outcome,onContinue}:{outcome?:CoopRoomOutcomeView;onContinue?:()=>void}){
+/** Informational, server-confirmed room feedback for Live voting.
+ * Solo opens its next route without a separate outcome acknowledgement. */
+export function DungeonRoomOutcomeBanner({outcome}:{outcome?:CoopRoomOutcomeView}){
  const {colors:C,styles:s}=useCoopStyles(makeStyles),st=useSocialText();
  const enter=useRef(new Animated.Value(0)).current;
  const pulse=useRef(new Animated.Value(0)).current;
@@ -29,8 +28,8 @@ export function DungeonRoomOutcomeBanner({outcome,onContinue}:{outcome?:CoopRoom
  if((outcome.damagedHp??0)>0)detail.push(`−${Math.round(outcome.damagedHp??0)} HP`);
  if(outcome.healedHp>0)detail.push(st('Restored {amount} HP',{amount:Math.round(outcome.healedHp)}));
  if(outcome.revivedCount>0)detail.push(st('Revived {count}',{count:outcome.revivedCount}));
- if(outcome.boonCount>0)detail.push(st('{count} boon gained',{count:outcome.boonCount}));
- if(outcome.artifactCount>0)detail.push(st('{count} artifact gained',{count:outcome.artifactCount}));
+ if(outcome.boonCount>0)detail.push(outcome.boonName?`${outcome.boonName} · ${st('Boon gained')}`:st('{count} boon gained',{count:outcome.boonCount}));
+ if(outcome.artifactCount>0)detail.push(outcome.artifactName?`${outcome.artifactName} · ${st('Run artifact')}`:st('{count} artifact gained',{count:outcome.artifactCount}));
  if(outcome.curseCount>0)detail.push(st('{count} curse gained',{count:outcome.curseCount}));
  if(outcome.resourcesDelta!==0)detail.push(st('{amount} resources',{amount:`${outcome.resourcesDelta>0?'+':''}${outcome.resourcesDelta}`}));
  const room=dungeonRoomPresentation(outcome.kind);
@@ -52,7 +51,6 @@ export function DungeonRoomOutcomeBanner({outcome,onContinue}:{outcome?:CoopRoom
     <Text style={s.text}>{summary}</Text>
    </View>
   </View>
-  {onContinue?<GameButton compact title={st('Continue dungeon')} onPress={onContinue}/>:null}
  </Animated.View>;
 }
 const makeStyles=(C:CoopColors)=>StyleSheet.create({

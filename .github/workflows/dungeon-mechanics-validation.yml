@@ -8,6 +8,24 @@ on:
       - 'backend/online/tests/live-queue.ts'
       - 'backend/online/dungeon-shop.ts'
       - 'backend/online/coop.ts'
+      - 'backend/online/dungeon-weekly-quests.ts'
+      - 'backend/online/tests/social-echo-recruitment.ts'
+      - 'backend/online/coop-social-echoes.ts'
+      - 'backend/online/coop-entry.ts'
+      - 'apps/mobile/src/i18n/dungeon-social-echo-copy.ts'
+      - 'apps/mobile/src/core/coop-social-echoes.ts'
+      - 'apps/mobile/src/online/coop-client.ts'
+      - 'backend/online/tests/social-echo-automatic.ts'
+      - 'backend/src/server/coop/social-echo-balance.ts'
+      - 'apps/mobile/tests/dungeon-social-echo-picker-ui.cjs'
+      - 'apps/mobile/tests/dungeon-ui-refinement.cjs'
+      - 'apps/mobile/src/i18n/dungeon-ux-copy.ts'
+      - 'backend/supabase/migrations/20261119162000_coop_social_echo_candidates_v1.sql'
+      - 'backend/online/tests/dungeon-weekly-quests.ts'
+      - 'apps/mobile/src/screens/CoopExpeditionScreen.tsx'
+      - 'apps/mobile/src/core/dungeon-weekly-quests.ts'
+      - 'apps/mobile/tests/dungeon-weekly-quest-ui.cjs'
+      - 'backend/supabase/migrations/20261119140000_coop_weekly_dungeon_quest_metrics_v1.sql'
       - 'backend/online/tests/dungeon-shop.ts'
       - 'backend/online/tests/dungeon-variety.ts'
       - 'backend/online/tests/regional-dungeon-clear-rates.ts'
@@ -17,6 +35,8 @@ on:
       - 'backend/package.json'
       - 'apps/mobile/src/core/coop-qmode.ts'
       - 'apps/mobile/src/core/coop-presentation.ts'
+      - 'apps/mobile/src/core/dungeon-combat-preload.ts'
+      - 'apps/mobile/tests/dungeon-instant-preview-ui.cjs'
       - 'apps/mobile/src/components/coop/**'
       - 'apps/mobile/src/i18n/dungeon-room-modifiers.ts'
       - '.github/workflows/dungeon-mechanics-validation.yml'
@@ -52,11 +72,20 @@ jobs:
       - name: Install mobile workspace types used by shared backend snapshots
         run: pnpm install --frozen-lockfile
         working-directory: apps/mobile
+      - name: Verify immediate enemy-specific combat preview contracts
+        run: node tests/dungeon-instant-preview-ui.cjs
+        working-directory: apps/mobile
       - name: Validate hidden Dungeon Marks Shop catalogue and purchase eligibility
         run: pnpm test:dungeon-shop-catalog
         working-directory: backend
       - name: Validate one dungeon per region, retired content, and frozen two-boss rotation
         run: pnpm test:regional-dungeon-rotation
+        working-directory: backend
+      - name: Validate versioned Endurance boss durability and room reward caps
+        run: pnpm build && node dist/server/coop/__tests__/endurance-depth-marks.js
+        working-directory: backend
+      - name: Validate meaningful route choices and historical dungeon graph compatibility
+        run: node dist/server/coop/__tests__/phase4-routes.js
         working-directory: backend
       - name: Validate real encounters, room rewards, modifiers, and Live vote authority
         run: pnpm test:dungeon-variety
@@ -64,6 +93,31 @@ jobs:
       - name: Verify dedicated boon rooms and independent Camp / Treasure / Event rewards
         run: node dist/online/backend/online/tests/room-boon-choices.js
         working-directory: backend
+      - name: Validate verified weekly dungeon quests, boon drafts and named relics
+        run: node dist/online/backend/online/tests/dungeon-weekly-quests.js
+        working-directory: backend
+      - name: Validate standalone weekly dungeon card and claim wiring
+        run: pnpm test:dungeon-weekly-ui
+        working-directory: apps/mobile
+      - name: Verify automatic friend/guild snapshots without a sharing switch
+        run: node dist/online/backend/online/tests/social-echo-automatic.js
+        working-directory: backend
+      - name: Verify selected friend/guild Echo role and power safety
+        run: node dist/online/backend/online/tests/social-echo-recruitment.js
+        working-directory: backend
+      - name: Validate mobile friend/guild Echo picker and run authorization
+        run: pnpm test:dungeon-social-echo-ui
+        working-directory: apps/mobile
+      - name: Validate compact Dungeon Hub, weekly quest, social Echo, route and loadout
+        run: |
+          node tests/dungeon-ui-refinement.cjs
+          node tests/dungeon-home-guide-ui.cjs
+          node tests/dungeon-route-choice-ui.cjs
+          node tests/dungeon-flow-simplicity-ui.cjs
+        working-directory: apps/mobile
+      - name: Validate mobile TypeScript after Dungeon UI changes
+        run: pnpm typecheck
+        working-directory: apps/mobile
       - name: Validate rebalanced Expedition Marks and unchanged tier multipliers
         run: pnpm test:dungeon-tier-balance
         working-directory: backend
@@ -73,9 +127,7 @@ jobs:
       - name: Calibrate all six regional dungeon power tiers and both bosses
         run: node dist/online/backend/online/tests/regional-dungeon-clear-rates.js
         working-directory: backend
-      - name: Probe new regional dungeon tiers against their minimum Combat Power
-        run: node dist/online/backend/online/tests/regional-dungeon-clear-rates.js
-        working-directory: backend
+      # The same regional clear-rate / power-gate assertions are run above.
       - name: Verify authenticated dungeon browsing, queues, and ready check
         run: |
           node dist/online/backend/online/tests/coop-entry.js

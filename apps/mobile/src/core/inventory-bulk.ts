@@ -5,7 +5,7 @@ import {HOLY_WATER_ID} from '../content/faith';
 import type {GameState,ItemStack} from './types';
 import {disposeCraftedGearInstance,moveCraftedGearInstance} from './crafted-gear-ownership';
 import {canDisposeLegacyEquipment} from './equipment-enhancement';
-import {depositToBank,salvageBankItem,salvageItem,sellBankItem,sellItem,withdrawFromBank} from './game';
+import {depositToBank,moveGatheringToolCopy,salvageBankItem,salvageItem,sellBankItem,sellItem,withdrawFromBank} from './game';
 import {workingTowardInventoryProtectionMap} from './working-toward-inventory';
 
 export type BulkStorageLocation='inventory'|'bank';
@@ -85,7 +85,10 @@ export function bulkTransferSelected(state:GameState,itemIds:readonly string[],f
   let next=state;
   for(const id of summary.transferableIds){
     if(id.startsWith('copy:')){
-      next=moveCraftedGearInstance(next,id.slice(5),from==='inventory'?'bank':'inventory');
+      const copy=next[from].stacks.find(row=>row.instanceId===id.slice(5));
+      next=copy&&itemDef(copy.itemId).type==='tool'
+       ?moveGatheringToolCopy(next,id.slice(5),from==='inventory'?'bank':'inventory')
+       :moveCraftedGearInstance(next,id.slice(5),from==='inventory'?'bank':'inventory');
       continue;
     }
     const source=from==='inventory'?next.inventory:next.bank;

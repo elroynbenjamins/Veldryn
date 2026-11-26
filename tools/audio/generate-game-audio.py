@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Veldryn original game audio: deterministic retro synthesis.
 
-Renders every sound effect and music loop from code (no samples, no third-party
-audio), so the whole set is original, license-free and reproducible:
+Renders sound effects and fallback music from deterministic synthesis. Selected
+production recordings are separate, locked assets; five use TimGM6mb. See
+ docs/roadmap/selected-music-sample-rights-evidence.md for provenance.
 
-    python3 tools/audio/generate-game-audio.py            # writes apps/mobile/assets/audio
+    python3 tools/audio/generate-game-audio.py --only sfx # preserves selected music
     python3 tools/audio/generate-game-audio.py --only sfx # effects only
 
 Requires numpy and ffmpeg (libmp3lame). Output: mono MP3, effects 22.05 kHz / 64 kbps,
@@ -278,7 +279,6 @@ SCALES = {'major': [0, 2, 4, 5, 7, 9, 11], 'minor': [0, 2, 3, 5, 7, 8, 10], 'dor
           'phrygian_dom': [0, 1, 4, 5, 7, 8, 10], 'mixolydian': [0, 2, 4, 5, 7, 9, 10]}
 TRACKS = {
     # name: tempo, root midi, scale, progression (scale degrees per bar), lead duty, energy, seed
-    'town':        dict(bpm=92,  root=60, scale='major',        prog=[0, 5, 3, 4, 0, 5, 1, 4], duty=.25, energy=.45, seed=11, bell=True),
     'asterfall':   dict(bpm=100, root=62, scale='mixolydian',   prog=[0, 6, 3, 0, 0, 6, 4, 4], duty=.5,  energy=.55, seed=23, bell=False),
     'sunscar':     dict(bpm=104, root=64, scale='phrygian_dom', prog=[0, 1, 0, 6, 0, 1, 5, 4], duty=.25, energy=.6,  seed=37, bell=False),
     'frostmarch':  dict(bpm=84,  root=57, scale='minor',        prog=[0, 5, 2, 6, 0, 5, 3, 4], duty=.125, energy=.4, seed=41, bell=True),
@@ -355,7 +355,14 @@ def write_mp3(samples, path, rate, kbps):
 
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument('--only', choices=['sfx', 'music'])
+    ap.add_argument('--replace-selected-music', action='store_true', help='Explicitly overwrite chosen/locked music assets')
     args = ap.parse_args(); manifest = {'sfx': {}, 'music': {}}
+    existing_manifest_path = os.path.join(OUT, 'manifest.json')
+    if args.only != 'sfx' and not args.replace_selected_music and os.path.isfile(existing_manifest_path):
+        with open(existing_manifest_path, encoding='utf-8') as f:
+            existing_manifest = json.load(f)
+        if any(row.get('selection') for row in existing_manifest.get('music', {}).values()):
+            ap.error('Selected music is locked. Use --only sfx or explicitly --replace-selected-music.')
     if args.only != 'music':
         for name, (fn, volume) in SFX.items():
             x = fade_tail(trim(normalize(fn())))

@@ -10,9 +10,9 @@ import {canUseProfileCosmetic} from '../src/core/profile-cosmetics';
 import {executeGameCommand} from '../src/core/game-commands';
 import {DUNGEON_MARKS_SHOP_RELEASED,FROSTFALL_REWARDS_RELEASED} from '../src/core/release-flags';
 
-// Prelaunch invariants: staged rewards and the Dungeon Marks Shop are not public until rollout approval.
+// Frostfall remains gated; released Dungeon Marks collectibles are registered.
 assert.equal(FROSTFALL_REWARDS_RELEASED,false,'Frostfall collectibles must remain gated ahead of event launch');
-assert.equal(DUNGEON_MARKS_SHOP_RELEASED,false,'Dungeon Marks Shop must remain gated until server and cosmetics are released');
+assert.equal(DUNGEON_MARKS_SHOP_RELEASED,true,'released Dungeon Marks collectibles must be registered');
 const now=Date.UTC(2026,9,13);
 const enabled=setLocalEventEnabled(createCharacter(newGame(now),'IRONWARDEN','Event Review'),true,now);
 assert.equal(activeLiveEvent(enabled,now)?.definition.id,LIVE_EVENT_CATALOG[0].id,'local review must enable the released event');

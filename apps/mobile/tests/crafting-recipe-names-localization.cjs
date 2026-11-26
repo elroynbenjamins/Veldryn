@@ -66,7 +66,7 @@ const fileMarkers={
  'components/CraftingRecipeBrowser.tsx':['recipeMatchesLocalizedSearch(language,recipe,q)'],
  'components/RecipeCard.tsx':['localizedRecipeName(language,recipe)','localizedItemName(language,output.id)'],
  'components/IngredientList.tsx':['localizedItemName(language,input.itemId)'],
- 'components/SmithingCollection.tsx':['localizedItemName(language,item.id)','localizedItemName(language,input.itemId)'],
+ 'components/SmithingCollection.tsx':['localizedItemName(language,item.id)'],
  'components/ItemQuickInspect.tsx':['localizedRecipeName(language,craftPath.recipe)']
 };
 for(const [p,markers]of Object.entries(fileMarkers)){

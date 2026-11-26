@@ -26,7 +26,7 @@ export function HomeCommandDeck({state,forgeReadyCount,onGuild,onDungeons,onCont
     <DeckAction label={a('Activity queue')} detail={a('{count} / {capacity} queued',{count:queue.length,capacity})} mark="calendar" onPress={onQueue} s={s}/>
     {social?<DeckAction label={a('Dungeons')} detail={a('Co-op expeditions')} mark="dungeon" onPress={onDungeons} s={s}/>:null}
     {contracts?<DeckAction label={a('Contracts')} detail={a('Weekly objectives')} mark="quests" onPress={onContracts} s={s}/>:null}
-    <DeckAction label={a('Forge')} detail={a('Crafting & upgrades')} mark="skills" onPress={onForge} badgeCount={forgeReadyCount} s={s}/>
+    <DeckAction label={a('Forge')} detail={a('Queue, mastery & rewards')} mark="skills" onPress={onForge} badgeCount={forgeReadyCount} s={s}/>
   </View>
  </View>;
 }

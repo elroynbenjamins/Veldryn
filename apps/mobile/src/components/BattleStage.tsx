@@ -37,11 +37,13 @@ export function BattleStage({state,monster,elapsedSeconds,cycleSeconds}:{state:G
  const fight=useMemo(()=>isLive?activeCombatHitProjection(state,effectiveNowMs,replayCursor.current):undefined,[isLive,state,effectiveNowMs]);
  useEffect(()=>{replayCursor.current=fight?.cursor;},[fight?.cursor]);
  const recentHit=!fight?.searching&&fight?.lastHit&&effectiveNowMs-fight.lastHit.atMs<2600?fight.lastHit:undefined;
- const recentSkillEffects=isLive?(fight?.lastSkillEffects??[]).filter(effect=>effectiveNowMs-effect.atMs>=0&&effectiveNowMs-effect.atMs<2700).slice(-2):[];
+ const recentSkillEffects=isLive&&!fight?.searching?(fight?.lastSkillEffects??[]).filter(effect=>effectiveNowMs-effect.atMs>=0&&effectiveNowMs-effect.atMs<2700).slice(-2):[];
  const damageValue=(value:number)=>displayStatPrecise(value);
+ const damageFloat=(value:number)=>value>0?`−${damageValue(value)}`:'0';
  const region=WORLD_ZONES.find(zone=>zone.name===monster.zone),motion=combatMotionProfile(cycleSeconds,state.settings.reduceMotion);
  const playerLunge=useRef(new Animated.Value(0)).current,enemyLunge=useRef(new Animated.Value(0)).current;
  const enemyImpact=useRef(new Animated.Value(0)).current,playerImpact=useRef(new Animated.Value(0)).current;
+ const missFloat=useRef(new Animated.Value(0)).current;
  const shake=useRef(new Animated.Value(0)).current,breath=useRef(new Animated.Value(0)).current;
 
  useEffect(()=>{
@@ -83,8 +85,12 @@ export function BattleStage({state,monster,elapsedSeconds,cycleSeconds}:{state:G
  useEffect(()=>{
   if(!isLive||!motion.enabled||!recentHit)return;
   const lunge=recentHit.actor==='player'?playerLunge:enemyLunge;
-  const impact=recentHit.actor==='player'?enemyImpact:playerImpact;
-  lunge.stopAnimation();impact.stopAnimation();lunge.setValue(0);impact.setValue(0);
+  // A real accuracy miss still swings, but only its text floats; the
+  // target receives no flash, recoil or slash impact animation.
+  const impact=recentHit.actor==='player'?(recentHit.missed?missFloat:enemyImpact):playerImpact;
+  // A new actor can interrupt the previous strike mid-fade. Reset both
+  // combatants, not only the new attacker, to avoid frozen flashes/recoils.
+  for(const value of [playerLunge,enemyLunge,enemyImpact,playerImpact,missFloat]){value.stopAnimation();value.setValue(0);}
   const attack=Animated.parallel([
    Animated.sequence([
     Animated.timing(lunge,{toValue:1,duration:motion.lungeMs,easing:Easing.out(Easing.quad),useNativeDriver:true}),
@@ -92,15 +98,16 @@ export function BattleStage({state,monster,elapsedSeconds,cycleSeconds}:{state:G
    ]),
    Animated.sequence([
     Animated.timing(impact,{toValue:1,duration:motion.impactMs,easing:Easing.out(Easing.cubic),useNativeDriver:true}),
-    Animated.timing(impact,{toValue:0,duration:1,useNativeDriver:true}),
+    Animated.timing(impact,{toValue:0,duration:recentHit.missed?500:1,useNativeDriver:true}),
    ]),
   ]);
   attack.start();
   return()=>attack.stop();
- },[isLive,recentHit?.atMs,recentHit?.actor,motion.enabled,motion.impactMs,motion.lungeMs,motion.recoverMs,playerLunge,enemyLunge,playerImpact,enemyImpact]);
+ },[isLive,recentHit?.atMs,recentHit?.actor,recentHit?.missed,motion.enabled,motion.impactMs,motion.lungeMs,motion.recoverMs,playerLunge,enemyLunge,playerImpact,enemyImpact,missFloat]);
 
  const playerScale=breath.interpolate({inputRange:[0,1],outputRange:[1,1.012]}),enemyScale=breath.interpolate({inputRange:[0,1],outputRange:[1.008,1]});
- const enemyFloatOpacity=enemyImpact.interpolate({inputRange:[0,.08,.55,1],outputRange:[0,1,.6,0]}),playerFloatOpacity=playerImpact.interpolate({inputRange:[0,.08,.55,1],outputRange:[0,1,.6,0]});
+ const enemyFeedback=recentHit?.missed?missFloat:enemyImpact;
+ const enemyFloatOpacity=enemyFeedback.interpolate({inputRange:[0,.08,.55,1],outputRange:[0,1,.6,0]}),playerFloatOpacity=playerImpact.interpolate({inputRange:[0,.08,.55,1],outputRange:[0,1,.6,0]});
  const floatY=(value:Animated.Value)=>value.interpolate({inputRange:[0,1],outputRange:[0,-22]});
  const flash=(value:Animated.Value)=>value.interpolate({inputRange:[0,.08,.22,1],outputRange:[0,.58,.12,0]});
  const slashOpacity=enemyImpact.interpolate({inputRange:[0,.05,.34,1],outputRange:[0,1,.7,0]}),slashScale=enemyImpact.interpolate({inputRange:[0,.14,1],outputRange:[.15,1,1.2]});
@@ -111,12 +118,12 @@ export function BattleStage({state,monster,elapsedSeconds,cycleSeconds}:{state:G
   <Animated.View style={[s.arena,{transform:[{translateX:shake}]}]}><RegionArtwork regionId={region?.id??'GREENFIELDS'}/><View style={s.shade}/>
    <View style={s.combatants}>
     <Animated.View style={[s.side,{transform:[{translateX:playerLunge.interpolate({inputRange:[0,1],outputRange:[0,motion.playerLungePx]})},{scale:playerScale}]}]}>
-     <View style={s.portrait}><CharacterPortrait state={state} style={{width:96,height:120}}/><Animated.View pointerEvents="none" style={[s.impactFlash,{opacity:flash(playerImpact)}]}/><Animated.View pointerEvents="none" style={[s.enemySlash,{opacity:enemySlashOpacity,transform:[{rotate:'24deg'},{scaleX:playerImpact.interpolate({inputRange:[0,.15,1],outputRange:[.2,1,1.1]})}]}]}/><Animated.View pointerEvents="none" style={[s.floatTextWrap,{opacity:playerFloatOpacity,transform:[{translateY:floatY(playerImpact)}]}]}><Text style={s.damageTaken}>−{recentHit?.actor==='enemy'?damageValue(recentHit.damage):isLive?'':displayStat(view.enemyHit)}</Text></Animated.View></View>
-     <Text style={s.name}>{state.character!.name}</Text><Text style={s.hit}>{isLive?recentHit?.actor==='player'?tr('Hit · {amount}',{amount:damageValue(recentHit.damage)}):tr('Current health'):tr('≈ {amount} damage',{amount:displayStat(view.playerHit)})}</Text>
+     <View style={s.portrait}><CharacterPortrait state={state} style={{width:96,height:120}}/><Animated.View pointerEvents="none" style={[s.impactFlash,{opacity:flash(playerImpact)}]}/><Animated.View pointerEvents="none" style={[s.enemySlash,{opacity:enemySlashOpacity,transform:[{rotate:'24deg'},{scaleX:playerImpact.interpolate({inputRange:[0,.15,1],outputRange:[.2,1,1.1]})}]}]}/><Animated.View pointerEvents="none" style={[s.floatTextWrap,{opacity:playerFloatOpacity,transform:[{translateY:floatY(playerImpact)}]}]}><Text style={s.damageTaken}>{isLive?(recentHit?.actor==='enemy'?damageFloat(recentHit.damage):null):`−${displayStat(view.enemyHit)}`}</Text></Animated.View></View>
+     <Text style={s.name}>{state.character!.name}</Text><Text style={s.hit}>{isLive?recentHit?.actor==='player'?(recentHit.missed?tr('MISS'):tr('Hit · {amount}',{amount:damageValue(recentHit.damage)})):tr('Current health'):tr('≈ {amount} damage',{amount:displayStat(view.playerHit)})}</Text>
     </Animated.View>
     <View style={s.versus}><Text style={s.vs}>VS</Text><Text style={s.motionHint}>{motion.enabled?tr("LIVE FX"):tr("REDUCED")}</Text></View>
     <Animated.View style={[s.side,{transform:[{translateX:enemyLunge.interpolate({inputRange:[0,1],outputRange:[0,motion.enemyLungePx]})},{scale:enemyScale}]}]}>
-     <View style={s.portrait}><MonsterPortraitFrame monster={monster} size={112} active reduceMotion={state.settings.reduceMotion} framed={false}/><Animated.View pointerEvents="none" style={[s.impactFlash,{opacity:flash(enemyImpact)}]}/><Animated.View pointerEvents="none" style={{position:'absolute',left:28,top:30,opacity:slashOpacity,transform:[{scale:slashScale},{rotate:'-25deg'}]}}><CombatEffectShape kind="slash" color="#f4ce91"/></Animated.View><Animated.View pointerEvents="none" style={[s.floatTextWrap,{opacity:enemyFloatOpacity,transform:[{translateY:floatY(enemyImpact)}]}]}><Text style={s.damageDealt}>−{recentHit?.actor==='player'?damageValue(recentHit.damage):isLive?'':displayStat(view.playerHit)}{recentHit?.actor==='player'&&recentHit.critical?'!':''}</Text></Animated.View></View>
+     <View style={s.portrait}><MonsterPortraitFrame monster={monster} size={112} active reduceMotion={state.settings.reduceMotion} framed={false}/><Animated.View pointerEvents="none" style={[s.impactFlash,{opacity:flash(enemyImpact)}]}/><Animated.View pointerEvents="none" style={{position:'absolute',left:28,top:30,opacity:slashOpacity,transform:[{scale:slashScale},{rotate:'-25deg'}]}}><CombatEffectShape kind="slash" color="#f4ce91"/></Animated.View><Animated.View pointerEvents="none" style={[s.floatTextWrap,{opacity:enemyFloatOpacity,transform:[{translateY:floatY(enemyFeedback)}]}]}><Text style={s.damageDealt}>{isLive?(recentHit?.actor==='player'?(recentHit.missed?tr('MISS'):`${damageFloat(recentHit.damage)}${recentHit.damage>0&&recentHit.critical?'!':''}`):null):`−${displayStat(view.playerHit)}`}</Text></Animated.View></View>
      <Text style={s.name}>{monster.name}</Text><Text style={s.hit}>{isLive?recentHit?.actor==='enemy'?tr('Hit · {amount}',{amount:damageValue(recentHit.damage)}):tr('Enemy health'):tr('≈ {amount} damage',{amount:displayStat(view.enemyHit)})}</Text>
     </Animated.View>
    </View>

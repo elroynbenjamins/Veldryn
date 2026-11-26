@@ -10,6 +10,10 @@ on:
       - 'apps/mobile/tests/chat-online-player-roster.cjs'
       - 'apps/mobile/tests/chat-overlay-layout.cjs'
       - 'backend/supabase/migrations/*_chat_online_players_roster.sql'
+      - 'backend/supabase/migrations/*_chat_active_30m_roster_v2.sql'
+      - 'backend/supabase/migrations/*_chat_roster_account_total_level.sql'
+      - 'apps/mobile/src/i18n/social.ts'
+      - 'apps/mobile/src/i18n/social-early-coverage.ts'
       - '.github/workflows/chat-online-roster-validation.yml'
   workflow_dispatch:
 

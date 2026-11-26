@@ -1,6 +1,6 @@
 import React,{createContext,useCallback,useContext,useEffect,useRef,useState} from 'react';
 import {AppState} from 'react-native';
-import {partySocialIdentity,partySocialSnapshot,type PartySocialSnapshot} from './party-social';
+import {partySocialProjection,type PartySocialSnapshot} from './party-social';
 import {supabase} from './supabase';
 import {useAuthSession} from './AuthSessionProvider';
 
@@ -11,9 +11,10 @@ const Context=createContext<SocialState>({...empty,accountId:'',characterId:null
 export function PartySocialProvider({children}:{children:React.ReactNode}){
  const {session}=useAuthSession(),accountId=session?.user.id??'';
  const [state,setState]=useState<Omit<SocialState,'refresh'>>({...empty,accountId:'',characterId:null,error:'',loading:true});
- const generation=useRef(0),activeAccount=useRef(accountId),inFlight=useRef<{accountId:string;promise:Promise<void>;refreshAgain:boolean}|null>(null),partyRef=useRef(state.party),idlePolls=useRef(0);
+ const generation=useRef(0),activeAccount=useRef(accountId),inFlight=useRef<{accountId:string;promise:Promise<void>;refreshAgain:boolean}|null>(null),partyRef=useRef(state.party);
  activeAccount.current=accountId;
- partyRef.current=state.party;
+ partyRef.current=state.accountId===accountId?state.party:null;
+ const rearmPoll=useRef<(()=>void)|null>(null);
  const refresh=useCallback((force=true)=>{
   if(activeAccount.current!==accountId)return Promise.resolve();
   if(!supabase||!accountId){setState({...empty,accountId,characterId:null,error:!supabase?'Online services are not configured.':'',loading:false});return Promise.resolve();}
@@ -25,10 +26,9 @@ export function PartySocialProvider({children}:{children:React.ReactNode}){
    do{
     request.refreshAgain=false;
    try{
-    const identity=await partySocialIdentity();
-    if(identity?.accountId!==accountId)throw new Error('Account session changed while refreshing social details.');
-    const snapshot=await partySocialSnapshot();
-    if(current===generation.current&&activeAccount.current===accountId)setState({...snapshot,accountId,characterId:identity.characterId,error:'',loading:false});
+    const {identity,snapshot}=await partySocialProjection(accountId);
+    if(identity.accountId!==accountId)throw new Error('Account session changed while refreshing social details.');
+    if(current===generation.current&&activeAccount.current===accountId){const changed=!!partyRef.current!==!!snapshot.party;partyRef.current=snapshot.party;if(changed)rearmPoll.current?.();setState({...snapshot,accountId,characterId:identity.characterId,error:'',loading:false});}
    }catch(error){
     // A refresh failure or token renewal is not evidence that the player left a party.
     if(current===generation.current&&activeAccount.current===accountId)setState(previous=>({...previous,error:error instanceof Error?error.message:'Social service unavailable.',loading:false}));
@@ -42,14 +42,29 @@ export function PartySocialProvider({children}:{children:React.ReactNode}){
  useEffect(()=>{
   generation.current++;
   setState({...empty,accountId,characterId:null,error:'',loading:!!accountId});
-  void refresh(false);
-  let previous=AppState.currentState;
-  // Keep one account-scoped lifecycle: changing party membership must not reset
-  // confirmed party state. Joined parties poll every 30 seconds; idle accounts
-  // only refresh once per four ticks (two minutes).
-  const timer=setInterval(()=>{if(AppState.currentState!=='active')return;if(partyRef.current){idlePolls.current=0;void refresh(false);}else if(++idlePolls.current>=IDLE_SOCIAL_REFRESH_MS/PARTY_REFRESH_MS){idlePolls.current=0;void refresh(false);}},PARTY_REFRESH_MS);
-  const foreground=AppState.addEventListener('change',next=>{const resumed=previous!=='active'&&next==='active';previous=next;if(resumed)void refresh();});
-  return()=>{generation.current++;inFlight.current=null;clearInterval(timer);foreground.remove();};
+  if(!accountId||!supabase)return;
+  let previous=AppState.currentState,disposed=false,cycle=0;
+  let timer:ReturnType<typeof setTimeout>|undefined;
+  const clearTimer=()=>{if(timer!==undefined){clearTimeout(timer);timer=undefined;}};
+  const isActive=()=>AppState.currentState==='active'||AppState.currentState===null;
+  const poll=async(force=false)=>{
+   clearTimer();const current=++cycle;
+   if(disposed||!isActive()||activeAccount.current!==accountId)return;
+   await refresh(force);
+   if(!disposed&&current===cycle&&isActive()&&activeAccount.current===accountId){
+    // No idle ticks or overlapping automatic requests. Preserve joined-party
+    // freshness even while the player is elsewhere in the game.
+    timer=setTimeout(()=>void poll(),partyRef.current?PARTY_REFRESH_MS:IDLE_SOCIAL_REFRESH_MS);
+   }
+  };
+  rearmPoll.current=()=>{if(timer!==undefined&&isActive()){clearTimer();timer=setTimeout(()=>void poll(),partyRef.current?PARTY_REFRESH_MS:IDLE_SOCIAL_REFRESH_MS);}};
+  void poll();
+  const foreground=AppState.addEventListener('change',next=>{
+   const resumed=previous!=='active'&&next==='active';previous=next;
+   if(next!=='active'){cycle++;clearTimer();}
+   else if(resumed)void poll(true);
+  });
+  return()=>{disposed=true;cycle++;rearmPoll.current=null;generation.current++;inFlight.current=null;clearTimer();foreground.remove();};
  },[accountId,refresh]);
  const visibleState=state.accountId===accountId?state:{...empty,accountId,characterId:null,error:'',loading:!!accountId};
  return <Context.Provider value={{...visibleState,refresh}}>{children}</Context.Provider>;

@@ -19,6 +19,8 @@ const paths={
   socialGate:'apps/mobile/src/online/social-identity-client-gate.ts',
   routes:'apps/mobile/src/core/feature-hub-routes.ts',
   app:'apps/mobile/App.tsx',
+  store:'apps/mobile/src/screens/StoreScreen.tsx',
+  cosmeticGrant:'backend/src/server/control-center/profile-cosmetic-grant-service-v1.ts',
   worldRead:'backend/online/world-boss-current-read-route-v52.ts',
   worldErasure:'backend/online/world-boss-account-erasure-v56.ts',
   partyRead:'backend/online/party-event-read-route-v39.ts',
@@ -44,18 +46,34 @@ function check(read,migrations){
     requireExportFalse('flags',name);
   // Shared gameplay and backend bundles remain immutable and disabled.
   requireExportFalse('flags','ACCOUNT_SOCIAL_IDENTITY_RELEASED');
-  // Only the mobile client can opt into the migrated staging backend for QA.
-  const socialStagingFlag=/export\s+const\s+ACCOUNT_SOCIAL_IDENTITY_RELEASED\s*=\s*PRODUCTION_SOCIAL_IDENTITY_RELEASED\|\|\(\s*process\.env\.EXPO_PUBLIC_RELEASE_CHANNEL==='staging'&&\s*process\.env\.EXPO_PUBLIC_SUPABASE_URL==='https:\/\/iqfmmpvwanvvmxcftfxw\.supabase\.co'&&\s*process\.env\.EXPO_PUBLIC_SOCIAL_NAMES_STAGING_PREVIEW==='true'\s*\);/;
-  if(!source('socialGate').includes("import {ACCOUNT_SOCIAL_IDENTITY_RELEASED as PRODUCTION_SOCIAL_IDENTITY_RELEASED} from '../core/release-flags';")||
-     !socialStagingFlag.test(source('socialGate')))
-    failures.push('Mobile Social Names QA gate must require unchanged production-off flag, staging channel, project and opt-in');
+  requireExportFalse('flags','PROFILE_ANIMATED_COSMETICS_RELEASED');
+  requireExportFalse('flags','PROFILE_COSMETICS_STORE_RELEASED');
+  requireExportFalse('cosmeticGrant','PROFILE_COSMETIC_COMMERCE_GRANTS_LIVE');
+  const store=source('store');
+  if(!/const\s+STORE_COSMETICS_VISIBLE\s*=\s*PROFILE_COSMETICS_STORE_RELEASED\s*;/.test(store))
+    failures.push('Cosmetics Store tab must remain bound to its explicit release flag');
+  if(!/STORE_COSMETICS_VISIBLE&&section==='Cosmetics'\?\s*<StoreCosmeticsCatalog\s+state=\{state\}\s*\/\>/.test(store))
+    failures.push('Cosmetics catalog render must remain behind the store release fence');
+  // Client-only Social Names gate supports staged QA and a deliberate later
+  // production build. Both paths must match channel, backend and explicit opt-in.
+  // The shared gameplay/Edge flag remains false irrespective of build profile.
+  const gate=source('socialGate');
+  const socialStagingFlag=/const\s+STAGING_SOCIAL_IDENTITY_PREVIEW\s*=\s*\(\s*process\.env\.EXPO_PUBLIC_RELEASE_CHANNEL==='staging'&&\s*process\.env\.EXPO_PUBLIC_SUPABASE_URL==='https:\/\/iqfmmpvwanvvmxcftfxw\.supabase\.co'&&\s*process\.env\.EXPO_PUBLIC_SOCIAL_NAMES_STAGING_PREVIEW==='true'\s*\);/;
+  const socialProductionFlag=/const\s+PRODUCTION_SOCIAL_NAME_LAUNCH\s*=\s*\(\s*process\.env\.EXPO_PUBLIC_RELEASE_CHANNEL==='production'&&\s*process\.env\.EXPO_PUBLIC_SUPABASE_URL==='https:\/\/nyjwigipamnvpdvpauuv\.supabase\.co'&&\s*process\.env\.EXPO_PUBLIC_SOCIAL_NAMES_PRODUCTION_ENABLED==='true'\s*\);/;
+  const socialExport=/export\s+const\s+ACCOUNT_SOCIAL_IDENTITY_RELEASED\s*=\s*STAGING_SOCIAL_IDENTITY_PREVIEW\|\|PRODUCTION_SOCIAL_NAME_LAUNCH\s*;/;
+  if(!socialStagingFlag.test(gate)||!socialProductionFlag.test(gate)||!socialExport.test(gate)||
+     /from\s+['"]\.\.\/core\/release-flags['"]/.test(gate))
+    failures.push('Mobile Social Names must require isolated staging and production channel, project and opt-in checks');
   try{
     const builds=JSON.parse(source('eas')).build;
     if(builds?.staging?.distribution!=='internal'||
        builds?.staging?.env?.EXPO_PUBLIC_RELEASE_CHANNEL!=='staging'||
        builds?.staging?.env?.EXPO_PUBLIC_SUPABASE_URL!=='https://iqfmmpvwanvvmxcftfxw.supabase.co'||
        builds?.staging?.env?.EXPO_PUBLIC_SOCIAL_NAMES_STAGING_PREVIEW!=='true'||
-       builds?.production?.env?.EXPO_PUBLIC_SOCIAL_NAMES_STAGING_PREVIEW!=='false')
+       builds?.production?.env?.EXPO_PUBLIC_RELEASE_CHANNEL!=='production'||
+       builds?.production?.env?.EXPO_PUBLIC_SUPABASE_URL!=='https://nyjwigipamnvpdvpauuv.supabase.co'||
+       builds?.production?.env?.EXPO_PUBLIC_SOCIAL_NAMES_STAGING_PREVIEW!=='false'||
+       builds?.production?.env?.EXPO_PUBLIC_SOCIAL_NAMES_PRODUCTION_ENABLED!=='true')
       failures.push('Social Names staging/production EAS build-profile isolation drift');
   }catch{failures.push('EAS release profiles are missing or invalid');}
   requireExportFalse('worldRead','WORLD_BOSS_V52_READ_ROUTE_LIVE');
@@ -99,9 +117,17 @@ function selfTest(){
     ['rankings-release',paths.flags,'RANKINGS_RELEASED=false','RANKINGS_RELEASED=true'],
     ['market-auth-release',paths.flags,'MARKET_AUTHENTICATED_SERVICE_READY=false','MARKET_AUTHENTICATED_SERVICE_READY=true'],
     ['social-name-shared-flag-bypass',paths.flags,'ACCOUNT_SOCIAL_IDENTITY_RELEASED=false','ACCOUNT_SOCIAL_IDENTITY_RELEASED=true'],
+    ['profile-cosmetics-render-release',paths.flags,'PROFILE_ANIMATED_COSMETICS_RELEASED=false','PROFILE_ANIMATED_COSMETICS_RELEASED=true'],
+    ['profile-cosmetics-store-release',paths.flags,'PROFILE_COSMETICS_STORE_RELEASED=false','PROFILE_COSMETICS_STORE_RELEASED=true'],
+    ['profile-cosmetics-store-bypass',paths.store,'const STORE_COSMETICS_VISIBLE=PROFILE_COSMETICS_STORE_RELEASED;','const STORE_COSMETICS_VISIBLE=true;'],
+    ['profile-cosmetics-grant-release',paths.cosmeticGrant,'PROFILE_COSMETIC_COMMERCE_GRANTS_LIVE=false','PROFILE_COSMETIC_COMMERCE_GRANTS_LIVE=true'],
     ['social-name-production-bypass',paths.socialGate,"process.env.EXPO_PUBLIC_RELEASE_CHANNEL==='staging'","true"],
     ['social-name-project-bypass',paths.socialGate,"process.env.EXPO_PUBLIC_SUPABASE_URL==='https://iqfmmpvwanvvmxcftfxw.supabase.co'","true"],
     ['social-name-eas-prod-bypass',paths.eas,'"EXPO_PUBLIC_SOCIAL_NAMES_STAGING_PREVIEW": "false"','"EXPO_PUBLIC_SOCIAL_NAMES_STAGING_PREVIEW": "true"'],
+    ['social-name-prod-channel-bypass',paths.socialGate,"process.env.EXPO_PUBLIC_RELEASE_CHANNEL==='production'","true"],
+    ['social-name-prod-project-bypass',paths.socialGate,"process.env.EXPO_PUBLIC_SUPABASE_URL==='https://nyjwigipamnvpdvpauuv.supabase.co'","true"],
+    ['social-name-prod-optin-bypass',paths.socialGate,"process.env.EXPO_PUBLIC_SOCIAL_NAMES_PRODUCTION_ENABLED==='true'","true"],
+    ['social-name-eas-activation-disabled',paths.eas,'"EXPO_PUBLIC_SOCIAL_NAMES_PRODUCTION_ENABLED": "true"','"EXPO_PUBLIC_SOCIAL_NAMES_PRODUCTION_ENABLED": "false"'],
     ['preview-release',paths.routes,"typeof __DEV__!=='undefined'&&__DEV__===true",'true'],
     ['erasure-release',paths.worldErasure,'WORLD_BOSS_V56_ERASURE_LIVE=false','WORLD_BOSS_V56_ERASURE_LIVE=true'],
     ['read-endpoint-release',paths.worldRead,'WORLD_BOSS_V52_READ_ROUTE_LIVE=false','WORLD_BOSS_V52_READ_ROUTE_LIVE=true'],
@@ -121,13 +147,13 @@ function selfTest(){
     'Guard did not detect Party Event migration promotion');
   assert.ok(check(read,[...migrations,'20261118140000_world_boss_public_raid.sql']).length>0,
     'Guard did not detect World Boss migration promotion');
-  console.log('PASS: hidden feature fence detects staging-only Social Names plus unsafe release regressions');
+  console.log('PASS: hidden feature fence enforces approved production Social Names opt-in and catches unsafe release regressions');
 }
 const failures=check(realRead,realMigrations());
 if(failures.length){
   for(const problem of failures)console.error('HIDDEN RELEASE FENCE: '+problem);
   process.exitCode=1;
 }else{
-  console.log('PASS: production Social Names, World Boss, Party Events, Guild PvE, Rankings and Market remain release-disabled');
+  console.log('PASS: production Social Names requires exact build opt-in; World Boss, Party Events, Guild PvE, Rankings and Market remain release-disabled');
   if(process.argv.includes('--self-test'))selfTest();
 }

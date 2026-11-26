@@ -1,5 +1,10 @@
 name: Mobile UX validation
 
+# Cancel superseded PR checks; never cancel main, scheduled, or manual release checks.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 on:
   push:
     branches: [main]
@@ -17,6 +22,7 @@ on:
 jobs:
   typecheck-and-core-tests:
     runs-on: ubuntu-latest
+    timeout-minutes: 40
     defaults:
       run:
         working-directory: apps/mobile
@@ -35,6 +41,8 @@ jobs:
         run: pnpm --dir ../../backend install --frozen-lockfile
       - name: Validate Inventory storage controls
         run: node tests/inventory-storage-management-ui.cjs
+      - name: Validate approved compact item inspect
+        run: node tests/item-inspect-compact-ui.cjs && node tests/equipment-disposal-ui.cjs
       - name: Validate UX popup and activity Stop reliability
         run: |
           pnpm exec tsc -p tsconfig.ux-popup.json --outDir .ux-popup-build
@@ -58,15 +66,30 @@ jobs:
       - name: Validate pixel audio settings and reversible mute
         run: pnpm test:audio-settings
       - name: Verify expanded chat tabs, keyboard clearance and floating emotes
-        run: node tests/chat-channel-dropdown-ui-contract.cjs && node tests/chat-overlay-layout.cjs && node tests/chat-online-player-roster.cjs
+        run: node tests/chat-channel-dropdown-ui-contract.cjs && node tests/chat-overlay-layout.cjs && node tests/chat-online-player-roster.cjs && node tests/chat-dock-responsive.cjs
+      - name: Validate compact recruitment quick-post and Crafting persistence
+        run: |
+          pnpm exec tsc -p tsconfig.core.json --outDir .core-build
+          node .core-build/apps/mobile/tests/party-social-v16.js
+          node .core-build/apps/mobile/tests/social-recruitment-ui-contract.js
+      - name: Validate compact gathering tool rows and vault safety
+        run: node tests/compact-gathering-tools-redesign-ui.cjs
       - name: Verify hidden World Boss, Party Event and Market UI routes
         run: pnpm test:feature-hubs
+      - name: Validate ownership-safe profile quick equip
+        run: node tests/profile-quick-set-equip.cjs
+      - name: Validate Ascendant showcase geometry and closed blessing gate
+        run: node tests/celestial-showcase-layout.cjs && node tests/ascendant-blessings.cjs && node tests/ascendant-blessing-state.cjs && node tests/ascendant-celestial-assets.cjs && node tests/ultra-luxe-private-visibility.cjs && node tests/draconic-showcase.cjs && node tests/ultra-luxe-titles.cjs && node tests/ultra-luxe-motion.cjs && node tests/ultra-luxe-pet-poses.cjs && node tests/ultra-luxe-set-visuals.cjs && node tests/ultra-luxe-prestige.cjs && node tests/ultra-luxe-grants.cjs
+      - name: Validate shared motion and static artwork lifecycle
+        run: node tests/shared-motion-efficiency.cjs
       - name: Typecheck app
         run: pnpm typecheck
       - name: Validate focused Home layout and queue/reward safety
         run: node tests/home-priority-dashboard-ui.cjs
       - name: Verify compact Quest screens, modal safety and reward semantics
         run: node tests/quest-refined-ui.cjs
+      - name: Validate Guild Project daily effort cap and UTC reset
+        run: node tests/guild-project-daily-effort.cjs
       - name: Validate Gems storage and dungeon recovery UX
         run: node tests/storage-dungeon-refinement-ui.cjs
       - name: Validate Frostfall 14-day preview and sealed rewards
@@ -81,6 +104,12 @@ jobs:
         run: pnpm test:companions
       - name: Validate Account New Unlocks inbox
         run: node tests/account-unlock-inbox-ui.cjs
+      - name: Validate compact Character Roster, eight-language copy and 800-skill UX
+        run: pnpm test:character-roster
+      - name: Validate single-row Skill Navigator and existing XP routes
+        run: pnpm test:skill-navigator
+      - name: Validate compact Rewards Inbox ledger
+        run: pnpm test:rewards-inbox-ledger
       - name: Typecheck Account unlock inbox UI
         run: pnpm exec tsc -p tsconfig.account-unlocks.json --noEmit
       - name: Typecheck core
@@ -93,5 +122,6 @@ jobs:
           node tests/guild-guide-render-layout.cjs
       - name: Verify compact gathering Drops UI and real drop odds
         run: pnpm test:gathering-drops
-      - name: Run mobile core tests
-        run: pnpm test:core
+      # Full core suite is owned by mobile-core-validation.yml on the same
+      # mobile source / test-manifest paths. Avoid running it twice per PR.
+      # This workflow still runs all UX-specific contracts and typechecks.

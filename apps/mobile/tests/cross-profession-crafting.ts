@@ -2,7 +2,7 @@ import {CROSS_PROFESSION_COMPONENT_ITEMS,CROSS_PROFESSION_COMPONENT_RECIPES} fro
 import {V33_EQUIPMENT_RECIPES,CROSS_PROFESSION_ASSEMBLY_INPUTS} from '../src/content/equipment-recipes-v33';
 import {RECIPES} from '../src/content/skills';
 import {itemDef} from '../src/content/items';
-import {newGame,createCharacter,claimActivity} from '../src/core/game';
+import {newGame,createCharacter,claimActivity,stopActivity} from '../src/core/game';
 import {executeGameCommand} from '../src/core/game-commands';
 import {startEquipmentCraft} from '../src/core/equipment-crafting-queue';
 import {processingAvailability,startProcessingBatch} from '../src/core/processing';
@@ -51,7 +51,7 @@ ok(browserSource.includes('setSelectedVariants(current=>({...current,[recipeGrou
 ok(recipeCardSource.includes('variantRecipes?.length===2'),'Switcher must appear only for genuine two-route craftables');
 ok(recipeCardSource.includes('onSelectVariant(candidate.id)'),'Recipe selection must update the active recipe ID');
 ok(recipeCardSource.includes('accessibilityState={{selected,disabled:starting}}'),'Selected crafting route must be announced accessibly');
-ok(recipeCardSource.includes('onProcessingStart(recipe.id)'),'Selected recipe ID must reach authoritative processing');
+ok(recipeCardSource.includes('onProcessingStart(recipe.id,quantity)'),'Selected recipe ID must reach authoritative processing');
 ok(!recipeCardSource.includes('componentRoute?<Text'),'Do not show redundant per-card labels above the new switcher');
 
 for(const item of CROSS_PROFESSION_COMPONENT_ITEMS){
@@ -115,6 +115,19 @@ for(const recipe of CROSS_PROFESSION_COMPONENT_RECIPES){
  equal(commanded.activity?.kind,'processing','Component command must start timed processing: '+recipe.id);
  equal(commanded.activity?.processing?.recipeId,recipe.id,'Component command must preserve recipe identity: '+recipe.id);
  equal(commanded.activity?.processing?.remainingBatches,1,'Component command must reserve exactly one available batch: '+recipe.id);
+
+ // Failure/reconnect safety: cancelling before a cycle finishes must return
+ // every reserved ingredient and all Gold, without granting an output.
+ const cancelled=stopActivity(commanded);
+ equal(cancelled.activity,null,'Cancelling timed component processing must clear its reservation: '+recipe.id);
+ equal(cancelled.character!.gold,state.character!.gold,'Cancelling must refund reserved Gold exactly once: '+recipe.id);
+ for(const input of recipe.inputs){
+  equal(cancelled.inventory.stacks.find(stack=>stack.itemId===input.itemId)?.quantity??0,
+   input.quantity,'Cancelling must refund the exact component input: '+recipe.id+'/'+input.itemId);
+ }
+ equal(cancelled.inventory.stacks.find(stack=>stack.itemId===recipe.output.itemId)?.quantity??0,
+  0,'Cancelling must not invent an output: '+recipe.id);
+
  equal(commanded.character!.gold,state.character!.gold-recipe.gold,'Component command must reserve Gold once: '+recipe.id);
  for(const input of recipe.inputs){
   equal(commanded.inventory.stacks.find(stack=>stack.itemId===input.itemId)?.quantity??0,0,'Component ingredients must be reserved: '+recipe.id+'/'+input.itemId);

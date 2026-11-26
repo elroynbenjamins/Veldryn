@@ -29,7 +29,7 @@ assert(run.includes('dungeonRewardDisplayAmount(reward,run,rewardBudget,liveFell
 assert(rewardDisplay.includes('reward.reward_json.enhanced_marks')&&rewardDisplay.includes('reward.claimed_at')&&rewardDisplay.includes('weeklyRemaining'),'Pre-claim calculation must use the server entitlement, preserve claimed totals and respect reward budgets');
 assert(screen.includes('liveFellowshipRemaining={entry?.liveFellowshipRemaining}'),'Preview must account for server-supplied Live Fellowship availability');
 assert(entry.includes('recommendedLiveTier:')&&details.includes('dungeon.recommendedLiveTier'),'Live tier label must follow verified backend gear recommendation');
-assert(browse.includes('estimatedMinutes??{min:6,max:8}')&&details.includes("mode==='live'?'3–5'"),'Live shows shorter wall pacing without misrepresenting Solo estimated time');
+assert(browse.includes('estimatedMinutes??{min:6,max:8}')&&details.includes("dungeonUxText(language,'bossChoice')")&&!details.includes('dungeon.estimatedMinutes.min'),'Endurance entry does not promise fixed Solo/Live completion times; boss checkpoint wording is accurate');
 assert(details.includes('rewardBudget.weeklyRemaining===0')&&details.includes('rewardBudget.charges===0'),'Dungeon reward preview must distinguish the exhausted weekly cap from empty charges');
 assert(run.includes("run.phase==='failed'")&&run.includes('No failed-run reward receipt yet.'),'Failed runs must not imply a consolation reward is always being prepared');
 assert(textCatalog.includes('Weekly enhanced reward limit reached.')&&textCatalog.includes('No failed-run reward receipt yet.'),'Dungeon eligibility guidance must be localized');

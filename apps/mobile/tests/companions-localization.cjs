@@ -49,7 +49,7 @@ assert.equal(companionMessage('tr',bondNotice),'BAĞ ÖDÜLÜ ALINDI · Ironwood
 const oldCompanionPanel=fs.readFileSync(path.join(root,'apps/mobile/src/components/CombatCompanionPanel.tsx'),'utf8');
 assert.ok(oldCompanionPanel.includes('monthlyChallengeCompletion[id]')&&oldCompanionPanel.includes("Clear Floor {floor}+ this month with the required team")&&oldCompanionPanel.includes("Floor reached, but this month's required team conditions"),'Monthly Companion claims must explain why verification has not unlocked the reward');
 assert.ok(oldCompanionPanel.includes('Progress target reached; waiting for verified challenge completion.')&&oldCompanionPanel.includes('{remaining} more progress needed for this weekly reward.'),'Weekly Companion claims must not mistake reached progress for verified completion');
-assert.ok(oldCompanionPanel.includes("trainingLast===undefined?t('Ready to claim')")&&oldCompanionPanel.includes("essenceLast===undefined?t('Ready to claim')"),'First Sanctuary claims must not misleadingly say Start timer');
+assert.ok(oldCompanionPanel.includes("trainingLast===undefined?t('Start timer'):t('Claim XP')")&&oldCompanionPanel.includes("essenceLast===undefined?t('Start timer'):t('Claim Essence')"),'First Sanctuary activation must clearly say Start timer and never promise unearned XP or Essence');
 const newCompanionTraining=fs.readFileSync(path.join(root,'apps/mobile/src/components/CompanionTrainingV50Panel.tsx'),'utf8');
 assert.ok(oldCompanionPanel.includes('COMPANION_BOND_ESSENCE_REWARDS')&&newCompanionTraining.includes('COMPANION_BOND_ESSENCE_REWARDS'),'Both companion flows must use the same authoritative Bond Essence reward map');
 assert.ok(!oldCompanionPanel.includes("'35 Essence + portrait'")&&!oldCompanionPanel.includes("'80 Essence + title'")&&!oldCompanionPanel.includes("'55 Essence + Bond Resonance'"),'No current Bond claim confirmation may promise obsolete portrait, title or Resonance rewards');
@@ -165,12 +165,8 @@ const baseline={
     "setViewFilter(option)"
   ],
   "apps/mobile/src/screens/BestiaryScreen.tsx": [
-    "setStatus('all')",
-    "setStatus('all')",
-    "setStatus(value)",
-    "setZone('all')",
-    "setZone('all')",
-    "setZone(value)"
+    "setTab('types')",
+    "setTab(choice.id)"
   ],
   "apps/mobile/src/components/CombatCompanionPanel.tsx": [
     "act('companion_essence')",

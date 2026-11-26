@@ -9,9 +9,17 @@ const required=(source,fragment,label)=>{
 
 const gameplay=read('backend/supabase/functions/gameplay/index.ts');
 required(gameplay,'if (!bearer) return json({ error: "auth_required" }, 401);','gameplay bearer guard');
-required(gameplay,'const accountId = await services2.authenticate(bearer);','gameplay token verification');
-required(gameplay,'if (!accountId) return json({ error: "invalid_session" }, 401);','gameplay invalid-session guard');
-required(gameplay,'/auth/v1/user','gameplay Supabase user lookup');
+required(gameplay,'const player = await authenticatePlayer2(bearer);','gameplay token verification');
+required(gameplay,'if (!player) return json({ error: "invalid_session" }, 401);','gameplay invalid-session guard');
+required(gameplay,'const { accountId, adminQa } = player;','gameplay verified identity and QA authority');
+required(gameplay,'var gameplay = gameplayHandler(services, authenticatePlayer);','gameplay verified authenticator wiring');
+required(gameplay,'async function authenticatePlayer(token) {','gameplay authenticator definition');
+required(gameplay,'fetch(`${url}/auth/v1/user`, { headers: { apikey: anonKey, Authorization: `Bearer ${token}` } })','gameplay Supabase bearer verification');
+required(gameplay,'if (!response.ok) return null;','gameplay rejected authentication guard');
+required(gameplay,'if (typeof user?.id !== "string" || !user.id) return null;','gameplay verified nonempty identity guard');
+required(gameplay,'const meta = user.app_metadata;','gameplay trusted QA metadata source');
+required(gameplay,'return { accountId: user.id, adminQa: meta?.admin_qa === true || Array.isArray(meta?.roles) && meta.roles.includes("admin_qa") };','gameplay QA derives from verified server metadata');
+required(gameplay,'return accountId ? { accountId, adminQa: false } : null;','gameplay default authenticator denies QA authority');
 
 const coop=read('backend/supabase/functions/coop/index.ts');
 required(coop,'if (!token) return json({ error: "auth_required" }, 401);','co-op bearer guard');

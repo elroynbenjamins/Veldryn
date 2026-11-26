@@ -49,10 +49,13 @@ function clear(seed:number,legacy:boolean):boolean{
  const repository=new MemoryQModeRunRepository(),service=new QModeService(repository,'published-loadout-balance-v1');
  let run=service.create({requestId:id,runId:id,controllerAccountId:roster[0].accountId,controllerSnapshot:roster[0],expeditionId:dungeon.id,tier:1,contentVersion:'online-coop-loadout-v1',balanceVersion:REGIONAL_DUNGEON_BALANCE_VERSION,nowMs:1000,profiles:roster.slice(1).map((snapshot,index)=>({profileId:'echo-'+index,sourceAccountId:snapshot.accountId,optedIn:true,publishedAtMs:0,contentVersion:'online-coop-loadout-v1',blockedAccountIds:[],snapshot}))});
  if(legacy){repository.save({...run,qmodePressureVersion:undefined});run=repository.get(run.id)!;}
- for(let room=0;room<6&&run.phase==='awaiting_choice';room++){
+ // First Endurance boss option follows seven cleared normal rooms at depth eight.
+ for(let room=0;room<10&&run.phase==='awaiting_choice';room++){
   const current=run.graph.nodes.find(node=>node.nodeId===run.currentNodeId)!;
   const options=current.nextNodeIds.map(optionId=>run.graph.nodes.find(node=>node.nodeId===optionId)!);
-  run=service.choose({runId:id,controllerAccountId:roster[0].accountId,optionNodeId:(options.find(node=>node.kind==='camp')??options[0]).nodeId});
+  const checkpoint=options.find(node=>node.kind==='boss');
+  if(checkpoint)assert.equal(current.depth,7,'First Endurance boss must be offered after seven rooms');
+  run=service.choose({runId:id,controllerAccountId:roster[0].accountId,optionNodeId:(checkpoint??options.find(node=>node.kind==='camp')??options[0]).nodeId});
  }
  return run.phase==='completed';
 }
@@ -61,17 +64,19 @@ for(let seed=0;seed<100;seed++){
  if(clear(seed,true))baselineClears++;
  if(clear(seed,false))qmodeClears++;
 }
-// Calibrate against the full six-room dungeon, not just damage in one fight.
+// Calibrate against the first full Endurance boss checkpoint, not six nonterminal nodes.
 function tunedClear(seed:number,attackMultiplier:number):boolean{
  const id='pressure-'+seed;
  const repo=new MemoryQModeRunRepository(),service=new QModeService(repo,'published-loadout-balance-v1');
  const run=service.create({requestId:id,runId:id,controllerAccountId:roster[0].accountId,controllerSnapshot:roster[0],expeditionId:dungeon.id,tier:1,contentVersion:'online-coop-loadout-v1',balanceVersion:REGIONAL_DUNGEON_BALANCE_VERSION,nowMs:1000,profiles:roster.slice(1).map((snapshot,index)=>({profileId:'echo-'+index,sourceAccountId:snapshot.accountId,optedIn:true,publishedAtMs:0,contentVersion:'online-coop-loadout-v1',blockedAccountIds:[],snapshot}))});
  let state=run.persistentState,currentId=run.currentNodeId;
- for(let room=0;room<6;room++){
+ for(let room=0;room<10;room++){
   const current=run.graph.nodes.find(node=>node.nodeId===currentId)!;
   const options=current.nextNodeIds.map(optionId=>run.graph.nodes.find(node=>node.nodeId===optionId)!);
   if(!options.length)return false;
-  const selected=options.find(node=>node.kind==='camp')??options[0];
+  const checkpoint=options.find(node=>node.kind==='boss');
+  if(checkpoint)assert.equal(current.depth,7,'Manual pressure probe must use first Endurance boss exit');
+  const selected=checkpoint??options.find(node=>node.kind==='camp')??options[0];
   const regional=regionalPowerMultipliers(run.expeditionId,run.tier,run.regionalBalanceVersion===1,selected.contentId);
   const result=resolveCoopNode({runId:run.id,serverSecret:'published-loadout-balance-v1',node:selected,players:run.players,state,tier:run.tierScalingVersion===2?run.tier:undefined,enemyAttackMultiplier:attackMultiplier*(regional?.attack??1),enemyHpMultiplier:regional?.hp,enemyDefenseMultiplier:regional?.defense,enemyLevel:regional?.enemyLevel,enemyDamageProfile:'qmode-v1'});
   if(!result.success)return false;

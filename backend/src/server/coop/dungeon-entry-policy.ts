@@ -32,16 +32,16 @@ export function defeatedDungeonChapterBoss(state:{defeatedBossIds?:readonly stri
  return Array.isArray(state?.defeatedBossIds)&&state.defeatedBossIds.includes(DUNGEON_CHAPTER_ONE_BOSS);
 }
 export type DungeonEntryError='dungeon_unavailable'|'dungeon_level_requirement'|'chapter_one_required'|'dungeon_power_requirement';
-export function regularDungeonEntryError(def:ExpeditionDefinition,state:{defeatedBossIds?:readonly string[]}|null|undefined,characterLevel:number,combatPower=0,tier:CoopTier=1):DungeonEntryError|undefined{
+export function regularDungeonEntryError(def:ExpeditionDefinition,state:{defeatedBossIds?:readonly string[]}|null|undefined,characterLevel:number,combatPower=0,tier:CoopTier=1,mode:'qmode'|'live'='live'):DungeonEntryError|undefined{
  const rule=DUNGEON_REQUIREMENTS[def.id];
  if(!publishedRegularDungeon(def)||!rule)return 'dungeon_unavailable';
  if(!Number.isInteger(characterLevel)||characterLevel<regularDungeonTierRequiredLevel(def,tier))return 'dungeon_level_requirement';
  if(rule.requiresChapterOne&&!defeatedDungeonChapterBoss(state))return 'chapter_one_required';
- if(combatPower<regularDungeonTierRequiredPower(def,tier)||(!Number.isFinite(combatPower)&&combatPower!==Number.POSITIVE_INFINITY))return 'dungeon_power_requirement';
+ if(mode==='live'&&(combatPower<regularDungeonTierRequiredPower(def,tier)||(!Number.isFinite(combatPower)&&combatPower!==Number.POSITIVE_INFINITY)))return 'dungeon_power_requirement';
  return undefined;
 }
-export function regularDungeonLockedReason(def:ExpeditionDefinition,state:{defeatedBossIds?:readonly string[]}|null|undefined,level:number,combatPower=0):string|undefined{
- const error=regularDungeonEntryError(def,state,level,combatPower);
+export function regularDungeonLockedReason(def:ExpeditionDefinition,state:{defeatedBossIds?:readonly string[]}|null|undefined,level:number,combatPower=0,mode:'qmode'|'live'='live'):string|undefined{
+ const error=regularDungeonEntryError(def,state,level,combatPower,1,mode);
  if(!error)return undefined;
  if(error==='dungeon_unavailable')return DEVELOPMENT_DUNGEONS.has(def.id)||def.region==='Ashlands'?'In Development':'No longer available for new runs';
  if(error==='dungeon_level_requirement')return `Requires level ${regularDungeonTierRequiredLevel(def,1)}`;

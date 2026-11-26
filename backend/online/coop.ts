@@ -1,6 +1,7 @@
 import {createHash} from 'node:crypto';
 import {coopEntryHandler} from './coop-entry';
 import {makeDungeonShopController} from './dungeon-shop';
+import {makeDungeonWeeklyQuestController} from './dungeon-weekly-quests';
 import {OnlineQModeRuntime} from './qmode-runtime';
 import {OnlineLiveQueue} from './live-queue';
 import {OnlineLiveReady} from './live-ready';
@@ -10,6 +11,8 @@ import {OnlineCoopLfg} from './coop-lfg';
 import {publicProfileCombatPower} from './public-profile-power';
 import {OnlineEventExpeditionRuntime,type OnlineEventExpeditionStartRequest} from './event-expedition-runtime';
 import {GameplayError,type GameplayServices} from './gameplay';
+import {validateSocialEchoCandidates} from '../../apps/mobile/src/core/coop-social-echoes';
+import {prepareSocialEchoCandidates} from './coop-social-echoes';
 import {parseCoopRunRequest,parseCoopDecisionCommand,parseCoopReadyCommand} from '../src/server/coop/api-contracts';
 
 const headers={'Content-Type':'application/json','Cache-Control':'no-store','Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization,apikey,content-type,x-client-info','Access-Control-Allow-Methods':'GET,POST,OPTIONS'};
@@ -18,17 +21,41 @@ const uuid='[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA
 
 export function coopHandler(services:GameplayServices){
  const dungeonShop=makeDungeonShopController(services);
+  const weeklyDungeonQuest=makeDungeonWeeklyQuestController(services);
  const entry=coopEntryHandler(services),runtime=new OnlineQModeRuntime(services),liveRuntime=new OnlineLiveRuntime(services),eventRuntime=new OnlineEventExpeditionRuntime(services),queue=new OnlineLiveQueue(services),lfg=new OnlineCoopLfg(services);
  return async(request:Request):Promise<Response>=>{
   if(request.method==='OPTIONS')return new Response(null,{status:204,headers});
   const path=new URL(request.url).pathname;
-  if(/\/coop\/(entry|echo)$/.test(path))return entry(request);
+  if(/\/coop\/entry$/.test(path))return entry(request);
   try{
    const bearer=request.headers.get('authorization')?.match(/^Bearer (\S+)$/i)?.[1];
    if(!bearer)return json({error:'auth_required'},401);
    const accountId=await services.authenticate(bearer);if(!accountId)return json({error:'invalid_session'},401);
 
-   if(path.endsWith('/coop/shop')){
+   if(path.endsWith('/coop/echo-allies')){
+     if(request.method!=='GET')return json({error:'method_not_allowed'},405);
+     const params=new URL(request.url).searchParams;
+     let invalidParams=params.getAll('minLevel').length!==1;
+     params.forEach((_value,key)=>{if(key!=='minLevel')invalidParams=true;});
+     if(invalidParams)throw new GameplayError('invalid_echo_level');
+     const minLevel=Number(params.get('minLevel'));
+     if(!Number.isSafeInteger(minLevel)||minLevel<1||minLevel>100)throw new GameplayError('invalid_echo_level');
+     const sources=await prepareSocialEchoCandidates(services,accountId,minLevel);
+     return json(validateSocialEchoCandidates(sources.map(source=>source.candidate)));
+    }
+    if(path.endsWith('/coop/weekly-quest')){
+     if(request.method==='GET')return json(await weeklyDungeonQuest.snapshot(accountId));
+     if(request.method!=='POST')return json({error:'method_not_allowed'},405);
+     const raw=await request.text();if(raw.length>1024)return json({error:'request_too_large'},413);
+     let body:unknown;try{body=JSON.parse(raw);}catch{throw new GameplayError('invalid_json');}
+     if(!body||typeof body!=='object'||Array.isArray(body))throw new GameplayError('invalid_dungeon_weekly_request');
+     const row=body as Record<string,unknown>;
+     if(Object.keys(row).some(key=>!['weekKey','requestId'].includes(key))||
+       typeof row.weekKey!=='string'||typeof row.requestId!=='string')throw new GameplayError('invalid_dungeon_weekly_request');
+     return json(await weeklyDungeonQuest.claim(accountId,row.weekKey,row.requestId));
+    }
+
+    if(path.endsWith('/coop/shop')){
     if(request.method==='GET')return json(await dungeonShop.snapshot(accountId));
     if(request.method!=='POST')return json({error:'method_not_allowed'},405);
     const raw=await request.text();if(raw.length>1024)return json({error:'request_too_large'},413);
@@ -152,7 +179,7 @@ export function coopHandler(services:GameplayServices){
    const raw=await request.text();if(raw.length>4096)return json({error:'request_too_large'},413);
    let body:unknown;try{body=JSON.parse(raw);}catch{throw new GameplayError('invalid_json');}
    if(!body||typeof body!=='object'||Array.isArray(body))throw new GameplayError('invalid_request');
-   const allowed=start?['requestId','dungeonId','tier','characterId','loadoutId','loadoutRevision']:run?.[2]==='merchant'?['requestId','expectedVersion','offerId']:run?.[2]==='potion'?['requestId']:run?.[2]==='tonic'?['requestId','potionId']:run?.[2]==='choose'?['requestId','decisionId','decisionRevision','optionId','boonId']:['requestId','decisionId','decisionRevision','optionId'];
+   const allowed=start?['requestId','dungeonId','tier','characterId','loadoutId','loadoutRevision','preferredEchoCharacterIds']:run?.[2]==='merchant'?['requestId','expectedVersion','offerId']:run?.[2]==='potion'?['requestId']:run?.[2]==='tonic'?['requestId','potionId']:run?.[2]==='choose'?['requestId','decisionId','decisionRevision','optionId','boonId']:['requestId','decisionId','decisionRevision','optionId'];
    if(Object.keys(body).some(key=>!allowed.includes(key)))throw new GameplayError('invalid_request');
    if(start)return json(await runtime.start(accountId,parseCoopRunRequest(body,'qmode')));
     if(run?.[2]==='potion'){
@@ -183,9 +210,9 @@ export function coopHandler(services:GameplayServices){
    catch(error){if(error instanceof GameplayError&&error.message==='not_live_run')return json(await runtime.choose(accountId,run![1],parseCoopDecisionCommand(body)));throw error;}
   }catch(error){
    const message=error instanceof Error?error.message:'server_error',code=message.toLowerCase();
-   const status=/^(stale_|idempotency_|node_resolving|potion_charges_exhausted|tonic_already_prepared|tonic_preparation_closed|insufficient_run_resources|merchant_offer_already_purchased|account_already_participating|rematch_closed|rematch_vote_locked|rematch_loadout_changed|echo_no_longer_eligible|ticket_not_queued|ready_check_closed|loadout_changed_since_queue|reservation_conflict|event_not_live|event_claim_closed|event_daily_clear_limit)/.test(code)?409:
+   const status=/^(stale_|idempotency_|social_echo_unavailable|node_resolving|potion_charges_exhausted|tonic_already_prepared|tonic_preparation_closed|insufficient_run_resources|merchant_offer_already_purchased|account_already_participating|rematch_closed|rematch_vote_locked|rematch_loadout_changed|echo_no_longer_eligible|ticket_not_queued|ready_check_closed|loadout_changed_since_queue|reservation_conflict|event_not_live|event_claim_closed|event_daily_clear_limit|dungeon_weekly_quest_expired|dungeon_weekly_quest_incomplete)/.test(code)?409:
     /^(dungeon_shop_unreleased|not_participant|loadout_not_owned|ticket_not_owned|not_ready_member)/.test(code)?403:
-    /^(invalid_|healing_potion_not_selected|healing_potion_not_carried|tonic_not_carried|potion_cannot_revive|health_full|not_a_merchant_node|merchant_not_resolved|rematch_unavailable|rematch_roster_unavailable|unknown_expedition|unknown_event_expedition|dungeon_|character_|role_not_ready|illegal_equipment|echo_pool_unavailable|run_not_awaiting_choice|event_level_requirement|event_reward_not_ready|event_run_not_awaiting_choice|event_run_not_found)/.test(code)?400:error instanceof GameplayError?error.status:503;
+    /^(invalid_|duplicate_coop_account|duplicate_damage_class|healing_potion_not_selected|healing_potion_not_carried|tonic_not_carried|potion_cannot_revive|health_full|not_a_merchant_node|merchant_not_resolved|rematch_unavailable|rematch_roster_unavailable|unknown_expedition|unknown_event_expedition|dungeon_|character_|role_not_ready|illegal_equipment|echo_pool_unavailable|run_not_awaiting_choice|event_level_requirement|event_reward_not_ready|event_run_not_awaiting_choice|event_run_not_found)/.test(code)?400:error instanceof GameplayError?error.status:503;
    if(status===503)console.error('coop_unexpected_error',request.method,code);
    return json({error:status===503?(request.method==='GET'?'Dungeons are temporarily unavailable. Try again.':'Could not confirm the co-op action. Retry it.'):code},status);
   }

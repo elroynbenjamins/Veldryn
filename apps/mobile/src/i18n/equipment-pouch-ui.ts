@@ -7,14 +7,67 @@ import {interpolateTranslation,type TranslationParams} from './translator';
  * server-generated sale reasons and canonical IDs/commands. DE/ES/NL/IT/FR/RU/TR. */
 type SevenLanguages=readonly [string,string,string,string,string,string,string];
 export const equipmentPouchUiRows={
+  "Details & sources": ["Details & Quellen","Detalles y fuentes","Details en bronnen","Dettagli e fonti","Détails et sources","Сведения и источники","Ayrıntılar ve kaynaklar"],
+  // Stat-first equipment inspection: all seven non-English locales.
+  "INNATE TRAIT": ["ANGEBORENE EIGENSCHAFT","RASGO INNATO","AANGEBOREN EIGENSCHAP","TRATTO INNATO","TRAIT INNÉ","ВРОЖДЁННОЕ СВОЙСТВО","DOĞUŞTAN ÖZELLİK"],
+  "RANDOM BONUS ROLLS": ["ZUFÄLLIGE BONUSWERTE","BONIFICACIONES ALEATORIAS","WILLEKEURIGE BONUSWAARDEN","BONUS CASUALI","BONUS ALÉATOIRES","СЛУЧАЙНЫЕ БОНУСЫ","RASTGELE BONUSLAR"],
+  "EQUIPMENT IMPACT": ["AUSRÜSTUNGSVERGLEICH","IMPACTO DEL EQUIPO","EFFECT OP UITRUSTING","IMPATTO EQUIPAGGIAMENTO","IMPACT DE L'ÉQUIPEMENT","ВЛИЯНИЕ СНАРЯЖЕНИЯ","EKİPMAN ETKİSİ"],
+  "POWER CHANGE": ["KRAFTÄNDERUNG","CAMBIO DE PODER","KRACHTVERSCHIL","VARIAZIONE POTENZA","VARIATION DE PUISSANCE","ИЗМЕНЕНИЕ СИЛЫ","GÜÇ DEĞİŞİMİ"],
+  "SET PIECES": ["SET-TEILE","PIEZAS DEL CONJUNTO","SETONDERDELEN","PEZZI DEL SET","PIÈCES D'ENSEMBLE","ПРЕДМЕТЫ КОМПЛЕКТА","SET PARÇALARI"],
+  "Replacing equipped item": ["Ersetzt angelegten Gegenstand","Reemplaza el objeto equipado","Vervangt huidige uitrusting","Sostituisce l'oggetto equipaggiato","Remplace l'objet équipé","Заменит надетый предмет","Kuşanılan eşyanın yerine geçer"],
+  "Withdraw to compare & equip.": ["Zum Vergleichen und Anlegen erst entnehmen.","Retira el objeto para compararlo y equiparlo.","Neem op om te vergelijken en uit te rusten.","Preleva per confrontare ed equipaggiare.","Retirez l'objet pour le comparer et l'équiper.","Заберите предмет, чтобы сравнить и надеть.","Karşılaştırıp kuşanmak için önce bankadan çekin."],
+  "More actions": ["Weitere Aktionen","Más acciones","Meer acties","Altre azioni","Autres actions","Другие действия","Diğer işlemler"],
+  "Less actions": ["Weniger Aktionen","Menos acciones","Minder acties","Meno azioni","Moins d’actions","Меньше действий","Daha az işlem"],
   "Store in Gear": ["In Ausrüstung lagern","Guardar en equipo","Opbergen bij uitrusting","Riponi nell'equipaggiamento","Ranger dans l'équipement","Убрать в снаряжение","Ekipmana koy"],
+  "Move to Bank": ["Zur Bank verschieben","Mover al banco","Verplaatsen naar bank","Sposta in banca","Déplacer vers la banque","Переместить в банк","Bankaya taşı"],
+  "Other item actions": ["Weitere Gegenstandsaktionen","Otras acciones del objeto","Andere voorwerpacties","Altre azioni sull'oggetto","Autres actions sur l'objet","Другие действия с предметом","Diğer eşya işlemleri"],
+  "Hide other item actions": ["Weitere Gegenstandsaktionen schließen","Ocultar otras acciones del objeto","Andere voorwerpacties verbergen","Nascondi altre azioni sull'oggetto","Masquer les autres actions sur l'objet","Скрыть другие действия с предметом","Diğer eşya işlemlerini gizle"],
   "Store {count} in Gear": ["{count} in Ausrüstung lagern","Guardar {count} en equipo","{count} bij uitrusting opbergen","Riponi {count} nell'equipaggiamento","Ranger {count} dans l'équipement","Убрать {count} в снаряжение","{count} eşyayı ekipmana koy"],
   "Gear storage full": ["Ausrüstungslager voll","Almacén de equipo lleno","Uitrustingsopslag vol","Deposito equipaggiamento pieno","Stockage d'équipement plein","Хранилище снаряжения заполнено","Ekipman deposu dolu"],
   "Not enough Gear slots": ["Zu wenige Ausrüstungsplätze","No hay suficientes espacios de equipo","Niet genoeg uitrustingsvakken","Spazi equipaggiamento insufficienti","Pas assez d'emplacements d'équipement","Недостаточно ячеек снаряжения","Yeterli ekipman yuvası yok"],
+  "Sell copy": ["Exemplar verkaufen","Vender ejemplar","Exemplaar verkopen","Vendi copia","Vendre l'exemplaire","Продать экземпляр","Kopyayı sat"],
+  "Salvage copy": ["Exemplar zerlegen","Desguazar ejemplar","Exemplaar ontmantelen","Smonta copia","Recycler l'exemplaire","Разобрать экземпляр","Kopyayı sök"],
 
   "Estimated sale · {gold} Gold": ["Voraussichtlicher Verkauf · {gold} Gold","Venta estimada · {gold} de oro","Verwachte verkoop · {gold} goud","Vendita prevista · {gold} oro","Vente estimée · {gold} or","Ожидаемая продажа · {gold} золота","Tahmini satış · {gold} altın"],
   "Quick sell": ["Schnell verkaufen","Venta rápida","Snel verkopen","Vendita rapida","Vente rapide","Быстрая продажа","Hızlı sat"],
   "Quick salvage": ["Schnell zerlegen","Desguace rápido","Snel ontmantelen","Smontaggio rapido","Recyclage rapide","Быстрая разборка","Hızlı sök"],
+
+  "Safe selection excludes Epic, Legendary and Mythic.": [
+    "Sichere Auswahl schließt epische, legendäre und mythische Ausrüstung aus.",
+    "La selección segura excluye equipo épico, legendario y mítico.",
+    "Veilig selecteren sluit epische, legendarische en mythische uitrusting uit.",
+    "La selezione sicura esclude equipaggiamento epico, leggendario e mitico.",
+    "La sélection sûre exclut les équipements épiques, légendaires et mythiques.",
+    "Безопасный выбор исключает эпическое, легендарное и мифическое снаряжение.",
+    "Güvenli seçim, Destansı, Efsanevi ve Mitik ekipmanı hariç tutar."
+  ],
+  "Tap a piece to inspect, equip or move it to Bank.": [
+    "Tippe auf ein Stück, um es anzusehen, anzulegen oder zur Bank zu verschieben.",
+    "Toca una pieza para inspeccionarla, equiparla o moverla al banco.",
+    "Tik op een stuk om het te bekijken, uit te rusten of naar de bank te verplaatsen.",
+    "Tocca un pezzo per esaminarlo, equipaggiarlo o spostarlo in banca.",
+    "Touchez une pièce pour l'inspecter, l'équiper ou la déplacer à la banque.",
+    "Нажмите на предмет, чтобы осмотреть, надеть или переместить его в банк.",
+    "Bir parçaya dokunarak inceleyin, kuşanın veya bankaya taşıyın."
+  ],
+  "The action was not confirmed. Try again.": [
+    "Aktion nicht bestätigt. Bitte erneut versuchen.",
+    "No se confirmó la acción. Inténtalo de nuevo.",
+    "De actie is niet bevestigd. Probeer het opnieuw.",
+    "Azione non confermata. Riprova.",
+    "Action non confirmée. Réessayez.",
+    "Действие не подтверждено. Попробуйте снова.",
+    "İşlem onaylanmadı. Tekrar deneyin."
+  ],
+  "High-rarity gear selected. Check each copy before confirming.": [
+    "Hochwertige Ausrüstung ausgewählt. Prüfe jedes Stück vor der Bestätigung.",
+    "Has seleccionado equipo de alta rareza. Revisa cada pieza antes de confirmar.",
+    "Uitrusting met hoge zeldzaamheid geselecteerd. Controleer elk exemplaar vóór bevestiging.",
+    "Equipaggiamento di alta rarità selezionato. Controlla ogni copia prima di confermare.",
+    "Équipement de grande rareté sélectionné. Vérifiez chaque exemplaire avant de confirmer.",
+    "Выбрано снаряжение высокой редкости. Проверьте каждый экземпляр перед подтверждением.",
+    "Yüksek nadirlikte ekipman seçildi. Onaylamadan önce her parçayı kontrol edin."
+  ],
   "Selected": ["Ausgewählt","Seleccionado","Geselecteerd","Selezionati","Sélectionnés","Выбрано","Seçilen"],
   "Sellable": ["Verkaufbar","Vendibles","Verkoopbaar","Vendibili","Vendables","Можно продать","Satılabilir"],
   "Salvageable": ["Zerlegbar","Reciclables","Te ontmantelen","Smontabili","Recyclables","Можно разобрать","Sökülebilir"],

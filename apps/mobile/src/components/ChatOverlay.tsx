@@ -36,6 +36,7 @@ function AccountChatOverlay({state,initialChannel='world',visible,hideDock=false
  const st=useSocialText();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),insets=useSafeAreaInsets(),{width,height,fontScale}=useWindowDimensions();
  const compactTabs=width<360||fontScale>=1.25;
+ const compactActivityPill=width<370||fontScale>=1.25;
  const [channel,setChannel]=useState<Channel>(partyOnly?'party':'world');
  const [guildHelpOpen,setGuildHelpOpen]=useState(false);
  const [visitedChannels,setVisitedChannels]=useState<Channel[]>(['world']);
@@ -76,24 +77,24 @@ function AccountChatOverlay({state,initialChannel='world',visible,hideDock=false
  };
 
  useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;};},[]);
- useEffect(()=>{if(visible)void refresh();else setOnlinePlayersOpen(false);},[visible,refresh]);
+ useEffect(()=>{if(visible&&chatEnabled)void refresh();else setOnlinePlayersOpen(false);},[visible,chatEnabled,refresh]);
  useEffect(()=>{if(!party&&channel==='party'){if(partyOnly){onClose();return;}selectChannel('world');}},[party,channel,partyOnly,onClose]);
  useEffect(()=>{guildCheckedAt.current=0;},[visible,state.account.guildMember]);
  useEffect(()=>{
   if(!onlineConfigured){setOnlineGuildAvailable(state.account.guildMember);return;}
-  if(!visible)return;
+  if(!visible||!chatEnabled||partyOnly)return;
   let active=true;
   const load=async()=>{
    if(!active||(AppState.currentState!=='active'&&AppState.currentState!==null)||guildLoading.current||Date.now()-guildCheckedAt.current<30000)return;
    guildLoading.current=true;
-   try{const guild=await myGuild();if(mounted.current){setOnlineGuildAvailable(!!guild);guildCheckedAt.current=Date.now();}}
+   try{const guild=await myGuild();if(active&&mounted.current){setOnlineGuildAvailable(!!guild);guildCheckedAt.current=Date.now();}}
    catch{/* Keep confirmed membership through temporary network failures. */}
    finally{guildLoading.current=false;}
   };
   void load();const timer=setInterval(()=>void load(),30000);
   const foreground=AppState.addEventListener('change',next=>{if(next==='active')void load();});
   return()=>{active=false;clearInterval(timer);foreground.remove();};
- },[visible,state.account.guildMember]);
+ },[visible,chatEnabled,partyOnly,state.account.guildMember]);
  const guildAvailable=onlineConfigured?onlineGuildAvailable:state.account.guildMember;
  useEffect(()=>{if(!guildAvailable&&channel==='guild')selectChannel('world');},[guildAvailable,channel]);
  useEffect(()=>{if(!chatEnabled&&visible)onClose();},[chatEnabled,visible,onClose]);
@@ -140,7 +141,7 @@ function AccountChatOverlay({state,initialChannel='world',visible,hideDock=false
         <Text style={s.title}>{partyOnly?st("Party Chat"):st("Chat")}</Text>
        </View>
        <View style={s.headerSpacer}/>
-       {!partyOnly&&ONLINE_PLAYER_ROSTER_RELEASED&&onlineConfigured&&<Pressable accessibilityRole="button" accessibilityLabel={st('Online players')+', '+(onlineRoster.count??st('loading'))} accessibilityHint={st('View the list of players online')} accessibilityState={{expanded:onlinePlayersOpen}} onPress={()=>{Keyboard.dismiss();setLanguageMenuOpen(false);setGuildHelpOpen(false);setOnlinePlayersOpen(true);void onlineRoster.refresh();}} style={({pressed})=>[s.onlinePill,pressed&&s.pressed]}><View style={s.onlineDot}/><Text numberOfLines={1} style={s.onlineText}>{st('Online')} {onlineRoster.count===null?'…':onlineRoster.count}</Text></Pressable>}
+       {!partyOnly&&ONLINE_PLAYER_ROSTER_RELEASED&&onlineConfigured&&<Pressable accessibilityRole="button" accessibilityLabel={st('Active in Last 30 Minutes')+', '+(onlineRoster.count??st('loading'))} accessibilityHint={st('View players active in the last 30 minutes')} accessibilityState={{expanded:onlinePlayersOpen}} onPress={()=>{Keyboard.dismiss();setLanguageMenuOpen(false);setGuildHelpOpen(false);setOnlinePlayersOpen(true);void onlineRoster.refresh();}} style={({pressed})=>[s.onlinePill,pressed&&s.pressed]}><View style={s.onlineDot}/><Text numberOfLines={1} style={s.onlineText}>{compactActivityPill?'30m':st('Active (30m)')} {onlineRoster.count===null?'…':onlineRoster.count}</Text></Pressable>}
        <Pressable accessibilityRole="button" accessibilityLabel={st("Close chat")} onPress={closeChat} style={({pressed})=>[s.close,pressed&&s.pressed]}><Text style={s.closeText}>×</Text></Pressable>
       </View>
       <View accessibilityRole="tablist" accessibilityElementsHidden={onlinePlayersOpen} importantForAccessibility={onlinePlayersOpen?'no-hide-descendants':'auto'} style={[s.tabs,compactTabs&&s.tabsCompact]}>
@@ -219,8 +220,8 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  title:{color:C.accent,fontSize:20,fontWeight:'900'},
  headerSpacer:{flex:1,minWidth:0},
  onlinePill:{minHeight:44,flexDirection:'row',alignItems:'center',justifyContent:'center',gap:6,paddingHorizontal:10,borderRadius:12,borderWidth:1,borderColor:C.line,backgroundColor:C.panelRaised},
- onlineDot:{width:7,height:7,borderRadius:4,backgroundColor:C.good},
- onlineText:{fontSize:11,color:C.good,fontWeight:'900',letterSpacing:.2},
+ onlineDot:{width:7,height:7,borderRadius:4,backgroundColor:C.info},
+ onlineText:{fontSize:11,color:C.info,fontWeight:'900',letterSpacing:.2},
  close:{width:44,height:44,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:10,backgroundColor:C.panelRaised},
  closeText:{fontSize:24,lineHeight:27,color:C.text,fontWeight:'400'},
  tabs:{minHeight:58,flexDirection:'row',alignItems:'center',gap:5,paddingHorizontal:9,paddingVertical:7,backgroundColor:C.panel2},

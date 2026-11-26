@@ -7,7 +7,7 @@ const overview=read('components/coop/CoopRunOverview.tsx');
 const choices=read('components/coop/DungeonRouteChoices.tsx');
 const stage=read('components/coop/DungeonCombatStage.tsx');
 const screen=read('screens/CoopExpeditionScreen.tsx');
-assert(choices.includes('minHeight:62')&&choices.includes('size="node"'),'Room selections are compact rows rather than oversized blocks');
+assert(choices.includes('minHeight:70')&&choices.includes('size="node"')&&choices.includes('paddingVertical:7'),'Room selections retain compact image-led rows with readable text and minimum touch targets');
 assert(choices.includes('option.votes??0')&&choices.includes('myVotedNodeId===option.nodeId'),'Live vote counts and identity remain');
 assert(stage.includes('<BattleElapsedSeconds')&&stage.includes('elapsedClock(anchor.current.elapsedMs')&&!stage.includes('seconds(pending.wallDurationMs)'),'Combat time counts upward, without revealing expected duration');
 assert(!stage.includes('Replay combat recap')&&!stage.includes('↻ Replay encounter'),'No combat replay control');
@@ -24,4 +24,5 @@ assert(screen.includes("const latest=await coopClient.entry()")&&screen.includes
 assert(screen.includes("started.run.runId===finished.runId")&&screen.includes("key={run.runId}")&&!screen.includes("lastQModeIntent"),'Solo retry creates a new run and resets local per-run UI');
 assert(read('core/coop-qmode.ts').includes('expeditionId:projection.expeditionId')&&read('core/coop-presentation.ts').includes('expeditionId?:string'),'Resumed runs retain their server dungeon identity');
 assert(screen.includes('Find new Live party')&&screen.includes('coopClient.quickLive('),'Live action must indicate that it creates a new matchmaking party');
+require('./dungeon-compact-marks-claim-ui.cjs');
 console.log('PASS compact dungeon flow, elapsed timer, reward popup and repeat-run safety');

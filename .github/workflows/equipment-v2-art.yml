@@ -1,5 +1,10 @@
 name: Equipment 2.0 Art Contract
 
+# Cancel superseded PR checks; never cancel main, scheduled, or manual release checks.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 on:
   push:
     paths:

@@ -1,4 +1,9 @@
 name: Release economy validation
+
+# Cancel superseded PR checks; never cancel main, scheduled, or manual release checks.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 on:
   pull_request:
     paths:
@@ -35,7 +40,7 @@ jobs:
           cache: pnpm
           cache-dependency-path: backend/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
-      - run: pnpm typecheck
+      # test:release-economy compiles and typechecks the same TS project.
       - run: pnpm test:release-economy
       - run: pnpm backend-pass-smoke
       - run: pnpm production-smoke

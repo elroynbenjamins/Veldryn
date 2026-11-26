@@ -1,5 +1,10 @@
 name: Mobile core validation
 
+# Cancel superseded PR checks; never cancel main, scheduled, or manual release checks.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 on:
   pull_request:
     paths:
@@ -42,30 +47,27 @@ jobs:
         run: pnpm --dir ../../backend install --frozen-lockfile
       - name: Verify generated gameplay Edge bundle matches shared engine
         run: node ../../tools/verify-gameplay-edge.mjs
-      - name: Validate mandatory update, maintenance, and fail-closed release gates
-        run: pnpm --dir ../../backend test:release-gate
-      - name: Validate Q-Mode NPC composition, level and real Echo priority
-        run: pnpm --dir ../../backend test:coop-composition
-      - name: Typecheck backend online Q-Mode runtime
-        run: pnpm --dir ../../backend typecheck:online
-      - name: Validate Q-Mode merchant, dungeon healing and tonic runtime contracts
-        run: pnpm --dir ../../backend test:qmode-merchant
-      - name: Verify Live room pacing and progressive battle simulation
-        run: pnpm --dir ../../backend test:live-pacing
-      - name: Verify dungeon tier difficulty and reward parity
-        run: pnpm --dir ../../backend test:dungeon-tier-balance
+      # Compile backend TS projects once, preserve original node assertions.
+      # A normal pnpm test:* still rebuilds independently for local use.
+      - name: Backend release, Q-Mode, dungeon, gems and market regressions
+        run: |
+          node ../../tools/run-backend-test-batch.mjs \
+            test:release-gate test:coop-composition test:qmode-merchant \
+            test:live-pacing test:dungeon-tier-balance test:market-readiness \
+            test:gems test:coop-rewards test:coop-live-social test:event-expedition-online
+      - name: Validate Q-Mode offline settlement and reconnect idempotency
+        run: node ../../backend/dist/online/backend/online/tests/qmode-runtime.js
       - name: Validate recent Supabase migration versions
         run: node ../../tools/validate-recent-migration-versions.mjs
       - name: Test chat retry receipts and read cursors in PostgreSQL
         run: node ../../tools/test-chat-reliability-db.mjs
       - name: Validate regional combat cadence migration
         run: node ../../tools/validate-regional-combat-cadence.mjs
-      - name: Typecheck core
-        run: pnpm typecheck:core
-      - name: Verify dormant market ownership inspection
-        run: pnpm --dir ../../backend test:market-readiness
+      # test:core compiles tsconfig.core.json with typechecking before running checks.
       - name: Typecheck mobile app
         run: pnpm typecheck
+      - name: Validate compact Inventory and Gear Option A interaction contracts
+        run: node tests/compact-inventory-pouch-option-a.cjs
       - name: Validate chat unread opening and keyboard anchor
         run: node tests/chat-keyboard-anchor.cjs
       - name: Verify native Google nonce generation, identity binding, and account safety
@@ -90,18 +92,7 @@ jobs:
         run: pnpm test:collectibles
       - name: Run companion validation
         run: pnpm test:companions
-      - name: Run gem progression and combat validation
-        working-directory: backend
-        run: pnpm test:gems
-      - name: Run co-op reward validation
-        working-directory: backend
-        run: pnpm test:coop-rewards
-      - name: Run Live Quick Match and LFG validation
-        run: pnpm --dir ../../backend test:coop-live-social
-      - name: Run unique dungeon class composition validation
-        working-directory: backend
-        run: pnpm test:coop-composition
-      - name: Run online gameplay and seasonal expedition transport validation
-        run: pnpm --dir ../../backend test:event-expedition-online && node ../../backend/dist/online/backend/online/tests/gameplay.js
+      - name: Run online gameplay regression on freshly compiled backend
+        run: node ../../backend/dist/online/backend/online/tests/gameplay.js
       - name: Profile synthetic multi-account contention and account isolation
         run: node ../../backend/dist/online/backend/online/tests/gameplay-load.js

@@ -10,6 +10,7 @@ import {initialPersistentRunState,resolveCoopNode} from '../../src/server/expedi
 import {OnlineLiveRuntime} from '../live-runtime';
 import type {QModeRun} from '../../src/server/coop/qmode';
 
+const specialCategory=(kind:string):string|undefined=>['shrine','forge','echo'].includes(kind)?'boon':['treasure','secret'].includes(kind)?'artifact':kind==='camp'?'campfire':undefined;
 const available=Object.values(EXPEDITIONS).filter(item=>item.coopImplemented);
 assert(available.length>=6,'There should be several playable dungeon catalogs');
 for(const dungeon of available){
@@ -27,15 +28,18 @@ for(const dungeon of available){
  for(let n=0;n<3;n++){
   const graph=generateCoopRouteGraph('variety-secret',dungeon.id,`variety-${dungeon.id}-${n}`,'content-v1','balance-v1');
   assert.equal(graph.preBossNodeCount,5);
+  assert(graph.nodes.every(node=>node.kind!=='event'),'Fresh dungeon routes must never offer resource-only Event Rooms');
   for(let depth=1;depth<=5;depth++){
    const options=graph.nodes.filter(node=>node.depth===depth);
    assert.equal(options.length,3,'Each tier has three real route choices');
    assert.equal(new Set(options.map(item=>`${item.contentId}:${item.modifierId}`)).size,3,'No duplicate route presentations');
    assert.equal(new Set(options.map(item=>item.contentId)).size,3,'Each choice must have distinct actual content');
+   const specialCategories=options.map(item=>specialCategory(item.kind)).filter(Boolean);
+   assert.equal(new Set(specialCategories).size,specialCategories.length,'Each of Boon, Artifact and Campfire may appear at most once per three room choices');
    if(depth===1)assert(options.every(item=>item.kind==='battle'),'First room remains a recognizable combat opener');
    if(depth===2){
     assert.equal(options.filter(item=>item.kind==='battle').length,2,'Second room retains two combat paths');
-    assert(['event','treasure','camp','shrine'].includes(String(options[2].kind)),'Third path is a real low-pressure utility encounter');
+    assert(['treasure','camp','shrine'].includes(String(options[2].kind)),'Third path is a real low-pressure utility encounter');
    }
    assert(options.filter(item=>item.kind!=='elite').every(item=>item.modifierId==='steady'),'Non-elite options cannot silently increase dungeon pressure');
   }

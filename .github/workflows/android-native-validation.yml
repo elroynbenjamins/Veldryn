@@ -1,13 +1,46 @@
 name: Android native validation
 
+# Cancel superseded PR checks; never cancel main, scheduled, or manual release checks.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 on:
+  # Native validation on main only for release/native-sensitive changes.
+  # A weekly full smoke catches wider integration drift; dispatch remains available.
   push:
     branches: [main]
     paths:
-      - 'apps/mobile/**'
+      - 'apps/mobile/app.json'
+      - 'apps/mobile/eas.json'
+      - 'apps/mobile/package.json'
+      - 'apps/mobile/pnpm-lock.yaml'
+      - 'apps/mobile/plugins/**'
+      - 'apps/mobile/modules/**'
+      - 'apps/mobile/src/online/google-signin.ts'
+      - 'apps/mobile/src/online/account.ts'
+      - 'apps/mobile/src/online/AuthSessionProvider.tsx'
+      - 'apps/mobile/src/online/supabase.ts'
+      - 'apps/mobile/src/core/auth-callback.ts'
+      - 'apps/mobile/src/components/OnlineAccountPanel.tsx'
+      - 'apps/mobile/src/online/play-games.ts'
+      - 'apps/mobile/src/core/equipment-bonus-rolls.ts'
+      - 'apps/mobile/src/core/weapon-bonus-rolls.ts'
+      - 'apps/mobile/src/core/crafted-gear-instances.ts'
+      - 'apps/mobile/src/components/SocialNameEditor.tsx'
+      - 'apps/mobile/src/components/ProfileCharacterSelector.tsx'
+      - 'apps/mobile/src/online/profile-extension-v43.ts'
+      - 'apps/mobile/src/online/social-identity-client-gate.ts'
+      - 'apps/mobile/src/core/release-flags.ts'
+      - 'apps/mobile/metro.config.js'
+      - 'apps/mobile/scripts/repair-frostfall-currency-images.cjs'
+      - 'apps/mobile/assets/events/frostfall/**'
+      - 'apps/mobile/assets/event_collectibles/frostfall_festival/abilities/**'
       - 'backend/src/**'
       - '.github/workflows/android-native-validation.yml'
       - '.github/scripts/android-release-smoke.sh'
+  schedule:
+    - cron: '29 3 * * 1'
   pull_request:
     paths:
       - 'apps/mobile/app.json'
@@ -17,6 +50,11 @@ on:
       - 'apps/mobile/plugins/**'
       - 'apps/mobile/modules/**'
       - 'apps/mobile/src/online/google-signin.ts'
+      - 'apps/mobile/src/online/account.ts'
+      - 'apps/mobile/src/online/AuthSessionProvider.tsx'
+      - 'apps/mobile/src/online/supabase.ts'
+      - 'apps/mobile/src/core/auth-callback.ts'
+      - 'apps/mobile/src/components/OnlineAccountPanel.tsx'
       # Release-candidate changes must also run the native AAB/emulator gates.
       - 'apps/mobile/src/core/equipment-bonus-rolls.ts'
       - 'apps/mobile/src/core/weapon-bonus-rolls.ts'
@@ -24,11 +62,13 @@ on:
       - 'apps/mobile/src/components/SocialNameEditor.tsx'
       - 'apps/mobile/src/components/ProfileCharacterSelector.tsx'
       - 'apps/mobile/src/online/profile-extension-v43.ts'
+      - 'apps/mobile/src/online/social-identity-client-gate.ts'
       - 'apps/mobile/src/core/release-flags.ts'
       - 'apps/mobile/src/online/play-games.ts'
       - 'apps/mobile/metro.config.js'
       - 'apps/mobile/scripts/repair-frostfall-currency-images.cjs'
       - 'apps/mobile/assets/events/frostfall/**'
+      - 'apps/mobile/assets/event_collectibles/frostfall_festival/abilities/**'
       - '.github/workflows/android-native-validation.yml'
       - '.github/scripts/android-release-smoke.sh'
   workflow_dispatch:
@@ -36,6 +76,7 @@ on:
 jobs:
   android-release-bundle:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     defaults:
       run:
         working-directory: apps/mobile
@@ -58,17 +99,6 @@ jobs:
           node-version: 22
           cache: pnpm
           cache-dependency-path: apps/mobile/pnpm-lock.yaml
-      - uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: '17'
-          cache: gradle
-      - name: Install Android API 36 toolchain
-        shell: bash
-        run: |
-          SDKMANAGER="${ANDROID_SDK_ROOT:-$ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager"
-          yes | "$SDKMANAGER" --licenses >/dev/null || true
-          "$SDKMANAGER" "platform-tools" "platforms;android-36" "build-tools;36.0.0"
       - name: Install mobile dependencies
         run: pnpm install --frozen-lockfile
       - name: Verify Android application version metadata
@@ -86,6 +116,18 @@ jobs:
         run: |
           node scripts/repair-frostfall-currency-images.cjs
           node scripts/repair-frostfall-currency-images.cjs --verify
+      # Cheap dependency, metadata and asset checks must pass before Java/SDK provisioning.
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+      - name: Install Android API 36 toolchain
+        shell: bash
+        run: |
+          SDKMANAGER="${ANDROID_SDK_ROOT:-$ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platform-tools" "platforms;android-36" "build-tools;36.0.0"
       - name: Generate Android native project
         run: npx expo prebuild --platform android --clean --no-install
       - name: Build release AAB

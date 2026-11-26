@@ -11,6 +11,7 @@ import {FixedCharacterPortrait} from './CharacterVisual';
 import {EquipmentArtwork} from './EquipmentArtwork';
 import {Panel} from './Panel';
 import {GameButton} from './GameButton';
+import type {CraftActionFeedback} from './useCraftActionFeedback';
 import {StatBar} from './StatBar';
 import {C,equipmentColors,radii,spacing,typography} from '../theme/theme';
 import {formatGameNumber} from '../core/number-format';
@@ -20,7 +21,7 @@ import {ResourceArtwork} from './ResourceArtwork';
 
 function PreviewChip({label,selected,onPress}:{label:string;selected:boolean;onPress:()=>void}){return <Pressable accessibilityRole="tab" accessibilityState={{selected}} onPress={onPress} style={({pressed})=>[{minHeight:36,paddingHorizontal:11,justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.bg},selected&&{borderColor:equipmentColors.selectedLine,backgroundColor:equipmentColors.selected},pressed&&{opacity:.76}]}><Text style={[{fontSize:11,color:C.muted,fontWeight:'800'},selected&&{color:'#d9f3ff'}]}>{selected?'✓ ':''}{label}</Text></Pressable>}
 
-export function NoviceWorkshop({state,onCraft,onCharacter}:{state:GameState;onCraft:(id:string)=>void;onCharacter:()=>void}){
+export function NoviceWorkshop({state,onCraft,craftFeedback,onCharacter}:{state:GameState;onCraft:(id:string)=>void|Promise<void>;craftFeedback?:CraftActionFeedback;onCharacter:()=>void}){
  const {gt,gl,language}=useGameplayText();
   const progress=noviceSetProgress(state),character=state.character!,body=character.bodyPresentation??'male';
   const [previewView,setPreviewView]=useState<'front'|'back'>('front');
@@ -34,8 +35,9 @@ export function NoviceWorkshop({state,onCraft,onCharacter}:{state:GameState;onCr
     <Panel><Text style={s.title}>{gt("Full-set materials")}</Text><Text style={s.sub}>{gt("Plan the entire set. Crafting spends from Inventory first, then Bank.")}</Text>{[...totals].map(([id,total])=><View key={id} style={s.material}><ResourceArtwork itemId={id} size={36} framed={false}/><Text style={s.pieceName}>{itemDef(id).name}</Text><Text style={s.materialCount}>{total} total</Text></View>)}</Panel>
     {recipes.map(recipe=>{
       const status=recipeAvailability(state,recipe.id),piece=progress.pieces.find(piece=>piece.id===recipe.output.itemId)!,item=itemDef(piece.id),stage=NOVICE_STAGE[piece.slot]??4;
+       const confirmed=craftFeedback?.recipeId===recipe.id&&craftFeedback.phase==='success',pending=craftFeedback?.phase==='pending';
       const stateLabel=piece.equipped?gt("Equipped").toLocaleUpperCase(language):piece.owned?gt("OWNED"):piece.crafted?gt("RECRAFT"):gt("LOCKED");
-      return <View key={recipe.id} style={[s.pieceCard,piece.equipped&&{borderColor:progress.set.theme.accent}]}><View style={[s.slotIcon,{borderColor:progress.set.theme.accent}]}><EquipmentArtwork item={item} compact/><Text style={s.slotLabel}>{piece.slot.toUpperCase()}</Text></View><View style={s.pieceCopy}><View style={s.between}><Text style={s.pieceName}>{item.name}</Text><Text style={[s.status,piece.equipped&&{color:progress.set.theme.accent}]}>{stateLabel}</Text></View><Text style={s.stats}>ATK {displayStat(item.attack??0)} · DEF {displayStat(item.defense??0)} · HP {displayStat(item.hp??0)}</Text><Text style={s.sub}>{gt("Stage")} {stage} · Character Lv {recipe.characterLevel} · {formatGameNumber(recipe.gold,state.settings.numberMode,state.settings.language)} gold · +{formatGameNumber(recipe.xp,state.settings.numberMode,state.settings.language)} {recipe.skillId==='tailoring'?gt("Tailoring"):gt("Smithing")} XP</Text><IngredientList inputs={status.inputs} numberMode={state.settings.numberMode}/>{!piece.owned&&<Text style={s.reason}>{status.reason}</Text>}<GameButton disabled={piece.owned||!status.ready} title={piece.owned?gt("Piece owned"):status.ready?`Craft ${item.name}`:gt("Requirements missing")} onPress={()=>onCraft(recipe.id)}/></View></View>;
+      return <View key={recipe.id} style={[s.pieceCard,piece.equipped&&{borderColor:progress.set.theme.accent}]}><View style={[s.slotIcon,{borderColor:progress.set.theme.accent}]}><EquipmentArtwork item={item} compact/><Text style={s.slotLabel}>{piece.slot.toUpperCase()}</Text></View><View style={s.pieceCopy}><View style={s.between}><Text style={s.pieceName}>{item.name}</Text><Text style={[s.status,piece.equipped&&{color:progress.set.theme.accent}]}>{stateLabel}</Text></View><Text style={s.stats}>ATK {displayStat(item.attack??0)} · DEF {displayStat(item.defense??0)} · HP {displayStat(item.hp??0)}</Text><Text style={s.sub}>{gt("Stage")} {stage} · Character Lv {recipe.characterLevel} · {formatGameNumber(recipe.gold,state.settings.numberMode,state.settings.language)} gold · +{formatGameNumber(recipe.xp,state.settings.numberMode,state.settings.language)} {recipe.skillId==='tailoring'?gt("Tailoring"):gt("Smithing")} XP</Text><IngredientList inputs={status.inputs} numberMode={state.settings.numberMode}/>{!piece.owned&&<Text style={s.reason}>{status.reason}</Text>}<GameButton disabled={piece.owned||!status.ready||pending} colors={confirmed?{backgroundColor:C.good,borderColor:C.good,textColor:C.bg}:undefined} title={confirmed?"✓ "+gt("Craft complete"):piece.owned?gt("Piece owned"):status.ready?`Craft ${item.name}`:gt("Requirements missing")} onPress={()=>{void onCraft(recipe.id)}}/></View></View>;
     })}
   </View>;
 }

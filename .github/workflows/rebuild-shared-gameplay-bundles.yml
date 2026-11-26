@@ -15,6 +15,8 @@ on:
       - 'apps/mobile/src/content/equipment-recipes-v33.ts'
       - 'apps/mobile/tests/gathering-tools.ts'
       - 'apps/mobile/tests/monster-drop-balance.ts'
+      - 'apps/mobile/tests/material-retirement-offline.ts'
+      - 'apps/mobile/tests/material-purpose-audit.ts'
       - 'apps/mobile/src/core/live-events.ts'
       - 'apps/mobile/src/core/permanent-boosts.ts'
       - 'apps/mobile/src/core/equipment-salvage.ts'
@@ -24,10 +26,14 @@ on:
       - 'apps/mobile/tests/faith.ts'
       - 'apps/mobile/tests/exploration-balance.ts'
       - 'apps/mobile/src/core/gem-progression-v1.ts'
+      - 'backend/src/server/equipment/gems/gem-acquisition-v1.ts'
+      - 'backend/src/server/equipment/equipment-recipe-materials-v33.ts'
+      - 'backend/src/server/equipment/equipment-v33-recipe-materials.test.ts'
       - 'apps/mobile/tests/gem-progression-v1.ts'
       - 'backend/online/guild-shop-read.ts'
       - 'backend/online/tests/guild-shop-read.ts'
       - 'backend/src/server/expeditions/content/coop-route-content.ts'
+      - 'backend/src/server/expeditions/route-generation.ts'
       # Keep the deployable co-op Edge bundle synchronized whenever its
       # regional gates, roster snapshots, matchmaking, or combat logic changes.
       - 'backend/src/server/coop/dungeon-entry-policy.ts'
@@ -86,7 +92,11 @@ jobs:
           pnpm --dir backend install --frozen-lockfile
           pnpm --dir apps/mobile install --frozen-lockfile
       - name: Verify the two-path equipment and Exploration balance regressions
-        run: node tools/run-mobile-tests.mjs equipment-two-path-balance exploration-balance equipment-salvage-recovery gathering-tools monster-drop-balance
+        run: node tools/run-mobile-tests.mjs equipment-two-path-balance exploration-balance equipment-salvage-recovery gathering-tools monster-drop-balance material-retirement-offline material-purpose-audit
+      - name: Verify current V33 recipes cannot use retired Echo Bat Wing aliases
+        run: |
+          pnpm --dir backend exec esbuild src/server/equipment/equipment-v33-recipe-materials.test.ts --bundle --platform=node --format=esm --outfile=/tmp/equipment-v33-retirement-test.mjs
+          node /tmp/equipment-v33-retirement-test.mjs
       - name: Rebuild canonical generated bundles and commit them on top of current main
         shell: bash
         run: |

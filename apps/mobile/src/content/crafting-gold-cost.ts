@@ -13,3 +13,12 @@ export function roundEquipmentCraftingGoldCost(gold:number):number{
  if(!Number.isSafeInteger(gold)||gold<0)throw new Error('invalid_crafting_gold');
  return gold===0?0:Math.max(100,Math.round(gold/100)*100);
 }
+
+/** Reduce the finalized, rounded Gold price by 300 per newly crafted equipment
+ * piece. Preserve the existing 100-Gold minimum for paid equipment crafts.
+ * Previously queued jobs retain their original reserved Gold snapshots. */
+export const EQUIPMENT_CRAFT_GOLD_REDUCTION=300;
+export function reducedEquipmentCraftingGoldCost(roundedGold:number):number{
+ if(!Number.isSafeInteger(roundedGold)||roundedGold<0)throw new Error('invalid_crafting_gold');
+ return roundedGold===0?0:Math.max(100,roundedGold-EQUIPMENT_CRAFT_GOLD_REDUCTION);
+}

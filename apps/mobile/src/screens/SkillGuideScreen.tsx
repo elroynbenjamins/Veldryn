@@ -29,7 +29,7 @@ const MILESTONE_LABEL:Record<SkillMilestoneKind,SkillGuideUiKey>={
  gathering_node:'Gathering spot',tool:'Tool',recipe:'Recipe',method:'Method',
  service:'Service',faith_practice:'Practice',faith_blessing:'Blessing',cross_skill:'Cross-skill',
 };
-const isProfession=(id:SkillGuideId):id is SkillId=>id!=='combat'&&id!=='companion-mastery'&&id!=='companion';
+const isProfession=(id:SkillGuideId):id is Extract<SkillGuideId,SkillId>=>id!=='combat'&&id!=='companion-mastery'&&id!=='companion';
 const clamp=(ratio:number)=>Math.max(0,Math.min(1,Number.isFinite(ratio)?ratio:0));
 
 /** Compact account reference: live progression and unlocks, no gameplay state mutations. */
@@ -67,6 +67,8 @@ export function SkillGuideScreen({state,onClose,onOpenSkill,onOpenCombat,onOpenM
  };
  const needle=query.trim().toLocaleLowerCase(language);
  const filtered=useMemo(()=>SKILL_GUIDE_IDS.filter(id=>{
+  // Training Ground is a Sanctuary facility, not a skill; keep it out of every guide filter and search.
+  if(id==='companion')return false;
   if(filter!=='All'&&CATEGORIES[id]!==filter)return false;
   if(!needle)return true;
   const row=skillGuideCopy(language,id);

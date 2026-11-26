@@ -8,6 +8,20 @@ module.exports=function withVeldrynGameCategory(config){
   const application=mod.modResults.manifest.application?.[0];
   if(!application)throw new Error('VELDRYN: Android application manifest entry is missing.');
   application.$={...(application.$??{}),'android:appCategory':'game'};
+  // Portrait remains the preferred layout, but is not a Play hardware requirement.
+  // This prevents a screenOrientation="portrait" activity from filtering out
+  // devices such as fixed-landscape desktops during Play Console validation.
+  const features=mod.modResults.manifest['uses-feature']??[];
+  const portraitName='android.hardware.screen.portrait';
+  const existing=features.find(feature=>feature.$?.['android:name']===portraitName);
+  if(existing){
+    existing.$={...existing.$,'android:required':'false'};
+  }else{
+    mod.modResults.manifest['uses-feature']=[
+      ...features,
+      {$:{'android:name':portraitName,'android:required':'false'}},
+    ];
+  }
   return mod;
  });
 };

@@ -22,6 +22,8 @@ for(const [encounterId,expected] of asterfallRegular){
  const enemies=buildExpeditionEncounter({encounterId}),preview=expeditionEncounterPreview(encounterId)!;
  assert.equal(enemies.length,2,`${encounterId} must remain a two-enemy encounter`);
  assert.deepEqual(preview.archetypes.map(item=>item.id),expected,`${encounterId} must publish actual enemy identities`);
+ assert.deepEqual(preview.enemies,enemies.slice(0,4).map(enemy=>({name:enemy.name,boss:enemy.boss===true})),`${encounterId} preview must retain the unique enemy lineup without combat stats`);
+ assert.equal(JSON.stringify(preview).includes('maxHp'),false,'Preview must never expose HP or rolled combat data');
  for(const enemy of enemies){
   const archetype=(enemy.tags??[]).find(tag=>tag.startsWith('pve:archetype:'))?.slice('pve:archetype:'.length);
   const abilities=enemy.abilities;

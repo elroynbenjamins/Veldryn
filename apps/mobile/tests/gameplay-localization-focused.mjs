@@ -38,7 +38,7 @@ assert.equal(localizeGameplay('de','A heat-stable fixative for Sunscar equipment
 const workshopSource=fs.readFileSync(path.join(root,'src/components/ConsumableWorkshop.tsx'),'utf8');
 assert.ok(workshopSource.includes('Math.round(effect.maxHpFraction*100)')&&workshopSource.includes('Math.round(effect.damageReductionFraction*100)')&&workshopSource.includes('Math.round(effect.healingStrengthFraction*100)'),'Alchemy benefit labels must use the current potion magnitudes');
 assert.ok(workshopSource.includes("gt('Healing potions work in boss fights and between dungeon rooms.")&&!workshopSource.includes("gt('Healing potions are for boss fights. Select one"),'Alchemy healing help must describe both boss and dungeon recovery');
-assert.ok(workshopSource.includes("gt('Lv {level}'")&&workshopSource.includes("gt('Tap to start')"),'Alchemy level badges and actionable hints must be localized');
+assert.ok(workshopSource.includes("gt('Lv {level}'")&&workshopSource.includes("gt('Choose quantity')"),'Alchemy level badges and actionable hints must be localized');
 
 assert.equal(gameplayTranslate('ru','BOSS HEALING POTIONS'),'ЛЕЧЕБНЫЕ ЗЕЛЬЯ ДЛЯ БОССОВ');
 assert.equal(gameplayTranslate('tr','Select for bosses'),'Bosslar için seç');

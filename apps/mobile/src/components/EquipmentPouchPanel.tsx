@@ -1,20 +1,21 @@
 import {useMemo,useRef,useState} from 'react';
-import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {Pressable,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import type {GameState,ItemStack} from '../core/types';
 import type {GameCommand} from '../core/game-commands';
 import {equipmentPouch,equipmentPouchUpgradePreview} from '../core/equipment-pouch';
-import {equipmentSalvageReward} from '../core/equipment-salvage';
 import {equipmentPouchSaleCandidates,equipmentPouchQuickSellIds,equipmentPouchSalvageCandidates,equipmentPouchQuickSalvageIds,type EquipmentPouchSaleCandidate} from '../core/equipment-pouch-selling';
 import {craftedGearDisplayQuality,craftedGearInstances} from '../core/crafted-gear-instances';
 import {itemDef} from '../content/items';
 import {localizedItemName} from '../i18n/starter-item-names';
 import {equipmentPouchText} from '../i18n/equipment-pouch-ui';
+import type {WorkingTowardDestination} from '../core/working-toward';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {itemRarity,rarityMeta} from '../core/item-rarity';
 import {ItemArtwork} from './ItemArtwork';
 import {DisposalPreview} from './DisposalPreview';
 import {GameButton} from './GameButton';
 import {EquipmentPreview} from './EquipmentPreview';
+import {ItemQuickInspect} from './ItemQuickInspect';
 import {EquipmentDisposalStatus} from './EquipmentDisposalStatus';
 import {GameModalHeader,GameModalSurface} from './GameModalSurface';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -24,16 +25,21 @@ const PAGE_SIZE=30;
 type PendingPouchDisposal={ids:string[];protectedCount:number};
 /** Each character has a separate pouch. Forge equipment keeps its exact receipt,
  * rarity and quality, and can be equipped without passing through Inventory. */
-export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState;busy?:boolean;onAction?:(command:GameCommand)=>void|Promise<unknown>}){
+export function EquipmentPouchPanel({state,busy=false,onAction,onNavigate}:{state:GameState;busy?:boolean;onAction?:(command:GameCommand)=>void|Promise<unknown>;onNavigate?:(destination:WorkingTowardDestination)=>void|Promise<unknown>}){
  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
+ const {width,fontScale}=useWindowDimensions();
+ // Narrow-phone Option A only: preserve the existing S24+ action layout.
+ const compactActions=width<380||fontScale>=1.25;
  const language=useGameLanguage();
  const p=(text:string,params?:Record<string,string|number>)=>equipmentPouchText(language,text,params);
  const pouch=equipmentPouch(state),upgrade=equipmentPouchUpgradePreview(state);
  const [page,setPage]=useState(0),[selectedIndex,setSelectedIndex]=useState<number|null>(null),[gridWidth,setGridWidth]=useState(300);
+ const [selectedReceipt,setSelectedReceipt]=useState<{itemId:string;instanceId:string|null}|null>(null);
  const [previewStack,setPreviewStack]=useState<ItemStack|null>(null);
  const [transferError,setTransferError]=useState('');
  const [selectMode,setSelectMode]=useState(false),[selectedIds,setSelectedIds]=useState<string[]>([]);
  const [pendingSale,setPendingSale]=useState<PendingPouchDisposal|null>(null),[pendingSalvage,setPendingSalvage]=useState<PendingPouchDisposal|null>(null),saleInFlight=useRef(false);
+ const [disposalBusy,setDisposalBusy]=useState(false),[disposalError,setDisposalError]=useState('');
  const columns=gridWidth>=600?8:gridWidth>=440?6:gridWidth>=345?5:4;
  const slotWidth=Math.max(54,Math.floor((gridWidth-(columns-1)*5)/columns));
  const pages=Math.max(1,Math.ceil(Math.max(pouch.capacity,pouch.stacks.length)/PAGE_SIZE)),shownPage=Math.min(page,pages-1),start=shownPage*PAGE_SIZE;
@@ -48,6 +54,7 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
  const selectedSalvages=useMemo(()=>selectedIds.length?equipmentPouchSalvageCandidates(state,selectedIds):[],[state,selectedIds]);
  const eligibleSalvages=selectedSalvages.filter(row=>row.eligible);
  const salvageCount=eligibleSalvages.length;
+ const unavailableSelectedCount=selectedIds.filter(id=>!eligibleSales.some(row=>row.id===id)&&!eligibleSalvages.some(row=>row.id===id)).length;
  const unlockableSales=selectedSales.filter(row=>{const stack=pouch.stacks[row.index];return !!stack&&(!!(stack.instanceId&&copyById.get(stack.instanceId)?.locked)||!!state.settings.lockedItemIds?.includes(stack.itemId));});
  const pendingSet=new Set(pendingSale?.ids??[]),pendingRows=saleCandidates.filter(row=>pendingSet.has(row.id));
  const pendingSalvageRows=useMemo(()=>pendingSalvage?equipmentPouchSalvageCandidates(state,pendingSalvage.ids):[],[state,pendingSalvage]);
@@ -58,20 +65,24 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
  const salvageSelectionValid=salvageCount>0;
  const confirmationValid=pendingRows.length>0&&pendingRows.length===(pendingSale?.ids.length??0)&&pendingRows.every(row=>row.eligible);
  const salvageConfirmationValid=pendingSalvageRows.length>0&&pendingSalvageRows.length===(pendingSalvage?.ids.length??0)&&pendingSalvageRows.every(row=>row.eligible);
- const salvageCandidate=selectedIndex===null?undefined:equipmentPouchSalvageCandidates(state,[salvageByIndex.get(selectedIndex)?.id??''])[0];
+ // A pouch reorder must never silently redirect an open inspector to another receipt.
+ const selectedAtIndex=selectedIndex===null?undefined:pouch.stacks[selectedIndex];
+ const selected=selectedAtIndex&&selectedReceipt&&selectedReceipt.itemId===selectedAtIndex.itemId&&selectedReceipt.instanceId===(selectedAtIndex.instanceId??null)?selectedAtIndex:undefined;
+ const salvageCandidate=selectedIndex===null||!selected?undefined:equipmentPouchSalvageCandidates(state,[salvageByIndex.get(selectedIndex)?.id??''])[0];
  const salvageRewards=(rows:typeof salvageCandidates):ItemStack[]=>{
   const amounts=new Map<string,number>();
   for(const row of rows)for(const reward of row.rewards??(row.reward?[row.reward]:[]))amounts.set(reward.itemId,(amounts.get(reward.itemId)??0)+reward.quantity);
   return [...amounts].map(([itemId,quantity])=>({itemId,quantity}));
  };
- const salvageMaterials=(rows:typeof salvageCandidates)=>salvageRewards(rows)
-  .map(row=>`${row.quantity.toLocaleString(language)}× ${localizedItemName(language,row.itemId)}`).join(' · ');
  const disposalItems=(rows:readonly {itemId:string;index:number}[])=>rows.map(row=>{
   const stack=pouch.stacks[row.index],copy=stack?.instanceId?copyById.get(stack.instanceId):undefined;
   return {itemId:row.itemId,quantity:1,rarity:copy?.rarity??itemRarity(itemDef(row.itemId)),quality:copy?craftedGearDisplayQuality(copy):undefined};
  });
- const saleCandidate=selectedIndex===null?undefined:byIndex.get(selectedIndex);
- const previewRecord=previewStack?.instanceId?copyById.get(previewStack.instanceId):undefined;
+ const needsHighRarityReview=(rows:readonly {itemId:string;index:number}[])=>rows.some(row=>{
+  const stack=pouch.stacks[row.index],copy=stack?.instanceId?copyById.get(stack.instanceId):undefined;
+  return ['epic','legendary','mythic'].includes(copy?.rarity??itemRarity(itemDef(row.itemId)));
+ });
+ const saleCandidate=selectedIndex===null||!selected?undefined:byIndex.get(selectedIndex);
  const previewSale=previewStack?.instanceId?saleCandidates.find(row=>pouch.stacks[row.index]?.instanceId===previewStack.instanceId):undefined;
  const previewSalvage=previewStack?.instanceId?salvageCandidates.find(row=>pouch.stacks[row.index]?.instanceId===previewStack.instanceId):undefined;
  const candidateReason=(row:{index:number;reason?:string})=>{
@@ -86,10 +97,10 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
   setSelectedIds(ids);setSelectMode(true);setSelectedIndex(null);
  };
  const selectSafeSalvage=()=>{
-  setSelectedIds(equipmentPouchQuickSalvageIds(state,salvageCandidates));setSelectMode(true);setSelectedIndex(null);
+  setSelectedIds(equipmentPouchQuickSalvageIds(state,salvageCandidates).slice(0,100));setSelectMode(true);setSelectedIndex(null);
  };
- const startSale=(ids:string[],protectedCount=0)=>{if(!ids.length||busy||!onAction)return;setSelectedIndex(null);setPendingSale({ids,protectedCount})};
- const startSalvage=(ids:string[],protectedCount=0)=>{if(!ids.length||busy||!onAction)return;setSelectedIndex(null);setPendingSalvage({ids,protectedCount})};
+ const startSale=(ids:string[],protectedCount=0)=>{if(!ids.length||busy||disposalBusy||!onAction)return;setDisposalError('');setSelectedIndex(null);setPendingSale({ids,protectedCount})};
+ const startSalvage=(ids:string[],protectedCount=0)=>{if(!ids.length||busy||disposalBusy||!onAction)return;setDisposalError('');setSelectedIndex(null);setPendingSalvage({ids,protectedCount})};
  const unlockSelected=async()=>{
   if(busy||!onAction||!unlockableSales.length)return;
   const updatedTypes=new Set<string>();
@@ -110,32 +121,45 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
  const confirmSale=async()=>{
   const ids=pendingSale?.ids;
   if(!ids||busy||!confirmationValid||saleInFlight.current||!onAction)return;
-  saleInFlight.current=true;
+  saleInFlight.current=true;setDisposalBusy(true);setDisposalError('');
   try{
    const result=await onAction({type:'equipment_pouch_sell',args:{ids}});
-   if(result!==false){setSelectedIds([]);setSelectMode(false);setPendingSale(null);}
-  }finally{saleInFlight.current=false;}
+   if(result===false){setDisposalError(p('The action was not confirmed. Try again.'));return;}
+   setSelectedIds([]);setSelectMode(false);setPendingSale(null);
+  }catch{setDisposalError(p('The action was not confirmed. Try again.'));}
+  finally{saleInFlight.current=false;setDisposalBusy(false);}
  };
  const confirmSalvage=async()=>{
   const ids=pendingSalvage?.ids;
   if(!ids||busy||!salvageConfirmationValid||saleInFlight.current||!onAction)return;
-  saleInFlight.current=true;
+  saleInFlight.current=true;setDisposalBusy(true);setDisposalError('');
   try{
    const result=await onAction({type:'equipment_pouch_salvage',args:{ids}});
-   if(result!==false){setSelectedIds([]);setSelectMode(false);setPendingSalvage(null);}
-  }finally{saleInFlight.current=false;}
+   if(result===false){setDisposalError(p('The action was not confirmed. Try again.'));return;}
+   setSelectedIds([]);setSelectMode(false);setPendingSalvage(null);
+  }catch{setDisposalError(p('The action was not confirmed. Try again.'));}
+  finally{saleInFlight.current=false;setDisposalBusy(false);}
  };
- const selected=selectedIndex===null?undefined:pouch.stacks[selectedIndex];
- const record=selected?.instanceId?copyById.get(selected.instanceId):undefined;
- const item=selected?itemDef(selected.itemId):undefined;
- const salvageRecipe=item?equipmentSalvageReward(item.id):null;
- const rarity=selected?rarityMeta(record?.rarity??itemRarity(item!)):undefined;
+ const isFavorite=(stack:ItemStack|null|undefined)=>!!stack&&!!state.settings.favoriteItemIds?.includes(stack.itemId);
+ const isLocked=(stack:ItemStack|null|undefined)=>!!stack&&(!!state.settings.lockedItemIds?.includes(stack.itemId)||!!(stack.instanceId&&copyById.get(stack.instanceId)?.locked));
+ const toggleFavorite=(stack:ItemStack|null|undefined)=>{
+  if(!stack||busy||!onAction)return;
+  return onAction({type:'inventory_preference',args:{id:stack.itemId,kind:'favorite',enabled:!isFavorite(stack)}});
+ };
+ const toggleLock=(stack:ItemStack|null|undefined)=>{
+  if(!stack||busy||!onAction)return;
+  const typeLocked=!!state.settings.lockedItemIds?.includes(stack.itemId);
+  const exact=stack.instanceId?copyById.get(stack.instanceId):undefined;
+  // Match Inventory: clear a type-wide lock before changing a specific receipt.
+  return onAction(typeLocked?{type:'inventory_preference',args:{id:stack.itemId,kind:'lock',enabled:false}}
+   :exact?{type:'gear_lock',args:{instanceId:exact.id,locked:!exact.locked}}
+   :{type:'inventory_preference',args:{id:stack.itemId,kind:'lock',enabled:true}});
+ };
  const canUpgrade=!!upgrade&&(state.character?.level??0)>=upgrade.level&&(state.character?.gold??0)>=upgrade.cost&&!busy;
- const send=(command:GameCommand)=>{setSelectedIndex(null);return onAction?.(command);};
  const choose=(stack:ItemStack|undefined,index:number)=>{
   if(!stack)return;
   if(selectMode){const candidate=byIndex.get(start+index);if(candidate)toggleSelected(candidate);return;}
-  setTransferError('');setSelectedIndex(start+index);
+  setTransferError('');setSelectedIndex(start+index);setSelectedReceipt({itemId:stack.itemId,instanceId:stack.instanceId??null});
  };
  const move=async(to:'inventory'|'bank')=>{
   if(!selected||!onAction||busy)return;
@@ -152,20 +176,20 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
    <View style={s.flex}><Text accessibilityRole="header" style={s.title}>{p('Equipment Pouch')}</Text>
     <Text style={s.meta}>{p('{used}/{capacity} slots · {character} only',{used:pouch.stacks.length,capacity:pouch.capacity,character:state.character?.name??p('Character')})}</Text></View>
   </View>
-  <Text style={s.hint}>{p('Crafted gear arrives here first. To share it with another character, select a piece and tap To Bank.')}</Text>
-  <View style={s.sellToolbar}>
+  <Text style={s.hint}>{p(compactActions?'Tap a piece to inspect, equip or move it to Bank.':'Crafted gear arrives here first. To share it with another character, select a piece and tap To Bank.')}</Text>
+  <View style={[s.sellToolbar,compactActions&&s.sellToolbarCompact]}>
    {selectMode?<>
-    <GameButton compact tone="secondary" title={p('Select safe')} disabled={busy||!onAction} onPress={selectSafe}/>
+    <GameButton compact tone="secondary" title={p(compactActions?'Select safe to sell':'Select safe')} disabled={busy||!onAction} onPress={selectSafe}/>
     <GameButton compact tone="secondary" title={p('Select safe to salvage')} disabled={busy||!onAction} onPress={selectSafeSalvage}/>
     {selectedIds.length>0?<GameButton compact tone="secondary" title={p('Clear')} disabled={busy} onPress={()=>setSelectedIds([])}/>:null}
     <GameButton compact tone="secondary" title={p('Done')} disabled={busy} onPress={()=>{setSelectMode(false);setSelectedIds([])}}/>
    </>:<>
     <GameButton compact tone="secondary" title={p('Select gear')} disabled={busy||!onAction||!pouch.stacks.length} onPress={()=>{setSelectedIndex(null);setSelectMode(true);setSelectedIds([])}}/>
-    <GameButton compact title={p('Quick sell')} disabled={busy||!onAction||!equipmentPouchQuickSellIds(saleCandidates).length} onPress={()=>startSale(equipmentPouchQuickSellIds(saleCandidates),saleCandidates.filter(row=>!row.eligible).length)}/>
-    <GameButton compact tone="secondary" title={p('Quick salvage')} disabled={busy||!onAction||!equipmentPouchQuickSalvageIds(state,salvageCandidates).length} onPress={()=>startSalvage(equipmentPouchQuickSalvageIds(state,salvageCandidates),salvageCandidates.filter(row=>!row.eligible).length)}/>
+    {!compactActions?<><GameButton compact title={p('Quick sell')} disabled={busy||!onAction||!equipmentPouchQuickSellIds(saleCandidates).length} onPress={()=>startSale(equipmentPouchQuickSellIds(saleCandidates).slice(0,100),saleCandidates.filter(row=>!row.eligible).length)}/>
+    <GameButton compact tone="secondary" title={p('Quick salvage')} disabled={busy||!onAction||!equipmentPouchQuickSalvageIds(state,salvageCandidates).length} onPress={()=>startSalvage(equipmentPouchQuickSalvageIds(state,salvageCandidates).slice(0,100),salvageCandidates.filter(row=>!row.eligible).length)}/></>:null}
    </>}
   </View>
-  {selectMode?<View style={s.sellSummary}>
+  {selectMode?<View style={[s.sellSummary,compactActions&&s.sellSummaryCompact]}>
    <View style={s.selectionStats}>
     {([{label:'Selected',value:selectedIds.length},{label:'Sellable',value:saleCount},{label:'Salvageable',value:salvageCount}] as const).map(stat=><View key={stat.label} style={s.selectionStat}>
       <Text style={s.selectionStatNumber}>{stat.value.toLocaleString(language)}</Text>
@@ -173,7 +197,8 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
     </View>)}
    </View>
    <Text style={s.meta}>{p('Estimated sale · {gold} Gold',{gold:saleGold.toLocaleString(language)})}</Text>
-   <View style={s.sellToolbar}>
+   {compactActions&&unavailableSelectedCount>0?<Text accessibilityLiveRegion="polite" style={s.saleWarning}>{p('Protected')+' · '+unavailableSelectedCount.toLocaleString(language)}</Text>:null}
+   <View style={[s.sellToolbar,compactActions&&s.sellToolbarCompact]}>
     <GameButton compact title={saleCount?p('Sell eligible · {gold}g',{gold:saleGold.toLocaleString(language)}):p('Nothing sellable')} tone="danger"
      disabled={!onAction||busy||!selectionValid} onPress={()=>startSale(eligibleSales.map(row=>row.id),selectedSales.length-saleCount)}/>
     <GameButton compact title={salvageCount?p('Salvage eligible · {count}',{count:salvageCount}):p('Nothing salvageable')} tone="danger"
@@ -182,7 +207,7 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
    </View>
    {excludedSelected>0?<Text style={s.meta}>{p('Protected copies are excluded from the sale.')+' '+selectedSales.filter(row=>!row.eligible).slice(0,2).map(row=>localizedItemName(language,row.itemId)+': '+p(candidateReason(row))).join(' · ')}</Text>:null}
    {selectedSalvages.length>salvageCount?<Text style={s.meta}>{p('Salvage protection:')+' '+selectedSalvages.filter(row=>!row.eligible).slice(0,2).map(row=>localizedItemName(language,row.itemId)+': '+p(candidateReason(row))).join(' · ')}</Text>:null}
-  </View>:<Text style={s.hint}>{p('Quick-selects only eligible Common, Uncommon and Rare gear. Epic, Legendary and Mythic need manual selection.')}</Text>}
+  </View>:<Text style={s.hint}>{p(compactActions?'Safe selection excludes Epic, Legendary and Mythic.':'Quick-selects only eligible Common, Uncommon and Rare gear. Epic, Legendary and Mythic need manual selection.')}</Text>}
   <View style={s.grid} onLayout={event=>{const width=Math.floor(event.nativeEvent.layout.width);setGridWidth(previous=>previous===width?previous:width)}}>
    {entries.map((stack,index)=>{
     const copy=stack?.instanceId?copyById.get(stack.instanceId):undefined;
@@ -200,29 +225,43 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
   {pages>1?<View style={s.paging}><GameButton compact title={p('Previous')} tone="secondary" disabled={shownPage===0} onPress={()=>{setSelectedIndex(null);setPage(value=>Math.max(0,value-1))}}/><Text style={s.meta}>{shownPage+1}/{pages}</Text><GameButton compact title={p('Next')} tone="secondary" disabled={shownPage>=pages-1} onPress={()=>{setSelectedIndex(null);setPage(value=>Math.min(pages-1,value+1))}}/></View>:null}
   <View style={s.upgrade}><View style={s.flex}><Text style={s.itemName}>{upgrade?p('Next: {count} slots',{count:upgrade.capacity}):p('Maximum capacity reached')}</Text>{upgrade?<Text style={s.meta}>{p('Level {level} · {gold} Gold',{level:upgrade.level,gold:upgrade.cost.toLocaleString(language)})}</Text>:null}</View>
     <GameButton compact title={p(upgrade?'Upgrade':'Maxed')} tone="secondary" disabled={!canUpgrade||!onAction} onPress={()=>onAction?.({type:'equipment_pouch_upgrade'})}/></View>
-  <GameModalSurface visible={pendingSale!==null} reduceMotion={state.settings.reduceMotion} onClose={()=>{if(!saleInFlight.current&&!busy)setPendingSale(null)}} surfaceStyle={s.modal}>
-   <GameModalHeader eyebrow={p('EQUIPMENT POUCH · SALE')} title={p('Sell selected equipment?')} onClose={()=>{if(!saleInFlight.current&&!busy)setPendingSale(null)}}/>
+  <GameModalSurface visible={pendingSale!==null} reduceMotion={state.settings.reduceMotion} dismissOnBackdrop={!busy&&!disposalBusy} onClose={()=>{if(!saleInFlight.current&&!disposalBusy&&!busy)setPendingSale(null)}} surfaceStyle={s.modal}>
+   <GameModalHeader eyebrow={p('EQUIPMENT POUCH · SALE')} title={p('Sell selected equipment?')} closeDisabled={busy||disposalBusy} onClose={()=>{if(!saleInFlight.current&&!disposalBusy&&!busy)setPendingSale(null)}}/>
    <View style={s.details}>
     <DisposalPreview mode="sell" items={disposalItems(pendingRows)} gold={pendingGold} summary={pendingSale?{selected:pendingSale.ids.length+pendingSale.protectedCount,eligible:pendingSale.ids.length,protected:pendingSale.protectedCount}:undefined} note={p('Locked, favorited, loadout and Working Toward gear stays protected. Selling destroys installed gems and upgrades.')}/>
+    {needsHighRarityReview(pendingRows)?<Text style={s.saleWarning}>{p('High-rarity gear selected. Check each copy before confirming.')}</Text>:null}
+    {disposalError?<Text accessibilityRole="alert" style={s.saleWarning}>{disposalError}</Text>:null}
     {!confirmationValid?<Text style={s.saleWarning}>{p('Selection has changed. Close and review the equipment.')}</Text>:null}
     <View style={s.actions}>
-     <GameButton compact tone="secondary" title={p('Cancel')} disabled={busy} onPress={()=>setPendingSale(null)}/>
-     <GameButton compact tone="danger" title={p('Confirm sale')} disabled={!onAction||busy||!confirmationValid} onPress={confirmSale}/>
+     <GameButton compact tone="secondary" title={p('Cancel')} disabled={busy||disposalBusy} onPress={()=>setPendingSale(null)}/>
+     <GameButton compact tone="danger" title={p('Confirm sale')} loading={disposalBusy} disabled={!onAction||busy||disposalBusy||!confirmationValid} onPress={confirmSale}/>
     </View>
    </View>
   </GameModalSurface>
-  <GameModalSurface visible={pendingSalvage!==null} reduceMotion={state.settings.reduceMotion} onClose={()=>{if(!saleInFlight.current&&!busy)setPendingSalvage(null)}} surfaceStyle={s.modal}>
-   <GameModalHeader eyebrow={p('EQUIPMENT POUCH · SALVAGE')} title={p('Salvage selected equipment?')} onClose={()=>{if(!saleInFlight.current&&!busy)setPendingSalvage(null)}}/>
+  <GameModalSurface visible={pendingSalvage!==null} reduceMotion={state.settings.reduceMotion} dismissOnBackdrop={!busy&&!disposalBusy} onClose={()=>{if(!saleInFlight.current&&!disposalBusy&&!busy)setPendingSalvage(null)}} surfaceStyle={s.modal}>
+   <GameModalHeader eyebrow={p('EQUIPMENT POUCH · SALVAGE')} title={p('Salvage selected equipment?')} closeDisabled={busy||disposalBusy} onClose={()=>{if(!saleInFlight.current&&!disposalBusy&&!busy)setPendingSalvage(null)}}/>
    <View style={s.details}>
     <DisposalPreview mode="salvage" items={disposalItems(pendingSalvageRows)} rewards={salvageRewards(pendingSalvageRows)} summary={pendingSalvage?{selected:pendingSalvage.ids.length+pendingSalvage.protectedCount,eligible:pendingSalvage.ids.length,protected:pendingSalvage.protectedCount}:undefined} note={p('Materials go to Inventory. Installed gems and upgrades are destroyed, not recovered. Locked, favorited and loadout gear stays protected.')}/>
+    {needsHighRarityReview(pendingSalvageRows)?<Text style={s.saleWarning}>{p('High-rarity gear selected. Check each copy before confirming.')}</Text>:null}
+    {disposalError?<Text accessibilityRole="alert" style={s.saleWarning}>{disposalError}</Text>:null}
     {!salvageConfirmationValid?<Text style={s.saleWarning}>{p('Selection has changed. Close and review the equipment.')}</Text>:null}
     <View style={s.actions}>
-     <GameButton compact tone="secondary" title={p('Cancel')} disabled={busy} onPress={()=>setPendingSalvage(null)}/>
-     <GameButton compact tone="danger" title={p('Confirm salvage')} disabled={!onAction||busy||!salvageConfirmationValid} onPress={confirmSalvage}/>
+     <GameButton compact tone="secondary" title={p('Cancel')} disabled={busy||disposalBusy} onPress={()=>setPendingSalvage(null)}/>
+     <GameButton compact tone="danger" title={p('Confirm salvage')} loading={disposalBusy} disabled={!onAction||busy||disposalBusy||!salvageConfirmationValid} onPress={confirmSalvage}/>
     </View>
    </View>
   </GameModalSurface>
   <EquipmentPreview state={state} itemId={previewStack?.itemId??null} instanceId={previewStack?.instanceId} source="equipment_pouch" onClose={()=>setPreviewStack(null)}
+   favorite={isFavorite(previewStack)} locked={isLocked(previewStack)}
+   onToggleFavorite={previewStack&&onAction?()=>toggleFavorite(previewStack):undefined}
+   onToggleLock={previewStack&&onAction?()=>toggleLock(previewStack):undefined}
+   onMoveToInventory={previewStack&&onAction?async()=>{
+     if(!previewStack||!onAction)throw new Error('Equipment transfer is unavailable.');
+     const result=await onAction(previewStack.instanceId?{type:'gear_move',args:{instanceId:previewStack.instanceId,to:'inventory'}}
+       :{type:'equipment_pouch_move',args:{itemId:previewStack.itemId,quantity:1,from:'equipment_pouch',to:'inventory'}});
+     if(result===false)throw new Error('Equipment transfer failed. Check Inventory space and try again.');
+     setPreviewStack(null);
+   }:undefined}
    onMoveToBank={previewStack&&onAction?async()=>{
      if(!previewStack||!onAction)throw new Error('Equipment transfer is unavailable.');
      const result=await onAction(previewStack.instanceId?{type:'gear_move',args:{instanceId:previewStack.instanceId,to:'bank'}}
@@ -240,31 +279,29 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
     if(result===false)throw new Error(p('Equipment was not equipped. Please try again.'));
     setPreviewStack(null);
    }}/>
-  <GameModalSurface visible={!!selected} reduceMotion={state.settings.reduceMotion} onClose={()=>setSelectedIndex(null)} backdropLabel={p('Close Equipment Pouch details')} surfaceStyle={s.modal}>
-   <GameModalHeader eyebrow={p('EQUIPMENT · CHARACTER STORAGE')} title={item?localizedItemName(language,item.id):p('Equipment')} onClose={()=>setSelectedIndex(null)}/>
-   {selected&&item?<ScrollView contentContainerStyle={s.details} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
-    <View style={s.hero}><View style={[s.art,{borderColor:rarity?.color??C.line}]}><ItemArtwork itemId={item.id} size={74}/></View>
-     <View style={s.flex}><Text style={[s.itemName,{color:rarity?.color??C.text}]}>{p(rarity?.label??'Equipment')}{record?' · Q'+craftedGearDisplayQuality(record):''}</Text>
-      <Text style={s.meta}>{p('Stored on {character} · {slot}',{character:state.character?.name??p('this character'),slot:p(item.slot??'Gear')})}</Text>
-      {record?<Text style={s.meta}>{record.locked?p('Locked · '):''}{record.enhancement.rank>0?'+'+record.enhancement.rank+p(' enhanced · '):''}{p('Unique forged copy')}</Text>:<Text style={s.meta}>{p('Standard equipment')}</Text>}</View>
+  <ItemQuickInspect state={state} itemId={selected?.itemId??null} instanceId={selected?.instanceId} source="equipment_pouch"
+   favorite={isFavorite(selected)} locked={isLocked(selected)}
+   onClose={()=>{setSelectedIndex(null);setTransferError('')}}
+   onToggleFavorite={onAction&&selected?()=>toggleFavorite(selected):undefined}
+   onToggleLock={onAction&&selected?()=>toggleLock(selected):undefined}
+   onNavigate={onNavigate?destination=>{setSelectedIndex(null);setTransferError('');void onNavigate(destination)}:undefined}
+   quickActions={selected?<View style={s.detailFooter}>
+    {!!transferError?<Text accessibilityRole="alert" style={s.saleWarning}>{p(transferError)}</Text>:null}
+    <GameButton title={p('Compare & Equip')} disabled={!onAction||busy} onPress={()=>{setPreviewStack(selected);setSelectedIndex(null);setTransferError('')}}/>
+    <View style={s.transferRow}>
+     <View style={s.transferAction}><GameButton compact title={p('To Inventory')} tone="secondary" disabled={!onAction||busy} loading={busy} onPress={()=>move('inventory')}/></View>
+     <View style={s.transferAction}><GameButton compact title={p('To Bank')} tone="secondary" disabled={!onAction||busy} loading={busy} onPress={()=>move('bank')}/></View>
+    </View>
+   </View>:undefined}
+   disposalActions={selected?<View style={s.detailActions}>
+    <View style={s.transferRow}>
+     <View style={s.transferAction}><GameButton compact title={p('Sell copy')} tone="secondary" disabled={!onAction||busy||!saleCandidate?.eligible} onPress={()=>{if(saleCandidate)startSale([saleCandidate.id])}}/></View>
+     <View style={s.transferAction}><GameButton compact title={p('Salvage copy')} tone="danger" disabled={!onAction||busy||!salvageCandidate?.eligible} onPress={()=>{if(salvageCandidate)startSalvage([salvageCandidate.id])}}/></View>
     </View>
     <EquipmentDisposalStatus compact sellAllowed={!!saleCandidate?.eligible} salvageAllowed={!!salvageCandidate?.eligible}
-      sellReason={saleCandidate?.reason} salvageReason={salvageCandidate?.reason}/>
-    {!!transferError?<Text accessibilityRole="alert" style={s.saleWarning}>{p(transferError)}</Text>:null}
-    <View style={s.actions}>
-     <GameButton compact title={p('Compare & Equip')} disabled={!onAction||busy} onPress={()=>{setPreviewStack(selected);setSelectedIndex(null)}}/>
-     <GameButton compact tone="secondary" title={p('To Inventory')} disabled={!onAction||busy} onPress={()=>move('inventory')}/>
-     <GameButton compact tone="secondary" title={p('To Bank')} disabled={!onAction||busy} onPress={()=>move('bank')}/>
-     {record?<GameButton compact tone="secondary" title={p(record.locked?'Unlock':'Lock')} disabled={!onAction||busy} onPress={()=>send({type:'gear_lock',args:{instanceId:record.id,locked:!record.locked}})}/>:<GameButton compact tone="secondary" title={p(state.settings.lockedItemIds?.includes(item.id)?'Unlock':'Lock')} disabled={!onAction||busy} onPress={()=>send({type:'inventory_preference',args:{id:item.id,kind:'lock',enabled:!state.settings.lockedItemIds?.includes(item.id)}})}/>}
-     <GameButton compact tone="secondary" title={p(state.settings.favoriteItemIds?.includes(item.id)?'Remove favorite':'Favorite')} disabled={!onAction||busy} onPress={()=>send({type:'inventory_preference',args:{id:item.id,kind:'favorite',enabled:!state.settings.favoriteItemIds?.includes(item.id)}})}/>
-     <GameButton compact tone="danger" title={saleCandidate?.eligible?p('Sell · {gold}g',{gold:saleCandidate.gold.toLocaleString(language)}):record?.locked||state.settings.lockedItemIds?.includes(item.id)?p('Unlock to sell'):p('Protected')} disabled={!onAction||busy||!saleCandidate?.eligible} onPress={()=>{if(saleCandidate)startSale([saleCandidate.id])}}/>
-     {salvageRecipe?<GameButton compact tone="secondary" title={salvageCandidate?.eligible?p('Salvage · {count}× {name}',{count:salvageRecipe.quantity,name:localizedItemName(language,salvageRecipe.itemId)}):p('Protected')} disabled={!onAction||busy||!salvageCandidate?.eligible} onPress={()=>{if(salvageCandidate)startSalvage([salvageCandidate.id])}}/>:null}
-    </View>
-    {saleCandidate?.eligible?<Text style={s.meta}>{p('Selling this copy adds Gold to this character.')}</Text>:null}
-    {salvageCandidate?.eligible&&salvageCandidate.rewards&&salvageCandidate.rewards.length>1?<Text style={s.meta}>{salvageMaterials([salvageCandidate])}</Text>:null}
+     sellReason={saleCandidate?.reason} salvageReason={salvageCandidate?.reason}/>
+   </View>:undefined}/>
 
-   </ScrollView>:null}
-  </GameModalSurface>
  </View>;
 }
 function styles(C:ThemeColors){return StyleSheet.create({
@@ -279,13 +316,16 @@ function styles(C:ThemeColors){return StyleSheet.create({
  selectionCheckText:{fontSize:12,fontWeight:'900',color:C.bg},
  paging:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'},
  sellToolbar:{flexDirection:'row',flexWrap:'wrap',gap:8,alignItems:'center'},
+ sellToolbarCompact:{gap:6,rowGap:6},
  sellSummary:{gap:8,padding:spacing.sm,borderWidth:1,borderColor:C.line,borderRadius:10,backgroundColor:C.panel2},
+ sellSummaryCompact:{gap:6,paddingHorizontal:6,paddingVertical:8},
  selectionStats:{flexDirection:'row',gap:6},selectionStat:{flex:1,alignItems:'center',gap:2,paddingVertical:8,paddingHorizontal:4,borderRadius:8,borderWidth:1,borderColor:C.line,backgroundColor:C.panel},
  selectionStatNumber:{...typography.title,color:C.text,fontWeight:'900',fontVariant:['tabular-nums']},selectionStatLabel:{...typography.caption,color:C.muted,fontSize:11,fontWeight:'800'},
  saleWarning:{...typography.caption,color:C.warning},
  upgrade:{flexDirection:'row',gap:8,alignItems:'center',borderTopWidth:1,borderColor:C.line,paddingTop:spacing.sm},
  modal:{maxHeight:'90%'},details:{gap:spacing.md,paddingBottom:spacing.md},
- hero:{flexDirection:'row',gap:spacing.md,alignItems:'center'},
- art:{width:88,height:88,borderRadius:12,borderWidth:1,backgroundColor:C.panel2,alignItems:'center',justifyContent:'center'},
- itemName:{...typography.bodyStrong,color:C.text},actions:{flexDirection:'row',flexWrap:'wrap',gap:8},
+ detailFooter:{gap:spacing.xs},detailActions:{gap:spacing.sm},
+ transferRow:{flexDirection:'row',gap:spacing.sm},transferAction:{flex:1,minWidth:0},
+ itemName:{...typography.bodyStrong,color:C.text},
+ actions:{flexDirection:'row',flexWrap:'wrap',gap:8},
  });}

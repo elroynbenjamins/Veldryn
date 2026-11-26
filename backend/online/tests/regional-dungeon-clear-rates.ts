@@ -11,7 +11,7 @@ import {recruitQModeAllies} from '../../src/server/coop/echo-recruitment';
 import {createQModeNpcAllies} from '../../src/server/coop/qmode-npc-allies';
 import {EXPEDITIONS} from '../../src/server/expeditions/content/launch-content';
 import {regularDungeonTierRequiredLevel,regularDungeonTierRequiredPower} from '../../src/server/coop/dungeon-entry-policy';
-import {REGIONAL_DUNGEON_BALANCE_VERSION} from '../../src/server/coop/regional-power-balance';
+import {REGIONAL_DUNGEON_BALANCE_VERSION,regionalPowerMultipliers} from '../../src/server/coop/regional-power-balance';
 
 /** Deterministic build-calibration probe. This models equal-CP parties using
  * the game's real character ratings, gear->co-op conversion, role readiness,
@@ -69,25 +69,47 @@ function runOne(id:'EXP_001'|'EXP_003',tier:1|2|3,seed:number,roster:ReturnType<
    publishedAtMs:0,contentVersion:'online-coop-loadout-v1',blockedAccountIds:[],snapshot,
   })),
  });
+ assert.equal(run.rootboundT3CalibrationVersion,id==='EXP_001'&&tier===3?1:undefined,'Only new Asterfall T3 Q-Mode runs pin the calibration');
  const priority=['camp','shrine','event','treasure','merchant','echo','battle','risk','elite','boss'];
- for(let room=0;room<7&&run.phase==='awaiting_choice';room++){
+ // Endurance replaces the old seven-step forced boss with a choice after
+ // seven cleared rooms (boss option is at depth 8). Take the FIRST eligible
+ // boss checkpoint to preserve the original short-run calibration; never
+ // silently continue for 42 rooms or change server-owned boss mechanics.
+ for(let room=0;room<10&&run.phase==='awaiting_choice';room++){
   const current=run.graph.nodes.find(node=>node.nodeId===run.currentNodeId)!;
   const options=current.nextNodeIds.map(nodeId=>run.graph.nodes.find(node=>node.nodeId===nodeId)!);
   if(!options.length)break;
+  const checkpointBoss=options.find(node=>node.kind==='boss');
+  if(checkpointBoss)assert.equal(current.depth,7,'The first Endurance boss exit follows seven normal rooms');
   options.sort((a,b)=>priority.indexOf(a.kind)-priority.indexOf(b.kind));
-  run=service.choose({runId,controllerAccountId:characters[0].accountId,optionNodeId:options[0].nodeId});
+  const next=checkpointBoss??options[0];
+  run=service.choose({runId,controllerAccountId:characters[0].accountId,optionNodeId:next.nodeId});
  }
- assert(run.phase!=='awaiting_choice','The test must reach a terminal result');
- return {clear:run.phase==='completed',boss:run.graph.nodes.find(node=>node.kind==='boss')?.contentId};
+ assert(run.phase!=='awaiting_choice','The calibration run must finish at its first seven-room Endurance boss checkpoint');
+ const terminal=run.graph.nodes.find(node=>node.nodeId===run.currentNodeId);
+ return {clear:run.phase==='completed',boss:run.graph.nodes.find(node=>node.kind==='boss')?.contentId,
+  terminalDepth:terminal?.depth??-1,terminalKind:terminal?.kind??'unknown'};
 }
-for(const id of ['EXP_001','EXP_003'] as const)for(const tier of [1,2,3] as const){
+// The persisted run marker is required; pre-existing runs and Live use the prior coefficient.
+const oldRoot=regionalPowerMultipliers('EXP_001',3,true,'BOSS_EXP_ROOT')!;
+const newRoot=regionalPowerMultipliers('EXP_001',3,true,'BOSS_EXP_ROOT',1)!;
+for(const stat of ['attack','hp','defense'] as const)assert.ok(Math.abs(newRoot[stat]/oldRoot[stat]-.975/.95)<1e-9);
+for(const [id,tier,encounter] of [['EXP_001',2,'BOSS_EXP_ROOT'],['EXP_001',3,'BOSS_EXP_BELL'],['EXP_001',3,'ROOT_TEST'],['EXP_003',3,'BOSS_EXP_SOLAR']] as const)
+ assert.deepEqual(regionalPowerMultipliers(id,tier,true,encounter,1),regionalPowerMultipliers(id,tier,true,encounter));
+assert.equal(regionalPowerMultipliers('EXP_001',3,false,'BOSS_EXP_ROOT',1),undefined);
+const releaseBalanceFailures:string[]=[];
+for(const id of ['EXP_001','EXP_003'] as const)for(const tier of [1,2,3] as const){try{
  const roster=calibratedRoster(id,tier),count=40;
  const results=Array.from({length:count},(_,seed)=>runOne(id,tier,seed,roster));
  const successes=results.filter(row=>row.clear);
+ const terminalSummary=Object.fromEntries([...new Set(results.map(row=>row.terminalDepth+':'+row.terminalKind))]
+  .map(key=>[key,results.filter(row=>row.terminalDepth+':'+row.terminalKind===key).length]));
  const bossResults:Record<string,{clears:number;attempts:number}>=Object.fromEntries([...new Set(results.map(row=>row.boss))].map(boss=>{
   const subset=results.filter(row=>row.boss===boss);
   return [boss,{clears:subset.filter(row=>row.clear).length,attempts:subset.length}];
  }));
+ console.log('REGIONAL_CHECKPOINT_TIER_AUDIT '+JSON.stringify({id,tier,clears:successes.length,
+  samples:count,terminalSummary,bossResults}));
  assert.equal(Object.keys(bossResults).length,2,'Each region should retain two reachable final bosses');
  assert.equal(Object.values(bossResults).reduce((sum,row)=>sum+row.attempts,0),count);
  // Keep a measurable release guard around the current 40-run synthetic
@@ -99,6 +121,10 @@ for(const id of ['EXP_001','EXP_003'] as const)for(const tier of [1,2,3] as cons
  const bossSamples=Object.values(bossResults);
  assert.ok(bossSamples.every(row=>row.attempts>=10),'Both original bosses must be encountered in a representative test batch');
  const bossRates=bossSamples.map(row=>row.clears/row.attempts);
+ console.log('REGIONAL_FIRST_CHECKPOINT_BOSS_AUDIT '+JSON.stringify({
+  id,tier,clears:successes.length,count,bossResults,bossRates,
+  roster:roster.map(row=>({cp:row.cp,role:row.snapshot.readiness.role,readiness:Number(row.ready.toFixed(2))})),
+ }));
  assert.ok(Math.abs(bossRates[0]-bossRates[1])<=.45,'A random boss roll must not create an excessive difficulty lottery');
  // Wide, deliberately synthetic release guards rather than promised live
  // success rates. T1 must remain welcoming, T2 reasonably accessible, and
@@ -117,7 +143,9 @@ for(const id of ['EXP_001','EXP_003'] as const)for(const tier of [1,2,3] as cons
   clears:successes.length,samples:count,bossResults,
   roster:roster.map(row=>({cp:row.cp,role:row.snapshot.readiness.role,readiness:Number(row.ready.toFixed(2))})),
  }));
+ }catch(error){releaseBalanceFailures.push(id+' T'+tier+': '+String(error));}
 }
+assert.deepEqual(releaseBalanceFailures,[],'All six regional tiers must pass their original balance and boss-lottery guards');
 
 /** Old or underpowered Echoes must never bypass the new regional tier gate.
  * A low-level player can still enter Q-Mode with correctly calibrated NPCs. */

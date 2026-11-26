@@ -7,6 +7,32 @@ import {companionCombatDescriptionText} from './companion-combat-names-de';
 
 // Each row supplies German, Spanish, Dutch, Italian and French; its key is English.
 export const companionTranslationRows={
+ "Heals the lowest-HP ally below 80% HP and reduces damage taken by 2.5% for 4s.": ["Heilt den Verbündeten mit den wenigsten LP unter 80% LP und senkt erlittenen Schaden 4 s lang um 2,5%.","Cura al aliado con menos PS por debajo del 80% y reduce el daño recibido un 2,5% durante 4 s.","Geneest de bondgenoot met de laagste HP onder 80% HP en vermindert ontvangen schade 4 s lang met 2,5%.","Cura l’alleato con meno PS sotto l’80% e riduce i danni subiti del 2,5% per 4 s.","Soigne l’allié ayant le moins de PV sous 80% et réduit les dégâts subis de 2,5% pendant 4 s."],
+ "Winter Cadence: 12% shorter base cooldown; +1% companion haste in standalone combat.": ["Wintertakt: 12% kürzere Basisabklingzeit; +1% Begleitertempo im eigenständigen Kampf.","Cadencia invernal: enfriamiento base un 12% menor; +1% de celeridad del compañero en combate independiente.","Wintercadans: 12% kortere basisafkoeltijd; +1% metgezelhaast in zelfstandig gevecht.","Cadenza invernale: ricarica base ridotta del 12%; +1% rapidità del compagno in combattimento autonomo.","Cadence hivernale : recharge de base réduite de 12% ; +1% de hâte du compagnon en combat autonome."],
+ "Grand Bell: +4% Frostbell Cycle healing.": ["Große Glocke: +4% Heilung durch Frostglockenklang.","Gran campana: +4% de curación de Ciclo de Escarcha.","Grote bel: +4% genezing door Frostbell Cycle.","Grande campana: +4% guarigione di Frostbell Cycle.","Grande cloche : +4% de soins de Frostbell Cycle."],
+ "Claw strike; the target takes 2.5% more damage for 5s.": ["Klauenhieb; das Ziel erleidet 5 s lang 2,5% mehr Schaden.","Zarpazo; el objetivo recibe un 2,5% más de daño durante 5 s.","Klauwaanval; het doelwit ontvangt 5 s lang 2,5% meer schade.","Colpo di artigli; il bersaglio subisce il 2,5% di danni in più per 5 s.","Coup de griffe ; la cible subit 2,5% de dégâts supplémentaires pendant 5 s."],
+ "Aurora Pursuit: +1% companion haste in standalone combat.": ["Aurorajagd: +1% Begleitertempo im eigenständigen Kampf.","Persecución auroral: +1% de celeridad del compañero en combate independiente.","Aurorajacht: +1% metgezelhaast in zelfstandig gevecht.","Inseguimento aurorale: +1% rapidità del compagno in combattimento autonomo.","Poursuite aurorale : +1% de hâte du compagnon en combat autonome."],
+ "Shattering Trail: +3% Rimeshard Mark damage.": ["Splitterspur: +3% Schaden durch Reifsplitter-Mal.","Rastro quebradizo: +3% de daño de Marca de Escarcha.","Splitterspoor: +3% schade door Rimeshard Mark.","Scia frantumante: +3% danni di Rimeshard Mark.","Trace éclatante : +3% de dégâts de Rimeshard Mark."],
+ "Shields the owner (self in standalone combat) and reflects 10% of absorbed damage.": ["Schützt den Besitzer (sich selbst im eigenständigen Kampf) und reflektiert 10% des abgefangenen Schadens.","Protege al dueño (a sí mismo en combate independiente) y refleja el 10% del daño absorbido.","Beschermt de eigenaar (zichzelf in zelfstandig gevecht) en weerkaatst 10% van geabsorbeerde schade.","Protegge il proprietario (sé stesso in combattimento autonomo) e riflette il 10% dei danni assorbiti.","Protège son propriétaire (lui-même en combat autonome) et renvoie 10% des dégâts absorbés."],
+ "Woolen Bulwark: +1% companion defense in standalone combat.": ["Wollbollwerk: +1% Begleiterverteidigung im eigenständigen Kampf.","Baluarte de lana: +1% de defensa del compañero en combate independiente.","Wollen bolwerk: +1% metgezelverdediging in zelfstandig gevecht.","Baluardo di lana: +1% difesa del compagno in combattimento autonomo.","Rempart de laine : +1% de défense du compagnon en combat autonome."],
+ "Hearthbound Vow: +4% shield strength and +5 percentage points of absorbed-damage reflection.": ["Schwur des Herdfeuers: +4% Schildstärke und +5 Prozentpunkte Schadensreflexion.","Voto del hogar: +4% de fuerza de escudo y +5 puntos porcentuales de reflejo de daño absorbido.","Haardgelofte: +4% schildsterkte en +5 procentpunten weerkaatsing van geabsorbeerde schade.","Voto del focolare: +4% forza dello scudo e +5 punti percentuali di riflessione dei danni assorbiti.","Serment du foyer : +4% de puissance du bouclier et +5 points de pourcentage de renvoi des dégâts absorbés."],
+ "Discovery progress": ["Entdeckungsfortschritt","Progreso de descubrimiento","Ontdekkingsvoortgang","Progresso scoperta","Progression des découvertes"],
+ "Reset filters": ["Filter zurücksetzen","Restablecer filtros","Filters wissen","Reimposta filtri","Réinitialiser les filtres"],
+ "Matching creatures": ["Gefundene Kreaturen","Criaturas coincidentes","Gevonden monsters","Creature corrispondenti","Créatures correspondantes"],
+ "View type mastery": ["Typenmeisterschaft ansehen","Ver maestría de tipo","Bekijk typemeesterschap","Vedi maestria del tipo","Voir la maîtrise du type"],
+ "Base drop rates shown. Bonuses may improve your actual rewards.": ["Angezeigt werden Grundchancen. Boni können die erhaltene Beute verbessern.","Se muestran las probabilidades base. Los bonos pueden mejorar las recompensas.","Dit zijn basiskansen. Bonussen kunnen de echte buit verbeteren.","Sono mostrate le probabilità base. I bonus possono aumentare le ricompense.","Les chances de butin de base sont affichées. Les bonus peuvent améliorer les récompenses."],
+ "Drop rate details unlock at species or type Rank 10.": ["Beutechancen werden ab Arten- oder Typenrang 10 sichtbar.","Las probabilidades se revelan al rango 10 de especie o tipo.","Dropkansen verschijnen bij rang 10 van de soort of het type.","Le probabilità si sbloccano al grado 10 della specie o del tipo.","Les chances de butin se dévoilent au rang 10 de l'espèce ou du type."],
+ "Monster Codex": ["Monsterkodex","Códice de monstruos","Monstercodex","Codice dei mostri","Codex des monstres"],
+ "Monsters": ["Monster","Monstruos","Monsters","Mostri","Monstres"],
+ "Types": ["Typen","Tipos","Types","Tipi","Types"],
+ "REGIONS & ZONES": ["REGIONEN & ZONEN","REGIONES Y ZONAS","REGIO'S EN ZONES","REGIONI E ZONE","RÉGIONS ET ZONES"],
+ "SPECIES MASTERY": ["ARTENMEISTERSCHAFT","MAESTRÍA DE ESPECIE","SOORTMEESTERSCHAP","MAESTRIA DELLA SPECIE","MAÎTRISE DE L'ESPÈCE"],
+ "TYPE MASTERY": ["TYPENMEISTERSCHAFT","MAESTRÍA DE TIPO","TYPEMEESTERSCHAP","MAESTRIA DEL TIPO","MAÎTRISE DU TYPE"],
+ "Undiscovered type": ["Unentdeckter Typ","Tipo sin descubrir","Onontdekt type","Tipo sconosciuto","Type non découvert"],
+ "Hunt. Discover. Master. Every creature and enemy family in one place.": ["Jagen. Entdecken. Meistern. Alle Kreaturen und Gegnertypen an einem Ort.","Caza, descubre y domina. Todas las criaturas y familias enemigas en un solo lugar.","Jaag, ontdek en beheers. Alle monsters en vijandfamilies op één plek.","Caccia, scopri e domina. Tutte le creature e le famiglie di nemici in un unico luogo.","Chassez, découvrez, maîtrisez. Toutes les créatures et familles ennemies au même endroit."],
+ "Rates unlock at mastery Rank 10": ["Dropchancen ab Meisterschaftsrang 10","Probabilidades disponibles en rango de maestría 10","Dropkansen vanaf meesterschapsrang 10","Probabilità disponibili al grado maestria 10","Probabilités débloquées au rang de maîtrise 10"],
+ "30 ranks · 1,500 kills per species": ["30 Ränge · 1.500 Siege pro Art","30 rangos · 1500 bajas por especie","30 rangen · 1.500 kills per soort","30 gradi · 1.500 uccisioni per specie","30 rangs · 1 500 éliminations par espèce"],
+ "30 ranks · 50,000 points per type": ["30 Ränge · 50.000 Punkte pro Typ","30 rangos · 50 000 puntos por tipo","30 rangen · 50.000 punten per type","30 gradi · 50.000 punti per tipo","30 rangs · 50 000 points par type"],
  // New Companion Quarters training guidance — authored across all supported UI languages.
  // Housing is optional: explain its benefits rather than a level gate.
  "Housing improves training and companion stats. Only Ascension and rarity limit levels.": ["Das Quartier verbessert Training und Gefährtenwerte. Nur Aufstieg und Seltenheit begrenzen das Level.","El alojamiento mejora el entrenamiento y los atributos del compañero. Solo la ascensión y la rareza limitan el nivel.","Het verblijf verbetert training en metgezelstatistieken. Alleen ascensie en zeldzaamheid bepalen het maximale niveau.","Gli alloggi migliorano l'addestramento e le statistiche dei compagni. Solo ascensione e rarità limitano il livello.","Les quartiers améliorent l'entraînement et les statistiques du compagnon. Seuls l'ascension et la rareté limitent le niveau."],
@@ -190,6 +216,11 @@ export const companionTranslationRows={
  "Add enough food to start the Expedition. Manual food selection is available in Mission Details.":["Füge genügend Nahrung hinzu, um die Expedition zu starten. Die manuelle Auswahl findest du in den Missionsdetails.","Añade suficiente comida para iniciar la expedición. Puedes elegirla manualmente en los detalles de la misión.","Voeg genoeg voedsel toe om de expeditie te starten. Handmatig kiezen kan bij Missiedetails.","Aggiungi abbastanza cibo per avviare la spedizione. La selezione manuale è nei dettagli missione.","Ajoutez assez de nourriture pour commencer l'expédition. Le choix manuel est dans les détails de la mission."],
  "Start timer to begin earning":["Timer starten, um Belohnungen zu sammeln","Inicia el temporizador para obtener recompensas","Start de timer om beloningen te verdienen","Avvia il timer per ottenere ricompense","Lancez le minuteur pour gagner des récompenses"],
  "Collect rewards and upgrade your facilities.":["Sammle Belohnungen und verbessere deine Gebäude.","Recoge recompensas y mejora tus instalaciones.","Verzamel beloningen en verbeter je voorzieningen.","Raccogli le ricompense e potenzia le strutture.","Récupérez des récompenses et améliorez vos installations."],
+ "Daily Companion XP":["Tägliche Gefährten-EP","EXP diaria de compañeros","Dagelijkse metgezel-XP","PE giornalieri dei compagni","EXP quotidienne des compagnons"],
+ "Weekly Companion Essence":["Wöchentliche Gefährten-Essenz","Esencia semanal de compañeros","Wekelijkse metgezelessentie","Essenza settimanale dei compagni","Essence hebdomadaire des compagnons"],
+ "+{value0} XP / eligible companion / day":["+{value0} EP / verfügbarem Gefährten / Tag","+{value0} EXP / compañero disponible / día","+{value0} XP / beschikbare metgezel / dag","+{value0} PE / compagno disponibile / giorno","+{value0} EXP / compagnon disponible / jour"],
+ "+{value0} Essence / week":["+{value0} Essenz / Woche","+{value0} Esencia / semana","+{value0} essentie / week","+{value0} essenza / settimana","+{value0} essence / semaine"],
+ "Until claim":["Bis zur Abholung","Hasta reclamar","Tot claim","Alla riscossione","Avant la récupération"],
  "Daily Training":["Tägliches Training","Entrenamiento diario","Dagelijkse training","Allenamento giornaliero","Entraînement quotidien"],
  "Build Training Grounds first":["Baue zuerst den Trainingsplatz","Construye primero el campo de entrenamiento","Bouw eerst het trainingsveld","Costruisci prima il campo di addestramento","Construisez d'abord le terrain d'entraînement"],
  "Start the first reward timer":["Starte den ersten Belohnungstimer","Inicia el primer temporizador de recompensas","Start de eerste beloningstimer","Avvia il primo timer delle ricompense","Lancez le premier minuteur de récompenses"],
@@ -988,6 +1019,13 @@ export const companionTranslationRows={
  "A flexible restorative support pulse with modest defensive and tempo advantages.": ["Ein flexibler Heilimpuls mit kleinen Vorteilen bei Verteidigung und Tempo.","Pulso curativo flexible con leves ventajas defensivas y de ritmo.","Flexibele herstelpuls met kleine defensieve en tempovoordelen.","Impulso curativo flessibile con modesti vantaggi difensivi e di ritmo.","Impulsion curative polyvalente avec de légers avantages défensifs et de cadence."],
  "Roadwise: slightly faster support cadence.": ["Roadwise: Etwas schnellere Unterstützung.","Roadwise: apoyo ligeramente más frecuente.","Roadwise: iets snellere ondersteuning.","Roadwise: supporto leggermente più rapido.","Roadwise : soutien légèrement accéléré."],
  "Bond 10 shortens Caravan Sentinel support cycles.": ["Bindung 10 verkürzt die Unterstützungszyklen von Caravan Sentinel.","Vínculo 10 acorta los ciclos de apoyo de Caravan Sentinel.","Band 10 verkort Caravan Sentinels ondersteuningscycli.","Legame 10 accorcia i cicli di supporto di Caravan Sentinel.","Le lien 10 raccourcit les cycles de soutien de Caravan Sentinel."],
+ // Frostfall companions: authored combat descriptions across the five legacy locale catalogs.
+ "A focused claw strike briefly exposes its target to allied attacks.": ["Ein gezielter Klauenhieb macht das Ziel kurzzeitig für Angriffe von Verbündeten verwundbar.","Un zarpazo preciso deja al objetivo brevemente expuesto a ataques aliados.","Een gerichte klauwaanval maakt het doelwit kort kwetsbaar voor aanvallen van bondgenoten.","Un colpo di artigli mirato espone brevemente il bersaglio agli attacchi degli alleati.","Un coup de griffe précis expose brièvement la cible aux attaques alliées."],
+ "Aurora Pursuit: a small increase to combat tempo.": ["Aurorajagd: Ein kleiner Bonus auf das Kampftempo.","Persecución auroral: aumenta ligeramente el ritmo de combate.","Aurorajacht: een kleine verhoging van het gevechtstempo.","Inseguimento aurorale: piccolo aumento della velocità di combattimento.","Poursuite aurorale : légère augmentation de la cadence de combat."],
+ "Bond 10 improves Rimeshard Mark damage without guaranteeing a debuff.": ["Bindung 10 erhöht den Schaden von Reifsplitter-Mal, ohne einen Schwächungseffekt zu garantieren.","El vínculo 10 mejora el daño de Marca de Escarcha sin garantizar una debilitación.","Band 10 verhoogt de schade van Rimeshard Mark zonder een verzwakking te garanderen.","Il legame 10 aumenta i danni di Rimeshard Mark senza garantire un indebolimento.","Le lien 10 augmente les dégâts de Rimeshard Mark sans garantir d'affaiblissement."],
+ "Shields the owner and reflects a measured share of absorbed hits.": ["Schützt den Besitzer mit einem Schild und reflektiert einen Teil des abgefangenen Schadens.","Protege al dueño con un escudo y refleja parte del daño absorbido.","Beschermt de eigenaar met een schild en kaatst een deel van de geabsorbeerde schade terug.","Protegge il proprietario con uno scudo e riflette parte dei danni assorbiti.","Protège son propriétaire avec un bouclier et renvoie une partie des dégâts absorbés."],
+ "Woolen Bulwark: improves damage resistance.": ["Wollbollwerk: Erhöht die Schadensresistenz.","Baluarte de lana: mejora la resistencia al daño.","Wollen bolwerk: verhoogt de weerstand tegen schade.","Baluardo di lana: migliora la resistenza ai danni.","Rempart de laine : améliore la résistance aux dégâts."],
+ "Bond 10 improves Hearthguard Aegis shield strength.": ["Bindung 10 erhöht die Schildstärke von Herdwacht-Ägis.","El vínculo 10 mejora la fuerza del escudo de Égida del Hogar.","Band 10 verhoogt de schildsterkte van Hearthguard Aegis.","Il legame 10 aumenta la forza dello scudo di Hearthguard Aegis.","Le lien 10 renforce le bouclier d'Hearthguard Aegis."],
  "Higher damage against enemies below 30% HP.": ["Mehr Schaden gegen Gegner unter 30% LP.","Más daño contra enemigos bajo el 30% PV.","Meer schade tegen vijanden onder 30% HP.","Più danni contro nemici sotto il 30% PS.","Plus de dégâts contre les ennemis sous 30% PV."],
  "Smaller damage bonus with a shorter active cooldown.": ["Kleinerer Schadensbonus mit kürzerer aktiver Abklingzeit.","Menor bonus de daño con recarga activa más corta.","Kleinere schadebonus met kortere actieve afkoeltijd.","Bonus danni minore con ricarica attiva più breve.","Bonus de dégâts réduit avec recharge active plus courte."],
  "Shield strength +15%.": ["Schildstärke +15%.","Fuerza de escudo +15%.","Schildsterkte +15%.","Forza scudo +15%.","Puissance de bouclier +15%."],
@@ -1174,6 +1212,37 @@ for(const key of Object.keys(companionTranslationRows) as CompanionMessageKey[])
  companionCatalogs.ru[key]=key;
  companionCatalogs.tr[key]=key;
 }
+companionCatalogs.ru["Heals the lowest-HP ally below 80% HP and reduces damage taken by 2.5% for 4s."]="Лечит союзника с наименьшим ОЗ ниже 80% и снижает получаемый урон на 2,5% на 4 с.";
+companionCatalogs.tr["Heals the lowest-HP ally below 80% HP and reduces damage taken by 2.5% for 4s."]="Canı %80'in altında olan en düşük canlı müttefiki iyileştirir ve alınan hasarı 4 sn boyunca %2,5 azaltır.";
+companionCatalogs.ru["Winter Cadence: 12% shorter base cooldown; +1% companion haste in standalone combat."]="Зимний ритм: базовая перезарядка короче на 12%; +1% скорости спутника в самостоятельном бою.";
+companionCatalogs.tr["Winter Cadence: 12% shorter base cooldown; +1% companion haste in standalone combat."]="Kış Ritmi: temel bekleme süresi %12 daha kısa; bağımsız savaşta yoldaşa +%1 hız.";
+companionCatalogs.ru["Grand Bell: +4% Frostbell Cycle healing."]="Большой колокол: +4% к лечению «Цикла морозного колокола».";
+companionCatalogs.tr["Grand Bell: +4% Frostbell Cycle healing."]="Büyük Çan: Frostbell Cycle iyileştirmesine +%4.";
+companionCatalogs.ru["Claw strike; the target takes 2.5% more damage for 5s."]="Удар когтями; цель получает на 2,5% больше урона в течение 5 с.";
+companionCatalogs.tr["Claw strike; the target takes 2.5% more damage for 5s."]="Pençe darbesi; hedef 5 sn boyunca %2,5 daha fazla hasar alır.";
+companionCatalogs.ru["Aurora Pursuit: +1% companion haste in standalone combat."]="Преследование сияния: +1% скорости спутника в самостоятельном бою.";
+companionCatalogs.tr["Aurora Pursuit: +1% companion haste in standalone combat."]="Kutup Işığı Takibi: bağımsız savaşta yoldaşa +%1 hız.";
+companionCatalogs.ru["Shattering Trail: +3% Rimeshard Mark damage."]="Осколочный след: +3% к урону «Метки ледяного осколка».";
+companionCatalogs.tr["Shattering Trail: +3% Rimeshard Mark damage."]="Parçalanan İz: Rimeshard Mark hasarına +%3.";
+companionCatalogs.ru["Shields the owner (self in standalone combat) and reflects 10% of absorbed damage."]="Защищает владельца (себя в самостоятельном бою) и отражает 10% поглощённого урона.";
+companionCatalogs.tr["Shields the owner (self in standalone combat) and reflects 10% of absorbed damage."]="Sahibini (bağımsız savaşta kendisini) korur ve soğurulan hasarın %10'unu yansıtır.";
+companionCatalogs.ru["Woolen Bulwark: +1% companion defense in standalone combat."]="Шерстяной бастион: +1% защиты спутника в самостоятельном бою.";
+companionCatalogs.tr["Woolen Bulwark: +1% companion defense in standalone combat."]="Yün Siper: bağımsız savaşta yoldaşa +%1 savunma.";
+companionCatalogs.ru["Hearthbound Vow: +4% shield strength and +5 percentage points of absorbed-damage reflection."]="Клятва очага: +4% прочности щита и +5 процентных пунктов отражения поглощённого урона.";
+companionCatalogs.tr["Hearthbound Vow: +4% shield strength and +5 percentage points of absorbed-damage reflection."]="Ocak Yemini: +%4 kalkan gücü ve soğurulan hasar yansımasına +5 yüzde puan.";
+// New Frostfall companion descriptions must not fall back to English in RU/TR.
+companionCatalogs.ru["A focused claw strike briefly exposes its target to allied attacks."]="Точный удар когтями ненадолго делает цель уязвимее для атак союзников.";
+companionCatalogs.tr["A focused claw strike briefly exposes its target to allied attacks."]="Hedefi müttefik saldırılarına kısa süreliğine açık hâle getiren odaklı pençe darbesi.";
+companionCatalogs.ru["Aurora Pursuit: a small increase to combat tempo."]="Преследование сияния: небольшое ускорение боевого темпа.";
+companionCatalogs.tr["Aurora Pursuit: a small increase to combat tempo."]="Kutup Işığı Takibi: savaş temposunu az miktarda artırır.";
+companionCatalogs.ru["Bond 10 improves Rimeshard Mark damage without guaranteeing a debuff."]="На 10-м уровне связи усиливает урон «Метки ледяного осколка», но не гарантирует ослабление.";
+companionCatalogs.tr["Bond 10 improves Rimeshard Mark damage without guaranteeing a debuff."]="Bağ 10, Buz Parçası İşareti'nin hasarını artırır; zayıflatma etkisi garanti değildir.";
+companionCatalogs.ru["Shields the owner and reflects a measured share of absorbed hits."]="Защищает владельца щитом и отражает часть поглощённого урона.";
+companionCatalogs.tr["Shields the owner and reflects a measured share of absorbed hits."]="Sahibini kalkanla korur ve soğurulan hasarın ölçülü bir bölümünü yansıtır.";
+companionCatalogs.ru["Woolen Bulwark: improves damage resistance."]="Шерстяной бастион: повышает сопротивление урону.";
+companionCatalogs.tr["Woolen Bulwark: improves damage resistance."]="Yün Siper: hasar direncini artırır.";
+companionCatalogs.ru["Bond 10 improves Hearthguard Aegis shield strength."]="На 10-м уровне связи усиливает щит «Эгиды хранителя очага».";
+companionCatalogs.tr["Bond 10 improves Hearthguard Aegis shield strength."]="Bağ 10, Ocak Muhafızı Kalkanı'nın gücünü artırır.";
 companionCatalogs.ru["Reward timer started"]="Таймер награды запущен";
 companionCatalogs.tr["Reward timer started"]="Ödül sayacı başladı";
 companionCatalogs.ru["Rewards collected"]="Награды получены";
@@ -1224,6 +1293,16 @@ companionCatalogs.ru["Training unavailable."]="Тренировка недост
 companionCatalogs.tr["Training unavailable."]="Eğitim kullanılamıyor.";
 companionCatalogs.ru["Recruit companion"]="Нанять спутника";
 companionCatalogs.tr["Recruit companion"]="Yoldaş edin";
+companionCatalogs.ru["Daily Companion XP"]="Ежедневный опыт спутников";
+companionCatalogs.tr["Daily Companion XP"]="Günlük Yoldaş XP'si";
+companionCatalogs.ru["Weekly Companion Essence"]="Еженедельная эссенция спутников";
+companionCatalogs.tr["Weekly Companion Essence"]="Haftalık Yoldaş Özütü";
+companionCatalogs.ru["+{value0} XP / eligible companion / day"]="+{value0} опыта / доступного спутника / день";
+companionCatalogs.tr["+{value0} XP / eligible companion / day"]="+{value0} XP / uygun yoldaş / gün";
+companionCatalogs.ru["+{value0} Essence / week"]="+{value0} эссенции / неделю";
+companionCatalogs.tr["+{value0} Essence / week"]="+{value0} Özüt / hafta";
+companionCatalogs.ru["Until claim"]="До получения";
+companionCatalogs.tr["Until claim"]="Almaya kalan";
 export const translateCompanion=createTranslator(companionCatalogs);
 export const companionTranslator=(language:Language)=>(key:CompanionMessageKey,params?:Record<string,string|number>)=>translateCompanion(language,key,params);
 

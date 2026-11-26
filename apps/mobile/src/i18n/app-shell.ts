@@ -2,6 +2,7 @@ import {createSourceTranslator,type TranslationRow} from './source-catalog';
 import {SHARED_MESSAGES} from './shared';
 
 export const APP_SHELL_MESSAGES={
+ 'Monster Codex':['Monsterkodex','Códice de monstruos','Monstercodex','Codice dei mostri','Codex des monstres'],
  'The local save could not be read.':['Der lokale Spielstand konnte nicht gelesen werden.','No se pudo leer la partida local.','De lokale opslag kon niet worden gelezen.','Impossibile leggere il salvataggio locale.','La sauvegarde locale est illisible.'],
  'No readable save state was returned.':['Es wurde kein lesbarer Spielstand gefunden.','No se encontró una partida legible.','Er is geen leesbare opslag gevonden.','Nessun salvataggio leggibile trovato.','Aucune sauvegarde lisible trouvée.'],
  ...SHARED_MESSAGES,

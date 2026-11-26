@@ -58,18 +58,22 @@ for(const tank of ['IRONWARDEN','BASTION','DREADGUARD'] as ClassId[])
    const id=`${dungeon}-${tank}-${support}-${damage[0]}-${seed}`;
    const service=new QModeService(new MemoryQModeRunRepository(),'published-loadout-balance-v1');
    let run=service.create({requestId:id,runId:id,controllerAccountId:roster[0].accountId,controllerSnapshot:roster[0],expeditionId:dungeon,tier:1,contentVersion:'online-coop-loadout-v1',balanceVersion:REGIONAL_DUNGEON_BALANCE_VERSION,nowMs:1000,profiles:roster.slice(1).map((snapshot,index)=>({profileId:'echo-'+index,sourceAccountId:snapshot.accountId,optedIn:true,publishedAtMs:0,contentVersion:'online-coop-loadout-v1',blockedAccountIds:[],snapshot}))});
-   for(let room=0;room<run.graph.preBossNodeCount+1&&run.phase==='awaiting_choice';room++){
+   // Endurance offers a boss after seven cleared rooms. The launch-rate
+   // audit must stop at the FIRST checkpoint, not run all 42 rooms.
+   for(let room=0;room<10&&run.phase==='awaiting_choice';room++){
     const current=run.graph.nodes.find(node=>node.nodeId===run.currentNodeId)!;
     const choices=current.nextNodeIds.map(id=>run.graph.nodes.find(node=>node.nodeId===id)!);
     assert.ok(choices.length>0,'Published route must offer a path to the final boss');
-    run=service.choose({runId:id,controllerAccountId:roster[0].accountId,optionNodeId:(choices.find(node=>node.kind==='camp')??choices[0]).nodeId});
+    const checkpoint=choices.find(node=>node.kind==='boss');
+    if(checkpoint)assert.equal(current.depth,7,'The first Endurance boss exit follows seven rooms');
+    run=service.choose({runId:id,controllerAccountId:roster[0].accountId,optionNodeId:(checkpoint??choices.find(node=>node.kind==='camp')??choices[0]).nodeId});
    }
    const bossId=run.graph.nodes.find(node=>node.kind==='boss')?.contentId;
    assert.ok(bossId,'Every published Q-Mode route must have a final boss');
    const bucket=bossOutcome[bossId]??{attempts:0,clears:0,failedBeforeBoss:0};
    bucket.attempts++;
    if(run.phase==='completed'){clears++;bucket.clears++;}
-   else if(run.lastResolution?.nodeId!==run.graph.bossNodeId)bucket.failedBeforeBoss++;
+   else if(run.graph.nodes.find(node=>node.nodeId===run.lastResolution?.nodeId)?.kind!=='boss')bucket.failedBeforeBoss++;
    bossOutcome[bossId]=bucket;
   }
   const result={dungeon,tank,support,damage,clears,samples,bossOutcome};

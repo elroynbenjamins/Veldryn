@@ -20,7 +20,7 @@ export interface RegionalHuntOptions {
   enemyHaste:number; environmentTimeMultiplier:number; seed:string;
 }
 export interface RegionalHuntStrike {
-  actor:'player'|'enemy'; atSeconds:number; damage:number; critical:boolean;
+  actor:'player'|'enemy'; atSeconds:number; damage:number; critical:boolean; missed?:boolean;
 }
 export interface RegionalHuntPlan {
   cycleSeconds:number; searchSeconds:number; fightSeconds:number;
@@ -50,7 +50,10 @@ export function regionalHuntPlan(options:RegionalHuntOptions):RegionalHuntPlan{
     const critical=landed&&random01(seed+':critical',i)<clamp(options.critChance,0,.65);
     const spread=.9+random01(seed+':variance',i)*.2;
     const damage=landed?Math.min(enemyHp,Math.max(1,Math.round(options.playerHit*spread*(critical?clamp(options.critMultiplier,1,3):1)))):0;
-    if(damage>0){strikes.push({actor:'player',atSeconds,damage,critical});enemyHp-=damage;}
+    // Preserve the resolved swing even when the accuracy roll fails. A miss
+    // is a zero-damage playback event, never a fabricated hit or extra time.
+    strikes.push({actor:'player',atSeconds,damage,critical,...(landed?{}:{missed:true})});
+    if(damage>0)enemyHp-=damage;
     finishSeconds=atSeconds;
     if(enemyHp<=0)break;
   }

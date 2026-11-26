@@ -1,0 +1,81 @@
+# Candidate only: rebuild canonical server bundles, never deploy or modify main.
+name: Veldryn 1.0.11 reconcile Edge bundles
+on:
+  push:
+    branches: ['release/1.0.11-clean-consolidation-20261120']
+    # Reconcile changed online sources on this isolated release branch.
+    # Generated functions/index.ts are intentionally excluded to prevent loops.
+    paths:
+      - '.github/workflows/v1-0-11-reconcile-generated-edge.yml'
+      - 'apps/mobile/src/**'
+      - 'backend/online/**'
+      - 'backend/src/**'
+      - 'backend/package.json'
+      - 'backend/pnpm-lock.yaml'
+      - 'apps/mobile/package.json'
+      - 'apps/mobile/pnpm-lock.yaml'
+      - 'tools/build-online.mjs'
+      - 'tools/verify-gameplay-edge.mjs'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: v111-candidate-edge-reconcile
+  cancel-in-progress: false
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: release/1.0.11-clean-consolidation-20261120
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Install locked backend and mobile packages
+        run: |
+          pnpm --dir backend install --frozen-lockfile
+          pnpm --dir apps/mobile install --frozen-lockfile
+      - name: Rebuild deployable gameplay and co-op bundles from integrated source
+        run: |
+          pnpm --dir backend build:online
+          node tools/verify-gameplay-edge.mjs
+      - name: Reject unrelated tracked writes
+        shell: bash
+        run: |
+          set -euo pipefail
+          unexpected=$(git diff --name-only | grep -Ev '^backend/supabase/functions/(gameplay|coop)/index\.ts$' || true)
+          if [ -n "$unexpected" ]; then
+            printf 'Refusing unrelated generator changes:\n%s\n' "$unexpected"
+            exit 1
+          fi
+      - name: Commit generated artifacts to candidate only
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch=release/1.0.11-clean-consolidation-20261120
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          if git diff --cached --quiet; then
+            echo 'Candidate canonical Edge bundles already match source.'
+            exit 0
+          fi
+          git commit -m 'build(edge): sync v1.0.11 candidate gameplay and co-op bundles'
+          git fetch origin "$branch"
+          if [ "$(git rev-parse HEAD^)" != "$(git rev-parse "origin/$branch")" ]; then
+            echo 'Candidate branch moved; refusing to push stale generated bundles.'
+            exit 1
+          fi
+          git push origin "HEAD:$branch"
+          echo 'Candidate bundles synchronized; CI must run on new SHA.'

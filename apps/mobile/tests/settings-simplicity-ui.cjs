@@ -11,7 +11,7 @@ const gameplay=segment("{section==='gameplay'&&","{section==='chat'&&");
 const chat=segment("{section==='chat'&&","{section==='display'&&<>");
 const display=segment("{section==='display'&&<>","{section==='data'&&");
 const data=segment("{section==='data'&&","{section==='developer'&&");
-assert(src.includes("['account','gameplay','chat','display','data']"),'Five settings categories are visible with Account first');
+assert(src.includes("['account','gameplay','chat','display','sound','data']"),'Six settings categories are visible with Account first');
 assert(src.includes("value??'account'"),'Settings opens on Account by default');
 assert(!src.includes('<UiIcon '),'Settings navigation and disclosures remain text-only');
 assert(src.includes("value==='appearance'||value==='accessibility'?'display'"),'Legacy deep links open Display');
@@ -43,4 +43,11 @@ assert(defaults&&!defaults[1].includes('autoJoinWorldChat')&&!defaults[1].includ
 for(const key of ['Store','Data & Privacy','Chat','AFK details','Deleting your local save removes progress stored on this device.']){
  assert(dictionary.includes(JSON.stringify(key)+':'),'Existing translation key '+key+' remains available');
 }
-console.log('PASS five Settings categories without Store duplication, Account Store route, Display and safe flows');
+const soundPanel=fs.readFileSync(path.join(root,'src/components/MusicSettingsPanel.tsx'),'utf8');
+assert(src.includes("{section==='sound'&&<MusicSettingsPanel language={language}/>}"),'Sound opens as a standalone Settings section');
+assert(soundPanel.includes('REGIONS.map(regionRow)')&&soundPanel.includes('ACTIVITIES.map(regionRow)'),'All regions and activities are on the same page');
+assert(soundPanel.includes('accessibilityRole="switch"')&&soundPanel.includes('accessibilityState={{expanded:open}}'),'Area toggles and inline pickers are accessible');
+assert(!soundPanel.includes('<ScrollView')&&!soundPanel.includes('setTab('),'Sound uses the existing scrollable Settings page, without nested tabs');
+assert(soundPanel.includes("musicContexts:{}}"),'Area reset preserves the independent master volume levels');
+assert(soundPanel.includes("playMusicPreview(track??id)")&&soundPanel.includes("stopMusicPreview()"),'Inline track preview plays the selected theme and restores the scene');
+console.log('PASS six Settings categories, scrollable audio customization, Account Store route, Display and safe flows');

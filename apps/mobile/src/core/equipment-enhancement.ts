@@ -216,7 +216,7 @@ export function enhancedGearStats(state:GameState,itemId:string){
  * from the three legacy Stat Gem types handled by equippedGemBonuses.
  */
 export const CANONICAL_STAT_GEM_KEYS_V1={
-  stat_might:'power',stat_vitality:'maxHp',stat_iron:'armor',stat_ward:'ward',
+  stat_might:'attack',stat_vitality:'maxHp',stat_iron:'armor',stat_ward:'ward',
   stat_precision:'accuracy',stat_keen:'critRate',stat_savage:'critDamage',
   stat_piercing:'penetration',stat_swift:'haste',stat_potent:'potency',
   stat_elusive:'evasion',stat_resolute:'tenacity',

@@ -9,6 +9,12 @@ const actions=read('src/core/account-actions.ts');
 const app=read('App.tsx');
 const account=read('src/screens/MoreScreen.tsx');
 
+ok(!screen.includes('s.playingCard'),'Roster should not duplicate active-character summary above the list');
+ok(screen.includes('s.playingStatus')&&screen.includes("accessibilityRole=\"text\""),'Playing is a consistent accessible status control, not a nonfunctional button');
+ok(screen.includes('style={s.switchButton}')&&screen.includes('style={s.playingStatus}'),'Switch and Playing controls should occupy matching row positions');
+ok(screen.includes('surfaceStyle={s.modalSurface}')&&screen.includes('modalSurface:{maxWidth:420'),'Character manager must use a compact dedicated dialog surface');
+ok(screen.includes('playingStatus:{minWidth:69,minHeight:44')&&screen.includes('manageButton:{minWidth:44,minHeight:44'),'Character controls must retain 44-point tap target sizing');
+ok(screen.includes("stackRows=width<390||fontScale>=1.25"),'Narrow-screen and large-text layouts must still stack controls');
 ok(screen.includes('Delete & choose new class'),'Character management must expose an explicit reroll flow');
 ok(screen.includes('Delete character only'),'Multi-character accounts must be able to free a slot without immediately recreating');
 ok(screen.includes('characterDeleteConfirmation'),'Delete UI must use the shared typed-confirmation contract');

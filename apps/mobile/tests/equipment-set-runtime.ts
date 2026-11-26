@@ -1,5 +1,6 @@
 import {EQUIPMENT_SETS} from '../src/content/equipment-sets';
 import {itemDef} from '../src/content/items';
+import {draftCraftedGearInstance} from '../src/core/crafted-gear-instances';
 import {createCharacter,effectiveStats,newGame} from '../src/core/game';
 import {activeEquipmentBuildStats,activeEquipmentSetRuntime,equipmentSetBonusCoverage,isLiveSixPieceBonus,equipmentSetCombatModifiers,equipmentSetStaticStatsForCount,parseEquipmentSetStaticBonus} from '../src/core/equipment-set-runtime';
 import {itemInspectModel} from '../src/core/item-inspect';
@@ -88,9 +89,27 @@ for(const slot of ['gloves','amulet','boots'] as const){
     'T5 '+slot+' inspection must not advertise a retired fixed bonus');
 }
 
+const glovesId=t5Set.itemIds.find(itemId=>itemDef(itemId).slot==='gloves');
+ok(glovesId,'Missing T5 gloves');
+const copy=draftCraftedGearInstance({itemId:glovesId!,ownerCharacterId:t5State.character!.id,jobId:'t5-set-random-gloves',createdAtMs:1,roll:.45});
+ok(copy.equipmentBonuses?.length===2,'T5 gloves now get two role-based rolls, not fixed Haste');
+const rolledState:GameState={...t5State,account:{...t5State.account,craftedGearInstances:[copy]},
+  character:{...t5State.character!,equipmentInstanceIds:{gloves:copy.id}}};
+const rolledStats=activeEquipmentBuildStats(rolledState);
+for(const bonus of copy.equipmentBonuses!)
+  close(rolledStats[bonus.stat]-t5Build[bonus.stat],bonus.basisPoints/10_000,
+    'Equipped exact T5 receipt must contribute only its genuine randomized stats');
+const rolledCombat=equipmentSetCombatModifiers(rolledState);
+close(rolledCombat.speedMultiplier,1+rolledStats.haste,'Random Haste must reach combat speed when rolled');
+close(rolledCombat.stats.critRate,rolledStats.critRate,'Random Crit Rate must reach combat crit when rolled');
+close(rolledCombat.stats.evasion,rolledStats.evasion,'Random Evasion must reach combat dodge when rolled');
+
+
+
 {
-  const base=createCharacter(newGame(0),'BASTION','Retired Item');
-  const retired:GameState={...base,character:{...base.character!,equipment:{...base.character!.equipment,ring:'RETIRED_RING_ID'}}};
-  ok(Array.isArray(activeEquipmentSetRuntime(retired).activeSets),'Unknown equipped item ids must not break set runtime');
+ const base=createCharacter(newGame(0),'BASTION','Retired Item');
+ const retired:GameState={...base,character:{...base.character!,equipment:{...base.character!.equipment,ring:'RETIRED_RING_ID'}}};
+ ok(Array.isArray(activeEquipmentSetRuntime(retired).activeSets),'Unknown equipped item ids must not break set runtime');
 }
+
 console.log('PASS: set bonuses reach combat, T5 fixed slot affixes are absent, and T5+ 6pc stays pending');

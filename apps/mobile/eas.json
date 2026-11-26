@@ -40,6 +40,7 @@
       "env": {
         "EXPO_PUBLIC_RELEASE_CHANNEL": "production",
         "EXPO_PUBLIC_SOCIAL_NAMES_STAGING_PREVIEW": "false",
+        "EXPO_PUBLIC_SOCIAL_NAMES_PRODUCTION_ENABLED": "true",
         "EXPO_PUBLIC_SUPABASE_URL": "https://nyjwigipamnvpdvpauuv.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_EBP2NTN1cNnwDFFg3idkwg_DiNu5zRo",
         "EXPO_PUBLIC_SERVER_GAMEPLAY": "true",

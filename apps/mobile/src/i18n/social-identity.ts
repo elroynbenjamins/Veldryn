@@ -55,6 +55,39 @@ const COPY={
   'No se pudo cargar tu nombre social.','Je sociale naam kon niet worden geladen.',
   'Impossibile caricare il nome sociale.','Impossible de charger votre nom social.',
   'Не удалось загрузить имя.','Görünür adın yüklenemedi.'],
+ 'Checking name availability…':[
+  'Checking name availability…','Name wird geprüft…','Comprobando disponibilidad…','Naam wordt gecontroleerd…',
+  'Verifica disponibilità…','Vérification du nom…','Проверка имени…','Ad uygunluğu kontrol ediliyor…'],
+ 'Name available.':[
+  'Name available.','Name ist verfügbar.','Nombre disponible.','Naam beschikbaar.',
+  'Nome disponibile.','Nom disponible.','Имя свободно.','Ad kullanılabilir.'],
+ 'Name already taken.':[
+  'Name already taken.','Name bereits vergeben.','Nombre ya ocupado.','Naam al in gebruik.',
+  'Nome già in uso.','Nom déjà pris.','Имя уже занято.','Ad zaten alınmış.'],
+ 'Unable to check availability. Tap to retry.':[
+  'Unable to check availability. Tap to retry.','Prüfung fehlgeschlagen. Tippe zum Wiederholen.',
+  'No se pudo comprobar. Toca para reintentar.','Controleren mislukt. Tik om opnieuw te proberen.',
+  'Verifica non riuscita. Tocca per riprovare.','Vérification impossible. Touchez pour réessayer.',
+  'Не удалось проверить. Нажмите для повтора.','Kontrol edilemedi. Tekrar denemek için dokun.'],
+ 'This name is already used by another player.':[
+  'This name is already used by another player.',
+  'Dieser Name wird bereits verwendet.','Otro jugador ya usa este nombre.','Deze naam is al in gebruik.',
+  'Questo nome è già in uso.','Ce nom est déjà utilisé.','Это имя уже занято.','Bu ad başka bir oyuncu tarafından kullanılıyor.'],
+ 'You can change your social name once every 30 days.':[
+  'You can change your social name once every 30 days.',
+  'Du kannst deinen sozialen Namen nur alle 30 Tage ändern.','Solo puedes cambiar tu nombre social cada 30 días.','Je kunt je sociale naam eens per 30 dagen wijzigen.',
+  'Puoi cambiare il nome sociale ogni 30 giorni.','Vous pouvez modifier votre nom social tous les 30 jours.','Социальное имя можно менять раз в 30 дней.','Sosyal adını 30 günde bir değiştirebilirsin.'],
+ 'Choose a different social name.':[
+  'Choose a different social name.','Wähle einen anderen sozialen Namen.','Elige otro nombre social.','Kies een andere sociale naam.',
+  'Scegli un altro nome sociale.','Choisissez un autre nom social.','Выберите другое социальное имя.','Farklı bir sosyal ad seç.'],
+ 'Complete account setup before choosing a social name.':[
+  'Complete account setup before choosing a social name.',
+  'Schließe die Kontoeinrichtung ab, bevor du einen Namen wählst.','Completa la configuración de tu cuenta antes de elegir un nombre.','Rond je accountinstelling af voordat je een naam kiest.',
+  'Completa la configurazione dell’account prima di scegliere un nome.','Terminez la configuration du compte avant de choisir un nom.','Завершите настройку аккаунта, прежде чем выбрать имя.','Ad seçmeden önce hesap kurulumunu tamamla.'],
+ 'Could not update your social name. Please try again.':[
+  'Could not update your social name. Please try again.',
+  'Der soziale Name konnte nicht geändert werden. Versuche es erneut.','No se pudo actualizar tu nombre social. Inténtalo de nuevo.','Je sociale naam kon niet worden bijgewerkt. Probeer het opnieuw.',
+  'Impossibile aggiornare il nome sociale. Riprova.','Impossible de modifier le nom social. Réessayez.','Не удалось обновить социальное имя. Попробуйте снова.','Sosyal ad güncellenemedi. Tekrar dene.'],
  'Use 2–20 letters. Spaces, hyphens and apostrophes are allowed.':[
   'Use 2–20 letters. Spaces, hyphens and apostrophes are allowed.',
   '2–20 Buchstaben; Leerzeichen, Bindestriche und Apostrophe sind erlaubt.',

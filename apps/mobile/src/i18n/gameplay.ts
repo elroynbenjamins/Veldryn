@@ -9,6 +9,234 @@ import {useMemo} from 'react';
 // Every row is complete, in en/de/es/nl/it/fr order. English phrases are typed keys.
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
+ "ACTION TIME":["ACTION TIME","AKTIONSZEIT","TIEMPO DE ACCIÓN","ACTIETIJD","TEMPO AZIONE","TEMPS D’ACTION"],
+ "RARE FINDS":["RARE FINDS","SELTENE FUNDE","HALLAZGOS RAROS","ZELDZAME VONDSTEN","RITROVAMENTI RARI","TROUVAILLES RARES"],
+ "Shorter gathering actions":["Shorter gathering actions","Kürzere Sammelaktionen","Recolección más rápida","Kortere verzamelacties","Raccolta più rapida","Actions de récolte plus courtes"],
+ "Slower without tools":["Slower without tools","Langsamer ohne Werkzeuge","Más lento sin herramientas","Langzamer zonder gereedschap","Più lento senza attrezzi","Plus lent sans outils"],
+ "How tool bonuses work":["How tool bonuses work","So wirken Werkzeugboni","Cómo funcionan los bonos","Hoe gereedschapsbonussen werken","Come funzionano i bonus","Comment fonctionnent les bonus"],
+ "Not equipped":["Not equipped","Nicht ausgerüstet","Sin equipar","Niet uitgerust","Non equipaggiato","Non équipé"],
+ "tier time":["tier time","Stufenzeit","tiempo de nivel","rangtijd","tempo del livello","temps du palier"],
+ // Isolated release: gathering tool vault, retaining latest main inspection strings.
+ "TOOL TIERS · SELECT TO INSPECT":["TOOL TIERS · SELECT TO INSPECT","WERKZEUGSTUFEN · ZUM ANSEHEN WÄHLEN","NIVELES DE HERRAMIENTA · TOCA PARA VER","GEREEDSCHAPSNIVEAUS · KIES OM TE BEKIJKEN","LIVELLI ATTREZZI · SELEZIONA","PALIERS D’OUTILS · SÉLECTIONNER"],
+ "saved copies":["saved copies","gespeicherte Exemplare","copias guardadas","opgeslagen exemplaren","copie salvate","copies enregistrées"],
+ "Up to 2 per tier":["Up to 2 per tier","Bis zu 2 pro Stufe","Hasta 2 por nivel","Maximaal 2 per niveau","Fino a 2 per livello","Jusqu’à 2 par palier"],
+ "saved":["saved","gespeichert","guardadas","opgeslagen","salvate","enregistrées"],
+ "TIER {tier}":["TIER {tier}","STUFE {tier}","NIVEL {tier}","NIVEAU {tier}","LIVELLO {tier}","PALIER {tier}"],
+ "shorter action time":["shorter action time","kürzere Aktionszeit","menos tiempo por acción","kortere actietijd","tempo d’azione ridotto","temps d’action réduit"],
+ "Saved Tools":["Saved Tools","Gespeicherte Werkzeuge","Herramientas guardadas","Opgeslagen gereedschap","Attrezzi salvati","Outils enregistrés"],
+ "Bonuses":["Bonuses","Boni","Bonificaciones","Bonussen","Bonus","Bonus"],
+ "Only the active tool contributes bonuses. The reserve stays outside Inventory until withdrawn.":["Only the active tool contributes bonuses. The reserve stays outside Inventory until withdrawn.","Nur das aktive Werkzeug gibt Boni. Die Reserve bleibt bis zur Entnahme außerhalb des Inventars.","Solo la herramienta activa aporta bonificaciones. La reserva permanece fuera del inventario hasta retirarla.","Alleen het actieve gereedschap geeft bonussen. De reserve blijft buiten de inventaris tot je deze opneemt.","Solo l’attrezzo attivo dà bonus. La riserva resta fuori dall’inventario finché non viene ritirata.","Seul l’outil actif confère des bonus. La réserve reste hors de l’inventaire jusqu’au retrait."],
+ "ACTIVE TOOL":["ACTIVE TOOL","AKTIVES WERKZEUG","HERRAMIENTA ACTIVA","ACTIEF GEREEDSCHAP","ATTREZZO ATTIVO","OUTIL ACTIF"],
+ "EMPTY":["EMPTY","LEER","VACÍO","LEEG","VUOTO","VIDE"],
+ "This copy currently contributes to gathering.":["This copy currently contributes to gathering.","Dieses Exemplar ist beim Sammeln aktiv.","Esta copia está activa al recolectar.","Dit exemplaar is actief tijdens verzamelen.","Questa copia è attiva nella raccolta.","Cette copie est active lors de la collecte."],
+ "Move to Inventory":["Move to Inventory","Ins Inventar verschieben","Mover al inventario","Naar inventaris verplaatsen","Sposta nell’inventario","Mettre dans l’inventaire"],
+ "Choose an inventory copy below to equip this tier.":["Choose an inventory copy below to equip this tier.","Wähle unten ein Exemplar aus dem Inventar für diese Stufe.","Elige abajo una copia del inventario para equipar este nivel.","Kies hieronder een exemplaar uit je inventaris voor dit niveau.","Scegli sotto una copia dall’inventario per equipaggiare il livello.","Choisissez ci-dessous une copie de l’inventaire pour ce palier."],
+ "SAVED RESERVE":["SAVED RESERVE","GESPEICHERTE RESERVE","RESERVA GUARDADA","OPGESLAGEN RESERVE","RISERVA SALVATA","RÉSERVE ENREGISTRÉE"],
+ "SAVED":["SAVED","GESPEICHERT","GUARDADO","OPGESLAGEN","SALVATO","ENREGISTRÉ"],
+ "Stored safely; grants no bonus until activated.":["Stored safely; grants no bonus until activated.","Sicher verstaut; gibt bis zur Aktivierung keine Boni.","Guardada de forma segura; no da bonificaciones hasta activarla.","Veilig opgeslagen; geeft pas na activeren een bonus.","Conservato al sicuro; non dà bonus finché non viene attivato.","Stocké en sécurité ; aucun bonus avant activation."],
+ "Activate":["Activate","Aktivieren","Activar","Activeren","Attiva","Activer"],
+ "Save a second copy here to switch without using Inventory.":["Save a second copy here to switch without using Inventory.","Speichere hier ein zweites Exemplar, um ohne Inventarwechsel zu tauschen.","Guarda aquí otra copia para cambiar sin usar el inventario.","Bewaar hier een tweede exemplaar om zonder inventaris te wisselen.","Salva una seconda copia qui per scambiarla senza usare l’inventario.","Enregistrez une seconde copie ici pour changer sans passer par l’inventaire."],
+ "AVAILABLE IN INVENTORY":["AVAILABLE IN INVENTORY","IM INVENTAR VERFÜGBAR","DISPONIBLE EN INVENTARIO","BESCHIKBAAR IN INVENTARIS","DISPONIBILI NELL’INVENTARIO","DISPONIBLE DANS L’INVENTAIRE"],
+ "Save":["Save","Speichern","Guardar","Opslaan","Salva","Enregistrer"],
+ "No additional copy in Inventory. Craft one in Smithing or withdraw one from Bank.":["No additional copy in Inventory. Craft one in Smithing or withdraw one from Bank.","Kein weiteres Exemplar im Inventar. Schmiede eines oder hole eines aus der Bank.","No hay más copias en el inventario. Fabrica una en Herrería o retira una del banco.","Geen extra exemplaar in je inventaris. Smeed er een of neem er een op uit de bank.","Nessun’altra copia nell’inventario. Creane una con Forgiatura o prelevane una dalla banca.","Aucune autre copie dans l’inventaire. Forgez-en une ou retirez-en une de la banque."],
+ "Withdraw from Bank":["Withdraw from Bank","Aus Bank entnehmen","Retirar del banco","Uit bank opnemen","Preleva dalla banca","Retirer de la banque"],
+ "Craft another tool":["Craft another tool","Weiteres Werkzeug schmieden","Fabricar otra herramienta","Nog een gereedschap maken","Crea un altro attrezzo","Fabriquer un autre outil"],
+ "Base tier speed":["Base tier speed","Basis-Tempo der Stufe","Velocidad base del nivel","Basissnelheid niveau","Velocità base del livello","Vitesse de base du palier"],
+ "Rarity and Quality":["Rarity and Quality","Seltenheit und Qualität","Rareza y calidad","Zeldzaamheid en kwaliteit","Rarità e qualità","Rareté et qualité"],
+ "No active copy":["No active copy","Kein aktives Exemplar","Ninguna copia activa","Geen actief exemplaar","Nessuna copia attiva","Aucune copie active"],
+ "Adjusted tier reduction":["Adjusted tier reduction","Angepasste Stufenreduktion","Reducción ajustada del nivel","Aangepaste niveaukorting","Riduzione livello corretta","Réduction ajustée du palier"],
+ "Random bonus roll":["Random bonus roll","Zufälliger Bonuswert","Bonificación aleatoria","Willekeurige bonusrol","Bonus casuale","Bonus aléatoire"],
+ "required":["required","erforderlich","requerido","vereist","richiesto","requis"],
+ "Character level required":["Character level required","Benötigte Charakterstufe","Nivel de personaje requerido","Vereist personageniveau","Livello personaggio richiesto","Niveau de personnage requis"],
+ "Tier speed bonuses add across equipped tiers. Speed rolls reduce the remaining time; rare-find and skill XP rolls apply only to this skill.":["Tier speed bonuses add across equipped tiers. Speed rolls reduce the remaining time; rare-find and skill XP rolls apply only to this skill.","Stufentempo addiert sich. Tempo-Boni verringern die Restzeit; Fundchance und Fertigkeits-EP gelten nur hier.","Las velocidades de nivel se suman. La velocidad extra reduce el tiempo restante; hallazgos y XP solo afectan a esta habilidad.","Niveausnelheden tellen op. Snelheidsbonussen verkorten de resterende tijd; vondsten en vaardigheids-XP gelden alleen hier.","Le velocità dei livelli si sommano. I bonus velocità riducono il tempo restante; rarità e PE si applicano solo a questa abilità.","Les vitesses des paliers s’additionnent. Les bonus réduisent le temps restant ; rareté et XP ne concernent que cette compétence."],
+ "Hide combined bonuses":["Hide combined bonuses","Gesamtboni ausblenden","Ocultar bonificaciones totales","Totale bonussen verbergen","Nascondi bonus complessivi","Masquer les bonus cumulés"],
+ "Show combined bonuses":["Show combined bonuses","Gesamtboni anzeigen","Ver bonificaciones totales","Totale bonussen tonen","Mostra bonus complessivi","Afficher les bonus cumulés"],
+ "COMBINED EQUIPPED BONUSES":["COMBINED EQUIPPED BONUSES","KOMBINIERTE AKTIVE BONI","BONIFICACIONES EQUIPADAS TOTALES","GECOMBINEERDE ACTIEVE BONUSSEN","BONUS ATTIVI COMBINATI","BONUS ÉQUIPÉS CUMULÉS"],
+ "Faster gathering":["Faster gathering","Schneller sammeln","Recolección más rápida","Sneller verzamelen","Raccolta più rapida","Collecte plus rapide"],
+ "Slower gathering":["Slower gathering","Langsamer sammeln","Recolección más lenta","Langzamer verzamelen","Raccolta più lenta","Collecte plus lente"],
+ "Rare finds":["Rare finds","Seltene Funde","Hallazgos raros","Zeldzame vondsten","Ritrovamenti rari","Trouvailles rares"],
+ "Tier contributions":["Tier contributions","Stufenbeiträge","Aportes por nivel","Niveaubijdragen","Contributi dei livelli","Contributions des paliers"],
+ "Speed rolls":["Speed rolls","Tempo-Boni","Bonos de velocidad","Snelheidsbonussen","Bonus velocità","Bonus de vitesse"],
+ "points":["points","Punkte","puntos","punten","punti","points"],
+ "Effective":["Effective","Effektiv","Efectivo","Effectief","Effettivo","Effectif"],
+ "Only active copies count. Skill XP rolls stack additively within this skill, capped at +60%. Gathering speed is capped at 80%.":["Only active copies count. Skill XP rolls stack additively within this skill, capped at +60%. Gathering speed is capped at 80%.","Nur aktive Exemplare zählen. Fertigkeits-EP addieren sich bis +60 %. Sammeltempo ist auf 80 % begrenzt.","Solo cuentan las copias activas. La XP se suma hasta +60 %. La velocidad de recolección tiene un límite del 80 %.","Alleen actieve exemplaren tellen. Vaardigheids-XP telt op tot +60%. Verzamelsnelheid is begrensd op 80%.","Contano solo le copie attive. I bonus PE si sommano fino a +60%. La velocità di raccolta ha un limite dell’80%.","Seules les copies actives comptent. Les bonus d’XP s’ajoutent jusqu’à +60 %. La vitesse de collecte est plafonnée à 80 %."],
+ // Gathering-tool inspection labels: typed and translated alongside the released compact UI.
+ "BASE STATS":["BASE STATS","GRUNDWERTE","ESTADÍSTICAS BASE","BASISSTATISTIEKEN","STATISTICHE BASE","STATS DE BASE"],
+ "Equipment base stats":["Equipment base stats","Grundwerte der Ausrüstung","Estadísticas base del equipo","Basisstatistieken uitrusting","Statistiche base equipaggiamento","Stats de base de l'équipement"],
+ "TRAIT":["TRAIT","EIGENSCHAFT","RASGO","EIGENSCHAP","TRATTO","TRAIT"],
+ "GATHERING TOOL DETAILS":["GATHERING TOOL DETAILS","SAMMELWERKZEUG-DETAILS","DETALLES DE HERRAMIENTA","VERZAMELGEREEDSCHAP DETAILS","DETTAGLI ATTREZZO DI RACCOLTA","DÉTAILS DE L'OUTIL DE RÉCOLTE"],
+ "Tool {number}":["Tool {number}","Werkzeug {number}","Herramienta {number}","Gereedschap {number}","Attrezzo {number}","Outil {number}"],
+ "Legacy tool":["Legacy tool","Altes Werkzeug","Herramienta antigua","Oud gereedschap","Attrezzo precedente","Ancien outil"],
+ "Tier gathering speed":["Tier gathering speed","Sammeltempo der Stufe","Velocidad de recolección por nivel","Verzamelsnelheid per rang","Velocità raccolta per livello","Vitesse de récolte du palier"],
+ "Tier base {base}% · Rarity {rarity}% · Quality {quality}%":["Tier base {base}% · Rarity {rarity}% · Quality {quality}%","Stufenbasis {base}% · Seltenheit {rarity}% · Qualität {quality}%","Base de nivel {base}% · Rareza {rarity}% · Calidad {quality}%","Rangbasis {base}% · Zeldzaamheid {rarity}% · Kwaliteit {quality}%","Base livello {base}% · Rarità {rarity}% · Qualità {quality}%","Base de palier {base}% · Rareté {rarity}% · Qualité {quality}%"],
+ "Bonus stat roll":["Bonus stat roll","Zusätzlicher Attributswurf","Atributo adicional","Extra eigenschap","Statistica bonus","Stat bonus"],
+ "Gathering Speed":["Gathering Speed","Sammeltempo","Velocidad de recolección","Verzamelsnelheid","Velocità di raccolta","Vitesse de récolte"],
+ "Gathering Rarity Chance":["Gathering Rarity Chance","Chance auf seltene Sammelfunde","Probabilidad de rareza en recolección","Kans op zeldzame vondsten","Probabilità rarità raccolta","Chance de rareté en récolte"],
+ "Legacy tool · No bonus stat roll":["Legacy tool · No bonus stat roll","Altes Werkzeug · Kein Bonuswurf","Herramienta antigua · Sin atributo adicional","Oud gereedschap · Geen extra eigenschap","Attrezzo precedente · Nessuna stat bonus","Ancien outil · Aucun stat bonus"],
+ "Tool roll record unavailable · no bonus is assumed.":["Tool roll record unavailable · no bonus is assumed.","Werkzeugdaten fehlen · Kein Bonus wird angenommen.","Sin datos del atributo de la herramienta · No se aplica ninguna bonificación.","Gegevens ontbreken · Er wordt geen bonus aangenomen.","Dati attrezzo non disponibili · Nessun bonus presunto.","Données d'outil indisponibles · Aucun bonus supposé."],
+ "Each tier contributes gathering speed. Rolled speed bonuses apply separately to remaining action time, subject to the gathering speed cap.":["Each tier contributes gathering speed. Rolled speed bonuses apply separately to remaining action time, subject to the gathering speed cap.","Jede Stufe erhöht das Sammeltempo. Gewürfelte Boni wirken auf die verbleibende Aktionszeit bis zur Obergrenze.","Cada nivel mejora la velocidad de recolección. Los bonos adicionales se aplican al tiempo restante, hasta el límite.","Elke rang verhoogt de verzamelsnelheid. Extra snelheid werkt op de resterende actietijd, tot het maximum.","Ogni livello aumenta la velocità di raccolta. I bonus extra agiscono sul tempo rimanente fino al limite.","Chaque palier augmente la vitesse de récolte. Les bonus s'appliquent au temps restant, jusqu'au plafond."],
+ "GATHERING TOOLS":["GATHERING TOOLS","SAMMELWERKZEUGE","HERRAMIENTAS DE RECOLECCIÓN","VERZAMELGEREEDSCHAP","ATTREZZI DI RACCOLTA","OUTILS DE RÉCOLTE"],
+ "GATHERING SPEED":["GATHERING SPEED","SAMMELTEMPO","VELOCIDAD DE RECOLECCIÓN","VERZAMELSNELHEID","VELOCITÀ DI RACCOLTA","VITESSE DE RÉCOLTE"],
+ "Tier + Rarity + Quality":["Tier + Rarity + Quality","Stufe + Seltenheit + Qualität","Nivel + Rareza + Calidad","Rang + Zeldzaamheid + Kwaliteit","Livello + Rarità + Qualità","Palier + Rareté + Qualité"],
+ "BONUS STAT ROLL":["BONUS STAT ROLL","BONUS-ATTRIBUTSWURF","ATRIBUTO ADICIONAL","EXTRA EIGENSCHAP","STATISTICA BONUS","STAT BONUS"],
+ "To Bank":["To Bank","Zur Bank","Al banco","Naar bank","In banca","Vers la banque"],
+ "Tier base · No bonus roll":["Tier base · No bonus roll","Stufenbasis · Kein Bonuswurf","Base de nivel · Sin atributo adicional","Rangbasis · Geen extra eigenschap","Base livello · Nessuna stat bonus","Base de palier · Aucun stat bonus"],
+ // Compact inventory batch-protection controls.
+ "Updating item protection…":["Updating item protection…","Objektschutz wird aktualisiert…","Actualizando protección…","Itembeveiliging bijwerken…","Aggiornamento protezione…","Mise à jour de la protection…"],
+ "Locked {count} selected stacks.":["Locked {count} selected stacks.","{count} ausgewählte Stapel gesperrt.","{count} pilas bloqueadas.","{count} geselecteerde stapels vergrendeld.","{count} pile bloccate.","{count} piles verrouillées."],
+ "Unlocked {count} selected stacks.":["Unlocked {count} selected stacks.","{count} ausgewählte Stapel entsperrt.","{count} pilas desbloqueadas.","{count} geselecteerde stapels ontgrendeld.","{count} pile sbloccate.","{count} piles déverrouillées."],
+ "Favorited {count} selected stacks.":["Favorited {count} selected stacks.","{count} ausgewählte Stapel favorisiert.","{count} pilas añadidas a favoritos.","{count} geselecteerde stapels favoriet gemaakt.","{count} pile aggiunte ai preferiti.","{count} piles ajoutées aux favoris."],
+ "Removed favorites from {count} selected stacks.":["Removed favorites from {count} selected stacks.","Favoriten von {count} Stapeln entfernt.","Favoritos eliminados de {count} pilas.","Favorieten verwijderd van {count} stapels.","Preferiti rimossi da {count} pile.","Favoris retirés de {count} piles."],
+ "Select items to lock or unlock":["Select items to lock or unlock","Objekte zum Sperren oder Entsperren wählen","Seleccionar objetos para bloquear o desbloquear","Selecteer items om te vergrendelen of ontgrendelen","Seleziona oggetti da bloccare o sbloccare","Choisir des objets à verrouiller ou déverrouiller"],
+ "Lock":["Lock","Sperren","Bloquear","Vergrendel","Blocca","Verrouiller"],
+ "Select items to favorite or unfavorite":["Select items to favorite or unfavorite","Objekte zu Favoriten hinzufügen oder entfernen","Seleccionar objetos para añadir o quitar de favoritos","Selecteer items om favoriet te maken of te verwijderen","Seleziona oggetti da aggiungere o rimuovere dai preferiti","Choisir des objets à ajouter ou retirer des favoris"],
+ "Tap item stacks to lock or unlock.":["Tap item stacks to lock or unlock.","Tippe auf Stapel, um sie zu sperren oder entsperren.","Toca las pilas para bloquearlas o desbloquearlas.","Tik op stapels om te vergrendelen of ontgrendelen.","Tocca le pile per bloccarle o sbloccarle.","Touchez des piles pour les verrouiller ou les déverrouiller."],
+ "Tap item stacks to favorite or unfavorite.":["Tap item stacks to favorite or unfavorite.","Tippe auf Stapel, um Favoriten zu ändern.","Toca las pilas para cambiar favoritos.","Tik op stapels om favorieten aan te passen.","Tocca le pile per modificare i preferiti.","Touchez des piles pour modifier les favoris."],
+ "Choose items to lock or unlock · up to 100 stacks":["Choose items to lock or unlock · up to 100 stacks","Sperren oder entsperren · bis zu 100 Stapel","Bloquear o desbloquear · hasta 100 pilas","Vergrendelen of ontgrendelen · max. 100 stapels","Blocca o sblocca · fino a 100 pile","Verrouiller ou déverrouiller · 100 piles max."],
+ "Choose items to favorite or unfavorite · up to 100 stacks":["Choose items to favorite or unfavorite · up to 100 stacks","Favoriten ändern · bis zu 100 Stapel","Cambiar favoritos · hasta 100 pilas","Favorieten aanpassen · max. 100 stapels","Modifica preferiti · fino a 100 pile","Modifier les favoris · 100 piles max."],
+ "Lock selected":["Lock selected","Auswahl sperren","Bloquear selección","Vergrendel selectie","Blocca selezione","Verrouiller la sélection"],
+ "Favorite selected":["Favorite selected","Auswahl favorisieren","Añadir selección a favoritos","Maak selectie favoriet","Aggiungi selezione ai preferiti","Ajouter la sélection aux favoris"],
+ "Unlock selected":["Unlock selected","Auswahl entsperren","Desbloquear selección","Ontgrendel selectie","Sblocca selezione","Déverrouiller la sélection"],
+ "Unfavorite selected":["Unfavorite selected","Aus Favoriten entfernen","Quitar selección de favoritos","Verwijder selectie uit favorieten","Rimuovi selezione dai preferiti","Retirer la sélection des favoris"],
+ // Focused crafting UX labels, kept in all six shared locale dictionaries.
+ 'Professions':["Professions","Berufe","Profesiones","Beroepen","Professioni","Métiers"],
+ 'Components':["Components","Komponenten","Componentes","Componenten","Componenti","Composants"],
+ 'Requirements':["Requirements","Anforderungen","Requisitos","Vereisten","Requisiti","Prérequis"],
+ 'No Gold refunded':["No Gold refunded","Kein Gold erstattet","No se devuelve oro","Geen goud terug","Nessun oro rimborsato","Or non remboursé"],
+ 'Crafting summary':["Crafting summary","Herstellungsübersicht","Resumen de fabricación","Maakoverzicht","Riepilogo creazione","Récapitulatif de fabrication"],
+ 'Total cost':["Total cost","Gesamtkosten","Coste total","Totale kosten","Costo totale","Coût total"],
+ 'types':["types","Arten","tipos","soorten","tipi","types"],
+ 'Missing a material?':["Missing a material?","Fehlt ein Material?","¿Te falta un material?","Mis je een materiaal?","Ti manca un materiale?","Il vous manque un matériau ?"],
+ // Compact crafting details tabs and optional material acquisition help.
+ 'Progress':['Progress','Fortschritt','Progreso','Voortgang','Progressi','Progression'],
+ 'Materials & sources':['Materials & sources','Materialien & Fundorte','Materiales y fuentes','Materialen en vindplaatsen','Materiali e fonti','Matériaux et sources'],
+ // Timed gathering tools use the shared Forge and its six-locale labels.
+ "Crafting time":["Crafting time","Herstellungszeit","Tiempo de fabricación","Maaktijd","Tempo di creazione","Temps de fabrication"],
+ "Tool bonus revealed on claim":["Tool bonus revealed on claim","Werkzeugbonus beim Abholen sichtbar","Bonus de herramienta al recoger","Gereedschapsbonus zichtbaar bij ophalen","Bonus attrezzo visibile al ritiro","Bonus de l’outil révélé à la récupération"],
+ "No equipment or tools are being crafted. Start a gear or tool recipe in Smithing or Tailoring.":[
+  "No equipment or tools are being crafted. Start a gear or tool recipe in Smithing or Tailoring.",
+  "Derzeit wird keine Ausrüstung und kein Werkzeug hergestellt. Starte ein Rezept in Schmiedekunst oder Schneiderei.",
+  "No se está fabricando equipo ni herramientas. Inicia una receta en Herrería o Sastrería.",
+  "Er wordt geen uitrusting of gereedschap gemaakt. Start een recept bij Smeden of Kleermakerij.",
+  "Nessun equipaggiamento o attrezzo in produzione. Avvia una ricetta in Forgiatura o Sartoria.",
+  "Aucun équipement ni outil en cours de fabrication. Lancez une recette en Forge ou Couture."
+ ],
+ // Quiet, in-place crafting confirmation (no modals or toasts).
+ "Added to queue":["Added to queue","Zur Warteschlange hinzugefügt","Añadido a la cola","Toegevoegd aan wachtrij","Aggiunto alla coda","Ajouté à la file d’attente"],
+ "Craft complete":["Craft complete","Herstellung abgeschlossen","Fabricación completada","Maken voltooid","Creazione completata","Fabrication terminée"],
+ "Add to forge":["Add to forge","Zur Schmiede hinzufügen","Añadir a la forja","Toevoegen aan smederij","Aggiungi alla forgia","Ajouter à la forge"],
+ "Crafting failed. Please retry.":["Crafting failed. Please retry.","Herstellung fehlgeschlagen. Bitte erneut versuchen.","No se pudo fabricar. Inténtalo de nuevo.","Maken mislukt. Probeer opnieuw.","Creazione non riuscita. Riprova.","Échec de fabrication. Réessayez."],
+ // Forge mastery screen: accessible profession handoffs and live rarity explanation.
+ "Mastery":["Mastery","Meisterschaft","Maestría","Meesterschap","Maestria","Maîtrise"],
+ "Crafting speed":["Crafting speed","Herstellungstempo","Velocidad de fabricación","Maaksnelheid","Velocità di creazione","Vitesse de fabrication"],
+ "Mastery progress":["Mastery progress","Meisterschaftsfortschritt","Progreso de maestría","Meesterschapsvoortgang","Progresso maestria","Progression de maîtrise"],
+ "relative chance":["relative chance","relative Chance","probabilidad relativa","relatieve kans","probabilità relativa","chance relative"],
+ "Equipment and gem crafting share Forge slots. Materials and Gold are reserved when you start a job.":["Equipment and gem crafting share Forge slots. Materials and Gold are reserved when you start a job.","Ausrüstung und Edelsteine teilen Schmiedeplätze. Material und Gold werden beim Start reserviert.","Los equipos y las gemas comparten espacios de forja. Los materiales y el oro se reservan al comenzar.","Uitrusting en edelstenen delen smeedplekken. Materialen en goud worden bij aanvang gereserveerd.","Equipaggiamento e gemme condividono gli slot. Materiali e oro vengono riservati all'avvio.","Équipement et gemmes partagent les emplacements. Matériaux et or sont réservés au lancement."],
+ "Mastery benefits":["Mastery benefits","Meisterschaftsboni","Beneficios de maestría","Meesterschapsbonussen","Benefici maestria","Bonus de maîtrise"],
+ "Base chance":["Base chance","Grundchance","Probabilidad base","Basiskans","Probabilità base","Chance de base"],
+ "With Forge mastery":["With Forge mastery","Mit Schmiedemeisterschaft","Con maestría de forja","Met smeedmeesterschap","Con maestria di forgia","Avec la maîtrise de forge"],
+ "Earn Forge XP when claiming crafted equipment. Smithing and Tailoring still earn profession XP. Speed and rarity bonuses are captured when a new job starts; older jobs are unaffected.":["Earn Forge XP when claiming crafted equipment. Smithing and Tailoring still earn profession XP. Speed and rarity bonuses are captured when a new job starts; older jobs are unaffected.","Beim Abholen von Ausrüstung erhältst du Schmiede-EP und weiter Berufs-EP. Boni gelten ab Auftragsstart; ältere Aufträge bleiben unverändert.","Gana EXP de forja al recoger equipo y EXP de oficio por separado. Los bonos se fijan al iniciar; los trabajos antiguos no cambian.","Ontvang smeed-EP bij het ophalen van uitrusting en behoud vak-EP. Bonussen worden vastgelegd bij de start; oudere opdrachten veranderen niet.","Ottieni PE forgia ritirando equipaggiamento, oltre ai PE professione. I bonus si fissano all'avvio, senza cambiare lavori precedenti.","Gagnez de l'XP de forge en récupérant l'équipement, en plus de l'XP de métier. Les bonus sont fixés au départ sans effet rétroactif."],
+ "Choose a profession":["Choose a profession","Beruf wählen","Elige una profesión","Kies een vak","Scegli una professione","Choisir un métier"],
+ "Recipes retain their original skill requirements.":["Recipes retain their original skill requirements.","Rezepte behalten ihre ursprünglichen Berufsvoraussetzungen.","Las recetas mantienen sus requisitos originales de oficio.","Recepten behouden hun oorspronkelijke vaardigheidseisen.","Le ricette conservano i requisiti di abilità.","Les recettes gardent leurs conditions de compétence."],
+ "Metal equipment and tools":["Metal equipment and tools","Metallausrüstung und Werkzeuge","Equipo metálico y herramientas","Metalen uitrusting en gereedschap","Equipaggiamento metallico e attrezzi","Équipement métallique et outils"],
+ "Cloth and leather equipment":["Cloth and leather equipment","Stoff- und Lederausrüstung","Equipo de tela y cuero","Stoffen en leren uitrusting","Equipaggiamento in stoffa e pelle","Équipement en tissu et cuir"],
+ "Gem refinement and combining":["Gem refinement and combining","Edelsteine veredeln und kombinieren","Refinar y combinar gemas","Edelstenen verfijnen en samenvoegen","Raffinare e combinare gemme","Affinage et fusion des gemmes"],
+ "Open Forge":["Open Forge","Schmiede öffnen","Abrir forja","Open de smederij","Apri la forgia","Ouvrir la forge"],
+ "Queue, mastery & rewards":["Queue, mastery & rewards","Warteschlange, Meisterschaft & Belohnungen","Cola, maestría y recompensas","Wachtrij, meesterschap en beloningen","Coda, maestria e ricompense","File d’attente, maîtrise et récompenses"],
+ "Manage crafting jobs and mastery":["Manage crafting jobs and mastery","Aufträge und Meisterschaft verwalten","Gestiona trabajos y maestría","Beheer opdrachten en meesterschap","Gestisci lavori e maestria","Gérer les travaux et la maîtrise"],
+ // Bulk crafting quantity controls shared by every profession.
+ "Choose quantity":["Choose quantity","Menge wählen","Elegir cantidad","Kies aantal","Scegli quantità","Choisir la quantité"],
+ "Production stops after your selected batches are completed.":["Production stops after your selected batches are completed.","Die Produktion endet nach den gewählten Durchgängen.","La producción termina cuando se completan las tandas elegidas.","De productie stopt nadat je gekozen batches klaar zijn.","La produzione termina quando sono completati i lotti scelti.","La production s’arrête lorsque les lots choisis sont terminés."],
+ "Stop the current activity to release reserved materials before starting another recipe.":["Stop the current activity to release reserved materials before starting another recipe.","Beende die aktuelle Aktivität, um reservierte Materialien für ein anderes Rezept freizugeben.","Detén la actividad actual para liberar los materiales reservados antes de empezar otra receta.","Stop de huidige activiteit om gereserveerde materialen vrij te maken voordat je een ander recept start.","Interrompi l’attività attuale per liberare i materiali riservati prima di avviare un’altra ricetta.","Arrêtez l’activité actuelle pour libérer les matériaux réservés avant de lancer une autre recette."],
+ "Decrease quantity":["Decrease quantity","Menge verringern","Reducir cantidad","Aantal verlagen","Riduci quantità","Diminuer la quantité"],
+ "Craft quantity":["Craft quantity","Herstellungsmenge","Cantidad a fabricar","Aantal om te maken","Quantità da creare","Quantité à fabriquer"],
+ "Increase quantity":["Increase quantity","Menge erhöhen","Aumentar cantidad","Aantal verhogen","Aumenta quantità","Augmenter la quantité"],
+ "Maximum craftable quantity":["Maximum craftable quantity","Maximal herstellbare Menge","Cantidad máxima fabricable","Maximaal maakbaar aantal","Quantità massima creabile","Quantité maximale fabricable"],
+ "Quantity":["Quantity","Menge","Cantidad","Aantal","Quantità","Quantité"],
+ "Max":["Max","Max.","Máx.","Max.","Max","Max"],
+ "crafts":["crafts","Herstellungen","fabricaciones","maakbeurten","creazioni","fabrications"],
+ "per craft":["per craft","pro Herstellung","por fabricación","per maakbeurt","per creazione","par fabrication"],
+ "Forge capacity":["Forge capacity","Schmiedekapazität","Capacidad de la forja","Smederijcapaciteit","Capacità della forgia","Capacité de la forge"],
+ "Choose brew quantity":["Choose brew quantity","Braumen­ge wählen","Elegir cantidad a preparar","Kies aantal brouwsels","Scegli quantità da preparare","Choisir la quantité à préparer"],
+ "Choose processing quantity":["Choose processing quantity","Verarbeitungsmenge wählen","Elegir cantidad a procesar","Kies aantal verwerkingen","Scegli quantità da lavorare","Choisir la quantité à traiter"],
+ "Choose the number of batches to reserve. The limit includes your ingredients, Gold, and AFK time.":["Choose the number of batches to reserve. The limit includes your ingredients, Gold, and AFK time.","Wähle die Anzahl der Durchgänge. Zutaten, Gold und AFK-Zeit begrenzen die Menge.","Elige cuántas tandas reservar. El límite depende de los ingredientes, el oro y el tiempo AFK.","Kies hoeveel batches je reserveert. Grondstoffen, goud en AFK-tijd bepalen de limiet.","Scegli quanti lotti prenotare. Ingredienti, oro e tempo AFK determinano il limite.","Choisissez le nombre de lots à réserver. Les ingrédients, l’or et le temps AFK fixent la limite."],
+ "Select a recipe, choose a batch quantity, then start. Materials and Gold are reserved when the run begins.":["Select a recipe, choose a batch quantity, then start. Materials and Gold are reserved when the run begins.","Wähle ein Rezept und die Anzahl der Durchgänge. Materialien und Gold werden beim Start reserviert.","Selecciona una receta y la cantidad de tandas. Los materiales y el oro se reservan al comenzar.","Kies een recept en het aantal batches. Materialen en goud worden bij de start gereserveerd.","Seleziona una ricetta e il numero di lotti. Materiali e oro vengono riservati all’avvio.","Choisissez une recette et le nombre de lots. Les matériaux et l’or sont réservés au démarrage."],
+ "Process":["Process","Verarbeiten","Procesar","Verwerken","Lavora","Traiter"],
+ "Queue":["Queue","Einreihen","En cola","In wachtrij","In coda","Mettre en file"],
+ "Start":["Start","Starten","Iniciar","Starten","Avvia","Démarrer"],
+ // Retain released inline gathering tool recipe translations from main.
+  "Recipe known":["Recipe known","Rezept bekannt","Receta conocida","Recept bekend","Ricetta conosciuta","Recette connue"],
+  "Recipe details":["Recipe details","Rezeptdetails","Detalles de la receta","Receptdetails","Dettagli della ricetta","Détails de la recette"],
+  "CRAFTING RECIPE":["CRAFTING RECIPE","HERSTELLUNGSREZEPT","RECETA DE FABRICACIÓN","MAAKRECEPT","RICETTA DI CREAZIONE","RECETTE DE FABRICATION"],
+  "KNOWN":["KNOWN","BEKANNT","CONOCIDO","BEKEND","NOTO","CONNU"],
+  "BLUEPRINT":["BLUEPRINT","BAUPLAN","PLANO","BLAUWDRUK","PROGETTO","PLAN"],
+  "Character level":["Character level","Charakterstufe","Nivel de personaje","Personageniveau","Livello personaggio","Niveau du personnage"],
+  "Action time":["Action time","Aktionszeit","Tiempo de acción","Actietijd","Tempo d'azione","Temps d'action"],
+  "shorter":["shorter","kürzer","menos","korter","più breve","plus court"],
+  "Blueprint source unavailable":["Blueprint source unavailable","Bauplanquelle unbekannt","Fuente del plano no disponible","Bron van blauwdruk onbekend","Fonte del progetto non disponibile","Source du plan indisponible"],
+  "Monster drop":["Monster drop","Monsterbeute","Botín de monstruo","Monsterbuit","Bottino del mostro","Butin de monstre"],
+  "Hunt source":["Hunt source","Quelle jagen","Cazar objetivo","Jaag op bron","Caccia la fonte","Chasser la cible"],
+  "missing":["missing","fehlen","faltan","ontbreken","mancanti","manquants"],
+  "All materials ready":["All materials ready","Alle Materialien bereit","Todos los materiales listos","Alle materialen klaar","Tutti i materiali pronti","Tous les matériaux sont prêts"],
+  "Inventory + Bank":["Inventory + Bank","Inventar + Bank","Inventario + Banco","Inventaris + Bank","Inventario + Banca","Inventaire + Banque"],
+  "Source information unavailable":["Source information unavailable","Quelleninformation nicht verfügbar","Información de origen no disponible","Broninformatie niet beschikbaar","Informazioni sulla fonte non disponibili","Informations de source indisponibles"],
+  "Other sources":["Other sources","Weitere Quellen","Otras fuentes","Andere bronnen","Altre fonti","Autres sources"],
+  "base XP":["base XP","Basis-EP","EXP base","basis-XP","PE base","XP de base"],
+  "Gold ready":["Gold ready","Genug Gold vorhanden","Oro suficiente","Genoeg goud","Oro sufficiente","Or suffisant"],
+  "Not enough gold":["Not enough gold","Nicht genug Gold","Oro insuficiente","Niet genoeg goud","Oro insufficiente","Pas assez d'or"],
+  "Crafting availability is checked in Smithing.":["Crafting availability is checked in Smithing.","Die Herstellbarkeit wird in der Schmiede geprüft.","La disponibilidad de fabricación se comprueba en Herrería.","De maakbaarheid wordt gecontroleerd bij Smeden.","La disponibilità di creazione viene verificata in Forgiatura.","La disponibilité de fabrication est vérifiée en Forge."],
+  "Open in Smithing":["Open in Smithing","In Schmiedekunst öffnen","Abrir en Herrería","Openen bij Smeden","Apri in Forgiatura","Ouvrir en Forge"],
+  "{name} can drop the {tool} Blueprint.":["{name} can drop the {tool} Blueprint.","{name} kann den Bauplan für {tool} fallen lassen.","{name} puede soltar el plano de {tool}.","{name} kan de blauwdruk voor {tool} laten vallen.","{name} può lasciare il progetto di {tool}.","{name} peut laisser tomber le plan de {tool}."],
+  "Hide Recipe":["Hide Recipe","Rezept ausblenden","Ocultar receta","Recept verbergen","Nascondi ricetta","Masquer la recette"],
+  "Blueprint: {name}":["Blueprint: {name}","Bauplan: {name}","Plano: {name}","Blauwdruk: {name}","Progetto: {name}","Plan : {name}"],
+ // Forge v7 shared stats and compact, non-percentile player-facing bonus information.
+ "Bonus stat changes":["Bonus stat changes","Änderungen der Bonuswerte","Cambios en los bonus","Verschillen in bonusstats","Variazioni delle statistiche bonus","Variations des bonus"],
+ "Random bonus stats":["Random bonus stats","Zufällige Bonuswerte","Estadísticas adicionales aleatorias","Willekeurige bonusstats","Statistiche bonus casuali","Statistiques bonus aléatoires"],
+ "Possible bonus stats":["Possible bonus stats","Mögliche Bonuswerte","Posibles estadísticas adicionales","Mogelijke bonusstats","Statistiche bonus possibili","Bonus possibles"],
+ "View possible rolls":["View possible rolls","Mögliche Würfe anzeigen","Ver posibles resultados","Bekijk mogelijke bonussen","Mostra i bonus possibili","Voir les bonus possibles"],
+ "Hide possible rolls":["Hide possible rolls","Mögliche Würfe ausblenden","Ocultar posibles resultados","Verberg mogelijke bonussen","Nascondi i bonus possibili","Masquer les bonus possibles"],
+ "possible stats":["possible stats","mögliche Werte","estadísticas posibles","mogelijke stats","statistiche possibili","statistiques possibles"],
+ "2 bonuses per weapon":["2 bonuses per weapon","2 Boni pro Waffe","2 bonificaciones por arma","2 bonussen per wapen","2 bonus per arma","2 bonus par arme"],
+ "1 bonus · Epic+ gets 2":["1 bonus · Epic+ gets 2","1 Bonus · Episch+ erhält 2","1 bonus · Épico+ obtiene 2","1 bonus · Episch+ krijgt 2","1 bonus · Epico+ ne ottiene 2","1 bonus · Épique+ en donne 2"],
+ "All eligible weapons share the same bonus pool.":["All eligible weapons share the same bonus pool.","Alle geeigneten Waffen haben dieselben möglichen Boni.","Todas las armas aptas comparten los mismos bonus posibles.","Alle geschikte wapens hebben dezelfde mogelijke bonusstats.","Tutte le armi idonee condividono gli stessi bonus possibili.","Toutes les armes éligibles partagent les mêmes bonus possibles."],
+ "Each bonus type can appear only once on a weapon.":["Each bonus type can appear only once on a weapon.","Jede Bonusart kann pro Waffe nur einmal auftreten.","Cada tipo de bonus solo puede aparecer una vez por arma.","Elke bonusstat kan maar één keer per wapen voorkomen.","Ogni tipo di bonus può apparire una sola volta per arma.","Chaque type de bonus ne peut apparaître qu'une fois par arme."],
+ "Two different bonuses on every rarity.":["Two different bonuses on every rarity.","Zwei verschiedene Boni bei jeder Seltenheit.","Dos bonus distintos en todas las rarezas.","Twee verschillende bonussen bij elke zeldzaamheid.","Due bonus diversi per ogni rarità.","Deux bonus distincts à chaque rareté."],
+ "Common–Rare: 1 bonus. Epic+: 2 bonuses.":["Common–Rare: 1 bonus. Epic+: 2 bonuses.","Gewöhnlich–Selten: 1 Bonus. Episch+: 2 Boni.","Común–Raro: 1 bonus. Épico+: 2 bonus.","Gewoon–Zeldzaam: 1 bonus. Episch+: 2 bonussen.","Comune–Raro: 1 bonus. Epico+: 2 bonus.","Commun–Rare : 1 bonus. Épique+ : 2 bonus."],
+ "Bonus stats, rarity and quality roll separately on claim.":["Bonus stats, rarity and quality roll separately on claim.","Bonuswerte, Seltenheit und Qualität werden beim Abholen getrennt gewürfelt.","Los bonus, la rareza y la calidad se generan por separado al recoger.","Bonusstats, zeldzaamheid en kwaliteit worden apart bepaald bij het ophalen.","Bonus, rarità e qualità vengono generati separatamente al ritiro.","Les bonus, la rareté et la qualité sont tirés séparément à la récupération."],
+ "Bonus range":["Bonus range","Bonusspanne","Rango del bonus","Bonusbereik","Intervallo bonus","Plage du bonus"],
+ "Older copy — no recorded bonus":["Older copy — no recorded bonus","Älteres Exemplar – kein Bonus gespeichert","Copia antigua: sin bonus registrado","Oud exemplaar — geen bonus geregistreerd","Copia precedente: nessun bonus registrato","Ancien exemplaire : aucun bonus enregistré"],
+ "Max HP":["Max HP","Max. LP","PV máx.","Max. HP","PS max","PV max"],
+ "Armor":["Armor","Rüstung","Armadura","Pantser","Armatura","Armure"],
+ "Crit Rate":["Crit Rate","Krit.-Chance","Prob. crítico","Critkans","Prob. critico","Taux critique"],
+  // Exact-copy bonus stats: maintained across the mainline gear quick-inspect redesign.
+  "BONUS STATS":["BONUS STATS","BONUSWERTE","ESTADÍSTICAS EXTRA","BONUSSTATISTIEKEN","STATISTICHE BONUS","STATS BONUS"],
+  "Random bonuses on this equipment copy.":["Random bonuses on this equipment copy.","Zufällige Boni für dieses Ausrüstungsexemplar.","Bonificaciones aleatorias de esta pieza de equipo.","Willekeurige bonussen op dit uitrustingsstuk.","Bonus casuali su questa copia dell'equipaggiamento.","Bonus aléatoires sur cet exemplaire d'équipement."],
+ // Clear tier and rolled bonus math for gathering tools (six base locales).
+ "Tier bonuses {base}% · Speed rolls +{roll} points · Effective {total}%":["Tier bonuses {base}% · Speed rolls +{roll} points · Effective {total}%","Stufenboni {base}% · Tempo-Würfe +{roll} Prozentpunkte · Effektiv {total}%","Bonos por niveles {base}% · Tiradas de velocidad +{roll} puntos · Efectivo {total}%","Tierbonussen {base}% · Snelheidsrollen +{roll} procentpunten · Effectief {total}%","Bonus dei livelli {base}% · Tiri velocità +{roll} punti · Effettivo {total}%","Bonus des paliers {base}% · Tirages vitesse +{roll} points · Effectif {total}%"],
+ "Speed rolls reduce remaining action time. Total reduction cannot exceed 80%.":["Speed rolls reduce remaining action time. Total reduction cannot exceed 80%.","Tempo-Boni verkürzen die verbleibende Aktionszeit. Die Gesamtreduktion ist auf 80% begrenzt.","Los bonos de velocidad reducen el tiempo restante. La reducción total no puede superar el 80%.","Snelheidsbonussen verkorten de resterende actietijd. De totale vermindering is maximaal 80%.","I bonus velocità riducono il tempo rimanente. La riduzione totale non supera l'80%.","Les bonus de vitesse réduisent le temps restant. La réduction totale ne dépasse pas 80%."],
+ "Speed cap reached":["Speed cap reached","Tempolimit erreicht","Límite de velocidad alcanzado","Snelheidslimiet bereikt","Limite di velocità raggiunto","Limite de vitesse atteinte"],
+ "Rare finds: +{percent}% relative chance (eligible gathering drops only)":["Rare finds: +{percent}% relative chance (eligible gathering drops only)","Seltene Funde: +{percent}% relative Chance (nur geeignete Sammelbeute)","Hallazgos raros: +{percent}% de probabilidad relativa (solo recompensas de recolección válidas)","Zeldzame vondsten: +{percent}% relatieve kans (alleen geschikte verzamelvondsten)","Ritrovamenti rari: +{percent}% probabilità relativa (solo ricompense di raccolta idonee)","Trouvailles rares : +{percent}% de chance relative (récoltes éligibles uniquement)"],
+ "Tier contribution: {base}% base → {adjusted}% with rarity and quality":["Tier contribution: {base}% base → {adjusted}% with rarity and quality","Stufenbeitrag: {base}% Basis → {adjusted}% mit Seltenheit und Qualität","Aporte del nivel: {base}% base → {adjusted}% con rareza y calidad","Tierbijdrage: {base}% basis → {adjusted}% met zeldzaamheid en kwaliteit","Contributo livello: {base}% base → {adjusted}% con rarità e qualità","Contribution du palier : {base}% de base → {adjusted}% avec rareté et qualité"],
+ "Rarity {rarity}% · Quality {quality}% (relative to tier base)":["Rarity {rarity}% · Quality {quality}% (relative to tier base)","Seltenheit {rarity}% · Qualität {quality}% (relativ zum Stufenbonus)","Rareza {rarity}% · Calidad {quality}% (respecto a la base del nivel)","Zeldzaamheid {rarity}% · Kwaliteit {quality}% (t.o.v. de tierbasis)","Rarità {rarity}% · Qualità {quality}% (rispetto alla base del livello)","Rareté {rarity}% · Qualité {quality}% (par rapport à la base du palier)"],
+
+ // Gathering tool forging: typed labels, safe placeholders and all six base locales.
+ "Every new tool rolls exactly one stat: Gathering Speed +{min}–{max}% OR Gathering Rarity Chance +{rareMin}–{rareMax}%. All tiers and rarities use identical roll ranges.":[
+  "Every new tool rolls exactly one stat: Gathering Speed +{min}–{max}% OR Gathering Rarity Chance +{rareMin}–{rareMax}%. All tiers and rarities use identical roll ranges.",
+  "Jedes neue Werkzeug erhält genau einen Bonuswert: Sammeltempo +{min}–{max}% ODER Chance auf seltene Funde +{rareMin}–{rareMax}%. Die Bereiche gelten für alle Stufen und Seltenheiten.",
+  "Cada herramienta nueva obtiene exactamente una bonificación: velocidad de recolección +{min}–{max}% O probabilidad de hallazgos raros +{rareMin}–{rareMax}%. Los rangos son iguales para todos los niveles y rarezas.",
+  "Elk nieuw gereedschap krijgt precies één bonus: verzamelsnelheid +{min}–{max}% OF kans op zeldzame vondsten +{rareMin}–{rareMax}%. De bereiken zijn gelijk voor alle tiers en zeldzaamheden.",
+  "Ogni nuovo attrezzo ottiene esattamente un bonus: velocità di raccolta +{min}–{max}% O probabilità di ritrovamenti rari +{rareMin}–{rareMax}%. Gli intervalli sono uguali per tutti i livelli e le rarità.",
+  "Chaque nouvel outil reçoit exactement un bonus : vitesse de récolte +{min}–{max}% OU chance de trouvailles rares +{rareMin}–{rareMax}%. Les plages sont identiques pour tous les paliers et toutes les raretés."
+ ],
+ "Displayed base speed is the Uncommon, Quality 50 baseline. Craft rarity and Quality 0–100 adjust the base tier bonus, not the roll range.":[
+  "Displayed base speed is the Uncommon, Quality 50 baseline. Craft rarity and Quality 0–100 adjust the base tier bonus, not the roll range.",
+  "Der angezeigte Grundwert gilt für Ungewöhnlich mit Qualität 50. Seltenheit und Qualität 0–100 ändern den Grundbonus, nicht den möglichen Bonusbereich.",
+  "La velocidad base mostrada corresponde a Poco común y calidad 50. La rareza y la calidad 0–100 modifican la bonificación base, no el rango de tirada.",
+  "De getoonde basissnelheid geldt voor Ongewoon met kwaliteit 50. Zeldzaamheid en kwaliteit 0–100 veranderen de tierbonus, niet het bereik van de roll.",
+  "La velocità base mostrata corrisponde a Non comune, Qualità 50. Rarità e Qualità 0–100 modificano il bonus base, non l'intervallo dei tiri.",
+  "La vitesse de base affichée correspond à Peu commun, Qualité 50. La rareté et la Qualité 0–100 modifient le bonus de base, pas la plage du tirage."
+ ],
+
  // Permanent socket rules and irreversible manual equipment disposal.
  "Gem extraction is no longer available.":["Gem extraction is no longer available.","Das Entfernen von Edelsteinen ist nicht mehr möglich.","Ya no se pueden extraer gemas.","Edelstenen kunnen niet meer worden verwijderd.","Non è più possibile estrarre le gemme.","L'extraction des gemmes n'est plus possible."],
  "The old gem is permanently destroyed when replaced.":["The old gem is permanently destroyed when replaced.","Der bisherige Edelstein wird beim Ersetzen endgültig zerstört.","La gema anterior se destruye definitivamente al sustituirla.","De oude edelsteen wordt bij vervanging definitief vernietigd.","La gemma precedente viene distrutta definitivamente quando viene sostituita.","L'ancienne gemme est définitivement détruite lors du remplacement."],
@@ -680,6 +908,9 @@ const skills={
 "Only gathering nodes in this region are shown.":["Only gathering nodes in this region are shown.","Es werden nur Sammelstellen dieser Region angezeigt.","Solo se muestran recursos de esta región.","Alleen verzamelpunten in deze regio worden getoond.","Sono mostrati solo i punti di raccolta di questa regione.","Seuls les points de récolte de cette région sont affichés."],
 "Forge work reserves materials and Gold when it starts. Equipment, gem refinement and gem combining share the same crafting slots; repeatable processing uses the Active Activity timer.":["Forge work reserves materials and Gold when it starts. Equipment, gem refinement and gem combining share the same crafting slots; repeatable processing uses the Active Activity timer.","Schmiedearbeit reserviert beim Start Materialien und Gold. Ausrüstung, Edelsteinveredelung und Kombination teilen sich Herstellungsplätze; wiederholbare Verarbeitung nutzt den Aktivitätstimer.","La forja reserva materiales y oro al empezar. El equipo, el refinado y la combinación de gemas comparten espacios; el procesamiento repetible usa el temporizador de actividad.","Smeedwerk reserveert materialen en goud bij de start. Uitrusting, edelsteenverfijning en combineren delen werkplekken; herhaalde verwerking gebruikt de activiteitstimer.","La forgia riserva materiali e oro all’avvio. Equipaggiamento, raffinazione e combinazione di gemme condividono gli spazi; la lavorazione ripetibile usa il timer attività.","La forge réserve matériaux et or au démarrage. Équipement, raffinage et combinaison de gemmes partagent les emplacements ; la transformation répétable utilise le minuteur d’activité."],
 "Materials are taken from Inventory first, then Bank.":["Materials are taken from Inventory first, then Bank.","Materialien werden zuerst dem Inventar, dann der Bank entnommen.","Los materiales se toman primero del inventario y luego del banco.","Materialen komen eerst uit de inventaris en daarna uit de bank.","I materiali vengono presi prima dall’inventario, poi dalla banca.","Les matériaux sont pris dans l’inventaire, puis dans la banque."],
+"{count} tools equipped":["{count} tools equipped","{count} Werkzeuge ausgerüstet","{count} herramientas equipadas","{count} stuks gereedschap uitgerust","{count} attrezzi equipaggiati","{count} outils équipés"],
+"{percent}% shorter action time":["{percent}% shorter action time","{percent} % kürzere Aktionszeit","Tiempo de acción un {percent}% más corto","{percent}% kortere actietijd","Tempo azione ridotto del {percent}%","Durée d’action réduite de {percent} %"],
+"Unequip":["Unequip","Ablegen","Desequipar","Afdoen","Rimuovi","Déséquiper"],
 "No tool equipped":["No tool equipped","Kein Werkzeug ausgerüstet","Sin herramienta equipada","Geen gereedschap uitgerust","Nessun attrezzo equipaggiato","Aucun outil équipé"],
 "No tool · 15% slower gathering":["No tool · 15% slower gathering","Kein Werkzeug · 15 % langsameres Sammeln","Sin herramienta · recolección un 15 % más lenta","Geen gereedschap · 15% langzamer verzamelen","Nessun attrezzo · raccolta più lenta del 15%","Aucun outil · récolte 15 % plus lente"],
 "Tier {tier} · {percent}% shorter action time":["Tier {tier} · {percent}% shorter action time","Stufe {tier} · {percent} % kürzere Aktionszeit","Grado {tier} · acciones un {percent}% más cortas","Rang {tier} · {percent}% kortere actietijd","Grado {tier} · tempo azione ridotto del {percent}%","Palier {tier} · durée d’action réduite de {percent} %"],
@@ -1086,10 +1317,12 @@ const crafting={
 "Stop & refund unused":["Stop & refund unused","Stoppen und Rest erstatten","Parar y devolver sobrante","Stoppen en restant teruggeven","Ferma e rimborsa il resto","Arrêter et rembourser le reste"],
 "Tap a resource to begin practicing.":["Tap a resource to begin practicing.","Tippe auf eine Ressource, um zu üben.","Toca un recurso para practicar.","Tik op een grondstof om te oefenen.","Tocca una risorsa per esercitarti.","Touchez une ressource pour pratiquer."],
 "Practice in progress":["Practice in progress","Übung läuft","Práctica en curso","Oefening bezig","Pratica in corso","Pratique en cours"],
+"ACTIVE BLESSINGS":["ACTIVE BLESSINGS","AKTIVE SEGEN","BENDICIONES ACTIVAS","ACTIEVE ZEGENINGEN","BENEDIZIONI ATTIVE","BÉNÉDICTIONS ACTIVES"],
 "ACTIVE BLESSING":["ACTIVE BLESSING","AKTIVER SEGEN","BENDICIÓN ACTIVA","ACTIEVE ZEGEN","BENEDIZIONE ATTIVA","BÉNÉDICTION ACTIVE"],
 "No blessing selected":["No blessing selected","Kein Segen gewählt","Sin bendición seleccionada","Geen zegen gekozen","Nessuna benedizione selezionata","Aucune bénédiction sélectionnée"],
 "Show all":["Show all","Alle anzeigen","Mostrar todo","Alles tonen","Mostra tutto","Tout afficher"],
 "Hide weaker":["Hide weaker","Schwächere ausblenden","Ocultar más débiles","Zwakkere verbergen","Nascondi più deboli","Masquer les plus faibles"],
+"Equip one blessing per category. Star useful alternatives to keep them visible.":["Equip one blessing per category. Star useful alternatives to keep them visible.","Rüste einen Segen pro Kategorie aus. Markiere Alternativen, damit sie sichtbar bleiben.","Equipa una bendición por categoría. Marca las alternativas para mantenerlas visibles.","Rust één zegening per categorie uit. Markeer alternatieven om ze zichtbaar te houden.","Equipaggia una benedizione per categoria. Segna le alternative per mantenerle visibili.","Équipez une bénédiction par catégorie. Marquez les alternatives pour les garder visibles."],
 "Equip one blessing at a time. Star useful alternatives so they remain visible when weaker blessings are hidden.":["Equip one blessing at a time. Star useful alternatives so they remain visible when weaker blessings are hidden.","Rüste einen Segen gleichzeitig aus. Markiere Alternativen, damit sie beim Ausblenden schwächerer Segen sichtbar bleiben.","Equipa una bendición a la vez. Marca alternativas para mantenerlas visibles al ocultar las más débiles.","Rust één zegen tegelijk uit. Markeer alternatieven zodat ze zichtbaar blijven wanneer zwakkere verborgen zijn.","Equipaggia una benedizione alla volta. Segna le alternative per mantenerle visibili quando nascondi quelle più deboli.","Équipez une bénédiction à la fois. Marquez les alternatives pour les garder visibles quand les plus faibles sont masquées."],
 "Close Forge result":["Close Forge result","Schmiedeergebnis schließen","Cerrar resultado de forja","Smeedresultaat sluiten","Chiudi risultato forgia","Fermer le résultat de forge"],
 "EXCEPTIONAL FORGE RESULT":["EXCEPTIONAL FORGE RESULT","AUSSERGEWÖHNLICHES SCHMIEDEERGEBNIS","RESULTADO DE FORJA EXCEPCIONAL","UITZONDERLIJK SMEEDRESULTAAT","RISULTATO FORGIA ECCEZIONALE","RÉSULTAT DE FORGE EXCEPTIONNEL"],
@@ -1355,6 +1588,10 @@ const details={
 "TIMED PACE":["TIMED PACE","ZEITTAKT","RITMO TEMPORIZADO","TIJDTEMPO","RITMO TEMPORIZZATO","RYTHME CHRONOMÉTRÉ"],
 "MAX LEVEL":["MAX LEVEL","MAX. STUFE","NIVEL MÁX.","MAX. NIVEAU","LIVELLO MAX","NIVEAU MAX"],
 "RECIPE MASTERY":["RECIPE MASTERY","REZEPTMEISTERSCHAFT","MAESTRÍA DE RECETA","RECEPTMEESTERSCHAP","MAESTRIA RICETTA","MAÎTRISE DE RECETTE"],
+"Next bonus":["Next bonus","Nächster Bonus","Siguiente bonificación","Volgende bonus","Prossimo bonus","Prochain bonus"],
+"How tool stats work":["How tool stats work","So funktionieren Werkzeugwerte","Cómo funcionan las estadísticas","Hoe gereedschapsbonussen werken","Come funzionano i bonus","Comprendre les bonus d’outil"],
+"Speed +{min}–{max}% or rare finds +{rareMin}–{rareMax}%":["Speed +{min}–{max}% or rare finds +{rareMin}–{rareMax}%","Tempo +{min}–{max}% oder seltene Funde +{rareMin}–{rareMax}%","Velocidad +{min}–{max}% o hallazgos raros +{rareMin}–{rareMax}%","Snelheid +{min}–{max}% of zeldzame vondsten +{rareMin}–{rareMax}%","Velocità +{min}–{max}% o ritrovamenti rari +{rareMin}–{rareMax}%","Vitesse +{min}–{max}% ou trouvailles rares +{rareMin}–{rareMax}%"],
+"Blueprint owned":["Blueprint owned","Bauplan vorhanden","Plano disponible","Blauwdruk in bezit","Progetto posseduto","Plan possédé"],
 "Maximum skill level reached":["Maximum skill level reached","Maximale Fertigkeitsstufe erreicht","Nivel máximo de habilidad alcanzado","Maximaal vaardigheidsniveau bereikt","Livello massimo abilità raggiunto","Niveau de compétence maximum atteint"],
 "Blueprint learned permanently":["Blueprint learned permanently","Bauplan dauerhaft gelernt","Plano aprendido permanentemente","Blauwdruk permanent geleerd","Progetto appreso permanentemente","Plan appris définitivement"],
 "Blueprint owned · consumed once when recipe is learned":["Blueprint owned · consumed once when recipe is learned","Bauplan vorhanden · wird beim Lernen verbraucht","Plano en posesión · se consume al aprender la receta","Blauwdruk in bezit · verbruikt bij leren van recept","Progetto posseduto · consumato all’apprendimento","Plan possédé · consommé à l’apprentissage"],
@@ -1500,8 +1737,176 @@ for(const [english,pair] of Object.entries(gemMergeEarlyLocales)){
  gameplayCatalogs.ru[english as GameplayKey]=pair[0];
  gameplayCatalogs.tr[english as GameplayKey]=pair[1];
 }
+// Russian/Turkish bonus labels for mainline Gear Storage.
+const bonusGearCopyEarlyLocales={
+ "BONUS STATS":["БОНУСНЫЕ ХАРАКТЕРИСТИКИ","EK ÖZELLİKLER"],
+ "Random bonuses on this equipment copy.":["Случайные бонусы этого экземпляра снаряжения.","Bu ekipman kopyasındaki rastgele bonuslar."],
+} as const;
+for(const [english,pair] of Object.entries(bonusGearCopyEarlyLocales)){
+ gameplayCatalogs.ru[english as GameplayKey]=pair[0];
+ gameplayCatalogs.tr[english as GameplayKey]=pair[1];
+}
+// New crafted gathering tool UI: keep the same roll explanations legible in RU/TR.
+const gatheringToolAffixEarlyLocales={
+  "Next bonus":["Следующий бонус","Sonraki bonus"],
+  "How tool stats work":["Как работают бонусы инструмента","Alet bonusları nasıl çalışır"],
+  "Speed +{min}–{max}% or rare finds +{rareMin}–{rareMax}%":["Скорость +{min}–{max}% или редкие находки +{rareMin}–{rareMax}%","Hız +{min}–{max}% veya nadir buluntu +{rareMin}–{rareMax}%"],
+  "Blueprint owned":["Чертёж есть","Plan mevcut"],
+  "Every new tool rolls exactly one stat: Gathering Speed +{min}–{max}% OR Gathering Rarity Chance +{rareMin}–{rareMax}%. All tiers and rarities use identical roll ranges.":[
+    "Каждый новый инструмент получает ровно один бонус: скорость сбора +{min}–{max}% ИЛИ шанс редких находок +{rareMin}–{rareMax}%. Диапазоны одинаковы для всех рангов и редкостей.",
+    "Her yeni alet yalnızca bir bonus alır: toplama hızı +{min}–{max}% VEYA nadir buluntu şansı +{rareMin}–{rareMax}%. Aralıklar tüm kademeler ve nadirlikler için aynıdır."
+  ],
+  "Displayed base speed is the Uncommon, Quality 50 baseline. Craft rarity and Quality 0–100 adjust the base tier bonus, not the roll range.":[
+    "Показанная базовая скорость соответствует необычному инструменту качества 50. Редкость и качество 0–100 изменяют базовый бонус ранга, но не диапазон бонуса.",
+    "Gösterilen temel hız, Yaygın Olmayan ve Kalite 50 içindir. Nadirlik ve Kalite 0–100, temel kademe bonusunu etkiler; bonus aralığını değiştirmez."
+  ],
+} as const;
+for(const [english,pair] of Object.entries(gatheringToolAffixEarlyLocales)){
+ gameplayCatalogs.ru[english as GameplayKey]=pair[0];
+ gameplayCatalogs.tr[english as GameplayKey]=pair[1];
+}
+// Compact tool-speed breakdown, including the extra RU/TR locales.
+const gatheringSpeedBreakdownEarlyLocales={
+ "Tier bonuses {base}% · Speed rolls +{roll} points · Effective {total}%":["Бонусы уровней {base}% · Бонус скорости +{roll} п.п. · Итог {total}%","Kademe bonusları %{base} · Hız bonusu +{roll} puan · Etkili %{total}"],
+ "Speed rolls reduce remaining action time. Total reduction cannot exceed 80%.":["Бонусы скорости сокращают оставшееся время действия. Общий предел сокращения — 80%.","Hız bonusları kalan eylem süresini azaltır. Toplam azalma %80'i aşamaz."],
+ "Speed cap reached":["Достигнут предел скорости","Hız sınırına ulaşıldı"],
+ "Rare finds: +{percent}% relative chance (eligible gathering drops only)":["Редкие находки: +{percent}% к относительному шансу (только подходящие ресурсы сбора)","Nadir buluntular: uygun toplama ganimetlerinde göreli şans +%{percent}"],
+ "Tier contribution: {base}% base → {adjusted}% with rarity and quality":["Вклад ранга: база {base}% → {adjusted}% с учётом редкости и качества","Kademe katkısı: %{base} taban → nadirlik ve kalite ile %{adjusted}"],
+ "Rarity {rarity}% · Quality {quality}% (relative to tier base)":["Редкость {rarity}% · Качество {quality}% (относительно базового бонуса)","Nadirlik %{rarity} · Kalite %{quality} (temel kademe bonusuna göre)"],
+} as const;
+for(const [english,pair] of Object.entries(gatheringSpeedBreakdownEarlyLocales)){
+ gameplayCatalogs.ru[english as GameplayKey]=pair[0];
+ gameplayCatalogs.tr[english as GameplayKey]=pair[1];
+}
+const craftingQuantityEarlyLocales={
+ "Added to queue":["Добавлено в очередь","Kuyruğa eklendi"],
+ "Craft complete":["Изготовление завершено","Üretim tamamlandı"],
+ "Add to forge":["Добавить в кузницу","Demirhaneye ekle"],
+ "Crafting failed. Please retry.":["Не удалось изготовить. Попробуйте ещё раз.","Üretim başarısız. Tekrar dene."],
+ "Choose quantity":["Выбрать количество","Miktarı seç"],
+ "Production stops after your selected batches are completed.":["Производство остановится после завершения выбранных партий.","Seçtiğin partiler tamamlandığında üretim durur."],
+ "Stop the current activity to release reserved materials before starting another recipe.":["Остановите текущее занятие, чтобы освободить зарезервированные материалы перед новым рецептом.","Başka bir tarife başlamadan önce ayrılan malzemeleri serbest bırakmak için mevcut etkinliği durdur."],
+ "Decrease quantity":["Уменьшить количество","Miktarı azalt"],
+ "Craft quantity":["Количество для изготовления","Üretim miktarı"],
+ "Increase quantity":["Увеличить количество","Miktarı artır"],
+ "Maximum craftable quantity":["Максимальное количество для изготовления","Üretilebilecek en yüksek miktar"],
+ "Quantity":["Количество","Miktar"],
+ "Max":["Макс.","Maks."],
+ "crafts":["изготовлений","üretim"],
+ "per craft":["за изготовление","üretim başına"],
+ "Forge capacity":["Вместимость кузницы","Demirhane kapasitesi"],
+ "Choose brew quantity":["Выберите количество зелий","Demleme miktarını seç"],
+ "Choose processing quantity":["Выберите количество обработок","İşleme miktarını seç"],
+ "Choose the number of batches to reserve. The limit includes your ingredients, Gold, and AFK time.":["Выберите число партий. Максимум зависит от материалов, золота и времени AFK.","Ayıracağın parti sayısını seç. Sınır malzemelerine, Altınına ve AFK sürene bağlıdır."],
+ "Select a recipe, choose a batch quantity, then start. Materials and Gold are reserved when the run begins.":["Выберите рецепт и число партий. Материалы и золото резервируются при запуске.","Tarifi ve parti sayısını seç. Malzemeler ve Altın başlatırken ayrılır."],
+ "Process":["Обработать","İşle"],
+ "Queue":["В очередь","Kuyruğa al"],
+ "Start":["Начать","Başlat"],
+} as const;
+for(const [english,pair] of Object.entries(craftingQuantityEarlyLocales)){
+ gameplayCatalogs.ru[english as GameplayKey]=pair[0];
+ gameplayCatalogs.tr[english as GameplayKey]=pair[1];
+}
+// Focused crafting interaction labels in Russian and Turkish (other shared locales are in common).
+const craftingFocusedEarlyLocales={
+ "Professions":["Профессии","Meslekler"],
+ "Components":["Компоненты","Bileşenler"],
+ "Requirements":["Требования","Gereksinimler"],
+ "No Gold refunded":["Золото не возвращается","Altın iade edilmez"],
+ "Crafting summary":["Сводка изготовления","Üretim özeti"],
+ "Total cost":["Общая стоимость","Toplam maliyet"],
+ "types":["видов","tür"],
+ "Missing a material?":["Не хватает материала?","Eksik malzeme mi var?"],
+} as const;
+for(const [english,pair] of Object.entries(craftingFocusedEarlyLocales)){
+ gameplayCatalogs.ru[english as GameplayKey]=pair[0];
+ gameplayCatalogs.tr[english as GameplayKey]=pair[1];
+}
+// Veldryn 2.0 tool vault Russian and Turkish translations (remaining six are in common).
+const toolVaultEarlyLocales={
+ "TOOL TIERS · SELECT TO INSPECT":["УРОВНИ ИНСТРУМЕНТОВ · ВЫБРАТЬ","ALET KADEMELERİ · İNCELE"],
+ "saved copies":["сохранённых копий","kayıtlı kopya"],
+ "Up to 2 per tier":["До 2 на уровень","Kademe başına en fazla 2"],
+ "saved":["сохранено","kayıtlı"],
+ "TIER {tier}":["УРОВЕНЬ {tier}","KADEME {tier}"],
+ "shorter action time":["меньше времени на действие","daha kısa eylem süresi"],
+ "Saved Tools":["Сохранённые инструменты","Kayıtlı Aletler"],
+ "Bonuses":["Бонусы","Bonuslar"],
+ "Only the active tool contributes bonuses. The reserve stays outside Inventory until withdrawn.":["Бонусы даёт только активный инструмент. Запасной хранится вне инвентаря до извлечения.","Yalnızca etkin alet bonus sağlar. Yedek alet alınana kadar envanter dışında kalır."],
+ "ACTIVE TOOL":["АКТИВНЫЙ ИНСТРУМЕНТ","ETKİN ALET"],
+ "EMPTY":["ПУСТО","BOŞ"],
+ "This copy currently contributes to gathering.":["Эта копия сейчас действует при сборе ресурсов.","Bu kopya şu anda toplama bonusu sağlar."],
+ "Move to Inventory":["Переместить в инвентарь","Envantere Taşı"],
+ "Choose an inventory copy below to equip this tier.":["Выберите ниже копию из инвентаря для этого уровня.","Bu kademeyi kuşanmak için aşağıdan envanterdeki bir kopyayı seç."],
+ "SAVED RESERVE":["ЗАПАСНОЙ ИНСТРУМЕНТ","KAYITLI YEDEK"],
+ "SAVED":["СОХРАНЕНО","KAYITLI"],
+ "Stored safely; grants no bonus until activated.":["Надёжно хранится; не даёт бонус до активации.","Güvenle saklanır; etkinleştirilene kadar bonus vermez."],
+ "Activate":["Активировать","Etkinleştir"],
+ "Save a second copy here to switch without using Inventory.":["Сохраните здесь вторую копию, чтобы переключаться без инвентаря.","Envanter kullanmadan geçiş yapmak için ikinci bir kopyayı burada sakla."],
+ "AVAILABLE IN INVENTORY":["ДОСТУПНО В ИНВЕНТАРЕ","ENVANTERDE MEVCUT"],
+ "Save":["Сохранить","Kaydet"],
+ "No additional copy in Inventory. Craft one in Smithing or withdraw one from Bank.":["В инвентаре нет другой копии. Создайте её в кузнице или заберите из банка.","Envanterde başka kopya yok. Demircilikte üret veya bankadan çek."],
+ "Withdraw from Bank":["Забрать из банка","Bankadan Çek"],
+ "Craft another tool":["Создать ещё один инструмент","Başka Alet Üret"],
+ "Base tier speed":["Базовая скорость уровня","Kademe Temel Hızı"],
+ "Rarity and Quality":["Редкость и качество","Nadirlik ve Kalite"],
+ "No active copy":["Нет активной копии","Etkin Kopya Yok"],
+ "Adjusted tier reduction":["Скорректированное ускорение","Düzeltilmiş Kademe Azaltımı"],
+ "Random bonus roll":["Случайный бонус","Rastgele Bonus"],
+ "required":["требуется","gerekli"],
+ "Character level required":["Требуемый уровень персонажа","Gerekli Karakter Seviyesi"],
+ "Tier speed bonuses add across equipped tiers. Speed rolls reduce the remaining time; rare-find and skill XP rolls apply only to this skill.":["Бонусы скорости уровней суммируются. Дополнительная скорость сокращает остаток времени; находки и опыт действуют только на этот навык.","Kademe hızları toplanır. Hız bonusu kalan süreyi azaltır; nadir buluntu ve beceri XP yalnızca bu beceriye işler."],
+ "Hide combined bonuses":["Скрыть общие бонусы","Toplam Bonusları Gizle"],
+ "Show combined bonuses":["Показать общие бонусы","Toplam Bonusları Göster"],
+ "COMBINED EQUIPPED BONUSES":["ОБЩИЕ АКТИВНЫЕ БОНУСЫ","BİRLEŞİK ETKİN BONUSLAR"],
+ "Faster gathering":["Быстрее сбор","Daha Hızlı Toplama"],
+ "Slower gathering":["Медленнее сбор","Daha Yavaş Toplama"],
+ "Rare finds":["Редкие находки","Nadir Buluntular"],
+ "Tier contributions":["Вклад уровней","Kademe Katkıları"],
+ "Speed rolls":["Бонусы скорости","Hız Bonusları"],
+ "points":["пунктов","puan"],
+ "Effective":["Эффективно","Etkin"],
+ "Only active copies count. Skill XP rolls stack additively within this skill, capped at +60%. Gathering speed is capped at 80%.":["Учитываются только активные копии. Опыт навыка суммируется до +60%. Скорость сбора ограничена 80%.","Yalnızca etkin kopyalar sayılır. Beceri XP bonusları +%60’a kadar toplanır. Toplama hızı %80 ile sınırlıdır."],
+} as const;
+for(const [english,pair] of Object.entries(toolVaultEarlyLocales)){
+ gameplayCatalogs.ru[english as GameplayKey]=pair[0];
+ gameplayCatalogs.tr[english as GameplayKey]=pair[1];
+}
+// Tool details from Inventory and Quick Inspect in Russian and Turkish.
+const toolDetailsEarlyLocales={
+ "GATHERING TOOL DETAILS":["СВЕДЕНИЯ ОБ ИНСТРУМЕНТЕ","TOPLAMA ALETİ DETAYLARI"],
+ "Tool {number}":["Инструмент {number}","Alet {number}"],
+ "Legacy tool":["Старый инструмент","Eski Alet"],
+ "Tier gathering speed":["Скорость сбора уровня","Kademe Toplama Hızı"],
+ "Tier base {base}% · Rarity {rarity}% · Quality {quality}%":["База {base}% · Редкость {rarity}% · Качество {quality}%","Kademe tabanı %{base} · Nadirlik %{rarity} · Kalite %{quality}"],
+ "Bonus stat roll":["Случайный бонус характеристики","Rastgele Özellik Bonusu"],
+ "Legacy tool · No bonus stat roll":["Старый инструмент · Нет случайного бонуса","Eski Alet · Rastgele bonus yok"],
+ "Tool roll record unavailable · no bonus is assumed.":["Данные бонуса недоступны · Бонус не предполагается.","Alet bonus kaydı yok · Bonus varsayılmaz."],
+ "Each tier contributes gathering speed. Rolled speed bonuses apply separately to remaining action time, subject to the gathering speed cap.":["Каждый уровень ускоряет сбор. Случайные бонусы скорости отдельно сокращают оставшееся время, до предела.","Her kademe toplama hızını artırır. Rastgele hız bonusları kalan süreye ayrı uygulanır; üst sınır geçerlidir."],
+ "BASE STATS":["БАЗОВЫЕ ХАРАКТЕРИСТИКИ","TEMEL İSTATİSTİKLER"],
+ "Equipment base stats":["Базовые характеристики снаряжения","Ekipman Temel İstatistikleri"],
+ "TRAIT":["ОСОБЕННОСТЬ","ÖZELLİK"],
+ "GATHERING TOOLS":["ИНСТРУМЕНТЫ ДЛЯ СБОРА","TOPLAMA ALETLERİ"],
+ "GATHERING SPEED":["СКОРОСТЬ СБОРА","TOPLAMA HIZI"],
+ "Tier + Rarity + Quality":["Уровень + редкость + качество","Kademe + Nadirlik + Kalite"],
+ "BONUS STAT ROLL":["СЛУЧАЙНЫЙ БОНУС","RASTGELE BONUS"],
+ "Gathering Speed":["Скорость сбора","Toplama Hızı"],
+ "Gathering Rarity Chance":["Шанс редкой находки","Nadir Buluntu Şansı"],
+ "To Bank":["В банк","Bankaya"],
+ "Tier base · No bonus roll":["Базовый уровень · Без случайного бонуса","Kademe tabanı · Rastgele bonus yok"],
+} as const;
+for(const [english,pair] of Object.entries(toolDetailsEarlyLocales)){
+ gameplayCatalogs.ru[english as GameplayKey]=pair[0];
+ gameplayCatalogs.tr[english as GameplayKey]=pair[1];
+}
 export const gameplayTranslate=createTranslator<GameplayKey>(gameplayCatalogs);
 
+const plainKeysByLowercase=new Map<string,GameplayKey>();
+for(const key of Object.keys(rows) as GameplayKey[]){
+ if(key.includes('{'))continue;
+ const lower=key.toLowerCase();
+ if(!plainKeysByLowercase.has(lower))plainKeysByLowercase.set(lower,key);
+}
 const templates=(Object.keys(rows) as GameplayKey[]).filter(key=>key.includes('{')).map(key=>{
   const names:string[]=[];
   const escaped=key.replace(/[.*+?^$()|[\]\\]/g,'\\$&');
@@ -1515,7 +1920,7 @@ export function localizeGameplay(language:Language,value:string|undefined):strin
   const equipmentMetadata=equipmentMaterialMetadataText(language,value);
   if(equipmentMetadata!==undefined)return equipmentMetadata;
   if(Object.prototype.hasOwnProperty.call(rows,value))return gameplayTranslate(language,value as GameplayKey);
-  const key=(Object.keys(rows) as GameplayKey[]).find(entry=>!entry.includes('{')&&entry.toLowerCase()===value.toLowerCase());
+  const key=plainKeysByLowercase.get(value.toLowerCase());
   if(key){const translated=gameplayTranslate(language,key);return value===value.toUpperCase()?translated.toLocaleUpperCase(language):translated;}
   // German source labels take priority over generic interpolated templates.
   if(language==='de'){const translated=germanCoverageText(value);if(translated!==undefined)return translated;}

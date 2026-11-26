@@ -36,7 +36,7 @@ const target=skillTargetEta(state,'woodcutting',7,gather.xpPerHour);
 ok((target.etaSeconds??0)>gather.levelPace.etaSeconds!,'Higher skill unlock ETA must include multiple levels of XP');
 const starterToolState={...state,character:{...state.character!,equippedToolIds:{woodcutting:'GREENWOOD_HATCHET'}}};
 const ironToolState={...state,character:{...state.character!,equippedToolIds:{woodcutting:'ASTER_IRON_HATCHET'}}};
-const oathToolState={...state,character:{...state.character!,equippedToolIds:{woodcutting:'OATHSTONE_HATCHET'}}};
+const oathToolState={...state,character:{...state.character!,equippedToolIdsByTier:{woodcutting:{2:'ASTER_IRON_HATCHET',3:'OATHSTONE_HATCHET'}}}};
 const ironwood=GATHERING.find(row=>row.id==='IRONWOOD_TREE')!,crownwood=GATHERING.find(row=>row.id==='CROWNWOOD_TREE')!;
 const starterPace=gatheringBalanceProjection(starterToolState,greenwood,24),midPace=gatheringBalanceProjection(ironToolState,ironwood,24),crownTier2Pace=gatheringBalanceProjection(ironToolState,crownwood,24),highPace=gatheringBalanceProjection(oathToolState,crownwood,24);
 ok(midPace.xpPerHour>starterPace.xpPerHour,'Recommended tier-2 gathering must improve XP/hour over starter gathering');
@@ -47,7 +47,7 @@ ok((starterPace.levelPace.etaSeconds??Infinity)>=8*60&&(starterPace.levelPace.et
 const firstUnlock=skillTargetEta(starterToolState,'woodcutting',7,starterPace.xpPerHour);
 ok((firstUnlock.etaSeconds??Infinity)>=4*3600&&(firstUnlock.etaSeconds??Infinity)<=12*3600,'The first major gathering tier should remain reachable within a long playday/offline session');
 const level7Wood={...ironToolState,skills:ironToolState.skills.map(row=>row.skillId==='woodcutting'?{...row,level:7,xp:totalXpAtLevel(7)}:row)};
-const level15Wood={...ironToolState,skills:ironToolState.skills.map(row=>row.skillId==='woodcutting'?{...row,level:15,xp:totalXpAtLevel(15)}:row)};
+const level15Wood={...ironToolState,character:{...ironToolState.character!,equippedToolIdsByTier:{woodcutting:{1:'GREENWOOD_HATCHET',2:'ASTER_IRON_HATCHET'}}},skills:ironToolState.skills.map(row=>row.skillId==='woodcutting'?{...row,level:15,xp:totalXpAtLevel(15)}:row)};
 const level7Pace=gatheringBalanceProjection(level7Wood,ironwood,24).levelPace,level15Pace=gatheringBalanceProjection(level15Wood,crownwood,24).levelPace;
 ok((level7Pace.etaSeconds??Infinity)<=3*3600,'A recommended mid-tier gathering node should keep a level around 7 within a few hours');
 ok((level15Pace.etaSeconds??Infinity)<=6*3600,'A recommended high Asterfall gathering node should keep level 15 progression within a long session');
@@ -80,7 +80,7 @@ ok(expected.averageFindSeconds>echoPace.cycleSeconds,'Rare material average find
 const mossMaterial=rat.drops.find(drop=>drop.itemId==='MOSS_FIBER')!,mossExpected=dropExpectation(mossMaterial.chance,mossMaterial.min,mossMaterial.max,combat.killsPerHour);
 close(mossMaterial.chance,.275*.95,.000001,'Ordinary monster material chance is halved and then reduced by 5%');
 const blueprintMonster=MONSTERS.find(row=>row.id==='THORNLING')!,hatchetBlueprint=blueprintMonster.drops.find(drop=>drop.itemId==='BP_ASTER_IRON_HATCHET')!;
-close(hatchetBlueprint.chance,.011,.000001,'Tool blueprint odds apply 25% scarcity, the general 5% drop reduction and final 0.10 percentage-point round-down');
+close(hatchetBlueprint.chance,.0055,.000001,'Tool blueprint odds include the additional 50% rarity cut after 25% scarcity, 5% general reduction and rounding');
 ok(mossExpected.averageFindSeconds<5*60,'Starter required materials should arrive frequently rather than carrying the grind');
 ok(MONSTERS.every(monster=>monster.drops.every(drop=>itemDef(drop.itemId).type!=='gear')),'Monster loot must not bypass Equipment 2.0 crafting with finished gear drops');
 const oracle=MONSTERS.find(row=>row.id==='DUNE_ORACLE')!,oraclePace=combatBaselineProjection(oracle),sigil=oracle.drops.find(drop=>drop.itemId==='SWIFT_SIGIL')!,sigilExpected=dropExpectation(sigil.chance,sigil.min,sigil.max,oraclePace.killsPerHour);
@@ -149,7 +149,7 @@ ok(exploreLevel?.label==='Exploration','Active Exploration must resolve the Expl
 const faithState={...activityBase,activity:{kind:'faith',targetId:'FAITH_QUIET',startedAtMs:1,lastClaimAtMs:1} as any};
 close(activityCycleSeconds(faithState),30,.001,'Faith Home cycle must use the authored practice duration');
 const faithRate=activityRate(faithState),faithLevel=activeActivityLevelPace(faithState,faithRate.xpPerHour);
-close(faithRate.xpPerHour,11520,.001,'Quiet Prayer Home rate must match 96 XP per 30-second practice');
+close(faithRate.xpPerHour,10800,.001,'Quiet Prayer Home rate must match 90 XP per 30-second practice');
 ok(faithLevel?.label==='Faith','Active Faith must resolve the Faith skill level bar');
 
 const alchemyState={...activityBase,activity:{kind:'alchemy',targetId:'TEST_BREW',startedAtMs:1,lastClaimAtMs:1,brew:{version:1,recipeId:'TEST_BREW',totalBatches:5,remainingBatches:5,inputsPerBatch:[],goldPerBatch:0,outputPerBatch:{itemId:'COPPER_INGOT',quantity:1},cycleSeconds:45,xpPerBatch:150}} as any};

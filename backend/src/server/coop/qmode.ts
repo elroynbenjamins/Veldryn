@@ -3,7 +3,7 @@ import { combatantFromVerifiedSnapshot } from '../combat/snapshot-adapter';
 import type { CombatantDefinition } from '../combat/types';
 import { EXPEDITIONS } from '../expeditions/content/launch-content';
 import { initialPersistentRunState, purchaseMerchantOffer, resolveCoopNode, type PersistentRunState, type NodeResolutionResult } from '../expeditions/node-resolution';
-import { generateCoopRouteGraph } from '../expeditions/route-generation';
+import { generateCoopRouteGraph,DUNGEON_ENDURANCE } from '../expeditions/route-generation';
 import { marksForRun } from '../expeditions/rewards';
 import {currentDungeonBaseMarks,frozenRunBaseMarks} from '../expeditions/reward-base';
 import type { FrozenLoadoutSnapshot } from './loadout-snapshots';
@@ -12,12 +12,17 @@ import { validateCoopRoster, validateUniqueDamageClasses } from './invariants';
 import {regularDungeonTierRequiredLevel,regularDungeonTierRequiredPower} from './dungeon-entry-policy';
 import {REGIONAL_DUNGEON_BALANCE_VERSION,regionalPowerMultipliers,regionalCombatPowerBoost} from './regional-power-balance';
 import {preparedCoopCombatants} from './potion-modifiers';
+import {scaleSocialEchoToHost} from './social-echo-balance';
+import {COOP_HOST_LEVEL_NORMALIZATION_VERSION} from './normalization';
+import {dungeonEncounterDepthMultipliers,dungeonBossTimeLimitMs,DUNGEON_BOSS_ENDURANCE_VERSION} from './dungeon-depth-scaling';
 import {roomBoonOffers,applyRoomBoon,type RoomBoonId} from './room-boon-choices';
+import {roomArtifactOffers,applyRoomArtifact} from './room-artifact-choices';
+import type {DungeonArtifactId} from './dungeon-artifacts';
 
 export interface QModeRun {
  id:string; requestId:string; controllerAccountId:string; expeditionId:string; tier:1|2|3|4|5;
  graph:CoopRouteGraph; currentNodeId:string; phase:'awaiting_choice'|'completed'|'failed';
- players:CombatantDefinition[]; persistentState:PersistentRunState; tierScalingVersion?:2; regionalBalanceVersion?:1; qmodePressureVersion?:1; echoSourceAccountIds:string[]; npcCharacterIds?:string[]; rewardBaseMarks?:number; rewardMarks?:number; chosenRoomBoons?:Record<string,RoomBoonId>;
+ players:CombatantDefinition[]; persistentState:PersistentRunState; enduranceRouteVersion?:1; bossEnduranceVersion?:typeof DUNGEON_BOSS_ENDURANCE_VERSION; tierScalingVersion?:2; regionalBalanceVersion?:1; rootboundT3CalibrationVersion?:1; qmodePressureVersion?:1; echoSourceAccountIds:string[]; npcCharacterIds?:string[]; rewardBaseMarks?:number; rewardMarks?:number; chosenRoomBoons?:Record<string,RoomBoonId>; chosenRoomArtifacts?:Record<string,DungeonArtifactId>;
  lastResolution?:{nodeId:string;result:NodeResolutionResult};
 }
 export interface QModeRunRepository {get(runId:string):QModeRun|undefined; getByRequest(accountId:string,requestId:string):QModeRun|undefined; save(run:QModeRun):void;}
@@ -42,16 +47,26 @@ function regionalCombatant(snapshot:FrozenLoadoutSnapshot,expeditionId:string,ba
 
 export class QModeService{
  constructor(private repository:QModeRunRepository,private serverSecret:string){}
- create(input:{requestId:string;runId:string;controllerAccountId:string;controllerSnapshot:FrozenLoadoutSnapshot;expeditionId:string;tier:1|2|3|4|5;contentVersion:string;balanceVersion:string;nowMs:number;profiles:PublishedEcho[];npcSnapshots?:readonly FrozenLoadoutSnapshot[]}):QModeRun{
+ create(input:{requestId:string;runId:string;controllerAccountId:string;controllerSnapshot:FrozenLoadoutSnapshot;expeditionId:string;tier:1|2|3|4|5;contentVersion:string;balanceVersion:string;nowMs:number;profiles:PublishedEcho[];npcSnapshots?:readonly FrozenLoadoutSnapshot[];preferredProfileIds?:readonly string[]}):QModeRun{
   const prior=this.repository.getByRequest(input.controllerAccountId,input.requestId);if(prior)return prior;
   const definition=EXPEDITIONS[input.expeditionId];if(!definition)throw new Error('unknown_expedition');if(!definition.coopImplemented)throw new Error('expedition_not_implemented');
-  const allies=recruitQModeAllies({serverSecret:this.serverSecret,requestId:input.requestId,controllerAccountId:input.controllerAccountId,controllerRole:input.controllerSnapshot.readiness.role,controllerClassId:input.controllerSnapshot.classId,contentVersion:input.contentVersion,nowMs:input.nowMs,profiles:input.profiles,minimumCombatPower:input.balanceVersion===REGIONAL_DUNGEON_BALANCE_VERSION?regularDungeonTierRequiredPower(definition,input.tier):undefined,npcSnapshots:input.npcSnapshots??[]});
+  const allies=recruitQModeAllies({serverSecret:this.serverSecret,requestId:input.requestId,controllerAccountId:input.controllerAccountId,controllerRole:input.controllerSnapshot.readiness.role,controllerClassId:input.controllerSnapshot.classId,contentVersion:input.contentVersion,nowMs:input.nowMs,profiles:input.profiles,npcSnapshots:input.npcSnapshots??[],preferredProfileIds:input.preferredProfileIds});
   const requiredLevel=regularDungeonTierRequiredLevel(definition,input.tier);
   for(const snapshot of [input.controllerSnapshot,...allies.map(ally=>ally.snapshot)])if((snapshot.characterLevel??snapshot.normalized.before.level)<requiredLevel)throw new Error(`character_below_tier_level:${snapshot.characterId}`);
-  if(input.balanceVersion===REGIONAL_DUNGEON_BALANCE_VERSION)for(const snapshot of [input.controllerSnapshot,...allies.map(ally=>ally.snapshot)])if(!Number.isFinite(snapshot.combatPower)||snapshot.combatPower!<regularDungeonTierRequiredPower(definition,input.tier))throw new Error('dungeon_power_requirement');
+  // Solo/Echo runs are level-gated; keep CP enforcement in createLive only.
   validateCoopRoster([{accountId:input.controllerAccountId,characterId:input.controllerSnapshot.characterId,role:input.controllerSnapshot.readiness.role},...allies.map(ally=>({accountId:ally.snapshot.accountId,characterId:ally.snapshot.characterId,role:ally.snapshot.readiness.role}))]);
   validateUniqueDamageClasses([input.controllerSnapshot,...allies.map(ally=>ally.snapshot)].map(snapshot=>({role:snapshot.readiness.role,classId:snapshot.classId})));
-  const players=[regionalCombatant(input.controllerSnapshot,input.expeditionId,input.balanceVersion),...allies.map(ally=>regionalCombatant(ally.snapshot,input.expeditionId,input.balanceVersion))];
+  const player=regionalCombatant(input.controllerSnapshot,input.expeditionId,input.balanceVersion);
+  const preferred=new Set(input.preferredProfileIds??[]);
+  const regionalEnabled=input.balanceVersion===REGIONAL_DUNGEON_BALANCE_VERSION;
+  const hostBoost=regionalCombatPowerBoost(input.expeditionId,input.controllerSnapshot.combatPower,regionalEnabled);
+  const players=[player,...allies.map(ally=>{
+   const base=regionalCombatant(ally.snapshot,input.expeditionId,input.balanceVersion);
+   // Host-level normalization already bounds the donor. Do not flatten gear by host CP.
+   if(input.controllerSnapshot.normalized.normalizationVersion===COOP_HOST_LEVEL_NORMALIZATION_VERSION||!ally.echo||!preferred.has(ally.echo.profileId))return base;
+   const donorBoost=regionalCombatPowerBoost(input.expeditionId,ally.snapshot.combatPower,regionalEnabled);
+   return scaleSocialEchoToHost(base,input.controllerSnapshot.combatPower,ally.snapshot.combatPower,hostBoost,donorBoost);
+  })];
   return this.createRun({requestId:input.requestId,runId:input.runId,controllerAccountId:input.controllerAccountId,expeditionId:input.expeditionId,tier:input.tier,contentVersion:input.contentVersion,balanceVersion:input.balanceVersion,players,qmodePressureVersion:1,echoSourceAccountIds:allies.filter(ally=>ally.kind==='echo').map(ally=>ally.snapshot.accountId),npcCharacterIds:allies.filter(ally=>ally.kind==='npc').map(ally=>ally.snapshot.characterId)});
  }
  createLive(input:{requestId:string;runId:string;controllerAccountId:string;expeditionId:string;tier:1|2|3|4|5;contentVersion:string;balanceVersion:string;snapshots:readonly FrozenLoadoutSnapshot[]}):QModeRun{
@@ -70,15 +85,29 @@ export class QModeService{
   const current=run.graph.nodes.find(node=>node.nodeId===run.currentNodeId);if(!current||!current.nextNodeIds.includes(input.optionNodeId))throw new Error('invalid_option');
   const selected=run.graph.nodes.find(node=>node.nodeId===input.optionNodeId);if(!selected)throw new Error('invalid_option');
   const offers=roomBoonOffers(run,this.serverSecret);
+  const artifactOffers=roomArtifactOffers(run,this.serverSecret);
   if(offers.length){
    // Older supported clients cannot submit a boon choice yet. Choose the
    // first deterministic offer for them instead of blocking existing runs.
    const selectedBoon=input.boonId??offers[0].id;
    if(!offers.some(offer=>offer.id===selectedBoon))throw new Error('invalid_boon_choice');
    applyRoomBoon(run,selectedBoon as RoomBoonId);
+  }else if(artifactOffers.length){
+   // Reuse the optional selection field to keep older supported clients
+   // compatible with a deterministic first-choice fallback.
+   const selectedArtifact=input.boonId??artifactOffers[0].id;
+   if(!artifactOffers.some(offer=>offer.id===selectedArtifact))throw new Error('invalid_artifact_choice');
+   applyRoomArtifact(run,selectedArtifact as DungeonArtifactId);
   }else if(input.boonId)throw new Error('invalid_boon_choice');
   const isCombat=selected.kind==='battle'||selected.kind==='elite'||selected.kind==='boss';
-  const regional=regionalPowerMultipliers(run.expeditionId,run.tier,run.regionalBalanceVersion===1,selected.contentId);
+  const regional=regionalPowerMultipliers(run.expeditionId,run.tier,run.regionalBalanceVersion===1,selected.contentId,run.rootboundT3CalibrationVersion);
+  // The first Endurance boss is a baseline clear checkpoint at room 8;
+  // only continued seven-room chapters add boss pressure. Regular rooms keep
+  // the original per-room difficulty ramp. Solo and Live share this engine.
+  const encounterDepth=run.enduranceRouteVersion===1&&selected.kind==='boss'
+   ?Math.max(1,selected.depth-DUNGEON_ENDURANCE.checkpointInterval):selected.depth;
+  const depth=dungeonEncounterDepthMultipliers(encounterDepth,run.enduranceRouteVersion===1,selected.kind==='boss',run.bossEnduranceVersion);
+  const maxDurationMs=dungeonBossTimeLimitMs(selected.depth,run.enduranceRouteVersion===1,selected.kind==='boss',run.bossEnduranceVersion);
   // Solar's repeated 5,200-HP Ward disproportionately blocks the Hexweaver/
   // Knife Dancer pairing despite verified entry CP. Slow only that ability on
   // newly versioned regional Tier I runs; keep opening Ward, boss phases and all
@@ -87,7 +116,7 @@ export class QModeService{
   const bossTuning=run.regionalBalanceVersion===1&&run.tier===1&&selected.contentId==='BOSS_EXP_SOLAR'
    ?{profileId:'sunscar-regional-solar-ward-cadence-v1',abilityCooldownMultipliers:{BOSS_EXP_SOLAR_WARD:3}}
    :undefined;
-  const result=resolveCoopNode({runId:run.id,serverSecret:this.serverSecret,node:selected,players:isCombat?preparedCoopCombatants(run.players,run.persistentState.preparedAlchemyPotionIdsByActor):run.players,state:run.persistentState,tier:run.tierScalingVersion===2?run.tier:undefined,enemyAttackMultiplier:(run.qmodePressureVersion===1?1.005:1)*(regional?.attack??1),enemyHpMultiplier:regional?.hp,enemyDefenseMultiplier:regional?.defense,enemyLevel:regional?.enemyLevel,enemyDamageProfile:run.qmodePressureVersion===1?'qmode-v1':undefined,bossTuning,safetyAiPlayerIds:input.safetyAiPlayerIds});
+  const result=resolveCoopNode({runId:run.id,serverSecret:this.serverSecret,node:selected,players:isCombat?preparedCoopCombatants(run.players,run.persistentState.preparedAlchemyPotionIdsByActor):run.players,state:run.persistentState,tier:run.tierScalingVersion===2?run.tier:undefined,enemyAttackMultiplier:(run.qmodePressureVersion===1?1.005:1)*(regional?.attack??1)*depth.attack,enemyHpMultiplier:(regional?.hp??1)*depth.hp,enemyDefenseMultiplier:(regional?.defense??1)*depth.defense,enemyLevel:regional?.enemyLevel,enemyDamageProfile:run.qmodePressureVersion===1?'qmode-v1':undefined,enduranceLootVersion:run.enduranceRouteVersion,campfireBalanceVersion:run.graph.generatorVersion?.endsWith('-endurance-v2')?2:undefined,deferArtifactChoice:run.enduranceRouteVersion===1&&run.qmodePressureVersion===1,bossTuning,maxDurationMs,safetyAiPlayerIds:input.safetyAiPlayerIds});
   run.lastResolution={nodeId:selected.nodeId,result:structuredClone(result)};
   run.persistentState=result.state;run.currentNodeId=selected.nodeId;
   if(!result.success)run.phase='failed';
@@ -103,8 +132,9 @@ export class QModeService{
   run.lastResolution={nodeId:node.nodeId,result:structuredClone(result)};run.persistentState=result.state;this.repository.save(run);return structuredClone(run);
  }
  private createRun(input:{requestId:string;runId:string;controllerAccountId:string;expeditionId:string;tier:1|2|3|4|5;contentVersion:string;balanceVersion:string;players:CombatantDefinition[];qmodePressureVersion?:1;echoSourceAccountIds:string[];npcCharacterIds?:string[]}):QModeRun{
-  const graph=generateCoopRouteGraph(this.serverSecret,input.expeditionId,input.runId,input.contentVersion,input.balanceVersion);
-  const run:QModeRun={id:input.runId,requestId:input.requestId,controllerAccountId:input.controllerAccountId,expeditionId:input.expeditionId,tier:input.tier,rewardBaseMarks:currentDungeonBaseMarks(input.expeditionId),graph,currentNodeId:graph.entryNodeId,phase:'awaiting_choice',players:input.players,persistentState:initialPersistentRunState(input.players),tierScalingVersion:2,...(input.balanceVersion===REGIONAL_DUNGEON_BALANCE_VERSION?{regionalBalanceVersion:1 as const}:{}),qmodePressureVersion:input.qmodePressureVersion,echoSourceAccountIds:input.echoSourceAccountIds,npcCharacterIds:input.npcCharacterIds??[]};
+  const endurance=input.balanceVersion===REGIONAL_DUNGEON_BALANCE_VERSION;
+  const graph=generateCoopRouteGraph(this.serverSecret,input.expeditionId,input.runId,input.contentVersion,input.balanceVersion,endurance?'endurance':'legacy');
+  const run:QModeRun={id:input.runId,requestId:input.requestId,controllerAccountId:input.controllerAccountId,expeditionId:input.expeditionId,tier:input.tier,rewardBaseMarks:currentDungeonBaseMarks(input.expeditionId),graph,currentNodeId:graph.entryNodeId,phase:'awaiting_choice',players:input.players,persistentState:initialPersistentRunState(input.players),...(endurance?{enduranceRouteVersion:1 as const,bossEnduranceVersion:DUNGEON_BOSS_ENDURANCE_VERSION}:{}),tierScalingVersion:2,...(input.balanceVersion===REGIONAL_DUNGEON_BALANCE_VERSION?{regionalBalanceVersion:1 as const}:{}),...(input.balanceVersion===REGIONAL_DUNGEON_BALANCE_VERSION&&input.qmodePressureVersion===1&&input.expeditionId==='EXP_001'&&input.tier===3?{rootboundT3CalibrationVersion:1 as const}:{}),qmodePressureVersion:input.qmodePressureVersion,echoSourceAccountIds:input.echoSourceAccountIds,npcCharacterIds:input.npcCharacterIds??[]};
   this.repository.save(run);return structuredClone(run);
  }
 }

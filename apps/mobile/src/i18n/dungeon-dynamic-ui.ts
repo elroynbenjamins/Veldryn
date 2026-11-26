@@ -29,6 +29,8 @@ export const dungeonDynamicUiRows={
  "{target} is downed": ["{target} ist kampfunfähig","{target} ha caído","{target} is uitgeschakeld","{target} è a terra","{target} est à terre","{target} выведен из строя","{target} yere düştü"],
  "Encounter cleared": ["Begegnung abgeschlossen","Encuentro superado","Gevecht voltooid","Scontro superato","Rencontre terminée","Бой завершён","Karşılaşma tamamlandı"],
  "Party defeated": ["Gruppe besiegt","Grupo derrotado","Groep verslagen","Squadra sconfitta","Équipe vaincue","Отряд побеждён","Grup yenildi"],
+ "COMBAT REPLAY": ["KAMPFWIEDERGABE","REPETICIÓN DEL COMBATE","GEVECHTSHERHALING","REPLAY DEL COMBATTIMENTO","REPLAY DU COMBAT","ПОВТОР БОЯ","SAVAŞ TEKRARI"],
+ "Combat limit reached at {time}": ["Kampflimit bei {time} erreicht","Límite de combate alcanzado a los {time}","Gevechtslimiet bereikt op {time}","Limite di combattimento raggiunto a {time}","Limite de combat atteinte à {time}","Лимит боя достигнут на {time}","Savaş süresi sınırına {time} anında ulaşıldı"],
  "Encounter timed out": ["Zeitlimit des Kampfes erreicht","Tiempo del encuentro agotado","Gevechtstijd verstreken","Tempo dello scontro scaduto","Temps de combat écoulé","Время боя истекло","Karşılaşma süresi doldu"],
  "CRIT": ["KRIT","CRÍTICO","KRIT","CRIT","CRITIQUE","КРИТ","KRİTİK"],
  "MISS": ["VERFEHLT","FALLO","MIS","MANCATO","MANQUÉ","ПРОМАХ","ISKA"],

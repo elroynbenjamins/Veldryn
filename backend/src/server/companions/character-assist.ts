@@ -19,6 +19,8 @@ function signatureAssistEffects(id:string,maxHp:number):AbilityEffect[]{
   case 'UNIT_009':return [{kind:'debuff',value:.03,durationMs:5000,tag:'damage_taken'}];
   case 'UNIT_010':return [{kind:'debuff',value:.03,durationMs:7000,tag:'damage_taken'}];
   case 'UNIT_011':return [{kind:'debuff',value:.03,durationMs:6000,tag:'crit_taken'}];
+  case 'EVT_UNIT_009':return [{kind:'buff',value:-.025,durationMs:4000,tag:'damage_taken'}];
+  case 'EVT_UNIT_012':return [{kind:'debuff',value:.025,durationMs:5000,tag:'damage_taken'}];
   default:return [];
  }
 }

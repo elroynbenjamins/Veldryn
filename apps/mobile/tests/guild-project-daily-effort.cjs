@@ -1,0 +1,47 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const Module=require('node:module');
+const ts=require('../node_modules/typescript');
+const root=path.resolve(__dirname,'../../..');
+const helperFile=path.join(root,'apps/mobile/src/core/guild-project-daily-effort.ts');
+const js=ts.transpileModule(fs.readFileSync(helperFile,'utf8'),{
+ compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022},
+}).outputText;
+const mod=new Module(helperFile,module);
+mod.filename=helperFile;
+mod.paths=Module._nodeModulePaths(path.dirname(helperFile));
+mod._compile(js,helperFile);
+const {guildProjectDailyEffortStatus}=mod.exports;
+const now=Date.parse('2026-11-20T12:00:00Z');
+const progress=(creditedMs,earnedDay='2026-11-20')=>({earnedDay,creditedMs,capMs:7200000});
+assert.deepEqual(guildProjectDailyEffortStatus(progress(0),now),{creditedEffort:0,capEffort:2400,complete:false});
+assert.deepEqual(guildProjectDailyEffortStatus(progress(4500000),now),{creditedEffort:1500,capEffort:2400,complete:false});
+assert.deepEqual(guildProjectDailyEffortStatus(progress(7200000),now),{creditedEffort:2400,capEffort:2400,complete:true});
+assert.deepEqual(guildProjectDailyEffortStatus(progress(9999999),now),{creditedEffort:2400,capEffort:2400,complete:true});
+assert.equal(guildProjectDailyEffortStatus(progress(7200000,'2026-11-19'),now),null,'Yesterday must never display as today');
+assert.equal(guildProjectDailyEffortStatus(progress(7200000),Date.parse('2026-11-21T00:00:00Z')),null,'Reset at UTC midnight');
+assert.equal(guildProjectDailyEffortStatus(undefined,now),null,'Missing RPC must not invent zero');
+assert.equal(guildProjectDailyEffortStatus({earnedDay:'2026-11-20',creditedMs:NaN,capMs:7200000},now),null);
+const read=p=>fs.readFileSync(path.join(root,p),'utf8');
+const sql=read('backend/supabase/migrations/20261120114000_guild_project_daily_effort_status_v1.sql');
+const client=read('apps/mobile/src/online/guild-projects-v18.ts');
+const ui=read('apps/mobile/src/components/OnlineGuildProjectsPanel.tsx');
+const i18n=read('apps/mobile/src/i18n/online-guild-project-ui.ts');
+assert.match(sql,/auth\.uid\(\)/,'Require signed-in account');
+assert.match(sql,/gm\.account_id=v_account/,'Restrict reads to current guild');
+assert.match(sql,/d\.account_id=v_account/,'Return own daily ledger only');
+assert.match(sql,/p\.status='active'/,'Do not show completed projects');
+assert.match(sql,/mode','effort'\)<>'donation'/,'Donation-only projects have no activity cap');
+assert.match(sql,/revoke all on function[\s\S]*from public,anon,authenticated/i);
+assert.match(sql,/grant execute on function[\s\S]*to authenticated/i);
+assert.match(client,/db\.rpc\('guild_project_my_daily_effort_v1'\)/);
+assert.match(client,/dailyResult\.error\?\[\]:/,'Missing RPC cannot break board');
+assert.match(ui,/guildProjectDailyEffortStatus\(project\.dailyEffort\)/);
+assert.match(ui,/daily\.complete/);
+assert.match(ui,/Resets at 00:00 UTC/);
+assert.match(ui,/contributors · Min/);
+assert.match(ui,/project\.projectMode!=='donation'/);
+for(const key of ['{count} contributors · Min {minimum}','Daily effort','Daily limit reached','Resets at 00:00 UTC'])
+ assert.ok(i18n.includes(JSON.stringify(key)+':'),'Missing translated key '+key);
+console.log('PASS: verified UTC Guild Project daily cap, reset, status and auth scope');

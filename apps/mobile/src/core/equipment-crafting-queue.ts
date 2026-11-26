@@ -1,7 +1,10 @@
 import {captureSkillAffinity,normalizeSkillAffinitySnapshot,affinityXpRemainderKey,settleAffinitySkillXp} from './class-skill-affinities';
 import {professionActionPace} from './profession-action-pace';
+import {forgeLevel,forgeRarityBonusPercent,forgeXpForRecipe} from './forge-mastery';
 import {RECIPES,recipeDef,type Recipe} from '../content/skills';
 import {itemDef} from '../content/items';
+import {gatheringToolDef} from '../content/gathering-tools';
+import {mintGatheringTool} from './gathering-tool-rolls';
 import {unlockedCharacterSlots,accountSkillLevel} from './account-roster';
 import {characterPermanentMultipliers} from './permanent-boosts';
 import {levelFromXp,totalXpAtLevel} from './progression';
@@ -14,7 +17,7 @@ import {gemCombineRecipeV1,gemRefineRecipeV1,isGemFamilyRecipeUnlockedV1} from '
 import {consumeGemFromStorage,gemStorageQuantity,isGemPouchItemId,storePouchGem} from './gem-pouch';
 import {professionMasteryMultipliers} from './profession-mastery-v40';
 import {applyTrustedLongTermProgression} from './long-term-progression-runtime';
-import {accountEntitlementBenefits} from './account-entitlements';
+import {accountEntitlementBenefits,entitlementStorageCapacity} from './account-entitlements';
 import {tryStoreEquipmentInPouch,equipmentPouchForCharacter} from './equipment-pouch';
 import {activeDailySupplyBoosts,commitDailySupplyTimedBoost,dailySupplyQueued,migrateLegacyDailySupplies} from './daily-supplies';
 
@@ -59,6 +62,7 @@ export function normalizeEquipmentCraftingQueue(raw:unknown):EquipmentCraftJob[]
       completesAtMs:Math.max(0,Math.floor(Number(row.completesAtMs)||0)),
       xpPerCraft:typeof row.xpPerCraft==='number'&&Number.isFinite(row.xpPerCraft)&&row.xpPerCraft>=0&&row.xpPerCraft<=1000000?row.xpPerCraft:undefined,
       skillAffinity:normalizeSkillAffinitySnapshot(row.skillAffinity),
+       forgeRarityBonusPercent:([0,5,10,15] as const).find(value=>value===row.forgeRarityBonusPercent),
       reservedGold:Number.isFinite(Number(row.reservedGold))?Math.max(0,Math.floor(Number(row.reservedGold))):undefined,
       reservedInputs:Array.isArray(row.reservedInputs)?row.reservedInputs.filter((stack:any)=>stack&&typeof stack.itemId==='string'&&Number.isFinite(Number(stack.quantity))&&Number(stack.quantity)>0).map((stack:any)=>({itemId:String(stack.itemId).slice(0,120),quantity:Math.max(1,Math.floor(Number(stack.quantity)))})).slice(0,12):undefined,
       // A malformed odds field must not become a guaranteed legacy claim.
@@ -75,7 +79,7 @@ export function equipmentCraftingQueue(state:GameState){return normalizeEquipmen
 
 export function isTimedEquipmentRecipe(recipe:Recipe){
   const output=itemDef(recipe.output.itemId);
-  return output.type==='gear'&&!recipe.noviceSetId;
+  return (output.type==='gear'&&!recipe.noviceSetId)||output.type==='tool';
 }
 
 export function timedEquipmentRecipe(recipeId:string){
@@ -106,6 +110,13 @@ function validateStart(state:GameState,recipe:Recipe){
   if(!isTimedEquipmentRecipe(recipe))throw new Error('This recipe does not use the equipment crafting queue');
   // Recipe classId identifies who can equip the finished piece, not who can forge it.
   if(state.character.level<(recipe.characterLevel??1))throw new Error(`Requires character level ${recipe.characterLevel}`);
+  const tool=gatheringToolDef(recipe.output.itemId);
+  if(tool){
+    const gathering=state.skills.find(row=>row.skillId===tool.skillId);
+    if(!gathering||gathering.level<tool.unlockLevel)throw new Error(`Requires ${tool.skillId} level ${tool.unlockLevel}`);
+    if(tool.blueprint&&!(state.account.unlockedKnowledgeIds??[]).includes(tool.blueprint.knowledgeId)
+       &&combinedQuantity(state,tool.blueprint.itemId)<1)throw new Error(`Requires ${itemDef(tool.blueprint.itemId).name}`);
+  }
   const skill=state.skills.find(row=>row.skillId===recipe.skillId);
   if(!skill||skill.level<recipe.level)throw new Error(`Requires ${recipe.skillId} level ${recipe.level}`);
   if(state.character.gold<recipe.gold)throw new Error(`Need ${recipe.gold} gold`);
@@ -236,6 +247,14 @@ export function startEquipmentCraft(state:GameState,recipeId:string,nowMs:number
   if(ready.length>=MAX_READY_EQUIPMENT_CRAFTS)throw new Error('Claim finished equipment before starting more crafts');
   if(active.length>=slots.capacity&&waiting.length>=MAX_WAITING_EQUIPMENT_CRAFTS)throw new Error(`Equipment crafting backlog is full (${MAX_WAITING_EQUIPMENT_CRAFTS}/${MAX_WAITING_EQUIPMENT_CRAFTS})`);
   projected={...projected,character:{...projected.character!,gold:projected.character!.gold-recipe.gold}};
+  // Tool blueprints unlock the knowledge permanently on the first reserved craft.
+  // Reservation is atomic: an unsuccessful start spends nothing.
+  const tool=gatheringToolDef(recipe.output.itemId),blueprint=tool?.blueprint;
+  if(blueprint&&!(projected.account.unlockedKnowledgeIds??[]).includes(blueprint.knowledgeId)){
+    projected=consumeAcross(projected,blueprint.itemId,1);
+    projected={...projected,account:{...projected.account,
+      unlockedKnowledgeIds:[...new Set([...(projected.account.unlockedKnowledgeIds??[]),blueprint.knowledgeId])]}};
+  }
   for(const input of recipe.inputs)projected=consumeAcross(projected,input.itemId,input.quantity);
   const seconds=equipmentCraftDurationSeconds(projected,recipeId),durationMs=seconds*1000;
   const existingQueue=equipmentCraftingQueue(projected);
@@ -245,6 +264,7 @@ export function startEquipmentCraft(state:GameState,recipeId:string,nowMs:number
     recipeId,ownerCharacterId:projected.character!.id,
     startedAtMs:startsNow?nowMs:nowMs+1,completesAtMs:(startsNow?nowMs:nowMs+1)+durationMs,
     reservedGold:recipe.gold,reservedInputs:recipe.inputs.map(input=>({...input})),
+    forgeRarityBonusPercent:forgeRarityBonusPercent(forgeLevel(projected)),
     xpPerCraft:professionActionPace(projected,recipe,'forge').xpPerAction,skillAffinity:captureSkillAffinity(projected,recipe.skillId),
   };
   const scheduled=scheduleWaiting([...existingQueue,job],slots.capacity,nowMs);
@@ -363,6 +383,15 @@ function deliverExactForgeCopy(state:GameState,itemId:string,instanceId:string,o
     return {...state,bank:{...state.bank,stacks:[...state.bank.stacks,stack]}} as GameState;
   throw new Error(state.character?.id===ownerId?'Equipment Pouch, Inventory and Bank are full':'Equipment Pouch and Bank are full; free space before claiming this character\'s equipment');
 }
+/** Tool copies remain individually tracked, even after an offline claim or character switch. */
+function deliverExactToolCopy(state:GameState,itemId:string,instanceId:string,ownerId:string):GameState{
+  const stack:ItemStack={itemId,quantity:1,instanceId};
+  if(state.character?.id===ownerId&&state.inventory.stacks.length<entitlementStorageCapacity(state,'inventory'))
+    return {...state,inventory:{...state.inventory,stacks:[...state.inventory.stacks,stack]}};
+  if(state.bank.stacks.length<entitlementStorageCapacity(state,'bank'))
+    return {...state,bank:{...state.bank,stacks:[...state.bank.stacks,stack]}};
+  throw new Error(state.character?.id===ownerId?'Inventory and Bank are full':'Bank is full; free Bank space before claiming this character\'s tool');
+}
 /** Predict where a newly crafted copy would settle for exact owner-correct auto-sale proceeds. */
 function forgeIncomingDelivery(state:GameState,ownerId:string){
   const active=state.character?.id===ownerId;
@@ -406,6 +435,19 @@ function awardOwnerSkillXp(state:GameState,ownerCharacterId:string,recipe:Pick<R
   return {...next,otherCharacters:(state.otherCharacters??[]).map(entry=>entry.character.id===ownerCharacterId?{...entry,skills:award(entry.skills)}:entry)};
 }
 
+/** Forge progression is granted only once, after successful equipment settlement. */
+function awardOwnerForgeXp(state:GameState,ownerCharacterId:string,recipeXp:number):GameState{
+ const gain=forgeXpForRecipe(recipeXp);
+ const add=(skills:SkillState[]):SkillState[]=>{
+  const current=skills.find(row=>row.skillId==='forge');
+  const xp=Math.min(totalXpAtLevel(100),(current?.xp??0)+gain);
+  const entry:SkillState={skillId:'forge',xp,level:levelFromXp(xp)};
+  return current?skills.map(row=>row.skillId==='forge'?entry:row):[...skills,entry];
+ };
+ if(state.character?.id===ownerCharacterId)return {...state,skills:add(state.skills)};
+ return {...state,otherCharacters:(state.otherCharacters??[]).map(row=>row.character.id===ownerCharacterId?{...row,skills:add(row.skills)}:row)};
+}
+
 export function claimForgeJob(state:GameState,jobId:string,nowMs:number,rarityRoll=Math.random()){
   const projected=withProjectedQueue(state,nowMs),queue=equipmentCraftingQueue(projected),job=queue.find(row=>row.id===jobId);
   if(!job)throw new Error('Crafting job not found');
@@ -413,8 +455,20 @@ export function claimForgeJob(state:GameState,jobId:string,nowMs:number,rarityRo
   const equipmentRecipe=timedEquipmentRecipe(job.recipeId),gemCombineRecipe=gemCombineRecipeV1(job.recipeId),gemRefineRecipe=gemRefineRecipeV1(job.recipeId),gemRecipe=gemCombineRecipe??gemRefineRecipe,recipe=equipmentRecipe??gemRecipe;
   if(!recipe)throw new Error('Crafting recipe is no longer available');
   let next=projected;
+  if(equipmentRecipe&&itemDef(equipmentRecipe.output.itemId).type==='tool'){
+    const tool=mintGatheringTool(equipmentRecipe.output.itemId,job.ownerCharacterId,job.id,nowMs);
+    // No physical copy or immutable roll is persisted until delivery succeeds.
+    next=deliverExactToolCopy(next,tool.itemId,tool.id,job.ownerCharacterId);
+    next={...next,account:{...next.account,craftedGatheringToolInstances:[
+      ...(next.account.craftedGatheringToolInstances??[]),tool]}};
+    next=awardOwnerSkillXp(next,job.ownerCharacterId,equipmentRecipe,job);
+    next={...next,account:{...next.account,equipmentCraftingQueue:queue.filter(row=>row.id!==jobId)}};
+    next=applyTrustedLongTermProgression(next,[{kind:'crafting',contentId:equipmentRecipe.id,units:1,startedAtMs:job.startedAtMs}],undefined,nowMs,
+      {accountId:next.account.longTermAccountScopeId??`local-account:${next.createdAtMs}`,eventId:`forge:${job.id}:${nowMs}`}).state;
+    return {state:next,recipe:equipmentRecipe,job,kind:'tool' as const,tool};
+  }
   if(equipmentRecipe){
-    const itemId=equipmentRecipe.output.itemId,args={itemId,ownerCharacterId:job.ownerCharacterId,jobId:job.id,createdAtMs:nowMs,roll:rarityRoll};
+    const itemId=equipmentRecipe.output.itemId,args={itemId,ownerCharacterId:job.ownerCharacterId,jobId:job.id,createdAtMs:nowMs,roll:rarityRoll,forgeRarityBonusPercent:job.forgeRarityBonusPercent};
     const draft=draftCraftedGearInstance(args),capacity=craftedGearCopyCapacity(next,itemId),mode=next.account.craftedGearAutoSellMode??'off';
     let saleGold=0,autoSold:'incoming'|'existing'|undefined;
     if(capacity.count>=capacity.limit){
@@ -427,7 +481,7 @@ export function claimForgeJob(state:GameState,jobId:string,nowMs:number,rarityRo
         mode,committedReceiptKeys:[],
       });
       if(proposed.status==='blocked')throw new Error(proposed.retention.reason==='weapon_bonus_choice'
-        ?'Weapon bonus rolls need your choice: copy limit reached. Review and sell or salvage a spare copy manually; your finished Forge job is safe.'
+        ?'Bonus stat rolls need your choice: copy limit reached. Review and sell or salvage a spare copy manually; your finished Forge job is safe.'
         :'Equipment requires manual review: '+proposed.retention.reason);
       if(proposed.receipt.action==='sell_incoming'){
         const credit=proposed.receipt.credit!;
@@ -443,7 +497,7 @@ export function claimForgeJob(state:GameState,jobId:string,nowMs:number,rarityRo
       next=deliverExactForgeCopy(next,itemId,draft.id,job.ownerCharacterId);
       next=createCraftedGearInstance(next,args).state;
     }
-    next=awardOwnerSkillXp(next,job.ownerCharacterId,equipmentRecipe,job);
+    next=awardOwnerForgeXp(awardOwnerSkillXp(next,job.ownerCharacterId,equipmentRecipe,job),job.ownerCharacterId,equipmentRecipe.xp);
     next={...next,account:{...next.account,equipmentCraftingQueue:queue.filter(row=>row.id!==jobId)}};
     next=applyTrustedLongTermProgression(next,[{kind:'crafting',contentId:equipmentRecipe.id,units:1,startedAtMs:job.startedAtMs}],undefined,nowMs,{accountId:next.account.longTermAccountScopeId??`local-account:${next.createdAtMs}`,eventId:`forge:${job.id}:${nowMs}`}).state;
     return {state:next,recipe:equipmentRecipe,job,kind:'equipment' as const,instance:draft,
@@ -477,12 +531,14 @@ export function claimEquipmentCraft(state:GameState,jobId:string,nowMs:number,ra
 /** Settle independently claimable jobs without losing successful claims to one blocked job.
  * Unexpected errors still abort the command so the authoritative transaction rolls back. */
 export function claimAllReadyEquipmentCrafts(state:GameState,nowMs:number,trustedRoll=Math.random()){
-  let next=withProjectedQueue(state,nowMs),claimed:string[]=[],results:ReturnType<typeof craftedInstanceResult>[]=[],gemClaims=0,gemFailed=0;
+  let next=withProjectedQueue(state,nowMs),claimed:string[]=[],results:ReturnType<typeof craftedInstanceResult>[]=[],gemClaims=0,gemFailed=0,toolClaims=0;
   const blocked:{jobId:string;reason:string}[]=[];
   for(const job of equipmentCraftingQueue(next).filter(row=>isReady(row,nowMs))){
     try{
       const result=claimForgeJob(next,job.id,nowMs,craftClaimSubRoll(trustedRoll,job.id));next=result.state;claimed.push(job.id);
-      if(result.kind==='equipment')results.push(result.result);else {gemClaims++;if(!result.gemSucceeded)gemFailed++;}
+      if(result.kind==='equipment')results.push(result.result);
+      else if(result.kind==='tool')toolClaims++;
+      else {gemClaims++;if(!result.gemSucceeded)gemFailed++;}
     }catch(error){
       const reason=error instanceof Error?error.message:'';
       // Keep unclaimable jobs in the queue. They can be claimed after storage is freed
@@ -494,7 +550,7 @@ export function claimAllReadyEquipmentCrafts(state:GameState,nowMs:number,truste
       throw error;
     }
   }
-  return {state:next,claimed,results,gemClaims,gemFailed,blocked};
+  return {state:next,claimed,results,gemClaims,gemFailed,toolClaims,blocked};
 }
 
 export const EQUIPMENT_CRAFT_CANCEL_GOLD_REFUND=0;
@@ -569,7 +625,7 @@ export function equipmentCraftQueueModel(state:GameState,nowMs:number){
     const eta=etaById.get(job.id)??job;
     const durationSeconds=Math.ceil(jobDurationMs(eta)/1000);
     const outputItemId=recipe?.output.itemId??gemRecipe?.output.itemId;
-    return {...job,startedAtMs:eta.startedAtMs,completesAtMs:eta.completesAtMs,name:recipe?itemDef(recipe.output.itemId).name:gemRecipe?.name??job.recipeId,outputItemId,forgeKind:gemRecipe?'gem' as const:'equipment' as const,status:ready?'ready' as const:waiting?'waiting' as const:'active' as const,
+    return {...job,startedAtMs:eta.startedAtMs,completesAtMs:eta.completesAtMs,name:recipe?itemDef(recipe.output.itemId).name:gemRecipe?.name??job.recipeId,outputItemId,forgeKind:gemRecipe?'gem' as const:recipe&&itemDef(recipe.output.itemId).type==='tool'?'tool' as const:'equipment' as const,status:ready?'ready' as const:waiting?'waiting' as const:'active' as const,
       ready,waiting,active,durationSeconds,remainingSeconds:ready?0:Math.max(0,Math.ceil((eta.completesAtMs-nowMs)/1000)),
       startInSeconds:waiting?Math.max(1,Math.ceil((eta.startedAtMs-nowMs)/1000)):0,
       waitingPosition:waiting?waitingIds.indexOf(job.id)+1:0};

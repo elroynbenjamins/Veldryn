@@ -6,6 +6,8 @@ import type {GameState,ItemStack,RewardBundle,SkillId} from './types';
 import {characterPermanentMultipliers} from './permanent-boosts';
 import {professionMasteryMultipliers} from './profession-mastery-v40';
 import {totalXpAtLevel} from './progression';
+import {isWinterHearthLightRecipe,winterHearthLightRecipeAvailable,WINTER_HEARTH_2026_END_MS} from './winter-hearth-2026';
+import {mealBonusDef} from './meal-buffs';
 
 // One processing start reserves the complete AFK run, capped by its normal AFK window.
 export const MAX_PROCESSING_BATCHES=10_000;
@@ -19,8 +21,11 @@ export interface ProcessingBatchState{
   inputsPerBatch:ItemStack[];
   goldPerBatch:number;
   outputPerBatch:ItemStack;
+  /** New bonus meal reservations yield exactly one portion; old reservations retain their terms. */
+  fixedMealOutput?:true;
   cycleSeconds:number;
   xpPerBatch:number;
+  seasonEndsAtMs?:number;
 }
 
 function storedQuantity(stacks:readonly ItemStack[],itemId:string){
@@ -58,6 +63,7 @@ export function processingAvailability(state:GameState,recipeId:string,batches=1
 /** Reserves every chosen batch up front. Outputs and skill XP arrive only as timed cycles complete. */
 export function startProcessingBatch(state:GameState,recipeId:string,batches:number,nowMs:number):GameState{
   if(!Number.isFinite(nowMs)||nowMs<0)throw new Error('Invalid processing time.');
+  if(isWinterHearthLightRecipe(recipeId)&&!winterHearthLightRecipeAvailable(state,nowMs))throw new Error('Winter Hearth crafting is closed.');
   const status=processingAvailability(state,recipeId,batches);if(!status.ready)throw new Error(status.reason);
   const recipe=status.recipe!;
   let inventory=state.inventory.stacks,bank=state.bank.stacks;
@@ -68,7 +74,8 @@ export function startProcessingBatch(state:GameState,recipeId:string,batches:num
   const bonuses=characterPermanentMultipliers(state),pace=professionActionPace(state,recipe,'batch');
   const processing:ProcessingBatchState={version:1,recipeId:recipe.id,skillId:recipe.skillId as ProcessingSkillId,totalBatches:batches,remainingBatches:batches,
     inputsPerBatch:recipe.inputs.map(input=>({...input})),goldPerBatch:recipe.gold,outputPerBatch:{...recipe.output},
-    cycleSeconds:pace.cycleSeconds,xpPerBatch:pace.xpPerAction};
+    ...(recipe.skillId==='cooking'&&mealBonusDef(recipe.output.itemId)?{fixedMealOutput:true as const}:{}),
+    cycleSeconds:pace.cycleSeconds,xpPerBatch:pace.xpPerAction,...(isWinterHearthLightRecipe(recipe.id)?{seasonEndsAtMs:Math.min(WINTER_HEARTH_2026_END_MS,state.account.liveEvent!.endsAtMs)}:{})};
   return {...state,character:{...state.character!,gold:state.character!.gold-status.gold},inventory:{...state.inventory,stacks:inventory},bank:{...state.bank,stacks:bank},
     activity:{kind:'processing',targetId:recipe.id,startedAtMs:nowMs,lastClaimAtMs:nowMs,progressFraction:0,bonusSnapshot:bonuses,skillAffinity:captureSkillAffinity(state,recipe.skillId),processing}};
 }
@@ -96,8 +103,8 @@ export function previewProcessingReward(state:GameState,elapsed:number):RewardBu
   const progress=elapsed/processing.cycleSeconds+(activity.progressFraction??0),actions=Math.min(processing.remainingBatches,Math.max(0,Math.floor(progress+1e-10))),remaining=processing.remainingBatches-actions,remainders={...(state.rewardRemainders??{})};
   const xpKey=activity.skillAffinity?affinityXpRemainderKey(state.character!.id,processing.skillId):`xp:processing:${processing.skillId}`,rawXp=actions*processing.xpPerBatch+(remainders[xpKey]??0),wholeXp=Math.floor(rawXp+1e-10),skill=state.skills.find(row=>row.skillId===processing.skillId);
   const xp=Math.max(0,Math.min(wholeXp,totalXpAtLevel(100)-(skill?.xp??0)));remainders[xpKey]=xp<wholeXp?0:Math.max(0,rawXp-wholeXp);
-  const mastery=professionMasteryMultipliers(processing.recipeId,state.account.professionMasteryByAction?.[processing.recipeId]),yieldKey=`mastery:processing:${processing.recipeId}:yield`,yieldRaw=actions*processing.outputPerBatch.quantity*mastery.yield+(remainders[yieldKey]??0),yieldQuantity=Math.floor(yieldRaw+1e-10);
-  remainders[yieldKey]=Math.max(0,yieldRaw-yieldQuantity);
+  const mastery=professionMasteryMultipliers(processing.recipeId,state.account.professionMasteryByAction?.[processing.recipeId]),yieldKey=`mastery:processing:${processing.recipeId}:yield`,yieldRaw=actions*processing.outputPerBatch.quantity*mastery.yield+(remainders[yieldKey]??0),yieldQuantity=processing.fixedMealOutput?actions:Math.floor(yieldRaw+1e-10);
+  if(!processing.fixedMealOutput)remainders[yieldKey]=Math.max(0,yieldRaw-yieldQuantity);
   const first=Math.max(0,(1-(activity.progressFraction??0))*processing.cycleSeconds),times=Array.from({length:actions},(_,index)=>Math.round(activity.lastClaimAtMs+(first+index*processing.cycleSeconds)*1000));
   const qualifyingActivitySeconds=remaining?elapsed:actions?Math.max(0,Math.min(elapsed,(times[times.length-1]-activity.lastClaimAtMs)/1000)):0;
   return {xp,gold:0,items:actions&&yieldQuantity?[{itemId:processing.outputPerBatch.itemId,quantity:yieldQuantity}]:[],kills:0,craftingActions:actions,elapsedSeconds:elapsed,qualifyingActivitySeconds,
@@ -126,8 +133,9 @@ export function normalizeProcessingBatch(value:unknown,targetId:string):Processi
     ||(!!legacy&&p.inputsPerBatch.length===1&&p.inputsPerBatch[0]?.itemId===legacy.itemId&&p.inputsPerBatch[0]?.quantity===legacy.quantity));
   const valid=!!p&&!!recipe&&p.version===1&&p.recipeId===targetId&&p.skillId===recipe.skillId&&integer(p.totalBatches,1,MAX_PROCESSING_BATCHES)&&integer(p.remainingBatches,1,p.totalBatches)&&
     integer(p.goldPerBatch,0,100000)&&Number.isFinite(p.cycleSeconds)&&p.cycleSeconds>=1&&p.cycleSeconds<=86400&&Number.isFinite(p.xpPerBatch)&&p.xpPerBatch>=0&&p.xpPerBatch<=100000&&
-    p.outputPerBatch?.itemId===recipe.output.itemId&&integer(p.outputPerBatch?.quantity,1,10000)&&inputsValid;
+    p.outputPerBatch?.itemId===recipe.output.itemId&&integer(p.outputPerBatch?.quantity,1,10000)&&inputsValid&&
+    (p.fixedMealOutput===undefined||(p.fixedMealOutput===true&&recipe.skillId==='cooking'&&!!mealBonusDef(recipe.output.itemId)&&p.outputPerBatch.quantity===1));
   if(!valid)throw new Error('Invalid reserved processing batch. Keep the save backup; do not reset or discard the reservation.');
   return {version:1,recipeId:targetId,skillId:recipe!.skillId as ProcessingSkillId,totalBatches:p!.totalBatches,remainingBatches:p!.remainingBatches,
-    inputsPerBatch:p!.inputsPerBatch.map(input=>({...input})),goldPerBatch:p!.goldPerBatch,outputPerBatch:{...p!.outputPerBatch},cycleSeconds:p!.cycleSeconds,xpPerBatch:p!.xpPerBatch};
+    inputsPerBatch:p!.inputsPerBatch.map(input=>({...input})),goldPerBatch:p!.goldPerBatch,outputPerBatch:{...p!.outputPerBatch},...(p!.fixedMealOutput?{fixedMealOutput:true as const}:{}),cycleSeconds:p!.cycleSeconds,xpPerBatch:p!.xpPerBatch,...(isWinterHearthLightRecipe(targetId)&&Number.isFinite(p!.seasonEndsAtMs)?{seasonEndsAtMs:Math.min(WINTER_HEARTH_2026_END_MS,p!.seasonEndsAtMs!)}:{})};
 }

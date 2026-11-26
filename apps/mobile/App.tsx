@@ -5,6 +5,7 @@ import {SavedLoadoutsPanel} from './src/components/SavedLoadoutsPanel';
 import {useCallback,useEffect,useMemo,useRef,useState,useSyncExternalStore} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {APP_BUILD_INFO} from './src/app-build';
+import {runWhileForeground} from './src/online/foreground-tasks';
 import {fetchReleaseNotes} from './src/online/release-notes';
 import {firstInstalledReleaseVersion,shouldAutoAnnounceReleaseNotes,shouldAutoShowReleaseNotes,type ReleaseNote} from './src/core/release-notes';
 import {WhatsNewModal} from './src/components/WhatsNewModal';
@@ -23,12 +24,14 @@ import {backgroundMusicFor} from './src/core/music-context';
 import {ActiveActivity,ClassId,CombatTacticId,GameState,QueuedActivity,RewardBundle} from './src/core/types';
 import type {HuntGoalId} from './src/core/hunt-goals';
 import {challengeFallenKnight,claimActivity,claimOverflowToBank,claimQuest,claimSeasonalContract,craftRecipe,createCharacter,depositAllMaterials,depositToBank,sellBankItem,depositGoldToBank,withdrawGoldFromBank,eatFood,equipFood,equipGatheringTool,newGame,previewActivityReward,salvageItem,sellItem,travelToRegion,unequipItem,upgradeStorage,withdrawFromBank} from './src/core/game';
-import {cancelEquipmentCraft,claimAllReadyEquipmentCrafts,claimForgeJob,equipmentCraftQueueModel,moveWaitingEquipmentCraft,startEquipmentCraft,startGemCombine,startGemRefinement,timedEquipmentRecipe} from './src/core/equipment-crafting-queue';
+import {cancelEquipmentCraft,claimAllReadyEquipmentCrafts,claimForgeJob,equipmentCraftQueueModel,moveWaitingEquipmentCraft,projectedEquipmentCraftingQueue,startEquipmentCraft,startGemCombine,startGemRefinement,timedEquipmentRecipe} from './src/core/equipment-crafting-queue';
+import {verifyCraftCommandOutcome} from './src/core/craft-command-outcome';
 import {craftEquipmentPrerequisites} from './src/core/equipment-crafting-prerequisites';
 import {migrateGemPouch} from './src/core/gem-pouch';
 import {migrateRetiredStoryRewards} from './src/core/retired-story-rewards';
 import {acknowledgeAllInventoryItems,acknowledgeInventoryItem,shouldAcknowledgeInventoryOnExit,toggleInventoryFavorite,toggleInventoryLock} from './src/core/inventory-view';
 import {bulkSalvageSelected,bulkSellSelected,bulkTransferSelected} from './src/core/inventory-bulk';
+import {applyBulkInventoryProtection} from './src/core/inventory-protection-bulk';
 import {ClassSelectScreen} from './src/screens/ClassSelectScreen';
 import {occupiedCharacterRoles} from './src/core/account-roster';
 import {HomeScreen} from './src/screens/HomeScreen';
@@ -84,7 +87,8 @@ import {ActionFeedback} from './src/components/ActionFeedback';
 import {LoadingState} from './src/components/LoadingState';
 import {equipNoviceSet} from './src/core/game';
 import {noviceSetProgress} from './src/core/character-appearance';
-import {normalizeProfileIcon,newlyUnlockedProfileIcons} from './src/core/profile-icons';
+import {normalizeProfileIcon,newlyUnlockedProfileIcons,selectProfileIcon,accountProfileIconId} from './src/core/profile-icons';
+import {publishOwnProfileIcon} from './src/online/player-identity-cache';
 import {normalizePlayerNameStyle,savePlayerNameStyle,type PlayerNameStylePreference} from './src/core/player-name-style';
 import {createSaveBackup,parseSaveBackup} from './src/core/save-transfer';
 import {SaveRecoveryScreen} from './src/components/SaveRecoveryScreen';
@@ -97,11 +101,15 @@ import {createCoopDungeonFixtureSource} from './src/dev/coop-dungeon-fixtures';
 import {itemDef} from './src/content/items';
 import {WORLD_ZONES} from './src/content/world-map';
 import {GameTopBar} from './src/components/GameTopBar';
+import {activityRewardPreviewClock} from './src/components/activity-preview-clock';
 import {ChatOverlay} from './src/components/ChatOverlay';
+import {ActiveProfileCharacterContext} from './src/components/ActiveProfileCharacterContext';
 import type {QuickNavDestination} from './src/core/quick-navigation';
 import {CombatScreen} from './src/screens/CombatScreen';
 import type {SkillId} from './src/core/types';
 import {PrimaryNavigation} from './src/components/PrimaryNavigation';
+import {ScreenTransition,useSystemReduceMotion} from './src/components/ScreenTransition';
+import {screenTransitionFor,type ScreenTransitionKind} from './src/core/screen-transitions';
 import {primaryNavForRoute} from './src/core/primary-tab-routing';
 import {setNetworkMetricsRoute} from './src/core/network-request-metrics';
 import {attemptEquipmentUpgrade,replaceGem,socketGem} from './src/core/equipment-enhancement';
@@ -134,7 +142,7 @@ import {useOnlineGame} from './src/online/useOnlineGame';
 import {serverGameplayEnabled} from './src/online/gameplay';
 import {OnlineAccountPanel} from './src/components/OnlineAccountPanel';
 import {UpdateRequiredScreen} from './src/components/UpdateRequiredScreen';
-import {signInAsGuest,signOut} from './src/online/account';
+import {signOut} from './src/online/account';
 import {accountLinkStep} from './src/core/auth-account-link';
 import {fetchAppVersionGate,openStoreListing,type VersionGateResult} from './src/online/app-version-gate';
 import {GameButton} from './src/components/GameButton';
@@ -153,6 +161,7 @@ import {weeklyOrderDestination,weeklyOrderIdleRule,weeklyOrderIdleRuleId,weeklyO
 import {weeklyOrderQuickStartPlan} from './src/core/weekly-order-quick-start';
 import type {WeeklyOrder} from './src/core/weekly-orders-v41';
 import {useSocialNotificationCounts} from './src/online/useSocialNotificationCounts';
+import {useDungeonWeeklyReminder} from './src/online/dungeon-weekly-reminder';
 import {fetchActiveEventRuntime} from './src/online/live-events';
 import {EVENTS_RELEASED,RANKINGS_RELEASED} from './src/core/release-flags';
 import {onlineConfigured} from './src/online/supabase';
@@ -170,7 +179,7 @@ type NavigationContext={skillsMode:'gathering'|'crafting'|'novice'|'faith';selec
 const primaryTabs:PrimaryTab[]=['Home','Character','Skills','World','Inventory','More'];
 function tabLabel(language:Language,tab:Tab):string{
   switch(tab){
-    case 'Home':return t(language,'nav.home');case 'World':return t(language,'nav.world');case 'Character':return t(language,'nav.character');case 'Inventory':return t(language,'nav.inventory');case 'More':return appText(language,'Account');case 'Activity':return appText(language,'Characters');case 'DailySupplies':return appText(language,'Supply Journey');case 'AccountBonuses':return appText(language,'Account Bonuses');case 'RewardsInbox':return appText(language,'Rewards Inbox');case 'MasteryHall':return appText(language,'Mastery Hall');case 'AdventurersJournal':return appText(language,"Adventurer's Journal");case 'Bestiary':return appText(language,'Bestiary');case 'WorldMilestones':return appText(language,'World Milestones');
+    case 'Home':return t(language,'nav.home');case 'World':return t(language,'nav.world');case 'Character':return t(language,'nav.character');case 'Inventory':return t(language,'nav.inventory');case 'More':return appText(language,'Account');case 'Activity':return appText(language,'Characters');case 'DailySupplies':return appText(language,'Supply Journey');case 'AccountBonuses':return appText(language,'Account Bonuses');case 'RewardsInbox':return appText(language,'Rewards Inbox');case 'MasteryHall':return appText(language,'Mastery Hall');case 'AdventurersJournal':return appText(language,"Adventurer's Journal");case 'Bestiary':return appText(language,'Monster Codex');case 'WorldMilestones':return appText(language,'World Milestones');
     case 'Quests':return t(language,'more.quests');case 'Companions':return appText(language,'Companions');case 'Skills':return t(language,'more.skills');case 'Events':return t(language,'more.events');case 'Friends':return t(language,'more.friends');case 'Guild':return t(language,'more.guild');case 'Settings':return t(language,'more.settings');case 'Store':return appText(language,'Store');case 'Account':return appText(language,'Account');case 'Dungeon':return appText(language,'Dungeon');case 'Empty':return appText(language,'Empty');
     case 'WorldBossPreview':return 'World Bosses';case 'PartyEventPreview':return 'Party Events';case 'PlayerMarketPreview':return 'Player Market';
     case 'Combat':return appText(language,'Combat');case 'Coop':return appText(language,'Dungeons');
@@ -201,7 +210,6 @@ function VeldrynApp(){
   const hasBlockingAlert=useSyncExternalStore(gameAlerts.subscribe,gameAlerts.getSnapshot,gameAlerts.getSnapshot).queue.length>0;
   const {width:viewportWidth}=useWindowDimensions();
   const adminQa=auth.session?.user.app_metadata?.admin_qa===true||(Array.isArray(auth.session?.user.app_metadata?.roles)&&auth.session!.user.app_metadata.roles.includes('admin_qa'));
-  const {counts:notificationCounts,refresh:refreshSocialNotifications}=useSocialNotificationCounts();
   const [state,setState]=useState<GameState|null>(null);
   // A visual-only preview must not wait for server settings or full-save serialization.
   const [themePreviewId,setThemePreviewId]=useState<UiThemeId|undefined>();
@@ -215,6 +223,8 @@ function VeldrynApp(){
   const [recoveryLanguage,setRecoveryLanguage]=useState<Language>('en');
   useEffect(()=>{gameAlerts.configure({themeId:displayedThemeId,language:state?.settings.language??recoveryLanguage,reduceMotion:state?.settings.reduceMotion??false});},[displayedThemeId,state?.settings.language,state?.settings.reduceMotion,recoveryLanguage]);
   const [tab,setCurrentTab]=useState<Tab>('Home');
+  const [transitionKind,setTransitionKind]=useState<ScreenTransitionKind>('none');
+  const systemReduceMotion=useSystemReduceMotion();
   const tabRef=useRef(tab);tabRef.current=tab;
   useEffect(()=>setNetworkMetricsRoute(tab),[tab]);
   // Background music follows the current screen and region; dungeons and bosses override it.
@@ -230,6 +240,8 @@ function VeldrynApp(){
   const [selectedSkill,setSelectedSkill]=useState<string|undefined>();
   const [goalActionId,setGoalActionId]=useState<string|undefined>();
   const [goalRecipeId,setGoalRecipeId]=useState<string|undefined>();
+  // Back from a tool's focused Smithing recipe restores its originating gathering skill.
+  const toolRecipeReturnRef=useRef<{skillId:string;mode:'gathering'|'crafting'|'novice'|'faith';actionId?:string;recipeId?:string}|null>(null);
   const [goalMonsterId,setGoalMonsterId]=useState<string|undefined>();
   /** Transient region-local selection, not persisted in player or backend save data. */
   const [selectedRegionalAreaId,setSelectedRegionalAreaId]=useState<string|undefined>();
@@ -239,6 +251,8 @@ function VeldrynApp(){
   const inventoryViews=useRef<Record<string,InventoryScreenState>>({});
   const companionNavigationMemory=useRef<{characterId:string;context:CompanionNavigationState}|null>(null);
   const guildNavigationMemory=useRef<{scope:string;context:GuildNavigationState}|null>(null);
+  const [guildEventPageOpen,setGuildEventPageOpen]=useState(false);
+  const [guildRaidScope,setGuildRaidScope]=useState<string|null>(null);
   // Back history is session-only; never carry another character's routes and
   // selections into a switched character or a newly signed-in account.
   useEffect(()=>{setTabHistory([]);},[auth.session?.user.id,state?.character?.id]);
@@ -252,6 +266,7 @@ function VeldrynApp(){
   const [unlockInboxLoaded,setUnlockInboxLoaded]=useState(false);
   const [featureUnlockMoments,setFeatureUnlockMoments]=useState<EarlyFeatureUnlockMoment[]>([]);
   const [forgeResults,setForgeResults]=useState<ForgeCraftResult[]|null>(null);
+  const [quietCraftSaving,setQuietCraftSaving]=useState(false);
   const [forgeClaimAllResults,setForgeClaimAllResults]=useState<ForgeCraftResult[]|null>(null);
   const [forgeClaimAllPendingCount,setForgeClaimAllPendingCount]=useState(0);
   const [forgeClaimFeedback,setForgeClaimFeedback]=useState<{message:string;tone:'success'|'warning'}|null>(null);
@@ -267,6 +282,8 @@ function VeldrynApp(){
   const [tutorialDismissedId,setTutorialDismissedId]=useState<FirstSessionTutorialId|undefined>();
   const [mainScreenTourIndex,setMainScreenTourIndex]=useState<number|undefined>();
   const stateRef=useRef<GameState|null>(null);
+  const activeProfileCharacterId=state?.character?.id;
+  const activeProfileCharacter=useMemo(()=>({id:activeProfileCharacterId,stateRef}),[activeProfileCharacterId]);
   const previousInventoryTab=useRef<Tab>(tab);
   const inventorySeenAfterExit=useRef<string|null>(null);
   useEffect(()=>{
@@ -292,14 +309,12 @@ function VeldrynApp(){
   }
   const appStateRef=useRef(AppState.currentState);
   const settlingRef=useRef(false);
-  const onlineForegroundSettlementRef=useRef(false);
   const onlineStartupSettlementAccountRef=useRef<string|undefined>(undefined);
   const initialCharacterAtLaunchRef=useRef<boolean|undefined>(undefined);
   const [onlineStartupRewardsReadyKey,setOnlineStartupRewardsReadyKey]=useState<string|undefined>();
   const [showAdminQa,setShowAdminQa]=useState(false);
   const [creatingRoster,setCreatingRoster]=useState(false);
   const [creationWelcome,setCreationWelcome]=useState<{name:string;classId:ClassId}|null>(null);
-  const [guestBooting,setGuestBooting]=useState(serverGameplayEnabled);
   const [versionGate,setVersionGate]=useState<VersionGateResult|null>(null);
   const [versionGateChecked,setVersionGateChecked]=useState(!serverGameplayEnabled);
   const [releaseNotes,setReleaseNotes]=useState<ReleaseNote[]>([]);
@@ -314,7 +329,6 @@ function VeldrynApp(){
   const firstInstalledReleaseKey='veldryn.release.first-installed-version';
   const availableUpdateVersion=versionGate?.updateAvailable?versionGate.policy?.latestVersion:undefined;
   const optionalUpdateSeenKey=availableUpdateVersion?'veldryn.optional-update.seen.'+availableUpdateVersion:undefined;
-  const guestBootstrapRef=useRef(false);
   const hasUnseenUpdate=!!availableUpdateVersion&&!optionalUpdateSeen||(releaseSeenLoaded&&!releaseSeen&&shouldAutoShowReleaseNotes(releaseNotes,APP_BUILD_INFO.version,false));
   const closeWhatsNew=()=>{
     setShowWhatsNew(false);
@@ -342,7 +356,7 @@ function VeldrynApp(){
   const [startupOverlayVisible,setStartupOverlayVisible]=useState(true);
   const versionGateOwnsScreen=!!(versionGate?.maintenanceMode&&versionGate.policy)||!!(versionGate?.updateRequired&&versionGate.policy);
   const startupBlocking=!versionGateChecked||(!versionGateOwnsScreen&&(serverGameplayEnabled
-    ?auth.loading||online.loading||(guestBooting&&!auth.session)||!!(auth.session&&!auth.recovering&&online.snapshot&&!ready)
+    ?auth.loading||online.loading||!!(auth.session&&!auth.recovering&&online.snapshot&&!ready)
     :!ready));
   useEffect(()=>{
     startupOpacity.stopAnimation();appEntranceOpacity.stopAnimation();appEntranceY.stopAnimation();
@@ -353,14 +367,12 @@ function VeldrynApp(){
     setStartupOverlayVisible(true);
     startupOpacity.setValue(1);appEntranceOpacity.setValue(reduced?1:.94);appEntranceY.setValue(reduced?0:4);
     if(reduced){startupOpacity.setValue(0);setStartupOverlayVisible(false);return;}
-    const timer=setTimeout(()=>{
-      Animated.parallel([
-        Animated.timing(startupOpacity,{toValue:0,duration:420,useNativeDriver:true}),
+    Animated.parallel([
+        Animated.timing(startupOpacity,{toValue:0,duration:240,useNativeDriver:true}),
         Animated.timing(appEntranceOpacity,{toValue:1,duration:260,useNativeDriver:true}),
         Animated.timing(appEntranceY,{toValue:0,duration:260,useNativeDriver:true}),
       ]).start(({finished})=>{if(finished)setStartupOverlayVisible(false);});
-    },160);
-    return()=>{clearTimeout(timer);startupOpacity.stopAnimation();appEntranceOpacity.stopAnimation();appEntranceY.stopAnimation();};
+    return()=>{startupOpacity.stopAnimation();appEntranceOpacity.stopAnimation();appEntranceY.stopAnimation();};
   },[startupBlocking,state?.settings.reduceMotion,startupOpacity,appEntranceOpacity,appEntranceY]);
   useEffect(()=>{let alive=true;
     const check=async()=>{try{const result=await Promise.race([fetchAppVersionGate(),new Promise<null>(resolve=>setTimeout(()=>resolve(null),2500))]);if(alive&&result)setVersionGate(result);}finally{if(alive)setVersionGateChecked(true);}};
@@ -380,13 +392,17 @@ function VeldrynApp(){
     void AsyncStorage.getItem(optionalUpdateSeenKey).then(value=>{if(active)setOptionalUpdateSeen(value==='1')}).catch(()=>{}).finally(()=>{if(active)setOptionalUpdateSeenLoaded(true)});
     return()=>{active=false};
   },[optionalUpdateSeenKey]);
+  const loadOptionalContent=!startupBlocking&&!startupOverlayVisible&&!versionGateOwnsScreen;
+  const socialPollingReady=loadOptionalContent&&ready&&!auth.recovering&&!!state?.character&&(!serverGameplayEnabled||online.snapshot?.accountId===auth.session?.user.id);
+  const {counts:notificationCounts,refresh:refreshSocialNotifications}=useSocialNotificationCounts(socialPollingReady);
+  // Optional reminder registration must not compete with startup gameplay/auth reads.
+  useDungeonWeeklyReminder(loadOptionalContent&&ready&&!auth.recovering?auth.session?.user.id:undefined,()=>setCurrentTab('Coop'));
   useEffect(()=>{
-    let active=true;
-    const load=async()=>{const notes=await fetchReleaseNotes();if(active)setReleaseNotes(notes)};
-    void load();
-    const listener=AppState.addEventListener('change',status=>{if(status==='active')void load()});
-    return()=>{active=false;listener.remove()};
-  },[]);
+    if(!loadOptionalContent&&!showWhatsNew)return;
+    return runWhileForeground(isCurrent=>{
+      void fetchReleaseNotes().then(notes=>{if(isCurrent())setReleaseNotes(notes);});
+    });
+  },[loadOptionalContent,showWhatsNew]);
   useEffect(()=>{
     // New installs are quiet, even after the first character is created.
     // Legacy saves from earlier builds retain their returning-player eligibility.
@@ -406,13 +422,7 @@ function VeldrynApp(){
     })();
     return()=>{active=false};
   },[ready,!!state,firstInstalledReleaseLoaded]);
-  useEffect(()=>{
-    if(!serverGameplayEnabled||auth.loading||auth.recovering)return;
-    if(auth.session){setGuestBooting(false);return;}
-    if(guestBootstrapRef.current){setGuestBooting(false);return;}
-    guestBootstrapRef.current=true;setGuestBooting(true);
-    void signInAsGuest().catch(()=>setGuestBooting(false));
-  },[auth.loading,auth.session,auth.recovering]);
+  // Signed-out startup shows the account entry screen. Only explicit Continue as guest creates an anonymous account.
   const profileAttentionScope=auth.session?.user.id?`account:${auth.session.user.id}`:state?`local:${state.createdAtMs}`:'local:pending';
   const confirmProfileCustomizeExit=useCallback((action:()=>void)=>{
     if(tab!=='ProfileCustomize'||!profileCustomizeDirty){action();return;}
@@ -428,7 +438,7 @@ function VeldrynApp(){
     if(destination==='Social')destination='Recruitment';
     // Re-selecting Skills opens its hub now that detail pages have no redundant back button.
     if(destination===tab){
-      if(destination==='Skills'&&selectedSkill){setSelectedSkill(undefined);setGoalActionId(undefined);setGoalRecipeId(undefined);}
+      if(destination==='Skills'&&selectedSkill){toolRecipeReturnRef.current=null;setSelectedSkill(undefined);setGoalActionId(undefined);setGoalRecipeId(undefined);}
       if(destination==='Settings'&&settingsSection)setSettingsSection(undefined);
       return;
     }
@@ -440,6 +450,7 @@ function VeldrynApp(){
       setProfileCustomizeDirty(false);
       setTabHistory(history=>rememberScreen(history,{route:tab,context:navigationContext},destination));
       setSettingsSection(undefined);
+      setTransitionKind(screenTransitionFor(tab,destination));
       setCurrentTab(destination);
     });
   },[tab,selectedSkill,settingsSection,navigationContext,confirmProfileCustomizeExit]);
@@ -455,6 +466,11 @@ function VeldrynApp(){
     if(showChatOverlay){setShowChatOverlay(false);return true;}
     if(showAdminQa){setShowAdminQa(false);return true;}
     if(showCoopUiGallery){setShowCoopUiGallery(false);return true;}
+    if(tab==='Skills'&&toolRecipeReturnRef.current){
+      const source=toolRecipeReturnRef.current;toolRecipeReturnRef.current=null;
+      setSkillsMode(source.mode);setSelectedSkill(source.skillId);setGoalActionId(source.actionId);setGoalRecipeId(source.recipeId);
+      return true;
+    }
     if(tab==='Skills'&&selectedSkill&&!skillsOpenedAsLink){setSelectedSkill(undefined);setGoalActionId(undefined);setGoalRecipeId(undefined);return true;}
     confirmProfileCustomizeExit(()=>{
       setProfileCustomizeDirty(false);
@@ -465,7 +481,7 @@ function VeldrynApp(){
       setTabHistory(remaining);
       if(!previous){
         setSettingsSection(undefined);
-        if(tab!=='Home')setCurrentTab('Home');
+        if(tab!=='Home'){setTransitionKind(screenTransitionFor(tab,'Home',true));setCurrentTab('Home');}
         return;
       }
       const {context}=previous;
@@ -482,6 +498,7 @@ function VeldrynApp(){
       if(previous.route==='Combat')setGoalMonsterId(context.goalMonsterId);
       if(previous.route==='World')setGoalRegionId(context.goalRegionId);
       if(previous.route==='Coop')setGoalDungeonId(context.goalDungeonId);
+      setTransitionKind(screenTransitionFor(tab,previous.route,true));
       setCurrentTab(previous.route==='Social'?'Recruitment':previous.route);
     });
     return true;
@@ -493,26 +510,26 @@ function VeldrynApp(){
   }),[goBack]);
   const loadGame=useCallback(async()=>{setReady(false);setLoadError('');try{setRecoveryLanguage(await repo.loadLanguage());const saved=await repo.load();if(initialCharacterAtLaunchRef.current===undefined)initialCharacterAtLaunchRef.current=!!saved?.character;const restored=retireGoalPlanner(normalizeProfileIcon(migrateRetiredStoryRewards(saved??newGame(Date.now()),Date.now())));const startup=saved?settleStartupActivity(restored,Date.now()):{state:restored,reward:null,activity:null};const next=startup.state;if(saved)queueCustomizationUnlocks(restored,next);stateRef.current=next;setState(next);setRecoveryLanguage(next.settings.language);if(startup.reward)setCollected({reward:startup.reward,activity:startup.activity,welcomeBack:true,welcomeReport:buildWelcomeBackFromStates(restored,next,startup.reward,startup.activity),progressionMoments:rewardProgressionMoments(restored,next)});if(saved){try{await repo.save(next)}catch{showAlert('Save upgrade pending','Your progress loaded, but the upgraded save could not be written yet. Keep the app open and try another saved action.')}}}catch(error){stateRef.current=null;setState(null);setLoadError(error instanceof Error?error.message:'The local save could not be read.')}finally{setReady(true)}},[]);
   useEffect(()=>{if(!serverGameplayEnabled)void loadGame()},[loadGame]);
-  useEffect(()=>{if(!serverGameplayEnabled)return;const snapshot=online.snapshot,next=snapshot?.state?retireGoalPlanner(migrateRetiredStoryRewards(snapshot.state,Date.now())):null,before=stateRef.current;queuePreparationNotices(before,next);if(before&&next&&before.createdAtMs===next.createdAtMs)queueCustomizationUnlocks(before,next);if(!before&&next&&initialCharacterAtLaunchRef.current===undefined)initialCharacterAtLaunchRef.current=!!next.character;if(!before&&next&&snapshot?.reward&&rewardHasProgress(snapshot.reward)){setCollected({reward:snapshot.reward,activity:snapshot.activity??null,welcomeBack:true,progressionMoments:[]});}stateRef.current=next;setState(next);setReady(!online.loading);setLoadError('');},[online.snapshot,online.loading]);
+  useEffect(()=>{if(!serverGameplayEnabled)return;const snapshot=online.snapshot,next=snapshot?.state?retireGoalPlanner(migrateRetiredStoryRewards(snapshot.state,Date.now())):null,before=stateRef.current;queuePreparationNotices(before,next);if(before&&next&&before.createdAtMs===next.createdAtMs)queueCustomizationUnlocks(before,next);if(!before&&next&&initialCharacterAtLaunchRef.current===undefined)initialCharacterAtLaunchRef.current=!!next.character;if(!before&&next&&snapshot?.reward&&rewardHasProgress(snapshot.reward)){setCollected({reward:snapshot.reward,activity:snapshot.activity??null,welcomeBack:true,progressionMoments:[]});}stateRef.current=next;setState(next);setLoadError('');},[online.snapshot]);
+  // Loading-only changes must not rerun save migrations or reward/unlock projections.
+  useEffect(()=>{if(serverGameplayEnabled){setReady(!online.loading);setLoadError('');}},[online.loading]);
   useEffect(()=>{
     const snapshot=online.snapshot;
     if(!auth.session?.user.id){onlineStartupSettlementAccountRef.current=undefined;return;}
     const arrivalKey=snapshot?`${snapshot.accountId}:${online.foregroundRevision}`:undefined;
     if(!serverGameplayEnabled||!snapshot?.state||online.loading||online.busy||online.pending||onlineStartupSettlementAccountRef.current===arrivalKey)return;
     // The initial snapshot may have unclaimed offline rewards; complete settlement
-    // before scheduling a release announcement.
+    // before scheduling a release announcement. Pending commands are recovered
+    // separately; waiting for them must never block navigation or touch input.
     onlineStartupSettlementAccountRef.current=arrivalKey;
     if(snapshot.state.character&&(snapshot.state.activity||snapshot.state.character.classTraining)){
       void perform({type:'claim'},true,true).finally(()=>{
-        onlineForegroundSettlementRef.current=false;
         setOnlineStartupRewardsReadyKey(arrivalKey);
       });
     }else{
       setOnlineStartupRewardsReadyKey(arrivalKey);
-      if(onlineForegroundSettlementRef.current){onlineForegroundSettlementRef.current=false;setOfflineSettling(false);}
     }
   },[online.snapshot,online.foregroundRevision,online.loading,online.busy,online.pending,auth.session?.user.id]);
-  useEffect(()=>{if(online.error&&onlineForegroundSettlementRef.current){onlineForegroundSettlementRef.current=false;setOfflineSettling(false);}},[online.error]);
   useEffect(()=>{stateRef.current=state},[state]);
   useEffect(()=>{const characterId=state?.character?.id;if(!characterId){setTutorialCompleted([]);setTutorialDismissedId(undefined);return;}let active=true;void loadFirstSessionTutorialCompleted(characterId).then(ids=>{if(active)setTutorialCompleted(ids)});return()=>{active=false};},[state?.character?.id]);
   const tutorialStep=useMemo(()=>state?.character?firstSessionTutorialStep(state,tutorialCompleted):undefined,[state,tutorialCompleted]);
@@ -532,23 +549,29 @@ function VeldrynApp(){
     setUnlockInbox(current=>markUnlockInboxSeen(current));
     void markUnlockInboxRead(profileAttentionScope).catch(()=>{});
   },[tab,profileAttentionScope,unlockInboxLoaded]);
-  const syncLiveEventRuntime=useCallback(async()=>{if(!EVENTS_RELEASED||!onlineConfigured)return;try{const runtime=await fetchActiveEventRuntime();const current=stateRef.current;if(!current)return;const before=current.account.liveEvent??null,nextRuntime=runtime??null;if(JSON.stringify(before)!==JSON.stringify(nextRuntime)){const next={...current,account:{...current.account,liveEvent:runtime}};stateRef.current=next;setState(next);}
+  const syncLiveEventRuntime=useCallback(async(isCurrent:()=>boolean)=>{if(!EVENTS_RELEASED||!onlineConfigured)return;try{const runtime=await fetchActiveEventRuntime();if(!isCurrent())return;const current=stateRef.current;if(!current)return;const before=current.account.liveEvent??null,nextRuntime=runtime??null;if(JSON.stringify(before)!==JSON.stringify(nextRuntime)){const next={...current,account:{...current.account,liveEvent:runtime}};stateRef.current=next;setState(next);}
     const announcedAt=Date.now(),announcementScope=auth.session?.user.id??current.character?.id??'device';
     if(runtime&&tabRef.current==='Events'){void eventAnnouncementStore.markSeen(announcementScope,runtime,announcedAt);setEventStartPopup(null);}
-     else if(runtime&&canAnnounceLiveEventStart(current.character?.level)&&await eventAnnouncementStore.claim(announcementScope,runtime,announcedAt)&&tabRef.current!=='Events')setEventStartPopup(runtime);
+     else if(runtime&&canAnnounceLiveEventStart(current.character?.level)&&await eventAnnouncementStore.claim(announcementScope,runtime,announcedAt)&&isCurrent()&&tabRef.current!=='Events')setEventStartPopup(runtime);
   }catch{/* Event registry sync is best-effort; gameplay refresh remains authoritative. */}},[auth.session?.user.id]);
-  // Event configuration is server-authoritative, but it changes on a live-ops cadence, not a frame cadence.
-  // Foregrounding still refreshes immediately so a returning player never waits for the next scheduled check.
-  useEffect(()=>{if(!onlineConfigured)return;void syncLiveEventRuntime();const id=setInterval(()=>void syncLiveEventRuntime(),60_000);const sub=AppState.addEventListener('change',status=>{if(status==='active')void syncLiveEventRuntime();});return()=>{clearInterval(id);sub.remove();}},[syncLiveEventRuntime]);
+  useEffect(()=>{
+    if(!loadOptionalContent||!ready||!EVENTS_RELEASED||!onlineConfigured)return;
+    let inFlight:(()=>boolean)|undefined;
+    return runWhileForeground(isCurrent=>{
+      if(inFlight?.())return;
+      inFlight=isCurrent;
+      void syncLiveEventRuntime(isCurrent).finally(()=>{if(inFlight===isCurrent)inFlight=undefined;});
+    },60_000);
+  },[loadOptionalContent,ready,syncLiveEventRuntime]);
    useEffect(()=>{if(tab!=='Events')return;setEventStartPopup(null);const runtime=state?.account.liveEvent;if(!runtime)return;void eventAnnouncementStore.markSeen(auth.session?.user.id??state?.character?.id??'device',runtime);},[tab,auth.session?.user.id,state?.account.liveEvent?.eventId,state?.account.liveEvent?.startsAtMs,state?.character?.id]);
   const needsLiveClock=!!state?.activity||!!state?.character?.classTraining;
   const needsFastClock=needsLiveClock&&(tab==='Home'||tab==='Combat');
   // This is presentation-only. Server authority and reward settlement do not poll on this clock.
-  useEffect(()=>{setNow(Date.now());const interval=needsFastClock?2_000:needsLiveClock?15_000:60_000;const id=setInterval(()=>setNow(Date.now()),interval);return()=>clearInterval(id)},[needsFastClock,needsLiveClock]);
+  useEffect(()=>runWhileForeground(()=>setNow(Date.now()),needsFastClock?2_000:needsLiveClock?15_000:60_000),[needsFastClock,needsLiveClock]);
   useEffect(()=>{if(!preparationNotices.length||collected||forgeResults)return;const timer=setTimeout(()=>setPreparationNotices(current=>current.slice(1)),4500);return()=>clearTimeout(timer)},[preparationNotices,collected,forgeResults]);
   useEffect(()=>{if(!masteryNotices.length||preparationNotices.length||collected||forgeResults)return;const timer=setTimeout(()=>setMasteryNotices([]),4500);return()=>clearTimeout(timer)},[masteryNotices,preparationNotices.length,collected,forgeResults]);
   useEffect(()=>{if(!forgeClaimFeedback)return;const timer=setTimeout(()=>setForgeClaimFeedback(null),4500);return()=>clearTimeout(timer)},[forgeClaimFeedback]);
-  useEffect(()=>{if(tab!=='Skills'){setSelectedSkill(undefined);setGoalActionId(undefined);setGoalRecipeId(undefined)}},[tab]);
+  useEffect(()=>{if(tab!=='Skills'){toolRecipeReturnRef.current=null;setSelectedSkill(undefined);setGoalActionId(undefined);setGoalRecipeId(undefined)}},[tab]);
   // Global announcements share one presentation slot; foreground user dialogs win.
   const popupBlocked=!!profileDiscardAction||creatingRoster||showChatOverlay||showAdminQa||showCoopUiGallery
     ||startupBlocking||startupOverlayVisible||offlineSettling||hasBlockingAlert;
@@ -600,7 +623,10 @@ function VeldrynApp(){
   useEffect(()=>{setTabHistory([]);},[state?.character?.id]);
   useEffect(()=>{if(tab!=='Combat')setGoalMonsterId(undefined)},[tab]);
   useEffect(()=>{const subscription=BackHandler.addEventListener('hardwareBackPress',goBack);return()=>subscription.remove()},[goBack]);
-  useEffect(()=>{const subscription=AppState.addEventListener('change',nextStatus=>{const wasAway=appStateRef.current==='background'||appStateRef.current==='inactive';appStateRef.current=nextStatus;if(!wasAway||nextStatus!=='active'||settlingRef.current)return;const current=stateRef.current;if(!current?.character)return;if(serverGameplayEnabled){if(current.activity||current.character.classTraining){onlineForegroundSettlementRef.current=true;setOfflineSettling(true);}return;}settlingRef.current=true;setOfflineSettling(true);setTimeout(()=>{const settled=settleStartupActivity(current,Date.now());const changed=settled.state!==current;if(changed){stateRef.current=settled.state;setState(settled.state);void repo.save(settled.state).catch(()=>showAlert('Save pending','Your returned progress is safe in memory, but could not be saved yet.'));}if(settled.reward){queuePreparationNotices(current,settled.state);setCollected({reward:settled.reward,activity:settled.activity,welcomeBack:true,progressionMoments:rewardProgressionMoments(current,settled.state),welcomeReport:buildWelcomeBackFromStates(current,settled.state,settled.reward,settled.activity)});}setOfflineSettling(false);settlingRef.current=false},0)});return()=>subscription.remove()},[]);
+  // Online foreground refresh is owned by useOnlineGame. Only the local
+  // prototype needs a separate foreground settlement listener and overlay.
+  useEffect(()=>{if(serverGameplayEnabled)return;
+    const subscription=AppState.addEventListener('change',nextStatus=>{const wasAway=appStateRef.current==='background'||appStateRef.current==='inactive';appStateRef.current=nextStatus;if(!wasAway||nextStatus!=='active'||settlingRef.current)return;const current=stateRef.current;if(!current?.character)return;settlingRef.current=true;setOfflineSettling(true);setTimeout(()=>{const settled=settleStartupActivity(current,Date.now());const changed=settled.state!==current;if(changed){stateRef.current=settled.state;setState(settled.state);void repo.save(settled.state).catch(()=>showAlert('Save pending','Your returned progress is safe in memory, but could not be saved yet.'));}if(settled.reward){queuePreparationNotices(current,settled.state);setCollected({reward:settled.reward,activity:settled.activity,welcomeBack:true,progressionMoments:rewardProgressionMoments(current,settled.state),welcomeReport:buildWelcomeBackFromStates(current,settled.state,settled.reward,settled.activity)});}setOfflineSettling(false);settlingRef.current=false},0)});return()=>subscription.remove()},[]);
   useEffect(()=>{const multiplier=state?.settings.textScale??1.5;for(const component of [Text,TextInput]){const scalable=component as typeof component&{defaultProps?:Record<string,unknown>};scalable.defaultProps={...(scalable.defaultProps??{}),allowFontScaling:true,maxFontSizeMultiplier:multiplier}}},[state?.settings.textScale]);
   const coopEntrySource=useMemo(()=>__DEV__&&!serverGameplayEnabled&&!coopOnlineConfigured?createCoopDungeonFixtureSource(state?.settings.language??recoveryLanguage,state?.character):realCoopEntrySource,[state?.settings.language,state?.character,recoveryLanguage]);
   function queueMasteryNotice(before:GameState|null|undefined,after:GameState|null|undefined){const moments=masteryRankProgressionMoments(before,after);if(moments.length)setMasteryNotices(moments);}
@@ -623,7 +649,7 @@ function VeldrynApp(){
 
   }
   async function perform(command?:GameCommand,presentRewards=true,welcomeBack=false,silentFailure=false,throwOnFailure=false){if(welcomeBack)setOfflineSettling(true);try{
-    const before=stateRef.current,result=await online.execute(command);
+    const before=stateRef.current,result=await online.execute(command,welcomeBack);
     setOnlineActionError('');
     queuePreparationNotices(before,result.state);stateRef.current=result.state;setState(result.state);queueCustomizationUnlocks(before,result.state);
     if(result.executedCommand.type==='quest')queueFeatureUnlockMoments(before,result.state);
@@ -637,7 +663,7 @@ function VeldrynApp(){
   }catch(error){
     const message=error instanceof Error?error.message:'Please retry.';
     if(command&&['withdraw','deposit','sell','bulk_transfer','bulk_sell'].includes(command.type)&&/gameplay action is already being saved/i.test(message))return null;
-    if(command?.type==='craft_claim_all'&&!forgeClaimAllInFlight.current){
+    if(command?.type==='craft_claim_all' && message==='invalid_command' && !forgeClaimAllInFlight.current){
       forgeClaimAllInFlight.current=true;
       try{
         const current=stateRef.current;
@@ -740,17 +766,21 @@ function VeldrynApp(){
   // palette. Retry once that action clears rather than issuing a competing command.
   useEffect(()=>{if(!online.busy&&!online.pending&&requestedThemeRef.current&&!themeSavingRef.current)scheduleThemeSave(0);},[online.busy,online.pending]);
   useEffect(()=>()=>{if(themeSaveTimerRef.current!==null)clearTimeout(themeSaveTimerRef.current);},[]);
-  async function commit(candidate:GameState){
+  async function commit(candidate:GameState,options?:{confirmSaved?:boolean}){
     const current=stateRef.current;
     if(serverGameplayEnabled){
       if(!current)return;
       // Ignore already-applied appearances before classifying settings or profile commands.
-      if(JSON.stringify(candidate)===JSON.stringify(current))return;
-      if(JSON.stringify(candidate)===JSON.stringify({...current,settings:candidate.settings})){await perform({type:'settings',args:{settings:settingsForOnlineCommand(candidate.settings)}});return;}
-      if(candidate.activity===null&&JSON.stringify(candidate)===JSON.stringify({...current,activity:null})){await perform({type:'stop'});return;}
-      const profileKeys=['profileIconId','profileTitle','profileBackgroundId','profileBorderId','selectedCosmeticPetId'] as const;
+      if(candidate===current)return;
+      // Serialize the candidate once. Retain exact existing JSON equality semantics
+      // so this optimization cannot admit additional server-owned changes.
+      const serializedCandidate=JSON.stringify(candidate);
+      if(serializedCandidate===JSON.stringify(current))return;
+      if(serializedCandidate===JSON.stringify({...current,settings:candidate.settings})){await perform({type:'settings',args:{settings:settingsForOnlineCommand(candidate.settings)}});return;}
+      if(candidate.activity===null&&serializedCandidate===JSON.stringify({...current,activity:null})){await perform({type:'stop'});return;}
+      const profileKeys=['profileIconId','profileTitle','profileBackgroundId','profileBorderId','profileEffectId','selectedCosmeticPetId'] as const;
       if(current.character&&candidate.character){const patch=Object.fromEntries(profileKeys.map(key=>[key,candidate.character![key]]));
-        if(JSON.stringify(candidate)===JSON.stringify({...current,character:{...current.character,...patch}})){await perform({type:'profile',args:Object.fromEntries(Object.entries(patch).map(([key,value])=>[key,value??null]))});return;}}
+        if(serializedCandidate===JSON.stringify({...current,character:{...current.character,...patch}})){const changed=profileKeys.filter(key=>current.character![key]!==candidate.character![key]);if(!changed.length)return;const result=await perform({type:'profile',args:Object.fromEntries(changed.map(key=>[key,patch[key]??null]))});if(result&&changed.includes('profileIconId')&&auth.session?.user.id&&result.state.character)publishOwnProfileIcon(result.accountId,accountProfileIconId(result.state),result.state.character.classId);return;}}
       showAlert('Server-owned progress','This change requires an online gameplay action.');return;
     }
     if(current?.character&&candidate.character&&current.character.selectedCosmeticPetId!==candidate.character.selectedCosmeticPetId){
@@ -760,14 +790,20 @@ function VeldrynApp(){
         const settled=claimActivity(current,Date.now());candidate={...settled.state,character:{...settled.state.character!,...patch}};
       }
     }
-const next=normalizeProfileIcon(migrateGemPouch(migrateRetiredStoryRewards(candidate,Date.now())));queuePreparationNotices(current,next);stateRef.current=next;setState(next);queueCustomizationUnlocks(current,next);queueFeatureUnlockMoments(current,next);try{await repo.save(next)}catch{showAlert('Local save failed','Progress is still in memory. Keep the app open and try another action to save again.')}}
+const explicitLocalIcon=current?.character&&candidate.character&&current.character.id===candidate.character.id&&candidate.character.profileIconId&&candidate.character.profileIconId!==current.character.profileIconId;
+const next=normalizeProfileIcon(migrateGemPouch(migrateRetiredStoryRewards(explicitLocalIcon?selectProfileIcon(candidate,candidate.character!.profileIconId!):candidate,Date.now())));
+ // For crafting, save before claiming success or updating the visible queue; a failed
+ // local save must not look like a completed transaction.
+ if(options?.confirmSaved)await repo.save(next);
+ queuePreparationNotices(current,next);stateRef.current=next;setState(next);queueCustomizationUnlocks(current,next);queueFeatureUnlockMoments(current,next);
+ if(!options?.confirmSaved){try{await repo.save(next)}catch{showAlert('Local save failed','Progress is still in memory. Keep the app open and try another action to save again.')}}}
   async function exportSave(){if(!state){showAlert('Export unavailable','No save is loaded.');return;}try{await Share.share({title:'VELDRYN save backup',message:createSaveBackup(state)})}catch(error){showAlert('Export failed',error instanceof Error?error.message:'The share sheet could not be opened.')}}
   async function importSave(raw:string){if(serverGameplayEnabled)throw new Error("Local backups cannot replace server-owned progress.");const next=normalizeProfileIcon(migrateRetiredStoryRewards(parseSaveBackup(raw),Date.now()));await repo.save(next);setState(next);setCurrentTab('Home');setTabHistory([]);showAlert('Save imported','The validated backup is now stored on this device.');}
   function presentCollected(reward:RewardBundle,activity:ActiveActivity|null,before?:GameState|null,after?:GameState|null){const progressionMoments=rewardProgressionMoments(before,after);if(rewardHasProgress(reward)||progressionMoments.length)setCollected({reward,activity,progressionMoments})}
-  function changeActivity(next?:{kind:'combat'|'gathering';id:string;tacticId?:CombatTacticId;goalId?:HuntGoalId}){
+  async function changeActivity(next?:{kind:'combat'|'gathering';id:string;tacticId?:CombatTacticId;goalId?:HuntGoalId}){
     if(!state)return;
-    if(serverGameplayEnabled){void perform(next?{type:'start',args:{kind:next.kind,id:next.id,...(next.tacticId?{tacticId:next.tacticId}: {}),...(next.goalId?{goalId:next.goalId}: {})}}:{type:'stop'},!next);return;}
-    try{const result=transitionActivity(state,Date.now(),next);commit(result.state)}
+    if(serverGameplayEnabled){await perform(next?{type:'start',args:{kind:next.kind,id:next.id,...(next.tacticId?{tacticId:next.tacticId}: {}),...(next.goalId?{goalId:next.goalId}: {})}}:{type:'stop'},!next);return;}
+    try{const result=transitionActivity(state,Date.now(),next);await commit(result.state)}
     catch(error){showAlert('Cannot change activity',error instanceof Error?error.message:'Please try again.')}
   }
   function mutateActionQueue(command:GameCommand,openHome=false){
@@ -853,8 +889,15 @@ const next=normalizeProfileIcon(migrateGemPouch(migrateRetiredStoryRewards(candi
     if(destination.kind==='combat'){setGoalMonsterId(destination.monsterId);setTab('Combat');return;}
     if(destination.kind==='skills'){
       setGoalActionId(destination.actionId);setGoalRecipeId(destination.recipeId);
-      if(destination.mode){setSelectedSkill(destination.skillId);setSkillsMode(destination.mode);setTab('Skills');return;}
-      setSelectedSkill(undefined);setTab('Skills');return;
+      // An in-Skills recipe deep link must not re-select the bottom tab:
+      // setTab('Skills') intentionally resets a detail page to the Skills hub.
+      if(destination.mode){
+        if(tab==='Skills'&&selectedSkill&&['mining','woodcutting','fishing'].includes(selectedSkill)&&destination.skillId==='smithing'&&destination.recipeId?.startsWith('CRAFT_')){
+          toolRecipeReturnRef.current={skillId:selectedSkill,mode:skillsMode,actionId:goalActionId,recipeId:goalRecipeId};
+        }
+        setSelectedSkill(destination.skillId);setSkillsMode(destination.mode);if(tab!=='Skills')setTab('Skills');return;
+      }
+      setSelectedSkill(undefined);if(tab!=='Skills')setTab('Skills');return;
     }
     if(destination.kind==='contracts'){openQuestMode('contracts');return;}
     if(destination.kind==='inventory'){setTab('Inventory');return;}
@@ -897,36 +940,48 @@ const next=normalizeProfileIcon(migrateGemPouch(migrateRetiredStoryRewards(candi
   // (up to a full AFK reserve). It is a pure function of the authoritative state and the
   // presentation clock, so unrelated root re-renders (tab changes, popups, chat, alerts)
   // reuse the last result instead of re-simulating.
-  const activityPreview=useMemo(()=>state?.character?previewActivityReward(state,now):undefined,[state,now]);
+  const activityPreviewMs=activityRewardPreviewClock(now,state?.activity??undefined,!!state?.character?.classTraining);
+  const activityPreview=useMemo(()=>state?.character?previewActivityReward(state,activityPreviewMs):undefined,[state,activityPreviewMs]);
+  // Shell projections depend on the save and presentation clock, not tab, chat,
+  // modal or cosmetic-preview changes. Keep the existing time-sensitive cadence.
+  const shellAttentionReady=versionGateChecked&&!versionGateOwnsScreen&&ready&&(!serverGameplayEnabled||(!auth.loading&&!online.loading&&!!auth.session&&!auth.recovering&&!!online.snapshot));
+  const shellAttention=useMemo(()=>{
+    if(!shellAttentionReady||!state?.character)return null;
+    const companionsUnlocked=earlyFeatureUnlocked(state,'companions'),dailySuppliesUnlocked=earlyFeatureUnlocked(state,'dailySupplies'),contractsUnlocked=earlyFeatureUnlocked(state,'contracts'),friendsUnlocked=earlyFeatureUnlocked(state,'friends'),socialUnlocked=earlyFeatureUnlocked(state,'social'),guildUnlocked=earlyFeatureUnlocked(state,'guild');
+    const companionAttention=companionsUnlocked?companionAttentionSummary(state,now):{total:0,hasAttention:false,expeditionClaims:0,bondRewards:0,ascensions:0,sanctuaryClaims:0,codexClaims:0,monthlyTrialClaims:0,recentUnlocks:0};
+    const dailySuppliesReady=dailySuppliesUnlocked&&dailySuppliesStatus(state,now).canClaim;
+    const forgeReadyCount=state.account.equipmentCraftingQueue?.length
+      ? projectedEquipmentCraftingQueue(state,now).filter(job=>job.completesAtMs<=now).length
+      : 0;
+    const questClaims=questClaimAttention(state,now);
+    const overflowStackCount=state.overflow.stacks.filter(stack=>stack.quantity>0).length;
+    const lockedAccountDestinations=Object.fromEntries((['DailySupplies','AccountBonuses','Companions','Friends','Recruitment','MasteryHall','Guild','Rankings'] as MoreDestination[]).flatMap(destination=>{const reason=earlyFeatureLockReason(state,destination);return reason?[[destination,reason]]:[]})) as Partial<Record<MoreDestination,string>>;
+    return {companionsUnlocked,dailySuppliesUnlocked,contractsUnlocked,friendsUnlocked,socialUnlocked,guildUnlocked,companionAttention,dailySuppliesReady,forgeReadyCount,questClaims,overflowStackCount,lockedAccountDestinations};
+  },[state,now,shellAttentionReady]);
   const renderApp=()=>{
   if(!versionGateChecked)return <View style={s.startupUnderlay}/>;
   if(versionGate?.maintenanceMode&&versionGate.policy)return <UpdateRequiredScreen maintenance title={appText(languageRef.current,"VELDRYN maintenance")} message={versionGate.policy.maintenanceMessage} currentVersion={versionGate.currentVersion} onUpdate={()=>{}}/>;
   if(versionGate?.updateRequired&&versionGate.policy)return <UpdateRequiredScreen title={versionGate.policy.title} message={versionGate.policy.message} currentVersion={versionGate.currentVersion} minimumVersion={versionGate.policy.minimumVersion} onUpdate={()=>void openStoreListing()}/>;
-  if(serverGameplayEnabled&&(auth.loading||online.loading||guestBooting&&!auth.session))return <View style={s.startupUnderlay}/>;
+  if(serverGameplayEnabled&&(auth.loading||online.loading))return <View style={s.startupUnderlay}/>;
   if(serverGameplayEnabled&&(!auth.session||auth.recovering))return <AccountWelcomeScreen scene={startupScene}><OnlineAccountPanel state={state??newGame(Date.now())}/></AccountWelcomeScreen>;
   if(serverGameplayEnabled&&!online.snapshot)return <SafeAreaView style={s.center}><Text style={s.txt}>{online.error||appText(languageRef.current,'Connecting…')}</Text><GameButton title={appText(languageRef.current,"Retry connection")} onPress={()=>online.refresh()}/><OnlineAccountPanel state={newGame(Date.now())}/></SafeAreaView>;
   if(!ready)return <View style={s.startupUnderlay}/>;
   if(loadError||!state)return <SafeAreaView style={s.safe}><StatusBar style="light"/><SaveRecoveryScreen language={recoveryLanguage} message={loadError||'No readable save state was returned.'} onRetry={()=>void loadGame()} onStartFresh={()=>showAlert('Delete unreadable local save?','This permanently removes the existing local data and starts a new game.',[{text:'Cancel'},{text:'Start fresh',style:'destructive',onPress:async()=>{await repo.reset();setState(newGame(Date.now()));setLoadError('');setCurrentTab('Home');setTabHistory([])}}])}/></SafeAreaView>;
-  if(!state.character){const theme=resolveTheme(displayedThemeId);if(serverGameplayEnabled&&adminQa)return <GameThemeProvider themeId={displayedThemeId}><SafeAreaView style={[s.safe,{backgroundColor:theme.bg}]}><StatusBar style={theme.dark?'light':'dark'}/><AdminQaScreen state={state} onApplyQa={applyOnlineAdminQa} onRefillQa={refillOnlineAdminQa} onClose={()=>{}} onOpenDungeon={()=>{}}/></SafeAreaView></GameThemeProvider>;return <GameThemeProvider themeId={displayedThemeId}><SafeAreaView style={[s.safe,{backgroundColor:theme.bg}]}><StatusBar style={theme.dark?'light':'dark'}/><ClassSelectScreen language={state.settings.language} themeId={displayedThemeId} onTheme={selectUiTheme} onLanguage={language=>commit({...state,settings:{...state.settings,language}})} onSignInExisting={serverGameplayEnabled&&auth.session?.user.is_anonymous?()=>{setGuestBooting(false);void signOut()}:undefined} onSelect={async(id,name,body)=>{await flushThemeSave();if(serverGameplayEnabled){const result=await perform({type:'create',args:{classId:id,name,body}});if(result)setCreationWelcome({name,classId:id});return;}const next=createCharacter(stateRef.current??state,id,name,body);await repo.save(next);stateRef.current=next;setState(next);setCreationWelcome({name,classId:id})}}/></SafeAreaView></GameThemeProvider>;}
+  if(!state.character){const theme=resolveTheme(displayedThemeId);if(serverGameplayEnabled&&adminQa)return <GameThemeProvider themeId={displayedThemeId}><SafeAreaView style={[s.safe,{backgroundColor:theme.bg}]}><StatusBar style={theme.dark?'light':'dark'}/><AdminQaScreen state={state} onApplyQa={applyOnlineAdminQa} onRefillQa={refillOnlineAdminQa} onClose={()=>{}} onOpenDungeon={()=>{}}/></SafeAreaView></GameThemeProvider>;return <GameThemeProvider themeId={displayedThemeId}><SafeAreaView style={[s.safe,{backgroundColor:theme.bg}]}><StatusBar style={theme.dark?'light':'dark'}/><ClassSelectScreen language={state.settings.language} themeId={displayedThemeId} onTheme={selectUiTheme} onLanguage={language=>commit({...state,settings:{...state.settings,language}})} onSignInExisting={serverGameplayEnabled&&auth.session?.user.is_anonymous?()=>{void signOut()}:undefined} onSelect={async(id,name,body)=>{await flushThemeSave();if(serverGameplayEnabled){const result=await perform({type:'create',args:{classId:id,name,body}});if(result)setCreationWelcome({name,classId:id});return;}const next=createCharacter(stateRef.current??state,id,name,body);await repo.save(next);stateRef.current=next;setState(next);setCreationWelcome({name,classId:id})}}/></SafeAreaView></GameThemeProvider>;}
   if(creatingRoster){const theme=resolveTheme(displayedThemeId);return <GameThemeProvider themeId={displayedThemeId}><SafeAreaView style={[s.safe,{backgroundColor:theme.bg}]}><StatusBar style={theme.dark?'light':'dark'}/><ClassSelectScreen language={state.settings.language} lockedRoles={occupiedCharacterRoles(state)} cancelLabel={t(state.settings.language,'roster.cancel')} onCancel={()=>setCreatingRoster(false)} onSelect={async(id,name,body)=>{if(serverGameplayEnabled){const result=await perform({type:'roster_create',args:{classId:id,name,body}});if(result)setCreatingRoster(false);return;}const result=executeGameCommand(state,{type:'roster_create',args:{classId:id,name,body}},Date.now());await commit(result.state);setCreatingRoster(false)}}/></SafeAreaView></GameThemeProvider>;}
   if(showAdminQa&&(adminQa||(__DEV__&&!serverGameplayEnabled)))return <SafeAreaView style={s.safe} {...backSwipe.panHandlers}><StatusBar style="light"/><AdminQaScreen state={state} onChange={!serverGameplayEnabled?commit:undefined} onApplyQa={serverGameplayEnabled&&adminQa?applyOnlineAdminQa:undefined} onRefillQa={serverGameplayEnabled&&adminQa?refillOnlineAdminQa:undefined} onClose={()=>setShowAdminQa(false)} onOpenDungeon={()=>{setShowAdminQa(false);setTab('Coop')}}/></SafeAreaView>;
   if(__DEV__&&showCoopUiGallery)return <SafeAreaView style={s.safe} {...backSwipe.panHandlers}><StatusBar style="light"/><CoopUiGalleryScreen language={state.settings.language} onClose={()=>setShowCoopUiGallery(false)}/></SafeAreaView>;
   const theme=resolveTheme(displayedThemeId);
   const preview=activityPreview??previewActivityReward(state,now);
-  const companionsUnlocked=earlyFeatureUnlocked(state,'companions'),dailySuppliesUnlocked=earlyFeatureUnlocked(state,'dailySupplies'),contractsUnlocked=earlyFeatureUnlocked(state,'contracts'),friendsUnlocked=earlyFeatureUnlocked(state,'friends'),socialUnlocked=earlyFeatureUnlocked(state,'social'),guildUnlocked=earlyFeatureUnlocked(state,'guild');
-  const companionAttention=companionsUnlocked?companionAttentionSummary(state,now):{total:0,hasAttention:false,expeditionClaims:0,bondRewards:0,ascensions:0,sanctuaryClaims:0,codexClaims:0,monthlyTrialClaims:0,recentUnlocks:0};
-  const dailySuppliesReady=dailySuppliesUnlocked&&dailySuppliesStatus(state,now).canClaim;
-  const equipmentForge=equipmentCraftQueueModel(state,now);
-  const questClaims=questClaimAttention(state,now),storyClaimCount=questClaims.story;
-  const overflowStackCount=state.overflow.stacks.filter(stack=>stack.quantity>0).length;
-  const lockedAccountDestinations=Object.fromEntries((['DailySupplies','AccountBonuses','Companions','Friends','Recruitment','MasteryHall','Guild','Rankings'] as MoreDestination[]).flatMap(destination=>{const reason=earlyFeatureLockReason(state,destination);return reason?[[destination,reason]]:[]})) as Partial<Record<MoreDestination,string>>;
+  const {companionsUnlocked,dailySuppliesUnlocked,contractsUnlocked,friendsUnlocked,socialUnlocked,guildUnlocked,companionAttention,dailySuppliesReady,forgeReadyCount,questClaims,overflowStackCount,lockedAccountDestinations}=shellAttention!;
+  const storyClaimCount=questClaims.story;
   const partyContractClaims=partySocial.accountId===auth.session?.user.id&&partySocial.party?partyContractClaimableRewardIds(partySocial.contracts).length:0;
   const navigationNotifications:NavigationNotification[]=[
     ...actionableClaimNotifications({storyRewards:storyClaimCount,challengeRewards:questClaims.challenges,milestoneRewards:questClaims.milestones,overflowStacks:overflowStackCount}),
     {key:'activity-reward-ready',kind:'reward_ready',unread:rewardHasProgress(preview)},
     {key:'companion-attention',kind:'companion_attention',unread:companionAttention.hasAttention},
     {key:'daily-supplies-ready',kind:'account_action',unread:dailySuppliesReady},
-    {key:'equipment-crafts-ready',kind:'equipment_craft_ready',count:equipmentForge.ready,unread:equipmentForge.ready>0},
+    {key:'equipment-crafts-ready',kind:'equipment_craft_ready',count:forgeReadyCount,unread:forgeReadyCount>0},
     {key:'incoming-friend-requests',kind:'friend_request',count:friendsUnlocked?notificationCounts.friendRequests:0,unread:friendsUnlocked&&notificationCounts.friendRequests>0},
     {key:'profile-customization-review',kind:'profile_customization',unread:unreadUnlockCount(unlockInbox)>0},
     {key:'unread-social-chat',kind:'chat_unread',count:socialUnlocked?notificationCounts.partyChatUnread:0,unread:socialUnlocked&&notificationCounts.partyChatUnread>0},
@@ -958,17 +1013,50 @@ const next=normalizeProfileIcon(migrateGemPouch(migrateRetiredStoryRewards(candi
   // Keep the normal app navigation available, but let an active dungeon run
   // begin immediately with its Q-Mode / Live status and room decisions.
   const immersiveDungeonFlow=dungeonFlowActive&&tab==='Coop';
+  // A crafting quantity drag must never trigger the app's edge-swipe history gesture.
+  // The explicit back button and Android hardware back still work normally.
+  const disableHistorySwipe=immersiveDungeonFlow||(tab==='Skills'&&skillsMode==='crafting'&&!!selectedSkill);
   const featureHubShell=featureHubShellPolicy(tab);
   const mainTabGuide=MAIN_TAB_GUIDANCE[tab];
-  return <GameThemeProvider themeId={displayedThemeId}><TutorialHighlightProvider active={(mainScreenTour?.highlightBeacon??visibleTutorialStep?.highlightBeacon)??null}><SafeAreaView edges={['top','left','right']} style={[s.safe,{backgroundColor:theme.bg}]}><StatusBar style={theme.dark?'light':'dark'}/>{!immersiveDungeonFlow&&<GameTopBar key={`${state.createdAtMs}:${state.character.id}`} state={state} nowMs={now} reward={preview} online={serverGameplayEnabled&&!online.error} attention={quickNavigationBadges} labelForDestination={destination=>tabLabel(state.settings.language,destination)} onNavigate={destination=>{if(destination==='Dungeon'){setTab('Coop');return;}if(destination==='Quests'){openQuestMode(storyClaimCount>0?'story':questClaims.challenges>0||questClaims.milestones>0?'challenges':'story');return;}setTab(destination)}} onChangeDestinations={destinations=>commit({...state,settings:{...state.settings,quickNavDestinations:destinations}})} showActivityBar={tab!=='ProfileCustomize'&&tab!=='Coop'&&!featureHubShell.hideActivityBar} onOpenActivity={()=>{if(preview.stoppedReason){setTab('Home');return;}openActiveActivity()}} onRecoverCombat={recoverStoppedCombat} onFoodCommand={quickFoodCommand}/>}{serverGameplayEnabled&&online.busy?<View pointerEvents="none" style={{position:'absolute',top:52,right:12,zIndex:30,flexDirection:'row',alignItems:'center',gap:6,paddingVertical:6,paddingHorizontal:10,borderWidth:1,borderColor:theme.info,borderRadius:12,backgroundColor:theme.panelRaised}}><ActivityIndicator color={theme.info} size="small"/><Text style={{color:theme.text,fontSize:11,fontWeight:'800'}}>{appText(state.settings.language,'Saving…')}</Text></View>:null}{serverGameplayEnabled&&online.pending?<View style={{paddingHorizontal:12}}><GameButton title={appText(languageRef.current,"Retry pending action")} disabled={online.busy} onPress={()=>perform()}/></View>:null}{onlineActionError?<View style={{paddingHorizontal:12,paddingVertical:6}}><ActionFeedback tone="error" message={onlineActionError} compact actionLabel={appText(state.settings.language,'Close')} onAction={()=>setOnlineActionError('')}/></View>:null}<View style={s.body} {...(immersiveDungeonFlow?{}:backSwipe.panHandlers)}>
+  return <GameThemeProvider themeId={displayedThemeId}><TutorialHighlightProvider active={(mainScreenTour?.highlightBeacon??visibleTutorialStep?.highlightBeacon)??null}><SafeAreaView edges={['top','left','right']} style={[s.safe,{backgroundColor:theme.bg}]}><StatusBar style={theme.dark?'light':'dark'}/>{!immersiveDungeonFlow&&<GameTopBar key={`${state.createdAtMs}:${state.character.id}`} state={state} nowMs={now} reward={preview} online={serverGameplayEnabled&&!online.error} attention={quickNavigationBadges} labelForDestination={destination=>tabLabel(state.settings.language,destination)} onNavigate={destination=>{if(destination==='Dungeon'){setTab('Coop');return;}if(destination==='Quests'){openQuestMode(storyClaimCount>0?'story':questClaims.challenges>0||questClaims.milestones>0?'challenges':'story');return;}setTab(destination)}} onChangeDestinations={destinations=>commit({...state,settings:{...state.settings,quickNavDestinations:destinations}})} showActivityBar={tab!=='ProfileCustomize'&&tab!=='Coop'&&tab!=='Events'&&!(tab==='Guild'&&(guildEventPageOpen||guildInitialPve||guildRaidScope===((auth.session?.user.id??state.character.id)+':'+guildMembershipRevision)))&&!featureHubShell.hideActivityBar} onOpenActivity={()=>{if(preview.stoppedReason){setTab('Home');return;}openActiveActivity()}} onRecoverCombat={recoverStoppedCombat} onFoodCommand={quickFoodCommand}/>}{serverGameplayEnabled&&(offlineSettling||(online.busy&&!quietCraftSaving))?<View pointerEvents="none" accessible accessibilityRole="progressbar" accessibilityLabel={appText(state.settings.language,offlineSettling?'Calculating offline rewards…':'Saving…')} style={{position:'absolute',top:52,right:12,zIndex:30,flexDirection:'row',alignItems:'center',gap:6,paddingVertical:6,paddingHorizontal:10,borderWidth:1,borderColor:theme.info,borderRadius:12,backgroundColor:theme.panelRaised}}><ActivityIndicator color={theme.info} size="small"/><Text style={{color:theme.text,fontSize:11,fontWeight:'800'}}>{appText(state.settings.language,offlineSettling?'Calculating offline rewards…':'Saving…')}</Text></View>:null}{serverGameplayEnabled&&online.pending?<View style={{paddingHorizontal:12}}><GameButton title={appText(languageRef.current,"Retry pending action")} disabled={online.busy} onPress={()=>perform()}/></View>:null}{onlineActionError?<View style={{paddingHorizontal:12,paddingVertical:6}}><ActionFeedback tone="error" message={onlineActionError} compact actionLabel={appText(state.settings.language,'Close')} onAction={()=>setOnlineActionError('')}/></View>:null}<View style={s.body} {...(disableHistorySwipe?{}:backSwipe.panHandlers)}>
+    <ScreenTransition key={tab} kind={transitionKind} reduceMotion={state.settings.reduceMotion||systemReduceMotion||immersiveDungeonFlow}>
     {!immersiveDungeonFlow&&mainTabGuide&&!mainScreenTour&&!visibleTutorialStep?<SectionGuide scope={auth.session?.user.id??state.character.id} area="main" section={tab} guide={mainTabGuide} showReplay={false}/>:null}
-    {tab==='Home'&&<HomeScreen onOpenGuide={()=>{setTab('Settings');setSettingsSection('guide')}} state={state} forgeReadyCount={equipmentForge.ready} preview={preview} nowMs={now} onOpenContracts={()=>openQuestMode('contracts')} onNavigateGoal={openWorkingTowardDestination} onOpenCombat={()=>setTab('Combat')} onOpenSkill={skillId=>{setSelectedSkill(skillId);setSkillsMode(skillId==='faith'?'faith':['mining','woodcutting','fishing','herbalism','exploration'].includes(skillId)?'gathering':'crafting');setTab('Skills')}} onNavigate={destination=>{if(destination==='Skills')setSelectedSkill(undefined);if(destination==='Quests'){openQuestMode('story');return;}setTab(destination)}} onQueueRemove={index=>mutateActionQueue({type:'queue_remove',args:{index}})} onQueueMove={(index,direction)=>mutateActionQueue({type:'queue_move',args:{index,direction}})} onQueueClear={()=>mutateActionQueue({type:'queue_clear'})} onQueueStart={()=>mutateActionQueue({type:'queue_start'},true)} onSetCurrentHandoff={()=>{const id=stateRef.current?.activity?.targetId;if(id)void submitHomeQueueCommand({type:'queue_set_goal',args:{id,goal:{kind:'duration_seconds',value:14400}}});}} onQueueAdd={(entry,handoff)=>submitHomeQueueCommand({type:'queue_add',args:{kind:entry.kind,id:entry.targetId,...(entry.combatTacticId?{tacticId:entry.combatTacticId}:{}),...(entry.huntGoalId?{goalId:entry.huntGoalId}:{}),...(entry.faithPracticeCount?{count:entry.faithPracticeCount}:{}),...(entry.goal?{goal:entry.goal}:{}),...(handoff?.goal?{handoffGoal:handoff.goal,handoffTargetId:handoff.targetId}:{}),...(handoff?.keepCurrentRunning?{keepCurrentRunning:true}:{})}})} onClaim={()=>{if(serverGameplayEnabled){void perform({type:'claim'});return;}const result=claimActivity(state,Date.now());commit(result.state);presentCollected(result.reward,state.activity,state,result.state)}} onStop={()=>changeActivity()}/>}
-    {tab==='Combat'&&<CombatScreen state={state} onCommand={runCompanionCommand} onOpenInventory={()=>setTab('Inventory')} initialMonsterId={goalMonsterId} initialAreaId={selectedRegionalAreaId} onChangeRegion={()=>setTab('World')} onStart={(id,tacticId,goalId)=>changeActivity({kind:'combat',id,...(tacticId?{tacticId}: {}),...(goalId?{goalId}: {})})} onQueue={(id,tacticId,goalId)=>queueActivity({kind:'combat',targetId:id,...(tacticId?{combatTacticId:tacticId}:{}),...(goalId?{huntGoalId:goalId}:{})})} onQueueRemove={index=>mutateActionQueue({type:'queue_remove',args:{index}})} onQueueMove={(index,direction)=>mutateActionQueue({type:'queue_move',args:{index,direction}})} onQueueClear={()=>mutateActionQueue({type:'queue_clear'})} onQueueStart={()=>mutateActionQueue({type:'queue_start'},true)} onBoss={()=>{const now=Date.now();if(serverGameplayEnabled){void perform({type:'boss'}).then(result=>{if(!result)return;if(result.storyBossBattle){setStoryBossBattle({battle:result.storyBossBattle,message:result.message??(result.won?'Victory':'Defeat')});return;}showAlert(result.won?'Victory':'Not ready',result.message)});return;}const settled=claimActivity(state,now);const result=challengeFallenKnight(settled.state,now);void commit(result.state);if(result.battle){setStoryBossBattle({battle:result.battle,message:result.message});return;}showAlert(ot(state.settings.language,result.won?'combat.victory':'combat.notReady'),result.message)}}/>}
+    {tab==='Home'&&<HomeScreen onOpenGuide={()=>{setTab('Settings');setSettingsSection('guide')}} state={state} forgeReadyCount={forgeReadyCount} preview={preview} nowMs={now} onOpenContracts={()=>openQuestMode('contracts')} onNavigateGoal={openWorkingTowardDestination} onOpenCombat={()=>setTab('Combat')} onOpenSkill={skillId=>{setSelectedSkill(skillId);setSkillsMode(skillId==='faith'?'faith':['mining','woodcutting','fishing','herbalism','exploration'].includes(skillId)?'gathering':'crafting');setTab('Skills')}} onNavigate={destination=>{if(destination==='Skills')setSelectedSkill(undefined);if(destination==='Quests'){openQuestMode('story');return;}setTab(destination)}} onQueueRemove={index=>mutateActionQueue({type:'queue_remove',args:{index}})} onQueueMove={(index,direction)=>mutateActionQueue({type:'queue_move',args:{index,direction}})} onQueueClear={()=>mutateActionQueue({type:'queue_clear'})} onQueueStart={()=>mutateActionQueue({type:'queue_start'},true)} onSetCurrentHandoff={()=>{const id=stateRef.current?.activity?.targetId;if(id)void submitHomeQueueCommand({type:'queue_set_goal',args:{id,goal:{kind:'duration_seconds',value:14400}}});}} onQueueAdd={(entry,handoff)=>submitHomeQueueCommand({type:'queue_add',args:{kind:entry.kind,id:entry.targetId,...(entry.combatTacticId?{tacticId:entry.combatTacticId}:{}),...(entry.huntGoalId?{goalId:entry.huntGoalId}:{}),...(entry.faithPracticeCount?{count:entry.faithPracticeCount}:{}),...(entry.goal?{goal:entry.goal}:{}),...(handoff?.goal?{handoffGoal:handoff.goal,handoffTargetId:handoff.targetId}:{}),...(handoff?.keepCurrentRunning?{keepCurrentRunning:true}:{})}})} onClaim={()=>{if(serverGameplayEnabled){void perform({type:'claim'});return;}const result=claimActivity(state,Date.now());commit(result.state);presentCollected(result.reward,state.activity,state,result.state)}} onStop={()=>changeActivity()}/>}
+    {tab==='Combat'&&<CombatScreen onOpenCodex={()=>setTab('Bestiary')} state={state} onCommand={runCompanionCommand} initialMonsterId={goalMonsterId} initialAreaId={selectedRegionalAreaId} onChangeRegion={()=>setTab('World')} onStart={(id,tacticId,goalId)=>changeActivity({kind:'combat',id,...(tacticId?{tacticId}: {}),...(goalId?{goalId}: {})})} onQueue={(id,tacticId,goalId)=>queueActivity({kind:'combat',targetId:id,...(tacticId?{combatTacticId:tacticId}:{}),...(goalId?{huntGoalId:goalId}:{})})} onQueueRemove={index=>mutateActionQueue({type:'queue_remove',args:{index}})} onQueueMove={(index,direction)=>mutateActionQueue({type:'queue_move',args:{index,direction}})} onQueueClear={()=>mutateActionQueue({type:'queue_clear'})} onQueueStart={()=>mutateActionQueue({type:'queue_start'},true)} onBoss={()=>{const now=Date.now();if(serverGameplayEnabled){void perform({type:'boss'}).then(result=>{if(!result)return;if(result.storyBossBattle){setStoryBossBattle({battle:result.storyBossBattle,message:result.message??(result.won?'Victory':'Defeat')});return;}showAlert(result.won?'Victory':'Not ready',result.message)});return;}const settled=claimActivity(state,now);const result=challengeFallenKnight(settled.state,now);void commit(result.state);if(result.battle){setStoryBossBattle({battle:result.battle,message:result.message});return;}showAlert(ot(state.settings.language,result.won?'combat.victory':'combat.notReady'),result.message)}}/>}
     {tab==='World'&&<WorldScreen state={state} goalRegionId={goalRegionId} onTravel={regionId=>{if(serverGameplayEnabled){void perform({type:'travel',args:{id:regionId}}).then(result=>{if(result)continueGoalAfterTravel(regionId)});return;}try{const result=travelToRegion(state,regionId,Date.now());void commit(result.state);continueGoalAfterTravel(regionId)}catch(error){showAlert('Cannot travel',error instanceof Error?error.message:'Please try again.')}}} onOpenCombat={areaId=>{setSelectedRegionalAreaId(areaId);setTab('Combat')}} onOpenSkills={areaId=>{setSelectedRegionalAreaId(areaId);setSelectedSkill('regional-gathering');setSkillsMode('gathering');setTab('Skills')}} onRegionalRewardsChanged={serverGameplayEnabled?()=>online.refresh():undefined}/>}
     {tab==='Coop'&&<CoopExpeditionScreen state={state} language={state.settings.language} entrySource={coopEntrySource} initialDungeonId={goalDungeonId} onInitialDungeonHandled={()=>setGoalDungeonId(undefined)} initialEventLiveId={pendingEventLiveId} onInitialEventHandled={()=>setPendingEventLiveId(undefined)} onRewardsChanged={serverGameplayEnabled?()=>online.refresh():undefined} onRunActiveChange={setDungeonFlowActive} onCommand={runCompanionCommand} onOpenChat={()=>{setChatInitialChannel('world');setShowChatOverlay(true)}} onClose={goBack}/>}
     {tab==='Quests'&&<QuestScreen state={state} nowMs={now} mode={questMode} focusedWeeklyOrderId={questFocusOrderId} onModeChange={mode=>{setQuestMode(mode);if(mode!=='contracts')setQuestFocusOrderId(undefined)}} onClaim={id=>serverGameplayEnabled?perform({type:'quest',args:{id}},false,false,true).then(Boolean):commit(claimQuest(state,id)).then(()=>true)} onClaimContract={(period,id,choiceId)=>serverGameplayEnabled?perform({type:'seasonal',args:{period,id,...(choiceId?{choiceId}:{})}},false,false,true,true).then(Boolean):commit(claimSeasonalContract(state,period,id,Date.now(),choiceId)).then(()=>true)} onClaimMilestone={(month,threshold,characterId,skillId)=>serverGameplayEnabled?perform({type:'monthly_quest_milestone',args:{month,threshold,characterId,skillId}},false,false,false).then(Boolean):commit(claimMonthlyQuestMilestone(state,month,threshold,characterId,skillId,Date.now())).then(()=>true)} onNavigate={destination=>{if(destination.tab==='World'&&destination.zoneId){setGoalRegionId(destination.zoneId);setTab('World');return;}if(destination.tab==='Skills'){setSelectedSkill(destination.skillId);setGoalActionId(undefined);setGoalRecipeId(undefined);setSkillsMode(destination.mode??(destination.skillId==='faith'?'faith':destination.skillId&&['mining','woodcutting','fishing','herbalism','exploration'].includes(destination.skillId)?'gathering':'crafting'));}setTab(destination.tab)}} onOpenWeeklyBoss={()=>openWorkingTowardDestination({kind:'combat',monsterId:'FALLEN_KNIGHT',zoneName:"King's Road",regionId:'KINGS_ROAD',button:'Open Fallen Knight',detail:'Open the Fallen Knight weekly rematch.'})} onOpenWeeklyOrder={openWeeklyOrder} onQueueWeeklyOrder={queueWeeklyOrder} onStopWeeklyOrder={stopAtWeeklyOrderCompletion}/>}
-  {tab==='Skills'&&<SkillsScreen key={`${skillsMode}:${selectedSkill??'all'}:${goalActionId??goalRecipeId??'none'}`} state={state} now={now} initialMode={skillsMode} initialSkill={selectedSkill} initialAreaId={selectedRegionalAreaId} initialActionId={goalActionId} initialRecipeId={goalRecipeId} forgeResults={forgeResults} onDismissForgeResults={()=>setForgeResults(null)} onBackToHub={()=>{setSelectedSkill(undefined);setGoalActionId(undefined);setGoalRecipeId(undefined)}} onOpenCombat={()=>setTab('Combat')} onSelectSkill={id=>{if(id==='companion'){setTab('Companions');return;}setSelectedSkill(id);setSkillsMode(id==='faith'?'faith':['mining','woodcutting','fishing','herbalism'].includes(id)?'gathering':'crafting')}} onCommand={runCompanionCommand} onCharacter={()=>setTab('Character')} onInventory={()=>setTab('Inventory')} onViewToolRecipes={()=>{setSelectedSkill('smithing');setSkillsMode('crafting')}} onNavigateCraftingSource={openWorkingTowardDestination} onMoveCraftWaiting={(jobId,direction)=>{if(serverGameplayEnabled){void perform({type:'craft_move',args:{id:jobId,direction}});return;}try{void commit(moveWaitingEquipmentCraft(state,jobId,direction,Date.now()))}catch(error){showAlert('Cannot reorder backlog',error instanceof Error?error.message:'Please try again.')}}} onCancelCraft={jobId=>{showAlert('Cancel forge job?','All reserved materials will be returned. Gold spent on this craft will not be refunded.',[{text:'Keep crafting'},{text:'Cancel craft',style:'destructive',onPress:()=>{if(serverGameplayEnabled){void perform({type:'craft_cancel',args:{id:jobId}}).then(result=>{if(result?.message)showAlert('Craft cancelled',result.message)});return;}try{const cancelled=cancelEquipmentCraft(state,jobId,Date.now());void commit(cancelled.state);showAlert('Craft cancelled',`Materials returned: ${cancelled.refundedInputs.map(row=>`${row.quantity}× ${itemDef(row.itemId).name}`).join(', ') || 'none'} · 0 Gold returned`)}catch(error){showAlert('Cannot cancel craft',error instanceof Error?error.message:'Please try again.')}}}])}} onCraftPrerequisites={recipeId=>{if(serverGameplayEnabled){void perform({type:'craft_prerequisites',args:{id:recipeId}}).then(result=>{if(result)showAlert('Prerequisites crafted',result.message??'Available processing steps were completed.');});return;}try{const result=craftEquipmentPrerequisites(state,recipeId,Date.now());void commit(result.state);queueMasteryNotice(state,result.state);showAlert('Prerequisites crafted',result.crafted.map(row=>row.batches+'× '+row.name).join('\n'));}catch(error){showAlert('Cannot craft prerequisites',error instanceof Error?error.message:'Please try again.')}}} onClaimCraft={jobId=>{if(serverGameplayEnabled){void perform({type:'craft_claim',args:{id:jobId}}).then(result=>{if(result?.forgeResults?.length)setForgeResults(result.forgeResults);else if(result?.message)setForgeClaimFeedback({message:result.message,tone:'success'});});return;}try{const claimed=claimForgeJob(state,jobId,Date.now(),Math.random());void commit(claimed.state);queueMasteryNotice(state,claimed.state);if(claimed.kind==='equipment')setForgeResults([claimed.result]);else setForgeClaimFeedback({message:appText(languageRef.current,'{name} is ready in the Gem Pouch.',{name:claimed.recipe.name}),tone:'success'})}catch(error){showAlert('Cannot claim forge job',error instanceof Error?error.message:'Please try again.')}}} onClaimAllCrafts={()=>{if(serverGameplayEnabled){void perform({type:'craft_claim_all'}).then(result=>{if(result?.forgeResults?.length){setForgeResults(null);setForgeClaimAllPendingCount(equipmentCraftQueueModel(result.state,Date.now()).ready);setForgeClaimAllResults(result.forgeResults);}if(result?.message&&!result?.forgeResults?.length)setForgeClaimFeedback({message:result.message,tone:/still waiting|No finished|Free .*space/i.test(result.message)?'warning':'success'});});return;}try{const claimed=claimAllReadyEquipmentCrafts(state,Date.now(),Math.random());void commit(claimed.state);queueMasteryNotice(state,claimed.state);if(claimed.results.length){setForgeResults(null);setForgeClaimAllPendingCount(claimed.blocked.length);setForgeClaimAllResults(claimed.results);}if(claimed.gemClaims>0&&!claimed.results.length)setForgeClaimFeedback({message:appText(languageRef.current,'Gem claims: {count}',{count:claimed.gemClaims}),tone:'success'})}catch(error){showAlert('Cannot claim forge jobs',error instanceof Error?error.message:'Please try again.')}}} onGather={id=>changeActivity({kind:'gathering',id})} onQueueGather={id=>queueActivity({kind:'gathering',id})} onQueueRemove={index=>mutateActionQueue({type:'queue_remove',args:{index}})} onQueueMove={(index,direction)=>mutateActionQueue({type:'queue_move',args:{index,direction}})} onQueueClear={()=>mutateActionQueue({type:'queue_clear'})} onQueueStart={()=>mutateActionQueue({type:'queue_start'},true)} onEquipTool={id=>{if(serverGameplayEnabled){void perform({type:'equip_tool',args:{id}});return;}try{const toolKind=itemDef(id).toolSkillId;const settled=state.activity?.kind===toolKind?claimActivity(state,Date.now()):{state,reward:null};commit(equipGatheringTool(settled.state,id));}catch(error){showAlert('Cannot equip tool',error instanceof Error?error.message:'Please try again.')}}} onCraft={id=>{const timed=timedEquipmentRecipe(id);if(serverGameplayEnabled){void perform({type:'craft',args:{id}}).then(result=>{if(result&&!timed)showAlert('Craft complete','Your crafted items have been saved online.');});return;}try{if(timed){const started=startEquipmentCraft(state,id,Date.now());commit(started.state);return;}const next=craftRecipe(state,id);const completed=!noviceSetProgress(state).unlocked&&noviceSetProgress(next).unlocked;commit(next);queueMasteryNotice(state,next);showAlert(ot(state.settings.language,completed?'craft.setComplete':'craft.complete'),completed?appText(languageRef.current,'{name} is fully crafted and ready to equip.',{name:noviceSetProgress(next).set.name}):'Your crafted items were added to Inventory, or Bank if Inventory was full. Equip them from Inventory or use Equip owned novice set on Character.',[{text:'Continue'},{text:'View character',onPress:()=>setTab('Character')}])}catch(error){showAlert(ot(state.settings.language,'craft.cannot'),error instanceof Error?error.message:'Please try again.')}}}/>}
-    {tab==='Inventory'&&<InventoryScreen key={`${state.createdAtMs}:${state.character.id}`} state={state} viewMemory={inventoryViews.current[`${state.createdAtMs}:${state.character.id}`]??(inventoryViews.current[`${state.createdAtMs}:${state.character.id}`]=newInventoryScreenState())} foodRequest={inventoryFoodScope===`${state.createdAtMs}:${state.character.id}`?inventoryFoodRequest:0} onEquip={id=>runCompanionCommand({type:'equip',args:{id}})} onFood={id=>void quickFoodCommand({type:'food',args:{id}}).catch(error=>showAlert('Food',error.message))} onEat={id=>void quickFoodCommand({type:'eat',args:{id}}).catch(error=>showAlert('Food',error.message))} onSell={(id,quantity)=>inventoryCommand({type:'sell',args:{id,quantity}},()=>sellItem(state,id,quantity))} onSalvage={id=>inventoryCommand({type:'salvage',args:{id}},()=>salvageItem(state,id))} onDeposit={(id,quantity)=>inventoryCommand({type:'deposit',args:{id,quantity}},()=>depositToBank(state,id,quantity))} onDepositMaterials={()=>inventoryCommand({type:'deposit_materials'},()=>depositAllMaterials(state))} onUpgradeStorage={location=>inventoryCommand({type:'storage',args:{location}},()=>upgradeStorage(state,location))} onBankSell={(id,quantity)=>inventoryCommand({type:'bank_sell',args:{id,quantity}},()=>sellBankItem(state,id,quantity))} onBankGoldTransfer={(direction,amount)=>inventoryCommand({type:direction==='deposit'?'bank_gold_deposit':'bank_gold_withdraw',args:{amount}},()=>direction==='deposit'?depositGoldToBank(state,amount):withdrawGoldFromBank(state,amount))} onWithdraw={(id,quantity)=>inventoryCommand({type:'withdraw',args:{id,quantity}},()=>withdrawFromBank(state,id,quantity))} onOverflow={()=>inventoryCommand({type:'overflow'},()=>claimOverflowToBank(state))} onToggleFavorite={id=>serverGameplayEnabled?void perform({type:'inventory_preference',args:{id,kind:'favorite',enabled:!state.settings.favoriteItemIds?.includes(id)}}):void commit(toggleInventoryFavorite(state,id))} onToggleLock={id=>serverGameplayEnabled?void perform({type:'inventory_preference',args:{id,kind:'lock',enabled:!state.settings.lockedItemIds?.includes(id)}}):void commit(toggleInventoryLock(state,id))} onAcknowledgeItem={id=>serverGameplayEnabled?void perform({type:'inventory_preference',args:{id,kind:'seen',enabled:true}}):void commit(acknowledgeInventoryItem(state,id))} onAcknowledgeAll={()=>serverGameplayEnabled?void perform({type:'inventory_seen_all'}):void commit(acknowledgeAllInventoryItems(state))} onBulkAction={(kind,location,ids)=>inventoryCommand({type:kind==='transfer'?'bulk_transfer':kind==='sell'?'bulk_sell':'bulk_salvage',args:{location,ids}},()=>kind==='transfer'?bulkTransferSelected(state,ids,location):kind==='sell'?bulkSellSelected(state,ids,location):bulkSalvageSelected(state,ids,location))} onNavigateInspect={openWorkingTowardDestination} onCommand={runCompanionCommand}/>}
+  {tab==='Skills'&&<SkillsScreen key={`${skillsMode}:${selectedSkill??'all'}:${goalActionId??goalRecipeId??'none'}`} state={state} now={now} initialMode={skillsMode} initialSkill={selectedSkill} initialAreaId={selectedRegionalAreaId} initialActionId={goalActionId} initialRecipeId={goalRecipeId} forgeResults={forgeResults} onDismissForgeResults={()=>setForgeResults(null)} onBackToHub={()=>{toolRecipeReturnRef.current=null;setSelectedSkill(undefined);setGoalActionId(undefined);setGoalRecipeId(undefined)}} onOpenCombat={()=>setTab('Combat')} onSelectSkill={id=>{toolRecipeReturnRef.current=null;if(id==='companion'){setTab('Companions');return;}setSelectedSkill(id);setSkillsMode(id==='faith'?'faith':['mining','woodcutting','fishing','herbalism'].includes(id)?'gathering':'crafting')}} onCommand={runCompanionCommand} onCharacter={()=>setTab('Character')} onInventory={()=>setTab('Inventory')} onWithdrawTool={id=>inventoryCommand({type:'withdraw',args:{id,quantity:1}},()=>withdrawFromBank(state,id,1)).catch(error=>showAlert('Cannot withdraw',error instanceof Error?error.message:'Please try again.'))} onViewToolRecipes={()=>{setSelectedSkill('smithing');setSkillsMode('crafting')}} onNavigateCraftingSource={openWorkingTowardDestination} onMoveCraftWaiting={(jobId,direction)=>{if(serverGameplayEnabled){void perform({type:'craft_move',args:{id:jobId,direction}});return;}try{void commit(moveWaitingEquipmentCraft(state,jobId,direction,Date.now()))}catch(error){showAlert('Cannot reorder backlog',error instanceof Error?error.message:'Please try again.')}}} onCancelCraft={jobId=>{showAlert('Cancel forge job?','All reserved materials will be returned. Gold spent on this craft will not be refunded.',[{text:'Keep crafting'},{text:'Cancel craft',style:'destructive',onPress:()=>{if(serverGameplayEnabled){void perform({type:'craft_cancel',args:{id:jobId}}).then(result=>{if(result?.message)showAlert('Craft cancelled',result.message)});return;}try{const cancelled=cancelEquipmentCraft(state,jobId,Date.now());void commit(cancelled.state);showAlert('Craft cancelled',`Materials returned: ${cancelled.refundedInputs.map(row=>`${row.quantity}× ${itemDef(row.itemId).name}`).join(', ') || 'none'} · 0 Gold returned`)}catch(error){showAlert('Cannot cancel craft',error instanceof Error?error.message:'Please try again.')}}}])}} onCraftPrerequisites={recipeId=>{if(serverGameplayEnabled){void perform({type:'craft_prerequisites',args:{id:recipeId}}).then(result=>{if(result)showAlert('Prerequisites crafted',result.message??'Available processing steps were completed.');});return;}try{const result=craftEquipmentPrerequisites(state,recipeId,Date.now());void commit(result.state);queueMasteryNotice(state,result.state);showAlert('Prerequisites crafted',result.crafted.map(row=>row.batches+'× '+row.name).join('\n'));}catch(error){showAlert('Cannot craft prerequisites',error instanceof Error?error.message:'Please try again.')}}} onClaimCraft={jobId=>{if(serverGameplayEnabled){void perform({type:'craft_claim',args:{id:jobId}}).then(result=>{if(result?.forgeResults?.length)setForgeResults(result.forgeResults);else if(result?.message)setForgeClaimFeedback({message:result.message,tone:'success'});});return;}try{const claimed=claimForgeJob(state,jobId,Date.now(),Math.random());void commit(claimed.state);queueMasteryNotice(state,claimed.state);if(claimed.kind==='equipment')setForgeResults([claimed.result]);else if(claimed.kind==='tool')setForgeClaimFeedback({message:`${claimed.recipe.name} · ${claimed.tool.rarity} · Q${claimed.tool.quality} · +${(claimed.tool.bonus.basisPoints/100).toFixed(1)}% ${claimed.tool.bonus.stat==='speed'?'Gathering Speed':'Gathering Rarity Chance'}`,tone:'success'});else setForgeClaimFeedback({message:appText(languageRef.current,'{name} is ready in the Gem Pouch.',{name:claimed.recipe.name}),tone:'success'})}catch(error){showAlert('Cannot claim forge job',error instanceof Error?error.message:'Please try again.')}}} onClaimAllCrafts={()=>{if(serverGameplayEnabled){void perform({type:'craft_claim_all'}).then(result=>{if(result?.forgeResults?.length){setForgeResults(null);setForgeClaimAllPendingCount(equipmentCraftQueueModel(result.state,Date.now()).ready);setForgeClaimAllResults(result.forgeResults);}if(result?.message&&!result?.forgeResults?.length)setForgeClaimFeedback({message:result.message,tone:/still waiting|No finished|Free .*space/i.test(result.message)?'warning':'success'});});return;}try{const claimed=claimAllReadyEquipmentCrafts(state,Date.now(),Math.random());void commit(claimed.state);queueMasteryNotice(state,claimed.state);if(claimed.results.length){setForgeResults(null);setForgeClaimAllPendingCount(claimed.blocked.length);setForgeClaimAllResults(claimed.results);}if((claimed.gemClaims>0||claimed.toolClaims>0)&&!claimed.results.length)setForgeClaimFeedback({message:`${claimed.toolClaims} tools · ${claimed.gemClaims} gem claims`,tone:'success'})}catch(error){showAlert('Cannot claim forge jobs',error instanceof Error?error.message:'Please try again.')}}} onGather={id=>changeActivity({kind:'gathering',id})} onQueueGather={id=>queueActivity({kind:'gathering',id})} onQueueRemove={index=>mutateActionQueue({type:'queue_remove',args:{index}})} onQueueMove={(index,direction)=>mutateActionQueue({type:'queue_move',args:{index,direction}})} onQueueClear={()=>mutateActionQueue({type:'queue_clear'})} onQueueStart={()=>mutateActionQueue({type:'queue_start'},true)} onEquipTool={id=>{if(serverGameplayEnabled){void perform({type:'equip_tool',args:{id}});return;}try{const toolKind=itemDef(id).toolSkillId;const settled=state.activity?.kind===toolKind?claimActivity(state,Date.now()):{state,reward:null};commit(equipGatheringTool(settled.state,id));}catch(error){showAlert('Cannot equip tool',error instanceof Error?error.message:'Please try again.')}}} onCraft={async(id,quantity=1)=>{
+  const timed=timedEquipmentRecipe(id);
+  const count=Math.max(1,Math.min(999,Math.floor(quantity)));
+  if(serverGameplayEnabled){
+    const previous=stateRef.current??state;
+    // Keep the global Saving spinner hidden for routine crafts: their button is the
+    // status indicator. Do not hide genuine errors or pending-action recovery UI.
+    setQuietCraftSaving(true);
+    try{
+      const result=await perform({type:'craft',args:{id,quantity:count}},false,false,true,true);
+      if(!result)throw new Error('Crafting was not confirmed. Please retry.');
+      queueMasteryNotice(state,result.state);
+      return verifyCraftCommandOutcome(previous,result.state,{
+        recipeId:id,outputItemId:timed?.output.itemId,requestedCount:count,
+        timed:!!timed,tool:!!timed&&itemDef(timed.output.itemId).type==='tool',
+      });
+    }finally{
+      setQuietCraftSaving(false);
+    }
+  }
+  let next=state;
+  const craftNow=Date.now();
+  for(let batch=0;batch<count;batch++){
+    next=timed?startEquipmentCraft(next,id,craftNow).state:craftRecipe(next,id,craftNow,batch);
+  }
+  // Confirm only after saving locally; errors are rendered in the recipe's status area.
+  await commit(next,{confirmSaved:true});
+  if(!timed)queueMasteryNotice(state,next);
+  return timed?'queued':'completed';
+}}/>}
+    {tab==='Inventory'&&<InventoryScreen key={`${state.createdAtMs}:${state.character.id}`} state={state} viewMemory={inventoryViews.current[`${state.createdAtMs}:${state.character.id}`]??(inventoryViews.current[`${state.createdAtMs}:${state.character.id}`]=newInventoryScreenState())} foodRequest={inventoryFoodScope===`${state.createdAtMs}:${state.character.id}`?inventoryFoodRequest:0} onEquip={id=>runCompanionCommand({type:'equip',args:{id}})} onFood={id=>void quickFoodCommand({type:'food',args:{id}}).catch(error=>showAlert('Food',error.message))} onEat={id=>void quickFoodCommand({type:'eat',args:{id}}).catch(error=>showAlert('Food',error.message))} onSell={(id,quantity)=>inventoryCommand({type:'sell',args:{id,quantity}},()=>sellItem(state,id,quantity))} onSalvage={id=>inventoryCommand({type:'salvage',args:{id}},()=>salvageItem(state,id))} onDeposit={(id,quantity)=>inventoryCommand({type:'deposit',args:{id,quantity}},()=>depositToBank(state,id,quantity))} onDepositMaterials={()=>inventoryCommand({type:'deposit_materials'},()=>depositAllMaterials(state))} onUpgradeStorage={location=>inventoryCommand({type:'storage',args:{location}},()=>upgradeStorage(state,location))} onBankSell={(id,quantity)=>inventoryCommand({type:'bank_sell',args:{id,quantity}},()=>sellBankItem(state,id,quantity))} onBankGoldTransfer={(direction,amount)=>inventoryCommand({type:direction==='deposit'?'bank_gold_deposit':'bank_gold_withdraw',args:{amount}},()=>direction==='deposit'?depositGoldToBank(state,amount):withdrawGoldFromBank(state,amount))} onWithdraw={(id,quantity)=>inventoryCommand({type:'withdraw',args:{id,quantity}},()=>withdrawFromBank(state,id,quantity))} onOverflow={()=>inventoryCommand({type:'overflow'},()=>claimOverflowToBank(state))} onToggleFavorite={id=>serverGameplayEnabled?void perform({type:'inventory_preference',args:{id,kind:'favorite',enabled:!state.settings.favoriteItemIds?.includes(id)}}):void commit(toggleInventoryFavorite(state,id))} onToggleLock={id=>serverGameplayEnabled?void perform({type:'inventory_preference',args:{id,kind:'lock',enabled:!state.settings.lockedItemIds?.includes(id)}}):void commit(toggleInventoryLock(state,id))} onAcknowledgeItem={id=>serverGameplayEnabled?void perform({type:'inventory_preference',args:{id,kind:'seen',enabled:true}}):void commit(acknowledgeInventoryItem(state,id))} onAcknowledgeAll={()=>serverGameplayEnabled?void perform({type:'inventory_seen_all'}):void commit(acknowledgeAllInventoryItems(state))} onBulkPreference={(kind,enabled,ids)=>inventoryCommand({type:'inventory_preference_bulk',args:{kind,enabled,ids}},()=>applyBulkInventoryProtection(state,ids,kind,enabled))} onBulkAction={(kind,location,ids)=>inventoryCommand({type:kind==='transfer'?'bulk_transfer':kind==='sell'?'bulk_sell':'bulk_salvage',args:{location,ids}},()=>kind==='transfer'?bulkTransferSelected(state,ids,location):kind==='sell'?bulkSellSelected(state,ids,location):bulkSalvageSelected(state,ids,location))} onNavigateInspect={openWorkingTowardDestination} onCommand={runCompanionCommand}/>}
     {tab==='DailySupplies'&&<DailySuppliesScreen state={state} nowMs={now} onCommand={runCompanionCommand}/>}
     {tab==='RewardsInbox'&&<RewardsInboxScreen state={state} online={serverGameplayEnabled} onRefresh={async()=>online.refresh()} onEventClaim={async id=>{if(serverGameplayEnabled){if(!await perform({type:'event_reward',args:{id}},false))throw new Error('Event reward was not confirmed.');return;}const result=executeGameCommand(state,{type:'event_reward',args:{id}},Date.now());await commit(result.state)}}/>}
     {tab==='AccountBonuses'&&<AccountBonusesScreen state={state}/>}
@@ -982,7 +1070,7 @@ const next=normalizeProfileIcon(migrateGemPouch(migrateRetiredStoryRewards(candi
       if(source.kind==='gathering'){setSelectedSkill(source.skillId as SkillId);setSkillsMode('gathering');setTab('Skills');return;}
       if(source.kind==='events')setTab('Events');
     }}/>}
-    {tab==='Activity'&&<ActivityOverviewScreen state={state} now={now} onSwitch={id=>{if(serverGameplayEnabled){void perform({type:'roster_switch',args:{id}});return;}void runCompanionCommand({type:'roster_switch',args:{id}})}} onCreate={()=>setCreatingRoster(true)} onDelete={async(id,confirmation)=>{if(serverGameplayEnabled){if(!await perform({type:'roster_delete',args:{id,confirmation}}))throw new Error('Character deletion was not confirmed.');return;}const current=stateRef.current;if(!current)throw new Error('Load your character first.');const result=executeGameCommand(current,{type:'roster_delete',args:{id,confirmation}},Date.now());await commit(result.state)}}/>}
+    {tab==='Activity'&&<ActivityOverviewScreen state={state} now={now} accountId={auth.session?.user.id} gameplayBusy={serverGameplayEnabled&&online.busy} onSwitch={async id=>{if(serverGameplayEnabled){await perform({type:'roster_switch',args:{id}},true,false,false,true);return;}await runCompanionCommand({type:'roster_switch',args:{id}})}} onCreate={()=>setCreatingRoster(true)} onDelete={async(id,confirmation)=>{if(serverGameplayEnabled){if(!await perform({type:'roster_delete',args:{id,confirmation}}))throw new Error('Character deletion was not confirmed.');return;}const current=stateRef.current;if(!current)throw new Error('Load your character first.');const result=executeGameCommand(current,{type:'roster_delete',args:{id,confirmation}},Date.now());await commit(result.state)}}/>}
     {tab==='Character'&&<CharacterScreen state={state} onEquip={itemId=>runCompanionCommand({type:'equip',args:{id:itemId}})} onEquipInstance={instanceId=>runCompanionCommand({type:'gear_equip',args:{instanceId}})} onEquipPouch={itemId=>runCompanionCommand({type:'equipment_pouch_equip',args:{itemId}})} onProfile={()=>{setProfileCustomizeSection('Look');setTab('ProfileCustomize')}} onCompanions={()=>setTab('Companions')} loadouts={<SavedLoadoutsPanel state={state} onChange={commit} onCommand={runCompanionCommand}/>} onUpgrade={async itemId=>{if(serverGameplayEnabled){await perform({type:'upgrade',args:{id:itemId}});return;}try{const attempt=attemptEquipmentUpgrade(state,itemId);await commit(attempt.state);}catch(error){showAlert('Cannot upgrade',error instanceof Error?error.message:'Please try again.')}}} onSocket={async (itemId,gemId)=>{if(serverGameplayEnabled){if(!await perform({type:'socket',args:{id:itemId,gemId}}))throw new Error('Gem socket was not confirmed by the server.');return;}try{await commit(socketGem(state,itemId,gemId))}catch(error){showAlert('Cannot socket gem',error instanceof Error?error.message:'Please try again.')}}} onReplaceGem={async (itemId,gemId)=>{if(serverGameplayEnabled){if(!await perform({type:'replace_socket',args:{id:itemId,gemId}}))throw new Error('Gem replacement or reroll was not confirmed by the server.');return;}try{await commit(replaceGem(state,itemId,gemId))}catch(error){showAlert('Cannot replace gem',error instanceof Error?error.message:'Please try again.')}}} onGemRefine={async (familyId,grade)=>{if(serverGameplayEnabled){await perform({type:'gem_refine',args:{familyId,grade}});return;}try{await commit(startGemRefinement(state,gemRefineRecipeIdV1(familyId,grade),Date.now()).state)}catch(error){showAlert('Cannot refine gem',error instanceof Error?error.message:'Please try again.')}}} onGemCombine={async (familyId,grade)=>{if(serverGameplayEnabled){await perform({type:'gem_combine',args:{familyId,grade}});return;}try{await commit(startGemCombine(state,gemCombineRecipeIdV1(familyId,grade),Date.now()).state)}catch(error){showAlert('Cannot combine gems',error instanceof Error?error.message:'Please try again.')}}} onGemDismantle={async (gemId,quantity)=>{if(serverGameplayEnabled){await perform({type:'gem_dismantle',args:{gemId,quantity}});return;}try{await commit(dismantleGemV1(state,gemId,quantity))}catch(error){showAlert('Cannot dismantle gem',error instanceof Error?error.message:'Please try again.')}}} onGemCacheClaim={async familyId=>{if(serverGameplayEnabled){await perform({type:'resonance_cache_claim',args:{familyId}});return;}try{await commit(claimResonanceCacheV1(state,familyId,Date.now()))}catch(error){showAlert('Cannot claim Resonance Cache',error instanceof Error?error.message:'Please try again.')}}} onInventory={()=>setTab('Inventory')} onSave={()=>serverGameplayEnabled?online.refresh():repo.save(state)} onUnequip={async slot=>{const instanceId=state.character?.equipmentInstanceIds?.[slot];if(instanceId){await runCompanionCommand({type:'gear_unequip',args:{instanceId}});return;}if(serverGameplayEnabled){if(!await perform({type:'unequip',args:{slot}}))throw new Error('Equipment change was not confirmed.');}else await commit(unequipItem(state,slot));}} onCrafting={()=>{setSkillsMode('novice');setTab('Skills')}} onEquipSet={async()=>{if(serverGameplayEnabled){if(!await perform({type:'equip_set'}))throw new Error('Set equip was not confirmed.');return;}const settled=claimActivity(state,Date.now());const next=equipNoviceSet(settled.state);await commit(next);}}><ProfileEditor key={profileAttentionScope} state={state} onChange={commit} onCommand={runCompanionCommand} onSaveNameStyle={saveNameStyle}/></CharacterScreen>}
     {tab==='Friends'&&<FriendsScreen onNotificationsChanged={()=>void refreshSocialNotifications()}/>}
     {FEATURE_HUB_QA_ENABLED&&isFeatureHubPreviewRoute(tab)&&<FeaturePreviewScreen key={tab} route={tab} onClose={()=>setTab('More')} onOpenParty={()=>setTab('Party')} onOpenPartyChat={()=>{setChatInitialChannel('party');setShowChatOverlay(true)}} partyUnread={notificationCounts.partyChatUnread} reduceMotion={state.settings.reduceMotion}/>}
@@ -990,8 +1078,11 @@ const next=normalizeProfileIcon(migrateGemPouch(migrateRetiredStoryRewards(candi
      {(tab==='Recruitment'||tab==='Social')&&<RecruitmentScreen characterLevel={state.character?.level??0} partyUnlocked={earlyFeatureUnlocked(state,'party')} initialArea={socialInitialTab==='guild'?'guild':'party'} onAreaChange={setSocialInitialTab} onParty={()=>setTab('Party')} onGuild={()=>setTab('Guild')} onAccount={()=>setTab('Settings')} onInvitationsChanged={()=>void refreshSocialNotifications()}/>}
     {tab==='Events'&&<EventScreen state={state} onChange={commit} onCommand={serverGameplayEnabled?command=>perform(command,false).then(Boolean):undefined} authoritativeGuildPve={serverGameplayEnabled} onOpenEventActivity={source=>{if(source==='combat'){setTab('Combat');return;}setSelectedSkill(undefined);setSkillsMode(source==='gathering'?'gathering':'crafting');setTab('Skills')}} onOpenGuildEventBoss={()=>{setGuildInitialPve(true);setTab('Guild')}} onOpenSeasonalExpedition={coopOnlineConfigured?liveEventId=>{setPendingEventLiveId(liveEventId);setTab('Coop')}:undefined}/>}
     {tab==='Guild'&&<GuildScreen
+      onEventPageChange={setGuildEventPageOpen}
+      eventGameplayBusy={online.busy||online.pending} onRefreshEventInventory={online.refreshAfterExternalWrite}
+      onOpenEventCrafting={skill=>{setSelectedSkill(skill);setSkillsMode('crafting');setTab('Skills')}}
       initialNavigation={!guildInitialPve&&guildNavigationMemory.current?.scope===(auth.session?.user.id??state.character.id)+':'+guildMembershipRevision?guildNavigationMemory.current.context:undefined}
-      onNavigationChange={context=>{guildNavigationMemory.current={scope:(auth.session?.user.id??state.character?.id??'')+':'+guildMembershipRevision,context};}}
+      onNavigationChange={context=>{const scope=(auth.session?.user.id??state.character?.id??'')+':'+guildMembershipRevision;guildNavigationMemory.current={scope,context};setGuildRaidScope(context.section==='PvE'?scope:null);}}
       onOpenChat={()=>{setChatInitialChannel('guild');setShowChatOverlay(true)}} onRecruitment={()=>{setSocialInitialTab('guild');setTab('Recruitment')}} online={serverGameplayEnabled} membershipRevision={guildMembershipRevision} state={state} onChange={commit} initialPve={guildInitialPve} onInitialPveHandled={()=>setGuildInitialPve(false)} onlineManagement={<OnlineGuildManagement onApplicationsChanged={()=>{void refreshSocialNotifications();setGuildMembershipRevision(value=>value+1)}}/>} onlineBoard={<OnlineGuildNoticeBoardPanel/>} onlineProjects={<OnlineGuildProjectsPanel onRewardsChanged={async()=>{await Promise.allSettled([online.refresh(),refreshSocialNotifications()])}} onNavigateActivity={activity=>{
   if(activity==='combat'){setTab('Combat');return;}
   setSelectedSkill(activity==='gathering'?'regional-gathering':undefined);
@@ -1010,6 +1101,7 @@ const next=normalizeProfileIcon(migrateGemPouch(migrateRetiredStoryRewards(candi
      {tab==='SkillGuide'&&<SkillGuideScreen state={state} onClose={()=>setTab('More')} onOpenSkill={id=>{if(id==='companion'){setTab('Companions');return;}setSelectedSkill(id);setSkillsMode(id==='faith'?'faith':['mining','woodcutting','fishing','herbalism','exploration'].includes(id)?'gathering':'crafting');setTab('Skills');}} onOpenCombat={()=>setTab('Combat')} onOpenMastery={()=>{setSelectedSkill('companion-mastery');setSkillsMode('gathering');setTab('Skills');}}/>}
     {tab==='Profile'&&<ProfileScreen state={state} onNavigate={destination=>{if(destination==='Customize'){setProfileCustomizeSection('Look');setTab('ProfileCustomize');return;}setTab(destination)}}/>}
     {tab==='ProfileCustomize'&&<ProfileCustomizeScreen key={profileAttentionScope} state={state} initialSection={profileCustomizeSection} onChange={commit} onSaveNameStyle={saveNameStyle} onNavigateSource={destination=>setTab(destination)} onDirtyChange={setProfileCustomizeDirty}/>}
+    </ScreenTransition>
   </View>
   <EventStartPopup runtime={activeGlobalPopup==='event-start'?eventStartPopup:null} reduceMotion={state.settings.reduceMotion} onOpen={()=>{setEventStartPopup(null);setTab('Events')}} onClose={()=>setEventStartPopup(null)}/>
   <ChatOverlay initialChannel={chatInitialChannel} state={state} visible={showChatOverlay} hideDock={tab==='ProfileCustomize'||tab==='Coop'||featureHubShell.hideGlobalChatDock} allowPartyChatWhenWorldDisabled={featureHubShell.showLocalPartyChatDock} partyOnly={featureHubShell.showLocalPartyChatDock} onOpen={()=>{setChatInitialChannel('world');setShowChatOverlay(true)}} onClose={()=>setShowChatOverlay(false)} onManageEmotes={openChatEmoteSettings} onEmoteTrayChange={ids=>commit({...state,settings:{...state.settings,chatEmoteTrayIds:ids}})} guildUnread={notificationCounts.guildChatUnread} guildMentions={notificationCounts.guildChatMentions} guildFirstUnreadMessageId={notificationCounts.guildFirstUnreadMessageId} partyUnread={notificationCounts.partyChatUnread} partyMentions={notificationCounts.partyChatMentions} partyFirstUnreadMessageId={notificationCounts.partyFirstUnreadMessageId} onChatRead={()=>void refreshSocialNotifications()}/>
@@ -1025,7 +1117,7 @@ const next=normalizeProfileIcon(migrateGemPouch(migrateRetiredStoryRewards(candi
   <MainScreenTourPopup step={activeGlobalPopup==='main-tour'?mainScreenTour:undefined} index={mainScreenTourIndex??0} total={MAIN_SCREEN_TOUR.length} onSkip={()=>{setMainScreenTourIndex(undefined);setSettingsSection('guide');setTab('Settings')}} onBack={()=>{if(mainScreenTourIndex===undefined)return;const next=Math.max(0,mainScreenTourIndex-1);setMainScreenTourIndex(next);const target=mainScreenTourStep(next);if(target)setTab(target.destination)}} onNext={()=>{if(mainScreenTourIndex===undefined)return;const next=mainScreenTourIndex+1;if(next>=MAIN_SCREEN_TOUR.length){setMainScreenTourIndex(undefined);setSettingsSection('guide');setTab('Settings');return;}setMainScreenTourIndex(next);const target=mainScreenTourStep(next);if(target)setTab(target.destination)}}/>
   <FeatureUnlockPopup moment={activeGlobalPopup==='feature-unlock'?featureUnlockMoments[0]:undefined} reduceMotion={state.settings.reduceMotion} onLater={()=>setFeatureUnlockMoments(current=>current.slice(1))} onOpen={()=>{const moment=featureUnlockMoments[0];setFeatureUnlockMoments(current=>current.slice(1));if(moment)setTab(moment.destination);}}/>
   <ProfileDiscardChangesModal visible={!!profileDiscardAction} reduceMotion={state.settings.reduceMotion} onKeepEditing={()=>setProfileDiscardAction(null)} onDiscard={()=>{const action=profileDiscardAction;setProfileDiscardAction(null);setProfileCustomizeDirty(false);action?.();}}/>
-  {offlineSettling&&<View style={s.offlineLoadingOverlay}><LoadingState label={appText(state.settings.language,'Calculating offline rewards…')} detail={appText(state.settings.language,'Calculating rewards from your time away.')}/></View>}
+  {!serverGameplayEnabled&&offlineSettling&&<View style={s.offlineLoadingOverlay}><LoadingState label={appText(state.settings.language,'Calculating offline rewards…')} detail={appText(state.settings.language,'Calculating rewards from your time away.')}/></View>}
   <ForgeClaimAllSummaryModal results={activeGlobalPopup==='exceptional-forge'?forgeClaimAllResults??[]:[]} remainingCount={forgeClaimAllPendingCount} reduceMotion={state.settings.reduceMotion} onClose={()=>setForgeClaimAllResults(null)} onInventory={()=>{setForgeClaimAllResults(null);setTab('Inventory')}}/>
    <ForgeRarityRevealModal results={activeGlobalPopup==='exceptional-forge'&&!forgeClaimAllResults?.length?forgeResults??[]:[]} reduceMotion={state.settings.reduceMotion} onClose={()=>setForgeResults(null)} onInventory={()=>{setForgeResults(null);setTab('Inventory')}}/>
   {activeGlobalPopup==='story-boss'&&storyBossBattle&&<StoryBossBattleModal state={state} battle={storyBossBattle.battle} message={storyBossBattle.message} onClose={()=>setStoryBossBattle(null)}/>}
@@ -1033,7 +1125,7 @@ const next=normalizeProfileIcon(migrateGemPouch(migrateRetiredStoryRewards(candi
   };
   const renderedApp=renderApp();
   return <GameLanguageProvider language={state?.settings.language??recoveryLanguage}><View style={s.appRoot}>
-    <Animated.View style={[s.appRoot,{opacity:appEntranceOpacity,transform:[{translateY:appEntranceY}]}]}>{renderedApp}</Animated.View>
+    <Animated.View style={[s.appRoot,{opacity:appEntranceOpacity,transform:[{translateY:appEntranceY}]}]}><ActiveProfileCharacterContext.Provider value={activeProfileCharacter}>{renderedApp}</ActiveProfileCharacterContext.Provider></Animated.View>
     {(startupOverlayVisible||startupBlocking)&&<Animated.View pointerEvents={startupBlocking?'auto':'none'} style={[s.startupOverlay,{opacity:startupBlocking?1:startupOpacity}]}>
       <StartupScreen scene={startupScene} language={state?.settings.language??recoveryLanguage} themeId={displayedThemeId}/>
     </Animated.View>}

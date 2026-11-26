@@ -3,6 +3,16 @@ import type {Language} from './languages';
 /** Additional base catalog item names, part A. All eight UI languages;
  * English source checks happen inside localizedItemName, not in game state. */
 export const expandedItemNamesA={
+  "SUNSCAR_SPICED_PLATTER": {
+    "en": "Sunscar Spiced Platter",
+    "de": "Gewürzte Sunscar-Platte",
+    "es": "Bandeja especiada de Sunscar",
+    "nl": "Gekruide Sunscar-schotel",
+    "it": "Piatto speziato di Sunscar",
+    "fr": "Assiette épicée de Sunscar",
+    "ru": "Пряное блюдо Санскара",
+    "tr": "Sunscar Baharatlı Tabağı"
+  },
   "basic_sword": {
     "en": "Basic Sword",
     "de": "Einfaches Schwert",

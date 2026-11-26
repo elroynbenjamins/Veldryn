@@ -18,7 +18,6 @@ export const DUNGEON_ROOM_PRESENTATION:Record<string,DungeonRoomPresentation>={
  merchant:{name:'Merchant room',description:'Visit a dungeon merchant.',art:'node_merchant'},
  echo:{name:'Echo room',description:'Receive a dungeon boon.',art:'node_echo'},
  risk:{name:'Risk room',description:'Gain resources, but take a curse.',art:'node_risk'},
- event:{name:'Event room',description:'Earn resources for your run.',art:'node_event'},
 };
 export function dungeonRoomPresentation(kind:string|undefined):DungeonRoomPresentation|undefined{
  return kind&&Object.prototype.hasOwnProperty.call(DUNGEON_ROOM_PRESENTATION,kind)?DUNGEON_ROOM_PRESENTATION[kind]:undefined;

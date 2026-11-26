@@ -1,15 +1,23 @@
 name: Unique forged equipment validation
+
+# Cancel superseded PR checks; never cancel main, scheduled, or manual release checks.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 on:
   pull_request:
     paths:
       - 'apps/mobile/src/core/**'
       - 'backend/online/tests/gameplay.ts'
+      - 'backend/online/coop-loadout.ts'
+      - 'backend/online/tests/coop-loadout.ts'
       - 'apps/mobile/src/screens/InventoryScreen.tsx'
       - 'apps/mobile/src/components/EquipmentCraftQueuePanel.tsx'
       - 'apps/mobile/src/components/ForgeOddsGuide.tsx'
       - 'apps/mobile/src/components/SmithingCollection.tsx'
       - 'apps/mobile/tests/equipment-crafted-instance-results.ts'
       - 'apps/mobile/tests/weapon-bonus-rolls.ts'
+      - 'apps/mobile/tests/equipment-bonus-rolls.ts'
       - 'apps/mobile/tsconfig.unique-gear.json'
       - '.github/workflows/unique-gear-validation.yml'
   workflow_dispatch:
@@ -36,9 +44,11 @@ jobs:
         run: node node_modules/typescript/lib/tsc.js -p tsconfig.unique-gear.json --outDir .unique-gear-build
       - name: Run exact-copy crafting and retention regressions
         run: NODE_PATH=../../backend/node_modules node .unique-gear-build/apps/mobile/tests/equipment-crafted-instance-results.js
-      - name: Verify dual weapon rolls and exact-copy combat bonuses
-        run: NODE_PATH=../../backend/node_modules node .unique-gear-build/apps/mobile/tests/weapon-bonus-rolls.js
+      - name: Verify role-based rarity-scaled rolls and exact-copy combat bonuses
+        run: NODE_PATH=../../backend/node_modules node .unique-gear-build/apps/mobile/tests/weapon-bonus-rolls.js && NODE_PATH=../../backend/node_modules node .unique-gear-build/apps/mobile/tests/equipment-bonus-rolls.js
       - name: Compile authoritative online gameplay
         run: pnpm --dir ../../backend exec tsc -p tsconfig.online.json
       - name: Verify concurrent copy writes, replay and Gold integrity
         run: node ../../backend/dist/online/backend/online/tests/gameplay.js
+      - name: Verify exact-copy stat rolls in frozen dungeon combat snapshots
+        run: node ../../backend/dist/online/backend/online/tests/coop-loadout.js

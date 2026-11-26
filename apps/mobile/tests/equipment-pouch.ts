@@ -143,12 +143,16 @@ const cappedBank:GameState={...inactiveForge,bank:{...inactiveForge.bank,capacit
  account:{...inactiveForge.account,craftedGearInstances:maxedCopies,craftedGearAutoSellMode:'keep_best_seven'}};
 ok(auditCraftedGearOwnership(cappedBank).consistent,'Inactive owner auto-sale fixture needs exact existing physical copies');
 const priorOwnerGold=cappedBank.otherCharacters![0].character.gold,priorBankGold=cappedBank.bank.gold??0;
-const autoSale=claimEquipmentCraft(cappedBank,job.id,job.completesAtMs,.9);
-ok(autoSale.result.autoSold==='incoming','The 26th weaker forged copy must honor the opt-in 25-copy auto-sell setting');
-ok(autoSale.state.otherCharacters?.[0].character.gold===priorOwnerGold+itemDef(output).value
- &&(autoSale.state.bank.gold??0)===priorBankGold,
- 'Auto-sale of an inactive character\'s would-be Equipment Pouch item must credit that character, never the shared Bank');
-ok(auditCraftedGearOwnership(autoSale.state).consistent,'Inactive-owner auto-sale must preserve 25 exact physical copies');
+// T1 equipment now carries meaningful bonus rolls. An automatic sale at the
+// 25-copy cap must refuse to discard a build choice, even when opt-in is set.
+let rolledAutoSaleBlocked=false;
+try{claimEquipmentCraft(cappedBank,job.id,job.completesAtMs,.9)}
+catch(error){rolledAutoSaleBlocked=error instanceof Error&&error.message.includes('Bonus stat rolls need your choice')}
+ok(rolledAutoSaleBlocked,'Rolled 26th Forge copy must require manual player choice regardless of auto-sell preference');
+ok(cappedBank.otherCharacters![0].character.gold===priorOwnerGold&&(cappedBank.bank.gold??0)===priorBankGold
+ &&equipmentCraftingQueue(cappedBank).some(row=>row.id===job.id)
+ &&auditCraftedGearOwnership(cappedBank).consistent,
+ 'Blocked inactive-owner Forge claim must keep original Gold, job and all exact physical copies');
 
 // Sales must be explicit, copy-specific and atomic. No item IDs or prices can be
 // supplied as a substitute for a physical pouch entry or its exact Forge receipt.

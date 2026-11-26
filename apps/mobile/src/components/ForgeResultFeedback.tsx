@@ -3,7 +3,8 @@ import {useEffect,useMemo,useRef} from 'react';
 import {playSound,useRarityRevealSound} from '../storage/audio';
 import {Animated,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {itemDef} from '../content/items';
-import {weaponBonusCompactLine,weaponBonusLine,weaponBonusRollGrade,weaponBonusStrength} from '../core/weapon-bonus-rolls';
+import {weaponBonusCompactLine} from '../core/weapon-bonus-rolls';
+import {equipmentBonusCompactLine} from '../core/equipment-bonus-rolls';
 import type {ForgeCraftResult} from '../core/game-commands';
 import {rarityMeta,rarityNameColor,type ItemRarity} from '../core/item-rarity';
 import {equipmentTheme,radii,spacing,typography,type ThemeColors} from '../theme/theme';
@@ -19,8 +20,8 @@ export function isExceptionalForgeResult(result:ForgeCraftResult){return result.
 function highest(results:readonly ForgeCraftResult[]){return results.slice().sort((a,b)=>RARITY_ORDER.indexOf(b.rarity)-RARITY_ORDER.indexOf(a.rarity))[0];}
 export function forgeClaimBannerMessage(results:readonly ForgeCraftResult[]){
   if(!results.length)return '';
-  if(results.length===1){const result=results[0],item=itemDef(result.itemId);const rolls=result.weaponBonuses?.length?` · Rolls: ${result.weaponBonuses.map(weaponBonusCompactLine).join(' / ')}`:'';return `Forged ${item.name} · ${rarityMeta(result.rarity).label}${result.quality!==undefined?` · Q${result.quality}/100`:''}${rolls}${result.autoSold==='incoming'?` · auto-sold new gear for ${result.saleGold} Gold`:result.autoSold==='existing'?` · sold weaker existing gear for ${result.saleGold} Gold`:' · sent to your Equipment Pouch (or fallback storage)'}.`;}
-  const best=highest(results),sold=results.filter(row=>row.autoSold),gold=sold.reduce((sum,row)=>sum+row.saleGold,0),rolled=results.filter(row=>row.weaponBonuses?.length).length;return `${results.length} Forge jobs settled · ${sold.length?`${sold.length} auto-sold for ${gold} Gold · `:''}${rolled?`${rolled} rolled weapon${rolled===1?'':'s'} · `:''}highest rarity ${rarityMeta(best.rarity).label}.`;
+  if(results.length===1){const result=results[0],item=itemDef(result.itemId);const bonuses=[...(result.weaponBonuses?.map(weaponBonusCompactLine)??[]),...(result.equipmentBonuses?.map(equipmentBonusCompactLine)??[])];const rolls=bonuses.length?` · Rolls: ${bonuses.join(' / ')}`:'';return `Forged ${item.name} · ${rarityMeta(result.rarity).label}${result.quality!==undefined?` · Q${result.quality}/100`:''}${rolls}${result.autoSold==='incoming'?` · auto-sold new gear for ${result.saleGold} Gold`:result.autoSold==='existing'?` · sold weaker existing gear for ${result.saleGold} Gold`:' · sent to your Equipment Pouch (or fallback storage)'}.`;}
+  const best=highest(results),sold=results.filter(row=>row.autoSold),gold=sold.reduce((sum,row)=>sum+row.saleGold,0),rolled=results.filter(row=>row.weaponBonuses?.length||row.equipmentBonuses?.length).length;return `${results.length} Forge jobs settled · ${sold.length?`${sold.length} auto-sold for ${gold} Gold · `:''}${rolled?`${rolled} gear piece${rolled===1?'':'s'} with bonus stats · `:''}highest rarity ${rarityMeta(best.rarity).label}.`;
 }
 
 export function ForgeClaimBanner({results,reduceMotion,onDismiss}:{results:readonly ForgeCraftResult[];reduceMotion:boolean;onDismiss:()=>void}){
@@ -30,7 +31,7 @@ export function ForgeClaimBanner({results,reduceMotion,onDismiss}:{results:reado
   const keptBest=highest(results.filter(row=>row.autoSold!=='incoming')),epicKept=!results.some(isExceptionalForgeResult)&&keptBest?.rarity==='epic';
   useEffect(()=>{if(results.length&&!results.some(isExceptionalForgeResult)&&!epicKept)playSound('craft_complete');},[results]); // eslint-disable-line react-hooks/exhaustive-deps
   useRarityRevealSound(epicKept?'epic':null,results,{reduceMotion});
-  useEffect(()=>{if(!results.length||results.some(isExceptionalForgeResult))return;const timer=setTimeout(()=>dismissRef.current(),results.some(row=>row.weaponBonuses?.length)?8000:4500);return()=>clearTimeout(timer)},[results]);
+  useEffect(()=>{if(!results.length||results.some(isExceptionalForgeResult))return;const timer=setTimeout(()=>dismissRef.current(),results.some(row=>row.weaponBonuses?.length||row.equipmentBonuses?.length)?8000:4500);return()=>clearTimeout(timer)},[results]);
   if(!results.length||results.some(isExceptionalForgeResult))return null;
   return <ActionFeedback message={forgeClaimBannerMessage(results)} tone="success" reduceMotion={reduceMotion} compact accentColor={meta?.color} accentSurface={meta?.surface} highlightText={meta?.label} highlightTextColor={meta?(C.dark?meta.color:meta.lightTextColor):undefined}/>;
 }
@@ -50,7 +51,7 @@ export function ForgeRarityRevealModal({results,reduceMotion,onClose,onInventory
     </Animated.View>
     <View style={s.results}>{procs.map(result=>{const item=itemDef(result.itemId),meta=rarityMeta(result.rarity),base=rarityMeta(result.baseRarity),bonus=Math.round((result.statMultiplier-1)*100);return <View key={result.instanceId} style={[s.result,{borderColor:meta.color,backgroundColor:meta.surface}]}>
       <View style={[s.artFrame,{borderColor:meta.color}]}><EquipmentArtwork item={item} rarity={result.rarity} compact framed={false}/></View>
-      <View style={s.flex}><Text style={[s.itemName,{color:rarityNameColor(result.rarity,C.dark,C.text)}]}>{item.name}</Text><Text style={s.meta}>{result.qualityProc?`${base.label} → ${meta.label}`:meta.label} gear{result.quality!==undefined?` · Q${result.quality}/100`:''}</Text>{bonus>0?<Text style={[s.bonus,{color:meta.color}]}>+{bonus}% equipment stats vs base gear</Text>:null}{result.weaponBonuses?.map((roll,index)=>{const strength=weaponBonusStrength(result.itemId,result.rarity,roll,result.weaponBonusRollVersion);return <Text key={index} style={[s.bonus,{color:C.good}]}>{weaponBonusLine(result.itemId,result.rarity,roll,result.weaponBonusRollVersion)}{strength>=90?` · ${weaponBonusRollGrade(strength)}!`:''}</Text>;})}{result.autoSold?<Text style={s.copy}>{result.autoSold==='incoming'?'New gear auto-sold; existing gear kept':'Weaker gear sold; stronger gear kept'} · +{result.saleGold} Gold</Text>:<Text style={s.copy}>{"Equipment Pouch first · Inventory or Bank if full"}</Text>}</View>
+      <View style={s.flex}><Text style={[s.itemName,{color:rarityNameColor(result.rarity,C.dark,C.text)}]}>{item.name}</Text><Text style={s.meta}>{result.qualityProc?`${base.label} → ${meta.label}`:meta.label} gear{result.quality!==undefined?` · Q${result.quality}/100`:''}</Text>{bonus>0?<Text style={[s.bonus,{color:meta.color}]}>+{bonus}% equipment stats vs base gear</Text>:null}{result.weaponBonuses?.map((roll,index)=><Text key={'weapon-'+index} style={[s.bonus,{color:C.good}]}>{weaponBonusCompactLine(roll)}</Text>)}{result.equipmentBonuses?.map((roll,index)=><Text key={'equipment-'+index} style={[s.bonus,{color:C.good}]}>{equipmentBonusCompactLine(roll)}</Text>)}{result.autoSold?<Text style={s.copy}>{result.autoSold==='incoming'?'New gear auto-sold; existing gear kept':'Weaker gear sold; stronger gear kept'} · +{result.saleGold} Gold</Text>:<Text style={s.copy}>{"Equipment Pouch first · Inventory or Bank if full"}</Text>}</View>
       <View style={[s.rarityBadge,{borderColor:meta.color}]}><Text style={[s.rarityText,{color:meta.color}]}>{meta.label.toUpperCase()}</Text></View>
     </View>})}</View>
     {results.length>procs.length?<Text style={s.normal}>{results.length-procs.length} other Forge job{results.length-procs.length===1?'':'s'} completed at the same time.</Text>:null}

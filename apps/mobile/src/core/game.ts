@@ -10,6 +10,9 @@ import {huntClassSurvivalEvents} from './hunt-class-identity';
 import {regionalHuntPlan,usesDamageDrivenHunts} from './ordinary-hunt';
 import {characterCombatXpScale} from './combat-progression-pacing';
 import {eventCandyWindow} from './live-events';
+import {WINTER_HEARTH_GUILD_RELEASED} from './release-flags';
+import {winterHearthLightRecipeAvailable,isWinterHearthLightRecipe,winterHearthCraftSettlementWindow,WINTER_HEARTH_2026_ID} from './winter-hearth-2026';
+import {winterHearthGatheringTimeline,winterHearthXpFactorForActionTimes} from './winter-hearth-bonus-windows';
 import {professionActionPace} from './profession-action-pace';
 import {captureSkillAffinity,activeSkillAffinity,affinityXpRemainderKey,settleAffinitySkillXp} from './class-skill-affinities';
 import {CLASSES} from '../content/classes';
@@ -47,7 +50,8 @@ import {unlockedCharacterSlots,accountRegionAfkUnlocked} from './account-roster'
 import {accountEntitlementBenefits,entitlementStorageCapacity} from './account-entitlements';
 import {isGemPouchItemId,tryStoreGemInPouch,gemPouch} from './gem-pouch';
 import {isEquipmentPouchItemId,tryStoreEquipmentInPouch,equipmentPouch} from './equipment-pouch';
-import {gatheringPacing} from './gathering-tools';
+import {equippedGatheringTools,reservedGatheringTool,gatheringPacing,gatheringToolRarityChanceMultiplier,gatheringToolSkillXpMultiplier} from './gathering-tools';
+import {mintGatheringTool,validateGatheringToolRoll} from './gathering-tool-rolls';
 import {gatheringToolDef} from '../content/gathering-tools';
 import {currentRegionId} from './combat-region';
 import {regionTravelAvailability,regionTravelLockReason,cumulativeMonsterUnlockIds,encounterLockRequirement} from './world-navigation';
@@ -60,8 +64,8 @@ import {monsterMasteryCombatBonuses,recordMonsterMastery} from './monster-master
 import {awardClassSkillXp,awardCombatClassXp,characterClassEffects,characterClassSkills,CLASS_DRILL_BASE_XP,normalizeTrainingFocus,settleClassDrills} from './class-skills';
 import {reserveFaithPractice,settleFaithPractice,cancelFaithPractice,normalizeFaith,selectedFaithBlessing} from './faith';
 import {FAITH_TIERS,HOLY_WATER_ID} from '../content/faith';
-import {previewAlchemyReward,alchemyRefund,startAlchemyUntilLimited,preparationEffects,spendPreparationEncounter} from './alchemy';
-import {previewProcessingReward,processingRefund,startProcessingUntilLimited} from './processing';
+import {previewAlchemyReward,alchemyRefund,startAlchemyBatch,startAlchemyUntilLimited,alchemyAvailability,preparationEffects,spendPreparationEncounter} from './alchemy';
+import {previewProcessingReward,processingRefund,startProcessingBatch,startProcessingUntilLimited,processingRunCapacity} from './processing';
 import {potionDef} from '../content/alchemy';
 import {applyTrustedLongTermProgression,reconcileWeeklyOrderRollover} from './long-term-progression-runtime';
 import {newJournalState} from './adventurers-journal-v42';
@@ -76,8 +80,25 @@ import {professionMasteryMultipliers} from './profession-mastery-v40';
 import {regionalSecondaryExchange} from './regional-enemy-stats';
 import {simulateFallenKnightStoryBattle,type FallenKnightBattleResult,type FallenKnightPlayerSnapshot} from './story-boss';
 import {FALLEN_KNIGHT_CLEAR_REWARD,FALLEN_KNIGHT_WEEKLY_BOUNTY_REWARD,fallenKnightWeeklyStatus,recordFallenKnightWeeklyVictory} from './weekly-boss';
-export function beginAlchemyBatch(state:GameState,recipeId:string,nowMs:number){const ready=finishClassDrills(state,nowMs);return startAlchemyUntilLimited(ready,recipeId,nowMs,offlineCapSeconds(ready));}
-export function beginProcessingBatch(state:GameState,recipeId:string,nowMs:number){const ready=finishClassDrills(state,nowMs);return startProcessingUntilLimited(ready,recipeId,nowMs,offlineCapSeconds(ready));}
+/** Optional fixed batch count; omitted counts preserve existing AFK-limited production. */
+export function beginAlchemyBatch(state:GameState,recipeId:string,nowMs:number,batches?:number){
+ const ready=finishClassDrills(state,nowMs);
+ if(batches===undefined)return startAlchemyUntilLimited(ready,recipeId,nowMs,offlineCapSeconds(ready));
+ const status=alchemyAvailability(ready,recipeId,1);
+ if(!status.ready)throw new Error(status.reason);
+ const cycle=professionActionPace(ready,status.recipe!,'batch').cycleSeconds;
+ const capacity=Math.min(status.maxBatches,Math.floor(offlineCapSeconds(ready)/cycle));
+ if(!Number.isSafeInteger(batches)||batches<1||batches>capacity)throw new Error('Selected brew count exceeds available materials, Gold or AFK time.');
+ return startAlchemyBatch(ready,recipeId,batches,nowMs);
+}
+export function beginProcessingBatch(state:GameState,recipeId:string,nowMs:number,batches?:number){
+ const ready=finishClassDrills(state,nowMs);
+ if(isWinterHearthLightRecipe(recipeId)&&!winterHearthLightRecipeAvailable(ready,nowMs))throw new Error('Winter Hearth crafting is closed.');
+ if(batches===undefined)return startProcessingUntilLimited(ready,recipeId,nowMs,offlineCapSeconds(ready));
+ const capacity=processingRunCapacity(ready,recipeId,offlineCapSeconds(ready));
+ if(!Number.isSafeInteger(batches)||batches<1||batches>capacity.availableBatches)throw new Error('Selected processing count exceeds available materials, Gold or AFK time.');
+ return startProcessingBatch(ready,recipeId,batches,nowMs);
+}
 
 function longTermAccountScope(state:GameState){return state.account.longTermAccountScopeId??`local-account:${state.createdAtMs}`;}
 
@@ -155,7 +176,7 @@ export function newGame(nowMs:number):GameState{return {
   version:6,createdAtMs:nowMs,character:null,inventory:{stacks:[],capacity:30},bank:{stacks:[],capacity:120},overflow:{stacks:[],expiresAtMs:null},activity:null,currentRegionId:'GREENFIELDS',
   quests:QUESTS.map((q,i)=>({questId:q.id,status:i===0?'active':'locked',progress:0 as number})) as any,
   unlockedMonsterIds:['MOSS_RAT'],exploredRouteIds:[],defeatedBossIds:[],
-  skills:['mining','woodcutting','fishing','smithing','cooking','herbalism','alchemy','exploration','tailoring','enchanting','faith'].map(skillId=>({skillId:skillId as any,xp:0,level:1})),
+  skills:['mining','woodcutting','fishing','smithing','cooking','herbalism','alchemy','exploration','tailoring','enchanting','faith','forge'].map(skillId=>({skillId:skillId as any,xp:0,level:1})),
   account:{gemPouch:{stacks:[],capacity:30},gemPouchMigrationDone:true,createdCharacterCount:1,unlockedCharacterSlots:1,guildMember:false,patronTier:'none',guildBannerId:'world_tree_green',guildProfileFrameId:'classic',guildNameplateId:'classic',guildMotto:'Stronger together.',guildContribution:0,guildProjectProgress:0,guildBossHp:100000,guildProjectClaimed:false,guildJoinPolicy:'open',guildMinimumLevel:7,guildApplicationStatus:'none',seasonalContractClaimIds:[]},
   settings:{language:'en',uiTheme:'obsidian',numberMode:'abbreviated',reduceMotion:false,textScale:1,autoEatThresholdPct:40,stopCombatWhenOutOfFood:true,autoTravelQueuedActivities:false,autoJoinWorldChat:true,defaultWorldChat:1,chatDockLines:1,chatEmoteTrayIds:[],quickNavDestinations:[...DEFAULT_QUICK_NAV_DESTINATIONS],favoriteItemIds:[],lockedItemIds:[],seenItemIds:[]}
 }}
@@ -175,7 +196,7 @@ export function createCharacter(state:GameState,classId:ClassId,name='Adventurer
 }
 
 export function effectiveStats(state:GameState){
-  const c=state.character;if(!c)return {hp:0,attack:0,defense:0,power:0,critChance:0,critMultiplier:1.5,accuracy:.84,evasion:.04,haste:.05,armor:0,ward:0,tenacity:0,potency:0,penetration:0,classHealing:1};
+  const c=state.character;if(!c)return {hp:0,attack:0,defense:0,power:0,critChance:0,critMultiplier:1.5,accuracy:.84,evasion:.04,haste:.05,armor:0,ward:0,tenacity:0,potency:0,penetration:0,classHealing:1,abilityDamage:0,healingPower:0};
   let hp=c.hp,attack=c.attack,defense=c.defense;
   let gearAttack=0,gearDefense=0;
   for(const id of Object.values(c.equipment)){if(!id)continue;const stats=enhancedGearStats(state,id);hp+=stats.hp;gearAttack+=stats.attack;gearDefense+=stats.defense;}
@@ -188,6 +209,8 @@ export function effectiveStats(state:GameState){
   // Preserve fractional equipment improvements until display/combat use. Rounding
   // each stage used to erase small upgrades, Iron gem Defense and class scaling.
   const setStats=activeEquipmentBuildStats(state);
+  // V2 Might Gems increase Attack exactly once; they never multiply derived Power.
+  attack*=1+setStats.attack;
   hp=Math.ceil(hp*(1+setStats.maxHp));
   defense*=1+setStats.armor;
   // Legacy gems keep their original primary-stat behavior; canonical Stat Gems
@@ -197,7 +220,7 @@ export function effectiveStats(state:GameState){
   const permanent=characterPermanentMultipliers(state);attack*=permanent.combatPowerMultiplier;
   // Wellspring and its upgrades increase actual maximum HP, not attack power.
   // This applies consistently to combat, healing caps and character stat displays.
-  const faithBlessing=selectedFaithBlessing(state);
+  const faithBlessing=selectedFaithBlessing(state,'combat');
   if(faithBlessing?.family==='hp')hp=Math.ceil(hp*(1+faithBlessing.bonus));
   const prep=c.preparation?preparationEffects(c.preparation):undefined;if(prep)attack*=prep.attack;
   const role=CLASSES.find(def=>def.id===c.classId)?.role,baseCritChance=role==='Damage'?.10:.05,baseEvasion=role==='Damage'?.07:.04;
@@ -213,7 +236,9 @@ export function effectiveStats(state:GameState){
     // Stack equipment and class wards multiplicatively.
     ward:1-(1-setStats.ward)*(1-mastery.ward),
     tenacity:setStats.tenacity,potency:setStats.potency+mastery.potency,
-    penetration:setStats.penetration+mastery.penetration,classHealing:mastery.classHealing,
+    penetration:setStats.penetration+mastery.penetration,
+     classHealing:mastery.classHealing*(1+setStats.healingPower),
+     abilityDamage:setStats.abilityDamage,healingPower:setStats.healingPower,
   }
 }
 
@@ -246,7 +271,7 @@ export function startCombat(state:GameState,monsterId:string,nowMs:number,combat
   if(!cumulativeMonsterUnlockIds(state).includes(monsterId)&&!(m.regionalAreaAutoUnlock&&state.character.level>=areaUnlockLevel))throw new Error('Monster not unlocked');
   if(m.boss)throw new Error('Bosses use challengeFallenKnight');
   if(zoneIdForTarget(monsterId)!==currentRegionId(state))throw new Error(`Travel to ${m.zone} before fighting ${m.name}`);
-  return {...state,outOfCombatSinceMs:undefined,character:{...state.character,activityQueuePausedReason:undefined},activity:{kind:'combat',targetId:monsterId,combatTacticId:normalizeCombatTactic(combatTacticId),...(huntGoalSnapshot(normalizeHuntGoalId(huntGoalId))?{huntGoal:huntGoalSnapshot(normalizeHuntGoalId(huntGoalId))}:{}),sessionKills:0,sessionChampions:0,startedAtMs:nowMs,lastClaimAtMs:nowMs,classFocus:normalizeTrainingFocus(state.character.trainingFocus),classTrainingSnapshot:{faithBlessingId:selectedFaithBlessing(state)?.id},environment:captureActivityEnvironment(monsterId,nowMs)}}
+  return {...state,outOfCombatSinceMs:undefined,character:{...state.character,activityQueuePausedReason:undefined},activity:{kind:'combat',targetId:monsterId,combatTacticId:normalizeCombatTactic(combatTacticId),...(huntGoalSnapshot(normalizeHuntGoalId(huntGoalId))?{huntGoal:huntGoalSnapshot(normalizeHuntGoalId(huntGoalId))}:{}),sessionKills:0,sessionChampions:0,startedAtMs:nowMs,lastClaimAtMs:nowMs,classFocus:normalizeTrainingFocus(state.character.trainingFocus),classTrainingSnapshot:{faithBlessingId:selectedFaithBlessing(state,'combat')?.id},environment:captureActivityEnvironment(monsterId,nowMs)}}
 }
 
 /** Average missing tier across all 10 gear slots, including empty/novice slots.
@@ -338,7 +363,7 @@ function pauseActivityQueue(state:GameState,reason:string){
  return {...state,character:{...state.character,activityQueuePausedReason:reason}};
 }
 
-/** Travel is instantaneous for now, but always settles and stops the prior activity. */
+/** Travel settles earned work, but preserves region-independent tasks and their reservations. */
 export function travelToRegion(state:GameState,regionId:string,nowMs:number){
   const zone=WORLD_ZONES.find(entry=>entry.id===regionId);
   if(!zone)throw new Error('Unknown region');
@@ -346,7 +371,14 @@ export function travelToRegion(state:GameState,regionId:string,nowMs:number){
   if(!state.character||regionTravelAvailability(state,zone)!=='available')throw new Error(regionTravelLockReason(state,zone)??`Cannot travel to ${zone.name} yet`);
   if(currentRegionId(state)===zone.id&&state.currentRegionId===zone.id)return {state,reward:{xp:0,gold:0,items:[],kills:0,elapsedSeconds:0} as RewardBundle};
   const settled=claimActivity(state,nowMs);
-  const travelled={...settled.state,currentRegionId:zone.id,activity:null,outOfCombatSinceMs:nowMs};
+  // Cooking, smithing, enchanting, alchemy and Faith do not depend on location.
+  // Keep their already-paid batches running instead of discarding the escrow.
+  const portable=['processing','alchemy','faith'].includes(settled.state.activity?.kind??'')
+    || (!settled.state.activity && !!settled.state.character?.classTraining);
+  // Regional activities must stop; use the ordinary stop path to return any
+  // unfinished reservation instead of clearing activity and losing materials.
+  const stopped=portable?settled.state:stopActivity(settled.state,nowMs);
+  const travelled={...stopped,currentRegionId:zone.id,...(portable?{}:{outOfCombatSinceMs:nowMs})};
   const next=normalizeActivityQueue(travelled.character?.activityQueue,activityQueueCapacity(travelled))[0];
   const locationIssue=next?activityQueueLocationIssue(travelled,next):undefined;
   // Travel never deletes queue entries or silently restarts them. Flag pending work
@@ -446,6 +478,23 @@ function consume(stacks:ItemStack[],itemId:string,quantity:number){
   return next;
 }
 function stackQty(stacks:ItemStack[],itemId?:string){if(!itemId)return 0;return stacks.filter(s=>s.itemId===itemId).reduce((n,s)=>n+s.quantity,0);}
+/** Preserve physical copy IDs through Inventory/Bank moves. Generic consume()
+ * intentionally refuses unique copies, as selling by type must not choose a
+ * valuable roll without an explicit choice. */
+function removeItemStacksPreservingCopies(stacks:ItemStack[],itemId:string,quantity:number){
+ if(!Number.isSafeInteger(quantity)||quantity<1)throw new Error('Invalid tool quantity');
+ let left=quantity;const moved:ItemStack[]=[];
+ const kept=stacks.flatMap(row=>{
+  if(left<=0||row.itemId!==itemId)return [row];
+  const taken=Math.min(row.quantity,left);
+  if(row.instanceId&&taken!==1)throw new Error('Invalid physical tool copy');
+  moved.push({...row,quantity:taken});left-=taken;
+  return row.quantity===taken?[]:[{...row,quantity:row.quantity-taken}];
+ });
+ if(left>0)throw new Error('Not enough tool copies');
+ return {kept,moved};
+}
+
 
 export function regionalMonsterPressureBand(monsterId:string):RegionalMonsterPressureBand{
  const m=MONSTERS.find(row=>row.id===monsterId);if(!m||m.boss)return 'hard';
@@ -558,7 +607,7 @@ function combatEncounterDamage(runtime:ReturnType<typeof combatRuntimeDetails>,c
  const incoming=runtime.huntOptions?Math.max(fatigue,combatPressure):combatPressure;
  const monsterDamage=runtime.huntOptions?Math.max(0,incoming-fatigue):combatPressure;
  const onKillHealing=Math.min(stats.attack*(style.onKillAttackHealPct??0),Math.max(0,incoming-Math.max(floor,fatigue)));
- const rawHealing=stats.hp*companion.directHealingPctPerHour*killCycleSeconds/3600*(c.preparation?preparationEffects(c.preparation).healing:1)+onKillHealing;
+ const rawHealing=stats.hp*companion.directHealingPctPerHour*killCycleSeconds/3600*(1+stats.healingPower)*(c.preparation?preparationEffects(c.preparation).healing:1)+onKillHealing;
  // Healers reduce attrition, but exertion always retains a small food cost.
  const healing=runtime.huntOptions?Math.min(rawHealing,monsterDamage+fatigue*.65):rawHealing;
  return {damage:incoming,monsterDamage,fatigue,healing,onKillHealing,net:incoming-healing};
@@ -606,7 +655,7 @@ export function combatSustainProjection(state:GameState,monsterId:string,hours=1
  const runtime=combatRuntimeDetails(state,monsterId),foodId=autoEatFoodOrder(state.character).find(id=>stackQty(state.inventory.stacks,id)>0)??state.character.equippedFoodId,food=foodId?itemDef(foodId):undefined;
  const average=averagedRegionalHunt(state,monsterId,runtime),exchange=average??combatEncounterDamage(runtime),damagePerKill=exchange.damage;
  const killCycleSeconds=average?.killCycleSeconds??runtime.killCycleSeconds;
- const killsPerHour=3600/Math.max(.1,killCycleSeconds),companionHealingPerHour=runtime.stats.hp*runtime.companion.directHealingPctPerHour;
+ const killsPerHour=3600/Math.max(.1,killCycleSeconds),companionHealingPerHour=runtime.stats.hp*runtime.companion.directHealingPctPerHour*(1+runtime.stats.healingPower);
  const recoveryPerKill=exchange.onKillHealing,netDamagePerKill=exchange.net;
  const effect=state.activity?.kind==='combat'&&state.activity.targetId===monsterId?runtime.environment:undefined;
  const xpPerHour=killsPerHour*runtime.m.xp*characterCombatXpScale(runtime.m.level,runtime.m.boss)*(effect?.xpMultiplier??1)*runtime.modifiers.characterXpMultiplier;
@@ -668,7 +717,7 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number,nowMs=Da
  let foodConsumed=0,hp=Math.min(c.currentHp??prepared.stats.hp,prepared.stats.hp),championKills=0,stoppedReason='',preparationEncounters=0,qualifyingActivitySeconds=elapsed;
  const completed:Array<{atMs:number;candy:boolean}>=[];
  let activeEncounterIndex=0,enemyHp:number|undefined=activity?.combatEnemyHp;
- let lastHit:undefined|{atMs:number;actor:'player'|'enemy';damage:number;critical:boolean};
+ let lastHit:undefined|{atMs:number;actor:'player'|'enemy';damage:number;critical:boolean;missed?:boolean};
  // Only report a completed, genuinely applied recovery benefit; ordinary
  // class training and companion stat multipliers are not active casts.
  let lastSkillEffect:ActiveHuntSkillEffect|undefined;
@@ -696,7 +745,7 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number,nowMs=Da
      hits=huntHitEvents({monsterHp:runtime.m.hp,basePlayerHit:huntBasePlayerHit(runtime.stats.attack,runtime.m.defense,runtime.secondary.playerOutputMultiplier),incomingDamage:exchange.damage,healingPerEncounter:exchange.healing,cycleSeconds:attackCadenceSeconds,critChance:runtime.stats.critChance,seed:seedFor(index)});
    }
    const cooldownTiming={combatStartedAtMs:activity.startedAtMs??startsAtMs,encounterStartedAtMs,cycleSeconds:runtime.killCycleSeconds};
-   const offensive=huntActiveDamageEvents(hits,{...classTechniqueInput,...cooldownTiming,
+   const offensive=huntActiveDamageEvents(hits,{...classTechniqueInput,...cooldownTiming,abilityDamageBonus:runtime.stats.abilityDamage,
      companion:commonCompanion?{...commonCompanion,contributionPct:Math.max(0,1-1/runtime.companion.outputMultiplier)}:undefined});
    const heals=huntSupportHealEvents(offensive,{...cooldownTiming,
      companion:commonCompanion?{...commonCompanion,healingPctPerHour:runtime.companion.directHealingPctPerHour}:undefined});
@@ -768,7 +817,7 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number,nowMs=Da
          foodConsumed++;
        }
      }
-     if(hit.actor!=='fatigue')lastHit={atMs:hitAtMs,actor:hit.actor,damage:hit.damage,critical:hit.critical};
+     if(hit.actor!=='fatigue')lastHit={atMs:hitAtMs,actor:hit.actor,damage:hit.damage,critical:hit.critical,...(hit.missed?{missed:true}:{})};
      if(hp<=1){
        hp=1;stoppedReason=foodOrder.length&&state.settings.stopCombatWhenOutOfFood?'Out of food / too injured':'Too injured';
        qualifyingActivitySeconds=Math.max(0,(hitAtMs-startsAtMs)/1000);
@@ -795,7 +844,7 @@ export interface ActiveCombatHitCursor{
  projected:GameState;
  atMs:number;
  stoppedReason:string;
- lastHit?:{atMs:number;actor:'player'|'enemy';damage:number;critical:boolean};
+ lastHit?:{atMs:number;actor:'player'|'enemy';damage:number;critical:boolean;missed?:boolean};
  lastSkillEffect?:ActiveHuntSkillEffect;
  lastSkillEffects?:ActiveHuntSkillEffect[];
 }
@@ -836,9 +885,16 @@ export function activeCombatHitProjection(state:GameState,nowMs:number,previous?
  const nextRuntime=combatRuntimeDetails(projected,original.targetId);
  const nextPlan=nextRuntime.huntOptions?regionalHuntPlan(nextRuntime.huntOptions):undefined;
  const searching=!!nextPlan&&current.nextProgressFraction<nextPlan.searchSeconds/nextPlan.cycleSeconds;
- const cursor:ActiveCombatHitCursor={source:state,projected,atMs,stoppedReason:current.stoppedReason,lastHit,lastSkillEffect,lastSkillEffects};
+ // A previously defeated monster's final strike is still present in the replay
+ // cursor until another strike lands. Never present it as the new monster's
+ // opening hit, including when the next search lasts less than the HUD fade.
+ const encounterStartedAtMs=nextPlan?atMs-current.nextProgressFraction*nextPlan.cycleSeconds*1000:undefined;
+ const visibleHit=nextPlan
+   ?(!searching&&lastHit&&lastHit.atMs>=(encounterStartedAtMs??atMs)-1?lastHit:undefined)
+   :lastHit;
+ const cursor:ActiveCombatHitCursor={source:state,projected,atMs,stoppedReason:current.stoppedReason,lastHit:visibleHit,lastSkillEffect,lastSkillEffects};
  return {searching,playerHp:current.endHp,playerMaxHp:runtime.stats.hp,enemyHp:current.enemyHp,enemyMaxHp:runtime.m.hp,
-   progressFraction:current.nextProgressFraction,stoppedReason:current.stoppedReason,lastHit,lastSkillEffect,lastSkillEffects,cursor};
+   progressFraction:current.nextProgressFraction,stoppedReason:current.stoppedReason,lastHit:visibleHit,lastSkillEffect,lastSkillEffects,cursor};
 }
 
 function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number):RewardBundle{
@@ -855,8 +911,9 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number)
       const totalSeconds=bankedSeconds+elapsed;
       const actions=Math.floor(totalSeconds/routeSeconds);
       const nextProgressFraction=actions>0?(totalSeconds%routeSeconds)/routeSeconds:(totalSeconds/routeSeconds);
-      let boostedActions=0;for(let i=1;i<=actions;i++){const at=state.activity.lastClaimAtMs+(i*routeSeconds-bankedSeconds)*1000;if(candy&&at>candy.startsAtMs&&at<=candy.endsAtMs)boostedActions++;}
-      return {xp:Math.floor((actions+.1*boostedActions)*route.xp*characterPermanentMultipliers(state).skillXpMultiplier),gold:0,items:[],kills:actions,elapsedSeconds:elapsed,nextProgressFraction,explorationDiscoveries:actions&&route.unlockMonsterId?[route.unlockMonsterId]:[]};
+      let boostedActions=0;const actionTimes:number[]=[];for(let i=1;i<=actions;i++){const at=state.activity.lastClaimAtMs+(i*routeSeconds-bankedSeconds)*1000;actionTimes.push(at);if(candy&&at>candy.startsAtMs&&at<=candy.endsAtMs)boostedActions++;}
+      const winterXp=WINTER_HEARTH_GUILD_RELEASED?winterHearthXpFactorForActionTimes(state.winterHearthBonusWindows??[],actionTimes,'skill'):1;
+      return {xp:Math.floor((actions+.1*boostedActions)*route.xp*characterPermanentMultipliers(state).skillXpMultiplier*winterXp),gold:0,items:[],kills:actions,elapsedSeconds:elapsed,nextProgressFraction,explorationDiscoveries:actions&&route.unlockMonsterId?[route.unlockMonsterId]:[]};
     }
     const g=[...GATHERING,...HERB_NODES].find(x=>x.id===state.activity!.targetId);if(!g)return {xp:0,gold:0,items:[],kills:0,elapsedSeconds:elapsed};
     const effect=environmentEffectForActivity(state.activity).effect;
@@ -865,7 +922,14 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number)
     const specialtySpeed=g.skillId==='fishing'?multipliers.fishingSpeedMultiplier:g.skillId==='herbalism'?multipliers.herbalismSpeedMultiplier:1;
     const effectiveActionSeconds=g.seconds*GATHER_TIME_SCALE*pacing.timeMultiplier*effect.actionTimeMultiplier*(method?.actionTimeMultiplier??1)/(multipliers.gatheringSpeedMultiplier*specialtySpeed*mastery.speed*affinity.speedMultiplier*dailySupplySpeedMultiplier(state,'gathering_speed',elapsed));
     const elapsedMs=Math.min(offlineCapSeconds(state)*1000,Math.max(0,effectiveNowMs-state.activity.lastClaimAtMs));
-    const timeline=combatTimeline({startsAtMs:state.activity.lastClaimAtMs,elapsedSeconds:elapsedMs/1000,progressFraction:state.activity.progressFraction??0,preparationEncounters:0,cycleSeconds:effectiveActionSeconds,preparedCycleSeconds:effectiveActionSeconds,candy:eventCandyWindow(state,'skill')});
+    const timeline=WINTER_HEARTH_GUILD_RELEASED&&state.winterHearthBonusWindows?.length
+      ?winterHearthGatheringTimeline({startsAtMs:state.activity.lastClaimAtMs,elapsedSeconds:elapsedMs/1000,
+        progressFraction:state.activity.progressFraction??0,cycleSeconds:effectiveActionSeconds,
+        candy:eventCandyWindow(state,'skill')},state.winterHearthBonusWindows)
+      :combatTimeline({startsAtMs:state.activity.lastClaimAtMs,elapsedSeconds:elapsedMs/1000,
+        progressFraction:state.activity.progressFraction??0,preparationEncounters:0,
+        cycleSeconds:effectiveActionSeconds,preparedCycleSeconds:effectiveActionSeconds,
+        candy:eventCandyWindow(state,'skill')});
     const actions=timeline.encounters.length,candyActions=timeline.encounters.filter(row=>row.candy).length;
     const candyXpMultiplier=actions?1+.1*candyActions/actions:1;
     const seed=`${state.character.id}:${state.activity.lastClaimAtMs}:${g.id}:yield`;
@@ -875,13 +939,13 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number)
     const quantity=Math.floor(quantityFloat);
     const skill=state.skills.find(x=>x.skillId===g.skillId);
     const xpKey=affinityXpRemainderKey(state.character.id,g.skillId);
-    const gain=settleAffinitySkillXp(actions*g.xp*effect.xpMultiplier*(method?.xpMultiplier??1)*multipliers.skillXpMultiplier*mastery.xp*affinity.xpMultiplier*candyXpMultiplier,state.rewardRemainders?.[xpKey],totalXpAtLevel(100)-(skill?.xp??0));
+    const gain=settleAffinitySkillXp(actions*g.xp*effect.xpMultiplier*(method?.xpMultiplier??1)*multipliers.skillXpMultiplier*mastery.xp*affinity.xpMultiplier*candyXpMultiplier*gatheringToolSkillXpMultiplier(state,g.skillId)*(WINTER_HEARTH_GUILD_RELEASED?winterHearthXpFactorForActionTimes(state.winterHearthBonusWindows??[],timeline.encounters.map(row=>row.atMs),'skill'):1),state.rewardRemainders?.[xpKey],totalXpAtLevel(100)-(skill?.xp??0));
     const xp=gain.xp;
     const items:ItemStack[]=quantity?[{itemId:g.itemId,quantity}]:[];
     if(g.skillId==='mining'){
       const essence=MINING_ESSENCE_BY_ZONE[g.zoneId];
       if(essence&&actions>0){
-        const rareChance=Math.min(1,essence.baseChance*effect.dropChanceMultiplier*multipliers.dropChanceMultiplier);
+        const rareChance=Math.min(1,essence.baseChance*effect.dropChanceMultiplier*multipliers.dropChanceMultiplier*gatheringToolRarityChanceMultiplier(state,'mining'));
         const rareSeed=`${state.character.id}:${state.activity.lastClaimAtMs}:${g.id}:mineral-essence`;
         let rareQuantity=0;
         for(let i=0;i<actions;i++)if(random01(rareSeed,i)<rareChance)rareQuantity++;
@@ -911,7 +975,8 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number)
   if(mastery.materialBonus)for(const item of items){if(itemDef(item.itemId).type!=='material')continue;const extra=item.quantity*mastery.materialBonus+(materialRemainders[item.itemId]??0),whole=Math.floor(extra+1e-9);item.quantity+=whole;materialRemainders[item.itemId]=Math.max(0,extra-whole);}
   const combatXpScale=characterCombatXpScale(m.level,m.boss);
   const rewardItems=items,champion=championBonus(Math.floor(m.xp*combatXpScale*effect.xpMultiplier*multipliers.characterXpMultiplier),Math.floor(m.gold*effect.goldMultiplier*multipliers.goldMultiplier),sim.championKills);
-  const baseXpPerKill=m.xp*combatXpScale*effect.xpMultiplier*multipliers.characterXpMultiplier*combatCandy,baseGoldPerKill=m.gold*effect.goldMultiplier*multipliers.goldMultiplier,sessionKills=state.activity.sessionKills??0;
+  const winterCombatXp=WINTER_HEARTH_GUILD_RELEASED?winterHearthXpFactorForActionTimes(state.winterHearthBonusWindows??[],sim.completed.map(row=>row.atMs),'combat'):1;
+  const baseXpPerKill=m.xp*combatXpScale*effect.xpMultiplier*multipliers.characterXpMultiplier*combatCandy*winterCombatXp,baseGoldPerKill=m.gold*effect.goldMultiplier*multipliers.goldMultiplier,sessionKills=state.activity.sessionKills??0;
   // Carry fractional per-kill rewards across claims of the same hunt clock.
   // Without this, two offline claims can floor the same earned XP/Gold twice.
   const xpFractionKey='combat:base-xp-fraction',goldFractionKey='combat:base-gold-fraction';
@@ -984,31 +1049,49 @@ function projectedIdleContext(state:GameState,reward:RewardBundle,settleAtMs:num
 }
 function idleRuleSettlementWindow(state:GameState,nowMs:number){
   const rule=activeIdleRuleForState(state),activity=state.activity;
-  if(!activity||!state.character)return {settleAtMs:nowMs,shouldStop:false as const,safety:false,combatRecovery:false};
+  if(!activity||!state.character)return {supply:previewStandardActivityRewardWithSupplies(state,nowMs),settleAtMs:nowMs,shouldStop:false as const,safety:false,combatRecovery:false};
   const node=[...GATHERING,...HERB_NODES].find(row=>row.id===activity.targetId),queueGoal=activity.queueGoal;
   const condition=queueGoal?{id:'queue-goal',kind:queueGoal.kind,targetId:queueGoal.kind==='item_quantity'?node?.itemId:queueGoal.kind==='skill_level'?node?.skillId:undefined,value:queueGoal.value,enabled:true}:activity.kind==='combat'&&activity.huntGoal?{id:'hunt-goal-condition',kind:activity.huntGoal.kind,targetId:activity.targetId,value:activity.huntGoal.value,enabled:true}:undefined;
   const goalRule=condition&&activity.queueGoalCompletedAtMs===undefined?{id:'activity-goal',characterId:state.character.id,name:'Activity goal',conditions:[condition],stopIfOutOfFood:false,stopIfRewardsWouldOverflow:false,finishCurrentCycle:true} as IdleRuleSet:undefined;
-  if(!rule&&!goalRule&&!activity.queueManaged&&!state.character.activityQueue?.length)return {settleAtMs:nowMs,shouldStop:false as const,safety:false,combatRecovery:false};
+  if(!rule&&!goalRule&&!activity.queueManaged&&!state.character.activityQueue?.length)return {supply:previewStandardActivityRewardWithSupplies(state,nowMs),settleAtMs:nowMs,shouldStop:false as const,safety:false,combatRecovery:false};
   const capAtMs=activity.lastClaimAtMs+offlineCapSeconds(state)*1000,upper=Math.max(activity.lastClaimAtMs,Math.min(nowMs,capAtMs));
   const evaluateAt=(time:number)=>{
-    const reward=previewStandardActivityRewardWithSupplies(state,time).reward,ctx=projectedIdleContext(state,reward,time),saved=rule?evaluateIdleRuleSet(rule,ctx):{shouldStop:false,safety:false},goal=goalRule?evaluateIdleRuleSet(goalRule,ctx):{shouldStop:false,safety:false};
+    const supply=previewStandardActivityRewardWithSupplies(state,time);
+    const reward=supply.reward,ctx=projectedIdleContext(state,reward,time),saved=rule?evaluateIdleRuleSet(rule,ctx):{shouldStop:false,safety:false},goal=goalRule?evaluateIdleRuleSet(goalRule,ctx):{shouldStop:false,safety:false};
     const evaluation=reward.stoppedReason?{shouldStop:true,safety:true,reason:reward.stoppedReason}:saved.safety?saved:goal.shouldStop?{...goal,reason:queueGoal?'Queue goal reached.':`Hunt goal reached: ${activity.huntGoal?.label??'target'}.`}:saved;
     const combatRecovery=activity.kind==='combat'&&(!!reward.stoppedReason?.toLowerCase().includes('injured')||saved.safety&&(saved.reason==='Food reserve is empty.'||rule?.conditions.some(row=>row.id===saved.conditionId&&row.kind==='food_below')===true));
-    return {reward,evaluation,combatRecovery};
+    return {supply,evaluation,combatRecovery};
   };
   const upperResult=evaluateAt(upper);
-  if(!upperResult.evaluation.shouldStop)return {settleAtMs:upper,shouldStop:false as const,safety:false,combatRecovery:false};
-  const atStart=evaluateAt(activity.lastClaimAtMs);
-  if(atStart.evaluation.shouldStop)return {settleAtMs:activity.lastClaimAtMs,shouldStop:true as const,safety:atStart.evaluation.safety,combatRecovery:atStart.combatRecovery,reason:atStart.evaluation.reason??'Idle Rule target already reached.'};
+  if(!upperResult.evaluation.shouldStop)return {supply:upperResult.supply,settleAtMs:upper,shouldStop:false as const,safety:false,combatRecovery:false};
+  const atStart=upper===activity.lastClaimAtMs?upperResult:evaluateAt(activity.lastClaimAtMs);
+  if(atStart.evaluation.shouldStop)return {supply:atStart.supply,settleAtMs:activity.lastClaimAtMs,shouldStop:true as const,safety:atStart.evaluation.safety,combatRecovery:atStart.combatRecovery,reason:atStart.evaluation.reason??'Idle Rule target already reached.'};
   let low=activity.lastClaimAtMs,high=upper;
-  while(high-low>1){const mid=low+Math.floor((high-low)/2);if(evaluateAt(mid).evaluation.shouldStop)high=mid;else low=mid;}
-  let settleAtMs=high;let final=evaluateAt(settleAtMs);
+  let final=upperResult,below=atStart;
+  while(high-low>1){
+    const mid=low+Math.floor((high-low)/2),candidate=evaluateAt(mid);
+    if(candidate.evaluation.shouldStop){high=mid;final=candidate;}
+    else{low=mid;below=candidate;}
+  }
+  let settleAtMs=high,supply=final.supply;
   if(final.evaluation.safety&&final.evaluation.reason==='Storage cannot safely accept the next reward.'&&settleAtMs>activity.lastClaimAtMs){
     settleAtMs=Math.max(activity.lastClaimAtMs,settleAtMs-1);
+    supply=settleAtMs===low?below.supply:previewStandardActivityRewardWithSupplies(state,settleAtMs);
   }
-  return {settleAtMs,shouldStop:true as const,safety:final.evaluation.safety,combatRecovery:final.combatRecovery,reason:final.evaluation.reason??'Configured Idle Rule target reached.'};
+  return {supply,settleAtMs,shouldStop:true as const,safety:final.evaluation.safety,combatRecovery:final.combatRecovery,reason:final.evaluation.reason??'Configured Idle Rule target reached.'};
 }
 
+function processingSettlementWindow(state:GameState,nowMs:number){
+ const activity=state.activity!,processing=activity.processing!;
+ if(!isWinterHearthLightRecipe(processing.recipeId))return {expired:false,elapsedSeconds:Math.min(offlineCapSeconds(state),Math.max(0,(nowMs-activity.lastClaimAtMs)/1000))};
+ const runtime=state.account.liveEvent;
+ return winterHearthCraftSettlementWindow({lastClaimAtMs:activity.lastClaimAtMs,nowMs,offlineCapSeconds:offlineCapSeconds(state),savedEndMs:processing.seasonEndsAtMs,runtimeEndMs:runtime?.eventId===WINTER_HEARTH_2026_ID?runtime.endsAtMs:undefined,released:WINTER_HEARTH_GUILD_RELEASED});
+}
+function processingTimedPreview(state:GameState,nowMs:number){
+ const window=processingSettlementWindow(state,nowMs),elapsed=window.elapsedSeconds;
+ const raw=dailySupplyAdjustTimedCraftReward(state,previewProcessingReward(state,dailySupplyCraftWorkSeconds(state,elapsed)),elapsed);
+ return {window,raw:{...raw,xp:Math.floor((raw.xp??0)*(WINTER_HEARTH_GUILD_RELEASED?winterHearthXpFactorForActionTimes(state.winterHearthBonusWindows??[],raw.craftingCompletedAtMs??[],'skill'):1)),...timedEventRewards(state,'crafting',raw.craftingCompletedAtMs??[])}};
+}
 export function previewActivityReward(state:GameState,nowMs:number):RewardBundle{
   if(state.character?.classTraining)return settleClassDrills(state,nowMs,offlineCapSeconds(state)).reward;
   if(state.activity?.kind==='faith'){
@@ -1020,12 +1103,12 @@ export function previewActivityReward(state:GameState,nowMs:number):RewardBundle
     return previewDailySupplyTimedReward(state,base,'crafting').reward;
   }
   if(state.activity?.kind==='processing'){
-    const source=state.activity;
-    const elapsed=Math.min(offlineCapSeconds(state),Math.max(0,(nowMs-state.activity.lastClaimAtMs)/1000)),raw=dailySupplyAdjustTimedCraftReward(state,previewProcessingReward(state,dailySupplyCraftWorkSeconds(state,elapsed)),elapsed),base={...raw,...timedEventRewards(state,'crafting',raw.craftingCompletedAtMs??[])};
-    return previewDailySupplyTimedReward(state,base,'crafting').reward;
+    const {window,raw}=processingTimedPreview(state,nowMs);
+    const reward=previewDailySupplyTimedReward(state,raw,'crafting').reward;
+    return window.expired?{...reward,stoppedReason:'Winter Hearth crafting ended. Unfinished reservations are refunded.'}:reward;
   }
   if(!state.activity||!state.character)return {xp:0,gold:0,items:[],kills:0,elapsedSeconds:0};
-  const idleWindow=idleRuleSettlementWindow(state,nowMs),reward=previewStandardActivityRewardWithSupplies(state,idleWindow.settleAtMs).reward;
+  const idleWindow=idleRuleSettlementWindow(state,nowMs),reward=idleWindow.supply.reward;
   return idleWindow.shouldStop&&!reward.stoppedReason?{...reward,stoppedReason:idleWindow.reason}:reward;
 }
 
@@ -1205,7 +1288,7 @@ function claimActivitySegmentRaw(state:GameState,nowMs:number){
   if(state.activity?.kind==='alchemy'){
     const source=state.activity;
     if(nowMs<=state.activity.lastClaimAtMs)return {state,reward:previewActivityReward(state,state.activity.lastClaimAtMs)};
-    const elapsed=Math.min(offlineCapSeconds(state),Math.max(0,(nowMs-state.activity.lastClaimAtMs)/1000)),raw=dailySupplyAdjustTimedCraftReward(state,previewAlchemyReward(state,dailySupplyCraftWorkSeconds(state,elapsed)),elapsed),baseReward={...raw,...timedEventRewards(state,'crafting',raw.craftingCompletedAtMs??[])},boost=previewDailySupplyTimedReward(state,baseReward,'crafting'),reward=boost.reward,brew=state.activity.brew!;
+    const elapsed=Math.min(offlineCapSeconds(state),Math.max(0,(nowMs-state.activity.lastClaimAtMs)/1000)),raw=dailySupplyAdjustTimedCraftReward(state,previewAlchemyReward(state,dailySupplyCraftWorkSeconds(state,elapsed)),elapsed),baseReward={...raw,xp:Math.floor((raw.xp??0)*(WINTER_HEARTH_GUILD_RELEASED?winterHearthXpFactorForActionTimes(state.winterHearthBonusWindows??[],raw.craftingCompletedAtMs??[],'skill'):1)),...timedEventRewards(state,'crafting',raw.craftingCompletedAtMs??[])},boost=previewDailySupplyTimedReward(state,baseReward,'crafting'),reward=boost.reward,brew=state.activity.brew!;
     const routed=routeRewards(state,reward.items,nowMs);
     const skills=state.skills.map(x=>x.skillId==='alchemy'?{...x,xp:Math.min(totalXpAtLevel(100),x.xp+(reward.xp??0)),level:levelFromXp(Math.min(totalXpAtLevel(100),x.xp+(reward.xp??0)))}:x);
     const nextBase={...state,...routed,skills,rewardRemainders:reward.nextRewardRemainders,activity:reward.nextBrewRemaining?{...state.activity,lastClaimAtMs:nowMs,progressFraction:reward.nextProgressFraction,brew:{...brew,remainingBatches:reward.nextBrewRemaining}}:null} as GameState;
@@ -1218,20 +1301,21 @@ function claimActivitySegmentRaw(state:GameState,nowMs:number){
   if(state.activity?.kind==='processing'){
     const source=state.activity;
     if(nowMs<=state.activity.lastClaimAtMs)return {state,reward:previewActivityReward(state,state.activity.lastClaimAtMs)};
-    const elapsed=Math.min(offlineCapSeconds(state),Math.max(0,(nowMs-state.activity.lastClaimAtMs)/1000)),raw=dailySupplyAdjustTimedCraftReward(state,previewProcessingReward(state,dailySupplyCraftWorkSeconds(state,elapsed)),elapsed),baseReward={...raw,...timedEventRewards(state,'crafting',raw.craftingCompletedAtMs??[])},boost=previewDailySupplyTimedReward(state,baseReward,'crafting'),reward=boost.reward,processing=state.activity.processing!;
-    const routed=routeRewards(state,reward.items,nowMs),nextXp=(state.skills.find(x=>x.skillId===processing.skillId)?.xp??0)+(reward.xp??0);
+    const {window,raw}=processingTimedPreview(state,nowMs),boost=previewDailySupplyTimedReward(state,raw,'crafting'),reward=window.expired?{...boost.reward,stoppedReason:'Winter Hearth crafting ended. Unfinished reservations are refunded.'}:boost.reward,processing=state.activity.processing!;
+    const unfinished=reward.nextProcessingRemaining??0,refund=window.expired&&unfinished>0?processingRefund({...processing,remainingBatches:unfinished}):null;
+    const routed=routeRewards(state,[...reward.items,...(refund?.items??[])],nowMs),nextXp=(state.skills.find(x=>x.skillId===processing.skillId)?.xp??0)+(reward.xp??0);
     const skills=state.skills.map(x=>x.skillId===processing.skillId?{...x,xp:Math.min(totalXpAtLevel(100),nextXp),level:levelFromXp(Math.min(totalXpAtLevel(100),nextXp))}:x);
-    const nextBase={...state,...routed,skills,rewardRemainders:reward.nextRewardRemainders,activity:reward.nextProcessingRemaining?{...state.activity,lastClaimAtMs:nowMs,progressFraction:reward.nextProgressFraction,processing:{...processing,remainingBatches:reward.nextProcessingRemaining}}:null} as GameState;
+    const nextBase={...state,...routed,skills,...(refund&&state.character?{character:{...state.character,gold:state.character.gold+refund.gold}}:{}),rewardRemainders:reward.nextRewardRemainders,activity:!window.expired&&reward.nextProcessingRemaining?{...state.activity,lastClaimAtMs:nowMs,progressFraction:reward.nextProgressFraction,processing:{...processing,remainingBatches:reward.nextProcessingRemaining}}:null} as GameState;
     const next=commitDailySupplyTimedBoost(nextBase,boost),actions=reward.craftingActions??0;
     let progressed=actions>0?applyTrustedLongTermProgression(next,[{kind:'crafting',contentId:processing.recipeId,units:actions,skillId:processing.skillId,startedAtMs:state.activity.lastClaimAtMs}],reward,nowMs,{accountId:longTermAccountScope(state),eventId:`processing:${state.character?.id??'unknown'}:${processing.recipeId}:${state.activity.lastClaimAtMs}:${nowMs}`}).state:next;
     progressed=applyEventDiscoveries(applyEventDrops(progressed,reward.eventDrops??[]),reward.eventDiscoveries??[]);
     progressed=refreshQuests(progressed);
     const finalState=reconcileCombatCompanionUnlocks(progressed,nowMs);
-    const queuedState=!reward.nextProcessingRemaining&&(source.queueManaged||state.character?.activityQueue?.length)?startFinishedQueuedActivity(finalState,nowMs):finalState;
+    const queuedState=(!reward.nextProcessingRemaining||window.expired)&&(source.queueManaged||state.character?.activityQueue?.length)?startFinishedQueuedActivity(finalState,nowMs):finalState;
     return {state:queuedState,reward:withCompanionUnlocks(reward,state,queuedState)};
   }
   if(!state.character||!state.activity){const recovered=settleOutOfCombatRecovery(state,nowMs);return {state:recovered,reward:previewActivityReward(state,nowMs)};}
-  const idleWindow=idleRuleSettlementWindow(state,nowMs),settledAtMs=idleWindow.settleAtMs,idleStopReason=idleWindow.shouldStop?idleWindow.reason:undefined,supply=previewStandardActivityRewardWithSupplies(state,settledAtMs),boosted=supply.reward;
+  const idleWindow=idleRuleSettlementWindow(state,nowMs),settledAtMs=idleWindow.settleAtMs,idleStopReason=idleWindow.shouldStop?idleWindow.reason:undefined,supply=idleWindow.supply,boosted=supply.reward;
   const reward:RewardBundle=idleWindow.shouldStop&&!boosted.stoppedReason?{...boosted,stoppedReason:idleStopReason,goalReached:!idleWindow.safety}:boosted;
   if(state.activity.kind!=='combat'){
     const skills=state.skills.map(x=>x.skillId===state.activity!.kind?{...x,xp:x.xp+reward.xp,level:levelFromXp(x.xp+reward.xp)}:x);
@@ -1446,6 +1530,12 @@ export function depositToBank(state:GameState,itemId:string,quantity:number):Gam
   if(!Number.isSafeInteger(quantity))throw new Error('Invalid deposit quantity');
   if(quantity<=0)return state;
   const invQty=stackQty(state.inventory.stacks,itemId);if(invQty<quantity)throw new Error('Not enough items in inventory');
+  if(itemDef(itemId).type==='tool'){
+    const selected=removeItemStacksPreservingCopies(state.inventory.stacks,itemId,quantity);
+    const added=addBounded(state.bank.stacks,entitlementStorageCapacity(state,'bank'),selected.moved);
+    if(added.overflow.length)throw new Error('Bank is full');
+    return {...state,inventory:{...state.inventory,stacks:selected.kept},bank:{...state.bank,stacks:added.stacks}};
+  }
   // One atomic state mutation: gems always target the shared account pouch first.
   // An existing pouch stack can grow even when all pouch slots are occupied.
   const removed=consume(state.inventory.stacks,itemId,quantity);
@@ -1461,11 +1551,49 @@ export function depositToBank(state:GameState,itemId:string,quantity:number):Gam
 export function withdrawFromBank(state:GameState,itemId:string,quantity:number):GameState{
   if(quantity<=0)return state;
   const bankQty=stackQty(state.bank.stacks,itemId);if(bankQty<quantity)throw new Error('Not enough items in Bank');
+  if(itemDef(itemId).type==='tool'){
+    const selected=removeItemStacksPreservingCopies(state.bank.stacks,itemId,quantity);
+    const added=addBounded(state.inventory.stacks,entitlementStorageCapacity(state,'inventory'),selected.moved);
+    if(added.overflow.length)throw new Error('Inventory is full');
+    return {...state,bank:{...state.bank,stacks:selected.kept},inventory:{...state.inventory,stacks:added.stacks}};
+  }
   const removed=consume(state.bank.stacks,itemId,quantity);
   const added=addBounded(state.inventory.stacks,entitlementStorageCapacity(state,'inventory'),[{itemId,quantity}]);
   if(added.overflow.length)throw new Error('Inventory is full');
   return {...state,bank:{...state.bank,stacks:removed},inventory:{...state.inventory,stacks:added.stacks}};
 }
+/** Move an explicitly selected physical tool without converting it to a
+ * generic catalog stack or losing its immutable quality / affix receipt. */
+export function moveGatheringToolCopy(state:GameState,instanceId:string,to:'inventory'|'bank'):GameState{
+ const copy=state.account.craftedGatheringToolInstances?.find(row=>row.id===instanceId);
+ if(!copy||!validateGatheringToolRoll(copy,copy.itemId)||!gatheringToolDef(copy.itemId))throw new Error('Unknown or unverified gathering tool copy');
+ const from=to==='inventory'?'bank':'inventory';
+ const owned=state[from].stacks.find(row=>row.instanceId===instanceId&&row.itemId===copy.itemId&&row.quantity===1);
+ if(!owned)throw new Error('Tool copy is not in the selected storage');
+ const added=addBounded(state[to].stacks,entitlementStorageCapacity(state,to),[owned]);
+ if(added.overflow.length)throw new Error(to==='bank'?'Bank is full':'Inventory is full');
+ return {...state,[from]:{...state[from],stacks:state[from].stacks.filter(row=>row.instanceId!==instanceId)},[to]:{...state[to],stacks:added.stacks}};
+}
+
+/** Selling is an explicit per-copy operation; item-type selling intentionally
+ * cannot choose a rolled tool. Never lose a chosen valuable roll silently. */
+export function sellGatheringToolCopy(state:GameState,instanceId:string):GameState{
+ if(!state.character)throw new Error('Character required');
+ const copy=state.account.craftedGatheringToolInstances?.find(row=>row.id===instanceId);
+ if(!copy||!validateGatheringToolRoll(copy,copy.itemId)||!gatheringToolDef(copy.itemId))throw new Error('Unknown tool copy');
+ if(state.settings.favoriteItemIds?.includes(copy.itemId)||state.settings.lockedItemIds?.includes(copy.itemId))throw new Error('Favorite or locked tool is protected');
+ const from=state.inventory.stacks.some(row=>row.instanceId===instanceId&&row.itemId===copy.itemId)?'inventory'
+  :state.bank.stacks.some(row=>row.instanceId===instanceId&&row.itemId===copy.itemId)?'bank':undefined;
+ if(!from)throw new Error('The tool copy must be in Inventory or Bank to sell');
+ const gain=itemVendorSellGold(itemDef(copy.itemId));
+ if(!Number.isSafeInteger(gain)||!Number.isSafeInteger(from==='bank'?(state.bank.gold??0)+gain:state.character.gold+gain))throw new Error('Gold overflow');
+ return {...state,
+  [from]:{...state[from],stacks:state[from].stacks.filter(row=>row.instanceId!==instanceId),...(from==='bank'?{gold:(state.bank.gold??0)+gain}:{})},
+  character:from==='inventory'?{...state.character,gold:state.character.gold+gain}:state.character,
+  account:{...state.account,craftedGatheringToolInstances:state.account.craftedGatheringToolInstances?.filter(row=>row.id!==instanceId)},
+ };
+}
+
 export type StorageLocation='inventory'|'bank';
 const STORAGE_UPGRADES:Record<StorageLocation,{capacity:number;cost:number;level:number}[]>={
   inventory:[{capacity:40,cost:10000,level:10},{capacity:50,cost:30000,level:20},{capacity:60,cost:80000,level:35},{capacity:75,cost:200000,level:50},{capacity:100,cost:500000,level:70}],
@@ -1519,29 +1647,145 @@ export function startExploration(state:GameState,routeId:string,nowMs:number):Ga
  if(state.activity){state=claimActivity(state,nowMs).state;state=stopActivity(state,nowMs);}
  return {...state,outOfCombatSinceMs:undefined,activity:{kind:'exploration',targetId:routeId,startedAtMs:nowMs,lastClaimAtMs:nowMs,environment:captureActivityEnvironment(routeId,nowMs)}};
 }
-export function equipGatheringTool(state:GameState,itemId:string,nowMs=Date.now()):GameState{
-  if(!state.character)throw new Error('Create a character first');
-  const tool=gatheringToolDef(itemId);if(!tool)throw new Error('Not a gathering tool');
-  if(state.character.level<tool.requiredCharacterLevel)throw new Error(`Requires Level ${tool.requiredCharacterLevel}`);
-  const skill=state.skills.find(entry=>entry.skillId===tool.skillId);if(!skill||skill.level<tool.unlockLevel)throw new Error(`Requires ${tool.skillId} level ${tool.unlockLevel}`);
-  const currentId=state.character.equippedToolIds?.[tool.skillId];if(currentId===itemId)return state;
-  const settled=state.activity?.kind===tool.skillId?claimActivity(state,nowMs).state:state;
-  let stacks=consume(settled.inventory.stacks,itemId,1);
-  if(currentId)stacks=stackItems(stacks,[{itemId:currentId,quantity:1}]);
-  return {...settled,inventory:{...settled.inventory,stacks},character:{...settled.character!,equippedToolIds:{...(settled.character!.equippedToolIds??{}),[tool.skillId]:itemId}}};
+/** An active copy and one reserve per tier live in character equipment storage.
+ * Existing equipped slots are the active copy: no save-time migration, changed
+ * ownership, or fabricated per-copy affix is required. */
+type StoredGatheringTool={itemId:string;instanceId?:string};
+function activeGatheringToolSlot(state:GameState,skillId:GatheringSkillId,tier:1|2|3|4):StoredGatheringTool|undefined{
+ const tool=equippedGatheringTools(state,skillId).find(row=>row.tier===tier);
+ if(!tool)return undefined;
+ return {itemId:tool.id,instanceId:state.character?.equippedToolInstanceIdsByTier?.[skillId]?.[tier]};
 }
-export function unequipGatheringTool(state:GameState,skillId:GatheringSkillId,nowMs=Date.now()):GameState{
-  if(!state.character)return state;const currentId=state.character.equippedToolIds?.[skillId];if(!currentId)return state;
-  const settled=state.activity?.kind===skillId?claimActivity(state,nowMs).state:state;
-  const equippedToolIds={...(settled.character!.equippedToolIds??{})};delete equippedToolIds[skillId];
-  const added=addBounded(settled.inventory.stacks,entitlementStorageCapacity(settled,'inventory'),[{itemId:currentId,quantity:1}]);
-  if(added.overflow.length)throw new Error('Free one Inventory slot before unequipping this tool');
-  return {...settled,inventory:{...settled.inventory,stacks:added.stacks},character:{...settled.character!,equippedToolIds}};
+function reserveGatheringToolSlot(state:GameState,skillId:GatheringSkillId,tier:1|2|3|4):StoredGatheringTool|undefined{
+ const saved=reservedGatheringTool(state,skillId,tier);
+ if(state.character?.savedToolIdsByTier?.[skillId]?.[tier]&&!saved)throw new Error('Saved tool copy is invalid');
+ return saved?{itemId:saved.tool.id,instanceId:saved.instanceId}:undefined;
 }
-export function craftRecipe(state:GameState,recipeId:string,nowMs=Date.now()):GameState{
+function setGatheringToolSlots(state:GameState,skillId:GatheringSkillId,tier:1|2|3|4,active?:StoredGatheringTool,reserve?:StoredGatheringTool):GameState{
+ const character=state.character;
+ if(!character)throw new Error('Character required');
+ const equippedIds={...(character.equippedToolIdsByTier?.[skillId]??{})};
+ // Older saves have only equippedToolIds (best-tool pointer). Preserve that
+ // physical tool when adding a different tier for the first time, rather than
+ // discarding the legacy contribution during modern slot initialization.
+ if(character.equippedToolIdsByTier?.[skillId]===undefined){
+  const legacy=gatheringToolDef(character.equippedToolIds?.[skillId]);
+  if(legacy?.skillId===skillId)equippedIds[legacy.tier]=legacy.id;
+ }
+ const equippedInstances={...(character.equippedToolInstanceIdsByTier?.[skillId]??{})};
+ const savedIds={...(character.savedToolIdsByTier?.[skillId]??{})};
+ const savedInstances={...(character.savedToolInstanceIdsByTier?.[skillId]??{})};
+ if(active){equippedIds[tier]=active.itemId;if(active.instanceId)equippedInstances[tier]=active.instanceId;else delete equippedInstances[tier];}
+ else{delete equippedIds[tier];delete equippedInstances[tier];}
+ if(reserve){savedIds[tier]=reserve.itemId;if(reserve.instanceId)savedInstances[tier]=reserve.instanceId;else delete savedInstances[tier];}
+ else{delete savedIds[tier];delete savedInstances[tier];}
+ const equippedToolIds={...(character.equippedToolIds??{})};
+ const highest=Object.entries(equippedIds).map(([t,id])=>({tier:Number(t),id})).sort((a,b)=>b.tier-a.tier)[0];
+ if(highest)equippedToolIds[skillId]=highest.id;
+ else delete equippedToolIds[skillId];
+ return {...state,character:{...character,equippedToolIds,
+  equippedToolIdsByTier:{...(character.equippedToolIdsByTier??{}),[skillId]:equippedIds},
+  equippedToolInstanceIdsByTier:{...(character.equippedToolInstanceIdsByTier??{}),[skillId]:equippedInstances},
+  savedToolIdsByTier:{...(character.savedToolIdsByTier??{}),[skillId]:savedIds},
+  savedToolInstanceIdsByTier:{...(character.savedToolInstanceIdsByTier??{}),[skillId]:savedInstances}}};
+}
+/** Remove exactly one inventory copy, never implicitly consuming a different
+ * receipt when an untracked legacy stack shares the same item definition. */
+function takeInventoryGatheringTool(state:GameState,itemId:string,instanceId?:string){
+ const preferred=state.inventory.stacks.findIndex(row=>row.itemId===itemId&&row.quantity>0&&!row.instanceId);
+ const index=instanceId?state.inventory.stacks.findIndex(row=>row.itemId===itemId&&row.quantity===1&&row.instanceId===instanceId):
+  preferred>=0?preferred:state.inventory.stacks.findIndex(row=>row.itemId===itemId&&row.quantity===1&&!!row.instanceId);
+ if(index<0)throw new Error('Tool copy is not in Inventory');
+ const row=state.inventory.stacks[index];
+ if(row.instanceId){
+  const copy=validateGatheringToolRoll(state.account.craftedGatheringToolInstances?.find(entry=>entry.id===row.instanceId),itemId);
+  if(!copy||row.quantity!==1)throw new Error('Unverified tool copy');
+ }
+ const stacks=state.inventory.stacks.flatMap((entry,i)=>i!==index?[entry]:entry.quantity>1?[{...entry,quantity:entry.quantity-1}]:[]);
+ return {stacks,copy:{itemId, ...(row.instanceId?{instanceId:row.instanceId}:{})} as StoredGatheringTool};
+}
+export function equipGatheringTool(state:GameState,itemId:string,nowMs=Date.now(),instanceId?:string):GameState{
+ if(!state.character)throw new Error('Create a character first');
+ const tool=gatheringToolDef(itemId);if(!tool)throw new Error('Not a gathering tool');
+ if(state.character.level<tool.requiredCharacterLevel)throw new Error(`Requires Level ${tool.requiredCharacterLevel}`);
+ const skill=state.skills.find(entry=>entry.skillId===tool.skillId);
+ if(!skill||skill.level<tool.unlockLevel)throw new Error(`Requires ${tool.skillId} level ${tool.unlockLevel}`);
+ const current=activeGatheringToolSlot(state,tool.skillId,tool.tier);
+ if(current&&current.itemId===itemId&&(!instanceId||current.instanceId===instanceId))return state;
+ const settled=state.activity?.kind===tool.skillId?claimActivity(state,nowMs).state:state;
+ const selected=takeInventoryGatheringTool(settled,itemId,instanceId);
+ let stacks=selected.stacks;
+ const reserve=reserveGatheringToolSlot(settled,tool.skillId,tool.tier);
+ let nextReserve=reserve;
+ if(current){
+  if(!reserve)nextReserve=current;
+  else{
+   const returned=addBounded(stacks,entitlementStorageCapacity(settled,'inventory'),[{itemId:current.itemId,quantity:1,...(current.instanceId?{instanceId:current.instanceId}:{})}]);
+   if(returned.overflow.length)throw new Error('Free an Inventory slot or withdraw your saved tool first');
+   stacks=returned.stacks;
+  }
+ }
+ return setGatheringToolSlots({...settled,inventory:{...settled.inventory,stacks}},tool.skillId,tool.tier,selected.copy,nextReserve);
+}
+/** Store one reserve per tier without Inventory capacity usage. If no active tool
+ * exists, the first tool is equipped instead, preserving legacy behaviour. */
+export function saveGatheringToolReserve(state:GameState,itemId:string,instanceId?:string,nowMs=Date.now()):GameState{
+ if(!state.character)throw new Error('Character required');
+ const tool=gatheringToolDef(itemId);if(!tool)throw new Error('Not a gathering tool');
+ const tier=tool.tier;
+ const current=activeGatheringToolSlot(state,tool.skillId,tier);
+ if(!current)return equipGatheringTool(state,itemId,nowMs,instanceId);
+ if(reserveGatheringToolSlot(state,tool.skillId,tier))throw new Error('This tier already has two saved tools');
+ const selected=takeInventoryGatheringTool(state,itemId,instanceId);
+ if(selected.copy.instanceId&&selected.copy.instanceId===current.instanceId)throw new Error('Tool copy is already active');
+ return setGatheringToolSlots({...state,inventory:{...state.inventory,stacks:selected.stacks}},tool.skillId,tier,current,selected.copy);
+}
+/** Instant swap inside tool storage. Settle the running activity using the old
+ * loadout before changing roll, so the new affix cannot modify past rewards. */
+export function activateGatheringToolReserve(state:GameState,skillId:GatheringSkillId,tier:1|2|3|4,nowMs=Date.now()):GameState{
+ if(!state.character)throw new Error('Character required');
+ const reserve=reserveGatheringToolSlot(state,skillId,tier);
+ if(!reserve)throw new Error('No reserve tool saved in this tier');
+ const tool=gatheringToolDef(reserve.itemId);
+ if(!tool||tool.skillId!==skillId||tool.tier!==tier)throw new Error('Invalid saved tool tier');
+ if(state.character.level<tool.requiredCharacterLevel)throw new Error(`Requires Level ${tool.requiredCharacterLevel}`);
+ const skill=state.skills.find(row=>row.skillId===skillId);
+ if(!skill||skill.level<tool.unlockLevel)throw new Error(`Requires ${skillId} level ${tool.unlockLevel}`);
+ const current=activeGatheringToolSlot(state,skillId,tier);
+ const settled=state.activity?.kind===skillId?claimActivity(state,nowMs).state:state;
+ return setGatheringToolSlots(settled,skillId,tier,reserve,current);
+}
+/** Release only the reserve copy to the chosen storage; active effects stay untouched. */
+export function withdrawGatheringToolReserve(state:GameState,skillId:GatheringSkillId,tier:1|2|3|4,to:'inventory'|'bank'='inventory'):GameState{
+ if(!state.character)throw new Error('Character required');
+ const reserve=reserveGatheringToolSlot(state,skillId,tier);
+ if(!reserve)throw new Error('No saved reserve in this tier');
+ const added=addBounded(state[to].stacks,entitlementStorageCapacity(state,to),[{itemId:reserve.itemId,quantity:1,...(reserve.instanceId?{instanceId:reserve.instanceId}:{})}]);
+ if(added.overflow.length)throw new Error(to==='bank'?'Bank is full':'Inventory is full');
+ return setGatheringToolSlots({...state,[to]:{...state[to],stacks:added.stacks}},skillId,tier,activeGatheringToolSlot(state,skillId,tier),undefined);
+}
+/** Removing an active copy promotes the reserve, if one exists, then returns
+ * only the removed physical copy to the chosen storage. */
+export function unequipGatheringTool(state:GameState,skillId:GatheringSkillId,nowMs=Date.now(),itemId?:string,to:'inventory'|'bank'='inventory'):GameState{
+ if(!state.character)return state;
+ const equipped=equippedGatheringTools(state,skillId);
+ const selected=itemId?equipped.find(row=>row.id===itemId):equipped[equipped.length-1];
+ if(!selected)return state;
+ const tier=selected.tier;
+ if(reserveGatheringToolSlot(state,skillId,tier))
+  return withdrawGatheringToolReserve(activateGatheringToolReserve(state,skillId,tier,nowMs),skillId,tier,to);
+ const current=activeGatheringToolSlot(state,skillId,tier);
+ if(!current)return state;
+ const settled=state.activity?.kind===skillId?claimActivity(state,nowMs).state:state;
+ const added=addBounded(settled[to].stacks,entitlementStorageCapacity(settled,to),[{itemId:current.itemId,quantity:1,...(current.instanceId?{instanceId:current.instanceId}:{})}]);
+ if(added.overflow.length)throw new Error(to==='bank'?'Bank is full':'Free one Inventory slot before unequipping this tool');
+ return setGatheringToolSlots({...settled,[to]:{...settled[to],stacks:added.stacks}},skillId,tier,undefined,undefined);
+}
+export function craftRecipe(state:GameState,recipeId:string,nowMs=Date.now(),sequence=0):GameState{
   if(!state.character)throw new Error('No character');
   if(recipeId.startsWith('BREW_'))throw new Error('Timed alchemy recipes must be started as a batch.');
   const r=recipeDef(recipeId);if(!r)throw new Error('Unknown recipe');
+  if(isWinterHearthLightRecipe(recipeId)&&!winterHearthLightRecipeAvailable(state,nowMs))throw new Error('Winter Hearth crafting is closed.');
   if(r.classId&&r.classId!==state.character.classId&&!r.v33SetId)throw new Error('This recipe belongs to another class');
   if(state.character.level<(r.characterLevel??1))throw new Error(`Requires character level ${r.characterLevel}`);
   if(r.requiresCraftedItemId&&!state.character.craftedNoviceItemIds?.includes(r.requiresCraftedItemId))throw new Error(`Craft ${itemDef(r.requiresCraftedItemId).name} first`);
@@ -1575,15 +1819,22 @@ export function craftRecipe(state:GameState,recipeId:string,nowMs=Date.now()):Ga
     inv=consumed.inventory;bank=consumed.bank;
     temp={...temp,inventory:{...temp.inventory,stacks:inv},bank:{...temp.bank,stacks:bank}};
   }
-  const output=addBounded(inv,entitlementStorageCapacity(boostedState,'inventory'),[{...r.output,quantity:boosted.outputQuantity}]);
+  // Each newly crafted tool is a distinct, verifiable one-affix item. The
+  // receipt is stable for deterministic offline replay; old tool stacks stay
+  // neutral Uncommon/Q50 without acquiring fabricated rolls.
+  const receiptKey=`${nowMs}:${boostedState.account.craftedGatheringToolInstances?.length??0}:${r.id}`;
+  const craftedTool=tool?mintGatheringTool(tool.id,boostedState.character!.id,receiptKey,nowMs):undefined;
+  const output=addBounded(inv,entitlementStorageCapacity(boostedState,'inventory'),[
+    craftedTool?{itemId:tool!.id,quantity:1,instanceId:craftedTool.id}:{...r.output,quantity:boosted.outputQuantity}
+  ]);
   inv=output.stacks;
   if(output.overflow.length){
     const b=addBounded(bank,entitlementStorageCapacity(boostedState,'bank'),output.overflow);bank=b.stacks;
     if(b.overflow.length)throw new Error('Inventory and Bank are full');
   }
   const xp=Math.min(totalXpAtLevel(100),sk.xp+boosted.xp);
-  const next={...boostedState,character:{...boostedState.character!,gold:boostedState.character!.gold-r.gold,...(r.noviceSetId?{craftedNoviceItemIds:[...new Set([...(boostedState.character!.craftedNoviceItemIds??[]),r.output.itemId])]}:{})},inventory:{...boostedState.inventory,stacks:inv},bank:{...boostedState.bank,stacks:bank},account:{...boostedState.account,unlockedKnowledgeIds},skills:boostedState.skills.map(x=>x.skillId===r.skillId?{...x,xp,level:levelFromXp(xp)}:x)} as GameState;
-  const progressed=applyTrustedLongTermProgression(next,[{kind:'crafting',contentId:r.id,units:1}],undefined,nowMs,{accountId:longTermAccountScope(boostedState),eventId:`craft:${state.character.id}:${r.id}:${nowMs}`}).state;
+  const next={...boostedState,character:{...boostedState.character!,gold:boostedState.character!.gold-r.gold,...(r.noviceSetId?{craftedNoviceItemIds:[...new Set([...(boostedState.character!.craftedNoviceItemIds??[]),r.output.itemId])]}:{})},inventory:{...boostedState.inventory,stacks:inv},bank:{...boostedState.bank,stacks:bank},account:{...boostedState.account,unlockedKnowledgeIds,...(craftedTool?{craftedGatheringToolInstances:[...(boostedState.account.craftedGatheringToolInstances??[]),craftedTool]}:{})},skills:boostedState.skills.map(x=>x.skillId===r.skillId?{...x,xp,level:levelFromXp(xp)}:x)} as GameState;
+  const progressed=applyTrustedLongTermProgression(next,[{kind:'crafting',contentId:r.id,units:1}],undefined,nowMs,{accountId:longTermAccountScope(boostedState),eventId:`craft:${state.character.id}:${r.id}:${nowMs}${sequence?`:${sequence}`:""}`}).state;
   return outputDef.type==='gear'?recordCompanionActivity(refreshQuests(grantEventActivity(progressed,'crafting',nowMs)),'crafting',r.output.itemId,r.output.quantity,nowMs):refreshQuests(grantEventActivity(progressed,'crafting',nowMs))
 }
 
@@ -1654,11 +1905,10 @@ export function fallenKnightPlayerSnapshot(state:GameState):FallenKnightPlayerSn
   };
 }
 
-function fallenKnightDropRoll(state:GameState,seed:string,includeStorySigil:boolean):ItemStack[]{
+function fallenKnightDropRoll(state:GameState,seed:string):ItemStack[]{
   const boss=MONSTERS.find(row=>row.id==='FALLEN_KNIGHT');if(!boss||!state.character)return [];
   const items:ItemStack[]=[];
   boss.drops.forEach((drop,index)=>{
-    if(!includeStorySigil&&drop.itemId==='FALLEN_KNIGHT_SIGIL')return;
     if(random01(seed,index*2)>=Math.min(1,Math.max(0,drop.chance)))return;
     const quantity=drop.min+Math.floor(random01(seed,index*2+1)*(drop.max-drop.min+1));
     if(quantity>0)items.push({itemId:drop.itemId,quantity});
@@ -1695,7 +1945,7 @@ export function challengeFallenKnightRematch(state:GameState,nowMs:number):{stat
   const weeklyRecorded=recordFallenKnightWeeklyVictory(next,nowMs);next=weeklyRecorded.state;
   const stone=awardCompanionRematchBondstone(next,nowMs);next=stone.state;
   const clearReward=FALLEN_KNIGHT_CLEAR_REWARD,bountyReward=weeklyRecorded.bountyTriggered?FALLEN_KNIGHT_WEEKLY_BOUNTY_REWARD:undefined;
-  const bossDrops=fallenKnightDropRoll(next,`${state.character.id}:FALLEN_KNIGHT_REMATCH:${weeklyRecorded.status.weekKey}:${weeklyRecorded.clearNumber}`,false);
+  const bossDrops=fallenKnightDropRoll(next,`${state.character.id}:FALLEN_KNIGHT_REMATCH:${weeklyRecorded.status.weekKey}:${weeklyRecorded.clearNumber}`);
   const fixedItems=[...clearReward.items.map(row=>({...row})),...(bountyReward?.items.map(row=>({...row}))??[])];
   const items=stackItems([],bossDrops.concat(fixedItems));
   const rewardGold=clearReward.gold+(bountyReward?.gold??0),rewardXp=clearReward.xp+(bountyReward?.xp??0),rewardEssence=clearReward.essence+(bountyReward?.essence??0);
@@ -1731,7 +1981,7 @@ export function challengeFallenKnight(state:GameState,nowMs=Date.now()):{state:G
     return {state:next,won:false,battle,message:`Fallen Knight repelled you after ${Math.max(1,Math.round(battle.durationMs/1000))}s. ${battle.potionConsumed?battle.potionConsumed+' healing potions used. ':''}Upgrade gear, improve class progression or select stronger healing potions before the next attempt.`};
   }
   const xp=state.character.xp+3000;
-  const storyDrops=fallenKnightDropRoll(state,`${state.character.id}:FALLEN_KNIGHT_STORY_DROP:${nowMs}`,true);
+  const storyDrops=fallenKnightDropRoll(state,`${state.character.id}:FALLEN_KNIGHT_STORY_DROP:${nowMs}`);
   const rewardRouted=routeRewards({...state,inventory:{...state.inventory,stacks:inventory}} as GameState,storyDrops,nowMs);
   let next={...state,...rewardRouted,defeatedBossIds:[...state.defeatedBossIds,'FALLEN_KNIGHT'],character:{...postFightCharacter,...(rewardRouted.character??{}),gold:state.character.gold+900,xp,level:characterLevelFromXp(xp)},activity:null,outOfCombatSinceMs:nowMs} as GameState;
   next.character=awardClassSkillXp(next.character!,3000*characterPermanentMultipliers(state).skillXpMultiplier).character;

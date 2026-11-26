@@ -17,7 +17,7 @@ const original:GameState={...starter,account:{...starter.account,
   eventProgressById:{[eventId]:22000},eventCurrencyBalanceById:{[eventId]:20000},
 }};
 const veilbreakIds=['EVT_UNIT_007','EVT_UNIT_008','EVT_UNIT_011'];
-const scheduledFrostfallIds=['EVT_UNIT_009'];
+const scheduledFrostfallIds=['EVT_UNIT_009','EVT_UNIT_012','EVT_UNIT_013'];
 assert(JSON.stringify(RELEASED_EVENT_COMPANIONS.map(c=>c.id).sort())===JSON.stringify([...veilbreakIds,...(FROSTFALL_REWARDS_RELEASED?scheduledFrostfallIds:[])].sort()),'Runtime roster keeps Frostfall companions behind their release flag');
 for(const id of scheduledFrostfallIds)assert(!!combatCompanionDef(id),'Scheduled Frostfall companion must resolve before the event starts');
 for(const id of veilbreakIds)assert(!!combatCompanionDef(id),'Every released event reward must resolve to a playable companion');

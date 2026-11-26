@@ -19,11 +19,11 @@ assert(browser.includes('accessibilityLabel={a("Back")} onPress={onBack}'),'Dung
 assert(browser.includes('notice?<FantasyPanel variant="danger"')&&screen.includes('notice={notice} activeRun={entry?.activeRun}'),'Quick Match errors must appear on the main Dungeon screen without opening group finder');
 assert(browser.includes('onQuickMatch?<View style={s.inlineTool}'),'Live Quick Match should remain directly accessible without an oversized panel');
 assert(browser.includes("mode==='live'&&liveTools?"),'Advanced group search remains accessible');
-assert(browser.includes("mode==='qmode'&&echoTools?"),'Echo sharing must not crowd primary browsing');
+assert(!browser.includes('echoTools')&&!screen.includes('showEchoSharing'),'Manual Echo sharing drawers must not crowd the Dungeon screen');
 assert(browser.includes('NPC or Echo allies fill the missing roles'),'Solo ally description must account for NPC fallback');
 const topBar=read('components/GameTopBar.tsx'),activityBar=read('components/ActiveActivityBar.tsx');
 const app=fs.readFileSync(path.join(root,'App.tsx'),'utf8');
-assert(app.includes("showActivityBar={tab!=='ProfileCustomize'&&tab!=='Coop'&&!featureHubShell.hideActivityBar}")&&app.includes('!immersiveDungeonFlow&&<GameTopBar')&&topBar.includes('compact={compactActivityBar}')&&activityBar.includes('if(compact)return <Pressable'),'Dungeon screens hide the non-dungeon activity bar while immersive runs hide the whole top bar');
+assert(app.includes("showActivityBar={tab!=='ProfileCustomize'&&tab!=='Coop'&&tab!=='Events'&&!(tab==='Guild'&&(guildEventPageOpen||guildInitialPve||guildRaidScope===((auth.session?.user.id??state.character.id)+':'+guildMembershipRevision)))&&!featureHubShell.hideActivityBar}")&&app.includes('!immersiveDungeonFlow&&<GameTopBar')&&topBar.includes('compact={compactActivityBar}')&&activityBar.includes('if(compact)return <Pressable'),'Dungeon and seasonal event screens hide the activity bar; immersive dungeon runs hide the whole top bar');
 assert(app.includes("hideDock={tab==='ProfileCustomize'||tab==='Coop'||featureHubShell.hideGlobalChatDock}")&&app.includes('onOpenChat={()=>{setChatInitialChannel')&&browser.includes('accessibilityLabel={st("World Chat")}'),'Dungeon chat dock becomes a header shortcut without losing chat access');
 assert(screen.includes('onShop={()=>setShowShop(true)}')&&browser.includes('s.shopShortcut'),'Shop shortcut uses the existing live Expedition Shop handler');
 
@@ -39,7 +39,7 @@ assert(run.includes('<CombatTheaterModal visible')&&run.includes('<DungeonCombat
 assert(stage.includes('CombatAttackSprite')&&stage.includes('CombatImpactBurst'),'Animated attack and impact effects remain in the Live combat stage');
 assert(theater.includes('{footer?<View style={[s.footer')&&theater.includes('paddingBottom:Math.max(insets.bottom,12)'), 'Combat theater keeps the main action fixed above device safe area');
 assert(run.includes("st('Continue dungeon')")&&run.includes("terminal?st('View rewards')")&&run.includes('onPresentationComplete={()=>setBattlePresentationReady(true)}'), 'Victory and run-end actions are accessible without using the top-right close control');
-assert(stage.includes('previewEnemies=anticipation&&!bossEncounter')&&run.includes('setEntryCombatArchetypes(option?.encounterPreview?.archetypes??[])'), 'Echo opening animations use server-published room archetypes');
+assert(stage.includes('previewEnemyRoster?.length')&&stage.includes('previewArchetypes??[]')&&run.includes('setEntryCombatEnemies(option?.encounterPreview?.enemies??[])')&&run.includes('setEntryCombatArchetypes(option?.encounterPreview?.archetypes??[])'), 'Echo opening animations prefer actual server-revealed enemies, retaining archetype fallback for older servers');
 assert(stage.includes('const complete=Boolean(replay&&!pending')&&run.includes('battlePresentationReady&&!inCombat'), 'Preview animations never claim a combat victory or enable continuation before real settlement');
 assert(route.includes('option.votes??0'),'Live vote totals derive from server options');
 assert(route.includes('myVotedNodeId===option.nodeId'),'Player portrait must appear only on their recorded route');
@@ -51,9 +51,12 @@ assert(bossPanel.includes('accessibilityState={{expanded:detailsOpen}}')&&bossPa
 assert(bossPanel.includes('priorityCast')&&bossPanel.includes('priorityPhase'),'Only priority interrupt and phase threshold are shown at a glance');
 assert(bossPanel.includes('telegraph.castAbilities.map')&&bossPanel.includes('telegraph.phases.map')&&bossPanel.includes('telegraph.suppressedAbilities.map'),'All authoritative mechanics remain available in the expanded view');
 assert(bossPanel.includes('accessibilityState={{expanded:recapOpen}}')&&bossPanel.includes('recap.abilitiesCast.length'),'The boss recap is optional but complete');
-for(const kind of ['battle','elite','boss','camp','shrine','forge','treasure','secret','merchant','echo','risk','event']){
- assert(roomPresentation.includes(kind+':{name:'),'Every dungeon kind, including non-combat and seasonal rooms, has a presentation: '+kind);
+// Event Rooms were deliberately retired; keep supported utility/battle rooms
+// recognizable without resurrecting the old resource-only event option.
+for(const kind of ['battle','elite','boss','camp','shrine','forge','treasure','secret','merchant','echo','risk']){
+ assert(roomPresentation.includes(kind+':{name:'),'Every supported dungeon kind has a presentation: '+kind);
 }
+assert(!roomPresentation.includes("event:{name:'Event room'"),'Retired Event Rooms must not reappear in route previews');
 assert(roomPresentation.includes("Restore your party's health.")&&roomPresentation.includes("Gain resources, but take a curse."),'Room previews describe actual resolver effects without promising drops');
 assert(route.includes('const redundantReward=')&&route.includes('!redundantReward?'),'Backend rewardTag duplicates are hidden rather than rendered as pointless labels');
 assert(route.includes('const riskBaseline=')&&route.includes('!riskBaseline?'),'Default 1.0 risk does not produce unnecessary tags');
@@ -66,7 +69,7 @@ assert(run.includes("run.phase==='awaiting_choice'&&run.options.length"),'Stale 
 assert(run.includes('initiallyOpen={run.presenceSummary.safetyAiCount>0}'),'Live party connection only expands when intervention is useful');
 assert(lobby.includes('Math.max(148,Math.min(208,height*.23))'),'Live lobby artwork stays compact on small phones');
 
-assert(run.includes('needsBoon')&&run.includes('selectedBoonId')&&run.includes('run.boonOffers!.map'),'Echo rooms must offer a real three-choice boon selection');
+assert(run.includes('needsBoon')&&run.includes('selectedBoonId')&&run.includes('draftOffers!.map')&&run.includes('run.artifactOffers'),'Echo rooms must offer a real three-choice boon selection');
 assert(run.includes('onChoose?.(nodeId,needsBoon?selectedBoonId:undefined)'),'Chosen boon must be submitted together with the next room');
 assert(screen.includes('...(boonId?{boonId}:{})'),'The boon ID must travel through the idempotent server command');
 const boonRuntime=fs.readFileSync(path.join(root,'../../backend/src/server/coop/room-boon-choices.ts'),'utf8');

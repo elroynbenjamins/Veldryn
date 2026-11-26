@@ -12,6 +12,7 @@ export interface HuntHit {
   damage:number;
   healing:number;
   critical:boolean;
+  missed?:boolean;
   index:number;
   /** Budgeted skill that landed on this real player hit. */
   activeAbility?:HuntActiveAbility;
@@ -87,6 +88,7 @@ export function regionalHuntHits(plan:RegionalHuntPlan,input:{monsterDamage:numb
     damage:strike.actor==='enemy'?Math.max(0,input.monsterDamage)/attacks:strike.damage,
     healing:0,
     critical:strike.critical,
+    ...(strike.missed?{missed:true}:{}),
     index,
   }));
   // Fatigue lands just before the finishing blow and cannot retroactively

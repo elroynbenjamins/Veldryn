@@ -207,6 +207,15 @@ export const SEASONAL_BOSS_MOVE_ROWS={
 } as const;
 /** English-only source matches; dynamically generated new/changed summaries remain verbatim. */
 export const SEASONAL_BOSS_SUMMARY_ROWS={
+  "\"3:00 combat limit. Defeat the boss before time expires; surviving alone is not enough.\"": [
+    "Kampflimit: 3:00. Besiege den Boss rechtzeitig; nur zu überleben reicht nicht.",
+    "Límite de combate: 3:00. Derrota al jefe a tiempo; sobrevivir no basta.",
+    "Gevechtslimiet: 3:00. Versla de baas op tijd; overleven alleen is niet genoeg.",
+    "Limite di combattimento: 3:00. Sconfiggi il boss in tempo; sopravvivere non basta.",
+    "Limite du combat : 3:00. Bats le boss à temps ; survivre ne suffit pas.",
+    "Лимит боя — 3:00. Победи босса вовремя: одного выживания недостаточно.",
+    "Savaş sınırı: 3:00. Bossu zamanında yen; yalnızca hayatta kalmak yetmez."
+  ],
   "All Chronicle Fractures are sealed; The Last Hour loses its additional timeline eruptions.": [
     "Alle Chronikbrüche sind versiegelt; Die Letzte Stunde verliert ihre zusätzlichen Zeitausbrüche.",
     "Todas las fracturas de la crónica están selladas; La Última Hora pierde sus erupciones temporales adicionales.",

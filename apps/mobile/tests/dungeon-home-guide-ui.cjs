@@ -42,12 +42,14 @@ test('Event content leads the screen while real matchmaking, tiers and shops sta
  assert.ok(eventIndex>=0&&modeIndex>eventIndex&&regionalIndex>modeIndex, 'Event -> mode -> regional hierarchy');
  assert.match(browser,/onPress=\{onQuickMatch\}/);
  assert.match(browser,/mode==='live'&&liveTools/);
- assert.match(browser,/mode==='qmode'&&echoTools/);
+ assert.ok(!browser.includes('echoTools'),'Echo sharing controls were retired in favour of automatic friend/guild recruiting');
  assert.match(browser,/disabled=\{locked\} onPress=\{\(\)=>onTier\(value\)\}/);
- assert.match(browser,/coopTierEligibility\(dungeon,value,currentLevel,currentPower\)/);
+ assert.match(browser,/coopTierEligibility\(dungeon,value,currentLevel,Number\.POSITIVE_INFINITY\)/);
+ assert.match(browser,/mode==='live'\?currentPower:Number\.POSITIVE_INFINITY/);
  assert.match(screen,/currentLevel=\{state.character\?\.level\?\?0\} currentPower=\{combatPowerRating\(state\)\.total\}/);
  assert.match(screen,/onShop=\{\(\)=>setShowShop\(true\)\}/);
- assert.match(app,/showActivityBar=\{tab!=='ProfileCustomize'&&tab!=='Coop'&&!featureHubShell\.hideActivityBar\}/);
+ assert.match(app,/showActivityBar=\{tab!=='ProfileCustomize'&&tab!=='Coop'&&tab!=='Events'&&\!\(tab==='Guild'&&\(guildEventPageOpen\|\|guildInitialPve\|\|guildRaidScope===/);
+ assert.ok(app.includes("+':'+guildMembershipRevision)))&& !featureHubShell.hideActivityBar".replace('&& ','&&')));
 });
 
 test('Guide copy matches authoritative boon and run-item behavior',()=>{

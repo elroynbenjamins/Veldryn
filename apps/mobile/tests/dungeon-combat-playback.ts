@@ -1,6 +1,8 @@
-import {playbackAdvanceDelayMs,playbackBossCombatant,playbackCastDisplayMs,playbackCombatantState,playbackCombatantStatuses,playbackEnemyCombatants,playbackCueDelayMs,playbackCueLabel,playbackCueTone,playbackSkillActivation,playbackProgress,playbackRecentCues,playbackVisualDurationMs} from '../src/core/dungeon-combat-playback';
+import {playbackAdvanceDelayMs,playbackBossCombatant,playbackCastDisplayMs,playbackCombatantState,playbackCombatantStatuses,playbackEnemyCombatants,playbackCueDelayMs,playbackCueLabel,playbackCueTone,playbackSkillActivation,playbackProgress,playbackRecentCues,playbackSimulatedElapsedMs,playbackVisualDurationMs} from '../src/core/dungeon-combat-playback';
 import {validateCoopRunView,type CoopCombatReplayView} from '../src/core/coop-presentation';
 import {dungeonEnemyAbilityDisplayName,dungeonEnemyDisplayName} from '../src/core/dungeon-enemy-display';
+import {dungeonDynamicUiText} from '../src/i18n/dungeon-dynamic-ui';
+import {seasonalBossDisplaySummary} from '../src/i18n/seasonal-boss-copy';
 
 function assert(value:unknown,message:string){if(!value)throw new Error(message);}
 function equal(actual:unknown,expected:unknown,message='values differ'){if(JSON.stringify(actual)!==JSON.stringify(expected))throw new Error(`${message}: ${JSON.stringify(actual)} !== ${JSON.stringify(expected)}`);}
@@ -69,6 +71,15 @@ assert(playbackCueDelayMs(replay.cues[0],replay.cues[1])>=260,'cue delay below f
 assert(playbackCueDelayMs(replay.cues[0],replay.cues[1])<=950,'cue delay above ceiling');
 equal(playbackProgress(replay,5),1);
 equal(playbackRecentCues(replay,4).length,3);
+const condensedTimeout:CoopCombatReplayView={...replay,reason:'timeout',durationMs:180_000,cues:[
+ {atMs:0,type:'cast'},
+ {atMs:45_000,type:'action'},
+ {atMs:180_000,type:'timeout'}
+]};
+equal(playbackSimulatedElapsedMs(condensedTimeout,1),45_000,'Compressed playback must display 45s of simulated time, not device wall time');
+equal(playbackSimulatedElapsedMs(condensedTimeout,2),180_000,'The terminal cue must show the full 3-minute combat duration');
+equal(playbackSimulatedElapsedMs(condensedTimeout,1,true),180_000,'A completed replay must display its authoritative final duration');
+equal(playbackSimulatedElapsedMs({...condensedTimeout,cues:[]},0),0,'Unstarted replay must not pretend a combat duration');
 equal(playbackBossCombatant(replay)?.id,'boss');
 const multiEnemyReplay:CoopCombatReplayView={...replay,combatants:[...(replay.combatants??[]).filter(item=>item.team==='players'),{id:'e1',name:'Briar Husk',team:'enemies',maxHp:1200,startHp:1200,startShield:0,boss:false},{id:'e2',name:'Briar Husk',team:'enemies',maxHp:1300,startHp:1300,startShield:0,boss:false}]};
 equal(playbackEnemyCombatants(multiEnemyReplay).map(item=>item.id),['e1','e2'],'duplicate-name enemies must remain distinct by replay id');
@@ -107,4 +118,13 @@ try{validateCoopRunView({runId:'bad',mode:'qmode',phase:'completed',syncedLevel:
  {memberId:'p3',role:'support',name:'Dawnkeeper',echo:true,classId:'DAWNKEEPER'},
 ],options:[],lastCombat:{...replay,cues:[replay.cues[1],replay.cues[0]]}});}catch(error){invalid=error instanceof Error?error.message:String(error);}
 equal(invalid,'invalid_combat_replay');
+// A condensed 48-cue replay must still explain a full authoritative boss timeout.
+const bossLimitCopy='3:00 combat limit. Defeat the boss before time expires; surviving alone is not enough.';
+equal(seasonalBossDisplaySummary('en',bossLimitCopy),bossLimitCopy);
+for(const language of ['de','es','nl','it','fr','ru','tr'] as const){
+ assert(seasonalBossDisplaySummary(language,bossLimitCopy).includes('3:00'),'Boss time limit must be localized without losing the duration');
+ assert(dungeonDynamicUiText(language,'COMBAT REPLAY').length>3,'Compressed combat replay heading must be localized');
+ assert(dungeonDynamicUiText(language,'Combat limit reached at {time}',{time:'03:00'}).includes('03:00'),'Localized timeout must state the full simulated duration');
+}
+equal(dungeonDynamicUiText('en','Combat limit reached at {time}',{time:'03:00'}),'Combat limit reached at 03:00');
 console.log('dungeon combat playback OK');

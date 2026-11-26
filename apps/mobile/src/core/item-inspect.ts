@@ -19,7 +19,9 @@ import {craftedGearDisplayQuality,craftedGearInstances,craftedInstancesForItem,e
 import {acquisitionEstimateLabel,acquisitionProjectionForDestination} from './balance-projection';
 import {displayStat} from './stat-display';
 import {materialAcquisitionPlanForDestination,materialAcquisitionPlanSummary} from './material-acquisition-plan';
+import {equipmentBonusLine} from './equipment-bonus-rolls';
 import {weaponBonusLine} from './weapon-bonus-rolls';
+import {validateGatheringToolRoll,gatheringToolBonusLabel} from './gathering-tool-rolls';
 
 export type ItemInspectSourceKind='gathering'|'crafting'|'combat'|'dungeon'|'dismantling'|'starting';
 export interface ItemInspectSource{kind:ItemInspectSourceKind;typeLabel?:string;title:string;detail:string;navigation?:WorkingTowardDestination;availability?:WorkingTowardDestinationAvailability;estimatedSeconds?:number;estimateLabel?:string;chainLabel?:string;chainBlockedReason?:string;}
@@ -36,9 +38,13 @@ const pct=(value:number)=>value>=.1?`${Math.round(value*100)}%`:`${(value*100).t
 
 export function itemInspectModel(state:GameState,itemId:string,instanceId?:string|null,source:'inventory'|'bank'|'equipment_pouch'='inventory'){
   const item=itemDef(itemId);
-  const selectedCopy=instanceId?craftedGearInstances(state).find(copy=>copy.id===instanceId&&copy.itemId===itemId):undefined;
-  if(instanceId&&!selectedCopy)throw new Error('Unknown selected equipment copy');
-  const rarityId=selectedCopy?.rarity??(item.type==='gear'?effectiveOwnedGearRarity(state,itemId):item.rarity??'common'),rarity=rarityMeta(rarityId);
+  // Tool receipts and equipment receipts are separate immutable collections.
+  // A tool must never be validated as a crafted gear instance on inspection.
+  const selectedCopy=item.type==='gear'&&instanceId?craftedGearInstances(state).find(copy=>copy.id===instanceId&&copy.itemId===itemId):undefined;
+  const selectedToolCopy=item.type==='tool'&&instanceId
+    ?validateGatheringToolRoll(state.account.craftedGatheringToolInstances?.find(copy=>copy.id===instanceId),itemId):undefined;
+  if(instanceId&&!selectedCopy&&item.type==='gear')throw new Error('Unknown selected equipment copy');
+  const rarityId=selectedToolCopy?.rarity??selectedCopy?.rarity??(item.type==='gear'?effectiveOwnedGearRarity(state,itemId):item.rarity??'common'),rarity=rarityMeta(rarityId);
   const sources:ItemInspectSource[]=[];
 
   for(const node of [...GATHERING,...HERB_NODES]){
@@ -93,8 +99,10 @@ export function itemInspectModel(state:GameState,itemId:string,instanceId?:strin
     }));
   });
 
-  const inventoryQuantity=state.inventory.stacks.find(stack=>stack.itemId===itemId)?.quantity??0;
-  const bankQuantity=state.bank.stacks.find(stack=>stack.itemId===itemId)?.quantity??0;
+  // Individual rolled copies each occupy their own stack. Sum all copies so
+  // the inspector never reports '1 owned' when multiple tools are present.
+  const inventoryQuantity=state.inventory.stacks.reduce((total,stack)=>total+(stack.itemId===itemId?stack.quantity:0),0);
+  const bankQuantity=state.bank.stacks.reduce((total,stack)=>total+(stack.itemId===itemId?stack.quantity:0),0);
   const pouchQuantity=isGemPouchItemId(itemId)?gemPouch(state).stacks.find(stack=>stack.itemId===itemId)?.quantity??0:0;
   const effectLines:string[]=[];
   if(itemId==='ASTERFALL_MINERAL_ESSENCE')effectLines.push('Rare Mining find · improves T1/T2 equipment (+1 to +4). Verdant Binding Resin remains a Forge material.');
@@ -174,6 +182,9 @@ export function itemInspectModel(state:GameState,itemId:string,instanceId?:strin
     }
     if(item.requiredLevel&&item.requiredLevel>1)effectLines.push(`Requires character Lv ${item.requiredLevel}`);
     if(item.readiness)effectLines.push(`Readiness +${item.readiness}`);
+    if(selectedCopy?.equipmentBonuses?.length){
+      for(const bonus of selectedCopy.equipmentBonuses)effectLines.push(`Equipment roll · ${equipmentBonusLine(itemId,selectedCopy.rarity,bonus,selectedCopy.equipmentBonusRollVersion)}`);
+    }
     if(selectedCopy?.weaponBonuses?.length){
       for(const bonus of selectedCopy.weaponBonuses)effectLines.push(`Weapon roll · ${weaponBonusLine(itemId,selectedCopy.rarity,bonus,selectedCopy.weaponBonusRollVersion)}`);
     }
@@ -185,6 +196,8 @@ export function itemInspectModel(state:GameState,itemId:string,instanceId?:strin
     effectLines.push(`${title(item.toolSkillId??'gathering')} tool · Tier ${item.toolTier??1}`);
     const speed=Math.round((1-(item.actionTimeMultiplier??1))*100);
     effectLines.push(speed>0?`${speed}% shorter base action time`:'Baseline action time');
+    if(selectedToolCopy)effectLines.push(`${selectedToolCopy.rarity} · Q${selectedToolCopy.quality} · ${gatheringToolBonusLabel(selectedToolCopy)}`);
+    else if(instanceId)effectLines.push('Tool roll record unavailable · baseline stats only');
   }else if(item.type==='gem'){
     const kind=gemSocketKind(item.id),bonus=gemPouchBonusDisplayV1(item.id);
     effectLines.push((kind==='stat'?'Stat Gem · ':'Effect Gem · ')+bonus.bonus);
@@ -204,5 +217,5 @@ export function itemInspectModel(state:GameState,itemId:string,instanceId?:strin
       :workingTowardDestinationAvailability(state,recipe.navigation)};
   });
   const craftedInstances=item.type==='gear'?craftedInstancesForItem(state,itemId):[];
-  return {item,rarityId,rarity,selectedQuality:selectedCopy?craftedGearDisplayQuality(selectedCopy):undefined,inventoryQuantity,bankQuantity,pouchQuantity,totalQuantity:inventoryQuantity+bankQuantity+pouchQuantity,craftedCopies:craftedInstances.length,craftedRarities:[...new Set(craftedInstances.map(row=>row.rarity))],effectLines,stats,upgrade,sockets,gearDecision,sources:actionableSources,usedIn:actionableUses};
+  return {item,rarityId,rarity,selectedQuality:selectedToolCopy?.quality??(selectedCopy?craftedGearDisplayQuality(selectedCopy):undefined),inventoryQuantity,bankQuantity,pouchQuantity,totalQuantity:inventoryQuantity+bankQuantity+pouchQuantity,craftedCopies:craftedInstances.length,craftedRarities:[...new Set(craftedInstances.map(row=>row.rarity))],effectLines,stats,upgrade,sockets,gearDecision,sources:actionableSources,usedIn:actionableUses};
 }

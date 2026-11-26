@@ -14,6 +14,7 @@ export const dungeonCombatUiRows={
  "FOCUS → {target}": ["ZIEL → {target}","OBJETIVO → {target}","DOELWIT → {target}","BERSAGLIO → {target}","CIBLE → {target}","ЦЕЛЬ → {target}","HEDEF → {target}"],
  "Boss {name}": ["Boss {name}","Jefe {name}","Baas {name}","Boss {name}","Boss {name}","Босс {name}","Boss {name}"],
  "Dungeon enemy {name}": ["Dungeon-Gegner {name}","Enemigo de mazmorra {name}","Kerkervijand {name}","Nemico del dungeon {name}","Ennemi du donjon {name}","Враг подземелья: {name}","Zindan düşmanı {name}"],
+ "Preparing battle": ["Kampf wird vorbereitet","Preparando combate","Gevecht wordt voorbereid","Preparazione della battaglia","Préparation du combat","Подготовка к бою","Savaş hazırlanıyor"],
  "TANK": ["TANK","TANQUE","TANK","TANK","TANK","ТАНК","TANK"],
  "SUPPORT": ["UNTERSTÜTZUNG","APOYO","STEUN","SUPPORTO","SOUTIEN","ПОДДЕРЖКА","DESTEK"],
  "DAMAGE": ["SCHADEN","DAÑO","SCHADE","DANNI","DÉGÂTS","УРОН","HASAR"],

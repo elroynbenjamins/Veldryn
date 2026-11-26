@@ -108,6 +108,14 @@ assert.equal(new Set(landed.map(row=>row.key)).size,classes.length,'every class 
 assert.ok(landed.every(row=>row.hit&&!row.critical&&row.params?.amount==='42'),'player hit narration must use recorded damage');
 const crit=linesFor('WAYFINDER',T+20500,revenant,{...recent,critical:true});
 assert.ok(crit.hit&&crit.critical&&new Set<string>(HUNT_CLASS_NARRATION.WAYFINDER.strike).has(crit.key),'critical emphasis must depend on recorded hit');
+const missed=liveHuntNarration({classId:'WAYFINDER',monster:revenant,nowMs:T+20500,startedAtMs:T,
+ lastHit:{...recent,damage:0,missed:true},damageText:formatDamage});
+assert.equal(missed.key,'Your attack misses.','a real miss must never produce a landed-hit caption');
+assert.ok(!missed.hit&&!missed.critical&&missed.params===undefined,'miss narration cannot claim damage or critical');
+assert.ok((BATTLE_MESSAGES as Record<string,readonly string[]>)['MISS']?.length===5,
+ 'MISS outcome must have DE/ES/NL/IT/FR translations');
+assert.ok((BATTLE_MESSAGES as Record<string,readonly string[]>)['Your attack misses.']?.length===5,
+ 'miss narration must have DE/ES/NL/IT/FR translations');
 const taken=linesFor('WAYFINDER',T+20500,revenant,{...recent,actor:'enemy',damage:17});
 assert.ok(new Set<string>(HUNT_COMMON_NARRATION.taken).has(taken.key),'enemy hit must use a real damage-labelled response');
 assert.ok(taken.hit&&!taken.critical&&taken.params?.amount==='17','ordinary enemy hit must not imply a critical hit');
@@ -155,8 +163,9 @@ assert.ok(homeStage.includes('activeCombatHitProjection('),'Home encounter previ
 assert.ok(homeStage.includes('!motion.enabled||isLive'),'Home must not play cosmetic hits over live fight events');
 assert.ok(homeStage.includes('current={displayStat(fight?.enemyHp??view.enemyHp)}'),'Home displays authoritative projected enemy HP on the canonical x10 UI scale');
 const combatTab=fs.readFileSync('src/components/HuntingPreview.tsx','utf8');
-assert.ok(combatTab.includes('activeCombatHitProjection('),'Combat tab must use real hit projection');
-assert.ok(combatTab.includes('replayCursor.current'),'Combat tab must reuse incremental projections');
+const liveHunt=fs.readFileSync('src/components/useLiveHuntProjection.ts','utf8');
+assert.ok(combatTab.includes('useLiveHuntProjection(state,active)')&&liveHunt.includes('activeCombatHitProjection(state,clock'),'Combat tab must use real hit projection through the shared store');
+assert.ok(liveHunt.includes('activeCombatHitProjection(state,clock,snapshot.fight?.cursor)'),'Combat tab must reuse incremental projections');
 assert.ok(combatTab.includes('liveHuntNarration('),'Combat tab must show event-driven class and encounter narration');
 const homeAbilityCues=homeStage.includes('<HuntAbilityCues effects={recentSkillEffects}');
 const tabAbilityCues=combatTab.includes('<HuntAbilityCues effects={recentSkillEffects}');

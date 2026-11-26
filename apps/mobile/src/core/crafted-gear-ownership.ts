@@ -6,6 +6,7 @@ import {itemDef} from '../content/items';
 import {equipmentSalvageReward,equipmentSalvageRewards,inventoryWithSalvageRewards} from './equipment-salvage';
 import {equipmentPouch,equipmentPouchForCharacter} from './equipment-pouch';
 import {workingTowardInventoryProtectionMap} from './working-toward-inventory';
+import {validateGatheringToolRoll} from './gathering-tool-rolls';
 
 export type VerifiedGearPlace='inventory'|'bank'|'equipment_pouch'|'overflow'|'equipped';
 export interface VerifiedGearLocation{
@@ -42,6 +43,16 @@ export function auditCraftedGearOwnership(state:GameState):CraftedGearOwnershipA
   }
   const observed=new Map<string,VerifiedGearLocation>();
   const trackedItemIds=new Set(definitions.map(row=>row.itemId));
+  // Gathering tools also carry exact-copy IDs in Inventory/Bank, but belong
+  // to their own receipt ledger. Never interpret valid tool IDs as forged gear.
+  const gatheringToolById=new Map<string,NonNullable<GameState['account']['craftedGatheringToolInstances']>[number]>();
+  for(const raw of state.account.craftedGatheringToolInstances??[]){
+    const record=validateGatheringToolRoll(raw,raw.itemId);
+    if(!record||!record.id.startsWith('gtool:'))continue;
+    if(gatheringToolById.has(record.id))audit.problems.push(`Duplicate gathering tool record: ${record.id}`);
+    else gatheringToolById.set(record.id,record);
+  }
+  const observedGatheringTools=new Set<string>();
   const register=(instanceId:string,itemId:string,place:VerifiedGearPlace,holderCharacterId?:string,slot?:GearSlot)=>{
     const record=byId.get(instanceId);
     if(!record){audit.problems.push(`Unrecognized crafted instance marker: ${instanceId}`);return;}
@@ -62,6 +73,15 @@ export function auditCraftedGearOwnership(state:GameState):CraftedGearOwnershipA
         audit.problems.push(`Invalid tagged equipment stack: ${String(stack.instanceId)}`);
         continue;
       }
+      // Respect independent tool custody without weakening the gear ID check.
+      // Invalid, unknown and duplicated tool IDs still fail closed.
+      const tool=place!=='equipment_pouch'&&!byId.has(stack.instanceId)?gatheringToolById.get(stack.instanceId):undefined;
+      if(tool){
+        if(tool.itemId!==stack.itemId)audit.problems.push(`Gathering tool item mismatch: ${stack.instanceId}`);
+        else if(observedGatheringTools.has(stack.instanceId))audit.problems.push(`Duplicate gathering tool copy marker: ${stack.instanceId}`);
+        else observedGatheringTools.add(stack.instanceId);
+        continue;
+      }
       register(stack.instanceId,stack.itemId,place,holderCharacterId);
     }
   };
@@ -70,6 +90,26 @@ export function auditCraftedGearOwnership(state:GameState):CraftedGearOwnershipA
     scanStacks(inventory.stacks,'inventory',character.id);
     scanStacks(equipmentPouchForCharacter(character).stacks,'equipment_pouch',character.id);
     scanStacks(overflow.stacks,'overflow',character.id);
+    // Gathering-tool receipts also live in character equipment and their new
+    // dedicated reserve slots. Observe both so an ID duplicated in Inventory,
+    // Bank, another character or both slots cannot evade the global custody audit.
+    const registerToolSlot=(instanceId:string,itemId:string|undefined)=>{
+      const record=gatheringToolById.get(instanceId);
+      if(!record){audit.problems.push(`Unrecognized gathering tool copy: ${instanceId}`);return;}
+      if(record.itemId!==itemId){audit.problems.push(`Gathering tool item mismatch: ${instanceId}`);return;}
+      if(observedGatheringTools.has(instanceId)){audit.problems.push(`Duplicate gathering tool copy marker: ${instanceId}`);return;}
+      observedGatheringTools.add(instanceId);
+    };
+    for(const skillId of ['mining','woodcutting','fishing'] as const){
+      for(const [tier,id] of Object.entries(character.equippedToolInstanceIdsByTier?.[skillId]??{})){
+        const toolId=character.equippedToolIdsByTier?.[skillId]?.[Number(tier) as 1|2|3|4];
+        registerToolSlot(id,toolId);
+      }
+      for(const [tier,id] of Object.entries(character.savedToolInstanceIdsByTier?.[skillId]??{})){
+        const toolId=character.savedToolIdsByTier?.[skillId]?.[Number(tier) as 1|2|3|4];
+        registerToolSlot(id,toolId);
+      }
+    }
     for(const [slot,itemId] of Object.entries(character.equipment)){
       if(itemId&&trackedItemIds.has(itemId)&&!character.equipmentInstanceIds?.[slot as GearSlot])
         audit.unmarkedPhysicalCopies+=1;
@@ -238,8 +278,11 @@ function protectedGear(state:GameState,record:CraftedGearInstance){
   const characters=[state.character,...(state.otherCharacters??[]).map(entry=>entry.character)].filter(Boolean);
   if(characters.some(character=>character?.savedLoadouts?.some(preset=>Object.values(preset.equipmentInstanceIds??{}).includes(record.id)||Object.entries(preset.equipment).some(([slot,id])=>id===record.itemId&&!preset.equipmentInstanceIds?.[slot as GearSlot]))))
     throw new Error('A saved loadout protects this equipment copy');
-  if(characters.some(character=>{const old=character?.gearEnhancements?.[record.itemId];return !!old&&(old.rank>0||!!old.statGemId||!!old.effectGemId||(old.gemIds?.length??0)>0)}))
-    throw new Error('Legacy equipment enhancements require manual review before disposal');
+  // Legacy itemId-only enchantments have no verified association with a
+  // Forge receipt. They remain protected when disposing UNMARKED legacy gear
+  // (canDisposeLegacyEquipment), but must not lock every independent, tagged
+  // copy of the same item type. Exact copies carry their own enhancement and
+  // still pass all per-copy, saved-loadout, ownership and storage checks above.
 }
 export function disposeCraftedGearInstance(state:GameState,instanceId:string,method:'sell'|'salvage'):GameState{
   if(!state.character)throw new Error('No active character');

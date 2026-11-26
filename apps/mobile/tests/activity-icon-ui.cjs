@@ -35,3 +35,10 @@ test('current activity, running bar and stopped bar all use the shared resolver'
  assert.doesNotMatch(home,/kind==='processing'\?'cooking'/);
  assert.doesNotMatch(bar,/kind==='processing'\?'cooking'/);
 });
+
+test('offline activity timeline uses the shared per-recipe profession icon resolver',()=>{
+ const timeline=read('src/components/ActivityQueueResults.tsx');
+ assert.ok(timeline.includes("import {activityIconId} from '../core/activity-icon'"));
+ assert.ok(timeline.includes('<ActivityArtwork id={activityIconId(row.activity)}/>'));
+ assert.doesNotMatch(timeline,/kind==='processing'\?'cooking'/);
+});

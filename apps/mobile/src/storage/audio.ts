@@ -12,7 +12,7 @@ import {MUSIC_TRACK_ASSETS,SOUND_EFFECT_ASSETS,type MusicTrackId,type SoundEffec
  * - Respects the phone's silent mode, never records, never plays in the background,
  *   and mixes with other apps' audio.
  */
-import {AUDIO_LEVEL_VOLUME,DEFAULT_AUDIO_PREFERENCES,parseAudioPreferences,rememberAudibleAudioLevels,audioAfterMuteToggle,type AudioPreferences} from '../core/audio-preferences';
+import {AUDIO_LEVEL_VOLUME,DEFAULT_AUDIO_PREFERENCES,parseAudioPreferences,resolvePreferredMusicTrack,rememberAudibleAudioLevels,audioAfterMuteToggle,type AudioPreferences,type AudioChannel,type MusicContextId} from '../core/audio-preferences';
 import type {ItemRarity} from '../core/item-rarity';
 import {rarityRevealDelayMs,rarityRevealSound} from '../core/rarity-reveal-sound';
 export {AUDIO_LEVEL_VOLUME,DEFAULT_AUDIO_PREFERENCES,parseAudioPreferences};
@@ -36,35 +36,46 @@ function ensureMode(m:AudioModule){
  try{void m.setAudioModeAsync({playsInSilentMode:false,interruptionMode:'mixWithOthers',allowsRecording:false,shouldPlayInBackground:false}).catch(()=>{});}catch{/* optional */}
 }
 
-let prefs:AudioPreferences={...DEFAULT_AUDIO_PREFERENCES},loaded=false;
-let remembered:AudioPreferences={...DEFAULT_AUDIO_PREFERENCES};
+let prefs:AudioPreferences={...DEFAULT_AUDIO_PREFERENCES,musicContexts:{}},loaded=false;
+let preferenceLoad:Promise<AudioPreferences>|undefined;
+let remembered:AudioPreferences={...DEFAULT_AUDIO_PREFERENCES,musicContexts:{}};
+let saveQueue:Promise<void>=Promise.resolve();
 const listeners=new Set<(value:AudioPreferences)=>void>();
-let persistence:Promise<void>=Promise.resolve();
-export async function loadAudioPreferences():Promise<AudioPreferences>{
- if(loaded)return prefs;
- try{
-  const [saved,savedRemembered]=await Promise.all([AsyncStorage.getItem(KEY),AsyncStorage.getItem(REMEMBERED_KEY)]);
-  // A player can change a setting before this async load completes. Never overwrite that tap.
-  if(loaded)return prefs;
-  prefs=parseAudioPreferences(saved);
-  remembered=rememberAudibleAudioLevels(parseAudioPreferences(savedRemembered),prefs);
- }catch{/* defaults */}
- if(loaded)return prefs;
- loaded=true;notify();return prefs;
+export function loadAudioPreferences():Promise<AudioPreferences>{
+ if(loaded)return Promise.resolve(prefs);
+ if(preferenceLoad)return preferenceLoad;
+ // Startup, Settings and music share the same pair of storage reads.
+ // Defer the first read until module initialization has completed.
+ preferenceLoad=Promise.resolve().then(async()=>{
+  try{
+   const [stored,lastAudible]=await Promise.all([AsyncStorage.getItem(KEY),AsyncStorage.getItem(REMEMBERED_KEY)]);
+   // A user choice made while the initial read was pending must win.
+   if(!loaded){
+    prefs=parseAudioPreferences(stored);
+    remembered=rememberAudibleAudioLevels(parseAudioPreferences(lastAudible),prefs);
+   }
+  }catch{/* defaults */}
+  if(!loaded){loaded=true;notify();resolveTrack();}
+  return prefs;
+ }).finally(()=>{preferenceLoad=undefined;});
+ return preferenceLoad;
 }
 export async function setAudioPreferences(next:AudioPreferences):Promise<void>{
- prefs={...next};remembered=rememberAudibleAudioLevels(remembered,prefs);
- loaded=true;notify();applyMusicVolume();
- if(prefs.music===0)stopMusicPlayer();else if(wantedTrack)startTrack(wantedTrack);
- // Serialize quick taps so the most recent level and its restore value win on disk.
- const nextPrefs=JSON.stringify(prefs),nextRemembered=JSON.stringify(remembered);
- persistence=persistence.catch(()=>{}).then(async()=>{
-  await AsyncStorage.multiSet([[KEY,nextPrefs],[REMEMBERED_KEY,nextRemembered]]);
- });
- try{await persistence;}catch{/* applies this session */}
+ prefs=parseAudioPreferences(JSON.stringify(next));
+ remembered=rememberAudibleAudioLevels(remembered,prefs);
+ loaded=true;notify();
+ // Resolve current *context* again; the user may have muted or remapped it.
+ resolveTrack();
+ applyMusicVolume();
+ if(prefs.music===0){stopMusicPreview();stopMusicPlayer();}
+ if(prefs.effects===0)releaseEffectPlayers();
+ const serialized=JSON.stringify(prefs),savedAudible=JSON.stringify(remembered);
+ // Serialize rapid changes; never restore an older context/volume over the last tap.
+ saveQueue=saveQueue.catch(()=>{}).then(()=>AsyncStorage.multiSet([[KEY,serialized],[REMEMBERED_KEY,savedAudible]])).then(()=>{},()=>{});
+ await saveQueue;
 }
-/** One-tap mute that restores each channel's previous audible level, even after relaunch. */
-export function toggleAudioMute(channel:keyof AudioPreferences):AudioPreferences[typeof channel]{
+/** One-tap mute remembers the previous audible level; area remapping stays intact. */
+export function toggleAudioMute(channel:AudioChannel):AudioPreferences[AudioChannel]{
  const next=audioAfterMuteToggle(prefs,remembered,channel);
  void setAudioPreferences(next);
  return next[channel];
@@ -77,9 +88,37 @@ export function audioPreferences():AudioPreferences{return prefs;}
 // ------------------------------------------------------------------ effects
 const effectPlayers=new Map<SoundEffectId,Player>();
 const lastPlayed=new Map<SoundEffectId,number>();
+// Keep hot effects ready without retaining every native decoder for the whole session.
+// Never cut a recently triggered sound: the authored maximum duration is 3.5s.
+const EFFECT_CACHE_TARGET=12,EFFECT_IDLE_MS=4_000;
+let effectSubscription:{remove():void}|undefined;
+function releasePlayer(player:Player){
+ try{player.pause();}catch{/* ignore */}
+ try{player.remove();}catch{/* ignore */}
+}
+function releaseEffectPlayers(){
+ for(const player of effectPlayers.values())releasePlayer(player);
+ effectPlayers.clear();lastPlayed.clear();
+ effectSubscription?.remove();effectSubscription=undefined;
+}
+function watchEffects(){
+ if(!effectSubscription)effectSubscription=AppState.addEventListener('change',state=>{if(state!=='active')releaseEffectPlayers();});
+}
+function trimIdleEffects(now:number,target:number){
+ if(effectPlayers.size<=target)return;
+ const candidates=[...effectPlayers.keys()].sort((a,b)=>(lastPlayed.get(a)??0)-(lastPlayed.get(b)??0));
+ for(const id of candidates){
+  if(effectPlayers.size<=target)break;
+  const player=effectPlayers.get(id)!;
+  if(now-(lastPlayed.get(id)??0)<EFFECT_IDLE_MS)continue;
+  // A delayed native decoder may still be playing despite the elapsed guard.
+  try{if(player.playing)continue;}catch{continue;}
+  effectPlayers.delete(id);lastPlayed.delete(id);releasePlayer(player);
+ }
+}
 /** Fire-and-forget. Never throws, never blocks presentation. */
 export function playSound(id:SoundEffectId,gain=1):void{
- if(prefs.effects===0||AppState.currentState!=='active')return;
+ if(!loaded||prefs.effects===0||AppState.currentState!=='active')return;
  const now=Date.now();
  if(now-(lastPlayed.get(id)??0)<MIN_GAP_MS)return;
  lastPlayed.set(id,now);
@@ -87,11 +126,17 @@ export function playSound(id:SoundEffectId,gain=1):void{
  try{
   ensureMode(m);
   let player=effectPlayers.get(id);
-  if(!player){player=m.createAudioPlayer(SOUND_EFFECT_ASSETS[id].source);effectPlayers.set(id,player);}
+  trimIdleEffects(now,player?EFFECT_CACHE_TARGET:EFFECT_CACHE_TARGET-1);
+  if(!player){player=m.createAudioPlayer(SOUND_EFFECT_ASSETS[id].source);effectPlayers.set(id,player);watchEffects();}
   player.volume=Math.max(0,Math.min(1,AUDIO_LEVEL_VOLUME[prefs.effects]*SOUND_EFFECT_ASSETS[id].volume*gain));
   void Promise.resolve(player.seekTo(0)).catch(()=>{});
   player.play();
- }catch{/* unsupported device or missing native module */}
+ }catch{
+  const failed=effectPlayers.get(id);
+  if(failed){effectPlayers.delete(id);releasePlayer(failed);}
+  lastPlayed.delete(id);
+  if(!effectPlayers.size){effectSubscription?.remove();effectSubscription=undefined;}
+ }
 }
 
 // ------------------------------------------------------------------ music
@@ -99,66 +144,93 @@ let wantedTrack:MusicTrackId|null=null,musicPlayer:Player|null=null,playingTrack
 let fadeTimer:ReturnType<typeof setInterval>|undefined;
 const isForeground=()=>AppState.currentState==='active';
 const musicVolume=()=>AUDIO_LEVEL_VOLUME[prefs.music]*MUSIC_BASE;
-function applyMusicVolume(){try{if(musicPlayer)musicPlayer.volume=musicVolume();}catch{/* ignore */}}
+function applyMusicVolume(){try{if(musicPlayer&&!fadeTimer)musicPlayer.volume=musicVolume();}catch{/* ignore */}}
 function stopMusicPlayer(){
  if(fadeTimer){clearInterval(fadeTimer);fadeTimer=undefined;}
- try{musicPlayer?.pause();musicPlayer?.remove();}catch{/* ignore */}
+ if(musicPlayer)releasePlayer(musicPlayer);
  musicPlayer=null;playingTrack=null;
 }
 function fade(player:Player,from:number,to:number,done?:()=>void){
  if(fadeTimer)clearInterval(fadeTimer);
  const steps=Math.max(1,Math.round(FADE_MS/40));let i=0;
  fadeTimer=setInterval(()=>{
-  i++;try{
-   // A user can adjust music while a scene fade is still running.
-   // Fade-ins follow the latest selected level; fade-outs still end at zero.
-   const target=done?to:musicVolume();
-   player.volume=from+(target-from)*Math.min(1,i/steps);
-  }catch{/* ignore */}
+  // Fade-in tracks the current volume choice; a fade-out always ends at silence.
+  i++;try{const target=done?to:musicVolume();player.volume=from+(target-from)*Math.min(1,i/steps);}catch{/* ignore */}
   if(i>=steps){clearInterval(fadeTimer);fadeTimer=undefined;done?.();}
  },40);
 }
 function startTrack(track:MusicTrackId){
  // Never start before saved preferences load: a player who turned music off must not hear it at launch.
- if(!loaded){void loadAudioPreferences().then(()=>{if(wantedTrack===track)startTrack(track);});return;}
+ if(!loaded){void loadAudioPreferences();return;}
  if(prefs.music===0||!isForeground())return;
  if(playingTrack===track&&musicPlayer){try{musicPlayer.play();}catch{/* ignore */}return;}
  const m=audioModule();if(!m)return;
+ const previous=musicPlayer;
+ let next:Player|undefined;
  try{
   ensureMode(m);
-  const previous=musicPlayer;
-  const next=m.createAudioPlayer(MUSIC_TRACK_ASSETS[track].source);
+  next=m.createAudioPlayer(MUSIC_TRACK_ASSETS[track].source);
   next.loop=true;next.volume=0;next.play();
-  musicPlayer=next;playingTrack=track;
-  if(previous){try{previous.pause();previous.remove();}catch{/* ignore */}}
-  fade(next,0,musicVolume());
- }catch{musicPlayer=null;playingTrack=null;}
+ }catch{
+  // A failed replacement must not orphan either the partial native player or
+  // the existing track. Keep the old track available for the next retry.
+  if(next)releasePlayer(next);
+  return;
+ }
+ musicPlayer=next;playingTrack=track;
+ if(previous)releasePlayer(previous);
+ fade(next,0,musicVolume());
 }
 /** Ask for a music track; null stops music. Repeated calls with the same track are no-ops. */
 function applyTrack(track:MusicTrackId|null):void{
- wantedTrack=track;
+ const previousWanted=wantedTrack;wantedTrack=track;
  watchAppState(track!==null);
  if(track===null){
   const player=musicPlayer;
-  if(player)fade(player,musicVolume(),0,()=>{if(musicPlayer===player)stopMusicPlayer();});
+  if(player&&(previousWanted!==null||!fadeTimer)){let from=musicVolume();try{from=player.volume;}catch{/* ignore */}fade(player,from,0,()=>{if(musicPlayer===player)stopMusicPlayer();});}
   return;
  }
- if(track!==playingTrack)startTrack(track);
+ if(track===playingTrack&&musicPlayer){
+  // Cancel an in-flight mute fade if the same scene becomes audible again.
+  if(fadeTimer&&previousWanted===null){clearInterval(fadeTimer);fadeTimer=undefined;}
+  applyMusicVolume();
+  if(prefs.music>0&&isForeground())try{musicPlayer.play();}catch{/* ignore */}
+ }else startTrack(track);
 }
 
 // Screens push a temporary track (a boss fight over the region theme) and pop it on exit.
-let baseTrack:MusicTrackId|null=null,nextOverrideId=1;
-const overrides:{id:number;track:MusicTrackId}[]=[];
-function resolveTrack(){applyTrack(overrides.length?overrides[overrides.length-1].track:baseTrack);}
+let baseTrack:MusicContextId|null=null,nextOverrideId=1;
+const overrides:{id:number;context:MusicContextId;track:MusicTrackId}[]=[];
+let previewTrack:MusicTrackId|null=null,previewTimer:ReturnType<typeof setTimeout>|undefined;
+function resolveTrack(){
+ // Do not select a default track before the saved context remaps/mutes arrive.
+ if(!loaded){void loadAudioPreferences();return;}
+ const active=overrides[overrides.length-1];
+ applyTrack(previewTrack??resolvePreferredMusicTrack(active?.context??baseTrack,prefs,active?.track));
+}
+/** Audition any packaged theme for a few seconds, regardless of the area's mute state. */
+export function playMusicPreview(track:MusicTrackId):void{
+ if(!loaded||prefs.music===0||!isForeground())return;
+ if(previewTimer)clearTimeout(previewTimer);
+ const sameTrack=playingTrack===track&&musicPlayer!==null;
+ previewTrack=track;resolveTrack();
+ if(sameTrack&&musicPlayer)try{void Promise.resolve(musicPlayer.seekTo(0)).catch(()=>{});}catch{/* ignore */}
+ previewTimer=setTimeout(()=>{previewTimer=undefined;previewTrack=null;resolveTrack();},8000);
+}
+/** Returning to other Settings sections must restore the correct scene immediately. */
+export function stopMusicPreview():void{
+ if(previewTimer){clearTimeout(previewTimer);previewTimer=undefined;}
+ if(previewTrack!==null){previewTrack=null;resolveTrack();}
+}
 /** The app's background music for the current place (region theme, town). */
-export function setBaseMusic(track:MusicTrackId|null):void{baseTrack=track;resolveTrack();}
+export function setBaseMusic(track:MusicContextId|null):void{baseTrack=track;resolveTrack();}
 /** While mounted, play `track` over the base music; restores the previous track on unmount. */
-export function useMusicOverride(track:MusicTrackId|null|undefined):void{
+export function useMusicOverride(context:MusicContextId|null|undefined,encounterDefault?:MusicTrackId):void{
  useEffect(()=>{
-  if(!track)return;
-  const entry={id:nextOverrideId++,track};overrides.push(entry);resolveTrack();
+  if(!context)return;
+  const entry={id:nextOverrideId++,context,track:encounterDefault??context};overrides.push(entry);resolveTrack();
   return()=>{const i=overrides.findIndex(o=>o.id===entry.id);if(i>=0)overrides.splice(i,1);resolveTrack();};
- },[track]);
+ },[context,encounterDefault]);
 }
 
 // Pause music in the background and resume it on return. Subscribed only while a

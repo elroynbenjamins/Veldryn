@@ -22,7 +22,28 @@ const {
 }=require('../src/i18n/companion-combat-names-de.ts');
 const {companionContent}=require('../src/i18n/companions.ts');
 
-assert.equal(Object.keys(russianCompanionCombatNames).length,38);
+assert.equal(Object.keys(russianCompanionCombatNames).length,40,'Both new Frostfall companion abilities and bond traits require Russian names');
+// New Frostfall combat descriptions have real player-facing copy in each
+// supported language rather than silently showing the English fallback.
+const frostfallDescriptions=[
+ "Heals the lowest-HP ally below 80% HP and reduces damage taken by 2.5% for 4s.",
+ "Winter Cadence: 12% shorter base cooldown; +1% companion haste in standalone combat.",
+ "Grand Bell: +4% Frostbell Cycle healing.",
+ "Claw strike; the target takes 2.5% more damage for 5s.",
+ "Aurora Pursuit: +1% companion haste in standalone combat.",
+ "Shattering Trail: +3% Rimeshard Mark damage.",
+ "Shields the owner (self in standalone combat) and reflects 10% of absorbed damage.",
+ "Woolen Bulwark: +1% companion defense in standalone combat.",
+ "Hearthbound Vow: +4% shield strength and +5 percentage points of absorbed-damage reflection.",
+];
+for(const key of frostfallDescriptions){
+ assert.equal(companionContent('en',key),key,'English source copy must remain canonical');
+ for(const lang of ['de','es','nl','it','fr','ru','tr']){
+  const translated=companionContent(lang,key);
+  assert.ok(translated&&translated!==key,'Missing '+lang+' translation for '+key);
+ }
+}
+
 assert.deepEqual(Object.keys(russianCompanionCombatNames).sort(),Object.keys(germanCompanionCombatNames).sort(),
  'Russian ability/trait names must match the source-verified German companion IDs');
 for(const [id,entry] of Object.entries(russianCompanionCombatNames)){
@@ -50,7 +71,7 @@ for(const [id,name] of Object.entries(germanCompanionLegacySignatures)){
 }
 assert.equal(Object.keys(germanCompanionLegacySignatures).length,12);
 
-assert.equal(Object.keys(russianCompanionTechniqueNames).length,82);
+assert.equal(Object.keys(russianCompanionTechniqueNames).length,86,'Frostfall adds four source-guarded technique names');
 assert.deepEqual(Object.keys(russianCompanionTechniqueNames).sort(),Object.keys(germanCompanionTechniqueNames).sort());
 for(const [english,russian] of Object.entries(russianCompanionTechniqueNames)){
  assert.ok(russian!==english&&/[А-Яа-яЁё]/u.test(russian),'Missing Russian technique: '+english);
@@ -92,4 +113,4 @@ const panels=[
 for(const marker of ['companionCombatAbilityName(language','companionCombatBondName(language',
  'companionTechniqueName(language','companionTrialAbilityName(language'])
  assert.ok(panels.includes(marker),'Companion display wiring missing '+marker);
-console.log('PASS: 38 Russian companion ability/Bond pairs, 82 techniques, 12 safe legacy Signatures, 22 Trial abilities, 16 descriptions and shared UI wiring');
+console.log('PASS: 40 Russian companion ability/Bond pairs, 86 techniques, 12 safe legacy Signatures, 22 Trial abilities, 16 descriptions and shared UI wiring');

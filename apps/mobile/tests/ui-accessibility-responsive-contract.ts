@@ -24,7 +24,7 @@ const modal=read('src/components/GameModalSurface.tsx');
 ok(modal.includes('KeyboardAvoidingView'),'Shared modals must protect focused fields from the iOS keyboard');
 ok(modal.includes('onAccessibilityEscape={onClose}'),'Shared modals must support the accessibility escape gesture');
 ok(modal.includes('accessible={false}')&&modal.includes('no-hide-descendants'),'Modal backdrops must not become redundant screen-reader focus targets');
-ok(modal.includes("behavior={Platform.OS==='ios'?'padding':undefined}")&&modal.includes("Keyboard.addListener('keyboardDidHide'")&&modal.includes('keyboardOverlap>0&&{paddingBottom:keyboardOverlap}'),'Shared modals must preserve Android keyboard clearance and clear stale overlap on dismiss');
+ok(modal.includes("behavior={Platform.OS==='ios'?'padding':undefined}")&&modal.includes("Keyboard.addListener('keyboardDidHide'")&&modal.includes('setAndroidKeyboardTop(null);return;')&&modal.includes('paddingBottom:bottomClearance')&&modal.includes("const bottomClearance=sheet?Math.max(insets.bottom,keyboardOverlap)"),'Shared modals must preserve Android keyboard clearance and clear stale overlap on dismiss');
 
 const reward=read('src/components/RewardPopup.tsx');
 ok(reward.includes('useSafeAreaInsets')&&reward.includes('statusBarTranslucent'),'Reward results must honor modal safe areas on edge-to-edge devices');
@@ -71,7 +71,11 @@ const recruitmentFilters=read('src/components/RecruitmentFiltersPanel.tsx');
 ok(recruitmentFilters.includes('clear:{minHeight:44')&&recruitmentFilters.includes('chip:{minHeight:44'),'Recruitment filter clear/chip actions must retain 44px touch targets');
 
 const inventoryTouch=read('src/screens/InventoryScreen.tsx');
-ok(inventoryTouch.includes('markSeen:{minHeight:44')&&inventoryTouch.includes('selectModeButton:{minHeight:44')&&inventoryTouch.includes('selectionQuickButton:{minHeight:44'),'Inventory utility and bulk-selection controls must retain 44px touch targets');
+ok(inventoryTouch.includes('viewOptionsTrigger:{flex:1,minWidth:0,minHeight:44')
+  &&inventoryTouch.includes('textAction:{minHeight:44')
+  &&inventoryTouch.includes('protectionToolbarButton:{width:44,minHeight:44')
+  &&inventoryTouch.includes('selectionQuickButton:{minHeight:44'),
+  'Current Inventory filter, bulk selection and protection buttons must retain 44px touch targets');
 
 const companionTrainingTouch=read('src/components/CompanionTrainingV50Panel.tsx');
 ok(companionTrainingTouch.includes('tab:{flex:1,minHeight:44')&&companionTrainingTouch.includes('sourceButton:{minWidth:56,minHeight:44'),'Companion Training tabs and source actions must retain 44px touch targets');
@@ -94,7 +98,7 @@ ok(guildFuture.includes("'Guild vs Guild'")&&guildFuture.includes("'Guild Raids'
 ok(guildFuture.includes("onlineSection==='Future'?<GuildFutureContent/>"),'Guild future content must have a dedicated destination');
 ok(guildFuture.includes('<GuildNavigation value={onlineSection}')&&guildNavigation.includes("GuildPrimarySection='Home'|'PvE'|'Activities'|'Hall'|'Progress'"),'Online Guild navigation must prioritize five primary destinations');
 ok(guildFuture.includes("onlineSection==='Home'?<GuildOnlineHome"),'Online Guild must expose a dedicated overview home');
-ok(guildFuture.includes('<OnlineGuildMusterPanel/>')&&guildFuture.includes('projects={onlineProjects}')&&guildFuture.includes("onlineSection==='Progress'?<GuildProgressPanel")&&guildFuture.includes("onlineSection==='PvE'?(isValidElement")&&guildFuture.includes('cloneElement(onlinePve,{headerHelp:headerGuide})'),"Guild navigation must separate Muster, Progress Projects and PvE");
+ok(guildFuture.includes('<OnlineGuildMusterPanel/>')&&guildFuture.includes('projects={onlineProjects}')&&guildFuture.includes("onlineSection==='Progress'?<GuildProgressPanel")&&guildFuture.includes("onlineSection==='PvE'?(isValidElement")&&guildFuture.includes('cloneElement(onlinePve,{headerHelp:headerGuide,raidScope:JSON.stringify('),"Guild navigation must separate Muster, Progress Projects and PvE");
 ok(guildFuture.includes("onlineSection==='Manage'?<View style={s.sectionStack}")&&guildFuture.includes('{onlineCustomize}')&&!guildFuture.includes('{onlineDirectory}'),'Member-only management must keep customization without displaying guild creation');
 ok(guildFuture.includes('<GuildDiscoveryFlow onJoined=')&&guildFuture.includes('setGuildTourJustJoined(true)'),'Nonmembers must only see Guild discovery and creation');
 ok(guildFuture.includes("homeGrid:{flexDirection:'row',flexWrap:'wrap'"),'Guild Home destination cards must wrap on narrow layouts');
@@ -102,8 +106,8 @@ const guildHall=read('src/components/OnlineGuildHallPanel.tsx');
 ok(guildHall.includes('Future Guild Legacy will preserve major trophies and season records permanently.'),'Guild Hall Trophy Room must explain its future Guild Legacy relationship');
 
 const skills=read('src/screens/SkillsScreen.tsx');
-ok(skills.includes('useWindowDimensions')&&skills.includes('stackCards=width<350||fontScale>=1.25'),'Skills hub must stack on narrow phones or large text');
-ok(skills.includes("skillCardWide:{width:'100%',minWidth:0}"),'Skills cards must support full-width responsive mode');
+ok(skills.includes('useWindowDimensions')&&skills.includes('narrowNavigator=width<380||fontScale>=1.3||state.settings.textScale>=1.3'),'Skills filter must adapt on narrow phones or large text');
+ok(skills.includes('narrowNavigator&&searchExpanded?<SearchField')&&skills.includes("stackCards=width<350||fontScale>=1.25||state.settings.textScale>=1.25")&&skills.includes('stackCards&&hubStyles.skillCardWide'),'Skills must stack cards for narrow phones and large text while preserving accessible search');
 ok(skills.includes('accessibilityHint'),'Skill cards must expose an action hint');
 ok(skills.includes('modeChip:{minHeight:44'),'Skill mode controls must retain a 44px touch target');
 ok(skills.includes('keyboardDismissMode="on-drag"'),'Skills search/crafting flow must dismiss the keyboard on drag');
@@ -154,7 +158,7 @@ ok(eventStartPopup.includes("surface:{maxHeight:'94%'")&&eventStartPopup.include
 const modalSurface=read('src/components/GameModalSurface.tsx');
 ok(modalSurface.includes("style={[s.keyboardAvoider,fullscreen?s.keyboardFullscreen:sheet?s.keyboardSheet:s.keyboardDialog]}")&&modalSurface.includes("keyboardFullscreen:{justifyContent:'flex-start'}")&&modalSurface.includes("keyboardAvoider:{width:'100%',flex:1")&&modalSurface.includes("keyboardDialog:{justifyContent:'center'}"),'Dialog and sheet percentage heights must resolve against a full safe-area container');
 const bestiaryModal=read('src/screens/BestiaryScreen.tsx');
-ok(bestiaryModal.includes("sheet:{maxHeight:'92%'")&&bestiaryModal.includes('optionList:{maxHeight:220,flexShrink:1')&&bestiaryModal.includes('actions:{flexDirection:\'row\',gap:8,marginTop:8,flexShrink:0'),'Bestiary filter actions must remain visible when the filter list grows');
+ok(bestiaryModal.includes("sheet:{maxHeight:'92%'")&&bestiaryModal.includes('detailScroll:{maxHeight:520,flexShrink:1')&&bestiaryModal.includes("filters:{flexDirection:'row',flexWrap:'wrap',gap:6}")&&bestiaryModal.includes('resetLink:{minHeight:32')&&bestiaryModal.includes('autoExpand?')&&bestiaryModal.includes('showsHorizontalScrollIndicator={false}'),'Codex filter chips and reset remain in the scrollable screen, with bounded details on short displays');
 ok(eventShop.includes('<GameModalSurface visible={selected!==null} presentation="sheet"')&&eventShop.includes('selected?visible.filter(({offer})=>offer.id===selected)')&&eventShop.includes("preview:{flexDirection:'row',alignItems:'center',gap:10,flexWrap:'wrap'}")&&eventShop.includes('<GameButton title={pendingId===offer.id'),'Event offer previews must expand inline, wrap their content and keep the purchase action visible');
 const playerProfileModal=read('src/components/PlayerProfileCard.tsx');
 ok(playerProfileModal.includes('ScrollView')&&playerProfileModal.includes("card:{width:'100%',maxWidth:460,maxHeight:'92%'")&&playerProfileModal.includes('scroll:{flexShrink:1}'),'Profile cards must scroll inside a bounded dialog on short screens');

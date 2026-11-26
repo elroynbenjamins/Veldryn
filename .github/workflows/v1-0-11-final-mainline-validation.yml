@@ -1,0 +1,178 @@
+# Verification only. This workflow never deploys an Edge Function, applies SQL,
+# publishes an EAS update, signs a release, or changes the minimum app version.
+name: Veldryn 1.0.11 final mainline QA
+
+on:
+  push:
+    branches:
+      - release/1.0.11-qa-gates-20261121
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/v1-0-11-final-mainline-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: v111-final-qa-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release-regressions:
+    name: Frozen mainline source + gameplay regression gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/mobile/pnpm-lock.yaml
+      - name: Require consistent 1.0.11 metadata without increasing live version gate
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const app = require('./apps/mobile/app.json');
+          const pkg = require('./apps/mobile/package.json');
+          const eas = require('./apps/mobile/eas.json');
+          const gradle = fs.readFileSync('./apps/mobile/android/app/build.gradle', 'utf8');
+          if (app.expo.version !== '1.0.11' || pkg.version !== '1.0.11') throw Error('expected_1_0_11');
+          if (!/versionName\s+"1\.0\.11"/.test(gradle)) throw Error('android_version_name_mismatch');
+          if (eas.cli.appVersionSource !== 'remote' || eas.build.production.autoIncrement !== true) throw Error('remote_version_code_gate');
+          if (eas.build.production.env.EXPO_PUBLIC_SOCIAL_NAMES_STAGING_PREVIEW !== 'false') throw Error('staging_social_preview_on_production');
+          if (eas.build.production.env.EXPO_PUBLIC_SOCIAL_NAMES_PRODUCTION_ENABLED !== 'true') throw Error('social_name_production_optin_missing');
+          if (eas.build.staging.env.EXPO_PUBLIC_RELEASE_CHANNEL !== 'staging') throw Error('missing_staging_profile');
+          console.log('PASS: 1.0.11 metadata, approved Social Name opt-in and other held flags; remote Play versionCode still requires manual verification.');
+          NODE
+      - name: Install verified lockfiles
+        run: |
+          pnpm --dir apps/mobile install --frozen-lockfile
+          pnpm --dir backend install --frozen-lockfile
+      - name: Validate Expo SDK dependency compatibility
+        run: pnpm --dir apps/mobile exec expo install --check
+      - name: Verify canonical gameplay and coop Edge bundles match source
+        run: node tools/verify-gameplay-edge.mjs
+      - name: Verify hidden 2.0 and unreleased UI fences
+        run: node tools/validate-hidden-feature-release-fences.mjs
+      - name: Verify Supabase migration version uniqueness
+        run: node tools/validate-recent-migration-versions.mjs
+      - name: Validate all server and mobile TypeScript contracts
+        run: |
+          pnpm --dir backend typecheck:online
+          pnpm --dir apps/mobile typecheck:core
+          pnpm --dir apps/mobile typecheck
+      - name: Run Q-Mode room-8 settlement and reconnect regression
+        run: |
+          pnpm --dir backend exec tsc -p tsconfig.online.json
+          node backend/dist/online/backend/online/tests/qmode-runtime.js
+      - name: Verify repeatable cross-profession timed recipe reservation and refunds
+        run: node tools/run-mobile-tests.mjs cross-profession-crafting timed-processing
+      - name: Validate all mobile core tests and legacy saves
+        run: pnpm --dir apps/mobile test:core
+      - name: Validate Dungeon Endurance, Echoes, weekly quests and online server state
+        run: |
+          pnpm --dir backend test:online
+          pnpm --dir backend test:dungeon-tier-balance
+          pnpm --dir apps/mobile test:dungeon-weekly-ui
+          pnpm --dir apps/mobile test:dungeon-social-echo-ui
+      - name: Validate locale coverage and safe update/maintenance gates
+        run: |
+          pnpm --dir apps/mobile test:localization
+          pnpm --dir backend test:release-gate
+
+  staging-edge-liveness:
+    name: Staging gameplay/co-op HTTP authentication gate
+    needs: release-regressions
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify new staging functions boot and reject anonymous requests
+        run: |
+          node - <<'NODE'
+          const cfg = require('./apps/mobile/eas.json').build.staging.env;
+          const base = new URL(cfg.EXPO_PUBLIC_SUPABASE_URL);
+          if (base.origin !== 'https://iqfmmpvwanvvmxcftfxw.supabase.co') throw Error('refuse_non_staging_target');
+          const headers = {
+            apikey: cfg.EXPO_PUBLIC_SUPABASE_ANON_KEY,
+            'x-app-version': '1.0.11',
+            'x-app-platform': 'android',
+          };
+          (async () => {
+            for (const name of ['gameplay', 'coop']) {
+              const response = await fetch(base.origin + '/functions/v1/' + name, {
+                method: 'GET', headers, redirect: 'manual', signal: AbortSignal.timeout(15000),
+              });
+              const body = await response.text();
+              const expected = [400, 401, 403, 405, 426].includes(response.status);
+              if (!expected) throw Error(name + '_unauthenticated_response_' + response.status + '_' + body.slice(0, 100));
+              console.log('PASS staging ' + name + ': HTTP ' + response.status + ', authentication fails closed');
+            }
+          })().catch(error => { console.error(error); process.exitCode = 1; });
+          NODE
+
+  staging-aab-smoke:
+    name: CI-only unsigned staging AAB (not a Play release)
+    needs: release-regressions
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    env:
+      NODE_ENV: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/mobile/pnpm-lock.yaml
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+      - name: Install Android API 36 toolchain
+        shell: bash
+        run: |
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+      - name: Require staging endpoints and prepare CI-only environment
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const env = require('./apps/mobile/eas.json').build.staging.env;
+          if (env.EXPO_PUBLIC_RELEASE_CHANNEL !== 'staging') throw Error('release_channel_mismatch');
+          if (!env.EXPO_PUBLIC_SUPABASE_URL.includes('iqfmmpvwanvvmxcftfxw.supabase.co')) throw Error('not_staging');
+          if (!env.EXPO_PUBLIC_COOP_API_URL?.includes('iqfmmpvwanvvmxcftfxw.supabase.co')) throw Error('coop_not_staging');
+          for (const [key, value] of Object.entries(env)) fs.appendFileSync(process.env.GITHUB_ENV, key + '=' + value + '\n');
+          NODE
+      - name: Install locked mobile packages
+        run: pnpm --dir apps/mobile install --frozen-lockfile
+      - name: Rebuild Android native project without store credentials
+        working-directory: apps/mobile
+        run: pnpm exec expo prebuild --platform android --clean --no-install
+      - name: Assemble test-signed Android App Bundle only
+        working-directory: apps/mobile/android
+        run: ./gradlew :app:bundleRelease --stacktrace --no-daemon
+      - name: Verify archive and artifact checksum
+        run: |
+          test -s apps/mobile/android/app/build/outputs/bundle/release/app-release.aab
+          sha256sum apps/mobile/android/app/build/outputs/bundle/release/app-release.aab
+      - uses: actions/upload-artifact@v4
+        with:
+          name: veldryn-1-0-11-final-qa-staging-only-aab
+          path: apps/mobile/android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+          retention-days: 5

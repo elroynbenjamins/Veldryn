@@ -82,9 +82,9 @@ ok(!researchState.inventory.stacks.some(row=>row.itemId==='raw_gem:effect_flow:g
 ok((researchState.inventory.stacks.find(row=>row.itemId==='GEM_DUST')?.quantity??0)===researchBeforeDust-10,'Research should consume 10 Gem Dust');
 ok(researchState.character!.gold===researchBeforeGold-2500,'Research should consume 2,500 Gold');
 ok(researchState.skills.find(row=>row.skillId==='enchanting')!.xp===researchBeforeXp+600,'Research should grant one-time Enchanting XP');
-ok(formatGemValueV1('stat_vitality',4).includes('1.25%'),'Flawless Vitality must display the exact 1.25% value, not rounded 1.3%');
-ok(formatGemValueV1('stat_might',1).includes('0.4%'),'Cut Might must retain its precise 0.4% value');
-ok(formatGemValueV1('stat_precision',2).includes('0.4 pp'),'Precision uses percentage points, not percentage multipliers');
+ok(formatGemValueV1('stat_vitality',4).includes('3.75%'),'V2 Flawless Vitality displays the exact 3.75% bonus');
+ok(formatGemValueV1('stat_might',1).includes('1% Attack'),'V2 Cut Might displays +1% Attack');
+ok(formatGemValueV1('stat_precision',2).includes('0.55 pp'),'Precision uses percentage points, not percentage multipliers');
 const regionalCatalystRecipe=RECIPES.find(row=>row.id==='ENCHANT_REGIONAL_CATALYST'),radiantCatalystRecipe=RECIPES.find(row=>row.id==='ENCHANT_RADIANT_CATALYST');
 ok(regionalCatalystRecipe?.level===70&&regionalCatalystRecipe.inputs.some(row=>row.itemId==='FROSTMARCH_BOTANICAL_ESSENCE'),'Enchanting 70 should synthesize Regional Catalysts from Frostmarch botanical essence');
 ok(radiantCatalystRecipe?.level===90&&radiantCatalystRecipe.inputs.some(row=>row.itemId==='ASHLANDS_BOTANICAL_ESSENCE'),'Enchanting 90 should synthesize Radiant Catalysts from Ashlands botanical essence');
@@ -137,14 +137,14 @@ let doubleClaimBlocked=false;try{claimResonanceCacheV1(cacheState,'effect_mercy'
 // backward-compatible gems, and gameplay modifiers share one authored value.
 const might='gem:stat_might:g1';
 const range=gemValueRangeV1('stat_might',1);
-ok(Math.abs(range.min-.0032)<1e-10&&Math.abs(range.max-.0048)<1e-10,'Cut Might Gem rolls from +0.32% to +0.48% Power');
+ok(Math.abs(range.min-.008)<1e-10&&Math.abs(range.max-.012)<1e-10,'V2 Cut Might rolls from +0.8% to +1.2% Attack');
 ok(gemRollPercentFromUnitV1(0)===80&&gemRollPercentFromUnitV1(.999999)===120&&gemRollPercentFromUnitV1(.5)===100,'Nine roll outcomes cover minimum, midpoint and maximum inclusively');
-ok(Math.abs(gemRolledValueV1('stat_might',1,120)-.0048)<1e-10,'Rolled power uses the actual grade value and multiplier');
+ok(Math.abs(gemRolledValueV1('stat_might',1,120)-.012)<1e-10,'Rolled Attack uses the actual grade value and multiplier');
 let rollState=createCharacter(newGame(1),'IRONWARDEN','Roll Tester','male');
 rollState={...rollState,character:{...rollState.character!,equipment:{...rollState.character!.equipment,weapon:'basic_sword'},gold:10000,gearEnhancements:{}},inventory:{...rollState.inventory,stacks:[{itemId:might,quantity:5}]}};
 const minSocket=socketGem(rollState,'basic_sword',might,0);
 ok(gearEnhancement(minSocket,'basic_sword').statGemRollPercent===80,'First socket persists its own actual minimum roll');
-ok(Math.abs((equippedCanonicalStatGemBonusesV1(minSocket).statPercent.power??0)-.0032)<1e-10,'Combat stats use the saved roll, not the old fixed grade value');
+ok(Math.abs((equippedCanonicalStatGemBonusesV1(minSocket).statPercent.attack??0)-.008)<1e-10,'Combat stats use the saved roll, not the old fixed grade value');
 const improved=replaceGem(minSocket,'basic_sword',might,.85);
 ok(gearEnhancement(improved,'basic_sword').statGemRollPercent===115,'A duplicate gem reroll can improve a low roll');
 ok(gemStorageQuantity(improved,might)===3,'A reroll consumes exactly one duplicate without returning the previously socketed gem');
@@ -165,7 +165,7 @@ ok(incompatibleLegacy.statGemId===might&&incompatibleLegacy.statGemRollPercent==
 const compatibleLegacy=normalizeEnhancementGemSlots({rank:0,failures:0,statGemId:might,statGemRollPercent:110,gemIds:[]});
 ok(compatibleLegacy.statGemRollPercent===110,'A valid existing named socket retains its saved roll');
 const legacyState={...rollState,character:{...rollState.character!,gearEnhancements:{basic_sword:{rank:0,failures:0,statGemId:might,gemIds:[]}}}};
-ok(Math.abs((equippedCanonicalStatGemBonusesV1(legacyState).statPercent.power??0)-.004)<1e-10,'Older socketed gems preserve their original midpoint value');
+ok(Math.abs((equippedCanonicalStatGemBonusesV1(legacyState).statPercent.attack??0)-.01)<1e-10,'Existing unrolled Might sockets default to 100% of the V2 Attack grade');
 
 const legacyRollBase={...rollState,inventory:{...rollState.inventory,stacks:[{itemId:'EMBER_SHARD',quantity:5},{itemId:'SWIFT_SIGIL',quantity:4}]}};
 const legacyLow=socketGem(legacyRollBase,'basic_sword','EMBER_SHARD',0);

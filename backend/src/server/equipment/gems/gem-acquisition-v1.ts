@@ -5,22 +5,24 @@ import {rawGemItemId,type GemGrade} from './gem-catalog-v1';
 export type GemSourceKind='enemy'|'elite'|'regional_boss'|'dungeon_boss'|'contract'|'party_contract'|'live_coop_weekly'|'crafting';
 export interface GemSourcePoolV1{id:string;kind:GemSourceKind;regionId?:string;families:readonly string[];grade:GemGrade;chance:number;pityAt?:number;recipeChance?:number;catalystChance?:number;}
 
+// Random gem rolls are 25% of prior rates; source pity intervals are 4x.
+// The earned Live Resonance Cache is a guaranteed reward, not a random drop.
 export const GEM_SOURCE_POOLS_V1:readonly GemSourcePoolV1[]=[
- {id:'ZONE_006',kind:'enemy',regionId:'REG_002',families:['stat_might','stat_vitality','effect_opening_strike','effect_sustenance'],grade:1,chance:.0075},
- {id:'ZONE_007',kind:'elite',regionId:'REG_002',families:['stat_iron','stat_piercing','effect_predator','effect_retaliation'],grade:2,chance:.015,pityAt:60},
- {id:'ZONE_008',kind:'elite',regionId:'REG_002',families:['stat_precision','stat_potent','effect_ruin','effect_mercy','effect_opportunist'],grade:2,chance:.015,pityAt:60},
- {id:'ZONE_009',kind:'elite',regionId:'REG_002',families:['stat_swift','stat_ward','effect_flow','effect_benediction','effect_aegis'],grade:2,chance:.015,pityAt:60},
- {id:'ZONE_010',kind:'regional_boss',regionId:'REG_002',families:['effect_execution','effect_last_stand','effect_unyielding'],grade:3,chance:.03,pityAt:25,recipeChance:.02,catalystChance:.05},
+ {id:'ZONE_006',kind:'enemy',regionId:'REG_002',families:['stat_might','stat_vitality','effect_opening_strike','effect_sustenance'],grade:1,chance:.001875},
+ {id:'ZONE_007',kind:'elite',regionId:'REG_002',families:['stat_iron','stat_piercing','effect_predator','effect_retaliation'],grade:2,chance:.00375,pityAt:240},
+ {id:'ZONE_008',kind:'elite',regionId:'REG_002',families:['stat_precision','stat_potent','effect_ruin','effect_mercy','effect_opportunist'],grade:2,chance:.00375,pityAt:240},
+ {id:'ZONE_009',kind:'elite',regionId:'REG_002',families:['stat_swift','stat_ward','effect_flow','effect_benediction','effect_aegis'],grade:2,chance:.00375,pityAt:240},
+ {id:'ZONE_010',kind:'regional_boss',regionId:'REG_002',families:['effect_execution','effect_last_stand','effect_unyielding'],grade:3,chance:.0075,pityAt:100,recipeChance:.02,catalystChance:.05},
 
- {id:'COP_004',kind:'dungeon_boss',regionId:'REG_002',families:['effect_bulwark','effect_retaliation','effect_predator','stat_iron'],grade:3,chance:.18,pityAt:8,recipeChance:.08,catalystChance:.15},
- {id:'COP_005',kind:'dungeon_boss',regionId:'REG_002',families:['effect_mercy','effect_ruin','effect_opportunist','stat_precision','stat_potent'],grade:3,chance:.18,pityAt:8,recipeChance:.08,catalystChance:.15},
- {id:'COP_006',kind:'dungeon_boss',regionId:'REG_002',families:['effect_flow','effect_benediction','effect_critical_surge','stat_swift','stat_ward'],grade:3,chance:.18,pityAt:8,recipeChance:.08,catalystChance:.15},
+ {id:'COP_004',kind:'dungeon_boss',regionId:'REG_002',families:['effect_bulwark','effect_retaliation','effect_predator','stat_iron'],grade:3,chance:.045,pityAt:32,recipeChance:.08,catalystChance:.15},
+ {id:'COP_005',kind:'dungeon_boss',regionId:'REG_002',families:['effect_mercy','effect_ruin','effect_opportunist','stat_precision','stat_potent'],grade:3,chance:.045,pityAt:32,recipeChance:.08,catalystChance:.15},
+ {id:'COP_006',kind:'dungeon_boss',regionId:'REG_002',families:['effect_flow','effect_benediction','effect_critical_surge','stat_swift','stat_ward'],grade:3,chance:.045,pityAt:32,recipeChance:.08,catalystChance:.15},
 
- {id:'COP_007',kind:'dungeon_boss',regionId:'REG_003',families:['effect_momentum','effect_predator','effect_sustenance','stat_keen'],grade:3,chance:.18,pityAt:8,recipeChance:.08,catalystChance:.15},
- {id:'COP_008',kind:'dungeon_boss',regionId:'REG_003',families:['effect_aegis','effect_guardians_gift','effect_unyielding','stat_vitality','stat_resolute'],grade:3,chance:.18,pityAt:8,recipeChance:.08,catalystChance:.15},
- {id:'COP_009',kind:'dungeon_boss',regionId:'REG_003',families:['effect_execution','effect_shared_resolve','effect_battle_rhythm','effect_renewal','stat_savage'],grade:3,chance:.18,pityAt:8,recipeChance:.08,catalystChance:.15},
+ {id:'COP_007',kind:'dungeon_boss',regionId:'REG_003',families:['effect_momentum','effect_predator','effect_sustenance','stat_keen'],grade:3,chance:.045,pityAt:32,recipeChance:.08,catalystChance:.15},
+ {id:'COP_008',kind:'dungeon_boss',regionId:'REG_003',families:['effect_aegis','effect_guardians_gift','effect_unyielding','stat_vitality','stat_resolute'],grade:3,chance:.045,pityAt:32,recipeChance:.08,catalystChance:.15},
+ {id:'COP_009',kind:'dungeon_boss',regionId:'REG_003',families:['effect_execution','effect_shared_resolve','effect_battle_rhythm','effect_renewal','stat_savage'],grade:3,chance:.045,pityAt:32,recipeChance:.08,catalystChance:.15},
 
- {id:'PARTY_CONTRACT_WEEKLY',kind:'party_contract',families:['effect_momentum','effect_execution','effect_bulwark','effect_mercy','effect_flow','effect_opportunist'],grade:3,chance:.25,pityAt:4,catalystChance:.20},
+ {id:'PARTY_CONTRACT_WEEKLY',kind:'party_contract',families:['effect_momentum','effect_execution','effect_bulwark','effect_mercy','effect_flow','effect_opportunist'],grade:3,chance:.0625,pityAt:16,catalystChance:.20},
  {id:'LIVE_COOP_RESONANCE_CACHE',kind:'live_coop_weekly',families:['effect_momentum','effect_execution','effect_opening_strike','effect_predator','effect_critical_surge','effect_ruin','effect_bulwark','effect_aegis','effect_last_stand','effect_retaliation','effect_unyielding','effect_mercy','effect_benediction','effect_guardians_gift','effect_renewal','effect_shared_resolve','effect_sustenance','effect_battle_rhythm','effect_flow','effect_opportunist'],grade:3,chance:1},
 ] as const;
 

@@ -8,7 +8,7 @@ const {SUPPORTED_LANGUAGES}=require('../src/i18n/languages.ts');
 const {POTIONS,ALCHEMY_EQUIPMENT_INFUSIONS}=require('../src/content/alchemy.ts');
 const {itemDef}=require('../src/content/items.ts');
 const {alchemyItemNames}=require('../src/i18n/alchemy-item-names.ts');
-const {localizedItemName,allItemNames}=require('../src/i18n/starter-item-names.ts');
+const {localizedItemName,allItemNames,seasonalItemNames}=require('../src/i18n/starter-item-names.ts');
 const languages=['en','de','es','nl','it','fr','ru','tr'];
 assert.deepEqual([...SUPPORTED_LANGUAGES],languages);
 const source=[...POTIONS,...ALCHEMY_EQUIPMENT_INFUSIONS];
@@ -16,7 +16,8 @@ assert.equal(POTIONS.length,12,'twelve potions expected');
 assert.equal(ALCHEMY_EQUIPMENT_INFUSIONS.length,8,'eight infusion materials expected');
 assert.equal(Object.keys(alchemyItemNames).length,20,'exact source-authored item coverage');
 assert.deepEqual(Object.keys(alchemyItemNames).sort(),source.map(x=>x.id).sort());
-assert.equal(Object.keys(allItemNames).length,130,'extends original 110 base names without overwriting them');
+assert.equal(Object.keys(allItemNames).length,131+Object.keys(seasonalItemNames).length,'extends original 111 base and 20 alchemy names without overwriting them; seasonal names are independent');
+assert.ok(Object.keys(alchemyItemNames).every(id=>!Object.hasOwn(seasonalItemNames,id)),'Seasonal names must not overwrite alchemy names');
 for(const def of source){
  const row=alchemyItemNames[def.id];
  assert.equal(row.en,def.name,def.id+' authored name changed');
@@ -35,7 +36,7 @@ for(const text of ["localizedItemName(language,itemId)","itemName(recipe.output.
  assert.ok(screen.includes(text),'workshop lost localized name '+text);
 }
 assert.ok(!screen.includes('itemName(selected.output.itemId)'), 'removed activity-switch confirmation should not be referenced');
-for(const source of ["onStart(id)","alchemyAvailability(state,r.id)","processingRunCapacity(state,r.id"]){
+for(const source of ["onStart(id,batches)","alchemyAvailability(state,r.id)","processingRunCapacity(state,r.id"]){
  assert.ok(screen.includes(source),'authoritative production flow changed '+source);
 }
 const parsed=ts.createSourceFile('ConsumableWorkshop.tsx',screen,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);

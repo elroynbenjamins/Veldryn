@@ -38,7 +38,9 @@ function load(file,dependencies={}){const sandbox={exports:{},require:name=>depe
  unavailable=true;await assert.rejects(cards.loadProfileGuildCard({tag:'GON'}),/Guild unavailable/);assert.equal(detailsCalls,2);
  const link=fs.readFileSync(path.join(root,'components/ProfileGuildAffiliation.tsx'),'utf8');
  assert.ok(link.includes('accessibilityRole="button"'));assert.ok(link.includes('<ProfileGuildCardModal'));assert.ok(!link.includes('GuildBannerArtwork'));
- const scene=fs.readFileSync(path.join(root,'components/PublicProfileScene.tsx'),'utf8');assert.ok(scene.includes('s.guildAnchor'));assert.ok(scene.includes("left:22,bottom:20"));assert.ok(!scene.includes('guildFooter'));
+ const scene=fs.readFileSync(path.join(root,'components/PublicProfileScene.tsx'),'utf8');assert.ok(scene.includes('s.guildAnchor'));assert.ok(scene.includes('left:anchors.side,bottom:anchors.bottom'),'Guild tag uses shared scene anchors');
+ const {profileSceneContentAnchors}=load('core/profile-frame-layout.ts');
+ for(const inset of [0,8]){const anchors=profileSceneContentAnchors(inset);assert.equal(anchors.side+inset,46);assert.equal(anchors.bottom+inset,28);assert.equal(anchors.guildRightWithPet+inset,112);}assert.ok(!scene.includes('guildFooter'));
  assert.ok(link.includes('minHeight:28')&&link.includes('hitSlop='),'Slim visual keeps an extended touch area');
  assert.ok(scene.includes("CLASSES.find(row=>row.id===classId)!.name"),'Public class uses its authored display name');
  assert.ok(!scene.includes("classId.replace("),'Internal uppercase class IDs are not displayed');

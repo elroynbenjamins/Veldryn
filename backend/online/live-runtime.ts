@@ -97,9 +97,18 @@ export class OnlineLiveRuntime{
   return this.services.rpc('finalize_online_live_node_server_v1',{p_account_id:accountId,p_run_id:runId,p_expected_version:loaded.stateVersion,p_private_state:{run,seed:loaded.privateState.seed},p_client_projection:projection(run,loaded.stateVersion+1),p_node_id:last.nodeId,p_result:last.result,p_start_state_hash:pending.startStateHash,p_enhanced_marks:completed?enhancedDungeonMarks(run):0,p_assistance_marks:0});
  }
  async choose(accountId:string,runId:string,request:CoopDecisionCommand){
-  const hash=hashRequest(request);const prior=await this.services.rpc<{requestHash:string;response:unknown}|null>('read_online_coop_receipt_server_v1',{p_account_id:accountId,p_operation:'live_choose_v1',p_resource_id:runId,p_request_id:request.requestId});
+  const hash=hashRequest(request);
+  // Parallel authorized reads only: replay wins over snapshot errors; all writes
+  // still use the original decision/version checks and atomic settlement RPCs.
+  const [receiptRead,snapshotRead]=await Promise.allSettled([
+   this.services.rpc<{requestHash:string;response:unknown}|null>('read_online_coop_receipt_server_v1',{p_account_id:accountId,p_operation:'live_choose_v1',p_resource_id:runId,p_request_id:request.requestId}),
+   this.services.rpc<Loaded>('load_coop_runtime_server_v1',{p_run_id:runId,p_actor_account_id:accountId}),
+  ]);
+  if(receiptRead.status==='rejected')throw receiptRead.reason;
+  const prior=receiptRead.value;
   if(prior){if(prior.requestHash!==hash)throw new GameplayError('idempotency_key_conflict',409);return prior.response;}
-  const loaded=await this.services.rpc<Loaded>('load_coop_runtime_server_v1',{p_run_id:runId,p_actor_account_id:accountId});
+  if(snapshotRead.status==='rejected')throw snapshotRead.reason;
+  const loaded=snapshotRead.value;
   if((loaded.clientProjection as {mode?:string})?.mode!=='live')throw new GameplayError('not_live_run',404);
   if(loaded.privateState.pending)throw new GameplayError('node_resolving',409);
   // /choose is exclusively for the single final boss route. Multi-option
@@ -112,9 +121,18 @@ export class OnlineLiveRuntime{
   return this.queueSelected(accountId,runId,request,loaded,current.nextNodeIds[0],hash,presence.safetyAiCharacterIds);
  }
  async vote(accountId:string,runId:string,request:CoopDecisionCommand){
-  const hash=hashRequest(request);const prior=await this.services.rpc<{requestHash:string;response:unknown}|null>('read_online_coop_receipt_server_v1',{p_account_id:accountId,p_operation:'live_vote_v1',p_resource_id:runId,p_request_id:request.requestId});
+  const hash=hashRequest(request);
+  // Parallel authorized reads only: replay wins over snapshot errors; all writes
+  // still use the original decision/version checks and atomic settlement RPCs.
+  const [receiptRead,snapshotRead]=await Promise.allSettled([
+   this.services.rpc<{requestHash:string;response:unknown}|null>('read_online_coop_receipt_server_v1',{p_account_id:accountId,p_operation:'live_vote_v1',p_resource_id:runId,p_request_id:request.requestId}),
+   this.services.rpc<Loaded>('load_coop_runtime_server_v1',{p_run_id:runId,p_actor_account_id:accountId}),
+  ]);
+  if(receiptRead.status==='rejected')throw receiptRead.reason;
+  const prior=receiptRead.value;
   if(prior){if(prior.requestHash!==hash)throw new GameplayError('idempotency_key_conflict',409);return prior.response;}
-  const loaded=await this.services.rpc<Loaded>('load_coop_runtime_server_v1',{p_run_id:runId,p_actor_account_id:accountId});
+  if(snapshotRead.status==='rejected')throw snapshotRead.reason;
+  const loaded=snapshotRead.value;
   if((loaded.clientProjection as {mode?:string})?.mode!=='live')throw new GameplayError('not_live_run',404);
   if(loaded.privateState.pending)throw new GameplayError('node_resolving',409);
   const presence=await this.touch(accountId,runId,loaded);

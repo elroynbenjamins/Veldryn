@@ -19,6 +19,14 @@ async function main(){
  assert.deepEqual(await runtime.choose('actor','run',request),saved);
  assert.equal(reads,2);
  await assert.rejects(()=>runtime.choose('actor','run',{...request,optionId:'changed'}),/idempotency_key_conflict/);
+ // A committed receipt must still win if the overlapping snapshot read fails.
+ let snapshotStarted=false;
+ const replayRuntime=new OnlineQModeRuntime({randomId:()=>{throw new Error('unexpected_random');},rpc:async<T>(name:string):Promise<T>=>{
+  if(name==='read_online_coop_receipt_server_v1'){await Promise.resolve();assert.ok(snapshotStarted,'snapshot read overlaps receipt');return {requestHash:hash,response:saved} as T;}
+  if(name==='load_online_qmode_server_v1'){snapshotStarted=true;throw new Error('NOT_PARTICIPANT');}
+  throw new Error('unexpected_mutation');
+ }});
+ assert.deepEqual(await replayRuntime.choose('actor','run',request),saved);
 
  // Regression: ordinary gathering/combat advances the account revision after the
  // loadout card says Ready. Q-Mode must freeze the current *server* character and

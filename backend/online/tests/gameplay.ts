@@ -12,7 +12,55 @@ import {createCharacter,effectiveStats,newGame} from '../../../apps/mobile/src/c
 import {unlockCombatCompanion} from '../../../apps/mobile/src/core/combat-companions';
 import {setLocalEventEnabled} from '../../../apps/mobile/src/core/live-events';
 import {gemRefineRecipeIdV1,gemRefineRecipeV1} from '../../../apps/mobile/src/core/gem-progression-v1';
+// Exercise the actual handler with intentionally delayed analytics. Avoid a
+// hardware-dependent time threshold: require both independent reads to be in
+// flight before either completes, and let the best-effort analytics fail.
+async function latencyReadOverlap(){
+ const nextTurn=()=>new Promise<void>(resolve=>setImmediate(resolve));
+ const state=createCharacter(newGame(0),'IRONWARDEN','Latency Fixture');
+ const saved={accountId:'alice',state,version:7,serverNow:1000};
+ const requestHash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode('{"args":{},"type":"claim"}')))).map(b=>b.toString(16).padStart(2,'0')).join('');
+ let analyticsActive=false,readActive=false,overlaps=0,analyticsCalls=0,authoritativeCalls=0;
+ const services:GameplayServices={
+  authenticate:async token=>token==='alice-token'?'alice':null,
+  randomId:()=>{throw new Error('unexpected_random');},randomRoll:()=>{throw new Error('unexpected_random');},
+  rpc:async<T>(name:string,args:Record<string,unknown>):Promise<T>=>{
+   if(name==='record_player_activity_server_v1'){
+    assert.equal(args.p_account_id,'alice');
+    analyticsCalls++;analyticsActive=true;
+    if(readActive)overlaps++;
+    await nextTurn();analyticsActive=false;
+    throw new Error('analytics unavailable');
+   }
+   if(name==='load_online_game_server_v1'||name==='read_online_game_receipt_server_v1'){
+    assert.equal(args.p_account_id,'alice');
+    authoritativeCalls++;readActive=true;
+    if(analyticsActive)overlaps++;
+    await nextTurn();readActive=false;
+    return (name==='read_online_game_receipt_server_v1'?{requestHash,response:saved}:{state:structuredClone(state),version:7,serverNow:1000,characterId:state.character!.id,walletGold:state.character!.gold,guildMember:false,communityProgress:{}}) as T;
+   }
+   if(name==='record_online_command_outcome_server_v1')return null as T;
+   throw new Error('unexpected mutation: '+name);
+  },
+ };
+ const handle=gameplayHandler(services),headers={Authorization:'Bearer alice-token'};
+ assert.equal((await handle(new Request('https://example.invalid/gameplay'))).status,401);
+ assert.equal(analyticsCalls,0);assert.equal(authoritativeCalls,0,'Unauthenticated requests launch neither projection');
+ const get=await handle(new Request('https://example.invalid/gameplay',{headers}));
+ assert.equal(get.status,200,'Analytics failure cannot prevent a valid gameplay snapshot');
+ assert.equal((await get.json()).version,7);
+ assert.equal(overlaps,1,'GET analytics and authoritative snapshot read must overlap');
+ const replay=await handle(new Request('https://example.invalid/gameplay',{method:'POST',headers,body:JSON.stringify({requestId:'replay-overlap-01',expectedVersion:6,command:{type:'claim'}})}));
+ assert.equal(replay.status,200,'Receipt replay remains available when analytics fails');
+ assert.deepEqual(await replay.json(),JSON.parse(JSON.stringify(saved)),'Replay returns the committed wire response without another settlement');
+ assert.equal(overlaps,2,'POST analytics and receipt read must overlap');
+ assert.equal(authoritativeCalls,2,'Replay avoids a second full game read');
+ assert.equal(analyticsCalls,2);
+ console.log('PASS gameplay read overlap, analytics failure isolation and authoritative receipt replay');
+}
+
 async function main(){
+ await latencyReadOverlap();
  let state:GameState|null=null,version=0,commits=0,clock=1700000000000,transportFailure=false,suppressLiveEvent=false,generatedIds=0,blockedDeleteCharacterId:string|null=null,deletedCommitCharacterId:string|null=null;
  const commandMetrics:Record<string,unknown>[]=[];
  const receipts=new Map<string,{response:unknown;requestHash:string}>();

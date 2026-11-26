@@ -85,3 +85,38 @@ assert(panel.includes('newUltraLuxeQuickSelection(stateRef.current'));
 const hook=read('online/useUltraLuxeCollectionProjection.ts');
 assert(hook.includes("rpc('ultra_luxe_collection_self_v1')")&&hook.includes('scopeRef.current!==scope')&&hook.includes('row.accountId!==accountId'));
 console.log('PASS: actual wardrobe candidate rows, independent readback, quick equip and queued grant revalidation');
+
+for(const row of wardrobe.NEW_ULTRA_LUXE_WARDROBE){
+ const selection={background:row.ids.background,border:row.ids.border,pet:row.ids.pet,verifiedTitleId:row.titleId,displayedBadges:[row.ids.badge]};
+ const otherRow=wardrobe.NEW_ULTRA_LUXE_WARDROBE.find(c=>c.id!==row.id);
+ assert(wardrobe.candidateAppearanceHint(selection));
+ assert.deepEqual(wardrobe.candidateAppearanceIds(selection,[row.id]),selection);
+ const denied=wardrobe.candidateAppearanceIds(selection,[]);
+ assert.equal(denied.background,'asterfall-night');assert.equal(denied.border,undefined);assert.equal(denied.pet,undefined);
+ assert.equal(wardrobe.candidateShowcase(selection,[]),undefined);
+ assert.equal(wardrobe.candidateShowcase(selection,[otherRow.id]),undefined);
+ assert.deepEqual(wardrobe.candidateShowcase(selection,[row.id]),{id:row.id,fullSet:true});
+ for(const patch of [{pet:otherRow.ids.pet},{pet:null},{verifiedTitleId:null},{displayedBadges:[]}]){
+  assert.deepEqual(wardrobe.candidateShowcase({...selection,...patch},[row.id]),{id:row.id,fullSet:false});
+ }
+ assert.equal(wardrobe.candidateShowcase({...selection,border:otherRow.ids.border},[row.id,otherRow.id]),undefined);
+ assert.equal(wardrobe.candidateShowcase({...selection,effect:'unrelated-effect'},[row.id]),undefined);
+ assert.equal(wardrobe.candidateVerifiedTitle(row.titleName,row.titleId,[row.id]).id,row.id);
+ assert.equal(wardrobe.candidateVerifiedTitle(row.titleName,row.titleId,[]),undefined);
+ assert.equal(wardrobe.candidateVerifiedTitle('Ordinary title',row.titleId,[row.id]),undefined);
+}
+const self=read('components/ProfileScenePreview.tsx'),pub=read('components/PublicProfileScene.tsx'),stage=read('components/profile/ProfileStage.tsx');
+for(const route of [self,pub]){
+ assert(route.includes('candidateAppearanceIds(')&&route.includes('candidateShowcase(')&&route.includes('<VerifiedCandidateShowcase'));
+ assert(route.includes('newLuxeBackground(renderBackgroundId)')&&route.includes('newLuxeBorder(renderBorderId)')&&route.includes('newLuxePet(renderPetId)'));
+ assert(route.includes('VerifiedCandidateBorderEffects'));
+}
+assert(self.includes('ownedNewUltraLuxeCollections(state,{accountId,characterId:character.id},projection)'));
+assert(pub.includes('profile.ultraLuxeAppearanceVerified===true'));
+assert(stage.includes('if(dedicated||candidate)'));
+const badgesArt=read('components/player-badge-artwork.ts');
+assert(badgesArt.includes("ascendant_monarch_of_deep:require(")&&badgesArt.includes("ascendant_beyond_existence:require("));
+assert(!read('components/PlayerBadges.tsx').includes('Animated.'));
+const tiers=read('components/profile/wardrobe-visual-tiers.ts');
+assert(tiers.includes('isNewUltraLuxeWardrobePiece(row)')&&tiers.includes('candidate?.name'));
+console.log('PASS: private self appearance, sanitized public appearance, mixed-piece fallback, exact pair, premium tier and static badge art');

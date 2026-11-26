@@ -1,3 +1,4 @@
+import {sixLuxeNamesEnabled} from '../online/ultra-luxe-name-readback';
 import {useAuthSession} from '../online/AuthSessionProvider';
 import {useUltraLuxeCollectionProjection} from '../online/useUltraLuxeCollectionProjection';
 import {candidateAppearanceIds,candidateAppearanceHint,candidateShowcase,ownedNewUltraLuxeCollections} from '../core/ultra-luxe-owned-wardrobe';
@@ -47,13 +48,13 @@ import {CelestialStandardBackgroundEffects,CelestialStandardBorderEffects} from 
 
 export function ProfileScenePreview({state,backgroundId,active=false}:{state:GameState;backgroundId:string;active?:boolean}){
  const language=useGameLanguage();
- const privateName=useUltraLuxeNameSelection(active&&ownedUltraLuxeTitles(state).length>0).style;
+ const privateName=useUltraLuxeNameSelection(active&&(ownedUltraLuxeTitles(state).length>0||sixLuxeNamesEnabled&&!!state.account.unlockedTitleIds?.some(id=>id.startsWith('ascendant-')))).style;
  const [previewWidth,setPreviewWidth]=useState(320),compact=previewWidth<300;
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),badges=usePlayerBadges();
  const character=state.character!;
  const accountId=useAuthSession().session?.user.id??'';
  const raw={background:backgroundId,border:character.profileBorderId,pet:character.selectedCosmeticPetId};
- const projection=useUltraLuxeCollectionProjection(candidateAppearanceHint(raw));
+ const projection=useUltraLuxeCollectionProjection(candidateAppearanceHint(raw),sixLuxeNamesEnabled);
  const owned=ownedNewUltraLuxeCollections(state,{accountId,characterId:character.id},projection);
  const allowed=owned.map(c=>c.id);
  const safe=candidateAppearanceIds({...raw,displayedBadges:[]},allowed);

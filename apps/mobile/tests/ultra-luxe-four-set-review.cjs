@@ -140,3 +140,23 @@ for(const id of all){
  assert(!reviewGrantAllowsFullSet(verified,scope,'unknown'));
 }
 console.log('PASS: gated six-set self projection, exact canonical IDs, cross-account rejection and revoked/missing collection guards');
+
+assert.equal(wardrobe.LEGACY_CANDIDATE_WARDROBE.length,2);
+assert.equal(wardrobe.NEW_ULTRA_LUXE_WARDROBE.length,4);
+const nextPair=load(path.join(root,'core/next-premium-set-review.ts')).NEXT_PREMIUM_SETS;
+for(const s of nextPair){
+ const state={character:{id:scope.characterId},account:{unlockedProfileBackgroundIds:[s.background],unlockedProfileBorderIds:[s.border],unlockedCosmeticPetIds:[s.pet],unlockedTitleIds:[s.title]}};
+ const raw={accountId:'a',collectionIds:[s.id]};
+ assert.deepEqual(wardrobe.ownedNewUltraLuxeCollections(state,scope,normalizeReviewGrantSnapshot(raw,'a')),[]);
+ assert.equal(wardrobe.ownedNewUltraLuxeCollections(state,scope,normalizeReviewGrantSnapshot(raw,'a',true)).length,1);
+ assert(!wardrobe.newUltraLuxePatchAllowed(state,scope,raw,{icon:s.icon}));
+ assert(!wardrobe.newUltraLuxePatchAllowed(state,scope,raw,{effect:s.showcase}));
+ const appearance={background:s.background,border:s.border,pet:s.pet,displayedBadges:[]};
+ const denied=wardrobe.candidateAppearanceIds(appearance,wardrobe.LEGACY_CANDIDATE_WARDROBE.map(c=>c.id));
+ assert.equal(denied.background,'asterfall-night');assert.equal(denied.border,undefined);assert.equal(denied.pet,undefined);
+}
+assert(pub.includes('LEGACY_CANDIDATE_WARDROBE.map(c=>c.id)'));
+assert(self.includes('candidateAppearanceHint(raw),sixLuxeNamesEnabled'));
+assert(stage.includes('collapsed&&candidate,sixLuxeNamesEnabled'));
+assert(panel.includes('newLuxeBackground(row.id)?.variants.square')&&panel.includes('newLuxeBorder(row.id)')&&panel.includes('newLuxePet(row.id)'));
+console.log('PASS: new pair gated wardrobe and individual art routes; legacy public marker cannot authorize new pieces');

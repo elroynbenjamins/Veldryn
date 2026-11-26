@@ -1,3 +1,4 @@
+import {newLuxeBackground,newLuxeBorder,newLuxePet} from '../../theme/ultra-luxe-candidate-art';
 import {reviewGrantAllowsFullSet} from '../../core/ultra-luxe-review-integration';
 import {ULTRA_LUXE_FULL_SET_DEFINITIONS,verifiedUltraLuxeFullSetPlan} from '../../core/ultra-luxe-full-set-command';
 import {confirmUltraLuxeFullSetReadback,ultraLuxeFullSetEquipped,ultraLuxeFullSetNamePreset,type FullSetPlan,type VerifiedFullSetNames} from '../../core/ultra-luxe-full-set-name';
@@ -22,10 +23,6 @@ import {petArtSource} from '../../theme/pet-art';
 import {useAuthSession} from '../../online/AuthSessionProvider';
 import {useUltraLuxeCollectionProjection} from '../../online/useUltraLuxeCollectionProjection';
 import {appendOwnedUltraLuxeWardrobe,ownedNewUltraLuxeQuickSets,newUltraLuxeQuickSelection,newUltraLuxeHint,newUltraLuxePatchAllowed} from '../../core/ultra-luxe-owned-wardrobe';
-import {ABYSSAL_IDS} from '../../core/abyssal-showcase-layout';
-import {PARADOX_IDS} from '../../core/paradox-showcase-layout';
-import {getAbyssalReviewAssets} from '../../theme/abyssal-integration-assets';
-import {getParadoxReviewAssets} from '../../theme/paradox-integration-assets';
 
 import {radii,typography,type ThemeColors} from '../../theme/theme';
 import {useGameTheme} from '../../theme/ThemeContext';
@@ -217,15 +214,15 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
  const sections=wardrobeVisualSections(category?.rows??[]);
  const artwork=(row:WardrobeRow,size:number):ReactNode=>{
   if(row.kind==='icon')return <ProfileIcon id={row.id} classId={character.classId} size={size}/>;
-  if(row.kind==='scene'){const special=row.id===ABYSSAL_IDS.background?getAbyssalReviewAssets().backgroundSquare:row.id===PARADOX_IDS.background?getParadoxReviewAssets().backgroundSquare:undefined;
+  if(row.kind==='scene'){const special=newLuxeBackground(row.id)?.variants.square;
    if(special)return <Image source={special} resizeMode="cover" style={s.fill}/>;
    const scene=profileBackgroundPreviewById.get(row.id),base=BASE_PROFILE_BACKGROUNDS.find(item=>item.id===row.id);
    return scene?<Image source={scene.source} resizeMode="cover" style={s.fill}/>:base?<View style={s.fill}><RegionArtwork regionId={base.region}/></View>:null}
-  if(row.kind==='frame'){const animated=profileAnimatedBorderDefinition(row.id),source=(row.id===ABYSSAL_IDS.border?getAbyssalReviewAssets().standardBorder:row.id===PARADOX_IDS.border?getParadoxReviewAssets().standardBorder:undefined)??cosmeticArtByBorder.get(row.id)?.border??profileBorderSourceById.get(row.id)??(animated?profileBorderSourceById.get(animated.fallbackBorderId):undefined);
+  if(row.kind==='frame'){const animated=profileAnimatedBorderDefinition(row.id),source=newLuxeBorder(row.id)??cosmeticArtByBorder.get(row.id)?.border??profileBorderSourceById.get(row.id)??(animated?profileBorderSourceById.get(animated.fallbackBorderId):undefined);
    return source?<View style={s.fill}><RegionArtwork regionId="KINGS_ROAD" muted/><ProfileFrameOverlay source={source}/></View>:<View style={s.blank}><Text style={s.blankMark}>◇</Text></View>}
   if(row.kind==='effect'){const art=cosmeticArtByEffect.get(row.id),runtime=profileCosmeticRuntimeByEffect.get(row.id);
    return art?<Image source={art.staticEffect} resizeMode="stretch" style={s.fill}/>:runtime?<ProfileEffectThumbnail runtime={runtime}/>:<View style={s.blank}><Text style={s.effectMark}>✦</Text></View>}
-  if(row.kind==='pet'){const source=(row.id===ABYSSAL_IDS.pet?getAbyssalReviewAssets().petRegular:row.id===PARADOX_IDS.pet?getParadoxReviewAssets().petRegular:undefined)??petArtSource(row.id);
+  if(row.kind==='pet'){const source=newLuxePet(row.id)??petArtSource(row.id);
    return source?<Image source={source} resizeMode="contain" style={s.petImage}/>:<View style={s.blank}><Text style={s.blankMark}>{row.clear?profileT(language,"Solo"):"—"}</Text></View>}
   return null;
  };

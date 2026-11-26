@@ -52,7 +52,7 @@ export function ProfileStage({state,collapsed,onToggle,onAudiencePreview,trailin
  const accountId=useAuthSession().session?.user.id??'';
  const raw={background:character?.profileBackgroundId,border:character?.profileBorderId,pet:character?.selectedCosmeticPetId};
  const candidate=candidateAppearanceHint(raw);
- const projection=useUltraLuxeCollectionProjection(collapsed&&candidate);
+ const projection=useUltraLuxeCollectionProjection(collapsed&&candidate,sixLuxeNamesEnabled);
  const allowed=ownedNewUltraLuxeCollections(state,{accountId,characterId:character?.id??''},projection).map(c=>c.id);
  const safe=candidateAppearanceIds({...raw,displayedBadges:[]},allowed);
  if(!character)return null;

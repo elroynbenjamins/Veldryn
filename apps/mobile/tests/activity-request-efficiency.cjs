@@ -53,3 +53,13 @@ assert.ok(dungeon.includes('weeklyQuestRequest.current===request'),'obsolete que
 const chatOverlay=fs.readFileSync(path.join(__dirname,'../src/components/ChatOverlay.tsx'),'utf8');
 assert.ok(chatOverlay.includes('if(!visible||!chatEnabled||partyOnly)return'),'party-only or disabled chat must not request guild membership');
 assert.ok(chatOverlay.includes('if(active&&mounted.current)'),'retired guild membership reads cannot publish');
+
+const inventoryCraft=fs.readFileSync(path.join(__dirname,'../src/components/InventoryCraftingPanel.tsx'),'utf8');
+assert.ok(inventoryCraft.includes('const candidates=useMemo(()=>RECIPES.filter'));
+assert.ok(inventoryCraft.includes('craftableOnly?candidates.map(recipe=>({recipe,status:recipeAvailability'));
+assert.ok(inventoryCraft.includes('candidates.slice(0,limit).map(recipe=>({recipe,status:recipeAvailability'));
+assert.ok(inventoryCraft.includes('const count=craftable?.length??candidates.length'));
+const recipeBrowser=fs.readFileSync(path.join(__dirname,'../src/components/CraftingRecipeBrowser.tsx'),'utf8');
+assert.ok(recipeBrowser.includes("state.character?.classId+':'+Number(winterHearthVisible)"),'event visibility is part of cache identity');
+assert.ok(recipeBrowser.includes('},[skillId,state.character?.classId,winterHearthVisible])'));
+assert.ok(recipeBrowser.includes('for(const group of matching)'));

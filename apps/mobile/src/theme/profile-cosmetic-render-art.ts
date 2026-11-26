@@ -5,7 +5,7 @@ import {wave2Ready} from '../core/profile-cosmetic-wave2';
 /** Keep the pinned legacy V3 art registry intact. New art uses the same native
  * rendering layers, without borrowing reward art or creating a preview UI. */
 export type Wave2CosmeticArt=Omit<CosmeticArt,'motionProfile'|'matte'>&{
- motionProfile:'tideborne';matte?:ImageSourcePropType;
+ motionProfile:'tideborne'|'clockwork'|'stormforged'|'crimson-oath';matte?:ImageSourcePropType;
 };
 export type CosmeticRenderArt=CosmeticArt|Wave2CosmeticArt;
 const readyWave2=WAVE2_ART.filter(row=>wave2Ready('border',row.borderId)&&wave2Ready('effect',row.effectId));

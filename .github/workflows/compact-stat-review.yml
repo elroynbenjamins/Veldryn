@@ -1,0 +1,29 @@
+name: Hidden 2.0 compact stat review
+
+on:
+  pull_request:
+    branches:
+      - review/v2-private-gem-isolation-hardening-20261126
+    paths:
+      - 'docs/2-0/compact-*-review.test.mjs'
+      - '.github/workflows/compact-stat-review.yml'
+      - 'backend/src/server/equipment/equipment-crafting-v2-*.ts'
+  push:
+    branches:
+      - review/v2-compact-class-stat-scale-20261126
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compact-source-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate compact class curves and canonical Forge budget sensitivity
+        run: node --test docs/2-0/compact-forge-budget-review.test.mjs

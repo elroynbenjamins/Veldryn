@@ -69,7 +69,7 @@ create function public.undo_ultra_luxe_full_set_server_v1(
  p_request_id text,p_request_hash text
 ) returns jsonb language plpgsql security invoker set search_path='' as $undo$
 declare j private.ultra_luxe_full_set_undo_v1%rowtype; prior jsonb; g jsonb; s jsonb; hero jsonb; old_hero jsonb;
- grants jsonb; current_slots jsonb; f text; val jsonb; name_now text; name_target text; names text[]; ack jsonb; changed boolean:=false;
+ grants jsonb; current_slots jsonb; f text; val jsonb; owned_field text; name_now text; name_target text; names text[]; ack jsonb; changed boolean:=false;
 begin
  if p_account_id is null or p_character_id is null or p_expected_version is null or p_expected_version<0
   or p_equip_request_id is null or p_equip_request_id !~ '^luxe_full_set_[A-Za-z0-9_-]{16,80}$'
@@ -92,11 +92,25 @@ begin
  foreach f in array array['profileBackgroundId','profileBorderId','selectedCosmeticPetId','profileTitle','profileEffectId'] loop
   if current_slots->f is not distinct from j.applied_slots->f and j.before_slots->f is distinct from j.applied_slots->f then
    val:=j.before_slots->f;
-   if val is null or val='null'::jsonb then hero:=hero-f;else hero:=jsonb_set(hero,array[f],val);end if;
+   owned_field:=case f when 'profileBackgroundId' then 'unlockedProfileBackgroundIds'
+    when 'profileBorderId' then 'unlockedProfileBorderIds'
+    when 'selectedCosmeticPetId' then 'unlockedCosmeticPetIds'
+    when 'profileEffectId' then 'unlockedProfileEffectIds' else null end;
+   if val is null or val='null'::jsonb then hero:=hero-f;
+   elsif owned_field is null or val#>>'{}'='' or
+    (f='profileBackgroundId' and val#>>'{}' in ('asterfall-night','ironwood-dawn','silverbrook-mist','oathglass-hall')) or
+    coalesce((s#>array['account',owned_field]) ? (val#>>'{}'),false) then
+    hero:=jsonb_set(hero,array[f],val);
+   else
+    -- A historical ordinary/legacy piece may have lost its entitlement.
+    -- Conservatively keep the still-owned applied slot instead of restoring it.
+    continue;
+   end if;
   end if;
  end loop;
  -- Private IDs are validated against current grants. Ordinary previous slots
- -- come from a trusted saved pre-image; no arbitrary client patch is accepted.
+ -- also require the current server ownership list (base backgrounds excepted).
+ -- Legacy wave2 pieces absent from those lists are conservatively not restored.
  hero:=private.ultra_luxe_project_hero_v1(hero,grants);
  if name_now=j.applied_name then
   name_target:=case when j.before_name=any(names) then j.before_name else null end;

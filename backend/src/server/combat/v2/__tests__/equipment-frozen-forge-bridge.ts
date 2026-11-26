@@ -1864,7 +1864,7 @@ function makeV21Loadout(classId:ClassIdV2,specIndex:0|1,targetTier:1|2|3|4,targe
   const build=(ids:string[])=>reviewFrozenForgeSocketsV2(qa.actor,qa.build,source,
    sidecar(ids.map(family=>({family,grade:5 as const,roll}))),policy);
   const support=build(['effect_mercy','effect_renewal','effect_benediction','effect_guardians_gift','effect_shared_resolve']);
-  const damage=build(['effect_momentum','effect_critical_surge','effect_retaliation','effect_sustenance']);
+  const damage=build(['effect_momentum','effect_critical_surge','effect_retaliation','effect_retaliation','effect_retaliation','effect_sustenance']);
   provenanceCases.push({roll,...runEffectEventProvenanceReviewV2(support,damage)});
  }
  console.log('EFFECT_GEM_EVENT_PROVENANCE_REVIEW '+JSON.stringify({cases:provenanceCases.length,results:provenanceCases,releaseEnabled:false}));

@@ -4,6 +4,7 @@
 import type {reviewFrozenForgeSocketsV2} from './frozen-forge-socket-review';
 import {reviewEffectGemResonanceV2} from './effect-gem-resonance-review';
 import {FORGE_SOCKET_MECHANICS_REVIEW_V2} from './frozen-forge-socket-review';
+import {emptyRetaliationReviewV2,reviewRetaliationTakenV2,reviewRetaliationHitV2,reviewSustenanceKillV2,type EffectTriggerReviewGroupV2,type RetaliationReviewStateV2} from './effect-gem-trigger-review';
 export const EFFECT_EVENT_PROVENANCE_REVIEW_V2='effect-event-provenance-review-v2-20261126' as const;
 type Projection=ReturnType<typeof reviewFrozenForgeSocketsV2>;
 type Origin='authored'|'basic'|'companion';
@@ -20,6 +21,8 @@ export interface GemRootOutputReviewV2{
  readonly kind:Output;readonly timing:'direct'|'periodic';readonly at:number;
  readonly successful:boolean;readonly actual:number;readonly attempted:number;
  readonly critical?:boolean;
+ /** QA-only snapshot of recipient for Mercy; kill eligibility for Sustenance. */
+ readonly targetMaxHp?:number;readonly targetShield?:number;readonly eliteKill?:boolean;
 }
 type Event=GemRootOutputReviewV2 & {actorId:string;origin:Origin|'secondary';depth:0|1;parentId:string|null;familyId:Family|null};
 const fail=(why:string):never=>{throw Error('effect_event_provenance_review_'+why);};
@@ -59,14 +62,21 @@ function scope(family:Family,event:Event,action:GemRootActionReviewV2){
  }
 }
 export function createEffectEventProvenanceReviewV2(projections:readonly {actorId:string;projection:Projection}[]){
- const equipped=new Map<string,Set<string>>();
+ const equipped=new Map<string,Map<string,EffectTriggerReviewGroupV2>>();
+ const actorMaxHp=new Map<string,number>();
+ const retaliation=new Map<string,RetaliationReviewStateV2>();
+ const sustainReady=new Map<string,number>();
+ const recovery=new Map<string,{heal:number;barrier:number}>();
+ const killed=new Set<string>();
  for(const {actorId,projection:p} of projections){
   if(!id(actorId)||equipped.has(actorId)||p.mechanicsReview!==FORGE_SOCKET_MECHANICS_REVIEW_V2||
    p.canExecuteCombat!==false||p.cpApproved!==false||p.releaseEnabled!==false||!p.effectResonanceReview)
    fail('projection_scope');
   const verified=reviewEffectGemResonanceV2(p.deferredEffectSources,p.equippedInstanceIds);
   if(JSON.stringify(verified)!==JSON.stringify(p.effectResonanceReview))fail('source_mismatch');
-  equipped.set(actorId,new Set(verified.families.map(g=>g.familyId)));
+  if(!finite(p.stats.maxHp)||p.stats.maxHp<=0)fail('actor_hp');
+  equipped.set(actorId,new Map(verified.families.map(g=>[g.familyId,g])));
+  actorMaxHp.set(actorId,p.stats.maxHp);
  }
  const actions=new Map<string,GemRootActionReviewV2>(),events=new Map<string,Event>();
  const claims=new Set<string>(),emissions=new Set<string>();
@@ -83,17 +93,50 @@ export function createEffectEventProvenanceReviewV2(projections:readonly {actorI
    ![o.at,o.actual,o.attempted].every(finite)||o.actual>o.attempted||o.at<a.at||
    !['direct','periodic'].includes(o.timing)||
    !['damage','heal','barrier','buff','debuff','kill','barrier_expiry'].includes(o.kind))fail('output');
+  if(o.kind==='heal'&&o.targetMaxHp!==undefined&&(!finite(o.targetMaxHp)||o.targetMaxHp<=0||
+   !finite(o.targetShield??0)||o.actual>o.targetMaxHp))fail('output_target_snapshot');
+  if(o.kind==='kill'&&o.successful&&o.actual>0){
+   if(killed.has(o.targetId))fail('duplicate_kill');killed.add(o.targetId);
+  }
   events.set(o.id,{...o,actorId:a!.actorId,origin:a!.origin,depth:0,parentId:null,familyId:null});
  }
- function claim(family:Family,eventId:string){
+ /** Review-only hostile hit input; authenticated event provenance must
+  * be supplied by the future engine. Actual max HP comes from projection. */
+ function registerRetaliationDamage(actorId:string,now:number,hpDamage:number,eligible:boolean,alive:boolean){
+  const g=equipped.get(actorId)?.get('effect_retaliation');
+  if(!g)throw Error('effect_event_provenance_review_unequipped_retaliation');
+  const next=reviewRetaliationTakenV2(g,now,retaliation.get(actorId)??emptyRetaliationReviewV2(),
+   actorMaxHp.get(actorId)!,hpDamage,eligible,alive);
+  retaliation.set(actorId,next.state);return next.armed;
+ }
+ function claim(family:Family,eventId:string,recoverySnapshot?:{hp:number;shield:number}){
   const e=events.get(eventId);
   if(!e)throw Error('effect_event_provenance_review_unknown_event');
-  if(!equipped.get(e.actorId)?.has(family))return {accepted:false,reason:'unequipped' as const};
+  const g=equipped.get(e.actorId)?.get(family);
+  if(!g)return {accepted:false,reason:'unequipped' as const};
   const a=actions.get(e.actionId)!;
   const s=scope(family,e,a);
   if(!s)return {accepted:false,reason:'ineligible_or_terminal' as const};
   const k=key(e.actorId,family,s,s==='event'?e.id:e.actionId,s==='target'?e.targetId:'');
   if(claims.has(k))return {accepted:false,reason:'duplicate_scope' as const};
+  if(family==='effect_retaliation'||family==='effect_sustenance'){
+   const maxHp=actorMaxHp.get(e.actorId)!;
+   if(!recoverySnapshot||!finite(recoverySnapshot.hp)||recoverySnapshot.hp<=0||
+    recoverySnapshot.hp>maxHp||!finite(recoverySnapshot.shield))fail('recovery_snapshot');
+   if(family==='effect_retaliation'){
+    const next=reviewRetaliationHitV2(g,e.at,retaliation.get(e.actorId)??emptyRetaliationReviewV2(),
+     maxHp,recoverySnapshot.hp,true,true,true);
+    if(!next.consumed)return {accepted:false,reason:'inactive_or_cooldown' as const};
+    retaliation.set(e.actorId,next.state);
+    recovery.set(key(family,eventId),{heal:next.heal,barrier:0});
+   }else{
+    const ready=sustainReady.get(e.actorId)??0;
+    if(e.at<ready)return {accepted:false,reason:'inactive_or_cooldown' as const};
+    const next=reviewSustenanceKillV2(g,e.at,ready,maxHp,recoverySnapshot.hp,recoverySnapshot.shield,e.eliteKill===true);
+    sustainReady.set(e.actorId,next.readyAt);
+    recovery.set(key(family,eventId),{heal:next.heal,barrier:next.barrier});
+   }
+  }
   claims.add(k);
   // Bind emission authorization to the exact claimed parent, not a
   // different event sharing an action or target.
@@ -108,13 +151,32 @@ export function createEffectEventProvenanceReviewV2(projections:readonly {actorI
    !finite(at)||at<parent.at||!finite(amount)||amount<=0||!Number.isSafeInteger(tickIndex)||tickIndex<0)
    fail('secondary');
   const parentEvent=parent!;
+  const g=equipped.get(parentEvent.actorId)!.get(family)!;
   if(family==='effect_renewal'){
-   if(tickIndex<1||tickIndex>3||at!==parentEvent.at+tickIndex*2000||targetId!==parentEvent.targetId)fail('renewal_tick');
+   const ticks=g.resonance>=2?3:2;
+   if(tickIndex<1||tickIndex>ticks||at!==parentEvent.at+tickIndex*2000||targetId!==parentEvent.targetId)fail('renewal_tick');
   }else if(tickIndex!==0||at!==parentEvent.at)fail('secondary_clock');
   const expectedTarget=family==='effect_retaliation'||family==='effect_sustenance'?parentEvent.actorId:parentEvent.targetId;
   if(targetId!==expectedTarget)fail('secondary_target');
   const emissionKey=key('emitted',family,parentId,kind,String(tickIndex));
   if(emissions.has(emissionKey))fail('duplicate_secondary');
+  let maximum=0;
+  if(family==='effect_mercy'){
+   const hp=parentEvent.targetMaxHp,shield=parentEvent.targetShield;
+   if(hp===undefined||shield===undefined)fail('missing_mercy_snapshot');
+   maximum=Math.min((parentEvent.attempted-parentEvent.actual)*g.totalValue,
+    Math.max(0,hp!*(g.resonance>=2?.04:.03)-shield!));
+  }else if(family==='effect_renewal'){
+   maximum=parentEvent.actual*g.totalValue*(g.resonance>=2?1.2:1)/(g.resonance>=2?3:2);
+  }else if(family==='effect_retaliation'||family==='effect_sustenance'){
+   const grant=recovery.get(key(family,parentId));
+   maximum=kind==='heal'?(grant?.heal??0):(grant?.barrier??0);
+  }else if(family==='effect_aegis'){
+   // An arbitrary root expiry is not evidence of an owned barrier.
+   // Fail closed until exact owned-segment expiry is integrated.
+   fail('aegis_owned_expiry_required');
+  }
+  if(amount>maximum+1e-9||maximum<=0)fail('secondary_magnitude');
   emissions.add(emissionKey);
   const event:Event={id:childId,actionId:parentEvent.actionId,targetId,kind,at,timing:family==='effect_renewal'?'periodic':'direct',
    successful:true,actual:amount,attempted:amount,actorId:parentEvent.actorId,origin:'secondary',depth:1,
@@ -122,7 +184,7 @@ export function createEffectEventProvenanceReviewV2(projections:readonly {actorI
   events.set(childId,event);
   return {...event,mayTriggerEffects:false as const};
  }
- return {registerAction,registerOutput,claim,emitSecondary,
+ return {registerAction,registerOutput,registerRetaliationDamage,claim,emitSecondary,
   inspect:()=>({version:EFFECT_EVENT_PROVENANCE_REVIEW_V2,actions:actions.size,events:events.size,
    terminalEvents:[...events.values()].filter(e=>e.depth===1).length,acceptedClaims:claims.size,
    canExecuteEffects:false as const,releaseEnabled:false as const})};

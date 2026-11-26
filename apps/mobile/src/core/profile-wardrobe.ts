@@ -12,7 +12,8 @@ import {collectibleJournal} from './collectibles';
 import {LIVE_EVENT_CATALOG} from '../content/live-events';
 import {frostfallRewardsDiscoverable,FROSTFALL_2026_EVENT_ID} from './frostfall-reward-visibility';
 import {canUseProfileEffect,profileAnimatedBorderDefinition,profileEffectDefinition} from './profile-effects';
-import {profileAnimatedCosmeticsEnabled} from './profile-cosmetic-access';
+import {profileAnimatedCosmeticsEnabled,profileAnimatedEffectCategoryEnabled} from './profile-cosmetic-access';
+import {wave2SetFor,wave2Owned} from './profile-cosmetic-wave2';
 import {PREMIUM_PROFILE_COSMETICS} from './profile-premium-cosmetics';
 
 /** One flat wardrobe model so the Look tab renders every cosmetic family the same way:
@@ -82,10 +83,10 @@ function frameRows(state:GameState,assets:WardrobeAssets,nowMs:number):WardrobeR
    return {kind:'frame' as const,id,name:id===DRACONIC_IDS.border?DRACONIC_COLLECTION.borderName:isCelestialBorder(id)?CELESTIAL_COLLECTION.borderName:source.name,group:(isCelestialBorder(id)||id===DRACONIC_IDS.border)?'Ascendant':source.destination==='Guild'?'Guild':id.startsWith('dungeon:')?'Dungeon':'Event',unlocked,equipped:equipped===id,...(unlocked?{}:lockFields(state,'border',id))};})];
 }
 
-function effectRows(state:GameState,assets:WardrobeAssets):WardrobeRow[]{
+function effectRows(state:GameState,assets:WardrobeAssets,includeUnreleased=false):WardrobeRow[]{
  const equipped=state.character?.profileEffectId??'';
  return [{kind:'effect' as const,id:'',name:'No effect',group:'Starter',unlocked:true,equipped:!equipped,clear:true},
-  ...(assets.effects??[]).map(item=>{const unlocked=canUseProfileEffect(state,item.id);return {kind:'effect' as const,id:item.id,name:item.name,group:'Cosmetics',unlocked,equipped:equipped===item.id,...(unlocked?{}:lockFields(state,'effect',item.id))};})];
+  ...(assets.effects??[]).filter(item=>wave2SetFor('effect',item.id)?wave2Owned(state.account,'effect',item.id):profileAnimatedCosmeticsEnabled(state)||includeUnreleased).map(item=>{const unlocked=canUseProfileEffect(state,item.id);return {kind:'effect' as const,id:item.id,name:item.name,group:'Cosmetics',unlocked,equipped:equipped===item.id,...(unlocked?{}:lockFields(state,'effect',item.id))};})];
 }
 
 function petRows(state:GameState,assets:WardrobeAssets):WardrobeRow[]{
@@ -121,8 +122,8 @@ function titleRows(state:GameState,nowMs:number):WardrobeRow[]{
 
 export function profileWardrobe(state:GameState,assets:WardrobeAssets,options?:{includeUnreleasedEffects?:boolean;nowMs?:number}):WardrobeCategory[]{
  const nowMs=options?.nowMs??Date.now();
- const byKind:Record<WardrobeKind,WardrobeRow[]>={icon:iconRows(state),scene:sceneRows(state,assets,nowMs),frame:frameRows(state,assets,nowMs),effect:effectRows(state,assets),pet:petRows(state,assets),title:titleRows(state,nowMs)};
- const kinds=profileAnimatedCosmeticsEnabled(state)||options?.includeUnreleasedEffects?WARDROBE_KINDS:WARDROBE_KINDS.filter(kind=>kind!=='effect');
+ const byKind:Record<WardrobeKind,WardrobeRow[]>={icon:iconRows(state),scene:sceneRows(state,assets,nowMs),frame:frameRows(state,assets,nowMs),effect:effectRows(state,assets,options?.includeUnreleasedEffects),pet:petRows(state,assets),title:titleRows(state,nowMs)};
+ const kinds=profileAnimatedEffectCategoryEnabled(state)||options?.includeUnreleasedEffects?WARDROBE_KINDS:WARDROBE_KINDS.filter(kind=>kind!=='effect');
  return kinds.map(kind=>{const rows=byKind[kind],counted=rows.filter(row=>!row.clear);
   return {kind,label:WARDROBE_LABELS[kind],rows,owned:counted.filter(row=>row.unlocked).length,total:counted.length};});
 }

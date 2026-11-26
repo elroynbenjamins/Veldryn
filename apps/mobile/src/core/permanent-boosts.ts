@@ -1,7 +1,7 @@
 import {BUYABLE_PERMANENT_BOOSTS,type PermanentBoostDefinition} from '../content/permanent-boosts';
 import type {CollectibleTarget} from '../content/collectibles';
 import {GameState} from './types';
-import {selectedFaithBlessing} from './faith';
+import {selectedFaithBlessings} from './faith';
 import {accountEntitlementBenefits} from './account-entitlements';
 import {collectionBonusBreakdown} from './collectibles';
 import {activeMealBonus} from './meal-buffs';
@@ -147,8 +147,7 @@ export function characterPermanentMultipliers(state:GameState):PermanentMultipli
   const explorationLevel=state.skills.find(skill=>skill.skillId==='exploration')?.level??1;
   result=merge(result,{...BASE,gatheringSpeedMultiplier:1+explorationGatheringSpeedBonus(explorationLevel)});
 
-  const blessing=selectedFaithBlessing(state);
-  if(blessing){
+  for(const blessing of selectedFaithBlessings(state)){
     if(blessing.family==='attack')result=merge(result,{...BASE,attackMultiplier:1+blessing.bonus,combatPowerMultiplier:1+blessing.bonus});
     if(blessing.family==='combatSpeed')result=merge(result,{...BASE,combatSpeedMultiplier:1+blessing.bonus});
     if(blessing.family==='defense')result=merge(result,{...BASE,incomingDamageMultiplier:1-blessing.bonus});

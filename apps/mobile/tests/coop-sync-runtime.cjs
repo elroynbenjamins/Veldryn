@@ -72,13 +72,26 @@ async function run(){
  assert.equal(pending.length,5,'retry eventually starts');
  await act(async()=>{pending[4].resolve();await Promise.resolve();});
  assert.deepEqual(delays(),[12000],'success resets backoff');
+ await act(async()=>{renderer.update(React.createElement(Harness,{...props,urgency:'decision'}));});
+ assert.equal(removed,0,'phase change keeps existing socket');
+ assert.equal(notifications.length,1,'no duplicate subscription');
+ assert.equal(pending.length,5,'phase change avoids redundant full fetch');
+ assert.deepEqual(delays(),[3500],'urgent vote shortens the existing watchdog');
+ await act(async()=>{renderer.update(React.createElement(Harness,{...props,urgency:'idle'}));});
+ assert.deepEqual(delays(),[3500],'less urgent phase never delays outstanding read');
+ await act(async()=>{notifications[0]();});
+ assert.equal(pending.length,6,'existing subscription still works');
+ await act(async()=>{renderer.update(React.createElement(Harness,{...props,urgency:'combat'}));});
+ assert.equal(pending.length,6,'phase change during request never launches a concurrent read');
+ await act(async()=>{pending[5].resolve();await Promise.resolve();});
+ assert.deepEqual(delays(),[6000],'next watchdog uses latest combat policy');
  await act(async()=>{renderer.update(React.createElement(Harness,{...props,enabled:false}));});
  assert.equal(removed,1,'inactive or hidden run drops its realtime subscription');
  assert.deepEqual(delays(),[],'inactive run cannot keep polling');
  await act(async()=>{notifications[0]();});
- assert.equal(pending.length,5,'stale channel notifications are ignored after cleanup');
+ assert.equal(pending.length,6,'stale channel notifications are ignored after cleanup');
  await act(async()=>{renderer.unmount();});
- assert.deepEqual(errors,['','','','timeout',''],'successful updates clear the sync error');
+ assert.deepEqual(errors,['','','','timeout','',''],'successful updates clear the sync error');
  console.log('PASS dungeon single-flight, realtime coalescing, watchdog and background cleanup');
 }
 void run().catch(error=>{console.error(error);process.exitCode=1;});

@@ -1,5 +1,6 @@
 import type {ImageSourcePropType} from 'react-native';
 import type {ClassId} from '../core/types';
+import {wave2PortraitArtwork} from './profile-cosmetic-render-art';
 
 /** Transparent showcase masters; separate from small navigation/class glyphs. */
 export const showcaseClassIcons:Record<ClassId,ImageSourcePropType>={
@@ -41,7 +42,7 @@ export const profilePortraitIcons:Record<string,ImageSourcePropType>={
  'dungeon:frostmarch:resonant-bell':require('../../assets/profile-icons-v1/dungeon-frostmarch-resonant-bell.webp'),
 };
 export function profileIconArtwork(id:string|undefined):ImageSourcePropType|undefined{
- return id?.startsWith('class:')?showcaseClassIcons[id.slice(6) as ClassId]:id?profilePortraitIcons[id]:undefined;
+ return id?.startsWith('class:')?showcaseClassIcons[id.slice(6) as ClassId]:id?(wave2PortraitArtwork(id)??profilePortraitIcons[id]):undefined;
 }
 
 /** Approved standard-set human portraits packed row-major: 4 columns × 2 rows. */

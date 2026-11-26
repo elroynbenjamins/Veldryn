@@ -16,7 +16,7 @@ export function professionActionPace(state:GameState,recipe:ProfessionActionDefi
  // crafting/processing modes; instant recipes have no duration to reduce.
  // Forging intentionally ignores generic permanent skill XP buffs, but the selected
  // Faith Experience blessing explicitly covers all professions including timed forging.
- const faith=selectedFaithBlessing(state);
+ const faith=selectedFaithBlessing(state,'experience');
  const forgeXp=faith?.family==='xp'?1+faith.bonus:1;
  const rawXpPerAction=recipe.xp*mastery.xp*(mode==='forge'?forgeXp:permanent.skillXpMultiplier)*affinity.xpMultiplier;
  // Round new Cooking batch rewards after all XP modifiers. Existing reservations retain their saved rate.

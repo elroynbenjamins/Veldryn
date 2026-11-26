@@ -220,7 +220,7 @@ export function effectiveStats(state:GameState){
   const permanent=characterPermanentMultipliers(state);attack*=permanent.combatPowerMultiplier;
   // Wellspring and its upgrades increase actual maximum HP, not attack power.
   // This applies consistently to combat, healing caps and character stat displays.
-  const faithBlessing=selectedFaithBlessing(state);
+  const faithBlessing=selectedFaithBlessing(state,'combat');
   if(faithBlessing?.family==='hp')hp=Math.ceil(hp*(1+faithBlessing.bonus));
   const prep=c.preparation?preparationEffects(c.preparation):undefined;if(prep)attack*=prep.attack;
   const role=CLASSES.find(def=>def.id===c.classId)?.role,baseCritChance=role==='Damage'?.10:.05,baseEvasion=role==='Damage'?.07:.04;
@@ -271,7 +271,7 @@ export function startCombat(state:GameState,monsterId:string,nowMs:number,combat
   if(!cumulativeMonsterUnlockIds(state).includes(monsterId)&&!(m.regionalAreaAutoUnlock&&state.character.level>=areaUnlockLevel))throw new Error('Monster not unlocked');
   if(m.boss)throw new Error('Bosses use challengeFallenKnight');
   if(zoneIdForTarget(monsterId)!==currentRegionId(state))throw new Error(`Travel to ${m.zone} before fighting ${m.name}`);
-  return {...state,outOfCombatSinceMs:undefined,character:{...state.character,activityQueuePausedReason:undefined},activity:{kind:'combat',targetId:monsterId,combatTacticId:normalizeCombatTactic(combatTacticId),...(huntGoalSnapshot(normalizeHuntGoalId(huntGoalId))?{huntGoal:huntGoalSnapshot(normalizeHuntGoalId(huntGoalId))}:{}),sessionKills:0,sessionChampions:0,startedAtMs:nowMs,lastClaimAtMs:nowMs,classFocus:normalizeTrainingFocus(state.character.trainingFocus),classTrainingSnapshot:{faithBlessingId:selectedFaithBlessing(state)?.id},environment:captureActivityEnvironment(monsterId,nowMs)}}
+  return {...state,outOfCombatSinceMs:undefined,character:{...state.character,activityQueuePausedReason:undefined},activity:{kind:'combat',targetId:monsterId,combatTacticId:normalizeCombatTactic(combatTacticId),...(huntGoalSnapshot(normalizeHuntGoalId(huntGoalId))?{huntGoal:huntGoalSnapshot(normalizeHuntGoalId(huntGoalId))}:{}),sessionKills:0,sessionChampions:0,startedAtMs:nowMs,lastClaimAtMs:nowMs,classFocus:normalizeTrainingFocus(state.character.trainingFocus),classTrainingSnapshot:{faithBlessingId:selectedFaithBlessing(state,'combat')?.id},environment:captureActivityEnvironment(monsterId,nowMs)}}
 }
 
 /** Average missing tier across all 10 gear slots, including empty/novice slots.

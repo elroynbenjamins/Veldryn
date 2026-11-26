@@ -182,18 +182,18 @@ var init_meal_buffs = __esm({
 });
 
 // ../apps/mobile/src/content/faith.ts
-var HOLY_WATER_ID, FAITH_TIERS, FAITH_BLESSINGS, HOLY_WATER_SOURCES, faithBlessingDef;
+var HOLY_WATER_ID, FAITH_TIERS, FAITH_BLESSINGS, FAITH_BLESSING_GROUPS, HOLY_WATER_SOURCES, faithBlessingDef, faithBlessingGroup;
 var init_faith = __esm({
   "../apps/mobile/src/content/faith.ts"() {
     "use strict";
     HOLY_WATER_ID = "HOLY_WATER";
     FAITH_TIERS = [
-      { id: "FAITH_QUIET", name: "Quiet prayer", level: 1, water: 1, xp: 96, seconds: 30 },
-      { id: "FAITH_CANDLE", name: "Candle vigil", level: 10, water: 2, xp: 208, seconds: 30 },
-      { id: "FAITH_LITANY", name: "Sacred litany", level: 25, water: 4, xp: 448, seconds: 30 },
-      { id: "FAITH_DEVOTION", name: "Devotion", level: 40, water: 8, xp: 960, seconds: 30 },
-      { id: "FAITH_COMMUNION", name: "Communion", level: 60, water: 16, xp: 2048, seconds: 30 },
-      { id: "FAITH_ASCENDANT", name: "Ascendant prayer", level: 80, water: 32, xp: 4352, seconds: 30 }
+      { id: "FAITH_QUIET", name: "Quiet prayer", level: 1, water: 1, xp: 90, seconds: 30 },
+      { id: "FAITH_CANDLE", name: "Candle vigil", level: 10, water: 2, xp: 192, seconds: 30 },
+      { id: "FAITH_LITANY", name: "Sacred litany", level: 25, water: 4, xp: 408, seconds: 30 },
+      { id: "FAITH_DEVOTION", name: "Devotion", level: 40, water: 8, xp: 864, seconds: 30 },
+      { id: "FAITH_COMMUNION", name: "Communion", level: 60, water: 16, xp: 1824, seconds: 30 },
+      { id: "FAITH_ASCENDANT", name: "Ascendant prayer", level: 80, water: 32, xp: 3840, seconds: 30 }
     ];
     FAITH_BLESSINGS = [
       { id: "EMBER_VOW", name: "Ember Vow", level: 1, family: "attack", bonus: 2 / 100 },
@@ -203,7 +203,6 @@ var init_faith = __esm({
       { id: "WELLSPRING", name: "Wellspring", level: 15, family: "hp", bonus: 4 / 100 },
       { id: "QUICKENED_STEP", name: "Quickened Step", level: 18, family: "combatSpeed", bonus: 3 / 100 },
       { id: "LANTERN_OF_WISDOM", name: "Lantern of Wisdom", level: 20, family: "xp", bonus: 2 / 100 },
-      { id: "FESTIVAL_FAVOR", name: "Festival Favor", level: 30, family: "eventCurrency", bonus: 10 / 100 },
       { id: "NATURES_COVENANT", name: "Nature's Covenant", level: 35, family: "gathering", bonus: 4 / 100 },
       { id: "SUNFIRE_VOW", name: "Sunfire Vow", level: 40, family: "attack", bonus: 4 / 100 },
       { id: "IRON_SANCTUARY", name: "Iron Sanctuary", level: 45, family: "defense", bonus: 6 / 100 },
@@ -219,6 +218,12 @@ var init_faith = __esm({
       { id: "UNDYING_LIGHT", name: "Undying Light", level: 90, family: "hp", bonus: 12 / 100 },
       { id: "ETERNAL_ENLIGHTENMENT", name: "Eternal Enlightenment", level: 95, family: "xp", bonus: 6 / 100 }
     ];
+    FAITH_BLESSING_GROUPS = [
+      { id: "combat", label: "Combat", families: ["attack", "defense", "hp", "combatSpeed"] },
+      { id: "gathering", label: "Gathering", families: ["gathering"] },
+      { id: "production", label: "Production", families: ["production"] },
+      { id: "experience", label: "Experience", families: ["xp"] }
+    ];
     HOLY_WATER_SOURCES = [
       { monsterId: "FIELD_WISP", chance: 0.16, min: 1, max: 2 },
       { monsterId: "DROWNED_PILGRIM", chance: 0.32, min: 2, max: 4 },
@@ -228,25 +233,57 @@ var init_faith = __esm({
       { monsterId: "ASHEN_REVENANT", chance: 0.5, min: 6, max: 10 }
     ];
     faithBlessingDef = (id) => FAITH_BLESSINGS.find((b) => b.id === id);
+    faithBlessingGroup = (blessing) => FAITH_BLESSING_GROUPS.find((group) => group.families.includes(blessing.family))?.id;
   }
 });
 
 // ../apps/mobile/src/core/faith.ts
+function validFaithSelections(raw2, level) {
+  const selections = {};
+  if (raw2?.selectedBlessingIds && typeof raw2.selectedBlessingIds === "object") {
+    for (const group of FAITH_BLESSING_GROUPS) {
+      const blessing = faithBlessingDef(raw2.selectedBlessingIds[group.id]);
+      if (blessing && blessing.level <= level && faithBlessingGroup(blessing) === group.id) selections[group.id] = blessing.id;
+    }
+  } else {
+    const blessing = faithBlessingDef(raw2?.selectedBlessingId);
+    if (blessing && blessing.level <= level) {
+      const group = faithBlessingGroup(blessing);
+      if (group) selections[group] = blessing.id;
+    }
+  }
+  return selections;
+}
+function safeFaithXp(xp) {
+  return typeof xp === "number" && Number.isFinite(xp) ? Math.max(0, Math.min(MAX_XP, Math.floor(xp))) : 0;
+}
+function stateFaithXp(state) {
+  return Math.max(safeFaithXp(state.character?.faith?.xp), safeFaithXp(state.skills.find((s) => s.skillId === "faith")?.xp));
+}
 function normalizeFaith(raw2) {
-  const xp = typeof raw2?.xp === "number" && Number.isFinite(raw2.xp) ? Math.max(0, Math.min(MAX_XP, Math.floor(raw2.xp))) : 0;
+  const xp = safeFaithXp(raw2?.xp);
   const selected2 = faithBlessingDef(raw2?.selectedBlessingId), p = raw2?.practice, tier = FAITH_TIERS.find((t) => t.id === p?.tierId);
+  const selectedBlessingIds = validFaithSelections(raw2, levelFromXp(xp));
+  const legacy = selected2 && Object.values(selectedBlessingIds).includes(selected2.id) ? selected2.id : Object.values(selectedBlessingIds)[0];
   const practice = tier && Number.isSafeInteger(p.remaining) && p.remaining > 0 && p.remaining <= MAX_FAITH_PRACTICES && Number.isSafeInteger(p.lastClaimAtMs) && p.lastClaimAtMs >= 0 && Number.isSafeInteger(p.progressMs) && p.progressMs >= 0 && p.progressMs < tier.seconds * 1e3 ? { tierId: tier.id, remaining: p.remaining, lastClaimAtMs: p.lastClaimAtMs, progressMs: p.progressMs } : void 0;
-  return { xp, selectedBlessingId: selected2 && selected2.level <= levelFromXp(xp) ? selected2.id : void 0, favoriteBlessingIds: Array.isArray(raw2?.favoriteBlessingIds) ? [...new Set(raw2.favoriteBlessingIds.filter((id) => typeof id === "string" && faithBlessingDef(id)))] : [], hideWeakerBlessings: raw2?.hideWeakerBlessings !== false, practice };
+  return { xp, selectedBlessingId: legacy, selectedBlessingIds, favoriteBlessingIds: Array.isArray(raw2?.favoriteBlessingIds) ? [...new Set(raw2.favoriteBlessingIds.filter((id) => typeof id === "string" && faithBlessingDef(id)))] : [], hideWeakerBlessings: raw2?.hideWeakerBlessings !== false, practice };
+}
+function activeFaithPreferences(state) {
+  const raw2 = state.character?.faith;
+  return normalizeFaith({ ...raw2, xp: stateFaithXp(state) });
 }
 function updateFaithPreference(state, kind, id, enabled) {
   if (!state.character) throw new Error("Create a character first.");
-  const faith = normalizeFaith(state.character.faith);
+  const faith = activeFaithPreferences(state);
   if (kind === "hide") faith.hideWeakerBlessings = !!enabled;
   else {
     const blessing = faithBlessingDef(id);
     if (!blessing) throw new Error("Unknown blessing.");
     if (kind === "blessing") {
       if (blessing.level > faithLevel(state)) throw new Error("Requires Faith level " + blessing.level);
+      const group = faithBlessingGroup(blessing);
+      if (!group) throw new Error("Unknown blessing category.");
+      faith.selectedBlessingIds[group] = blessing.id;
       faith.selectedBlessingId = blessing.id;
     } else faith.favoriteBlessingIds = enabled ? [.../* @__PURE__ */ new Set([...faith.favoriteBlessingIds, blessing.id])] : faith.favoriteBlessingIds.filter((b) => b !== blessing.id);
   }
@@ -263,7 +300,7 @@ function removeWater(stacks, quantity2) {
 }
 function reserveFaithPractice(state, tierId, count, now) {
   if (!state.character) throw new Error("Create a character first.");
-  const faith = normalizeFaith(state.character.faith), tier = FAITH_TIERS.find((t) => t.id === tierId);
+  const faith = activeFaithPreferences(state), tier = FAITH_TIERS.find((t) => t.id === tierId);
   if (faith.practice) throw new Error("Stop the current practice first.");
   if (!tier || tier.level > faithLevel(state)) throw new Error("Faith tier is locked.");
   if (faith.xp >= MAX_XP) throw new Error("Faith is mastered.");
@@ -275,7 +312,7 @@ function reserveFaithPractice(state, tierId, count, now) {
 }
 function settleFaithPractice(state, now, capSeconds) {
   const empty2 = { xp: 0, gold: 0, kills: 0, items: [], elapsedSeconds: 0, faithActions: 0, faithXp: 0, holyWaterConsumed: 0 };
-  const normalized = normalizeFaith(state.character?.faith), skillXp = state.skills.find((s) => s.skillId === "faith")?.xp ?? 0, faith = { ...normalized, xp: Math.max(normalized.xp, skillXp) }, reservation = state.activity?.faithPractice, reservationTier = FAITH_TIERS.find((t) => t.id === reservation?.tierId);
+  const faith = activeFaithPreferences(state), reservation = state.activity?.faithPractice, reservationTier = FAITH_TIERS.find((t) => t.id === reservation?.tierId);
   const p = faith.practice ?? (reservation && reservationTier ? { tierId: reservation.tierId, remaining: reservation.remainingPractices, lastClaimAtMs: reservation.lastClaimAtMs, progressMs: Math.floor(Math.max(0, Math.min(0.999999, reservation.progressFraction)) * reservationTier.seconds * 1e3) } : void 0), tier = FAITH_TIERS.find((t) => t.id === p?.tierId);
   if (!state.character || !p || !tier || now < p.lastClaimAtMs) return { state, reward: empty2, refund: 0 };
   const elapsed = Math.min(capSeconds * 1e3, now - p.lastClaimAtMs), speed = mealSpeedFactor(state.character, "noncombat"), total = p.progressMs + elapsed * speed;
@@ -287,7 +324,7 @@ function settleFaithPractice(state, now, capSeconds) {
   return { state: { ...state, activity: nextActivity, character: { ...state.character, faith: { ...faith, xp: faith.xp + xp, practice: nextPractice } } }, refund, reward: { ...empty2, xp, elapsedSeconds: Math.floor(elapsed / 1e3), qualifyingActivitySeconds, faithActions: actions, faithXp: xp, holyWaterConsumed: actions * tier.water, faithWaterRefund: refund } };
 }
 function cancelFaithPractice(state) {
-  const faith = normalizeFaith(state.character?.faith), reservation = state.activity?.faithPractice, p = faith.practice ?? (reservation ? { tierId: reservation.tierId, remaining: reservation.remainingPractices, lastClaimAtMs: reservation.lastClaimAtMs, progressMs: 0 } : void 0), tier = FAITH_TIERS.find((t) => t.id === p?.tierId);
+  const faith = activeFaithPreferences(state), reservation = state.activity?.faithPractice, p = faith.practice ?? (reservation ? { tierId: reservation.tierId, remaining: reservation.remainingPractices, lastClaimAtMs: reservation.lastClaimAtMs, progressMs: 0 } : void 0), tier = FAITH_TIERS.find((t) => t.id === p?.tierId);
   if (!state.character || !p || !tier) return { state, refund: 0 };
   return { state: { ...state, character: { ...state.character, faith: { ...faith, practice: void 0 } } }, refund: p.remaining * tier.water };
 }
@@ -296,7 +333,7 @@ function affordableFaithPracticeCount(state, tierId) {
   if (!tier || tier.level > faithLevel(state) || faithLevel(state) >= 100) return 0;
   return Math.min(MAX_FAITH_PRACTICES, Math.floor(holyWaterAvailable(state) / tier.water));
 }
-var MAX_XP, MAX_FAITH_PRACTICES, faithLevel, selectedFaithBlessing, holyWaterAvailable, faithPracticeAvailability;
+var MAX_XP, MAX_FAITH_PRACTICES, faithLevel, selectedFaithBlessing, selectedFaithBlessings, holyWaterAvailable, faithPracticeAvailability;
 var init_faith2 = __esm({
   "../apps/mobile/src/core/faith.ts"() {
     "use strict";
@@ -305,10 +342,19 @@ var init_faith2 = __esm({
     init_progression();
     MAX_XP = totalXpAtLevel(100);
     MAX_FAITH_PRACTICES = 1e3;
-    faithLevel = (state) => levelFromXp(Array.isArray(state) ? state.find((s) => s.skillId === "faith")?.xp ?? 0 : Math.max(normalizeFaith(state.character?.faith).xp, state.skills.find((s) => s.skillId === "faith")?.xp ?? 0));
-    selectedFaithBlessing = (state) => {
-      const raw2 = state.character?.faith, blessing = faithBlessingDef(raw2?.selectedBlessingId);
-      return blessing && blessing.level <= faithLevel(state) ? blessing : void 0;
+    faithLevel = (state) => levelFromXp(Array.isArray(state) ? safeFaithXp(state.find((s) => s.skillId === "faith")?.xp) : stateFaithXp(state));
+    selectedFaithBlessing = (state, group) => {
+      const raw2 = state.character?.faith;
+      if (!raw2) return void 0;
+      const selections = validFaithSelections(raw2, faithLevel(state));
+      const ids2 = Object.values(selections);
+      return faithBlessingDef(group ? selections[group] : raw2.selectedBlessingId && ids2.includes(raw2.selectedBlessingId) ? raw2.selectedBlessingId : ids2[0]);
+    };
+    selectedFaithBlessings = (state) => {
+      const raw2 = state.character?.faith;
+      if (!raw2) return [];
+      const ids2 = Object.values(validFaithSelections(raw2, faithLevel(state)));
+      return ids2.map((id) => faithBlessingDef(id));
     };
     holyWaterAvailable = (state) => [...state.inventory.stacks, ...state.bank.stacks].filter((s) => s.itemId === HOLY_WATER_ID).reduce((n, s) => n + s.quantity, 0);
     faithPracticeAvailability = (state, tierId, count) => {
@@ -856,6 +902,27 @@ var EQUIPMENT_RESALE_UPLIFT_RELEASED = false;
 var PROFILE_ANIMATED_COSMETICS_RELEASED = false;
 var PROFILE_COSMETICS_STORE_RELEASED = false;
 
+// ../apps/mobile/src/core/profile-cosmetic-wave2.ts
+var WAVE2_SETS = [
+  { id: "tideborne", name: "Tideborne", borderId: "cosmetic:tideborne:pearlframe", borderName: "Tideborne Pearlframe", effectId: "effect_tideborne_tidal_reverie", effectName: "Tidal Reverie", iconIds: ["cosmetic:tideborne:portrait-siren", "cosmetic:tideborne:portrait-corsair"], iconNames: ["Tideborne Siren", "Tideborne Corsair"] },
+  { id: "clockwork", name: "Clockwork Covenant", borderId: "cosmetic:clockwork:mechanism", borderName: "Clockwork Mechanism", effectId: "effect_clockwork_aetherwork_pulse", effectName: "Aetherwork Pulse", iconIds: ["cosmetic:clockwork:portrait-artificer", "cosmetic:clockwork:portrait-engineer"], iconNames: ["Covenant Artificer", "Covenant Engineer"] },
+  { id: "stormforged", name: "Stormforged", borderId: "cosmetic:stormforged:thunderframe", borderName: "Stormforged Thunderframe", effectId: "effect_stormforged_static_surge", effectName: "Static Surge", iconIds: ["cosmetic:stormforged:portrait-tempest", "cosmetic:stormforged:portrait-sentinel"], iconNames: ["Stormforged Tempest", "Stormforged Sentinel"] },
+  { id: "crimson-oath", name: "Crimson Oath", borderId: "cosmetic:crimson-oath:oathguard", borderName: "Crimson Oathguard", effectId: "effect_crimson_oath_scarlet_reverence", effectName: "Scarlet Reverence", iconIds: ["cosmetic:crimson-oath:portrait-justicar", "cosmetic:crimson-oath:portrait-knight"], iconNames: ["Crimson Justicar", "Crimson Knight"] }
+];
+var WAVE2_READY_SET_IDS = [];
+function wave2SetFor(kind, id) {
+  return WAVE2_SETS.find((row) => kind === "border" ? row.borderId === id : kind === "effect" ? row.effectId === id : row.iconIds.some((icon) => icon === id));
+}
+function wave2Ready(kind, id, ready = WAVE2_READY_SET_IDS) {
+  const row = wave2SetFor(kind, id);
+  return !!row && ready.includes(row.id);
+}
+function wave2Owned(account, kind, id, ready = WAVE2_READY_SET_IDS) {
+  if (!wave2Ready(kind, id, ready)) return false;
+  const ids2 = kind === "border" ? account.unlockedProfileBorderIds : kind === "effect" ? account.unlockedProfileEffectIds : account.unlockedProfileIconIds;
+  return ids2?.includes(id) ?? false;
+}
+
 // ../apps/mobile/src/core/profile-cosmetic-icons.ts
 var PROFILE_COSMETIC_PORTRAITS = [
   { id: "cosmetic:gloamward:portrait-seer", name: "Gloamward Seer", collectionId: "gloamward", presentation: "female", artworkReady: true },
@@ -865,7 +932,8 @@ var PROFILE_COSMETIC_PORTRAITS = [
   { id: "cosmetic:amberglass:portrait-duelist", name: "Amberglass Duelist", collectionId: "amberglass", presentation: "female", artworkReady: true },
   { id: "cosmetic:amberglass:portrait-vanguard", name: "Amberglass Vanguard", collectionId: "amberglass", presentation: "male", artworkReady: true },
   { id: "cosmetic:briarbound:portrait-ranger", name: "Briarbound Ranger", collectionId: "briarbound", presentation: "female", artworkReady: true },
-  { id: "cosmetic:briarbound:portrait-warden", name: "Briarbound Warden", collectionId: "briarbound", presentation: "male", artworkReady: true }
+  { id: "cosmetic:briarbound:portrait-warden", name: "Briarbound Warden", collectionId: "briarbound", presentation: "male", artworkReady: true },
+  ...WAVE2_SETS.filter((row) => WAVE2_READY_SET_IDS.includes(row.id)).flatMap((row) => row.iconIds.map((id, i) => ({ id, name: row.iconNames[i], collectionId: row.id, presentation: i === 0 ? "female" : "male", artworkReady: true })))
 ];
 
 // ../apps/mobile/src/core/profile-cosmetic-access.ts
@@ -875,6 +943,9 @@ function profileCosmeticsTester(state) {
 }
 function profileAnimatedCosmeticsEnabled(state) {
   return PROFILE_ANIMATED_COSMETICS_RELEASED || profileCosmeticsTester(state);
+}
+function profileAnimatedPieceEnabled(state, kind, id) {
+  return wave2SetFor(kind, id) ? wave2Owned(state.account, kind, id) : profileAnimatedCosmeticsEnabled(state);
 }
 
 // ../apps/mobile/src/core/frostfall-reward-visibility.ts
@@ -910,7 +981,7 @@ var PROFILE_ICON_CATALOG = [
   { id: "starter:dune-warden", name: "Dune Warden", group: "Starter", source: "Available from the start." },
   { id: "creature:FALLEN_KNIGHT", name: "Fallen Knight", group: "Combat", source: "Defeat the Fallen Knight.", bossId: "FALLEN_KNIGHT" },
   { id: "guild:stormwatch-crest", name: "Stormwatch Crest", group: "Guild", source: "Guild Token Shop \xB7 Guild Level 4" },
-  ...PROFILE_COSMETIC_PORTRAITS.map((row) => ({ id: row.id, name: row.name, group: "Cosmetics", source: "Cosmetics set \xB7 Tester access", artworkReady: row.artworkReady })),
+  ...PROFILE_COSMETIC_PORTRAITS.map((row) => ({ id: row.id, name: row.name, group: "Cosmetics", source: wave2SetFor("icon", row.id) ? "Cosmetics set \xB7 Account ownership" : "Cosmetics set \xB7 Tester access", artworkReady: row.artworkReady })),
   ...DUNGEON_SHOP_PROFILE_ICONS_V1.map((row) => ({ id: row.id, name: row.name, group: "Dungeon", source: "Dungeon Marks Shop \xB7 " + row.region }))
 ];
 function initialIconCharacter(state) {
@@ -941,8 +1012,8 @@ function profileIconCollection(state, nowMs = Date.now()) {
   const owned = new Set(state.account.unlockedProfileIconIds ?? []);
   const characters = [state.character, ...(state.otherCharacters ?? []).map((row) => row.character)];
   const tester = profileCosmeticsTester(state);
-  const portraits = PROFILE_ICON_CATALOG.filter((row) => (row.group !== "Dungeon" || DUNGEON_MARKS_SHOP_RELEASED || owned.has(row.id)) && (row.group !== "Cosmetics" || PROFILE_COSMETICS_STORE_RELEASED || tester || owned.has(row.id))).map((row) => {
-    const artworkReady = row.group === "Cosmetics" && tester ? true : row.artworkReady ?? true;
+  const portraits = PROFILE_ICON_CATALOG.filter((row) => !wave2SetFor("icon", row.id) || wave2Owned(state.account, "icon", row.id)).filter((row) => (row.group !== "Dungeon" || DUNGEON_MARKS_SHOP_RELEASED || owned.has(row.id)) && (row.group !== "Cosmetics" || PROFILE_COSMETICS_STORE_RELEASED || tester || owned.has(row.id))).map((row) => {
+    const artworkReady = row.group === "Cosmetics" && tester && !wave2SetFor("icon", row.id) ? true : row.artworkReady ?? true;
     return { ...row, artworkReady, selected: selected2 === row.id, unlocked: row.group === "Starter" || artworkReady && owned.has(row.id) || row.monsterId !== void 0 && characters.some((c) => (c?.monsterMasteryPoints?.[row.monsterId] ?? 0) >= 10) || row.bossId !== void 0 && state.defeatedBossIds.includes(row.bossId) };
   });
   const known2 = new Set(portraits.map((row) => row.id));
@@ -48708,9 +48779,6 @@ function eventCurrencyPromotionBps(eventId, earnedAtMs) {
   return Math.round((1e4 + base) * frostfallHolidayMultiplierBps(eventId, earnedAtMs) / 1e4) - 1e4;
 }
 
-// ../apps/mobile/src/core/live-events.ts
-init_faith2();
-
 // ../apps/mobile/src/core/equipment-shop-tier-unlock.ts
 function equipmentShopTierUnlocked(state, tier) {
   if (!state.character) return false;
@@ -48881,9 +48949,7 @@ function eventEffectiveDropRate(state, eventId, source, nowMs = Date.now()) {
   const event = liveEventDef(eventId);
   if (!event) return 0;
   const blessing = eventDailyFestivalBlessing2(state, nowMs), blessingMultiplier = blessing?.source === source ? 1 + blessing.bonusBps / 1e4 : 1;
-  const active2 = activeLiveEvent(state, nowMs), faith = active2?.definition.id === eventId ? selectedFaithBlessing(state) : void 0;
-  const faithMultiplier = faith?.family === "eventCurrency" ? 1 + faith.bonus : 1;
-  return event.dropRates[source] * (eventProjectChoice(state, eventId)?.dropMultipliers?.[source] ?? 1) * blessingMultiplier * (1 + eventCurrencyBonusBps(state, eventId, nowMs) / 1e4) * faithMultiplier;
+  return event.dropRates[source] * (eventProjectChoice(state, eventId)?.dropMultipliers?.[source] ?? 1) * blessingMultiplier * (1 + eventCurrencyBonusBps(state, eventId, nowMs) / 1e4);
 }
 function eventContributionValue(state, eventId, spent) {
   const multiplier = eventProjectChoice(state, eventId)?.contributionMultiplier ?? 1;
@@ -49940,8 +50006,7 @@ function characterPermanentMultipliers(state) {
   if (!c) return result;
   const explorationLevel = state.skills.find((skill2) => skill2.skillId === "exploration")?.level ?? 1;
   result = merge(result, { ...BASE, gatheringSpeedMultiplier: 1 + explorationGatheringSpeedBonus(explorationLevel) });
-  const blessing = selectedFaithBlessing(state);
-  if (blessing) {
+  for (const blessing of selectedFaithBlessings(state)) {
     if (blessing.family === "attack") result = merge(result, { ...BASE, attackMultiplier: 1 + blessing.bonus, combatPowerMultiplier: 1 + blessing.bonus });
     if (blessing.family === "combatSpeed") result = merge(result, { ...BASE, combatSpeedMultiplier: 1 + blessing.bonus });
     if (blessing.family === "defense") result = merge(result, { ...BASE, incomingDamageMultiplier: 1 - blessing.bonus });
@@ -50096,7 +50161,7 @@ function professionActionPace(state, recipe2, mode) {
   const permanent = characterPermanentMultipliers(state);
   const mastery = professionMasteryMultipliers(recipe2.id, state.account.professionMasteryByAction?.[recipe2.id]);
   const affinity = skillAffinityModifiers(state.character?.classId, recipe2.skillId);
-  const faith = selectedFaithBlessing(state);
+  const faith = selectedFaithBlessing(state, "experience");
   const forgeXp = faith?.family === "xp" ? 1 + faith.bonus : 1;
   const rawXpPerAction = recipe2.xp * mastery.xp * (mode === "forge" ? forgeXp : permanent.skillXpMultiplier) * affinity.xpMultiplier;
   const xpPerAction = recipe2.skillId === "cooking" && mode === "batch" ? Math.round(rawXpPerAction / 10) * 10 : rawXpPerAction;
@@ -54891,7 +54956,7 @@ function effectiveStats(state) {
   defense *= mastery.defense;
   const permanent = characterPermanentMultipliers(state);
   attack *= permanent.combatPowerMultiplier;
-  const faithBlessing = selectedFaithBlessing(state);
+  const faithBlessing = selectedFaithBlessing(state, "combat");
   if (faithBlessing?.family === "hp") hp = Math.ceil(hp * (1 + faithBlessing.bonus));
   const prep = c.preparation ? preparationEffects(c.preparation) : void 0;
   if (prep) attack *= prep.attack;
@@ -54942,7 +55007,7 @@ function startCombat(state, monsterId, nowMs, combatTacticId = "balanced", huntG
   if (!cumulativeMonsterUnlockIds(state).includes(monsterId) && !(m.regionalAreaAutoUnlock && state.character.level >= areaUnlockLevel)) throw new Error("Monster not unlocked");
   if (m.boss) throw new Error("Bosses use challengeFallenKnight");
   if (zoneIdForTarget(monsterId) !== currentRegionId(state)) throw new Error(`Travel to ${m.zone} before fighting ${m.name}`);
-  return { ...state, outOfCombatSinceMs: void 0, character: { ...state.character, activityQueuePausedReason: void 0 }, activity: { kind: "combat", targetId: monsterId, combatTacticId: normalizeCombatTactic(combatTacticId), ...huntGoalSnapshot(normalizeHuntGoalId(huntGoalId)) ? { huntGoal: huntGoalSnapshot(normalizeHuntGoalId(huntGoalId)) } : {}, sessionKills: 0, sessionChampions: 0, startedAtMs: nowMs, lastClaimAtMs: nowMs, classFocus: normalizeTrainingFocus(state.character.trainingFocus), classTrainingSnapshot: { faithBlessingId: selectedFaithBlessing(state)?.id }, environment: captureActivityEnvironment(monsterId, nowMs) } };
+  return { ...state, outOfCombatSinceMs: void 0, character: { ...state.character, activityQueuePausedReason: void 0 }, activity: { kind: "combat", targetId: monsterId, combatTacticId: normalizeCombatTactic(combatTacticId), ...huntGoalSnapshot(normalizeHuntGoalId(huntGoalId)) ? { huntGoal: huntGoalSnapshot(normalizeHuntGoalId(huntGoalId)) } : {}, sessionKills: 0, sessionChampions: 0, startedAtMs: nowMs, lastClaimAtMs: nowMs, classFocus: normalizeTrainingFocus(state.character.trainingFocus), classTrainingSnapshot: { faithBlessingId: selectedFaithBlessing(state, "combat")?.id }, environment: captureActivityEnvironment(monsterId, nowMs) } };
 }
 function regionalEquippedTierGap(state, expectedTier) {
   if (!state.character || expectedTier <= 0) return 0;
@@ -56712,11 +56777,13 @@ var PROFILE_EFFECTS = [
   { id: "effect_gloamward_wisps", name: "Arcane Wisps", collection: "Gloamward", borderId: "cosmetic:gloamward:arcane-frame", borderName: "Gloamward Arcane Frame", fallbackBorderId: "frame_gloamward" },
   { id: "effect_frostbound_winter_veil", name: "Winter Veil", collection: "Frostbound Chime", borderId: "cosmetic:frostbound:chime-frame", borderName: "Frostbound Chime Frame", fallbackBorderId: "dungeon:frostmarch:frostbound-chime" },
   { id: "effect_amberglass_ember_motes", name: "Ember Motes", collection: "Amberglass Loop", borderId: "cosmetic:amberglass:loop-frame", borderName: "Amberglass Loop Frame", fallbackBorderId: "dungeon:sunscar:amberglass-loop" },
-  { id: "effect_briarbound_verdant_whispers", name: "Verdant Whispers", collection: "Briarbound", borderId: "cosmetic:briarbound:verdant-frame", borderName: "Briarbound Verdant Frame", fallbackBorderId: "dungeon:asterfall:briarbound-frame" }
+  { id: "effect_briarbound_verdant_whispers", name: "Verdant Whispers", collection: "Briarbound", borderId: "cosmetic:briarbound:verdant-frame", borderName: "Briarbound Verdant Frame", fallbackBorderId: "dungeon:asterfall:briarbound-frame" },
+  ...WAVE2_SETS.filter((row) => WAVE2_READY_SET_IDS.includes(row.id)).map((row) => ({ id: row.effectId, name: row.effectName, collection: row.name, borderId: row.borderId, borderName: row.borderName, fallbackBorderId: "" }))
 ];
 var PROFILE_ALL_EFFECTS = [...PROFILE_EFFECTS, ...PREMIUM_PROFILE_COSMETICS.map((row) => ({ id: row.effectId, name: row.effectName, collection: row.name, borderId: row.borderId, borderName: row.borderName, fallbackBorderId: row.fallbackBorderId }))];
 function canUseProfileEffect(state, id) {
   if (!id) return true;
+  if (wave2SetFor("effect", id)) return wave2Owned(state.account, "effect", id);
   return state.account.unlockedProfileEffectIds?.includes(id) ?? false;
 }
 
@@ -61007,8 +61074,8 @@ function executeGameCommand(previous, value, now, options = {}) {
       if (!canUsePrivateTitleText(state, patch.profileTitle)) throw new Error("cosmetic_not_owned");
       if (patch.profileIconId && !canUseProfileIcon(state, patch.profileIconId)) throw new Error("cosmetic_not_owned");
       if (patch.profileBackgroundId && !["asterfall-night", "ironwood-dawn", "silverbrook-mist", "oathglass-hall", ...state.account.unlockedProfileBackgroundIds ?? []].includes(patch.profileBackgroundId)) throw new Error("cosmetic_not_owned");
-      if (patch.profileBorderId && !state.account.unlockedProfileBorderIds?.includes(patch.profileBorderId)) throw new Error("cosmetic_not_owned");
-      if (patch.profileEffectId && !profileAnimatedCosmeticsEnabled(state) && patch.profileEffectId !== state.character.profileEffectId) throw new Error("feature_not_released");
+      if (patch.profileBorderId && (wave2SetFor("border", patch.profileBorderId) ? !wave2Owned(state.account, "border", patch.profileBorderId) : !state.account.unlockedProfileBorderIds?.includes(patch.profileBorderId))) throw new Error("cosmetic_not_owned");
+      if (patch.profileEffectId && !profileAnimatedPieceEnabled(state, "effect", patch.profileEffectId) && patch.profileEffectId !== state.character.profileEffectId) throw new Error("feature_not_released");
       if (patch.profileEffectId && !canUseProfileEffect(state, patch.profileEffectId)) throw new Error("cosmetic_not_owned");
       if (patch.selectedCosmeticPetId && !state.account.unlockedCosmeticPetIds?.includes(patch.selectedCosmeticPetId)) throw new Error("cosmetic_not_owned");
       const icon = patch.profileIconId;
@@ -61228,7 +61295,7 @@ function gameplayHandler(services2, authenticatePlayer2 = async (token) => {
       const response = { guildProjectEffort, guildPveEffort, state: restoreCumulativeMonsterUnlocks(result.state), version: loaded.version + 1, serverNow: loaded.serverNow, accountId, reward: result.reward, activity: result.activity, message: result.message, won: result.won, storyBossBattle: result.storyBossBattle, upgrade: result.upgrade, forgeResults: result.forgeResults };
       const commitRpc = privateGrants ? "commit_online_game_ultra_luxe_v1" : "commit_online_game_guild_pve_v1";
       const committed = await services2.rpc(commitRpc, { p_account_id: accountId, p_expected_version: loaded.version, p_expected_gold: loaded.walletGold, p_request_id: body.requestId, p_request_hash: requestHash, p_response: response, p_contributions: contributions, ...privateGrants ? { p_expected_grants: [...ultraLuxeGrantProjection(loaded.ultraLuxeCollectionIds).collectionIds].sort() } : {}, ...command.type === "roster_delete" ? { p_deleted_character_id: command.args.id } : {} });
-      try {
+      if (contributions.length > 0) try {
         await services2.rpc("guild_quest_record_contributions_v1", { p_account_id: accountId, p_contributions: contributions.map((e) => ({ ...e, units: e.questUnits ?? e.units })) });
       } catch {
       }

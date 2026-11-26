@@ -1,4 +1,4 @@
-import {useEffect} from 'react';
+import {useEffect,useRef} from 'react';
 import {coopSyncIntervalMs,type CoopSyncMode,type CoopSyncUrgency} from '../core/coop-sync-policy';
 import {supabase} from './supabase';
 import {coopErrorMessage} from './coop-client';
@@ -15,15 +15,27 @@ export function useCoopRunSync({runId,mode,urgency,enabled,refresh,setError}:{
  refresh:(id:string)=>Promise<void>;
  setError:(message:string)=>void;
 }){
+ const policy=useRef({mode,urgency});policy.current={mode,urgency};
+ const callbacks=useRef({refresh,setError});callbacks.current={refresh,setError};
+ const adjustWatchdog=useRef<(()=>void)|null>(null);
  useEffect(()=>{
   if(!enabled||!runId)return;
   const id=runId;
   let stopped=false,inFlight=false,queued=false,realtimeConnected=false,coalescing=false,failures=0;
   const CHANGE_COALESCE_MS=350;
-  const retryDelay=()=>{const base=coopSyncIntervalMs(mode,urgency,realtimeConnected);const cap=urgency==='decision'?4000:Math.max(base,15000);return Math.min(cap,base*2**Math.min(failures,4));};
+  const interval=()=>coopSyncIntervalMs(policy.current.mode,policy.current.urgency,realtimeConnected);
+  const retryDelay=()=>{const base=interval();const cap=policy.current.urgency==='decision'?4000:Math.max(base,15000);return Math.min(cap,base*2**Math.min(failures,4));};
   let timer:ReturnType<typeof setTimeout>|undefined;
   const clearTimer=()=>{if(timer!==undefined){clearTimeout(timer);timer=undefined;}};
-  const schedule=(delay:number)=>{clearTimer();if(!stopped)timer=setTimeout(()=>void update(),delay);};
+  let dueAt=0;
+  const schedule=(delay:number)=>{clearTimer();if(!stopped){dueAt=Date.now()+delay;timer=setTimeout(()=>void update(),delay);}};
+  // A faster phase may shorten the outstanding watchdog, never postpone it.
+  // Keep queued realtime changes and retry pacing independent of render churn.
+  adjustWatchdog.current=()=>{
+   if(stopped||inFlight||coalescing||timer===undefined)return;
+   const delay=failures?retryDelay():interval();
+   if(Date.now()+delay<dueAt)schedule(delay);
+  };
   const update=async()=>{
    if(stopped)return;
    if(inFlight){queued=true;return;}
@@ -31,11 +43,11 @@ export function useCoopRunSync({runId,mode,urgency,enabled,refresh,setError}:{
    inFlight=true;
    coalescing=false;
    queued=false;
-   try{await refresh(id);failures=0;if(!stopped)setError('');}
-   catch(reason){failures++;if(!stopped)setError(coopErrorMessage(reason));}
+   try{await callbacks.current.refresh(id);failures=0;if(!stopped)callbacks.current.setError('');}
+   catch(reason){failures++;if(!stopped)callbacks.current.setError(coopErrorMessage(reason));}
    finally{
     inFlight=false;
-    if(!stopped){const repeat=queued;queued=false;coalescing=!failures&&repeat;schedule(failures?retryDelay():repeat?CHANGE_COALESCE_MS:coopSyncIntervalMs(mode,urgency,realtimeConnected));}
+    if(!stopped){const repeat=queued;queued=false;coalescing=!failures&&repeat;schedule(failures?retryDelay():repeat?CHANGE_COALESCE_MS:interval());}
    }
   };
   void update();
@@ -46,8 +58,10 @@ export function useCoopRunSync({runId,mode,urgency,enabled,refresh,setError}:{
     const connected=status==='SUBSCRIBED';
     if(connected===realtimeConnected)return;
     realtimeConnected=connected;
-    if(!inFlight&&!failures&&!coalescing)schedule(coopSyncIntervalMs(mode,urgency,realtimeConnected));
+    if(!inFlight&&!failures&&!coalescing)schedule(interval());
    });
-  return()=>{stopped=true;clearTimer();if(channel)void supabase?.removeChannel(channel);};
- },[runId,mode,urgency,enabled,refresh,setError]);
+  return()=>{stopped=true;adjustWatchdog.current=null;clearTimer();if(channel)void supabase?.removeChannel(channel);};
+ },[runId,enabled]);
+ // Policy changes do not reconnect or initiate a duplicate full run fetch.
+ useEffect(()=>{adjustWatchdog.current?.();},[mode,urgency]);
 }

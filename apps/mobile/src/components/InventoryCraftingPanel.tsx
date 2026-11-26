@@ -16,15 +16,21 @@ export function InventoryCraftingPanel({state,onCraft}:{state:GameState;onCraft:
  const {gt,gl,language}=useGameplayText();
  const [query,setQuery]=useState(''),[profession,setProfession]=useState<Profession>('all'),[craftableOnly,setCraftableOnly]=useState(false),[sort,setSort]=useState<Sort>('level'),[filtersOpen,setFiltersOpen]=useState(false),[limit,setLimit]=useState(20);
  const active=(profession==='all'?0:1)+(craftableOnly?1:0);
- const recipes=useMemo(()=>RECIPES.filter(recipe=>!isWinterHearthLightRecipe(recipe.id)||winterHearthContentVisible(state)).map(recipe=>({recipe,status:recipeAvailability(state,recipe.id)})).filter(({recipe,status})=>(profession==='all'||recipe.skillId===profession)&&(!craftableOnly||status.ready)&&(!query.trim()||(recipe.name+' '+recipe.output.itemId).toLowerCase().includes(query.trim().toLowerCase()))).sort((a,b)=>sort==='name'?a.recipe.name.localeCompare(b.recipe.name):a.recipe.level-b.recipe.level||a.recipe.name.localeCompare(b.recipe.name)),[state,profession,craftableOnly,query,sort]);
+ const q=query.trim().toLowerCase(),winterHearthVisible=winterHearthContentVisible(state);
+ // Cheap catalog filters first. Without the craftable filter, only visible
+ // cards require a potentially expensive pure craft/queue availability check.
+ const candidates=useMemo(()=>RECIPES.filter(recipe=>(!isWinterHearthLightRecipe(recipe.id)||winterHearthVisible)&&(profession==='all'||recipe.skillId===profession)&&(!q||(recipe.name+' '+recipe.output.itemId).toLowerCase().includes(q))).sort((a,b)=>sort==='name'?a.name.localeCompare(b.name):a.level-b.level||a.name.localeCompare(b.name)),[profession,q,sort,winterHearthVisible]);
+ const craftable=useMemo(()=>craftableOnly?candidates.map(recipe=>({recipe,status:recipeAvailability(state,recipe.id)})).filter(row=>row.status.ready):null,[state,candidates,craftableOnly]);
+ const count=craftable?.length??candidates.length;
+ const visible=useMemo(()=>craftable?craftable.slice(0,limit):candidates.slice(0,limit).map(recipe=>({recipe,status:recipeAvailability(state,recipe.id)})),[state,candidates,craftable,limit]);
  return <View style={s.root}>
   <Text style={s.title}>{gt("Crafting")}</Text>
   <SearchField value={query} onChangeText={value=>{setQuery(value);setLimit(20)}} placeholder={gt("Search recipes…")} placeholderTextColor={C.muted}/>
   <View style={s.toolbar}><View style={s.flex}><GameButton title={`${gt("Crafting Filters")}${active?` · ${active}`:''} · ${sort==='level'?gt("Level"):gt("Name")}`} tone={active?'primary':'secondary'} onPress={()=>setFiltersOpen(true)}/></View></View>
-  <Text style={s.count}>{recipes.length} recipes shown</Text>
-  {recipes.slice(0,limit).map(({recipe,status})=><RecipeCard key={recipe.id} state={state} recipe={recipe} status={status} onCraft={onCraft}/>)}
-  {recipes.length>limit?<GameButton title={`Show more recipes (${recipes.length-limit} remaining)`} tone="secondary" onPress={()=>setLimit(value=>value+20)}/>:null}
-  {!recipes.length?<Text style={s.empty}>{gt("No recipes match these filters.")}</Text>:null}
+  <Text style={s.count}>{count} recipes shown</Text>
+  {visible.map(({recipe,status})=><RecipeCard key={recipe.id} state={state} recipe={recipe} status={status} onCraft={onCraft}/>)}
+  {count>limit?<GameButton title={`Show more recipes (${count-limit} remaining)`} tone="secondary" onPress={()=>setLimit(value=>value+20)}/>:null}
+  {!count?<Text style={s.empty}>{gt("No recipes match these filters.")}</Text>:null}
   <Modal visible={filtersOpen} transparent animationType="slide" onRequestClose={()=>setFiltersOpen(false)}><View style={s.backdrop}><Pressable style={StyleSheet.absoluteFill} onPress={()=>setFiltersOpen(false)}/><View style={s.sheet}><Text style={s.title}>{gt("Crafting Filters")}</Text><Text style={s.label}>{gt("Profession")}</Text>{(['all','smithing','cooking'] as const).map(value=><Pressable key={value} onPress={()=>setProfession(value)} style={[s.option,profession===value&&s.optionActive]}><Text style={s.optionText}>{profession===value?'✓ ':''}{value==='all'?gt("All professions"):value[0].toUpperCase()+value.slice(1)}</Text></Pressable>)}<Text style={s.label}>{gt("Availability")}</Text><Pressable onPress={()=>setCraftableOnly(false)} style={[s.option,!craftableOnly&&s.optionActive]}><Text style={s.optionText}>{!craftableOnly?'✓ ':''}{gt("All recipes")}</Text></Pressable><Pressable onPress={()=>setCraftableOnly(true)} style={[s.option,craftableOnly&&s.optionActive]}><Text style={s.optionText}>{craftableOnly?'✓ ':''}{gt("Craftable now")}</Text></Pressable><Text style={s.label}>{gt("Sort by")}</Text>{(['level','name'] as const).map(value=><Pressable key={value} onPress={()=>setSort(value)} style={[s.option,sort===value&&s.optionActive]}><Text style={s.optionText}>{sort===value?'✓ ':''}{value==='level'?gt("Required level"):gt("Name")}</Text></Pressable>)}<View style={s.toolbar}><View style={s.flex}><GameButton title={gt("Reset")} tone="secondary" onPress={()=>{setProfession('all');setCraftableOnly(false);setSort('level')}}/></View><View style={s.flex}><GameButton title={gt("Apply Filters")} onPress={()=>setFiltersOpen(false)}/></View></View></View></View></Modal>
  </View>;
 }

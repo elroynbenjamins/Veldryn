@@ -1,5 +1,5 @@
 export type MotionTrack={points:readonly (readonly [number,number])[];phase:number;width:number;maxDp:number;opacity:number;rotation:number;cycles:number};
-export type MotionProfile='gloamward'|'frostbound'|'amberglass'|'briarbound'|'celestial'|'draconic'|'abyssal'|'paradox';
+export type MotionProfile='gloamward'|'frostbound'|'amberglass'|'briarbound'|'celestial'|'draconic'|'abyssal'|'paradox'|'tideborne'|'clockwork'|'stormforged'|'crimson-oath';
 export const MOTION_STEPS=Array.from({length:121},(_,i)=>i/120);
 // Close the shared native clock exactly while preserving authored tempo variation.
  // The integer lap count prevents reset jumps; the smooth warp preserves relative speed.
@@ -23,7 +23,7 @@ export function cosmeticGlowOpacity(profile:MotionProfile,clock:number,periodMs:
  const f=periodicCosmeticPhase(clock,12000/periodMs,phaseMs/periodMs);
  if(lantern)return peak*(.35+.30*Math.sin(Math.PI*f)**2+.20*Math.sin(5*Math.PI*f)**2);
  const pulse=Math.sin(Math.PI*f)**2;
- switch(profile){case 'gloamward':return peak*(.06+.94*pulse**2.5);case 'frostbound':return peak*(.06+.94*pulse**3);case 'amberglass':return peak*(.06+.94*pulse**1.5);case 'briarbound':return peak*(.06+.94*pulse);case 'celestial':return peak*(.2+.8*pulse**3);case 'draconic':return peak*(.25+.75*pulse**2);case 'abyssal':return peak*(.18+.82*pulse);case 'paradox':return peak*(.15+.85*Math.abs(Math.sin(3*Math.PI*f)));}
+ switch(profile){case 'gloamward':return peak*(.06+.94*pulse**2.5);case 'frostbound':return peak*(.06+.94*pulse**3);case 'amberglass':return peak*(.06+.94*pulse**1.5);case 'briarbound':return peak*(.06+.94*pulse);case 'celestial':return peak*(.2+.8*pulse**3);case 'draconic':return peak*(.25+.75*pulse**2);case 'abyssal':return peak*(.18+.82*pulse);case 'paradox':return peak*(.15+.85*Math.abs(Math.sin(3*Math.PI*f)));case 'tideborne':return peak*(.06+.94*Math.sin(Math.PI*f)**3);case 'clockwork':return peak*(.06+.94*pulse**1.8);case 'stormforged':return peak*(.06+.94*pulse**2);case 'crimson-oath':return peak*(.06+.94*pulse**1.7);}
 }
 
 /** Scroll-content coordinates. Treat missing measurements and zero-sized cards as inactive. */

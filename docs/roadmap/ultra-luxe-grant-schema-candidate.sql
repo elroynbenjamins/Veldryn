@@ -34,6 +34,17 @@ $$;
 revoke all on function public.ultra_luxe_grants_server_v1(uuid) from public,anon,authenticated;
 grant execute on function public.ultra_luxe_grants_server_v1(uuid) to service_role;
 
+-- Self-only readback for wardrobe discovery. Never accept a target account ID.
+create function public.ultra_luxe_collection_self_v1()
+returns jsonb language plpgsql stable security definer set search_path='' as $self_collections$
+declare uid uuid:=auth.uid();
+begin
+ if uid is null then raise exception 'AUTH_REQUIRED';end if;
+ return jsonb_build_object('accountId',uid,'collectionIds',public.ultra_luxe_grants_server_v1(uid));
+end $self_collections$;
+revoke all on function public.ultra_luxe_collection_self_v1() from public,anon,authenticated;
+grant execute on function public.ultra_luxe_collection_self_v1() to authenticated;
+
 -- Narrow account existence check; no broad auth.users read grant.
 create function private.ultra_luxe_account_exists_v1(p_account_id uuid)
 returns boolean language sql stable security definer set search_path='' as $exists$

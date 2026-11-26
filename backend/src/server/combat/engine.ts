@@ -8,6 +8,7 @@ import type {SyncStatV2} from './v2/party-synchronization';
 import {CRITICAL_SUPPORT_HP_V2,supportV2,tankV2,damageV2,emergencySupportRankV2,supportTargetsV2,incomingBossPressureV2,predictiveShieldTargetsV2,ordinaryHealSufficientV2,tankProtectionDecisionV2,damageTacticsV2,pureSingleHealV2,coordinatedHealV2,redundantPureShieldV2,sequenceDamageActionV2} from './v2/tactical-ai';
 import {EquipmentTraitRuntimeV2} from './v2/equipment-trait-engine-runtime';
 import {authorizeEq2PrivateHitQaV22,type Eq2PrivateHitAuthorityV22} from './v2/equipment-private-hit-qa-v22';
+import {authorizePrivateDamageGemReviewV2,type PrivateDamageGemAuthorityV2} from './v2/effect-gem-private-damage-authority';
 import {authorizeDungeonRewardEngineV2,type DungeonRewardEngineAuthorityV2,
  type DungeonRewardProcActionV2} from './v2/dungeon-reward-engine-v2';
 import {initCombatResourceV2,awardCombatResourceV2,spendCombatResourceV2,consumeQueuedCombatBonusV2} from './v2/resource-runtime';
@@ -47,21 +48,23 @@ export interface ServerCombatAuthoritiesV2 {
  readonly aiPolicy?:'tactical'|'authored-priority';
  /** Private matched experiment only, never a client or persisted live policy. */
  readonly rngReviewPolicy?:ActionStreamRngReviewPolicy;
+ /** Hidden QA only: opaque source-verified three-family damage gem review. */
+ readonly privateDamageGem?:PrivateDamageGemAuthorityV2;
 }
 export function simulateCombatWithServerAuthoritiesV2(
  input:CombatInput,authorities:ServerCombatAuthoritiesV2,
 ):CombatResult{
  if(!authorities||typeof authorities!=='object'||Array.isArray(authorities)||
-   Object.keys(authorities).some(key=>!['enemy','equipmentTrait','dungeonReward','privateHit','partySync','aiPolicy','rngReviewPolicy'].includes(key)))
+   Object.keys(authorities).some(key=>!['enemy','equipmentTrait','dungeonReward','privateHit','partySync','aiPolicy','rngReviewPolicy','privateDamageGem'].includes(key)))
   throw Error('combat_v2_unknown_authority_channel');
  if(authorities.aiPolicy!==undefined&&authorities.aiPolicy!=='tactical'&&authorities.aiPolicy!=='authored-priority')
   throw Error('combat_v2_unknown_ai_policy');
  return simulateCombat(input,authorities.enemy,authorities.equipmentTrait,
-  authorities.dungeonReward,authorities.privateHit,authorities.partySync,authorities.aiPolicy,authorities.rngReviewPolicy);
+  authorities.dungeonReward,authorities.privateHit,authorities.partySync,authorities.aiPolicy,authorities.rngReviewPolicy,authorities.privateDamageGem);
 }
 
 /** Optional server-issued second parameter is never parsed from CombatInput JSON. */
-export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2EngineAuthority, equipmentTraitAuthority?:EquipmentV2TraitEngineAuthority, dungeonRewardAuthority?:DungeonRewardEngineAuthorityV2, eq2PrivateHitAuthority?:Eq2PrivateHitAuthorityV22, partySyncAuthority?:PartySyncAuthorityV2, reviewAiPolicy?:'tactical'|'authored-priority', rngReviewPolicy?:ActionStreamRngReviewPolicy): CombatResult {
+export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2EngineAuthority, equipmentTraitAuthority?:EquipmentV2TraitEngineAuthority, dungeonRewardAuthority?:DungeonRewardEngineAuthorityV2, eq2PrivateHitAuthority?:Eq2PrivateHitAuthorityV22, partySyncAuthority?:PartySyncAuthorityV2, reviewAiPolicy?:'tactical'|'authored-priority', rngReviewPolicy?:ActionStreamRngReviewPolicy,privateDamageGemAuthority?:PrivateDamageGemAuthorityV2): CombatResult {
   if (!input.players.length || !input.enemies.length) throw new Error('combat_requires_both_teams');
   const enemyV2Effects=authorizeEnemyV2EngineExecution(input,enemyV2Authority);
   // No token -> no equipment trait runtime actions, preserving every legacy
@@ -82,6 +85,12 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
        eq2PrivateHitAuthority!==undefined||reviewAiPolicy!=='tactical')
       throw Error('combat_v2_rng_review_scope');
   }
+  if(privateDamageGemAuthority!==undefined&&(!enemyV2Effects||!equipmentTraitAuthority||
+    rngReviewPolicy!==ACTION_STREAM_RNG_QA_V2||reviewAiPolicy!=='tactical'||partySyncAuthority!==undefined||
+    dungeonRewardAuthority!==undefined||eq2PrivateHitAuthority!==undefined||input.initialPlayerState!==undefined||
+    input.players.some(p=>p.effectGems?.length||p.alchemyModifiers)))
+    throw Error('private_damage_gem_review_engine_scope');
+  const privateDamageGem=authorizePrivateDamageGemReviewV2(input,privateDamageGemAuthority,equipmentSources);
   const actionRng=rngReviewPolicy!==undefined?new ActionStreamRngReview(input.seed,rngReviewPolicy):undefined;
   const sync=(a:CombatantState,k:SyncStatV2)=>(syncSources.get(a.definition.id)?.[k]??0)/10000;
   const maxMs=input.maxDurationMs ?? 180_000; const tick=input.tickMs ?? 100; const mitigationConstant=input.mitigationConstant ?? 1200; const accuracyScale=input.accuracyScale ?? 1400;
@@ -277,6 +286,14 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
        !abilityId.startsWith('V2_')&&
        source.definition.abilities.some(a=>a.id===abilityId))
       raw*=1+clamp(sourceGear?.abilityDamagePct??0,0,1);
+    // Private QA conditional damage lane, additive across equipped
+    // families. Applied to original output before derived rupture.
+    if(privateDamageGem){
+      const bonuses=privateDamageGem.onSuccessfulHit(now,source,target,effect,abilityId,eventType);
+      raw*=1+bonuses.reduce((n,x)=>n+x.fraction,0);
+      for(const row of bonuses)events.push({atMs:now,type:'gem_state',actorId:source.definition.id,
+        targetId:target.definition.id,abilityId,amount:row.fraction,detail:'private_qa_damage_gem:'+row.familyId});
+    }
     const hpBeforeReactive=hpPct(target);
     if(v2Encounter&&eventType==='damage'&&!abilityId.startsWith('V2_')){
       if(source.combatV2)raw*=outgoingReactiveMultiplierV2(source,target,now);
@@ -844,7 +861,7 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
       if(!boss.alive)continue;
       for(const phase of phasesByBoss.get(boss)??[]){
         if(hpPct(boss)<=phase.hpPct && !boss.triggeredPhases.includes(phase.id)){
-          boss.triggeredPhases.push(phase.id); events.push({atMs:now,type:'phase',actorId:boss.definition.id,abilityId:phase.id,detail:`hp<=${phase.hpPct}`});gemOnBossPhaseV1(now,players);emitGemState(now);
+          boss.triggeredPhases.push(phase.id); events.push({atMs:now,type:'phase',actorId:boss.definition.id,abilityId:phase.id,detail:`hp<=${phase.hpPct}`});gemOnBossPhaseV1(now,players);emitGemState(now);privateDamageGem?.onBossPhase(now);
           for(const fx of phase.effects){ for(const t of targetsFor(fx.target??phase.target,boss,enemies,players,rng,`${now}:${phase.id}:phase`)) applyEffect(now,boss,t,fx,phase.id); }
         }
       }

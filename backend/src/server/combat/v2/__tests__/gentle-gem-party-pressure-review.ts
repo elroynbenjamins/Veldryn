@@ -17,6 +17,7 @@ import type {compileRealFrozenForgeActorV2} from '../equipment-frozen-forge-brid
 import type {reviewFrozenForgeSocketsV2} from '../frozen-forge-socket-review';
 import {gentleStatGemActorReviewV2} from './gentle-stat-gem-combat-review';
 import {reviewPotentAuthoredActorV2} from './potent-authored-output-combat-review';
+import {issuePrivateDamageGemAuthorityV2} from '../effect-gem-private-damage-authority';
 type Projection=ReturnType<typeof reviewFrozenForgeSocketsV2>;
 type Member={classId:ClassIdV2;accountId:string;characterId:string;revision:number;
  compiled:ReturnType<typeof compileRealFrozenForgeActorV2>;baseline:Projection};
@@ -72,7 +73,19 @@ export function createGentleGemPartyPressureReviewV2(members:readonly Member[],p
    (row,actual,d)=>d===inputDigest&&enemyV2SnapshotDigest(row)===bindingDigest&&enemyV2SnapshotDigest(actual)===sourceDigest);
   const enemy=issuePersistedPartyEnemyV2EngineAuthority(input,binding,kit.enemyIds,kit.bossIds,
    (row,d)=>d===inputDigest&&enemyV2SnapshotDigest(row)===bindingDigest&&enemyV2SnapshotDigest(kit)===kitDigest);
-  const result=simulateCombatWithServerAuthoritiesV2(input,{enemy,equipmentTrait,aiPolicy:'tactical',rngReviewPolicy:ACTION_STREAM_RNG_QA_V2});
+  const effects=projections.filter(p=>p.deferredEffectSources.length>0);
+  assert.ok(effects.length<=1);
+  const projection=effects[0];
+  const projectionDigest=projection?enemyV2SnapshotDigest(projection):null;
+  const privateDamageGem=projection?issuePrivateDamageGemAuthorityV2(input,projection,
+   (p,d)=>d===inputDigest&&enemyV2SnapshotDigest(p)===projectionDigest):undefined;
+  const result=simulateCombatWithServerAuthoritiesV2(input,{enemy,equipmentTrait,aiPolicy:'tactical',rngReviewPolicy:ACTION_STREAM_RNG_QA_V2,
+   ...(privateDamageGem?{privateDamageGem}:{})});
+  if(privateDamageGem){
+   assert.throws(()=>simulateCombatWithServerAuthoritiesV2({...input,maxDurationMs:59900},
+    {enemy,equipmentTrait,aiPolicy:'tactical',rngReviewPolicy:ACTION_STREAM_RNG_QA_V2,privateDamageGem}),/scope_does_not_match|not_matching_compiled/);
+   assert.throws(()=>simulateCombatWithServerAuthoritiesV2(input,{enemy,equipmentTrait,aiPolicy:'tactical',privateDamageGem}),/private_damage_gem_review_engine_scope/);
+  }
   assert.equal(result.events[0].detail,ACTION_STREAM_RNG_QA_V2);
   return result;
  };
@@ -82,7 +95,9 @@ export function createGentleGemPartyPressureReviewV2(members:readonly Member[],p
  return (index:number,p:Projection,replay=false)=>{
   const m=members[index];
   assert.deepEqual(p.forgeEvidence,m.baseline.forgeEvidence);
-  const actor=reviewPotentAuthoredActorV2(gentleStatGemActorReviewV2(m.compiled,p,true),p).actor;
+  const effectOnly=p.deferredEffectSources.length>0;
+  if(effectOnly){assert.equal(p.gemSources.length,0);assert.deepEqual(p.stats,m.baseline.stats);assert.deepEqual(p.advanced,m.baseline.advanced);}
+  const actor=effectOnly?baseline[index]:reviewPotentAuthoredActorV2(gentleStatGemActorReviewV2(m.compiled,p,true),p).actor;
   const players=baseline.map((a,i)=>i===index?actor:a);
   const projections=empty.map((x,i)=>i===index?p:x);
   const after=run(projections,players);
@@ -92,6 +107,15 @@ export function createGentleGemPartyPressureReviewV2(members:readonly Member[],p
   assert.equal(JSON.stringify(members),snapshots);
   const a=measure(before,index),b=measure(after,index);
   assert.ok([...Object.values(a),...Object.values(b)].every(Number.isFinite));
-  return {before:a,after:b,releaseEnabled:false as const};
+  const triggers=after.events.filter(e=>e.detail?.startsWith('private_qa_damage_gem:'));
+  assert.ok(!before.events.some(e=>e.detail?.startsWith('private_qa_damage_gem:')));
+  assert.ok(triggers.every(e=>e.actorId===actor.id&&e.amount!==undefined&&e.amount>0&&
+   (e.abilityId==='BASIC'||actor.abilities.some(a=>a.id===e.abilityId))));
+  if(effectOnly){
+   const report=p.effectResonanceReview!;
+   assert.ok(triggers.every(e=>report.families.some(g=>e.detail==='private_qa_damage_gem:'+g.familyId&&e.amount!<=g.peak.candidate+1e-9)));
+   assert.deepEqual(after.players[index].definition,before.players[index].definition);
+  }else assert.equal(triggers.length,0);
+  return {before:a,after:b,triggerCount:triggers.length,maxFraction:Math.max(0,...triggers.map(e=>e.amount??0)),releaseEnabled:false as const};
  };
 }

@@ -85,3 +85,35 @@ for(const b of [{x:157,y:5,w:26,h:26},{x:158,y:176,w:24,h:24}]){
  }
 }
 console.log('PASS: frame crest and pearl light are bounded and above artwork');
+
+const crypto=require('node:crypto');
+const artDir=path.join(__dirname,'../assets/ascendant/abyssal');
+const manifest=JSON.parse(fs.readFileSync(path.join(artDir,'manifest.json'),'utf8'));
+const registry=fs.readFileSync(path.join(__dirname,'../src/theme/abyssal-integration-assets.ts'),'utf8');
+const expectedFiles=Object.keys(manifest.files);
+assert.equal(expectedFiles.length,13);
+assert.equal((registry.match(/require\(/g)||[]).length,13);
+let totalBytes=0;
+for(const name of expectedFiles){
+ const meta=manifest.files[name],buf=fs.readFileSync(path.join(artDir,name));
+ assert.equal(buf.length,meta.size_bytes,name+' byte length');
+ assert.equal(crypto.createHash('sha256').update(buf).digest('hex'),meta.sha256,name+' hash');
+ assert.equal(buf.toString('ascii',0,4),'RIFF');
+ assert.equal(buf.toString('ascii',8,12),'WEBP');
+ const chunk=buf.toString('ascii',12,16);
+ let w,h,alpha=false;
+ if(chunk==='VP8X'){w=1+buf.readUIntLE(24,3);h=1+buf.readUIntLE(27,3);alpha=!!(buf[20]&16);}
+ else if(chunk==='VP8L'){assert.equal(buf[20],47);const bits=buf.readUInt32LE(21);w=1+(bits&16383);h=1+((bits>>>14)&16383);alpha=!!(bits&(1<<28));}
+ else if(chunk==='VP8 '){w=buf.readUInt16LE(26)&16383;h=buf.readUInt16LE(28)&16383;}
+ else assert.fail('Unsupported WebP chunk '+chunk);
+ assert.deepEqual([w,h],meta.dimensions,name+' dimensions');
+ assert.equal(alpha,meta.mode==='RGBA',name+' alpha metadata');
+ assert(registry.includes("require('../../assets/ascendant/abyssal/"+name+"')"));
+ totalBytes+=buf.length;
+}
+assert(totalBytes<1024*1024,'Abyssal artwork bundle stays below 1 MiB compressed');
+for(const name of ['PublicProfileScene.tsx','ProfileScenePreview.tsx','profile/ProfileStage.tsx']){
+ const live=fs.readFileSync(path.join(__dirname,'../src/components',name),'utf8');
+ assert(!live.includes('abyssal-integration-assets'),'review registry must remain isolated');
+}
+console.log('PASS: all thirteen uploaded artwork files match manifest and typed review registry');

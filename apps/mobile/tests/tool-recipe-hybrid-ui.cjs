@@ -16,8 +16,12 @@ assert.match(toolPanel,/const selected=opened===null\?undefined:tools\.find\(too
 assert.match(toolPanel,/setOpened\(current=>current===tier\?null:tier\)/,'Tapping an open tier collapses its details');
 assert.match(toolPanel,/const \[tab,setTab\]=useState<Tab>\('saved'\)/,'Saved copies are the first detail tab');
 assert.match(toolPanel,/\{tab==='recipe'\?<ToolRecipeInlinePanel state=\{state\} tool=\{selected\}/,'Exact selected tool recipe is inline, never an unrelated tier');
-assert.match(toolPanel,/accessibilityState=\{\{expanded:opened===tool\.tier\}\}/,'Tool tier disclosure announces its state to screen readers');
-assert.match(toolPanel,/accessibilityLabel=\{'Tier '\+tool\.tier/,'Tier selection identifies the correct tool to assistive technology');
+const disclosure=read('src/components/DisclosureControl.tsx');
+assert.match(toolPanel,/<DisclosureRow key=\{tool\.id\}/,'Tier uses the shared accessible row');
+assert.match(toolPanel,/expanded=\{opened===tool\.tier\}/,'Pass the correct tier state');
+assert.match(disclosure,/accessibilityState=\{\{expanded\}\}/,'Shared disclosure announces state to screen readers');
+assert.match(toolPanel,/label=\{'Tier '\+tool\.tier/,'Tier passes the correct accessible label');
+assert.match(disclosure,/accessibilityLabel=\{label\}/,'Shared disclosure forwards the label');
 assert.match(toolPanel,/onPress=\{\(\)=>dispatch\('tool_vault_activate'/,'A saved copy can be activated without going through Inventory');
 assert.match(toolPanel,/onPress=\{\(\)=>dispatch\('tool_vault_withdraw'/,'The saved reserve can return to Inventory deliberately');
 assert.match(toolPanel,/onPress=\{\(\)=>dispatch\(active\?'tool_vault_save':'equip_tool'/,'Stored versus equipped tools use distinct validated commands');

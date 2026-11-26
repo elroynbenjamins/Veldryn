@@ -124,7 +124,7 @@ export function normalizeSave(input:any):GameState{
       :normalizeEnemyFamilyMastery(savedCharacter.familyMasteryPoints),
     masteryMaterialRemainders:Object.fromEntries(Object.entries(savedCharacter.masteryMaterialRemainders??{}).filter(([id,v])=>ITEMS.some(i=>i.id===id&&i.type==='material')&&typeof v==='number'&&Number.isFinite(v)&&v>=0&&v<1)),
     classSkills:normalizeClassSkills(savedCharacter.classId,savedCharacter.classSkills),
-    faith:normalizeFaith(savedCharacter.faith),
+    faith:normalizeFaith({...savedCharacter.faith,xp:Math.max(savedCharacter.faith?.xp??0,Array.isArray(input.skills)?input.skills.find((skill:any)=>skill.skillId==='faith')?.xp??0:0)}),
     trainingFocus:normalizeTrainingFocus(savedCharacter.trainingFocus),
     herbalismMethodId:['balanced','quick','careful','bountiful'].includes(savedCharacter.herbalismMethodId)?savedCharacter.herbalismMethodId:'balanced',
     classTraining:input.activity?undefined:normalizeClassDrills(savedCharacter.classTraining),

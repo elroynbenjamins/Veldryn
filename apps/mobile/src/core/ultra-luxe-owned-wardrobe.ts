@@ -15,6 +15,12 @@ export const NEW_ULTRA_LUXE_WARDROBE=[...LEGACY_PUBLIC_LUXE_WARDROBE,...NEXT_PRE
  id:set.id,name:set.name,accent:set.colors[0],ids:{background:set.background,border:set.border,pet:set.pet,badge:set.badge},
  backgroundName:set.backgroundName,borderName:set.borderName,petName:set.petName,titleId:set.title,titleName:set.titleName,
 }))] as const;
+/** Public RPC v2 sanitizes all six sets. A legacy boolean alone never authorizes
+ * the two new collections; neither marker exposes an account's grant list. */
+export function verifiedPublicCandidateCollections(verified:unknown,version:unknown):readonly string[]{
+ if(verified!==true)return [];
+ return (version===2?NEW_ULTRA_LUXE_WARDROBE:LEGACY_PUBLIC_LUXE_WARDROBE).map(c=>c.id);
+}
 /** Discovery hint only. A verified, self-only RPC is independently required. */
 export function newUltraLuxeHint(state:GameState){
  const a=state.account;

@@ -115,7 +115,10 @@ for(const route of [self,pub]){
  assert(route.includes('VerifiedCandidateBorderEffects'));
 }
 assert(self.includes('ownedNewUltraLuxeCollections(state,{accountId,characterId:character.id},projection)'));
-assert(pub.includes('profile.ultraLuxeAppearanceVerified===true?LEGACY_PUBLIC_LUXE_WARDROBE.map'));
+assert(pub.includes('verifiedPublicCandidateCollections(profile.ultraLuxeAppearanceVerified,profile.ultraLuxeAppearanceVersion)'));
+assert.equal(wardrobe.verifiedPublicCandidateCollections(true,2).length,4);
+for(const version of [undefined,1,3,'2',null])assert.equal(wardrobe.verifiedPublicCandidateCollections(true,version).length,2);
+for(const verified of [false,undefined,'true',1])assert.deepEqual(wardrobe.verifiedPublicCandidateCollections(verified,2),[]);
 assert(self.includes('candidateAppearanceHint(raw),sixLuxeNamesEnabled)'));
 assert(stage.includes('collapsed&&candidate,sixLuxeNamesEnabled)'));
 for(const row of wardrobe.NEW_ULTRA_LUXE_WARDROBE.slice(2)){

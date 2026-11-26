@@ -14,8 +14,8 @@ const root=path.join(__dirname,'../src/components');
 const read=f=>fs.readFileSync(path.join(root,f),'utf8');
 assert(read('profile/UltraLuxeIdentityMotion.tsx').includes('if(!verified||!motion)'));
 assert(!read('PlayerBadges.tsx').includes('Animated.')&&read('PlayerBadges.tsx').includes('art(size)'));
-for(const name of ['CelestialSovereignPreview','DraconicDominionPreview'])assert(read('profile/'+name+'.tsx').includes('<UltraLuxeIdentityMotionProvider'));
-for(const name of ['PublicProfileScene','ProfileScenePreview'])assert((read(name+'.tsx').match(/<UltraLuxeTitleText/g)||[]).length===2);
+for(const name of ['CelestialSovereignPreview','DraconicDominionPreview','AbyssalMajestyPreview','ParadoxEternalPreview'])assert(read('profile/'+name+'.tsx').includes('<UltraLuxeIdentityMotionProvider'));
+for(const name of ['PublicProfileScene','ProfileScenePreview']){const source=read(name+'.tsx');assert((source.match(/<UltraLuxeTitleText/g)||[]).length===3);assert(source.includes('verified={!!candidateTitle}')&&source.includes('candidateShowcase('));}
 console.log('Full-set visual tier, mixed pieces and verified identity gating passed.');
 
 const allow={background:true,border:true,pet:true},deny={background:false,border:false,pet:false};
@@ -63,7 +63,7 @@ for(const name of ['PublicProfileScene','ProfileScenePreview']){
 }
 const stage=read('profile/ProfileStage.tsx');
 assert(stage.includes('ownsBackground&&ownsBorder&&'));
-assert(stage.indexOf('if(collapsed)return')<stage.indexOf('if(dedicated)return'));
+assert(stage.indexOf('if(collapsed)return')>=0&&stage.indexOf('if(dedicated||candidate)return')>stage.indexOf('if(collapsed)return'));
 assert(stage.includes('<ProfileScenePreview state={state} backgroundId={backgroundId} active={active}/>'));
 assert(stage.includes('dedicatedTools:{flexDirection:')&&stage.includes('active={false} reduceMotion'));
 const customize=fs.readFileSync(path.join(root,'../screens/ProfileCustomizeScreen.tsx'),'utf8');

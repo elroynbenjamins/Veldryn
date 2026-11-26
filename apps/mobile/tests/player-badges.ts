@@ -124,7 +124,8 @@ ok(badgeArt.includes('export function PlayerBadgeShowcase')&&badgeArt.includes('
 ok(badgeArt.includes("variant='framed'")&&badgeArt.includes("bareShowcase:{paddingVertical:2,paddingHorizontal:0}"),'bare Ultra Luxe shelf does not alter the ordinary framed default');
 for(const file of ['components/PublicProfileScene.tsx','components/ProfileScenePreview.tsx']){
  const scene=read('src/'+file);
- ok((scene.match(/variant="bare"/g)??[]).length===2,'both Ultra Luxe renderers use bare badge shelves in '+file);
+ ok((scene.match(/variant="bare"/g)??[]).length===3,'Celestial, Draconic and the shared Abyssal/Paradox branch use bare badge shelves in '+file);
+ ok(scene.includes('<VerifiedCandidateShowcase'),'new pair uses verified renderer in '+file);
 }
 for(const [path,marker] of [['components/PublicProfileScene.tsx','profile.playerBadges'],['components/profile/ProfileStage.tsx','badges.identity'],['components/profile/ProfileShowcasePanel.tsx','badges.identity']] as const)
  ok(read('src/'+path).includes('<PlayerBadgeShowcase identity={'+marker),'the profile badge shelf is shown on '+path);

@@ -13,7 +13,7 @@ export const compactClassProfiles = Object.freeze([
   ['DREADGUARD','tank',[126,15,14],[190,25,25]],
   ['RAVAGER','damage',[108,19,8],[160,34,17]],
   ['KNIFE_DANCER','damage',[90,19,8],[130,33,12]],
-  ['HEXWEAVER','damage',[92,15,9],[135,32,13]],
+  ['HEXWEAVER','damage',[92,18,9],[135,32,13]],
   ['WAYFINDER','damage',[94,18,9],[140,31,14]],
   ['DAWNKEEPER','support',[100,12,11],[155,19,19]],
   ['STONECALLER','support',[102,17,10],[170,23,22]],

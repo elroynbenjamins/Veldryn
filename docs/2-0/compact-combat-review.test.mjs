@@ -26,9 +26,9 @@ const rosters=[...compactClassProfiles.map(p=>[p.id]),...parties];
 const pressure=[{id:'moderate',attack:.24},{id:'heavy',attack:.38}];
 const arms=[{id:'unchanged',constant:()=>1200},{id:'low',constant:l=>(30+2*l)*.75},{id:'middle',constant:l=>30+2*l},{id:'high',constant:l=>(30+2*l)*1.5}];
 const clone=x=>structuredClone(x);
-function actor(id,band){
+function actor(id,band,defenseOriented=false){
  const p=compactClassProfiles.find(p=>p.id===id);
- const s=compactFullStats(id,band.level),g=sum(choose(p,band.tier),'common',50,true);
+ const s=compactFullStats(id,band.level),g=sum(choose(p,band.tier,defenseOriented),'common',50,true);
  const a=launchPlayer(names[id],band.level);
  return {...a,stats:{...s,maxHp:s.maxHp+g.hp,attackPower:s.attackPower+g.attack,defense:s.defense+g.defense,healingPower:s.healingPower+g.healingPower}};
 }
@@ -125,5 +125,27 @@ test('historical launch kits: actual engine matched scale diagnostic, not equiva
   const a=simulateCombat(clone(large)),b=simulateCombat(clone(small));
   verify(a);verify(b);
   console.log('COMPACT_UNIT_PROBE',JSON.stringify({id,large:metrics(a),scaled:metrics(b)}));
+ }
+});
+
+test('36 matched real-engine tank gear comparisons: same weapon, budget and enemy pressure',()=>{
+ const rows=[];
+ for(const band of bands)for(const id of ['BASTION','IRONWARDEN','DREADGUARD'])
+ for(const p of pressure)for(const seedIndex of [0,1]){
+  const seed=['QA_COMPACT_TANK',band.level,id,p.id,seedIndex].join(':');
+  const before=actor(id,band),after=actor(id,band,true);
+  assert.ok(after.stats.defense>=before.stats.defense);
+  const foe=enemy(band,1,p);
+  const run=a=>simulateCombat({seed,players:[clone(a)],enemies:[clone(foe)],maxDurationMs:60000,
+    mitigationConstant:arms[2].constant(band.level),accuracyScale:1400});
+  const first=run(before),second=run(after);
+  verify(first);verify(second);
+  rows.push({id,level:band.level,pressure:p.id,seedIndex,defenseDelta:after.stats.defense-before.stats.defense,before:metrics(first),after:metrics(second)});
+ }
+ assert.equal(rows.length,36);
+ for(const id of ['BASTION','IRONWARDEN','DREADGUARD']){
+  const group=rows.filter(r=>r.id===id);
+  const delta=k=>group.reduce((n,r)=>n+r.after[k]-r.before[k],0)/group.length;
+  console.log('COMPACT_TANK_BUILD_SUMMARY',JSON.stringify({id,cases:group.length,meanHpDelta:delta('hp'),meanDamageDelta:delta('damage'),meanTakenDelta:delta('taken'),victoryDelta:delta('victory')}));
  }
 });

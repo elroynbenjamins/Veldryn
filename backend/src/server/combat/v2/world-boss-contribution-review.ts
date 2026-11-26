@@ -2,7 +2,7 @@
  * engine does not preserve ordinary shield owner/consumption or counterfactual
  * mitigation attribution. Never manufacture those values from shield grants.
  */
-import type {CombatResult} from '../types';
+import type {CombatResult,CombatantState,CombatEvent} from '../types';
 const metric=(x:unknown):x is number=>typeof x==='number'&&Number.isFinite(x)&&x>=0&&x<=1e12;
 const round=(x:number)=>Math.round(x*100)/100;
 export const WORLD_BOSS_CONTRIBUTION_REVIEW_LIVE=false as const;
@@ -16,7 +16,7 @@ export function reviewWorldBossContributionV2(combat:CombatResult){
   !metric(boss.hp)||!metric(boss.definition.stats.maxHp)||
   boss.hp>boss.definition.stats.maxHp)
   throw Error('world_boss_review_invalid_boss');
- const players=combat.players;
+ const players:readonly CombatantState[]=combat.players;
  const ids=new Set<string>();
  const rows=players.map(p=>{
   const d=p.definition;
@@ -33,7 +33,8 @@ export function reviewWorldBossContributionV2(combat:CombatResult){
  });
  const byId=new Map(rows.map(row=>[row.actorId,row]));
  let unattributedPartyShieldAbsorbed=0,bossShieldGranted=0,bossHealingObserved=0,lastAt=0;
- for(const event of combat.events){
+ const events:readonly CombatEvent[]=combat.events;
+ for(const event of events){
   if(!event||!metric(event.atMs)||event.atMs<lastAt||event.atMs>combat.durationMs||
    (event.amount!==undefined&&!metric(event.amount))||
    (event.absorbed!==undefined&&!metric(event.absorbed)))

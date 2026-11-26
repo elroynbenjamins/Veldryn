@@ -14,12 +14,15 @@ assert.match(screen,/useMemo\(\(\)=>selectedCopyId\?equipmentCopyDisposalDecisio
 assert.match(screen,/Salvage may need a free slot/,'full Inventory explains salvage limits');
 assert.match(preview,/<EquipmentDisposalStatus compact/,'expanded secondary actions explain blocked sell/salvage permissions');
 assert.doesNotMatch(preview,/actionsOpen|hasOtherActions/,'approved equipment actions must never require opening a drawer');
-assert.match(preview,/hasStorageActions\?<View style=\{s.footerActionRow\}>/,'storage transfers must be directly accessible');
+assert.match(preview,/hasStorageActions\?<View style=\{\[s\.footerActionRow,stackFooterActions&&s\.footerActionRowStacked\]\}>/,'storage transfers must be directly accessible');
 assert.match(preview,/hasDisposalActions\?<View style=\{s.footerDisposal\}>/,'Sell and Salvage must appear below a thin divider');
 assert.match(preview,/title=\{gearText\('Move to Bank'\)\}/,'bank destination must be explicit and never truncated to To');
 assert.doesNotMatch(preview,/title=\{gearText\('To Bank'\)\}/,'comparison must not use the ambiguous To Bank label');
 assert.doesNotMatch(preview,/footerSecondary|onContentSizeChange/,'approved compact footer must avoid auto-scroll jumps');
 assert.match(preview,/width<380\|\|fontScale>=1\.2/,'bonus rows must remain readable on narrow screens and large type');
+assert.match(preview,/scrollWithActions=width<355\|\|shortScreen\|\|fontScale>=1\.25/,'Comparison footer scrolls on constrained screens');
+assert(preview.includes('{scrollWithActions?footer:null}')&&preview.includes('{!scrollWithActions?footer:null}'),'Comparison actions remain available in both layouts');
+assert(preview.includes("footerActionCellStacked:{flex:0,flexShrink:0,width:'100%'}")&&(preview.match(/stackFooterActions&&s\.footerActionCellStacked/g)||[]).length===5,'All five comparison action cells use intrinsic heights in stacked mode');
 assert.match(preview,/disabled=\{busy\|\|!canSalvage\}/,'salvage permissions stay enforced');
 assert.match(preview,/disabled=\{busy\|\|!canSell\}/,'sell permissions stay enforced');
 assert.match(pouch,/<EquipmentDisposalStatus/,'Gear pouch uses the same action status panel');

@@ -43,10 +43,33 @@ export const WAVE2_ART:readonly Wave2CosmeticArt[]=[{
   {source:require('../../assets/profile-cosmetics-wave2/clockwork/gear-mote.png'),points:[[0.66,0.74],[0.73,0.53],[0.8,0.31],[0.92,0.2]],phase:70,width:0.026,maxDp:12,opacity:0.47,rotation:-200,cycles:0.85},
   {source:require('../../assets/profile-cosmetics-wave2/clockwork/aether-glint.png'),points:[[0.28,0.83],[0.39,0.64],[0.52,0.54],[0.66,0.38]],phase:91,width:0.022,maxDp:10,opacity:0.43,rotation:0,cycles:1.1},
  ],
+},{
+ borderId:'cosmetic:stormforged:thunderframe',effectId:'effect_stormforged_static_surge',
+ border:require('../../assets/profile-cosmetics-wave2/stormforged/thunderframe.png'),wisp:require('../../assets/profile-cosmetics-wave2/stormforged/lightning-spark.png'),particle:require('../../assets/profile-cosmetics-wave2/stormforged/charged-shard.png'),staticEffect:require('../../assets/profile-cosmetics-wave2/stormforged/static-effect.png'),
+ motion:'rise',motionProfile:'stormforged',effectPeriodMs:10800,
+ glows:[
+  {source:require('../../assets/profile-cosmetics-wave2/stormforged/storm-glint.png'),sourceRect:[375,15,20,20],periodMs:3200,phaseMs:0,peakOpacity:0.86},
+  {source:require('../../assets/profile-cosmetics-wave2/stormforged/storm-glint.png'),sourceRect:[710,32,20,20],periodMs:2800,phaseMs:570,peakOpacity:0.86},
+  {source:require('../../assets/profile-cosmetics-wave2/stormforged/storm-glint.png'),sourceRect:[729,203,20,20],periodMs:3100,phaseMs:1100,peakOpacity:0.86},
+  {source:require('../../assets/profile-cosmetics-wave2/stormforged/storm-glint.png'),sourceRect:[708,380,20,20],periodMs:3500,phaseMs:1680,peakOpacity:0.86},
+  {source:require('../../assets/profile-cosmetics-wave2/stormforged/storm-glint.png'),sourceRect:[375,392,20,20],periodMs:3200,phaseMs:2320,peakOpacity:0.86},
+  {source:require('../../assets/profile-cosmetics-wave2/stormforged/storm-glint.png'),sourceRect:[37,383,20,20],periodMs:3500,phaseMs:2890,peakOpacity:0.86},
+  {source:require('../../assets/profile-cosmetics-wave2/stormforged/storm-glint.png'),sourceRect:[16,203,20,20],periodMs:3100,phaseMs:3510,peakOpacity:0.86},
+  {source:require('../../assets/profile-cosmetics-wave2/stormforged/storm-glint.png'),sourceRect:[39,30,20,20],periodMs:2800,phaseMs:4140,peakOpacity:0.86},
+ ],
+ tracks:[
+  {source:require('../../assets/profile-cosmetics-wave2/stormforged/lightning-spark.png'),points:[[0.08,0.78],[0.18,0.64],[0.15,0.4],[0.28,0.21]],phase:4,width:0.038,maxDp:17,opacity:0.7,rotation:35,cycles:1.15},
+  {source:require('../../assets/profile-cosmetics-wave2/stormforged/lightning-spark.png'),points:[[0.92,0.18],[0.82,0.33],[0.86,0.54],[0.73,0.73]],phase:27,width:0.034,maxDp:16,opacity:0.64,rotation:-40,cycles:1.1},
+  {source:require('../../assets/profile-cosmetics-wave2/stormforged/charged-shard.png'),points:[[0.22,0.9],[0.33,0.71],[0.29,0.51],[0.43,0.35]],phase:49,width:0.03,maxDp:14,opacity:0.56,rotation:105,cycles:1},
+  {source:require('../../assets/profile-cosmetics-wave2/stormforged/charged-shard.png'),points:[[0.67,0.88],[0.77,0.72],[0.73,0.51],[0.87,0.34]],phase:72,width:0.026,maxDp:12,opacity:0.48,rotation:-90,cycles:0.95},
+  {source:require('../../assets/profile-cosmetics-wave2/stormforged/storm-glint.png'),points:[[0.56,0.22],[0.65,0.29],[0.75,0.18],[0.86,0.26]],phase:96,width:0.022,maxDp:10,opacity:0.42,rotation:0,cycles:0.85},
+ ],
 }];
 export const WAVE2_PORTRAIT_ART:Readonly<Record<string,ImageSourcePropType>>={
  'cosmetic:tideborne:portrait-siren':require('../../assets/profile-cosmetics-wave2/tideborne/siren.png'),
  'cosmetic:tideborne:portrait-corsair':require('../../assets/profile-cosmetics-wave2/tideborne/corsair.png'),
  'cosmetic:clockwork:portrait-artificer':require('../../assets/profile-cosmetics-wave2/clockwork/artificer.png'),
  'cosmetic:clockwork:portrait-engineer':require('../../assets/profile-cosmetics-wave2/clockwork/engineer.png'),
+ 'cosmetic:stormforged:portrait-tempest':require('../../assets/profile-cosmetics-wave2/stormforged/tempest.png'),
+ 'cosmetic:stormforged:portrait-sentinel':require('../../assets/profile-cosmetics-wave2/stormforged/sentinel.png'),
 };

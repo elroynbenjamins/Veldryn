@@ -1,0 +1,411 @@
+{
+  "status": "review-only; generated dedicated frame, concept-derived portrait crops; native QA pending",
+  "sourceFrame": [
+    768,
+    432
+  ],
+  "portraitSize": [
+    256,
+    256
+  ],
+  "effectPeriodMs": 10800,
+  "glowClockMs": 12000,
+  "glows": [
+    {
+      "name": "top-capacitor",
+      "x": 0.5013020833333334,
+      "y": 0.05787037037037037,
+      "sizeDp": 9,
+      "sourceRect": [
+        375,
+        15,
+        20,
+        20
+      ],
+      "periodMs": 3200,
+      "phaseMs": 0,
+      "peakOpacity": 0.86
+    },
+    {
+      "name": "upper-right",
+      "x": 0.9375,
+      "y": 0.09722222222222222,
+      "sizeDp": 9,
+      "sourceRect": [
+        710,
+        32,
+        20,
+        20
+      ],
+      "periodMs": 2800,
+      "phaseMs": 570,
+      "peakOpacity": 0.86
+    },
+    {
+      "name": "right-conduit",
+      "x": 0.9622395833333334,
+      "y": 0.4930555555555556,
+      "sizeDp": 9,
+      "sourceRect": [
+        729,
+        203,
+        20,
+        20
+      ],
+      "periodMs": 3100,
+      "phaseMs": 1100,
+      "peakOpacity": 0.86
+    },
+    {
+      "name": "lower-right",
+      "x": 0.9348958333333334,
+      "y": 0.9027777777777778,
+      "sizeDp": 9,
+      "sourceRect": [
+        708,
+        380,
+        20,
+        20
+      ],
+      "periodMs": 3500,
+      "phaseMs": 1680,
+      "peakOpacity": 0.86
+    },
+    {
+      "name": "bottom-capacitor",
+      "x": 0.5013020833333334,
+      "y": 0.9305555555555556,
+      "sizeDp": 9,
+      "sourceRect": [
+        375,
+        392,
+        20,
+        20
+      ],
+      "periodMs": 3200,
+      "phaseMs": 2320,
+      "peakOpacity": 0.86
+    },
+    {
+      "name": "lower-left",
+      "x": 0.061197916666666664,
+      "y": 0.9097222222222222,
+      "sizeDp": 9,
+      "sourceRect": [
+        37,
+        383,
+        20,
+        20
+      ],
+      "periodMs": 3500,
+      "phaseMs": 2890,
+      "peakOpacity": 0.86
+    },
+    {
+      "name": "left-conduit",
+      "x": 0.033854166666666664,
+      "y": 0.4930555555555556,
+      "sizeDp": 9,
+      "sourceRect": [
+        16,
+        203,
+        20,
+        20
+      ],
+      "periodMs": 3100,
+      "phaseMs": 3510,
+      "peakOpacity": 0.86
+    },
+    {
+      "name": "upper-left",
+      "x": 0.06380208333333333,
+      "y": 0.09259259259259259,
+      "sizeDp": 9,
+      "sourceRect": [
+        39,
+        30,
+        20,
+        20
+      ],
+      "periodMs": 2800,
+      "phaseMs": 4140,
+      "peakOpacity": 0.86
+    }
+  ],
+  "tracks": [
+    {
+      "sprite": "lightning-spark",
+      "points": [
+        [
+          0.08,
+          0.78
+        ],
+        [
+          0.18,
+          0.64
+        ],
+        [
+          0.15,
+          0.4
+        ],
+        [
+          0.28,
+          0.21
+        ]
+      ],
+      "phase": 4,
+      "width": 0.038,
+      "maxDp": 17,
+      "opacity": 0.7,
+      "rotation": 35,
+      "cycles": 1.15
+    },
+    {
+      "sprite": "lightning-spark",
+      "points": [
+        [
+          0.92,
+          0.18
+        ],
+        [
+          0.82,
+          0.33
+        ],
+        [
+          0.86,
+          0.54
+        ],
+        [
+          0.73,
+          0.73
+        ]
+      ],
+      "phase": 27,
+      "width": 0.034,
+      "maxDp": 16,
+      "opacity": 0.64,
+      "rotation": -40,
+      "cycles": 1.1
+    },
+    {
+      "sprite": "charged-shard",
+      "points": [
+        [
+          0.22,
+          0.9
+        ],
+        [
+          0.33,
+          0.71
+        ],
+        [
+          0.29,
+          0.51
+        ],
+        [
+          0.43,
+          0.35
+        ]
+      ],
+      "phase": 49,
+      "width": 0.03,
+      "maxDp": 14,
+      "opacity": 0.56,
+      "rotation": 105,
+      "cycles": 1
+    },
+    {
+      "sprite": "charged-shard",
+      "points": [
+        [
+          0.67,
+          0.88
+        ],
+        [
+          0.77,
+          0.72
+        ],
+        [
+          0.73,
+          0.51
+        ],
+        [
+          0.87,
+          0.34
+        ]
+      ],
+      "phase": 72,
+      "width": 0.026,
+      "maxDp": 12,
+      "opacity": 0.48,
+      "rotation": -90,
+      "cycles": 0.95
+    },
+    {
+      "sprite": "storm-glint",
+      "points": [
+        [
+          0.56,
+          0.22
+        ],
+        [
+          0.65,
+          0.29
+        ],
+        [
+          0.75,
+          0.18
+        ],
+        [
+          0.86,
+          0.26
+        ]
+      ],
+      "phase": 96,
+      "width": 0.022,
+      "maxDp": 10,
+      "opacity": 0.42,
+      "rotation": 0,
+      "cycles": 0.85
+    }
+  ],
+  "files": {
+    "charged-shard.png": {
+      "size": [
+        64,
+        64
+      ],
+      "mode": "RGBA",
+      "bytes": 343,
+      "sha256": "0760a39eafc9c8bde9ea674d08848b52e4054b9ea40ae025c03c7aab23dd3924"
+    },
+    "lightning-spark.png": {
+      "size": [
+        64,
+        64
+      ],
+      "mode": "RGBA",
+      "bytes": 426,
+      "sha256": "734d93937bf8dba9e787e86efc741f4def4a7c8de3723c8dd71739152f63b456"
+    },
+    "sentinel.png": {
+      "size": [
+        256,
+        256
+      ],
+      "mode": "RGBA",
+      "bytes": 165033,
+      "sha256": "403b63fca0e33fe67ed17c16628a1928fd8f7839da159dca36ea02221eee575f"
+    },
+    "static-effect.png": {
+      "size": [
+        768,
+        432
+      ],
+      "mode": "RGBA",
+      "bytes": 6734,
+      "sha256": "ded709dfbd82cad50785865e4b407af1825568f9b0ce89805a3beb257bfcca30"
+    },
+    "storm-glint.png": {
+      "size": [
+        64,
+        64
+      ],
+      "mode": "RGBA",
+      "bytes": 382,
+      "sha256": "9a2abf16bf03029952c1a816abe9433ad700f90f9ffad9de77d4f01c0255968b"
+    },
+    "tempest.png": {
+      "size": [
+        256,
+        256
+      ],
+      "mode": "RGBA",
+      "bytes": 169205,
+      "sha256": "25950cdfab598f7f88eb0a5c8e55e9a2fa4822ee6512ace471e4ca83c8c64bd3"
+    },
+    "thunderframe.png": {
+      "size": [
+        768,
+        432
+      ],
+      "mode": "RGBA",
+      "bytes": 217908,
+      "sha256": "c524c9c86ec927588aba170d2bf37826bca7e9c94ac6689efbe68d0fea6918e8"
+    }
+  },
+  "reviewMetrics": [
+    {
+      "size": [
+        104,
+        72
+      ],
+      "opaque_pixels": 1248,
+      "pre_stencil_clipped_pixels": 11,
+      "glow_fragments": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "size": [
+        260,
+        174
+      ],
+      "opaque_pixels": 7258,
+      "pre_stencil_clipped_pixels": 16,
+      "glow_fragments": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "size": [
+        340,
+        205
+      ],
+      "opaque_pixels": 10821,
+      "pre_stencil_clipped_pixels": 0,
+      "glow_fragments": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "size": [
+        480,
+        270
+      ],
+      "opaque_pixels": 19677,
+      "pre_stencil_clipped_pixels": 230,
+      "glow_fragments": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    }
+  ]
+}

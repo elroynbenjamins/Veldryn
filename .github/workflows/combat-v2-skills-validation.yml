@@ -267,6 +267,26 @@ jobs:
         run: node tools/tests/combat-v2-edge-isolation.test.mjs
       - name: Compile production gameplay and co-op bundles WITHOUT experimental V2 runtime
         run: node tools/build-online.mjs
+      - name: Capture reproducible isolated Edge rebuild for review only
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/v2-edge-review
+          cp backend/supabase/functions/gameplay/index.ts /tmp/v2-edge-review/gameplay.ts
+          cp backend/supabase/functions/coop/index.ts /tmp/v2-edge-review/coop.ts
+          node tools/build-online.mjs
+          cmp /tmp/v2-edge-review/gameplay.ts backend/supabase/functions/gameplay/index.ts
+          cmp /tmp/v2-edge-review/coop.ts backend/supabase/functions/coop/index.ts
+          git diff --stat -- backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts > /tmp/v2-edge-review/diff-stat.txt
+          git diff --binary -- backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts > /tmp/v2-edge-review/generated.patch
+          (cd /tmp/v2-edge-review && sha256sum gameplay.ts coop.ts > SHA256SUMS)
+      - name: Retain isolated generated artifacts (not deployment)
+        uses: actions/upload-artifact@v4
+        with:
+          name: v2-edge-review-${{ github.sha }}
+          path: /tmp/v2-edge-review/
+          retention-days: 14
+          if-no-files-found: error
       - name: Compile real private engine and legacy combat fixtures
         run: pnpm --dir backend build
       - name: Verify deterministic pre-2.0 combat and party matrix

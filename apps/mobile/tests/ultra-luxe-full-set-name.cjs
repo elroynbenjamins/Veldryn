@@ -34,7 +34,8 @@ for(const [i,set] of ids.entries()){
  assert.equal(m.confirmUltraLuxeFullSetReadback(plan,scope,{...receipt,nameSelection:read}),'unconfirmed');
  assert.equal(m.confirmUltraLuxeFullSetReadback(plan,scope,{...receipt,replayed:true,nameSelection:read}),'superseded');
  assert.equal(m.confirmUltraLuxeFullSetReadback(plan,scope,{...receipt,replayed:true,nameSelection:{...committed,ownedIds:[]}}),'superseded');
- assert.equal(m.confirmUltraLuxeFullSetReadback(plan,scope,{...receipt,replayed:true}),'unconfirmed');
+ assert.equal(m.confirmUltraLuxeFullSetReadback(plan,scope,{...receipt,replayed:true}),'confirmed');
+ assert.equal(m.confirmUltraLuxeFullSetReadback(plan,scope,{...receipt,replayed:true,nameSelection:undefined}),'unconfirmed');
  assert.deepEqual(m.undoUltraLuxeFullSet(plan.after,plan,scope,committed),plan.before);
  assert.equal(m.undoUltraLuxeFullSet(plan.after,plan,switched,committed),null);
  assert.equal(m.undoUltraLuxeFullSet(plan.after,plan,scope,{...committed,ownedIds:[id]}).namePresetId,null);

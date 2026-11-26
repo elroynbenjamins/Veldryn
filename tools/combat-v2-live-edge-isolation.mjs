@@ -15,6 +15,8 @@ const ALLOWED=new Set([
  './v2/enemy-engine-authority',
  './v2/equipment-trait-engine-authority',
  './v2/equipment-trait-engine-runtime',
+ './v2/party-sync-authority',
+ './v2/tactical-ai',
  './v2/equipment-private-hit-qa-v22',
  './v2/dungeon-reward-engine-v2',
  './enemy-v2-status-rules',
@@ -55,20 +57,45 @@ export function authorizeEquipmentV2TraitEngine(input,authority){
  return new Map();
 }
 `,
+ './v2/party-sync-authority':`
+export function authorizePartySyncV2(input,authority){
+ if(authority!==undefined||input?.players?.some(player=>player.combatV2)) ${DISABLED}
+ return new Map();
+}
+`,
+ './v2/equipment-trait-engine-runtime':`
+export class EquipmentTraitRuntimeV2 {
+ constructor(){ ${DISABLED} }
+}
+`,
  './v2/equipment-private-hit-qa-v22':`
 export function authorizeEq2PrivateHitQaV22(input,authority){
  if(authority!==undefined||input?.players?.some(player=>player.combatV2)) ${DISABLED}
  return undefined;
 }
 `,
- './v2/equipment-trait-engine-runtime':`
-export class EquipmentTraitRuntimeV2 { constructor(){ ${DISABLED} } }
-`,
  './v2/dungeon-reward-engine-v2':`
 export function authorizeDungeonRewardEngineV2(input,authority){
  if(authority!==undefined||input?.players?.some(player=>player.combatV2)) ${DISABLED}
  return undefined;
 }
+`,
+ './v2/tactical-ai':`
+export const CRITICAL_SUPPORT_HP_V2=.30;
+export function supportV2(actor){if(actor?.combatV2) ${DISABLED} return false;}
+export function tankV2(actor){if(actor?.combatV2) ${DISABLED} return false;}
+export function damageV2(actor){if(actor?.combatV2) ${DISABLED} return false;}
+export function emergencySupportRankV2(){ ${DISABLED} }
+export function supportTargetsV2(){ ${DISABLED} }
+export function incomingBossPressureV2(){ ${DISABLED} }
+export function predictiveShieldTargetsV2(){ ${DISABLED} }
+export function ordinaryHealSufficientV2(){ ${DISABLED} }
+export function tankProtectionDecisionV2(){ ${DISABLED} }
+export function damageTacticsV2(){ ${DISABLED} }
+export function pureSingleHealV2(){ ${DISABLED} }
+export function coordinatedHealV2(){ ${DISABLED} }
+export function redundantPureShieldV2(){ ${DISABLED} }
+export function sequenceDamageActionV2(){ ${DISABLED} }
 `,
  './enemy-v2-status-rules':`
 export function applyEnemyV2Periodic(){ ${DISABLED} }
@@ -108,9 +135,13 @@ export function assertLegacyEdgeIsolation(result,outputName){
   'combat_v2_enemy_authority_','combat_v2_solo_',
   'enemy-v2-prototype-1','issueEnemyV2EngineAuthority',
   'prepareSoloEnemyKitsV2','SoloEncounterPersistenceServiceV2',
-  'issueEquipmentV2TraitAuthority','eq2-traits-hidden-engine-pass1',
+  'issueEquipmentV2TraitAuthority','compileExactEquipmentTraitSourceV2','eq2-traits-hidden-engine-pass1',
   'issueDungeonRewardEngineAuthorityV2','dungeon-reward-reactive-hidden-v1',
   'issueEq2PrivateHitQaV22','eq2-v22-private-current-hit-qa',
+  'issuePartySyncAuthorityV2','party_sync_authority_',
+  'issuePersistedPartyEquipmentV2TraitAuthority','party-v2-run-binding-review-1',
+  'issuePersistedPartyEnemyV2EngineAuthority','preparePartyEnemyKitsV2',
+  'projectPartySynchronizationLobbyV2','previewPartySynchronizationCandidateV2',
  ]){
   if(js.includes(forbidden))
    throw Error('combat_v2_edge_private_token_in_bundle:'+outputName+':'+forbidden);

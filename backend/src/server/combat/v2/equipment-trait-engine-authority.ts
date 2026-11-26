@@ -42,9 +42,14 @@ const scoped=new WeakMap<object,FrozenScope>();
 const validId=(x:unknown):x is string=>typeof x==='string'&&x.length>0&&x.length<=128&&
  /^[A-Za-z0-9:_-]+$/.test(x);
 const validPct=(x:unknown,max:number)=>typeof x==='number'&&Number.isFinite(x)&&x>=0&&x<=max;
-const fail=(why:string):never=>{throw Error('combat_v2_equipment_trait_'+why);};
+function fail(why:string):never{throw Error('combat_v2_equipment_trait_'+why);}
 const allowed=new Set<string>(EXECUTABLE_EQUIPMENT_TRAITS_V2);
 const frozen=<T>(x:T):T=>JSON.parse(JSON.stringify(x)) as T;
+/** Keep the readonly element type after Array.isArray runtime guards. */
+const freezeSources=(sources:readonly VerifiedV2EquipmentEffectSource[])=>Object.freeze(sources.map(row=>Object.freeze({
+ ...frozen(row),ownedEquippedInstanceIds:Object.freeze([...row.ownedEquippedInstanceIds]),
+ traits:Object.freeze(row.traits.map(trait=>Object.freeze({...trait}))),
+})));
 function validate(source:VerifiedV2EquipmentEffectSource){
  if(!source||source.source!=='server-persisted-equipment-v2'||
   source.policy!==EQUIPMENT_V2_TRAIT_ENGINE_POLICY||
@@ -68,6 +73,17 @@ function validate(source:VerifiedV2EquipmentEffectSource){
   selected.add(trait.instanceId);traits.add(trait.traitId);
  }
 }
+/** The divergent original-Forge compiler has a fractional abilityDamagePct
+ * channel; this sidecar has a percent-valued channel of the same meaning.
+ * Do not multiply them together or silently discard an earned roll. Until a
+ * versioned combined source/cap policy exists, mixed nonzero channels fail
+ * closed. This also guards any later branch reconciliation of those types. */
+function rejectUnreconciledAbilityDamage(input:CombatInput,source:VerifiedV2EquipmentEffectSource){
+ const effects=input.players.find(p=>p.id===source.actorId)?.combatV2?.equipmentEffects;
+ if(source.abilityDamagePct>0&&effects&&'abilityDamagePct' in effects&&
+    effects.abilityDamagePct!==undefined&&effects.abilityDamagePct!==0)
+  fail('unreconciled_ability_damage_channels');
+}
 /** In the hidden server adapter, verifyPersisted MUST read actual ownership,
  * equipped item receipts, revision, selected trait IDs and a frozen digest.
  * Issuing a token is never proof the DB implementation is present in production. */
@@ -85,24 +101,30 @@ export function issueEquipmentV2TraitAuthority(
     input.players.some(p=>p.team!=='players'||p.combatV2?.version!==2)||
     input.enemies.some(e=>e.team!=='enemies'))
    fail('no_legacy_or_inflight_encounter');
- const ids=new Set<string>(),characters=new Set<string>();
+ const ids=new Set<string>(),characters=new Set<string>(),copies=new Set<string>();
  for(const source of sources){
   validate(source);
+  rejectUnreconciledAbilityDamage(input,source);
   if(ids.has(source.actorId)||!input.players.some(p=>p.id===source.actorId)||
     characters.has(source.characterId))
     fail('source_actor_or_owner_mismatch');
+  for(const copy of source.ownedEquippedInstanceIds){
+   if(copies.has(copy))fail('duplicate_encounter_equipment_copy');
+   copies.add(copy);
+  }
   ids.add(source.actorId);characters.add(source.characterId);
  }
  const digest=enemyV2SnapshotDigest(input);
+ const verifiedSources=freezeSources(sources);
+ const sourceDigest=enemyV2SnapshotDigest(verifiedSources);
  let accepted=false;
- try{accepted=verifyPersisted(sources,digest)===true;}catch{accepted=false;}
- if(!accepted)fail('persisted_ledger_not_verified');
+ try{accepted=verifyPersisted(verifiedSources,digest)===true;}catch{accepted=false;}
+ if(!accepted||enemyV2SnapshotDigest(input)!==digest||
+    enemyV2SnapshotDigest(sources)!==sourceDigest)
+  fail('persisted_ledger_not_verified');
  const token=Object.freeze({[brand]:true}) as EquipmentV2TraitEngineAuthority;
  scoped.set(token,Object.freeze({inputDigest:digest,inputSeed:input.seed,
-  actors:Object.freeze(sources.map(row=>Object.freeze({
-   ...frozen(row),ownedEquippedInstanceIds:Object.freeze([...row.ownedEquippedInstanceIds]),
-   traits:Object.freeze(row.traits.map(trait=>Object.freeze({...trait}))),
-  }))),
+  actors:verifiedSources,
  }));
  return token;
 }

@@ -50,6 +50,8 @@ export interface CombatV2State {
   pendingCritMultiplierBonus:number;
   pendingHealingBonus:number;
   scheduledTotemAt:number[];
+  /** One server-authored Stonecaller Thunder Totem per character; never saved between encounters. */
+  activeTotem?:{abilityId:string;nextPulseAtMs:number;pulsesRemaining:number;pulseCoeff:number};
 }
 export interface CombatV2AbilityMeta {
   spend?:'all'|number;
@@ -89,6 +91,9 @@ export interface AbilityEffect {
   /** Only applied to v2 direct heals; no changes to legacy healing. */
   healBelowHpPct?:number;
   healBonus?:number;
+  /** V2 class shield only: additional fractional strength below recipient HP threshold. */
+  shieldBelowHpPct?:number;
+  shieldBonus?:number;
   shieldReflectPct?:number;
   kind: EffectKind;
   /** Optional per-effect target for Combat 2.0 compound abilities. Existing effects keep ability target. */
@@ -173,6 +178,8 @@ export interface ActivePeriodicEffect {
   expiresAt: number;
   tickMs: number;
   extendedV2?:boolean;
+  /** V2 class-skill application tick, used only for exact-source refresh policy. */
+  v2AppliedAtMs?:number;
 }
 
 export interface ActiveTimedModifier {
@@ -183,6 +190,8 @@ export interface ActiveTimedModifier {
   createdAt?: number;
   kind?: 'buff'|'debuff'|'gem';
   v2CapstoneId?:string;
+  /** V2 class ability provenance for refresh-only buffs and debuffs. */
+  v2SourceAbilityId?:string;
 }
 
 export interface CombatantState {

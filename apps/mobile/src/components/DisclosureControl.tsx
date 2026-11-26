@@ -1,5 +1,5 @@
-import {useMemo} from 'react';
-import {Pressable,StyleSheet,Text,View} from 'react-native';
+import {useMemo,type ReactNode} from 'react';
+import {Pressable,StyleSheet,Text,View,type StyleProp,type ViewStyle} from 'react-native';
 import {useGameTheme} from '../theme/ThemeContext';
 import type {ThemeColors} from '../theme/theme';
 
@@ -23,6 +23,17 @@ export function DisclosureControl({label,expanded,onPress,compact=false}:{
   <Text numberOfLines={1} style={[s.label,expanded&&s.labelOpen]}>{label}</Text>
   <DisclosureMark expanded={expanded}/>
  </Pressable>;
+}
+/** Optional disclosure row. Static content must not expose a button or an
+ * expanded state. Callers own layout and marks, avoiding visual redesign. */
+export function DisclosureRow({children,expanded,onPress,label,style,pressedStyle}:{
+ children:ReactNode;expanded:boolean;onPress?:()=>void;label?:string;
+ style:StyleProp<ViewStyle>;pressedStyle?:StyleProp<ViewStyle>;
+}){
+ if(!onPress)return <View style={style}>{children}</View>;
+ return <Pressable accessibilityRole="button" accessibilityLabel={label}
+  accessibilityState={{expanded}} onPress={onPress}
+  style={({pressed})=>[style,pressed&&pressedStyle]}>{children}</Pressable>;
 }
 function styles(C:ThemeColors){return StyleSheet.create({
  control:{minHeight:44,minWidth:103,borderWidth:1,borderColor:C.lineStrong,

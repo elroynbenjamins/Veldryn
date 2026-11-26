@@ -7,6 +7,7 @@ import {profileText,profileSourceText} from '../i18n/profile';
 import {useGameTheme} from '../theme/ThemeContext';
 import {spacing,typography,type ThemeColors} from '../theme/theme';
 import {GameButton} from '../components/GameButton';
+import {DisclosureRow} from '../components/DisclosureControl';
 import {unlockInboxDisplayName,type UnlockInboxEntry} from '../core/unlock-inbox';
 import {unlockInboxArtwork} from '../theme/unlock-inbox-art';
 
@@ -15,7 +16,7 @@ const labels={title:'TITLE',background:'PROFILE BACKGROUND',border:'PROFILE BORD
 export function NewUnlocksScreen({language,entries,onCustomize}:{language:Language;entries:readonly UnlockInboxEntry[];onBack:()=>void;onCustomize:()=>void}){
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const [showAll,setShowAll]=useState(false),[filter,setFilter]=useState<'all'|'title'|'pet'|'other'>('all'),[expanded,setExpanded]=useState<string|null>(null);
- const filtered=entries.filter(row=>filter==='all'||(filter==='title'?row.kind==='title':filter==='pet'?row.kind==='pet':row.kind!=='title'&&row.kind!=='pet'));
+ const filtered=useMemo(()=>entries.filter(row=>filter==='all'||(filter==='title'?row.kind==='title':filter==='pet'?row.kind==='pet':row.kind!=='title'&&row.kind!=='pet')),[entries,filter]);
  const shown=showAll?filtered:filtered.slice(0,20);
  const t=(key:string)=>accountText(language,key);
 
@@ -44,7 +45,7 @@ export function NewUnlocksScreen({language,entries,onCustomize}:{language:Langua
            {isExpanded?<Text style={s.detail}>{detail}</Text>:null}
          </View><View style={s.end}><Text style={s.date}>{new Date(row.unlockedAtMs).toLocaleDateString(language)}</Text>{canExpand?<Text style={s.chevron}>{isExpanded?'⌃':'⌄'}</Text>:null}</View>
        </>;
-       return canExpand?<Pressable key={row.key} accessibilityRole="button" accessibilityState={{expanded:isExpanded}} onPress={()=>setExpanded(current=>current===row.key?null:row.key)} style={({pressed})=>[s.entry,pressed&&s.pressed]}>{content}</Pressable>:<View key={row.key} style={s.entry}>{content}</View>;
+       return <DisclosureRow key={row.key} expanded={isExpanded} onPress={canExpand?()=>setExpanded(current=>current===row.key?null:row.key):undefined} style={s.entry} pressedStyle={s.pressed}>{content}</DisclosureRow>;
      })}</View>
      {!filtered.length?<View style={s.empty}><Text style={s.emptyTitle}>{t('No unlocks in this category')}</Text></View>:null}
      {filtered.length>20?<GameButton compact title={showAll?t('Show fewer unlocks'):t('Show older unlocks')} tone="secondary" onPress={()=>setShowAll(value=>!value)}/>:null}

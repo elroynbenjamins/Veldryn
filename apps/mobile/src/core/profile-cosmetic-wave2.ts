@@ -11,9 +11,10 @@ export type Wave2Set=(typeof WAVE2_SETS)[number];
 export type Wave2Id=Wave2Set['id'];
 export type Wave2Kind='border'|'effect'|'icon';
 type Ownership={unlockedProfileBorderIds?:readonly string[];unlockedProfileEffectIds?:readonly string[];unlockedProfileIconIds?:readonly string[]};
-/** No set is ready as of this commit. Deliberately separate from store release
- * and legacy tester flag. Never set true based solely on a review archive. */
-export const WAVE2_READY_SET_IDS:readonly Wave2Id[]=[];
+/** Release candidate: ownership-based availability in both mobile and shared
+ * server engine. No store release or legacy tester entitlement required.
+ * Do not deploy this candidate before native acceptance / staged rollout approval. */
+export const WAVE2_READY_SET_IDS:readonly Wave2Id[]=['tideborne','clockwork','stormforged','crimson-oath'];
 export function wave2SetFor(kind:Wave2Kind,id:string){
  return WAVE2_SETS.find(row=>kind==='border'?row.borderId===id:kind==='effect'?row.effectId===id:row.iconIds.some(icon=>icon===id));
 }

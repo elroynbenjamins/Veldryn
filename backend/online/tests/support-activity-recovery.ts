@@ -2,17 +2,18 @@ import assert from 'node:assert/strict';
 import {supportReceiptReader,supportCommandHash} from '../support-activity-receipts';
 import {buildSupportActivityHandlers} from '../support-activity-admin-handler';
 import type {AdminCommandRow} from '../../../control-center/backend_integration/admin-command-worker-v17_3';
+import {totalXpAtLevel} from '../../../apps/mobile/src/core/progression';
 import {createCharacter,newGame,startGathering} from '../../../apps/mobile/src/core/game';
 import {executeGameCommand} from '../../../apps/mobile/src/core/game-commands';
 import {planSupportActivityRecovery,executeSupportActivityStep,type AuthorizedSupportJob,type SupportRecoveryPorts,type PreparedSupportStep,type SupportCommitReadback,type SupportRecoveryResult} from '../support-activity-recovery';
 
 async function main(){
  const now=1700000000000;
- const hero=createCharacter(newGame(now),'IRONWARDEN','Support Fixture');
+ const hero=createCharacter(newGame(now),'IRONWARDEN','Rowan Oak');
  hero.character!.id='target';
  hero.character!.level=39;
  hero.currentRegionId='IRONWOOD';
- hero.skills=hero.skills.map(row=>row.skillId==='woodcutting'?{...row,level:18}:row);
+ hero.skills=hero.skills.map(row=>row.skillId==='woodcutting'?{...row,level:18,xp:totalXpAtLevel(18)}:row);
  hero.exploredRouteIds=['SCOUT_IRONWOOD','SCOUT_OLD_MINES','SCOUT_KINGS_ROAD','SCOUT_SUNSCAR'];
  const active=startGathering(hero,'IRONWOOD_TREE',now);
  const later=now+120000;
@@ -27,7 +28,7 @@ async function main(){
  assert.throws(()=>planSupportActivityRecovery(active,'target',{kind:'start_gathering',nodeId:'DUNEWOOD_TREE'},later),/support_gathering_locked/);
  assert.throws(()=>planSupportActivityRecovery(active,'target',{kind:'travel',regionId:'ASHLANDS'},later),/support_region_locked/);
  assert.throws(()=>planSupportActivityRecovery(active,'not-owned',{kind:'claim'},later),/support_character_not_owned/);
- const other=createCharacter(newGame(now),'IRONWARDEN','Other Fixture');
+ const other=createCharacter(newGame(now),'IRONWARDEN','Alder Reed');
  other.character!.id='selected';
  other.otherCharacters=[{character:active.character!,inventory:active.inventory,overflow:active.overflow,activity:active.activity,skills:active.skills,quests:active.quests,currentRegionId:active.currentRegionId,defeatedBossIds:active.defeatedBossIds,exploredRouteIds:active.exploredRouteIds,unlockedMonsterIds:active.unlockedMonsterIds}];
  const inactive=planSupportActivityRecovery(other,'target',{kind:'highest_woodcutting'},later);

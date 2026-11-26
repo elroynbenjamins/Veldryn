@@ -33,6 +33,8 @@ import {InventoryItemHeaderControls} from './InventoryItemHeaderControls';
 import {hasGemArtworkV1,hasRawGemArtworkV1} from '../theme/gem-assets';
 import type {WorkingTowardDestination} from '../core/working-toward';
 
+function signedPreviewStat(raw:number){const value=displayStat(raw);return value>0?'+'+value:String(value);}
+
 function InspectArt({itemId,model}:{itemId:string;model:ReturnType<typeof itemInspectModel>}){
  const {gl,language}=useGameplayText();
   const C=useGameTheme(),item=model.item;
@@ -56,6 +58,16 @@ export function ItemQuickInspect({state,itemId,instanceId,source='inventory',onC
   const craftPath=useMemo(()=>itemId&&model?.item.type==='gear'?equipmentCraftingPath(state,itemId):undefined,[state,itemId,model?.item.type]);
   if(!itemId||!model)return null;
   const item=model.item,rarity=model.rarity,upgrade=model.upgrade,sockets=model.sockets,gearDecision=model.gearDecision,nameColor=rarityNameColor(model.rarityId,C.dark,C.text);
+  // Never show a speculative loadout delta for a nonspecific forged copy.
+  // itemInspectModel verifies an exact receipt and runs the same equip projection
+  // used by Compare & Swap; bank copies cannot be equipped directly.
+  const canPreviewGear=item.type==='gear'&&!!gearDecision?.compatible&&!!gearDecision.previewAvailable
+    &&(!!instanceId||model.craftedCopies===0);
+  const isExactEquippedGear=item.type==='gear'&&source!=='bank'&&!!gearDecision?.alreadyEquipped
+    &&(!!instanceId||model.craftedCopies===0);
+  const visibleStatDeltas=gearDecision?([
+    ['ATK',gearDecision.loadoutDelta.attack],['DEF',gearDecision.loadoutDelta.defense],['HP',gearDecision.loadoutDelta.hp],
+  ] as const).filter(([,delta])=>displayStat(delta)!==0):[];
   const toolDef=item.type==='tool'?gatheringToolDef(item.id):undefined;
   const storedToolCopies=item.type==='tool'?state[source==='bank'?'bank':'inventory'].stacks
     .filter(stack=>stack.itemId===item.id&&!!stack.instanceId)
@@ -89,6 +101,7 @@ export function ItemQuickInspect({state,itemId,instanceId,source='inventory',onC
             <Text style={[s.rarity,{color:rarity.color}]}>{rarity.symbol+' '+contentText(rarity.label).toLocaleUpperCase(language)+(model.selectedQuality!==undefined?' · Q'+model.selectedQuality:'')+' · '+contentText(item.type).toLocaleUpperCase(language)}</Text>
             <Text numberOfLines={2} style={[s.name,{color:nameColor}]}>{localizedItemName(language,item.id)+(upgrade?.rank?' +'+upgrade.rank:'')}</Text>
             <Text numberOfLines={2} style={s.owned}>{item.type==='gear'?(source==='bank'?gt('Bank'):gl('Gear'))+' '+formatGameNumber(source==='bank'?model.bankQuantity:source==='equipment_pouch'?storedGearCount:model.inventoryQuantity,state.settings.numberMode,language)+' · '+(state.character?.name??gl('Character')):gl('Carried')+' '+formatGameNumber(model.inventoryQuantity,state.settings.numberMode,language)+' · '+gt('Bank')+' '+formatGameNumber(model.bankQuantity,state.settings.numberMode,language)}</Text>
+            {isExactEquippedGear?<View style={s.equippedPill}><Text style={s.equippedPillText}>{gt('Equipped').toLocaleUpperCase(language)}</Text></View>:null}
           </View>
           <View style={[s.heroControls,compactHeader&&s.heroControlsCompact]}><InventoryItemHeaderControls favorite={favorite} locked={locked} onFavorite={onToggleFavorite} onLock={onToggleLock} onClose={onClose}/></View>
         </View>
@@ -102,20 +115,41 @@ export function ItemQuickInspect({state,itemId,instanceId,source='inventory',onC
               {model.stats.hp!==0?<Stat label="HP" value={model.stats.hp}/>:null}
             </View>
           </View>:null}
+          {traitLine?<View style={s.statGroup}>
+            <Text style={s.statHeading}>{item.type==='gear'?ui('INNATE TRAIT'):gt("TRAIT")}</Text>
+            <View style={s.traitPanel}><Text style={s.traitText}>{contentText(traitLine)}</Text></View>
+          </View>:null}
           {item.type==='gear'&&bonusRows.length>0?<View style={s.statGroup}>
-            <Text style={s.statHeading}>{gt("BONUS STATS")}</Text>
-            <View style={s.bonusPanel}>
+            <Text style={s.statHeading}>{ui('RANDOM BONUS ROLLS')}</Text>
+            <View style={[s.bonusPanel,{borderColor:rarity.color,backgroundColor:rarity.surface}]}>
               {bonusRows.map(roll=><View key={roll.id} style={s.bonusRow}>
                 <Text style={s.bonusLabel}>{contentText(roll.label)}</Text>
-                <Text style={s.bonusValue}>{roll.value}</Text>
+                <Text style={[s.bonusValue,{color:rarityNameColor(model.rarityId,C.dark,C.good)}]}>{roll.value}</Text>
               </View>)}
             </View>
           </View>:null}
-          {traitLine?<View style={s.statGroup}>
-            <Text style={s.statHeading}>{gt("TRAIT")}</Text>
-            <View style={s.traitPanel}><Text style={s.traitText}>{contentText(traitLine)}</Text></View>
+          {canPreviewGear&&gearDecision?<View style={s.gearSummary} accessibilityLabel={ui("EQUIPMENT IMPACT")}>
+            <View style={s.gearSummaryHead}>
+              <Text style={s.statHeading}>{ui("EQUIPMENT IMPACT")}</Text>
+              <Text numberOfLines={1} style={s.gearSummaryTarget}>{gearDecision.alreadyEquipped?gt('Equipped'):gearDecision.replaces?ui('Replacing equipped item'):gl('Empty slot')}</Text>
+            </View>
+            <View style={s.gearSummaryMetrics}>
+              <View style={s.gearMetric}>
+                <Text style={s.gearMetricLabel}>{ui("POWER CHANGE")}</Text>
+                <Text style={[s.gearMetricValue,{color:displayStat(gearDecision.loadoutDelta.power)>0?C.good:displayStat(gearDecision.loadoutDelta.power)<0?C.bad:C.muted}]}>{signedPreviewStat(gearDecision.loadoutDelta.power)}</Text>
+              </View>
+              {gearDecision.set?<View style={s.gearMetric}>
+                <Text style={s.gearMetricLabel}>{ui("SET PIECES")}</Text>
+                <Text style={s.gearMetricValue}>{gearDecision.set.currentPieces+' → '+gearDecision.set.previewPieces+' / '+gearDecision.set.required}</Text>
+              </View>:null}
+            </View>
+            {gearDecision.set?<Text numberOfLines={2} style={s.gearSummaryNote}>{gearDecision.set.name}</Text>:null}
+            {visibleStatDeltas.length>0?<Text style={s.gearSummaryNote}>{visibleStatDeltas.map(([label,delta])=>label+' '+signedPreviewStat(delta)).join(' · ')}</Text>:null}
+            <Text style={s.gearSummaryNote}>{gearDecision.alreadyEquipped?gt('Currently equipped · loadout change is zero.'):gl('Includes upgrades, socketed gems and set bonuses. Equip to apply.')}</Text>
           </View>:null}
+          {item.type==='gear'&&source==='bank'?<Text style={s.gearSummaryNote}>{ui('Withdraw to compare & equip.')}</Text>:item.type==='gear'&&model.craftedCopies>0&&!instanceId?<Text style={s.gearSummaryHint}>{gt('Choose a specific equipment copy to compare')}</Text>:null}
           <View style={s.footerRow}><Text style={s.sell}>{it('Sell value · {gold} gold each',{gold:formatGameNumber(itemVendorSellGold(item),state.settings.numberMode,language)})}</Text>{item.classRestriction&&<Text style={s.classText}>{item.classRestriction.replaceAll('_',' ')}</Text>}</View>
+          {item.type==='tool'&&actions?<View style={s.foodActions}>{actions}</View>:null}
           <Pressable accessibilityRole="button" accessibilityLabel={ui('Details & sources')} accessibilityState={{expanded:detailsOpen}} onPress={()=>setDetailsOpen(value=>!value)} style={({pressed})=>[s.disclosure,pressed&&s.pressed]}>
             <Text style={s.disclosureText}>{ui('Details & sources')}</Text><Text style={s.disclosureMark}>{detailsOpen?'−':'+'}</Text>
           </Pressable>
@@ -136,7 +170,7 @@ export function ItemQuickInspect({state,itemId,instanceId,source='inventory',onC
             {instanceId&&detailToolCopies.length===0?<Text style={s.note}>{gt('Tool roll record unavailable · no bonus is assumed.')}</Text>:null}
             <Text style={s.note}>{gt('Each tier contributes gathering speed. Rolled speed bonuses apply separately to remaining action time, subject to the gathering speed cap.')}</Text>
           </Section>:null}
-          {gearDecision&&<Section title={gt("GEAR CHECK")}>{!gearDecision.compatible?<Text style={s.warningText}>{gt("This item belongs to another class, so loadout impact cannot be previewed on this character.")}</Text>:!gearDecision.previewAvailable?<Text style={s.warningText}>{gt("Choose a specific equipment copy to compare")}</Text>:<><View style={s.compareLine}><Text style={s.note}>{gt("REPLACES")}</Text><Text style={s.bodyStrong}>{gearDecision.replaces?gearDecision.replaces.name+(gearDecision.replaces.rank?' +'+gearDecision.replaces.rank:''):it('Empty {slot} slot',{slot:gl(item.slot??'equipment')})}</Text></View><Text style={s.note}>{gearDecision.alreadyEquipped?gt("Currently equipped · loadout change is zero."):gt("Whole-loadout change if equipped now.")}</Text><View style={s.deltaRow}><DeltaStat label="ATK" value={gearDecision.loadoutDelta.attack}/><DeltaStat label="DEF" value={gearDecision.loadoutDelta.defense}/><DeltaStat label="HP" value={gearDecision.loadoutDelta.hp}/><DeltaStat label="PWR" value={gearDecision.loadoutDelta.power}/></View><Text style={s.totalLine}>{it('After equip · ATK {attack} · DEF {defense} · HP {hp} · PWR {power}',{attack:displayStat(gearDecision.loadoutAfter.attack),defense:displayStat(gearDecision.loadoutAfter.defense),hp:displayStat(gearDecision.loadoutAfter.hp),power:displayStat(gearDecision.loadoutAfter.power)})}</Text>{upgrade&&!upgrade.maxed&&<><View style={s.compareLine}><Text style={s.note}>{it('TO +{rank} FROM CURRENT RANK',{rank:gearDecision.maxRank})}</Text><Text style={s.potentialLabel}>{gt("POTENTIAL")}</Text></View><View style={s.deltaRow}><DeltaStat label="ATK" value={gearDecision.maxLoadoutGain.attack} potential/><DeltaStat label="DEF" value={gearDecision.maxLoadoutGain.defense} potential/><DeltaStat label="HP" value={gearDecision.maxLoadoutGain.hp} potential/><DeltaStat label="PWR" value={gearDecision.maxLoadoutGain.power} potential/></View><Text style={s.note}>{gt("Potential keeps this copy's current socketed gems and only raises its upgrade rank.")}</Text></>}{gearDecision.set&&<View style={s.setDecision}><View style={s.compareLine}><Text style={s.setName}>{gearDecision.set.name}</Text><Text style={s.setCount}>{gearDecision.set.currentPieces+' → '+gearDecision.set.previewPieces+' / '+gearDecision.set.required}</Text></View>{gearDecision.set.active.map(row=><View key={row.pieces} style={s.setRuntimeRow}><Text style={[s.setRuntimePill,row.runtime==='live'?s.setRuntimeLive:s.setRuntimePending]}>{row.runtime==='live'?gt("LIVE"):it('HOOK')}</Text><Text style={s.note}>{it('{pieces} pieces · {bonus}',{pieces:row.pieces,bonus:gl(row.bonus)})}</Text></View>)}{gearDecision.set.next&&<Text style={s.setNext}>{it('Next · {pieces} pieces · {bonus}',{pieces:gearDecision.set.next.pieces,bonus:gl(gearDecision.set.next.bonus)})}</Text>}{/^T[5-9]$/.test(gearDecision.set.tier)?<Text style={s.catalogNote}>{it('2/4/8/10 always-on V33 bonuses are live in stats/combat. 6pc conditional text is preserved as a trigger hook until its exact skill/ally/barrier event exists.')}</Text>:null}</View>}</>}</Section>}
+          {gearDecision&&<Section title={gt("GEAR CHECK")}>{model.craftedCopies>0&&!instanceId?<Text style={s.warningText}>{gt('Choose a specific equipment copy to compare')}</Text>:!gearDecision.compatible?<Text style={s.warningText}>{gt("This item belongs to another class, so loadout impact cannot be previewed on this character.")}</Text>:!gearDecision.previewAvailable?<Text style={s.warningText}>{source==='bank'?ui('Withdraw to compare & equip.'):gt("Choose a specific equipment copy to compare")}</Text>:<><View style={s.compareLine}><Text style={s.note}>{gt("REPLACES")}</Text><Text style={s.bodyStrong}>{gearDecision.replaces?gearDecision.replaces.name+(gearDecision.replaces.rank?' +'+gearDecision.replaces.rank:''):it('Empty {slot} slot',{slot:gl(item.slot??'equipment')})}</Text></View><Text style={s.note}>{gearDecision.alreadyEquipped?gt("Currently equipped · loadout change is zero."):gt("Whole-loadout change if equipped now.")}</Text><View style={s.deltaRow}><DeltaStat label="ATK" value={gearDecision.loadoutDelta.attack}/><DeltaStat label="DEF" value={gearDecision.loadoutDelta.defense}/><DeltaStat label="HP" value={gearDecision.loadoutDelta.hp}/><DeltaStat label="PWR" value={gearDecision.loadoutDelta.power}/></View><Text style={s.totalLine}>{it('After equip · ATK {attack} · DEF {defense} · HP {hp} · PWR {power}',{attack:displayStat(gearDecision.loadoutAfter.attack),defense:displayStat(gearDecision.loadoutAfter.defense),hp:displayStat(gearDecision.loadoutAfter.hp),power:displayStat(gearDecision.loadoutAfter.power)})}</Text>{upgrade&&!upgrade.maxed&&<><View style={s.compareLine}><Text style={s.note}>{it('TO +{rank} FROM CURRENT RANK',{rank:gearDecision.maxRank})}</Text><Text style={s.potentialLabel}>{gt("POTENTIAL")}</Text></View><View style={s.deltaRow}><DeltaStat label="ATK" value={gearDecision.maxLoadoutGain.attack} potential/><DeltaStat label="DEF" value={gearDecision.maxLoadoutGain.defense} potential/><DeltaStat label="HP" value={gearDecision.maxLoadoutGain.hp} potential/><DeltaStat label="PWR" value={gearDecision.maxLoadoutGain.power} potential/></View><Text style={s.note}>{gt("Potential keeps this copy's current socketed gems and only raises its upgrade rank.")}</Text></>}{gearDecision.set&&<View style={s.setDecision}><View style={s.compareLine}><Text style={s.setName}>{gearDecision.set.name}</Text><Text style={s.setCount}>{gearDecision.set.currentPieces+' → '+gearDecision.set.previewPieces+' / '+gearDecision.set.required}</Text></View>{gearDecision.set.active.map(row=><View key={row.pieces} style={s.setRuntimeRow}><Text style={[s.setRuntimePill,row.runtime==='live'?s.setRuntimeLive:s.setRuntimePending]}>{row.runtime==='live'?gt("LIVE"):it('HOOK')}</Text><Text style={s.note}>{it('{pieces} pieces · {bonus}',{pieces:row.pieces,bonus:gl(row.bonus)})}</Text></View>)}{gearDecision.set.next&&<Text style={s.setNext}>{it('Next · {pieces} pieces · {bonus}',{pieces:gearDecision.set.next.pieces,bonus:gl(gearDecision.set.next.bonus)})}</Text>}{/^T[5-9]$/.test(gearDecision.set.tier)?<Text style={s.catalogNote}>{it('2/4/8/10 always-on V33 bonuses are live in stats/combat. 6pc conditional text is preserved as a trigger hook until its exact skill/ally/barrier event exists.')}</Text>:null}</View>}</>}</Section>}
 
           {craftPath&&<Section title={gt("CRAFTING PATH")}><View style={s.compareLine}><View style={s.flex}><Text style={s.bodyStrong}>{craftPath.tier?craftPath.tier+' · ':''}{localizedRecipeName(language,craftPath.recipe)}</Text><Text style={s.note}>{it('{skill} · Character Lv {level} · {gold} gold',{skill:gl(craftPath.skillLabel),level:craftPath.characterLevel,gold:formatGameNumber(craftPath.gold,state.settings.numberMode,language)})}</Text>{craftPath.region&&<Text style={s.note}>{craftPath.region+(craftPath.path?' · '+craftPath.path:'')}</Text>}</View><Text style={[s.craftState,craftPath.canCraftNow?s.craftReady:s.craftBlocked]}>{craftPath.canCraftNow?gt("Ready").toLocaleUpperCase(language):it('BLOCKERS: {count}',{count:craftPath.blockers.length})}</Text></View>{craftPath.blockers.filter(blocker=>blocker.kind!=='material').map((blocker,index)=>blocker.destination&&onNavigate&&blocker.availability?.canNavigate?<Pressable key={blocker.kind+index} accessibilityRole="button" accessibilityLabel={contentText(blocker.label)} onPress={()=>onNavigate(blocker.destination!)} style={({pressed})=>[s.actionRow,pressed&&s.pressed]}><View style={s.flex}><Text style={s.bodyStrong}>{contentText(blocker.label)}</Text><Text style={s.note}>{contentText(blocker.detail)}</Text></View><View style={s.actionMeta}>{blocker.availability&&<AvailabilityPill status={blocker.availability.status} label={blocker.availability.label}/>}<Text style={s.openMark}>{gt("Open ›").toLocaleUpperCase(language)}</Text></View></Pressable>:<View key={blocker.kind+index} style={s.blockerRow}><Text style={s.bodyStrong}>{contentText(blocker.label)}</Text><Text style={s.note}>{contentText(blocker.detail)}</Text></View>)}<Text style={s.sectionMini}>{gt("Materials").toLocaleUpperCase(language)}</Text>{craftPath.ingredients.map(ingredient=>{const missing=ingredient.missing>0;return missing&&onNavigate&&ingredient.availability.canNavigate?<Pressable key={ingredient.itemId} accessibilityRole="button" accessibilityLabel={it('Find {item}',{item:localizedItemName(language,ingredient.itemId)})} onPress={()=>onNavigate(ingredient.source)} style={({pressed})=>[s.actionRow,pressed&&s.pressed]}><View style={s.flex}><Text style={s.bodyStrong}>{localizedItemName(language,ingredient.itemId)+' · '+ingredient.owned+'/'+ingredient.required}</Text><Text style={s.note}>{it('{count} missing · {source}',{count:ingredient.missing,source:contentText(ingredient.source.detail)})}</Text></View><View style={s.actionMeta}><AvailabilityPill status={ingredient.availability.status} label={ingredient.availability.label}/><Text style={s.openMark}>{gt("Open ›").toLocaleUpperCase(language)}</Text></View></Pressable>:<View key={ingredient.itemId} style={s.materialReadyRow}><View style={s.flex}><Text style={s.bodyStrong}>{localizedItemName(language,ingredient.itemId)}</Text><Text style={s.note}>{it('{owned}/{required} owned',{owned:ingredient.owned,required:ingredient.required})}</Text></View><Text style={missing?s.materialMissing:s.materialReady}>{missing?gt("Missing").toLocaleUpperCase(language):gt("Ready").toLocaleUpperCase(language)}</Text></View>})}</Section>}
 
@@ -176,7 +210,7 @@ export function ItemQuickInspect({state,itemId,instanceId,source='inventory',onC
             <Text style={s.sourceDisclosureMark}>{useLimit>=uses.length?'−':'+'}</Text>
            </Pressable>:null}</>}</Section>:null}
           </>}
-          {actions?<View style={s.foodActions}>{actions}</View>:null}
+          {item.type!=='tool'&&actions?<View style={s.foodActions}>{actions}</View>:null}
         </ScrollView>
         {(quickActions||disposalActions)?<View style={s.quickFooter}>
           {quickActions}
@@ -204,6 +238,8 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
   heroControls:{alignItems:'flex-end',justifyContent:'center'},
   heroControlsCompact:{marginLeft:'auto'},
   artBox:{width:60,height:60,borderWidth:1,borderRadius:radii.md,alignItems:'center',justifyContent:'center'},
+  equippedPill:{alignSelf:'flex-start',paddingHorizontal:7,paddingVertical:2,borderRadius:radii.sm,borderWidth:1,borderColor:C.good,backgroundColor:C.goodSurface},
+  equippedPillText:{fontSize:9,lineHeight:13,fontWeight:'900',color:C.good},
   heroCopy:{flex:1,minWidth:0,gap:3},heroCopyCompact:{minWidth:160},rarity:{...typography.caption,fontWeight:'900',letterSpacing:.7},name:{...typography.title,fontWeight:'800'},owned:{...typography.caption,color:C.muted},
   close:{width:44,height:44,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.panel2},closeText:{fontSize:24,lineHeight:27,color:C.text,fontWeight:'700'},
   scroll:{maxHeight:520,flexShrink:1,minHeight:0},content:{padding:spacing.sm,gap:spacing.sm,paddingBottom:spacing.md},
@@ -219,6 +255,15 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
   bonusRow:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:8,minHeight:24},
   bonusLabel:{...typography.bodyStrong,color:C.text,flex:1},
   bonusValue:{...typography.bodyStrong,color:C.good,fontWeight:'900'},
+  gearSummary:{gap:7,padding:10,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2},
+  gearSummaryHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:6},
+  gearSummaryTarget:{...typography.caption,color:C.muted,flexShrink:1},
+  gearSummaryMetrics:{flexDirection:'row',alignItems:'center',gap:10,flexWrap:'wrap'},
+  gearMetric:{flex:1,minWidth:100,gap:3},
+  gearMetricLabel:{fontSize:10,lineHeight:14,fontWeight:'900',letterSpacing:.5,color:C.muted},
+  gearMetricValue:{...typography.title,color:C.text,fontWeight:'900',fontVariant:['tabular-nums']},
+  gearSummaryNote:{...typography.caption,color:C.muted,flexShrink:1},
+  gearSummaryHint:{...typography.caption,color:C.warning,fontWeight:'700'},
   baseValue:{...typography.bodyStrong,color:C.text,fontWeight:'900'},
   traitPanel:{paddingHorizontal:spacing.sm,paddingVertical:8,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2},
   traitText:{...typography.bodyStrong,color:C.text},

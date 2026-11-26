@@ -272,6 +272,8 @@
   ".core-build/apps/mobile/tests/mining-essence-enchanting.js",
   ".core-build/apps/mobile/tests/gathering-drop-ui-contract.js",
   ".core-build/apps/mobile/tests/gathering-tools.js",
+  "tests/compact-gathering-tool-inspect-ui.cjs",
+  "tests/equipment-inspect-stat-first-ui.cjs",
   ".core-build/apps/mobile/tests/gathering-tool-affixes.js",
   ".core-build/apps/mobile/tests/gathering-tool-vault.js",
   ".core-build/apps/mobile/tests/startup-summary.js",

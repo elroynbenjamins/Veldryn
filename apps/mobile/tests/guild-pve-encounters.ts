@@ -87,3 +87,34 @@ assert.deepEqual(guildWeeklyBossSections([{...priorWeekly,claimed:[25,50]},curre
 assert.deepEqual(guildWeeklyBossSections([priorWeekly,currentWeekly],Date.parse(currentWeekly.endsAt)).rewards.map(b=>b.id),['current-week']);
 assert.deepEqual(guildWeeklyBossSections([priorWeekly],Date.parse(priorWeekly.claimEndsAt)).rewards,[]);
 console.log('PASS Guild PvE boss rotation UI, thresholds, eligibility, claims and lifecycle boundaries');
+
+// Receipt recovery and lost acknowledgements: no local changes to shared damage.
+import {RaidAttemptRetryKeys,reconcileRaidRow,validRaidStartReceipt} from '../src/core/guild-raid-recovery';
+const receipt={attemptsUsed:1,attemptCap:3,resolvesAt:'2026-10-04T00:03:00Z'};
+assert.equal(validRaidStartReceipt(receipt),true);
+for(const invalid of [null,{...receipt,resolvesAt:'invalid'},{...receipt,attemptsUsed:4},{...receipt,attemptsUsed:0},{...receipt,attemptsUsed:1.5}])assert.equal(validRaidStartReceipt(invalid),false);
+const stale={...row,attemptsUsed:0,attemptCap:3};
+const reserved=reconcileRaidRow(stale,receipt,[25]);
+assert.equal(reserved.row.pendingAttempts,1);
+assert.equal(reserved.row.damage,stale.damage);
+assert.equal(reserved.row.personalDamage,stale.personalDamage);
+assert.equal(reserved.startPending,true);
+assert.equal(reserved.claimsPending,true);
+assert.equal(guildPveView(reserved.row,live).canContribute,false);
+const settled=reconcileRaidRow({...stale,attemptsUsed:1,pendingAttempts:0,claimed:[25],damage:260000},receipt,[25]);
+assert.equal(settled.startPending,false);
+assert.equal(settled.claimsPending,false);
+assert.equal(settled.row.pendingAttempts,0);
+assert.equal(settled.row.damage,260000);
+let seq=0;const retries=new RaidAttemptRetryKeys(()=>String(++seq),2);
+const key=retries.get('accountA/guildA/charA',stale,live);
+assert.equal(retries.get('accountA/guildA/charA',stale,live+1000),key);
+assert.equal(retries.get('accountA/guildA/charB',stale,live)!==key,true);
+retries.observe('accountA/guildA/charA',{...stale,attemptsUsed:1});
+const next=retries.get('accountA/guildA/charA',{...stale,attemptsUsed:1},live);
+assert.equal(next!==key,true);
+retries.confirm('accountA/guildA/charA',stale.id,key); // stale ACK cannot clear newer nonce
+assert.equal(retries.get('accountA/guildA/charA',{...stale,attemptsUsed:1},live),next);
+retries.confirm('accountA/guildA/charA',stale.id,next);
+assert.equal(retries.get('accountA/guildA/charA',{...stale,attemptsUsed:1},live)!==next,true);
+console.log('PASS raid receipt validation, monotonic settlement, retry scope and stale ACK recovery');

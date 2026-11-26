@@ -7,7 +7,7 @@ import {socialLabel} from '../i18n/social';
 import {IdentityArtwork} from '../components/SocialIdentity';
 import {GuildIdentitySummary} from '../components/GuildIdentitySummary';
 import {cloneElement,isValidElement,useEffect,useRef,useState,type ReactNode,type ElementRef,useMemo} from 'react';
-import {ActivityIndicator,Image,Modal,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {ActivityIndicator,AppState,Image,Modal,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {GuildDiscoveryFlow} from '../components/GuildDiscoveryFlow';
 import {SectionGuide} from '../components/SectionGuide';
 import {GuildTutorial} from '../components/GuildTutorial';
@@ -26,6 +26,7 @@ import {GuildNavigation} from '../components/GuildNavigation';
 import {GuildProgressPanel,type GuildProgressTab} from '../components/GuildProgressPanel';
 import {GuildMemberIdentity} from '../components/GuildMemberIdentity';
 import {guildDetails,myGuild,type OnlineGuild} from '../online/social';
+import {prefetchGuildPveBoard} from '../online/guild-pve-read';
 import {guildChoiceVoteReminder} from '../online/guild-projects-v18';
 import {useOnlineGuildProjectUiText} from '../i18n/online-guild-project-ui';
 import {BoardTabs} from '../components/BoardTabs';
@@ -134,10 +135,13 @@ export function GuildScreen({state,onChange,onlineManagement,onlineBoard,onlineP
   useEffect(()=>{
    if(!online)return;
    let mounted=true;
+   setGuildMembership('loading');setEventGuildId('');
    void myGuild().then(membership=>{if(mounted){setEventGuildId(membership?.guild_id??'');setGuildRole(membership?.role??null);setGuildMembership(membership?'member':'none')}})
     .catch(reason=>{if(mounted){setGuildLoadError(reason instanceof Error?reason.message:'Unable to check Guild membership.');setGuildMembership('error')}});
    return()=>{mounted=false};
-  },[online,membershipRevision]);
+  },[online,membershipRevision,session?.user.id]);
+  const raidCharacterId=state.character?.id;
+  useEffect(()=>{if(!online||guildMembership!=='member'||onlineSection!=='Home'||!session?.user.id||!raidCharacterId)return;const timer=setTimeout(()=>{if(AppState.currentState==='active')void prefetchGuildPveBoard(raidCharacterId).catch(()=>{})},700);return()=>clearTimeout(timer)},[online,guildMembership,onlineSection,session?.user.id,raidCharacterId,membershipRevision]);
   useEffect(()=>{if(onlineSection!=='Roster')setRosterSection('Members')},[onlineSection]);
   // Small in-app, actionable weekly voting reminder. The RPC is guild-member scoped,
   // cached for two minutes, and refreshed when returning Home after casting a vote.
@@ -186,7 +190,7 @@ export function GuildScreen({state,onChange,onlineManagement,onlineBoard,onlineP
       {activityView==='Muster'?<><GuildSectionHeader label={st("DAILY & WEEKLY")} title={st("Muster & Rally")} copy={guildTutorialText(language,'Track your daily effort and weekly Guild Rally progress.')}/><OnlineGuildMusterPanel/></>:null}
     </View>:null}
     {onlineSection==='Progress'?<GuildProgressPanel headerHelp={headerGuide} tab={progressTab} onChange={setProgressTab} projects={onlineProjects} onViewBank={()=>{setHallSection('Bank');setOnlineSection('Hall');guildScroll.current?.scrollTo({y:0,animated:false})}}/>:null}
-    {onlineSection==='PvE'?(isValidElement<{headerHelp?:ReactNode}>(onlinePve)?cloneElement(onlinePve,{headerHelp:headerGuide}):onlinePve):null}
+    {onlineSection==='PvE'?(isValidElement<{headerHelp?:ReactNode;raidScope?:string}>(onlinePve)?cloneElement(onlinePve,{headerHelp:headerGuide,raidScope:JSON.stringify([session?.user.id??'',eventGuildId,raidCharacterId??'']),key:`${session?.user.id??''}:${eventGuildId}:${raidCharacterId??''}:${membershipRevision}`}):onlinePve):null}
     {onlineSection==='Hall'?<View style={s.sectionStack}>
       {isValidElement<{playerState?:GameState;activeSection?:'Overview'|'Construction'|'Bank'|'Skills'|'Legacy'|'Shop';onSectionChange?:(section:GuildNavigationState['hallSection'])=>void;onTokenRewardsChanged?:()=>void|Promise<unknown>;headerHelp?:ReactNode}>(onlineHall)
        ?cloneElement(onlineHall,{activeSection:hallSection,playerState:state,onTokenRewardsChanged,headerHelp:headerGuide,onSectionChange:next=>{if(next==='Skills'){setProgressTab('Skills');setOnlineSection('Progress')}else setHallSection(next);guildScroll.current?.scrollTo({y:0,animated:false})}})

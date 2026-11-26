@@ -3,10 +3,7 @@
  * shared mobile/backend engine. Regeneration is intentionally read-only here.
  */
 import {createRequire} from 'node:module';
-import {readFileSync,mkdtempSync,writeFileSync,rmSync} from 'node:fs';
-import {tmpdir} from 'node:os';
-import {spawnSync} from 'node:child_process';
-import {createHash} from 'node:crypto';
+import {readFileSync} from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
@@ -34,22 +31,6 @@ if(checkedIn!==rebuilt){
  console.error('Expected around difference:',JSON.stringify(rebuilt.slice(Math.max(0,offset-90),offset+170)));
  console.error('FAIL: generated gameplay Edge bundle is out of sync with the shared game engine.');
  console.error('Run pnpm --dir backend build:online, review gameplay/index.ts, and commit the generated artifact.');
- // Temporary review-branch diagnostic: print only the generated code delta,
- // not environment, credentials, or data. The parity check still fails.
- if(process.env.GITHUB_HEAD_REF==='review/sakura-stormforged-premium'||process.env.GITHUB_REF_NAME==='review/sakura-stormforged-premium'){
-  const dir=mkdtempSync(path.join(tmpdir(),'edge-parity-'));
-  try{
-   const expected=path.join(dir,'gameplay.ts');writeFileSync(expected,rebuilt);
-   const patch=spawnSync('git',['-c','color.ui=false','diff','--no-index','--no-ext-diff','--unified=3',output,expected],{encoding:'utf8',maxBuffer:4*1024*1024});
-   if(patch.status===1&&patch.stdout){
-    console.log('BEGIN_CANONICAL_GAMEPLAY_PATCH');console.log(patch.stdout.trimEnd());console.log('END_CANONICAL_GAMEPLAY_PATCH');
-    const gitBlobHash=text=>createHash('sha1').update('blob '+Buffer.byteLength(text)+'\0').update(text).digest('hex');
-    console.log('CANONICAL_GAMEPLAY_BASE_BLOB '+gitBlobHash(checkedIn));
-    console.log('CANONICAL_GAMEPLAY_NEW_BLOB '+gitBlobHash(rebuilt));
-    console.log('CANONICAL_GAMEPLAY_SHA256 '+createHash('sha256').update(rebuilt).digest('hex'));
-   }
-  }finally{rmSync(dir,{recursive:true,force:true});}
- }
  process.exitCode=1;
 }else console.log('PASS: committed gameplay Edge bundle exactly matches canonical shared game engine.');
 

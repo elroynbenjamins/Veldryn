@@ -306,11 +306,16 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
     if(privateDamageGem){
       const bonuses=privateDamageGem.onSuccessfulHit(now,source,target,effect,abilityId,eventType,crit);
       raw*=1+bonuses.reduce((n,x)=>n+x.fraction,0);
+      const extension=privateDamageGem.takeStatusExtension();
+      if(extension)events.push({atMs:now,type:'gem_state',actorId:source.definition.id,targetId:target.definition.id,
+        abilityId,statusKind:'debuff',statusTag:extension.tag,expiresAtMs:extension.expiry,
+        amount:extension.expiry-extension.priorExpiry,detail:'private_qa_opportunist_extension:'+extension.id});
       for(const row of bonuses)events.push({atMs:now,type:'gem_state',actorId:source.definition.id,
         targetId:target.definition.id,abilityId,amount:row.fraction,detail:'private_qa_damage_gem:'+row.familyId});
     }
     const privateRecovery=privateDamageGem?.takeRecovery()??0;
     const hpBeforeReactive=hpPct(target);
+    const privateHpBefore=privateDamageGem?target.hp:0;
     if(v2Encounter&&eventType==='damage'&&!abilityId.startsWith('V2_')){
       if(source.combatV2)raw*=outgoingReactiveMultiplierV2(source,target,now);
       if(target.combatV2){
@@ -408,6 +413,7 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
     const dealt=Math.max(0,source.combatV2&&eventType==='damage'
       ?Math.min(target.hp,residual):residual);
     target.hp=Math.max(0,target.hp-dealt); source.damageDone+=dealt; target.damageTaken+=dealt;
+    const privateActualHpDamage=privateDamageGem?Math.max(0,privateHpBefore-target.hp):0;
     if(eq2PrivateHit&&eq2Incoming){
       for(const id of eq2PrivateHit.afterIncomingHit(eq2Incoming,Math.max(0,eq2Incoming.targetHp-target.hp)))
         events.push({atMs:now,type:'equipment_trait_trigger',actorId:target.definition.id,targetId:source.definition.id,
@@ -453,7 +459,7 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
     }
     if(privateDamageGem&&eventType==='damage'){
       emitPrivateStack(now,source,abilityId,privateDamageGem.afterDirectHit(now,source,target,abilityId,crit,dealt));
-      if(privateDamageGem.onIncoming(now,source,target,abilityId,Math.max(0,hpBeforeReactive*target.definition.stats.maxHp-target.hp)))
+      if(privateDamageGem.onIncoming(now,source,target,abilityId,privateActualHpDamage))
         events.push({atMs:now,type:'gem_state',actorId:target.definition.id,targetId:source.definition.id,
           abilityId,detail:'private_qa_retaliation_armed'});
       // Terminal recovery: not applyHeal, no charge/trait/secondary triggers.

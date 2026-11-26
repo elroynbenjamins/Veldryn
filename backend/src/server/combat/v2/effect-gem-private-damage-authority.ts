@@ -66,6 +66,7 @@ export function authorizePrivateDamageGemReviewV2(input:CombatInput,
  let opportunistWindows:readonly OpportunistWindowReviewV2[]=[];
  let retaliation=emptyRetaliationReviewV2();
  let recovery=0;
+ let extension:{id:string;tag:string;priorExpiry:number;expiry:number}|undefined;
  const ownStatuses=(target:CombatantState,now:number)=>target.modifiers.filter(r=>r.kind==='debuff'&&
   r.sourceId===row.actorId&&r.expiresAt>now&&statusIds.has(r));
  let action:{id:string;sequence:number;now:number;momentum:number}|undefined;
@@ -116,15 +117,17 @@ export function authorizePrivateDamageGemReviewV2(input:CombatInput,
   onIncoming(now:number,attacker:CombatantState,recipient:CombatantState,abilityId:string,damage:number){
    const g=groups.get('effect_retaliation');
    if(!g||!isWearer(recipient)||recipient.hp<=0||attacker.definition.team!=='enemies'||
-    !(abilityId==='BASIC'||attacker.definition.abilities.some(a=>a.id===abilityId)))return false;
+    damage<=0||abilityId.startsWith('V2_')||(attacker.definition.phases??[]).some(p=>p.id===abilityId)||
+    !(abilityId==='BASIC'||attacker.definition.abilities.some(a=>a.id===abilityId&&a.effects.some(e=>e.kind==='damage'))))return false;
    const next=reviewRetaliationTakenV2(g,now,retaliation,recipient.definition.stats.maxHp,damage,true,true);
    retaliation=next.state;return next.armed;
   },
   takeRecovery(){const result=recovery;recovery=0;return result;},
+  takeStatusExtension(){const result=extension;extension=undefined;return result;},
   onBossPhase(now:number){if(openingGroup)opening=reviewOpeningStrikeV2(openingGroup,now,opening,true,false).state;},
   onSuccessfulHit(now:number,source:CombatantState,target:CombatantState,effect:AbilityEffect,
    abilityId:string,eventType:'damage'|'dot_tick',critical:boolean){
-   recovery=0;
+   recovery=0;extension=undefined;
    if(source.definition.id!==row.actorId||source.definition.team!=='players'||target.definition.team!=='enemies'||
     !source.alive||!target.alive)return [];
    const direct=eventType==='damage',basic=direct&&abilityId==='BASIC';
@@ -147,7 +150,10 @@ export function authorizePrivateDamageGemReviewV2(input:CombatInput,
     const hit=reviewOpportunistHitV2(opportunist,row.actorId,target.definition.id,now,true,true,critical,
      current?statusIds.get(current)!:null,current?.expiresAt??0,opportunistWindows);
     opportunistWindows=hit.windows;
-    if(current&&hit.extension)current.expiresAt=hit.effectExpiry;
+    if(current&&hit.extension){
+     extension={id:statusIds.get(current)!,tag:current.tag,priorExpiry:current.expiresAt,expiry:hit.effectExpiry};
+     current.expiresAt=hit.effectExpiry;
+    }
     put(opportunist.familyId,hit.bonus);
    }
    const retaliate=groups.get('effect_retaliation');

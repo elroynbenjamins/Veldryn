@@ -8,7 +8,7 @@ import {Image,Pressable,StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../../core/types';
 import type {ProfileCustomizationDestination} from '../../core/profile-customization';
 import {
- applyWardrobeEquipped,profileWardrobe,wardrobeEquipped,wardrobeSelection,wardrobeChanges,wardrobeDisplaySections,
+ applyWardrobeEquipped,profileWardrobe,wardrobeEquipped,wardrobeSelection,wardrobeChanges,
  type WardrobeAssets,type WardrobeEquipped,type WardrobeKind,type WardrobeRow,
 } from '../../core/profile-wardrobe';
 import {PROFILE_BACKGROUND_PREVIEWS,profileBackgroundPreviewById} from '../../theme/profile-background-assets';
@@ -29,6 +29,7 @@ import {ProfileUnlockSheet} from './ProfileUnlockSheet';
 import {PROFILE_ALL_EFFECTS,profileAnimatedBorderDefinition} from '../../core/profile-effects';
 import {cosmeticArtByBorder,cosmeticArtByEffect} from '../../theme/profile-cosmetic-render-art';
 import {profileCosmeticRuntimeByEffect} from '../../theme/profile-cosmetic-runtime-v1';
+import {wardrobeVisualSections} from './wardrobe-visual-tiers';
 import {ProfileEffectThumbnail} from '../ProfileCosmeticMotion';
 
 /** Image ids/names only; the wardrobe model itself stays free of asset requires. */
@@ -154,7 +155,7 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
 
  if(!character)return null;
  const category=categories.find(row=>row.kind===chip);
- const sections=wardrobeDisplaySections(category?.rows??[]);
+ const sections=wardrobeVisualSections(category?.rows??[]);
  const artwork=(row:WardrobeRow,size:number):ReactNode=>{
   if(row.kind==='icon')return <ProfileIcon id={row.id} classId={character.classId} size={size}/>;
   if(row.kind==='scene'){const scene=profileBackgroundPreviewById.get(row.id),base=BASE_PROFILE_BACKGROUNDS.find(item=>item.id===row.id);
@@ -211,11 +212,13 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
       :<Text style={s.sourceMark}>{row.lockTag} ›</Text>}
     </Pressable>)}
    </View>:<View style={s.wardrobeSections} onLayout={({nativeEvent:{layout}})=>setGridWidth(previous=>previous===layout.width?previous:layout.width)}>
-    {sections.standard.length>0?<View style={s.grid}>
+    {sections.standard.length>0?<>
+     {sections.animated.length+sections.premium.length>0?<View style={s.sectionDivider} accessibilityRole="header"><Text style={s.sectionLabel}>{profileT(language,"Static cosmetics")}</Text><View style={s.sectionLine}/></View>:null}
+     <View style={s.grid}>
      {sections.standard.map(row=><WardrobeTile key={row.kind+':'+row.id} row={row} width={tileWidth}
       equipped={selectedId===row.id} tryingOn={tryOn?.kind===row.kind&&tryOn?.id===row.id}
       onPress={()=>equip(row)}>{artwork(row,Math.round(tileWidth*.72))}</WardrobeTile>)}
-    </View>:null}
+    </View></>:null}
     {sections.animated.length>0?<>
      <View style={s.sectionDivider} accessibilityRole="header">
       <Text style={s.sectionLabel}>✦ {profileT(language,"Animated sets")}</Text>
@@ -223,6 +226,17 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
      </View>
      <View style={s.grid}>
       {sections.animated.map(row=><WardrobeTile key={row.kind+':'+row.id} row={row} width={tileWidth}
+       equipped={selectedId===row.id} tryingOn={tryOn?.kind===row.kind&&tryOn?.id===row.id}
+       onPress={()=>equip(row)}>{artwork(row,Math.round(tileWidth*.72))}</WardrobeTile>)}
+     </View>
+    </>:null}
+    {sections.premium.length>0?<>
+     <View style={s.sectionDivider} accessibilityRole="header">
+      <Text style={s.sectionLabel}>✦ {profileT(language,"Premium animated sets")}</Text>
+      <View style={s.sectionLine}/>
+     </View>
+     <View style={s.grid}>
+      {sections.premium.map(row=><WardrobeTile key={row.kind+':'+row.id} row={row} width={tileWidth}
        equipped={selectedId===row.id} tryingOn={tryOn?.kind===row.kind&&tryOn?.id===row.id}
        onPress={()=>equip(row)}>{artwork(row,Math.round(tileWidth*.72))}</WardrobeTile>)}
      </View>

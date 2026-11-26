@@ -1,0 +1,43 @@
+name: AAB size pass 1 fast compression totals (temporary)
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/aab-size-pass-1-fast.yml'
+permissions:
+  contents: read
+jobs:
+  totals:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'chatgpt/aab-size-pass-1'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends webp ripgrep >/dev/null
+      - name: Calculate card and portrait savings
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+          def enc(p,q,out):
+              subprocess.run(['cwebp','-quiet','-q',str(q),'-m','4','-alpha_q','100','-metadata','none',str(p),'-o',str(out)],check=True)
+              return out.stat().st_size
+          old=new=0;n=0
+          for p in Path('apps/mobile/assets/card-backgrounds').glob('*.webp'):
+              if p.stat().st_size<1024*1024: continue
+              refs=subprocess.run(['rg','-l','-F',p.name,'apps/mobile/src'],capture_output=True,text=True).stdout.strip()
+              if not refs: continue
+              o=p.stat().st_size;z=enc(p,85,Path('/tmp')/(p.stem+'-card.webp'));old+=o;new+=z;n+=1
+          print(f'CARDS_Q85 files={n} old={old/1048576:.2f}MiB new={new/1048576:.2f}MiB save={(old-new)/1048576:.2f}MiB')
+          old=new=0;n=0
+          roots=[Path('apps/mobile/assets/master_roster/pets/portraits_512'),Path('apps/mobile/assets/guild-token-shop/pets/portraits')]
+          for root in roots:
+              for p in root.glob('*.png'):
+                  o=p.stat().st_size;z=enc(p,90,Path('/tmp')/(p.stem+'-pet.webp'));old+=o;new+=z;n+=1
+          print(f'PETS_Q90 files={n} old={old/1048576:.2f}MiB new={new/1048576:.2f}MiB save={(old-new)/1048576:.2f}MiB')
+          old=new=0;n=0
+          for p in [Path('apps/mobile/assets/gem-sprite-v2.png'),Path('apps/mobile/assets/unrefined-gem.png'),Path('apps/mobile/assets/regional-resources-v2.png'),Path('apps/mobile/assets/events/frostfall/candy_frostmint.png')]:
+              o=p.stat().st_size;z=enc(p,90,Path('/tmp')/(p.stem+'-runtime.webp'));old+=o;new+=z;n+=1
+          print(f'RUNTIME_Q90 files={n} old={old/1048576:.2f}MiB new={new/1048576:.2f}MiB save={(old-new)/1048576:.2f}MiB')
+          PY

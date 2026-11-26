@@ -32,8 +32,9 @@ function fixture(b:typeof cases[number],phase:typeof phases[number],size:number)
  const input:CombatInput={seed,players:rows.map(x=>x.actor),enemies:[boss],maxDurationMs:12000,tickMs:100};
  const scope:WorldBossSharedRosterReviewV2={accountId,eventId:'QA_WORLD_EVENT',
   reservationId:'QA_WORLD_RESERVATION',attempt:1,entitlementRevision:7,
-  unlockedCharacterSlots:3,contentVersion:'qa_content',balanceVersion:'qa_balance',
-  seed,bossId:b.id,phase,members:sources.map(s=>({actorId:s.actorId,characterId:s.characterId,
+  unlockedCharacterSlots:3,rosterDigest:'a'.repeat(64),contentVersion:'qa_content',balanceVersion:'qa_balance',
+  seed,bossId:b.id,phase,members:sources.map((s,i)=>({actorId:s.actorId,characterId:s.characterId,
+   snapshotId:'QA_SNAPSHOT_'+i,sourceRevision:2,sourceHash:(i+1).toString(16).repeat(64),
    equipmentReceiptRevision:s.revision,equipmentReceiptDigest:s.equipmentReceiptDigest}))};
  const compiled=compileWorldBossRosterReviewV2(input,builds,runtime,traitPorts,scope);
  const expected:WorldBossSharedPreviewBindingV2={scope:structuredClone(scope),
@@ -74,6 +75,9 @@ assert.throws(()=>run(f.input,{...f.scope,unlockedCharacterSlots:2}),/invalid_ro
 assert.throws(()=>run(f.input,{...f.scope,accountId:'FOREIGN'}),/member_ownership_or_revision_mismatch/);
 assert.throws(()=>run(f.input,{...f.scope,phase:'exposed'}),/persisted_ledger_not_verified/);
 assert.throws(()=>run(f.input,{...f.scope,attempt:4}),/invalid_roster_scope/);
+assert.throws(()=>run(f.input,{...f.scope,rosterDigest:'b'.repeat(64)}),/persisted_ledger_not_verified/);
+assert.throws(()=>run(f.input,{...f.scope,members:[{...f.scope.members[0],sourceRevision:3},...f.scope.members.slice(1)]}),/persisted_ledger_not_verified/);
+assert.throws(()=>run(f.input,{...f.scope,members:[{...f.scope.members[0],snapshotId:f.scope.members[1].snapshotId},...f.scope.members.slice(1)]}),/duplicate_snapshot/);
 assert.throws(()=>run(f.input,{...f.scope,members:[{...f.scope.members[0],equipmentReceiptDigest:'f'.repeat(64)},...f.scope.members.slice(1)]}),/equipment_digest_mismatch/);
 assert.throws(()=>run(f.input,f.scope,[{...f.traitPorts[0],verifyPersisted:()=>false},...f.traitPorts.slice(1)]),/persisted_ledger_not_verified/);
 assert.throws(()=>run(f.input,f.scope,f.traitPorts,()=>false),/persisted_ledger_not_verified/);

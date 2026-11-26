@@ -2,7 +2,7 @@ import {memo,useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {Animated,Easing,Image,StyleSheet,View,type ImageSourcePropType,type LayoutChangeEvent,type NativeScrollEvent,type NativeSyntheticEvent} from 'react-native';
 import {profileFrameSegments,profileSceneFrameSegments,profileSceneGlowBounds,profileSceneArtworkGlowBounds} from '../core/profile-frame-layout';
 import {sampleCosmeticTrack,cosmeticGlowOpacity,cosmeticViewportVisible,MOTION_STEPS as steps} from '../core/profile-cosmetic-motion-v2';
-import type {CosmeticArt} from '../theme/profile-cosmetic-art-v1';
+import type {CosmeticRenderArt} from '../theme/profile-cosmetic-render-art';
 import {usesArtworkGlowAnchors,type ProfileCosmeticRuntime,type ProfileParticleKind} from '../theme/profile-cosmetic-runtime-v1';
 import {useCosmeticMotionPolicy} from './anim/motion';
 const SW=768,SH=432;
@@ -52,7 +52,7 @@ function useClock(enabled:boolean,period:number){
  },[clock,entryOpacity,enabled,period]);
  return {clock,entryOpacity};
 }
-export const AnimatedProfileBorderGlows=memo(function AnimatedProfileBorderGlows({art,active,reduceMotion:requestedReduceMotion=false}:{art:CosmeticArt;active:boolean;reduceMotion?:boolean}){
+export const AnimatedProfileBorderGlows=memo(function AnimatedProfileBorderGlows({art,active,reduceMotion:requestedReduceMotion=false}:{art:CosmeticRenderArt;active:boolean;reduceMotion?:boolean}){
  const {reduced:reduceMotion,running}=useCosmeticMotionPolicy(active,requestedReduceMotion);
  const [size,setSize]=useState({width:0,height:0});const enabled=active&&!reduceMotion&&size.width>0&&size.height>0;const {clock,entryOpacity}=useClock(running&&enabled,12000);
  const segments=useMemo(()=>profileSceneFrameSegments(size.width,size.height,16/9),[size.width,size.height]);
@@ -77,7 +77,7 @@ export const ProfileCosmeticExteriorMatte=memo(function ProfileCosmeticExteriorM
  {segments.map(p=><View key={p.key} style={{position:'absolute',left:p.x,top:p.y,width:p.width,height:p.height,overflow:'hidden'}}><Image source={source} fadeDuration={0} resizeMode="stretch" style={{position:'absolute',left:p.imageLeft,top:p.imageTop,width:p.imageWidth,height:p.imageHeight,tintColor:color}}/></View>)}
  </View>;
 });
-export const ProfileSceneEffect=memo(function ProfileSceneEffect({art,active,reduceMotion:requestedReduceMotion=false}:{art:CosmeticArt;active:boolean;reduceMotion?:boolean}){
+export const ProfileSceneEffect=memo(function ProfileSceneEffect({art,active,reduceMotion:requestedReduceMotion=false}:{art:CosmeticRenderArt;active:boolean;reduceMotion?:boolean}){
  const {reduced:reduceMotion,running}=useCosmeticMotionPolicy(active,requestedReduceMotion);
  const [size,setSize]=useState({width:0,height:0});const enabled=active&&!reduceMotion&&size.width>0&&size.height>0;const {clock,entryOpacity}=useClock(running&&enabled,art.effectPeriodMs);
  const items=useMemo(()=>!enabled?[]:art.tracks.map((t,i)=>{

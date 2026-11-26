@@ -1,0 +1,70 @@
+{
+  "files": [
+    {
+      "name": "aeon_512.webp",
+      "width": 512,
+      "height": 512,
+      "bytes": 100624,
+      "sha256": "fd9d4eddc8b2ddbb2fac3ed5e37f1a86654dc1f4bceb3da93c01d070b07811e3",
+      "alpha": true
+    },
+    {
+      "name": "aeon_96.webp",
+      "width": 96,
+      "height": 96,
+      "bytes": 8064,
+      "sha256": "ef45bf178b72fa53c1b8202a60a131ce99b9bff46ee58f1ee06f6b031d15ccb8",
+      "alpha": true
+    },
+    {
+      "name": "aeon_idle_atlas.webp",
+      "width": 672,
+      "height": 768,
+      "bytes": 214792,
+      "sha256": "3421fbca4fe69b63996e12ad13356a8fd7266fb712aaf3fa14614ca2d4bae56c",
+      "alpha": true
+    },
+    {
+      "name": "aeon_showcase.webp",
+      "width": 224,
+      "height": 256,
+      "bytes": 27000,
+      "sha256": "931a90575b175acfeec17a514cfb93857a0370a405cce7a17a326ab11f3a2834",
+      "alpha": true
+    },
+    {
+      "name": "beyond_existence_256.webp",
+      "width": 256,
+      "height": 256,
+      "bytes": 19562,
+      "sha256": "f3889f5a64b8908a0ee9f5b3d9c10b8b79cb60f634add4ca9cb6b21797ec8367",
+      "alpha": true
+    },
+    {
+      "name": "beyond_existence_64.webp",
+      "width": 64,
+      "height": 64,
+      "bytes": 2780,
+      "sha256": "89e864a82c6b864b80dff15ba2e43fc99f97dd26e7fc26ebf7859293f9ddb07a",
+      "alpha": true
+    },
+    {
+      "name": "paradox_aura.webp",
+      "width": 128,
+      "height": 128,
+      "bytes": 1784,
+      "sha256": "3685d83bf9cb48272ebedbf9c5cdfbd041b1709170180821a7a73519b5361afd",
+      "alpha": true
+    },
+    {
+      "name": "paradox_glint.webp",
+      "width": 48,
+      "height": 48,
+      "bytes": 484,
+      "sha256": "6b712451a62b6645ef8af88129e361673d05a4f3ea5b9b3c9d9b1ce0f68dfde5",
+      "alpha": true
+    }
+  ],
+  "status": "uploaded; review-only",
+  "badgeMotion": false
+}

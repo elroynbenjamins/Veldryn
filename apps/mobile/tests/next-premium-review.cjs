@@ -93,3 +93,12 @@ for(const theme of ['petal-waltz','thunder-pulse'])for(const full of [false,true
 }
 assert.notDeepEqual(env.nextPremiumEnvironmentTracks('petal-waltz',true),env.nextPremiumEnvironmentTracks('thunder-pulse',true));
 console.log('Next premium environment: '+envChecks+' interpolated safety assertions passed.');
+
+for(const theme of ['petal-waltz','thunder-pulse']){
+ const tracks=env.nextPremiumEnvironmentTracks(theme,true);
+ const a=env.NEXT_PREMIUM_ENVIRONMENT_ANCHORS[theme];
+ for(const [kind,xy] of Object.entries(a)){
+  const track=tracks.find(t=>t.kind===kind);assert(track);
+  assert(track.frames.every(f=>f.x===xy[0]&&f.y===xy[1]),'fixed wide artwork landmark');
+ }
+}

@@ -83,3 +83,26 @@ const sql=fs.readFileSync(path.join(repo,'docs/roadmap/ultra-luxe-full-set-commi
  assert(edge.includes("Deno.env.get('ULTRA_LUXE_FULL_SET_AUTHORITY')==='true'"));
  console.log('Six combined equip route and durable recovery mocks passed; closed feature gate, verified name readback and root/route source checks.');
 })().catch(e=>{console.error(e);process.exitCode=1;});
+
+const undo=load(path.join(core,'ultra-luxe-full-set-undo-command.ts'));
+(async()=>{
+ const receipt=command.fullSetRequestId('game-1234567890123456789');
+ const cmd=undo.fullSetUndoCommand(scope,receipt),id=undo.fullSetUndoRequestId('game-1234567890123456789');
+ assert.deepEqual(cmd,{type:'ultra_luxe_full_set_undo',args:{characterId,equipRequestId:receipt}});
+ for(const bad of ['other','luxe_undo_set_1234567890123456789',null])assert.throws(()=>undo.fullSetUndoCommand(scope,bad));
+ assert.throws(()=>undo.fullSetUndoCommand({...scope,accountId:''},receipt));
+ const state={character:{id:characterId},account:{}};
+ let pending=null,attempts=[],fail=true;
+ const online=new r.OnlineGameRepository(accountId,{read:async()=>({accountId,state,version:8,serverNow:1}),send:async request=>{
+  attempts.push(request.requestId);if(fail){fail=false;throw Error('timeout');}
+  return {accountId,state,version:9,serverNow:1,ultraLuxeNameSelection:{accountId,ownedIds:[],selectedId:null},ultraLuxeFullSetReplayed:true};
+ }},{read:async()=>pending,write:async v=>{pending=v;}},()=> 'game-1234567890123456789');
+ await assert.rejects(online.execute(cmd),/timeout/);assert.equal(pending.requestId,id);
+ const recovered=await online.execute(cmd);assert.deepEqual(attempts,[id,id]);assert.equal(pending,null);
+ assert.equal(recovered.ultraLuxeNameSelection.selectedId,null);
+ const panel=fs.readFileSync(path.join(repo,'apps/mobile/src/components/profile/ProfileLookPanel.tsx'),'utf8');
+ assert(panel.includes('next.ultraLuxeUndoEquipRequestId')&&panel.includes('void undo({accountId:owner,characterId},equipRequestId)'));
+ const transport=fs.readFileSync(path.join(repo,'apps/mobile/src/online/gameplay.ts'),'utf8');
+ assert(transport.includes('payload.undoEquipRequestId===body.requestId'));
+ console.log('PASS: receipt-only undo client and durable same-ID retry');
+})().catch(e=>{console.error(e);process.exitCode=1;});

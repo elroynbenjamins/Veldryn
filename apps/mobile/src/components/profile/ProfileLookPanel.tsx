@@ -1,7 +1,7 @@
 import {newLuxeBackground,newLuxeBorder,newLuxePet} from '../../theme/ultra-luxe-candidate-art';
 import {reviewGrantAllowsFullSet} from '../../core/ultra-luxe-review-integration';
 import {ULTRA_LUXE_FULL_SET_DEFINITIONS,verifiedUltraLuxeFullSetPlan} from '../../core/ultra-luxe-full-set-command';
-import {confirmUltraLuxeFullSetReadback,ultraLuxeFullSetEquipped,ultraLuxeFullSetNamePreset,type FullSetPlan,type VerifiedFullSetNames} from '../../core/ultra-luxe-full-set-name';
+import {confirmUltraLuxeFullSetReadback,ultraLuxeFullSetEquipped,ultraLuxeFullSetNamePreset,type FullSetPlan,type FullSetScope,type VerifiedFullSetNames} from '../../core/ultra-luxe-full-set-name';
 import type {OnlineSnapshot} from '../../core/online-game-repository';
 import {quickCosmeticSets,quickSetEquipped,quickSetSelection,undoQuickSet} from '../../core/profile-quick-set-equip';
 import {ownedUltraLuxeTitleColor} from '../../core/ultra-luxe-titles';
@@ -50,7 +50,7 @@ export type ChipKind=WardrobeKind|'badge';
 const COMMIT_DELAY_MS=700;
 export interface ProfileEquipNotice{name:string;undo:()=>void}
 /** Optional port, supplied only after the combined command and fresh self-only name readback are available. */
-export interface UltraLuxeFullSetPort{names:VerifiedFullSetNames;apply:(plan:FullSetPlan)=>Promise<OnlineSnapshot>}
+export interface UltraLuxeFullSetPort{names:VerifiedFullSetNames;apply:(plan:FullSetPlan)=>Promise<OnlineSnapshot>;undo?:(scope:FullSetScope,equipRequestId:string)=>Promise<OnlineSnapshot>}
 const LUXE_LABELS=['Celestial Sovereign','Draconic Dominion','Abyssal Majesty','Paradox Eternal','Sakura Enchantment','Stormforged Sovereign'];
 const LUXE_ACCENTS=['#F3C86F','#FF9460','#55C8C9','#B9A0F9','#F5A6C8','#63CFFF'];
 
@@ -183,6 +183,17 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
     const confirmed=wardrobeEquipped(next.state);
     selectionRef.current=confirmed;setSelection(confirmed);setCustomTitle(confirmed.title);
     setFullSetStatus('Full set equipped, including animated name.');
+    const undo=fullSetPort.undo,equipRequestId=next.ultraLuxeUndoEquipRequestId;
+    if(undo&&equipRequestId)onNotice?.({name,undo:()=>{
+     if(!mounted.current||accountRef.current!==owner||stateRef.current.character?.id!==characterId||fullSetInFlight.current||pendingRef.current||sentRef.current)return;
+     fullSetInFlight.current=true;setFullSetBusy(true);setFullSetStatus('Restoring previous look…');onNotice?.(null);
+     void undo({accountId:owner,characterId},equipRequestId).then(restored=>{
+      if(!mounted.current||accountRef.current!==owner||stateRef.current.character?.id!==characterId)return;
+      const confirmed=wardrobeEquipped(restored.state);
+      selectionRef.current=confirmed;setSelection(confirmed);setCustomTitle(confirmed.title);
+      setFullSetStatus(restored.ultraLuxeFullSetReplayed?'Undo recovered. Current look refreshed.':'Previous available cosmetics restored.');
+     }).catch(()=>{if(mounted.current&&accountRef.current===owner&&stateRef.current.character?.id===characterId)setFullSetStatus('Undo could not be confirmed. Refresh or retry the pending action.');}).finally(()=>{fullSetInFlight.current=false;if(mounted.current)setFullSetBusy(false);});
+    }});
    }).catch(()=>{if(mounted.current&&accountRef.current===owner&&stateRef.current.character?.id===characterId)setFullSetStatus('Full set equip could not be confirmed.');}).finally(()=>{fullSetInFlight.current=false;if(mounted.current)setFullSetBusy(false);});
    return;
   }

@@ -134,6 +134,10 @@ jobs:
         run: node backend/dist/server/combat/v2/__tests__/class-identity-v2.js
       - name: Capture deterministic 18-spec balance baseline
         run: node backend/dist/server/combat/v2/__tests__/specialization-matrix.js
+      - name: Verify source-scoped boss and four-player cleansing
+        run: |
+          node backend/dist/server/combat/v2/__tests__/counterplay-cleanse-boss.js
+          node backend/dist/server/combat/v2/__tests__/counterplay-four-player-cleanse.js
       - name: Validate Combat 2.0 executable skills
         run: node backend/dist/server/combat/v2/__tests__/skill-effects.js
 

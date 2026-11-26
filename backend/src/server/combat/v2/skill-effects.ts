@@ -9,7 +9,7 @@
  * profiles, 25 numerical passives and 25 authored passive-to-ability rules.
  * Remaining reactive passives fail closed until exact mechanics are available.
  */
-import {simulateCombat} from '../engine';
+import {simulateCombat,simulateCombatWithServerAuthoritiesV2} from '../engine';
 import {RESOURCE_BY_CLASS_V2} from './resource-runtime';
 import {extraAbilityDefinitionV2,extraVariantRecipesV2} from './extra-active-skills';
 import {applyPassiveAbilityRulesV2,passiveAbilityRuleIdsV2} from './passive-ability-rules';
@@ -83,6 +83,7 @@ type VariantRecipe={
   adds?:readonly AbilityEffect[];replaces?:readonly AbilityEffect[];
   priorityDelta?:number;
   healBelowHpPct?:number;healBonus?:number;
+  shieldBelowHpPct?:number;shieldBonus?:number;
 };
 const ward=(value:number,durationMs=4000):AbilityEffect=>({kind:'buff',target:'self',tag:'damage_taken',value:-value,durationMs});
 const weakening=(value:number,durationMs=5000):AbilityEffect=>({kind:'debuff',tag:'damage_done',value:-value,durationMs});
@@ -192,23 +193,34 @@ export interface VerifiedSkillBuildV2 {
 const finite=(v:number,min:number,max:number)=>Math.min(max,Math.max(min,v));
 const round=(v:number)=>Math.round(v*1e6)/1e6;
 function applyRecipe(base:AbilityDefinition,recipe:VariantRecipe,mods:MutableMods):AbilityDefinition {
-  const fx=(recipe.replaces??base.effects).map(e=>({...e}));
-  const effects=fx.map(e=>{
+  // All effects share the same authenticated specialization/talent modifiers.
+  // Variant multipliers modify primary/replacement effects only; a secondary
+  // shield or HoT has its own authored coefficient and must not inherit the
+  // primary heal/shield variant multiplier (or be silently left unscaled).
+  const adjust=(e:AbilityEffect,primary:boolean):AbilityEffect=>{
     const n={...e};
-    const scale=e.kind==='damage'? (recipe.damage??1)*(1+mods.direct)
-      :e.kind==='dot'?(recipe.dot??1)*(1+mods.dot)
-      :e.kind==='heal'?(recipe.heal??1)*(1+mods.heal)
-      :e.kind==='hot'?(recipe.hot??1)*(1+mods.hot)
-      :e.kind==='shield'?(recipe.shield??1)*(1+mods.shield):1;
-    if(typeof e.coeff==='number')n.coeff=round(e.coeff*finite(scale,0,2.0));
-    if(e.kind==='heal'&&recipe.healBelowHpPct!==undefined){
+    const variant=primary?(
+      e.kind==='damage'?recipe.damage??1:e.kind==='dot'?recipe.dot??1:
+      e.kind==='heal'?recipe.heal??1:e.kind==='hot'?recipe.hot??1:
+      e.kind==='shield'?recipe.shield??1:1
+    ):1;
+    const bonus=e.kind==='damage'?1+mods.direct:e.kind==='dot'?1+mods.dot:
+      e.kind==='heal'?1+mods.heal:e.kind==='hot'?1+mods.hot:
+      e.kind==='shield'?1+mods.shield:1;
+    if(typeof e.coeff==='number')n.coeff=round(e.coeff*finite(variant*bonus,0,2.0));
+    if(primary&&e.kind==='heal'&&recipe.healBelowHpPct!==undefined){
       n.healBelowHpPct=finite(recipe.healBelowHpPct,0,.75);
       n.healBonus=finite(recipe.healBonus??0,0,.4);
     }
+    if(primary&&e.kind==='shield'&&recipe.shieldBelowHpPct!==undefined){
+      n.shieldBelowHpPct=finite(recipe.shieldBelowHpPct,0,.75);
+      n.shieldBonus=finite(recipe.shieldBonus??0,0,.4);
+    }
     if(e.kind==='taunt')n.value=round((e.value??100)*(1+finite(mods.threat,0,.7)));
     return n;
-  });
-  for(const e of recipe.adds??[])effects.push({...e});
+  };
+  const effects=(recipe.replaces??base.effects).map(e=>adjust(e,true));
+  for(const e of recipe.adds??[])effects.push(adjust(e,false));
   return {...base,
     cooldownMs:Math.max(1200,Math.round((base.cooldownMs+(recipe.cooldownDelta??0))*
       finite((recipe.cooldownMult??1)*(1+mods.cooldown),.75,1.35))),
@@ -274,7 +286,14 @@ export function compileServerSkillBuildV2(serverEnabled:boolean,input:VerifiedSk
       'Hex Detonation':'all','Final Dance':'all','Solar Hymn':'all',
       'Resonance Burst':'all',
     };
+    // River Stone's Cleansing Stream is a conditional status counter, not
+    // merely an under-50%-HP heal. Only its V2 second variant wakes for a
+    // debuff-only ally; ordinary River Stone and all V1 skills remain intact.
+    const cleansingStream=verified.classId==='STONECALLER'&&
+      record.name==='River Stone'&&index===1;
     return {...upgraded,id:base.id+':v2:'+index,
+      ...(cleansingStream?{target:'lowest_hp_ally_with_dot' as const,
+        aiCondition:'ally_below_50_or_dot' as const}:{}),
       ...(spenders[record.name]?{combatV2:{spend:spenders[record.name],bonusPerStack:.055}}:{})};
   });
   const s=actor.stats;
@@ -322,5 +341,5 @@ export function simulateCombatWithSkillsV2(
     return compileServerSkillBuildV2(true,build);
   });
   if(found.size!==builds.length)throw Error('combat_v2_build_actor_not_in_encounter');
-  return simulateCombat({...input,players});
+  return simulateCombatWithServerAuthoritiesV2({...input,players},{aiPolicy:'tactical'});
 }

@@ -30,3 +30,38 @@ assert(canUsePrivateTitleText(none,undefined));
 const commands=fs.readFileSync(path.join(__dirname,'../src/core/game-commands.ts'),'utf8');
 assert(commands.includes('!canUsePrivateTitleText(state,patch.profileTitle)'));
 console.log('Ultra Luxe grant projection: spoofed ownership, revocation, roster cleanup, idempotency and unrelated cosmetics passed.');
+
+const {ULTRA_LUXE_CANDIDATE_GRANT_COLLECTIONS:N}=mod.exports;
+assert.equal(N.length,2);
+for(const row of N){
+ assert.deepEqual(ultraLuxeGrantProjection([row.id]).collectionIds,[]);
+ const g=ultraLuxeGrantProjection([row.id],true);
+ assert.deepEqual(g.collectionIds,[row.id]);
+ assert.deepEqual(g.backgrounds,[row.background]);assert.deepEqual(g.borders,[row.border]);assert.deepEqual(g.pets,[row.pet]);
+ assert.deepEqual(g.titles,[row.title]);assert.deepEqual(g.badges,[row.badge]);
+ assert.deepEqual(g.icons,[]);assert.deepEqual(g.nameStyles,[]);
+ const input={...base,character:{...hero,profileBackgroundId:row.background,profileBorderId:row.border,selectedCosmeticPetId:row.pet,profileTitle:row.titleName,profileIconId:'class:BASTION'},account:{...base.account,unlockedProfileBackgroundIds:[row.background],unlockedProfileBorderIds:[row.border],unlockedCosmeticPetIds:[row.pet],unlockedTitleIds:[row.title]}};
+ const owned=withVerifiedUltraLuxeGrants(input,[row.id],true);
+ assert.equal(owned.character.profileBackgroundId,row.background);
+ assert.equal(owned.character.profileBorderId,row.border);
+ assert.equal(owned.character.selectedCosmeticPetId,row.pet);
+ assert.equal(owned.character.profileTitle,row.titleName);
+ assert.equal(owned.character.profileIconId,'class:BASTION');
+ assert.equal(verifiedUltraLuxeTitleId(row.titleName,[row.id],true),row.title);
+ assert.equal(verifiedUltraLuxeTitleId(row.titleName,[row.id]),undefined);
+ const revoked=withVerifiedUltraLuxeGrants(owned,[],true);
+ assert.equal(revoked.character.profileBackgroundId,'asterfall-night');
+ assert.equal(revoked.character.profileBorderId,undefined);
+ assert.equal(revoked.character.selectedCosmeticPetId,undefined);
+ assert.equal(revoked.character.profileTitle,'New Adventurer');
+ assert(!canUsePrivateTitleText(revoked,row.titleName.toUpperCase()));
+ assert(canUsePrivateTitleText(owned,row.titleName));
+ assert.deepEqual(withVerifiedUltraLuxeGrants(owned,[row.id],true),owned);
+}
+assert.equal(ultraLuxeGrantProjection([...C,...N].map(r=>r.id),true).collectionIds.length,4);
+const sql=fs.readFileSync(path.join(__dirname,'../../../docs/roadmap/ultra-luxe-grant-schema-candidate.sql'),'utf8');
+for(const row of [...C,...N])for(const field of ['id','background','border','pet','title','titleName','badge'])assert(sql.includes(row[field]),field+' '+row.id);
+assert(!sql.includes("else 'ascendant_dragon_sovereign'")&&!sql.includes("else 'ascendant-draconic-name'"));
+assert(sql.includes("if preset is not null then delete"));
+assert(sql.includes("stale_state_ultra_luxe_grants"));
+console.log('PASS: gated four-collection projection, revocation, exact SQL mapping and no invented icon/name preset');

@@ -1,3 +1,4 @@
+import {ULTRA_LUXE_GRADIENTS} from './ultra-luxe-name-gradients';
 import type {GameState} from './types';
 import type {PlayerNameStylePreference} from './player-name-style';
 
@@ -15,8 +16,8 @@ export function ownedUltraLuxeIcons(state:GameState){
 /** Preset identity is separate from color stops. Supporters may choose similar ordinary
  * colors, but only an authoritative private grant can confer the preset ID. */
 export const ULTRA_LUXE_NAME_PRESETS=[
- {id:'ascendant-celestial-name',name:'Astral Radiance',colors:['#F3C86F','#FFF4D9','#D6E8FF']},
- {id:'ascendant-draconic-name',name:'Ember Sovereignty',colors:['#FF9460','#FFE0A1','#EE6651']},
+ ULTRA_LUXE_GRADIENTS[0],
+ ULTRA_LUXE_GRADIENTS[1],
 ] as const;
 export type UltraLuxeNamePresetId=typeof ULTRA_LUXE_NAME_PRESETS[number]['id'];
 export function ownedUltraLuxeNamePresets(verifiedOwnedIds:readonly string[]|undefined){

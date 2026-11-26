@@ -35,35 +35,69 @@ export function parseOnlineRoster(value:unknown):OnlineRoster{
  return {count:Math.max(0,Math.floor(payload.count)),players};
 }
 
-export function useOnlinePlayerRoster(active:boolean){
- const {session}=useAuthSession(),accountId=session?.user.id;
- const currentAccount=useRef(accountId);currentAccount.current=accountId;
- const pendingForAccount=useRef<string|null>(null);
- const [roster,setRoster]=useState<OnlineRoster|null>(null);
- const [loading,setLoading]=useState(false);
- const [error,setError]=useState('');
- const refresh=useCallback(async()=>{
-  if(!supabase||!accountId||pendingForAccount.current===accountId)return;
-  pendingForAccount.current=accountId;
-  if(currentAccount.current===accountId)setLoading(true);
-  try{
-   const {data,error:requestError}=await supabase.rpc('online_player_roster_v2');
-   if(requestError)throw requestError;
-   if(currentAccount.current===accountId){setRoster(parseOnlineRoster(data));setError('');}
-  }catch(e){
-   if(currentAccount.current===accountId)setError(e instanceof Error?e.message:'Unable to load online players.');
-  }finally{
-   if(pendingForAccount.current===accountId)pendingForAccount.current=null;
-   if(currentAccount.current===accountId)setLoading(false);
+type RosterRpc=(name:string)=>PromiseLike<{data:unknown;error:{code?:string;message?:string}|null}>;
+type CountCapability={missing:boolean};
+export async function readOnlinePlayerProjection(rpc:RosterRpc,details:boolean,capability:CountCapability):Promise<OnlineRoster>{
+ if(!details&&!capability.missing){
+  const {data,error}=await rpc('online_player_count_v1');
+  if(!error){
+   if(typeof data!=='number'||!Number.isSafeInteger(data)||data<0)throw new Error('Invalid online player count.');
+   return {count:data,players:[]};
   }
+  // Only an absent RPC permits legacy fallback. Never bypass access errors.
+  if(error.code!=='PGRST202'&&error.code!=='42883')throw error;
+  capability.missing=true;
+ }
+ const {data,error}=await rpc('online_player_roster_v2');
+ if(error)throw error;
+ const roster=parseOnlineRoster(data);
+ return details?roster:{count:roster.count,players:[]};
+}
+
+export function useOnlinePlayerRoster(active:boolean,details=false){
+ const {session}=useAuthSession(),accountId=session?.user.id;
+ const scope=useRef({accountId,active,details});scope.current={accountId,active,details};
+ const capability=useRef<{accountId:string|undefined;missing:boolean}>({accountId,missing:false});
+ const pending=useRef<{accountId:string;details:boolean;promise:Promise<void>}|null>(null);
+ const [state,setState]=useState<{accountId:string;count:number|null;players:OnlinePlayer[];loading:boolean;error:string}|null>(null);
+ const refresh=useCallback(async()=>{
+  const client=supabase;
+  if(!client||!accountId||scope.current.accountId!==accountId||!scope.current.active)return;
+  if(capability.current.accountId!==accountId)capability.current={accountId,missing:false};
+  const existing=pending.current;
+  if(existing?.accountId===accountId){
+   await existing.promise;
+   if(scope.current.accountId===accountId&&scope.current.active&&scope.current.details&&!existing.details)await refresh();
+   return;
+  }
+  const requestedDetails=scope.current.details,serverCapability=capability.current;
+  const current=()=>scope.current.accountId===accountId&&scope.current.active;
+  const flight={accountId,details:requestedDetails,promise:Promise.resolve()};
+  pending.current=flight;
+  setState(previous=>({accountId,count:previous?.accountId===accountId?previous.count:null,players:previous?.accountId===accountId?previous.players:[],loading:true,error:''}));
+  flight.promise=(async()=>{
+   try{
+    const roster=await readOnlinePlayerProjection(name=>client.rpc(name),requestedDetails,serverCapability);
+    if(current())setState({accountId,count:roster.count,players:requestedDetails&&scope.current.details?roster.players:[],loading:false,error:''});
+   }catch(e){
+    if(current())setState(previous=>({accountId,count:previous?.accountId===accountId?previous.count:null,players:previous?.accountId===accountId?previous.players:[],loading:false,error:e instanceof Error?e.message:typeof (e as {message?:unknown})?.message==='string'?String((e as {message:string}).message):'Unable to load online players.'}));
+   }finally{if(pending.current===flight)pending.current=null;}
+  })();
+  await flight.promise;
  },[accountId]);
  useEffect(()=>{
-  setRoster(null);setError('');
   if(!active||!accountId||!supabase)return;
-  void refresh();
-  const timer=setInterval(()=>{if(AppState.currentState==='active')void refresh();},45_000);
-  const foreground=AppState.addEventListener('change',next=>{if(next==='active')void refresh();});
-  return()=>{clearInterval(timer);foreground.remove();};
+  let timer:ReturnType<typeof setInterval>|undefined;
+  const stop=()=>{if(timer!==undefined){clearInterval(timer);timer=undefined;}};
+  const start=()=>{if(timer!==undefined)return;void refresh();timer=setInterval(()=>void refresh(),45_000);};
+  if(AppState.currentState==='active'||AppState.currentState===null)start();
+  const foreground=AppState.addEventListener('change',next=>{if(next==='active')start();else stop();});
+  return()=>{stop();foreground.remove();};
  },[active,accountId,refresh]);
- return {count:roster?.count??null,players:roster?.players??[],loading,error,refresh};
+ useEffect(()=>{
+  if(!active||!details)return;
+  if(AppState.currentState==='active'||AppState.currentState===null)void refresh();
+ },[active,details,refresh]);
+ const visible=state?.accountId===accountId&&active?state:null;
+ return {count:visible?.count??null,players:details?visible?.players??[]:[],loading:visible?.loading??false,error:visible?.error??'',refresh};
 }

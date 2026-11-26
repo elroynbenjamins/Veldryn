@@ -64,7 +64,7 @@ function AccountChatOverlay({state,initialChannel='world',visible,hideDock=false
  const guildCheckedAt=useRef(0),guildLoading=useRef(false),mounted=useRef(true);
  const {party,accountId,refresh}=usePartySocial();
  const chatEnabled=state.settings.autoJoinWorldChat!==false||(allowPartyChatWhenWorldDisabled&&Boolean(party));
- const onlineRoster=useOnlinePlayerRoster(ONLINE_PLAYER_ROSTER_RELEASED&&visible&&chatEnabled&&!partyOnly);
+ const onlineRoster=useOnlinePlayerRoster(ONLINE_PLAYER_ROSTER_RELEASED&&visible&&chatEnabled&&!partyOnly,onlinePlayersOpen);
  const wasVisible=useRef(false);
  const selectChannel=(next:Channel)=>{
    if(partyOnly&&next!=='party')return;
@@ -141,7 +141,7 @@ function AccountChatOverlay({state,initialChannel='world',visible,hideDock=false
         <Text style={s.title}>{partyOnly?st("Party Chat"):st("Chat")}</Text>
        </View>
        <View style={s.headerSpacer}/>
-       {!partyOnly&&ONLINE_PLAYER_ROSTER_RELEASED&&onlineConfigured&&<Pressable accessibilityRole="button" accessibilityLabel={st('Active in Last 30 Minutes')+', '+(onlineRoster.count??st('loading'))} accessibilityHint={st('View players active in the last 30 minutes')} accessibilityState={{expanded:onlinePlayersOpen}} onPress={()=>{Keyboard.dismiss();setLanguageMenuOpen(false);setGuildHelpOpen(false);setOnlinePlayersOpen(true);void onlineRoster.refresh();}} style={({pressed})=>[s.onlinePill,pressed&&s.pressed]}><View style={s.onlineDot}/><Text numberOfLines={1} style={s.onlineText}>{compactActivityPill?'30m':st('Active (30m)')} {onlineRoster.count===null?'…':onlineRoster.count}</Text></Pressable>}
+       {!partyOnly&&ONLINE_PLAYER_ROSTER_RELEASED&&onlineConfigured&&<Pressable accessibilityRole="button" accessibilityLabel={st('Active in Last 30 Minutes')+', '+(onlineRoster.count??st('loading'))} accessibilityHint={st('View players active in the last 30 minutes')} accessibilityState={{expanded:onlinePlayersOpen}} onPress={()=>{Keyboard.dismiss();setLanguageMenuOpen(false);setGuildHelpOpen(false);setOnlinePlayersOpen(true);}} style={({pressed})=>[s.onlinePill,pressed&&s.pressed]}><View style={s.onlineDot}/><Text numberOfLines={1} style={s.onlineText}>{compactActivityPill?'30m':st('Active (30m)')} {onlineRoster.count===null?'…':onlineRoster.count}</Text></Pressable>}
        <Pressable accessibilityRole="button" accessibilityLabel={st("Close chat")} onPress={closeChat} style={({pressed})=>[s.close,pressed&&s.pressed]}><Text style={s.closeText}>×</Text></Pressable>
       </View>
       <View accessibilityRole="tablist" accessibilityElementsHidden={onlinePlayersOpen} importantForAccessibility={onlinePlayersOpen?'no-hide-descendants':'auto'} style={[s.tabs,compactTabs&&s.tabsCompact]}>

@@ -37,7 +37,7 @@ assert.throws(()=>parse(null),/Invalid online player response/);
 const overlay=read('src/components/ChatOverlay.tsx');
 const panel=read('src/components/ChatOnlinePlayersPanel.tsx');
 const heartbeat=read('src/online/useOnlineGame.ts');
-assert.ok(overlay.includes('useOnlinePlayerRoster(ONLINE_PLAYER_ROSTER_RELEASED&&visible&&chatEnabled&&!partyOnly)'),'refresh only while chat is open, roster release gate is on and Party-only modal is closed');
+assert.ok(overlay.includes('useOnlinePlayerRoster(ONLINE_PLAYER_ROSTER_RELEASED&&visible&&chatEnabled&&!partyOnly,onlinePlayersOpen)'),'refresh only while chat is open, roster release gate is on and Party-only modal is closed');
 assert.ok(overlay.includes('ONLINE_PLAYER_ROSTER_RELEASED&&onlineConfigured'),'show the header only when the verified release gate is on');
 assert.ok(read('src/core/release-flags.ts').includes('ONLINE_PLAYER_ROSTER_RELEASED=true'),'the verified online roster is enabled for release');
 assert.ok(overlay.includes('<ChatOnlinePlayersPanel'),'the header opens the existing modal-based roster');
@@ -46,7 +46,8 @@ assert.ok(panel.includes('<ChatPlayerSheet'),'reuse existing secure player/profi
 assert.ok(panel.includes('FlatList')&&panel.includes('TextInput'),'searchable scrollable roster');
 assert.ok(panel.includes("filter==='friends'")&&panel.includes("filter!=='all'"),'friend/guild list filters');
 assert.ok(heartbeat.includes('heartbeat();')&&heartbeat.includes('2*60_000'),'foreground heartbeat begins immediately');
-assert.ok(moduleSource.includes("supabase.rpc('online_player_roster_v2')"),'read from server-authoritative presence');
+assert.ok(moduleSource.includes("rpc('online_player_roster_v2')"),'read from server-authoritative presence');
+assert.ok(moduleSource.includes("rpc('online_player_count_v1')"),'header count has independent projection');
 
 const migration=fs.readFileSync(path.join(root,'../../backend/supabase/migrations/20261121170000_chat_active_30m_roster_v2.sql'),'utf8');
 assert.match(migration,/create or replace function public\.online_player_roster_v2\(\)/);
@@ -83,3 +84,20 @@ assert.ok(panel.includes('setSelected(null);setSearch(\'\');setFilter(\'all\')')
 for(const file of ['src/i18n/social.ts','src/i18n/social-early-coverage.ts'])assert.ok(read(file).includes('"Total character level":'));
 
 console.log('PASS: 30-minute activity roster RPC, backward compatibility, UI labels, translations and presence cadence');
+
+async function projectionTests(){
+ const readProjection=sandbox.exports.readOnlinePlayerProjection;
+ const calls=[],cap={missing:false};
+ const response={count:1,players:[{account_id:'a',sender_name:'Adventurer',level:10}]};
+ const rpc=async name=>{calls.push(name);return {data:name==='online_player_count_v1'?1:response,error:null};};
+ const count=await readProjection(rpc,false,cap);assert.equal(count.count,1);assert.equal(count.players.length,0);assert.deepEqual(calls,['online_player_count_v1']);
+ const full=await readProjection(rpc,true,cap);assert.equal(full.players.length,1);assert.deepEqual(calls,['online_player_count_v1','online_player_roster_v2']);
+ calls.length=0;const legacy={missing:false};
+ const oldRpc=async name=>{calls.push(name);return name==='online_player_count_v1'?{data:null,error:{code:'PGRST202'}}:{data:response,error:null};};
+ assert.equal((await readProjection(oldRpc,false,legacy)).players.length,0);assert.equal(legacy.missing,true);
+ await readProjection(oldRpc,false,legacy);assert.deepEqual(calls,['online_player_count_v1','online_player_roster_v2','online_player_roster_v2']);
+ calls.length=0;await assert.rejects(readProjection(async name=>{calls.push(name);return {data:null,error:{code:'42501'}};},false,{missing:false}));assert.deepEqual(calls,['online_player_count_v1']);
+ await assert.rejects(readProjection(async()=>({data:-1,error:null}),false,{missing:false}),/Invalid online player count/);
+ console.log('PASS count-only, on-demand details, missing-RPC fallback and access error isolation');
+}
+void projectionTests().catch(error=>{console.error(error);process.exitCode=1;});

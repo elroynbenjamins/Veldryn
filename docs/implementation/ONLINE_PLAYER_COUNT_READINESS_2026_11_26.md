@@ -1,0 +1,5 @@
+# Online player count split — review only
+
+Production roster v2 definition verified read-only. Candidate count RPC preserves the active-character join, 30-minute last-seen window, 35-minute bucket window, unique account semantics and two-way block exclusion. No client-supplied account or filter. Authenticated execute only, empty search_path, explicit auth.uid() check, no new tables. Old roster remains unchanged.
+
+Before release: generate a migration with the pinned CLI; apply to staging only; compare count to roster count within a single transaction under authenticated test viewers (including blocked relationships, missing characters, multiple presence buckets and empty data); test unauthenticated denial and permissions; run advisors and measure EXPLAIN (ANALYZE, BUFFERS) and payload bytes. Do not deploy draft SQL. The app falls back to roster only on missing-function errors and does not repeatedly probe a missing RPC for the same account. Release DB first, then the app, with old clients unaffected.

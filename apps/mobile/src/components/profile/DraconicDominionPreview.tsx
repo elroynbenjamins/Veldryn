@@ -1,5 +1,6 @@
 import {useCosmeticMotionPolicy} from '../anim/motion';
 import {useUltraLuxePetReaction,UltraLuxePetReaction} from './UltraLuxePetReaction';
+import {DraconicBorderLight} from './DraconicBorderLight';
 import {UltraLuxeIdentityMotionProvider} from './UltraLuxeIdentityMotion';
 import {UltraLuxePetPoseSprite} from './UltraLuxePetPoseSprite';
 import {ULTRA_LUXE_CYCLE_MS} from '../../core/ultra-luxe-motion';
@@ -75,10 +76,13 @@ export function DraconicDominionPreview({assets,equippedPetId,alternatePetSource
 }
 /** Independent lightweight effects for ordinary layouts. No signature or matching pet effects. */
 export function DraconicStandardEffects({ember,kind,active,reduceMotion=false}:{ember:ImageSourcePropType;kind:'background'|'border';active:boolean;reduceMotion?:boolean}){
- const {clock}=useEmberClock(active,reduceMotion);
+ const {clock,running}=useEmberClock(active,reduceMotion);
+ const [size,setSize]=useState({width:0,height:0});
  const opacity=clock.interpolate({inputRange:[0,.2,.5,.8,1],outputRange:[.25,.8,.35,.65,.25]});
  const y=clock.interpolate({inputRange:[0,.5,1],outputRange:[0,-14,0]});
- const locations=kind==='background'?[{right:'12%' as const,top:'25%' as const},{right:'27%' as const,bottom:'20%' as const}]:[{left:5,top:5},{right:5,bottom:5}];
+ const locations=[{right:'12%' as const,top:'25%' as const},{right:'27%' as const,bottom:'20%' as const}];
+ if(kind==='border')return <View onLayout={event=>{const {width,height}=event.nativeEvent.layout;setSize(old=>Math.abs(old.width-width)<.5&&Math.abs(old.height-height)<.5?old:{width,height});}} pointerEvents="none" accessible={false} importantForAccessibility="no-hide-descendants" style={StyleSheet.absoluteFill}>{running?<DraconicBorderLight clock={clock} width={size.width} height={size.height} ember={ember}/>:null}</View>;
+ if(!running)return null;
  return <View pointerEvents="none" accessible={false} importantForAccessibility="no-hide-descendants" style={StyleSheet.absoluteFill}>{locations.map((p,i)=><Animated.Image key={i} source={ember} resizeMode="contain" style={[s.ember,p,{opacity,transform:[{translateY:y}]}]}/>)}</View>;
 }
 const s=StyleSheet.create({

@@ -1,6 +1,6 @@
 import type {GameState} from './types';
 import type {WardrobeEquipped} from './profile-wardrobe';
-import {PROFILE_COSMETIC_STORE_COLLECTIONS,profileCosmeticCollectionOwnership} from '../content/profile-cosmetic-store';
+import {PROFILE_COSMETIC_WARDROBE_COLLECTIONS,profileCosmeticCollectionOwnership} from '../content/profile-cosmetic-store';
 import {PREMIUM_PROFILE_COSMETICS} from './profile-premium-cosmetics';
 import {CELESTIAL_IDS} from './ascendant-cosmetics';
 import {DRACONIC_IDS} from './draconic-showcase-layout';
@@ -22,7 +22,7 @@ export function quickCosmeticSets(state:GameState):QuickCosmeticSet[]{
  const legacyEnabled=profileAnimatedCosmeticsEnabled(state);
  const sets:QuickCosmeticSet[]=[];
  const a=state.account;
- for(const row of PROFILE_COSMETIC_STORE_COLLECTIONS){
+ for(const row of PROFILE_COSMETIC_WARDROBE_COLLECTIONS){
   const wave2=wave2SetFor('border',row.border.itemId);
   if(wave2?!wave2Complete(a,wave2):!legacyEnabled)continue;
   if(!profileCosmeticCollectionOwnership(state,row).setOwned||!row.portraits.every(p=>p.artworkReady))continue;

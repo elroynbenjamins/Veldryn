@@ -1,28 +1,30 @@
 import {type PropsWithChildren,type ReactNode,useEffect,useMemo,useState} from 'react';
-import {Keyboard,KeyboardAvoidingView,Modal,Platform,Pressable,StyleSheet,Text,View,useWindowDimensions,type StyleProp,type ViewStyle} from 'react-native';
-import {SafeAreaProvider,useSafeAreaInsets} from 'react-native-safe-area-context';
+import {Dimensions,Keyboard,KeyboardAvoidingView,Modal,Platform,Pressable,StyleSheet,Text,View,useWindowDimensions,type StyleProp,type ViewStyle} from 'react-native';
+import {SafeAreaProvider,useSafeAreaFrame,useSafeAreaInsets} from 'react-native-safe-area-context';
 import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {sharedText} from '../i18n/shared';
+import {resolveModalBottomInset} from './modal-safe-area';
 
 type Presentation='sheet'|'dialog'|'fullscreen';
 type GameModalSurfaceProps=PropsWithChildren<{visible:boolean;onClose:()=>void;reduceMotion?:boolean;presentation?:Presentation;surfaceStyle?:StyleProp<ViewStyle>;backdropLabel?:string;dismissOnBackdrop?:boolean}>;
 
 export function GameModalSurface(props:GameModalSurfaceProps){
   const {visible,onClose,reduceMotion=false,presentation='sheet'}=props;
+  const rootInsets=useSafeAreaInsets();
   // A React Native Modal owns a separate native window on Android. Measure
   // safe areas inside that window, not against the underlying app screen.
   return <Modal visible={visible} transparent={presentation!=='fullscreen'} statusBarTranslucent navigationBarTranslucent={Platform.OS==='android'} animationType={reduceMotion?'none':'fade'} onRequestClose={onClose}>
     <SafeAreaProvider style={{flex:1}}>
-      <GameModalWindow {...props}/>
+      <GameModalWindow {...props} rootBottom={rootInsets.bottom} rootTop={rootInsets.top}/>
     </SafeAreaProvider>
   </Modal>;
 }
 
-function GameModalWindow({visible,onClose,presentation='sheet',children,surfaceStyle,backdropLabel:providedBackdropLabel,dismissOnBackdrop=true}:GameModalSurfaceProps){
+function GameModalWindow({visible,onClose,presentation='sheet',children,surfaceStyle,backdropLabel:providedBackdropLabel,dismissOnBackdrop=true,rootBottom,rootTop}:GameModalSurfaceProps&{rootBottom:number;rootTop:number}){
   const language=useGameLanguage(),backdropLabel=providedBackdropLabel??sharedText(language,'Close dialog');
-  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),insets=useSafeAreaInsets(),{height:windowHeight}=useWindowDimensions(),sheet=presentation==='sheet',fullscreen=presentation==='fullscreen';
+  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),insets=useSafeAreaInsets(),frame=useSafeAreaFrame(),{height:windowHeight}=useWindowDimensions(),sheet=presentation==='sheet',fullscreen=presentation==='fullscreen';
   const [androidKeyboardTop,setAndroidKeyboardTop]=useState<number|null>(null);
   useEffect(()=>{
     if(Platform.OS!=='android'||!visible){setAndroidKeyboardTop(null);return;}
@@ -36,12 +38,13 @@ function GameModalWindow({visible,onClose,presentation='sheet',children,surfaceS
   // For sheets the navigation inset belongs OUTSIDE the surface, so the
   // footer and its last buttons sit entirely above three-button navigation.
   // Dialogs already reserve extra breathing room; fullscreens pad internally.
-  const bottomClearance=sheet?Math.max(insets.bottom,keyboardOverlap)
-    :fullscreen?keyboardOverlap:Math.max(spacing.lg,insets.bottom+spacing.sm,keyboardOverlap);
+  const safeBottom=resolveModalBottomInset({android:Platform.OS==='android',modalBottom:insets.bottom,modalTop:insets.top,rootBottom,rootTop,screenHeight:Dimensions.get('screen').height,frameHeight:frame.height});
+  const bottomClearance=sheet?Math.max(safeBottom,keyboardOverlap)
+    :fullscreen?keyboardOverlap:Math.max(spacing.lg,safeBottom+spacing.sm,keyboardOverlap);
   return <View style={[s.backdrop,fullscreen&&s.fullscreenBackdrop,!sheet&&!fullscreen&&s.center,{paddingTop:fullscreen?0:Math.max(spacing.sm,insets.top),paddingBottom:bottomClearance}]}>
       {dismissOnBackdrop?<Pressable accessible={false} accessibilityLabel={backdropLabel} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" onPress={onClose} style={StyleSheet.absoluteFill}/>:<View pointerEvents="none" style={StyleSheet.absoluteFill}/>}
       <KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':undefined} keyboardVerticalOffset={insets.top} style={[s.keyboardAvoider,fullscreen?s.keyboardFullscreen:sheet?s.keyboardSheet:s.keyboardDialog]}>
-        <View accessibilityViewIsModal onAccessibilityEscape={onClose} style={[s.surface,fullscreen?s.fullscreen:sheet?s.sheet:s.dialog,sheet&&{paddingBottom:spacing.lg},fullscreen&&{paddingTop:Math.max(spacing.sm,insets.top),paddingBottom:Math.max(spacing.sm,insets.bottom)},surfaceStyle]}>
+        <View accessibilityViewIsModal onAccessibilityEscape={onClose} style={[s.surface,fullscreen?s.fullscreen:sheet?s.sheet:s.dialog,sheet&&{paddingBottom:spacing.lg},fullscreen&&{paddingTop:Math.max(spacing.sm,insets.top),paddingBottom:Math.max(spacing.sm,safeBottom-keyboardOverlap)},surfaceStyle]}>
           {sheet?<View style={s.grabber}/>:null}
           {children}
         </View>

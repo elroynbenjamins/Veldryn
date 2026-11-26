@@ -51,7 +51,10 @@ export function ItemQuickInspect({state,itemId,instanceId,source='inventory',onC
  const it=(key:keyof typeof itemDetailRows,params?:Record<string,string|number>)=>itemDetailText(language,key,params);
  const ui=(label:string)=>equipmentPouchText(language,label);
  const contentText=(value:string)=>itemDetailContent(language,value,gl);
-  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions(),compactHeader=width<390||fontScale>=1.25;
+  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,height,fontScale}=useWindowDimensions(),compactHeader=width<390||fontScale>=1.25;
+  // Very narrow screens stack the footer even at normal font scale. Keep
+  // the entire inspector reachable instead of reserving an oversized footer.
+  const scrollWholeSheet=width<345||height<650||fontScale>=1.25;
   const [sourceDisclosure,setSourceDisclosure]=useState<Record<string,boolean>>({}),[craftingDisclosure,setCraftingDisclosure]=useState<Record<string,boolean>>({}),[useLimits,setUseLimits]=useState<Record<string,number>>({}),[detailsOpen,setDetailsOpen]=useState(false);
   useEffect(()=>{setDetailsOpen(false)},[itemId,instanceId,source]);
   const model=useMemo(()=>itemId?itemInspectModel(state,itemId,instanceId,source):undefined,[state,itemId,instanceId,source]);
@@ -93,9 +96,7 @@ export function ItemQuickInspect({state,itemId,instanceId,source='inventory',onC
   const readyUses=uses.filter(row=>row.availability.status==='ready').length;
   const upgradeChance=upgrade?Math.round(upgrade.successChance*100):0;
   const upgradeColor=upgrade?.maxed?C.good:upgradeChance>=70?C.good:upgradeChance>=30?C.warning:C.bad;
-  return <GameModalSurface visible={true} reduceMotion={state.settings.reduceMotion} onClose={onClose}
-    backdropLabel={gt("Close item quick inspect")} surfaceStyle={s.sheet}>
-        <View style={[s.hero,compactHeader&&s.heroCompact]}>
+  const header=<View style={[s.hero,compactHeader&&s.heroCompact]}>
           <View style={[s.artBox,{borderColor:rarity.color,backgroundColor:rarity.surface}]}><InspectArt itemId={itemId} model={model}/></View>
           <View style={[s.heroCopy,compactHeader&&s.heroCopyCompact]}>
             <Text style={[s.rarity,{color:rarity.color}]}>{rarity.symbol+' '+contentText(rarity.label).toLocaleUpperCase(language)+(model.selectedQuality!==undefined?' · Q'+model.selectedQuality:'')+' · '+contentText(item.type).toLocaleUpperCase(language)}</Text>
@@ -104,9 +105,17 @@ export function ItemQuickInspect({state,itemId,instanceId,source='inventory',onC
             {isExactEquippedGear?<View style={s.equippedPill}><Text style={s.equippedPillText}>{gt('Equipped').toLocaleUpperCase(language)}</Text></View>:null}
           </View>
           <View style={[s.heroControls,compactHeader&&s.heroControlsCompact]}><InventoryItemHeaderControls favorite={favorite} locked={locked} onFavorite={onToggleFavorite} onLock={onToggleLock} onClose={onClose}/></View>
-        </View>
-
-        <ScrollView style={s.scroll} contentContainerStyle={s.content} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
+        </View>;
+  const footer=(quickActions||disposalActions)?<View style={s.quickFooter}>
+    {quickActions}
+    {disposalActions?<View style={s.footerDisposal}>{disposalActions}</View>:null}
+  </View>:null;
+  return <GameModalSurface visible={true} reduceMotion={state.settings.reduceMotion} onClose={onClose}
+    backdropLabel={gt("Close item quick inspect")} surfaceStyle={s.sheet}>
+        {!scrollWholeSheet?header:null}
+        <ScrollView style={[s.scroll,scrollWholeSheet&&s.wholeScroll]} keyboardShouldPersistTaps="handled" contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={scrollWholeSheet} showsHorizontalScrollIndicator={false}>
+          {scrollWholeSheet?header:null}
+          <View style={s.content}>
           {item.type==='gear'&&model.stats&&(model.stats.attack!==0||model.stats.defense!==0||model.stats.hp!==0)?<View style={s.statGroup}>
             <Text style={s.statHeading}>{gt("BASE STATS")}</Text>
             <View style={s.basePanel} accessibilityLabel={gt("Equipment base stats")}>
@@ -211,12 +220,11 @@ export function ItemQuickInspect({state,itemId,instanceId,source='inventory',onC
            </Pressable>:null}</>}</Section>:null}
           </>}
           {item.type!=='tool'&&actions?<View style={s.foodActions}>{actions}</View>:null}
-        </ScrollView>
-        {(quickActions||disposalActions)?<View style={s.quickFooter}>
-          {quickActions}
-          {disposalActions?<View style={s.footerDisposal}>{disposalActions}</View>:null}
-        </View>:null}
-  </GameModalSurface>;
+        </View>
+          {scrollWholeSheet?footer:null}
+         </ScrollView>
+         {!scrollWholeSheet?footer:null}
+   </GameModalSurface>;
 }
 function Section({title,children}:{title:string;children:ReactNode}){const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);return <View style={s.section}><Text style={s.sectionTitle}>{title}</Text>{children}</View>}
 function Stat({label,value}:{label:string;value:number}){const {language}=useGameplayText();const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);return <View style={s.bonusRow}><Text style={s.bonusLabel}>{itemDetailText(language,label)}</Text><Text style={s.baseValue}>{displayStatPrecise(value)}</Text></View>}
@@ -242,7 +250,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
   equippedPillText:{fontSize:9,lineHeight:13,fontWeight:'900',color:C.good},
   heroCopy:{flex:1,minWidth:0,gap:3},heroCopyCompact:{minWidth:160},rarity:{...typography.caption,fontWeight:'900',letterSpacing:.7},name:{...typography.title,fontWeight:'800'},owned:{...typography.caption,color:C.muted},
   close:{width:44,height:44,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.panel2},closeText:{fontSize:24,lineHeight:27,color:C.text,fontWeight:'700'},
-  scroll:{maxHeight:520,flexShrink:1,minHeight:0},content:{padding:spacing.sm,gap:spacing.sm,paddingBottom:spacing.md},
+  scroll:{maxHeight:520,flexShrink:1,minHeight:0},wholeScroll:{maxHeight:'100%'},scrollContent:{flexGrow:0},content:{padding:spacing.sm,gap:spacing.sm,paddingBottom:spacing.md},
    foodActions:{gap:spacing.xs},
    footerDisposal:{borderTopWidth:StyleSheet.hairlineWidth,borderTopColor:C.lineStrong,marginTop:spacing.sm,paddingTop:spacing.sm,gap:spacing.xs},
    disclosure:{minHeight:44,flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingHorizontal:12,paddingVertical:8,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel2},

@@ -1,15 +1,8 @@
-import {canonicalUltraLuxeCollection,ULTRA_LUXE_FULL_SET_COMMAND,ULTRA_LUXE_REQUEST_PREFIX} from '../../apps/mobile/src/core/ultra-luxe-full-set-command';
+import {canonicalUltraLuxeCollection,ULTRA_LUXE_FULL_SET_COMMAND,ULTRA_LUXE_REQUEST_PREFIX,ULTRA_LUXE_FULL_SET_DEFINITIONS} from '../../apps/mobile/src/core/ultra-luxe-full-set-command';
 import {ultraLuxeGradient} from '../../apps/mobile/src/core/ultra-luxe-name-gradients';
 import type {GameState} from '../../apps/mobile/src/core/types';
 
-const DEFINITIONS=[
- ['ascendant-celestial-sovereign','ascendant-celestial-astral-sanctum','ascendant-celestial-crown-of-the-cosmos','ascendant-celestial-aetherion','Sovereign of the Stars'],
- ['ascendant-draconic-dominion','ascendant-draconic-dominion-of-ash','ascendant-draconic-throne-of-embers','ascendant-draconic-vharaxis','Dragon Sovereign'],
- ['ascendant-abyssal-majesty','ascendant-abyssal-forgotten-abyss','ascendant-abyssal-crown-of-the-depths','ascendant-abyssal-nhalzuun','Monarch of the Deep'],
- ['ascendant-paradox-eternal','ascendant-paradox-beyond-the-veil','ascendant-paradox-fractured-eternity','ascendant-paradox-aeon','Beyond Existence'],
- ['ascendant-sakura-enchantment','ascendant-sakura-petal-sanctuary','ascendant-sakura-blossom-crown','ascendant-sakura-spirit-fox','Sakura Dreamkeeper'],
- ['ascendant-stormforged-sovereign','ascendant-stormforged-thunderkeep','ascendant-stormforged-steel-crown','ascendant-stormforged-direwolf','Stormforged Warden'],
-] as const;
+
 const object=(v:unknown):Record<string,unknown>|undefined=>v&&typeof v==='object'&&!Array.isArray(v)?v as Record<string,unknown>:undefined;
 export class FullSetCommandError extends Error{constructor(message:string,readonly status=400){super(message);}}
 export interface FullSetCommandServices{
@@ -35,7 +28,7 @@ export async function executeUltraLuxeFullSetCommand(services:FullSetCommandServ
   typeof a.characterId!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(a.characterId)||
   !(a.expectedNameId===null||ultraLuxeGradient(a.expectedNameId)))throw new FullSetCommandError('invalid_full_set_request');
  const collection=canonicalUltraLuxeCollection(a.collectionId);
- const definition=DEFINITIONS.find(d=>d[0]===collection);
+ const definition=ULTRA_LUXE_FULL_SET_DEFINITIONS.find(d=>d[0]===collection);
  if(!definition||a.collectionId!==collection)throw new FullSetCommandError('invalid_full_set_collection');
  const requestHash=await services.hash(JSON.stringify([ULTRA_LUXE_FULL_SET_COMMAND,body.expectedVersion,collection,a.characterId,a.expectedNameId]));
  const loaded=await services.rpc<Load>('load_online_game_ultra_luxe_v1',{p_account_id:accountId});

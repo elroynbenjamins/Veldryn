@@ -182,18 +182,18 @@ var init_meal_buffs = __esm({
 });
 
 // ../apps/mobile/src/content/faith.ts
-var HOLY_WATER_ID, FAITH_TIERS, FAITH_BLESSINGS, HOLY_WATER_SOURCES, faithBlessingDef;
+var HOLY_WATER_ID, FAITH_TIERS, FAITH_BLESSINGS, FAITH_BLESSING_GROUPS, HOLY_WATER_SOURCES, faithBlessingDef, faithBlessingGroup;
 var init_faith = __esm({
   "../apps/mobile/src/content/faith.ts"() {
     "use strict";
     HOLY_WATER_ID = "HOLY_WATER";
     FAITH_TIERS = [
-      { id: "FAITH_QUIET", name: "Quiet prayer", level: 1, water: 1, xp: 96, seconds: 30 },
-      { id: "FAITH_CANDLE", name: "Candle vigil", level: 10, water: 2, xp: 208, seconds: 30 },
-      { id: "FAITH_LITANY", name: "Sacred litany", level: 25, water: 4, xp: 448, seconds: 30 },
-      { id: "FAITH_DEVOTION", name: "Devotion", level: 40, water: 8, xp: 960, seconds: 30 },
-      { id: "FAITH_COMMUNION", name: "Communion", level: 60, water: 16, xp: 2048, seconds: 30 },
-      { id: "FAITH_ASCENDANT", name: "Ascendant prayer", level: 80, water: 32, xp: 4352, seconds: 30 }
+      { id: "FAITH_QUIET", name: "Quiet prayer", level: 1, water: 1, xp: 90, seconds: 30 },
+      { id: "FAITH_CANDLE", name: "Candle vigil", level: 10, water: 2, xp: 192, seconds: 30 },
+      { id: "FAITH_LITANY", name: "Sacred litany", level: 25, water: 4, xp: 408, seconds: 30 },
+      { id: "FAITH_DEVOTION", name: "Devotion", level: 40, water: 8, xp: 864, seconds: 30 },
+      { id: "FAITH_COMMUNION", name: "Communion", level: 60, water: 16, xp: 1824, seconds: 30 },
+      { id: "FAITH_ASCENDANT", name: "Ascendant prayer", level: 80, water: 32, xp: 3840, seconds: 30 }
     ];
     FAITH_BLESSINGS = [
       { id: "EMBER_VOW", name: "Ember Vow", level: 1, family: "attack", bonus: 2 / 100 },
@@ -203,7 +203,6 @@ var init_faith = __esm({
       { id: "WELLSPRING", name: "Wellspring", level: 15, family: "hp", bonus: 4 / 100 },
       { id: "QUICKENED_STEP", name: "Quickened Step", level: 18, family: "combatSpeed", bonus: 3 / 100 },
       { id: "LANTERN_OF_WISDOM", name: "Lantern of Wisdom", level: 20, family: "xp", bonus: 2 / 100 },
-      { id: "FESTIVAL_FAVOR", name: "Festival Favor", level: 30, family: "eventCurrency", bonus: 10 / 100 },
       { id: "NATURES_COVENANT", name: "Nature's Covenant", level: 35, family: "gathering", bonus: 4 / 100 },
       { id: "SUNFIRE_VOW", name: "Sunfire Vow", level: 40, family: "attack", bonus: 4 / 100 },
       { id: "IRON_SANCTUARY", name: "Iron Sanctuary", level: 45, family: "defense", bonus: 6 / 100 },
@@ -219,6 +218,12 @@ var init_faith = __esm({
       { id: "UNDYING_LIGHT", name: "Undying Light", level: 90, family: "hp", bonus: 12 / 100 },
       { id: "ETERNAL_ENLIGHTENMENT", name: "Eternal Enlightenment", level: 95, family: "xp", bonus: 6 / 100 }
     ];
+    FAITH_BLESSING_GROUPS = [
+      { id: "combat", label: "Combat", families: ["attack", "defense", "hp", "combatSpeed"] },
+      { id: "gathering", label: "Gathering", families: ["gathering"] },
+      { id: "production", label: "Production", families: ["production"] },
+      { id: "experience", label: "Experience", families: ["xp"] }
+    ];
     HOLY_WATER_SOURCES = [
       { monsterId: "FIELD_WISP", chance: 0.16, min: 1, max: 2 },
       { monsterId: "DROWNED_PILGRIM", chance: 0.32, min: 2, max: 4 },
@@ -228,6 +233,7 @@ var init_faith = __esm({
       { monsterId: "ASHEN_REVENANT", chance: 0.5, min: 6, max: 10 }
     ];
     faithBlessingDef = (id) => FAITH_BLESSINGS.find((b) => b.id === id);
+    faithBlessingGroup = (blessing) => FAITH_BLESSING_GROUPS.find((group) => group.families.includes(blessing.family))?.id;
   }
 });
 
@@ -235,18 +241,37 @@ var init_faith = __esm({
 function normalizeFaith(raw2) {
   const xp = typeof raw2?.xp === "number" && Number.isFinite(raw2.xp) ? Math.max(0, Math.min(MAX_XP, Math.floor(raw2.xp))) : 0;
   const selected2 = faithBlessingDef(raw2?.selectedBlessingId), p = raw2?.practice, tier = FAITH_TIERS.find((t) => t.id === p?.tierId);
+  const level = levelFromXp(xp), selectedBlessingIds = {};
+  if (raw2?.selectedBlessingIds && typeof raw2.selectedBlessingIds === "object") {
+    for (const group of FAITH_BLESSING_GROUPS) {
+      const blessing = faithBlessingDef(raw2.selectedBlessingIds[group.id]);
+      if (blessing && blessing.level <= level && faithBlessingGroup(blessing) === group.id) selectedBlessingIds[group.id] = blessing.id;
+    }
+  } else if (selected2 && selected2.level <= level) {
+    const group = faithBlessingGroup(selected2);
+    if (group) selectedBlessingIds[group] = selected2.id;
+  }
+  const legacy = selected2 && Object.values(selectedBlessingIds).includes(selected2.id) ? selected2.id : Object.values(selectedBlessingIds)[0];
   const practice = tier && Number.isSafeInteger(p.remaining) && p.remaining > 0 && p.remaining <= MAX_FAITH_PRACTICES && Number.isSafeInteger(p.lastClaimAtMs) && p.lastClaimAtMs >= 0 && Number.isSafeInteger(p.progressMs) && p.progressMs >= 0 && p.progressMs < tier.seconds * 1e3 ? { tierId: tier.id, remaining: p.remaining, lastClaimAtMs: p.lastClaimAtMs, progressMs: p.progressMs } : void 0;
-  return { xp, selectedBlessingId: selected2 && selected2.level <= levelFromXp(xp) ? selected2.id : void 0, favoriteBlessingIds: Array.isArray(raw2?.favoriteBlessingIds) ? [...new Set(raw2.favoriteBlessingIds.filter((id) => typeof id === "string" && faithBlessingDef(id)))] : [], hideWeakerBlessings: raw2?.hideWeakerBlessings !== false, practice };
+  return { xp, selectedBlessingId: legacy, selectedBlessingIds, favoriteBlessingIds: Array.isArray(raw2?.favoriteBlessingIds) ? [...new Set(raw2.favoriteBlessingIds.filter((id) => typeof id === "string" && faithBlessingDef(id)))] : [], hideWeakerBlessings: raw2?.hideWeakerBlessings !== false, practice };
+}
+function activeFaithPreferences(state) {
+  const raw2 = state.character?.faith;
+  const storedXp = typeof raw2?.xp === "number" && Number.isFinite(raw2.xp) ? raw2.xp : 0;
+  return normalizeFaith({ ...raw2, xp: Math.max(storedXp, state.skills.find((s) => s.skillId === "faith")?.xp ?? 0) });
 }
 function updateFaithPreference(state, kind, id, enabled) {
   if (!state.character) throw new Error("Create a character first.");
-  const faith = normalizeFaith(state.character.faith);
+  const faith = activeFaithPreferences(state);
   if (kind === "hide") faith.hideWeakerBlessings = !!enabled;
   else {
     const blessing = faithBlessingDef(id);
     if (!blessing) throw new Error("Unknown blessing.");
     if (kind === "blessing") {
       if (blessing.level > faithLevel(state)) throw new Error("Requires Faith level " + blessing.level);
+      const group = faithBlessingGroup(blessing);
+      if (!group) throw new Error("Unknown blessing category.");
+      faith.selectedBlessingIds[group] = blessing.id;
       faith.selectedBlessingId = blessing.id;
     } else faith.favoriteBlessingIds = enabled ? [.../* @__PURE__ */ new Set([...faith.favoriteBlessingIds, blessing.id])] : faith.favoriteBlessingIds.filter((b) => b !== blessing.id);
   }
@@ -296,7 +321,7 @@ function affordableFaithPracticeCount(state, tierId) {
   if (!tier || tier.level > faithLevel(state) || faithLevel(state) >= 100) return 0;
   return Math.min(MAX_FAITH_PRACTICES, Math.floor(holyWaterAvailable(state) / tier.water));
 }
-var MAX_XP, MAX_FAITH_PRACTICES, faithLevel, selectedFaithBlessing, holyWaterAvailable, faithPracticeAvailability;
+var MAX_XP, MAX_FAITH_PRACTICES, faithLevel, selectedFaithBlessing, selectedFaithBlessings, holyWaterAvailable, faithPracticeAvailability;
 var init_faith2 = __esm({
   "../apps/mobile/src/core/faith.ts"() {
     "use strict";
@@ -306,9 +331,13 @@ var init_faith2 = __esm({
     MAX_XP = totalXpAtLevel(100);
     MAX_FAITH_PRACTICES = 1e3;
     faithLevel = (state) => levelFromXp(Array.isArray(state) ? state.find((s) => s.skillId === "faith")?.xp ?? 0 : Math.max(normalizeFaith(state.character?.faith).xp, state.skills.find((s) => s.skillId === "faith")?.xp ?? 0));
-    selectedFaithBlessing = (state) => {
-      const raw2 = state.character?.faith, blessing = faithBlessingDef(raw2?.selectedBlessingId);
-      return blessing && blessing.level <= faithLevel(state) ? blessing : void 0;
+    selectedFaithBlessing = (state, group) => {
+      const faith = activeFaithPreferences(state);
+      return faithBlessingDef(group ? faith.selectedBlessingIds[group] : faith.selectedBlessingId);
+    };
+    selectedFaithBlessings = (state) => {
+      const faith = activeFaithPreferences(state);
+      return FAITH_BLESSINGS.filter((blessing) => Object.values(faith.selectedBlessingIds).includes(blessing.id));
     };
     holyWaterAvailable = (state) => [...state.inventory.stacks, ...state.bank.stacks].filter((s) => s.itemId === HOLY_WATER_ID).reduce((n, s) => n + s.quantity, 0);
     faithPracticeAvailability = (state, tierId, count) => {
@@ -48733,9 +48762,6 @@ function eventCurrencyPromotionBps(eventId, earnedAtMs) {
   return Math.round((1e4 + base) * frostfallHolidayMultiplierBps(eventId, earnedAtMs) / 1e4) - 1e4;
 }
 
-// ../apps/mobile/src/core/live-events.ts
-init_faith2();
-
 // ../apps/mobile/src/core/equipment-shop-tier-unlock.ts
 function equipmentShopTierUnlocked(state, tier) {
   if (!state.character) return false;
@@ -48906,9 +48932,7 @@ function eventEffectiveDropRate(state, eventId, source, nowMs = Date.now()) {
   const event = liveEventDef(eventId);
   if (!event) return 0;
   const blessing = eventDailyFestivalBlessing2(state, nowMs), blessingMultiplier = blessing?.source === source ? 1 + blessing.bonusBps / 1e4 : 1;
-  const active2 = activeLiveEvent(state, nowMs), faith = active2?.definition.id === eventId ? selectedFaithBlessing(state) : void 0;
-  const faithMultiplier = faith?.family === "eventCurrency" ? 1 + faith.bonus : 1;
-  return event.dropRates[source] * (eventProjectChoice(state, eventId)?.dropMultipliers?.[source] ?? 1) * blessingMultiplier * (1 + eventCurrencyBonusBps(state, eventId, nowMs) / 1e4) * faithMultiplier;
+  return event.dropRates[source] * (eventProjectChoice(state, eventId)?.dropMultipliers?.[source] ?? 1) * blessingMultiplier * (1 + eventCurrencyBonusBps(state, eventId, nowMs) / 1e4);
 }
 function eventContributionValue(state, eventId, spent) {
   const multiplier = eventProjectChoice(state, eventId)?.contributionMultiplier ?? 1;
@@ -49965,8 +49989,7 @@ function characterPermanentMultipliers(state) {
   if (!c) return result;
   const explorationLevel = state.skills.find((skill2) => skill2.skillId === "exploration")?.level ?? 1;
   result = merge(result, { ...BASE, gatheringSpeedMultiplier: 1 + explorationGatheringSpeedBonus(explorationLevel) });
-  const blessing = selectedFaithBlessing(state);
-  if (blessing) {
+  for (const blessing of selectedFaithBlessings(state)) {
     if (blessing.family === "attack") result = merge(result, { ...BASE, attackMultiplier: 1 + blessing.bonus, combatPowerMultiplier: 1 + blessing.bonus });
     if (blessing.family === "combatSpeed") result = merge(result, { ...BASE, combatSpeedMultiplier: 1 + blessing.bonus });
     if (blessing.family === "defense") result = merge(result, { ...BASE, incomingDamageMultiplier: 1 - blessing.bonus });
@@ -50121,7 +50144,7 @@ function professionActionPace(state, recipe2, mode) {
   const permanent = characterPermanentMultipliers(state);
   const mastery = professionMasteryMultipliers(recipe2.id, state.account.professionMasteryByAction?.[recipe2.id]);
   const affinity = skillAffinityModifiers(state.character?.classId, recipe2.skillId);
-  const faith = selectedFaithBlessing(state);
+  const faith = selectedFaithBlessing(state, "experience");
   const forgeXp = faith?.family === "xp" ? 1 + faith.bonus : 1;
   const rawXpPerAction = recipe2.xp * mastery.xp * (mode === "forge" ? forgeXp : permanent.skillXpMultiplier) * affinity.xpMultiplier;
   const xpPerAction = recipe2.skillId === "cooking" && mode === "batch" ? Math.round(rawXpPerAction / 10) * 10 : rawXpPerAction;
@@ -54916,7 +54939,7 @@ function effectiveStats(state) {
   defense *= mastery.defense;
   const permanent = characterPermanentMultipliers(state);
   attack *= permanent.combatPowerMultiplier;
-  const faithBlessing = selectedFaithBlessing(state);
+  const faithBlessing = selectedFaithBlessing(state, "combat");
   if (faithBlessing?.family === "hp") hp = Math.ceil(hp * (1 + faithBlessing.bonus));
   const prep = c.preparation ? preparationEffects(c.preparation) : void 0;
   if (prep) attack *= prep.attack;
@@ -54967,7 +54990,7 @@ function startCombat(state, monsterId, nowMs, combatTacticId = "balanced", huntG
   if (!cumulativeMonsterUnlockIds(state).includes(monsterId) && !(m.regionalAreaAutoUnlock && state.character.level >= areaUnlockLevel)) throw new Error("Monster not unlocked");
   if (m.boss) throw new Error("Bosses use challengeFallenKnight");
   if (zoneIdForTarget(monsterId) !== currentRegionId(state)) throw new Error(`Travel to ${m.zone} before fighting ${m.name}`);
-  return { ...state, outOfCombatSinceMs: void 0, character: { ...state.character, activityQueuePausedReason: void 0 }, activity: { kind: "combat", targetId: monsterId, combatTacticId: normalizeCombatTactic(combatTacticId), ...huntGoalSnapshot(normalizeHuntGoalId(huntGoalId)) ? { huntGoal: huntGoalSnapshot(normalizeHuntGoalId(huntGoalId)) } : {}, sessionKills: 0, sessionChampions: 0, startedAtMs: nowMs, lastClaimAtMs: nowMs, classFocus: normalizeTrainingFocus(state.character.trainingFocus), classTrainingSnapshot: { faithBlessingId: selectedFaithBlessing(state)?.id }, environment: captureActivityEnvironment(monsterId, nowMs) } };
+  return { ...state, outOfCombatSinceMs: void 0, character: { ...state.character, activityQueuePausedReason: void 0 }, activity: { kind: "combat", targetId: monsterId, combatTacticId: normalizeCombatTactic(combatTacticId), ...huntGoalSnapshot(normalizeHuntGoalId(huntGoalId)) ? { huntGoal: huntGoalSnapshot(normalizeHuntGoalId(huntGoalId)) } : {}, sessionKills: 0, sessionChampions: 0, startedAtMs: nowMs, lastClaimAtMs: nowMs, classFocus: normalizeTrainingFocus(state.character.trainingFocus), classTrainingSnapshot: { faithBlessingId: selectedFaithBlessing(state, "combat")?.id }, environment: captureActivityEnvironment(monsterId, nowMs) } };
 }
 function regionalEquippedTierGap(state, expectedTier) {
   if (!state.character || expectedTier <= 0) return 0;

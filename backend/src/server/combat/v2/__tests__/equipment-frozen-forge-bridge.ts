@@ -9,6 +9,7 @@ import {reviewUtilityGemSemanticsV2,UTILITY_GEM_REVIEW_V2} from '../socket-utili
 import {reviewEffectGemResonanceV2,EFFECT_RESONANCE_REVIEW_V2} from '../effect-gem-resonance-review';
 import {runEffectTriggerBoundaryReviewV2} from './effect-gem-trigger-review';
 import {inspectEffectGemInteractionsV2,EFFECT_INTERACTION_REVIEW_V2,type EffectInteractionActionV2} from '../effect-gem-interaction-review';
+import {runEffectEventProvenanceReviewV2} from './effect-gem-event-provenance-review';
 import {STAT_GEMS_V1,EFFECT_GEMS_V1,gemItemId,type GemGrade,GEM_BALANCE_REVIEW_V2,STAT_GEMS_REVIEW_V2,EFFECT_GEMS_REVIEW_V2,EFFECT_GEM_REVIEW_MULTIPLIERS_V2} from '../../../equipment/gems/gem-catalog-v1';
 import type {V2GemSidecarState} from '../../../equipment/equipment-crafting-v2-gem-sidecar-types';
 import {writeFileSync} from 'node:fs';
@@ -1858,6 +1859,15 @@ function makeV21Loadout(classId:ClassIdV2,specIndex:0|1,targetTier:1|2|3|4,targe
  assert.equal(pairs,190);assert.equal(fullBuilds,4);assert.equal(contextCases,(190+4)*8);
  console.log('EFFECT_GEM_INTERACTION_PEAK_REVIEW '+JSON.stringify({policy:EFFECT_INTERACTION_REVIEW_V2,
   pairs,fullBuilds,contextCases,peaks:Object.fromEntries(peaks),canExecuteEffects:false,releaseEnabled:false}));
+ const provenanceCases=[];
+ for(const roll of [80,100,120]){
+  const build=(ids:string[])=>reviewFrozenForgeSocketsV2(qa.actor,qa.build,source,
+   sidecar(ids.map(family=>({family,grade:5 as const,roll}))),policy);
+  const support=build(['effect_mercy','effect_renewal','effect_benediction','effect_guardians_gift','effect_shared_resolve']);
+  const damage=build(['effect_momentum','effect_critical_surge','effect_retaliation','effect_sustenance']);
+  provenanceCases.push({roll,...runEffectEventProvenanceReviewV2(support,damage)});
+ }
+ console.log('EFFECT_GEM_EVENT_PROVENANCE_REVIEW '+JSON.stringify({cases:provenanceCases.length,results:provenanceCases,releaseEnabled:false}));
  const sample=mixed.deferredEffectSources[0];
  assert.throws(()=>reviewEffectGemResonanceV2([{...sample,candidateFraction:99}],qa.ids),/invalid_copy/);
  assert.throws(()=>reviewEffectGemResonanceV2([sample,sample],qa.ids),/invalid_copy/);

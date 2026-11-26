@@ -29,7 +29,7 @@ import {ProfileUnlockSheet} from './ProfileUnlockSheet';
 import {PROFILE_ALL_EFFECTS,profileAnimatedBorderDefinition} from '../../core/profile-effects';
 import {cosmeticArtByBorder,cosmeticArtByEffect} from '../../theme/profile-cosmetic-render-art';
 import {profileCosmeticRuntimeByEffect} from '../../theme/profile-cosmetic-runtime-v1';
-import {wardrobeVisualSections} from './wardrobe-visual-tiers';
+import {wardrobeVisualSections,wardrobeCollectionLabel} from './wardrobe-visual-tiers';
 import {ProfileEffectThumbnail} from '../ProfileCosmeticMotion';
 
 /** Image ids/names only; the wardrobe model itself stays free of asset requires. */
@@ -257,15 +257,19 @@ const WardrobeTile=memo(function WardrobeTile({row,width,equipped,tryingOn,onPre
 }){
  const language=useGameLanguage();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
+ const collection=wardrobeCollectionLabel(row);
  const status=equipped?profileT(language,"Equipped"):tryingOn?profileT(language,"Trying on"):row.unlocked?profileText(language,row.group):profileT(language,"Locked");
- return <Pressable accessibilityRole="button" accessibilityLabel={row.name+', '+status} accessibilityState={{selected:equipped}} onPress={onPress}
+ return <Pressable accessibilityRole="button" accessibilityLabel={(collection?.fullName??row.name)+', '+status} accessibilityState={{selected:equipped}} onPress={onPress}
    style={({pressed})=>[s.tile,{width},equipped&&s.tileOn,tryingOn&&s.tileTry,pressed&&s.pressed]}>
   <View style={s.tileArt}>
    <View style={[s.artLayer,!row.unlocked&&s.dim]}>{children}</View>
    {equipped?<View style={s.tick}><Text style={s.tickMark}>✓</Text></View>:null}
    {!row.unlocked&&row.lockTag?<View style={s.source}><Text numberOfLines={1} style={s.sourceText}>{row.lockTag}</Text></View>:null}
   </View>
-  <Text numberOfLines={2} style={[s.tileName,!row.unlocked&&s.lockedText]}>{row.name}</Text>
+  {collection?<View style={s.tileName}>
+   <Text numberOfLines={1} style={s.tileCollection}>{collection.short}</Text>
+   <Text numberOfLines={1} style={[s.tilePiece,!row.unlocked&&s.lockedText]}>{collection.item}</Text>
+  </View>:<Text numberOfLines={2} style={[s.tileName,!row.unlocked&&s.lockedText]}>{row.name}</Text>}
   <Text numberOfLines={1} style={s.tileMeta}>{status}</Text>
  </Pressable>;
 },(previous,next)=>previous.row===next.row&&previous.width===next.width&&previous.equipped===next.equipped&&previous.tryingOn===next.tryingOn&&previous.children===next.children);
@@ -297,6 +301,8 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  source:{position:'absolute',left:3,right:3,bottom:3,paddingVertical:2,borderRadius:4,borderWidth:1,borderColor:C.warning,backgroundColor:C.warningSurface},
  sourceText:{fontSize:7.5,lineHeight:10,color:C.warning,fontWeight:'900',textAlign:'center',letterSpacing:.3},
  tileName:{height:28,fontSize:10.5,lineHeight:14,color:C.text,fontWeight:'700'},
+ tileCollection:{fontSize:9,lineHeight:12,fontWeight:'800',color:C.accent},
+ tilePiece:{fontSize:10.5,lineHeight:14,color:C.text,fontWeight:'700'},
  tileMeta:{fontSize:8.5,lineHeight:11,color:C.disabled,fontWeight:'700'},
  lockedText:{color:C.muted},
  titleList:{gap:7},

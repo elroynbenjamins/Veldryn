@@ -122,7 +122,7 @@ export function eventDailyFestivalBlessing(state:GameState,nowMs=Date.now()){con
 export function eventEffectiveDropRate(state:GameState,eventId:string,source:EventActivitySource,nowMs=Date.now()){
  const event=liveEventDef(eventId);if(!event)return 0;
  const blessing=eventDailyFestivalBlessing(state,nowMs),blessingMultiplier=blessing?.source===source?1+blessing.bonusBps/10000:1;
- const active=activeLiveEvent(state,nowMs),faith=active?.definition.id===eventId?selectedFaithBlessing(state):undefined;
+ const active=activeLiveEvent(state,nowMs),faith=active?.definition.id===eventId?selectedFaithBlessing(state,'events'):undefined;
  const faithMultiplier=faith?.family==='eventCurrency'?1+faith.bonus:1;
  return event.dropRates[source]*(eventProjectChoice(state,eventId)?.dropMultipliers?.[source]??1)*blessingMultiplier*(1+eventCurrencyBonusBps(state,eventId,nowMs)/10000)*faithMultiplier;
 }

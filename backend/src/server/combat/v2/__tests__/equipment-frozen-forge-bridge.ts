@@ -7,6 +7,7 @@ import {reviewFrozenForgeSocketsV2,FORGE_SOCKET_MECHANICS_REVIEW_V2,type ForgeSo
 import {inspectSocketStackingCapReviewV2,SOCKET_CAP_DIMINISHING_V2,SOCKET_CAP_GENTLE_V2,diminishingSocketContributionV2,type SocketStackLaneV2} from '../socket-stacking-cap-review';
 import {reviewUtilityGemSemanticsV2,UTILITY_GEM_REVIEW_V2} from '../socket-utility-gem-review';
 import {reviewEffectGemResonanceV2,EFFECT_RESONANCE_REVIEW_V2} from '../effect-gem-resonance-review';
+import {runEffectTriggerBoundaryReviewV2} from './effect-gem-trigger-review';
 import {STAT_GEMS_V1,EFFECT_GEMS_V1,gemItemId,type GemGrade,GEM_BALANCE_REVIEW_V2,STAT_GEMS_REVIEW_V2,EFFECT_GEMS_REVIEW_V2,EFFECT_GEM_REVIEW_MULTIPLIERS_V2} from '../../../equipment/gems/gem-catalog-v1';
 import type {V2GemSidecarState} from '../../../equipment/equipment-crafting-v2-gem-sidecar-types';
 import {writeFileSync} from 'node:fs';
@@ -1764,6 +1765,7 @@ function makeV21Loadout(classId:ClassIdV2,specIndex:0|1,targetTier:1|2|3|4,targe
   {id:'max',grades:[5,5,5] as const,rolls:[120,120,120]},
  ];
  const rows:{family:string;profile:string;copies:number;total:number;legacy:number;peak:number;unit:string}[]=[];
+ const triggers:NonNullable<ReturnType<typeof runEffectTriggerBoundaryReviewV2>>[]=[];
  for(const def of EFFECT_GEMS_REVIEW_V2){
   const legacy=EFFECT_GEMS_V1.find(x=>x.familyId===def.familyId)!;
   for(const profile of profiles)for(const copies of [1,2,3] as const){
@@ -1784,6 +1786,8 @@ function makeV21Loadout(classId:ClassIdV2,specIndex:0|1,targetTier:1|2|3|4,targe
    assert.ok(Math.abs(group.legacyTotalValue-expectedLegacy)<1e-9);
    assert.equal(group.sources.length,copies);assert.ok(group.peak.candidate>=group.totalValue);
    assert.ok(Math.abs(group.peak.candidate-group.peak.legacy*EFFECT_GEM_REVIEW_MULTIPLIERS_V2[def.familyId])<1e-8);
+   const trigger=runEffectTriggerBoundaryReviewV2(qa.actor,group);
+   if(trigger)triggers.push(trigger);
    rows.push({family:def.familyId,profile:profile.id,copies,total:group.totalValue,legacy:group.legacyTotalValue,
     peak:group.peak.candidate,unit:group.peak.unit});
   }
@@ -1802,6 +1806,10 @@ function makeV21Loadout(classId:ClassIdV2,specIndex:0|1,targetTier:1|2|3|4,targe
  assert.throws(()=>reviewEffectGemResonanceV2([sample],qa.ids.filter(id=>id!==sample.instanceId)),/invalid_scope|invalid_copy/);
  assert.equal(JSON.stringify(source.items),original);
  assert.equal(rows.length,20*3*3);
+ assert.equal(triggers.length,4*3*3);
+ console.log('EFFECT_GEM_TRIGGER_BOUNDARY_REVIEW '+JSON.stringify({cases:triggers.length,
+  assertions:triggers.reduce((n,r)=>n+r.assertions,0),legacyGapCases:triggers.filter(r=>r.legacyGap).length,
+  families:[...new Set(triggers.map(r=>r.family))],releaseEnabled:false}));
  console.log('EFFECT_GEM_RESONANCE_CALIBRATION '+JSON.stringify({policy:EFFECT_RESONANCE_REVIEW_V2,
   cases:rows.length,fourthCopyRejections:20,mixedFamilies:3,mixedCopies:9,
   maxRollThreeCopy:rows.filter(r=>r.profile==='max'&&r.copies===3),

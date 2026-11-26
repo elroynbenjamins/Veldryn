@@ -10,6 +10,11 @@ function load(name){
  });return mod.exports;
 }
 const g=load('ultra-luxe-name-gradients'),p=load('player-name-style'),priv=load('ultra-luxe-prestige');
+const rendered={exports:{}};
+const uiCode=ts.transpileModule(fs.readFileSync(path.join(core,'../components/player-name-render-colors.ts'),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText;
+new Function('exports','module','require',uiCode)(rendered.exports,rendered,id=>{assert(id.startsWith('../core/'));return load(id.slice(8));});
+const {renderedPlayerNameColors}=rendered.exports;
+for(const row of priv.ULTRA_LUXE_NAME_PRESETS)assert.deepEqual(row.colors,g.ultraLuxeGradient(row.id).colors);
 const palettes=g.ULTRA_LUXE_GRADIENTS;
 assert.equal(palettes.length,6);assert.equal(new Set(palettes.map(r=>r.id)).size,6);
 assert.equal(new Set(palettes.map(r=>r.motion)).size,6);
@@ -21,11 +26,11 @@ for(const row of palettes){
  assert.equal(g.ultraLuxeGradientForColors(row.colors),row);
  assert.equal(g.ultraLuxeGradientForColors([...row.colors].reverse()),undefined);
  const style={mode:'gradient',gradientColors:[...row.colors],animation:'flow'};
- const first=p.playerNameCharacterColors('Adventurer',style,0);
- assert.deepEqual(first,p.playerNameCharacterColors('Adventurer',style,1));
- assert.notDeepEqual(first,p.playerNameCharacterColors('Adventurer',style,.25));
+ const first=renderedPlayerNameColors('Adventurer',style,0);
+ assert.deepEqual(first,renderedPlayerNameColors('Adventurer',style,1));
+ assert.notDeepEqual(first,renderedPlayerNameColors('Adventurer',style,.25));
  for(const name of ['A','Ab','Adventurer','Long Adventurer Name']){
-  const phases=Array.from({length:281},(_,i)=>p.playerNameCharacterColors(name,style,i/280));
+  const phases=Array.from({length:281},(_,i)=>renderedPlayerNameColors(name,style,i/280));
   assert.deepEqual(phases[0],phases.at(-1));
   assert(phases.some(f=>f.some((c,i)=>c!==phases[0][i])));
   for(let i=0;i<phases.length;i++)for(let j=0;j<phases[i].length;j++){
@@ -38,10 +43,10 @@ for(const row of palettes){
  if(!['ascendant-celestial-name','ascendant-draconic-name'].includes(row.id))assert.equal(priv.verifiedUltraLuxeNameStyle(row.id,[row.id]),undefined);
 }
 assert.equal(g.ultraLuxeGradient('invalid'),undefined);
-assert.deepEqual(p.playerNameCharacterColors('AB',{mode:'solid',solidColor:'#123456'},.3),['#123456','#123456']);
+assert.deepEqual(renderedPlayerNameColors('AB',{mode:'solid',solidColor:'#123456'},.3),['#123456','#123456']);
 const ordinary={mode:'gradient',gradientColors:['#112233','#445566','#778899'],animation:'flow'};
 assert.equal(g.ultraLuxeGradientForColors(ordinary.gradientColors),undefined);
-assert.deepEqual(p.playerNameCharacterColors('ABC',ordinary,0),['#112233','#445566','#112233']);
+assert.deepEqual(renderedPlayerNameColors('ABC',ordinary,0),['#112233','#445566','#112233']);
 const renderer=fs.readFileSync(path.join(core,'../components/PlayerStyledName.tsx'),'utf8');
 assert(renderer.includes('subscribeSharedTicker(ULTRA_LUXE_NAME_TICK_MS'));
 assert(renderer.includes('animated?phase:0'));

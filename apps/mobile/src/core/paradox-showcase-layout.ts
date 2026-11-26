@@ -43,3 +43,21 @@ export const PARADOX_GLINT_PATHS=[
  [[292,189],[265,189],[198,189],[60,189],[48,189],[60,189],[170,189],[265,189],[292,189],[292,189]],
 ] as const;
 export const PARADOX_GLINT_OPACITY=[.18,.7,.48,.25,0,.4,.95,.48,.3,.18] as const;
+
+export const PARADOX_REVIEW={collectionId:PARADOX_COLLECTION.id,titleId:'ascendant-paradox-title',effectId:'premium:paradox-eternal:reality-rewritten'} as const;
+export type ParadoxSelection={background?:string|null;border?:string|null;pet?:string|null;effect?:string|null;verifiedTitleId?:string|null;displayedBadges?:readonly string[]};
+/** Explicit trusted review grant, exact equipped pieces; does not grant or persist ownership. */
+export function paradoxReviewTier(enabled:boolean,verifiedIds:readonly string[],selection:ParadoxSelection):'hidden'|'paired'|'awakened'|'ascendant'{
+ if(!enabled||!verifiedIds.includes(PARADOX_REVIEW.collectionId))return 'hidden';
+ if(selection.background!==PARADOX_IDS.background||selection.border!==PARADOX_IDS.border)return 'hidden';
+ if(selection.effect&&selection.effect!==PARADOX_REVIEW.effectId)return 'hidden';
+ if(selection.pet!==PARADOX_IDS.pet)return 'paired';
+ return selection.verifiedTitleId===PARADOX_REVIEW.titleId&&selection.displayedBadges?.includes(PARADOX_IDS.badge)?'ascendant':'awakened';
+}
+export const PARADOX_IDLE_PHASE=Array.from({length:49},(_,i)=>i/48);
+export const PARADOX_IDLE_LIFT=PARADOX_IDLE_PHASE.map(t=>t===0||t===1?0:-1.5*(1-Math.cos(2*Math.PI*6*t))/2);
+export const PARADOX_AMBIENT_PATHS=[
+ [[239,40],[266,29],[297,40],[310,53],[297,40],[266,29],[239,40]],
+ [[239,165],[261,174],[287,165],[310,164],[287,165],[261,174],[239,165]],
+ [[35,42],[75,37],[110,43],[145,36],[110,43],[75,37],[35,42]],
+] as const;

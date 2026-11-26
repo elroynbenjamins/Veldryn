@@ -11,11 +11,17 @@ export const ULTRA_LUXE_CANDIDATE_GRANT_COLLECTIONS=[
  {id:'ascendant-abyssal-majesty',background:'ascendant-abyssal-forgotten-abyss',border:'ascendant-abyssal-crown-of-the-depths',pet:'ascendant-abyssal-nhalzuun',icon:null,title:'ascendant-abyssal-title',titleName:'Monarch of the Deep',badge:'ascendant_monarch_of_deep',nameStyle:null},
  {id:'ascendant-paradox-eternal',background:'ascendant-paradox-beyond-the-veil',border:'ascendant-paradox-fractured-eternity',pet:'ascendant-paradox-aeon',icon:null,title:'ascendant-paradox-title',titleName:'Beyond Existence',badge:'ascendant_beyond_existence',nameStyle:null},
 ] as const;
-const ALL_COLLECTIONS=[...ULTRA_LUXE_GRANT_COLLECTIONS,...ULTRA_LUXE_CANDIDATE_GRANT_COLLECTIONS] as const;
-function grantRows(includeCandidates:boolean){return includeCandidates?ALL_COLLECTIONS:ULTRA_LUXE_GRANT_COLLECTIONS;}
-export function ultraLuxeGrantProjection(raw:unknown,includeCandidates=false){
+const FOUR_COLLECTIONS=[...ULTRA_LUXE_GRANT_COLLECTIONS,...ULTRA_LUXE_CANDIDATE_GRANT_COLLECTIONS] as const;
+/** Six-set authority is separate from the existing four-set grant gate. */
+const SIX_ONLY_COLLECTIONS=[
+ {id:'ascendant-sakura-enchantment',background:'ascendant-sakura-petal-sanctuary',border:'ascendant-sakura-blossom-crown',pet:'ascendant-sakura-spirit-fox',icon:null,title:'ascendant-sakura-title',titleName:'Sakura Dreamkeeper',badge:'ascendant_sakura_blossom_crest',nameStyle:'ascendant-sakura-name'},
+ {id:'ascendant-stormforged-sovereign',background:'ascendant-stormforged-thunderkeep',border:'ascendant-stormforged-steel-crown',pet:'ascendant-stormforged-direwolf',icon:null,title:'ascendant-stormforged-title',titleName:'Stormforged Warden',badge:'ascendant_stormforged_wolf_crest',nameStyle:'ascendant-stormforged-name'},
+] as const;
+const ALL_COLLECTIONS=[...ULTRA_LUXE_GRANT_COLLECTIONS,{...ULTRA_LUXE_CANDIDATE_GRANT_COLLECTIONS[0],nameStyle:'ascendant-abyssal-name'},{...ULTRA_LUXE_CANDIDATE_GRANT_COLLECTIONS[1],nameStyle:'ascendant-paradox-name'},...SIX_ONLY_COLLECTIONS] as const;
+function grantRows(includeCandidates:boolean,includeSix=false){return includeCandidates&&includeSix?ALL_COLLECTIONS:includeCandidates?FOUR_COLLECTIONS:ULTRA_LUXE_GRANT_COLLECTIONS;}
+export function ultraLuxeGrantProjection(raw:unknown,includeCandidates=false,includeSix=false){
  const ids=new Set(Array.isArray(raw)?raw.filter((id):id is string=>typeof id==='string'):[]);
- const rows=grantRows(includeCandidates).filter(row=>ids.has(row.id));
+ const rows=grantRows(includeCandidates,includeSix).filter(row=>ids.has(row.id));
  return {collectionIds:rows.map(row=>row.id),backgrounds:rows.map(row=>row.background),borders:rows.map(row=>row.border),pets:rows.map(row=>row.pet),icons:rows.flatMap(row=>row.icon?[row.icon]:[]),titles:rows.map(row=>row.title),badges:rows.map(row=>row.badge),nameStyles:rows.flatMap(row=>row.nameStyle?[row.nameStyle]:[])};
 }
 const privateId=(id:string)=>id.startsWith('ascendant-')||id.startsWith('ascendant_');
@@ -28,8 +34,8 @@ function allowed(id:string|undefined,owned:readonly string[]){
 /** Rebuild only reserved private IDs, keeping all earned/ordinary cosmetics intact.
  * Pure and idempotent; no auto-equip, currency, CP or other gameplay change.
  * The caller must supply fresh service-only grant rows, not a client payload. */
-export function withVerifiedUltraLuxeGrants(state:GameState,raw:unknown,includeCandidates=false):GameState{
- const grants=ultraLuxeGrantProjection(raw,includeCandidates);
+export function withVerifiedUltraLuxeGrants(state:GameState,raw:unknown,includeCandidates=false,includeSix=false):GameState{
+ const grants=ultraLuxeGrantProjection(raw,includeCandidates,includeSix);
  const sanitize=(c:CharacterState):CharacterState=>{
   const title=ALL_COLLECTIONS.find(row=>row.titleName.toLowerCase()===c.profileTitle?.trim().toLowerCase());
   return {...c,

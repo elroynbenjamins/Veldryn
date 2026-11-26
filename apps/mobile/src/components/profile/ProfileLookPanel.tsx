@@ -1,3 +1,6 @@
+import {ULTRA_LUXE_FULL_SET_DEFINITIONS,verifiedUltraLuxeFullSetPlan} from '../../core/ultra-luxe-full-set-command';
+import {confirmUltraLuxeFullSetReadback,ultraLuxeFullSetEquipped,ultraLuxeFullSetNamePreset,type FullSetPlan,type VerifiedFullSetNames} from '../../core/ultra-luxe-full-set-name';
+import type {OnlineSnapshot} from '../../core/online-game-repository';
 import {quickCosmeticSets,quickSetEquipped,quickSetSelection,undoQuickSet} from '../../core/profile-quick-set-equip';
 import {ownedUltraLuxeTitleColor} from '../../core/ultra-luxe-titles';
 import {AscendantBlessingPicker} from './AscendantBlessingPicker';
@@ -48,10 +51,14 @@ export const WARDROBE_ASSETS:WardrobeAssets={
 export type ChipKind=WardrobeKind|'badge';
 const COMMIT_DELAY_MS=700;
 export interface ProfileEquipNotice{name:string;undo:()=>void}
+/** Optional port, supplied only after the combined command and fresh self-only name readback are available. */
+export interface UltraLuxeFullSetPort{names:VerifiedFullSetNames;apply:(plan:FullSetPlan)=>Promise<OnlineSnapshot>}
+const LUXE_LABELS=['Celestial Sovereign','Draconic Dominion','Abyssal Majesty','Paradox Eternal','Sakura Enchantment','Stormforged Sovereign'];
+const LUXE_ACCENTS=['#F3C86F','#FF9460','#55C8C9','#B9A0F9','#F5A6C8','#63CFFF'];
 
-export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreviewStateChange,onDirtyChange,onNotice,active=true}:{
+export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreviewStateChange,onDirtyChange,onNotice,fullSetPort,fullSetEnabled=false,active=true}:{
  state:GameState;chip:ChipKind;onChange:(next:GameState)=>void|Promise<void>;onNavigateSource?:(destination:ProfileCustomizationDestination)=>void;
- onPreviewStateChange?:(preview:GameState)=>void;onDirtyChange?:(dirty:boolean)=>void;onNotice?:(notice:ProfileEquipNotice|null)=>void;active?:boolean;
+ onPreviewStateChange?:(preview:GameState)=>void;onDirtyChange?:(dirty:boolean)=>void;onNotice?:(notice:ProfileEquipNotice|null)=>void;fullSetPort?:UltraLuxeFullSetPort;fullSetEnabled?:boolean;active?:boolean;
 }){
  const language=useGameLanguage();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
@@ -61,6 +68,9 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
  const verifiedRef=useRef(verifiedCollections);verifiedRef.current=verifiedCollections;
  const grantScope=useMemo(()=>({accountId,characterId:character?.id??''}),[accountId,character?.id]);
  const [tryOn,setTryOn]=useState<WardrobeRow|null>(null),[sheet,setSheet]=useState<WardrobeRow|null>(null);
+ const [fullSetBusy,setFullSetBusy]=useState(false),[fullSetStatus,setFullSetStatus]=useState('');
+ const fullSetInFlight=useRef(false),mounted=useRef(true);
+ useEffect(()=>{mounted.current=true;return()=>{mounted.current=false}},[]);
  const [gridWidth,setGridWidth]=useState(0),[quickOpen,setQuickOpen]=useState(false);
  const saved=useMemo(()=>wardrobeEquipped(state),[state]);
  const [selection,setSelection]=useState<WardrobeEquipped>(saved);
@@ -112,7 +122,7 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
    if(timerRef.current){clearTimeout(timerRef.current);timerRef.current=null;}
    pendingRef.current=null;sentRef.current=null;
    const next=JSON.parse(savedKey) as WardrobeEquipped;
-   selectionRef.current=next;setSelection(next);setCustomTitle(next.title);setTryOn(null);setSheet(null);setQuickOpen(false);
+   selectionRef.current=next;setSelection(next);setCustomTitle(next.title);setTryOn(null);setSheet(null);setQuickOpen(false);setFullSetStatus('');
    return;
   }
   if(pendingRef.current)return;
@@ -124,7 +134,20 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
  useEffect(()=>{setCustomTitle(saved.title)},[saved.title]);
 
  const categories=useMemo(()=>appendOwnedUltraLuxeWardrobe(profileWardrobe(state,WARDROBE_ASSETS),state,grantScope,verifiedCollections),[state,grantScope,verifiedCollections]);
- const quickSets=useMemo(()=>[...quickCosmeticSets(state),...ownedNewUltraLuxeQuickSets(state,grantScope,verifiedCollections)],[state,grantScope,verifiedCollections]);
+ const quickSets=useMemo(()=>{
+  const legacy=[...quickCosmeticSets(state),...ownedNewUltraLuxeQuickSets(state,grantScope,verifiedCollections)];
+  if(!fullSetEnabled&&!fullSetPort)return legacy;
+  if(!fullSetPort||!state.character)return legacy.filter(set=>!ultraLuxeFullSetNamePreset(set.id));
+  const scope={accountId,characterId:state.character.id},current=wardrobeEquipped(state);
+  const ordinary=legacy.filter(set=>!ultraLuxeFullSetNamePreset(set.id));
+  const canonical=ULTRA_LUXE_FULL_SET_DEFINITIONS.flatMap((def,i)=>{
+   const plan=verifiedUltraLuxeFullSetPlan(state,scope,def[0],current,fullSetPort.names);
+   if(!plan)return [];
+   const {scene,frame,pet,title,effect}=plan.after.wardrobe;
+   return [{id:def[0],name:LUXE_LABELS[i],accent:LUXE_ACCENTS[i],choices:[{id:def[0],name:LUXE_LABELS[i],namePresetId:ultraLuxeFullSetNamePreset(def[0]),patch:{scene,frame,pet,title,effect}}]}];
+  });
+  return [...ordinary,...canonical];
+ },[state,accountId,grantScope,verifiedCollections,fullSetPort,fullSetEnabled]);
  const live=useMemo(()=>({...selection,title:customTitle.trim()||selection.title}),[selection,customTitle]);
  const preview=useMemo(()=>{
   const equipped=tryOn?wardrobeSelection(live,tryOn):live;
@@ -136,6 +159,7 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
  useEffect(()=>()=>onDirtyChange?.(false),[onDirtyChange]);
 
  const equip=(row:WardrobeRow)=>{
+  if(fullSetInFlight.current)return;
   if(!row.unlocked){setSheet(row);return}
   const before=selection,next=wardrobeSelection(before,row);
   if(!newUltraLuxePatchAllowed(stateRef.current,{accountId:accountRef.current,characterId:stateRef.current.character?.id??''},verifiedRef.current,wardrobeChanges(before,next)))return;
@@ -144,6 +168,23 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
   onNotice?.({name:row.name,undo:()=>{setSelection(before);queueCommit(before);onNotice?.(null)}});
  };
  const equipSet=(setId:string,choiceId:string,name:string)=>{
+  if(fullSetInFlight.current)return;
+  if(fullSetEnabled&&!fullSetPort&&ultraLuxeFullSetNamePreset(setId))return;
+  if(fullSetPort&&ultraLuxeFullSetNamePreset(setId)){
+   const owner=accountRef.current,characterId=stateRef.current.character?.id;
+   if(!characterId||selectionScopeRef.current!==scope||pendingRef.current||sentRef.current){setFullSetStatus('Finish saving your current look first.');return;}
+   const plan=verifiedUltraLuxeFullSetPlan(stateRef.current,{accountId:owner,characterId},setId,wardrobeEquipped(stateRef.current),fullSetPort.names);
+   if(!plan){setFullSetStatus('Full set ownership could not be confirmed.');return;}
+   fullSetInFlight.current=true;setFullSetBusy(true);setFullSetStatus('');setTryOn(null);setSheet(null);onNotice?.(null);
+   void fullSetPort.apply(plan).then(next=>{
+    if(!mounted.current||accountRef.current!==owner||stateRef.current.character?.id!==characterId)return;
+    if(confirmUltraLuxeFullSetReadback(plan,{accountId:owner,characterId},{replayed:next.ultraLuxeFullSetReplayed,gameplay:next,nameSelection:next.ultraLuxeNameSelection})!=='confirmed')throw Error('unconfirmed_full_set');
+    const confirmed=wardrobeEquipped(next.state);
+    selectionRef.current=confirmed;setSelection(confirmed);setCustomTitle(confirmed.title);
+    setFullSetStatus('Full set equipped, including animated name.');
+   }).catch(()=>{if(mounted.current&&accountRef.current===owner&&stateRef.current.character?.id===characterId)setFullSetStatus('Full set equip could not be confirmed.');}).finally(()=>{fullSetInFlight.current=false;if(mounted.current)setFullSetBusy(false);});
+   return;
+  }
   const owner=accountRef.current,characterId=stateRef.current.character?.id;
   const before=selectionRef.current,next=quickSetSelection(stateRef.current,before,setId,choiceId)??newUltraLuxeQuickSelection(stateRef.current,{accountId:owner,characterId:characterId??''},verifiedRef.current,before,setId,choiceId);
   if(selectionScopeRef.current!==scope||!characterId||!next||!Object.keys(wardrobeChanges(before,next)).length)return;
@@ -159,6 +200,7 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
   }});
  };
  const saveCustomTitle=()=>{
+  if(fullSetInFlight.current)return;
   const value=customTitle.trim();if(!value)return;
   const next={...selection,title:value};
   if(!newUltraLuxePatchAllowed(stateRef.current,{accountId:accountRef.current,characterId:stateRef.current.character?.id??''},verifiedRef.current,{title:value}))return;
@@ -192,14 +234,15 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
     <Pressable accessibilityRole="button" accessibilityState={{expanded:quickOpen}} onPress={()=>setQuickOpen(v=>!v)} style={s.quickHeader}>
      <Text style={s.label}>{profileT(language,"Quick set equip")} · {quickSets.length}</Text><Text style={s.useMark}>{quickOpen?'⌃':'⌄'}</Text>
     </Pressable>
-    {quickOpen?<><Text style={s.rowMeta}>{profileT(language,"Equip owned matching pieces on this character. Badges stay unchanged.")}</Text>
+    {quickOpen?<><Text style={s.rowMeta}>{fullSetPort?'Ultra Luxe sets also equip their animated account name. Badges stay unchanged.':profileT(language,"Equip owned matching pieces on this character. Badges stay unchanged.")}</Text>
+    {fullSetBusy||fullSetStatus?<Text accessibilityLiveRegion="polite" style={s.rowMeta}>{fullSetBusy?'Saving full set…':fullSetStatus}</Text>:null}
     {quickSets.map(set=><View key={set.id} style={[s.quickRow,{borderColor:set.accent}]}>
      <Text style={s.rowName}>{set.name}</Text>
      <View style={s.quickChoices}>
       {set.choices.map(choice=>{
-       const equipped=quickSetEquipped(selection,choice);
+       const equipped=fullSetPort&&choice.namePresetId?ultraLuxeFullSetEquipped(selection,choice.patch,set.id,fullSetPort.names,{accountId,characterId:character.id}):quickSetEquipped(selection,choice);
        return <Pressable key={choice.id} accessibilityRole="button" accessibilityLabel={set.name+', '+choice.name+', '+profileT(language,equipped?"Equipped":"Equip set")}
-        accessibilityState={{selected:equipped,disabled:equipped}} disabled={equipped} onPress={()=>equipSet(set.id,choice.id,set.name)}
+        accessibilityState={{selected:equipped,disabled:equipped||fullSetBusy}} disabled={equipped||fullSetBusy} onPress={()=>equipSet(set.id,choice.id,set.name)}
         style={({pressed})=>[s.quickChoice,equipped&&s.tileOn,pressed&&s.pressed]}>
         {set.choices.length>1?<Text style={s.quickChoiceName}>{choice.name}</Text>:null}
         <Text style={equipped?s.equippedMark:s.useMark}>{profileT(language,equipped?"Equipped":"Equip set")}</Text>

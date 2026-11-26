@@ -59,8 +59,48 @@ async function latencyReadOverlap(){
  console.log('PASS gameplay read overlap, analytics failure isolation and authoritative receipt replay');
 }
 
+async function fullSetHttpRouting(){
+ const uid='alice',cid='11111111-1111-4111-8111-111111111111';
+ const state=createCharacter(newGame(0),'IRONWARDEN','Full Set Fixture');
+ state.character!.id=cid;
+ const collection='ascendant-sakura-enchantment',preset='ascendant-sakura-name';
+ const command={type:'ultra_luxe_full_set',args:{collectionId:collection,characterId:cid,expectedNameId:null}};
+ const body={requestId:'luxe_full_set_http_fixture_123456789',expectedVersion:7,command};
+ let reads=0,commits=0,mode:'normal'|'stale'='normal';
+ const services:GameplayServices={
+  authenticate:async token=>token==='alice-token'?uid:null,randomId:()=>{throw Error('unexpected_random');},randomRoll:()=>{throw Error('unexpected_random');},
+  rpc:async<T>(name:string,args:Record<string,unknown>):Promise<T>=>{
+   if(name==='record_online_command_outcome_server_v1')return null as T;
+   assert.equal(args.p_account_id,uid);
+   if(name==='load_online_game_ultra_luxe_v1'){reads++;return {state,version:7,walletGold:state.character!.gold,serverNow:1,ultraLuxeCollectionIds:[collection]} as T;}
+   assert.equal(name,'commit_ultra_luxe_full_set_server_v1');commits++;
+   if(mode==='stale')throw new GameplayError('STALE_ULTRA_LUXE_NAME_SELECTION');
+   const response=args.p_response as {state:GameState;version:number};
+   assert.equal(response.state.character?.profileTitle,'Sakura Dreamkeeper');
+   assert.equal(response.state.character?.profileBackgroundId,'ascendant-sakura-petal-sanctuary');
+   return {gameplay:response,replayed:false,nameSelection:{accountId:uid,ownedIds:[preset],selectedId:preset}} as T;
+  }
+ };
+ const request=(flags:Partial<GameplayServices>,payload:unknown=body,token='alice-token')=>gameplayHandler({...services,...flags})(new Request('https://example.invalid/gameplay',{method:'POST',headers:{Authorization:'Bearer '+token},body:JSON.stringify(payload)}));
+ const enabled={ultraLuxeGrantAuthority:true,ultraLuxeFullSetAuthority:true};
+ assert.equal((await request({})).status,403);
+ assert.equal((await request({ultraLuxeFullSetAuthority:true})).status,403);
+ assert.equal((await request({ultraLuxeGrantAuthority:true})).status,403);
+ assert.equal((await request(enabled,body,'invalid-token')).status,401);
+ assert.equal((await request(enabled,{...body,command:{type:'claim'}})).status,400);
+ assert.equal((await request(enabled,{...body,command:{...command,args:{...command.args,accountId:'other'}}})).status,400);
+ assert.equal(reads,0);assert.equal(commits,0);
+ const accepted=await request(enabled);assert.equal(accepted.status,200);
+ assert.equal((await accepted.json()).nameSelection.selectedId,preset);
+ assert.equal(reads,1);assert.equal(commits,1);
+ mode='stale';assert.equal((await request(enabled)).status,409);
+ assert.equal(reads,2);assert.equal(commits,2);
+ console.log('PASS combined Ultra Luxe HTTP dispatch, independent authority flags, receipt prefix, account scope and stale conflict');
+}
+
 async function main(){
  await latencyReadOverlap();
+ await fullSetHttpRouting();
  let state:GameState|null=null,version=0,commits=0,clock=1700000000000,transportFailure=false,suppressLiveEvent=false,generatedIds=0,blockedDeleteCharacterId:string|null=null,deletedCommitCharacterId:string|null=null;
  const commandMetrics:Record<string,unknown>[]=[],guildQuestCalls:Record<string,unknown>[]=[];
  const receipts=new Map<string,{response:unknown;requestHash:string}>();

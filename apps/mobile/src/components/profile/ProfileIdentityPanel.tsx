@@ -14,7 +14,7 @@ import {GameTextInput} from '../GameTextInput';
 import {Panel} from '../Panel';
 import {SocialNameEditor} from '../SocialNameEditor';
 import {ACCOUNT_SOCIAL_IDENTITY_RELEASED} from '../../online/social-identity-client-gate';
-import {PlayerNameStyleEditor} from '../PlayerNameStyleEditor';
+import {PlayerNameStyleEditor,type PrestigeNamePicker} from '../PlayerNameStyleEditor';
 
 const visibilityLabel:Record<ProfileVisibilityV43,string>={public:'Public',guild:'Guild only',private:'Private'};
 const AUDIENCES=[
@@ -25,16 +25,16 @@ const AUDIENCES=[
 
 /** Identity is the typed half of the profile: who may read it, what it says, and how the
  * player's name is drawn. Unlike the Look tab these commit through an explicit save. */
-export function ProfileIdentityPanel({state,draft,nameStyle,onNameStyleChange,onSaveNameStyle,onNameInputDirtyChange,nameResetVersion=0,active=true}:{
+export function ProfileIdentityPanel({state,draft,nameStyle,onNameStyleChange,onSaveNameStyle,onNameInputDirtyChange,nameResetVersion=0,active=true,prestige}:{
  state:GameState;draft:ProfileExtensionDraft;nameStyle:PlayerNameStylePreference;onNameStyleChange:(style:PlayerNameStylePreference)=>void;
- onSaveNameStyle:SavePlayerNameStyle;onNameInputDirtyChange?:(dirty:boolean)=>void;nameResetVersion?:number;active?:boolean;
+ onSaveNameStyle:SavePlayerNameStyle;onNameInputDirtyChange?:(dirty:boolean)=>void;nameResetVersion?:number;active?:boolean;prestige?:PrestigeNamePicker;
 }){
  const language=useGameLanguage();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const {value,busy,guest,identityDirty:dirty,error,notice}=draft;
  const [socialName,setSocialName]=useState('');
  const nameStyleCard=<Panel style={s.card}><PlayerNameStyleEditor state={state} previewName={socialName} draft={nameStyle} onDraftChange={onNameStyleChange}
-  onSaveNameStyle={onSaveNameStyle} onInputDirtyChange={onNameInputDirtyChange} resetVersion={nameResetVersion} active={active}/></Panel>;
+  onSaveNameStyle={onSaveNameStyle} onInputDirtyChange={onNameInputDirtyChange} resetVersion={nameResetVersion} active={active} prestige={prestige}/></Panel>;
 
  if(!draft.online)return <View style={s.root}>
   <Panel><Text style={s.eyebrow}>{profileT(language,"SOCIAL PROFILE")}</Text><Text style={s.title}>{profileT(language,"Identity")}</Text>

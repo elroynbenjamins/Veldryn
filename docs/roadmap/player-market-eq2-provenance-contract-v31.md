@@ -8,7 +8,7 @@ HIDDEN / REVIEW ONLY / NO DEPLOY. Child of draft #1651 at dc763f16199a7a93785ac2
 - #1713 at 31d0469707e12ffe9721ffada19d90e1c2428249: canonical Equipment 2.0 approval record and review-only proposed universal rolls. Historical review PR closed; follow its successor before integration. No synthetic copy or proposed roll is tradable.
 
 ## V31 executable review
-Run `node tools/market-review/eq2-provenance-contract-v31.mjs`. 43 cases executed with the identical functions in a standalone JS isolate, before committing. Repository Node/CI and PostgreSQL have not yet been executed for V31.
+Run `node tools/market-review/eq2-provenance-contract-v31.mjs`. 43 original cases executed with the identical functions in a standalone JS isolate, before committing. Repository Node/CI and PostgreSQL have not yet been executed for V31.
 
 Synthetic review inputs model the trusted mint, policy, custody and actor records the future server must supply under transaction locks. Every output, even candidate, has marketAuthorized:false. Neither the fixture marker nor the boolean fields/digest are authentication, cryptographic attestation, a proof of ownership, or a deployable gateway. The module is deliberately unmounted. A single physical copy means authoritative custody across inventory, bank, escrow or pending entitlement, not an inventory object in every state.
 
@@ -17,7 +17,7 @@ Synthetic review inputs model the trusted mint, policy, custody and actor record
 - Cancel, expiry and pending return are recovery candidates even when source policy revoked, but cannot create or transfer copies. Missing/inconsistent proof must be quarantined and reconciled, never deleted.
 - Resource market delegates to its own policy. Candidate source names (Forge, monster, dungeon, world boss, party event) are not approvals. Each actual source/item requires explicit registration and approved policy.
 - Recipient level/class requirements are inputs to this model, NOT decided here. Do not copy old T4 Lv52/T5+ prohibition onto new EQ2 catalogue; resolve with Equipment team, including Sunscar T4 Lv42 proposal. No numerical changes.
-- Claim after policy revocation currently denies ordinary candidate; a real settlement needs a durable purchased-entitlement recovery path that preserves paid ownership or atomically refunds under an approved policy. Do not strand paid deliveries. Bank deposit/withdraw must have separate capacity and recipient validation in runtime.
+- V32 refinement supersedes the original denial: independently committed paid delivery proof is required and a valid paid claim remains a recovery candidate after policy revocation. A real durable entitlement, recipient recheck, and physical claim are still required; an unresolved entitlement must not be deleted or automatically refunded. The expanded 48-case review passed in a JS isolate. See player-market-eq2-settlement-review-v33.md. Bank deposit/withdraw must have separate capacity and recipient validation in runtime.
 - Snapshot digest and sale count are placeholders; the real adapter must read immutable mint and append-only sale chain in the database, validate mutable allowed upgrades/socket policies, and never trust client records. No chain linkage, price, Gold, taxes, capacity, concurrency, or authenticated user identity is proven by this pass.
 
 ## Next passes and release gates

@@ -456,6 +456,40 @@ async function executeUltraLuxeFullSetCommand(services2, accountId, raw2) {
   }));
   const gameplay2 = object(result?.gameplay), names = object(result?.nameSelection);
   if (!result || !gameplay2 || !names || names.accountId !== accountId || gameplay2.accountId !== void 0 && gameplay2.accountId !== accountId || typeof result.replayed !== "boolean" || !Number.isSafeInteger(gameplay2.version) || !object(gameplay2.state)) throw new FullSetCommandError("full_set_readback_invalid", 503);
+  return {
+    replayed: result.replayed,
+    gameplay: { ...gameplay2, accountId },
+    nameSelection: names,
+    undoEquipRequestId: result.undoEquipRequestId === body.requestId ? body.requestId : void 0
+  };
+}
+
+// ../apps/mobile/src/core/ultra-luxe-full-set-undo-command.ts
+var ULTRA_LUXE_UNDO_COMMAND = "ultra_luxe_full_set_undo";
+var ULTRA_LUXE_UNDO_PREFIX = "luxe_undo_set_";
+function isFullSetEquipReceipt(id) {
+  return typeof id === "string" && /^luxe_full_set_[A-Za-z0-9_-]{16,80}$/.test(id);
+}
+
+// online/ultra-luxe-full-set-undo-command.ts
+var object2 = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : void 0;
+var exactKeys2 = (v, keys) => Object.keys(v).length === keys.length && keys.every((k) => Object.prototype.hasOwnProperty.call(v, k));
+async function executeUltraLuxeUndoCommand(services2, accountId, raw2) {
+  if (!services2.enabled) throw new FullSetCommandError("feature_not_released", 403);
+  if (!accountId) throw new FullSetCommandError("auth_required", 401);
+  const body = object2(raw2), cmd = object2(body?.command), a = object2(cmd?.args);
+  if (!body || !cmd || !a || !exactKeys2(body, ["requestId", "expectedVersion", "command"]) || !exactKeys2(cmd, ["type", "args"]) || !exactKeys2(a, ["characterId", "equipRequestId"]) || cmd.type !== ULTRA_LUXE_UNDO_COMMAND || typeof body.requestId !== "string" || !/^luxe_undo_set_[A-Za-z0-9_-]{16,80}$/.test(body.requestId) || typeof body.expectedVersion !== "number" || !Number.isSafeInteger(body.expectedVersion) || body.expectedVersion < 0 || typeof a.characterId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(a.characterId) || !isFullSetEquipReceipt(a.equipRequestId)) throw new FullSetCommandError("invalid_full_set_undo_request");
+  const requestHash = await services2.hash(JSON.stringify([ULTRA_LUXE_UNDO_COMMAND, body.expectedVersion, a.characterId, a.equipRequestId]));
+  const result = object2(await services2.rpc("undo_ultra_luxe_full_set_server_v1", {
+    p_account_id: accountId,
+    p_character_id: a.characterId,
+    p_equip_request_id: a.equipRequestId,
+    p_expected_version: body.expectedVersion,
+    p_request_id: body.requestId,
+    p_request_hash: requestHash
+  }));
+  const gameplay2 = object2(result?.gameplay), names = object2(result?.nameSelection);
+  if (!result || !gameplay2 || !names || names.accountId !== accountId || gameplay2.accountId !== void 0 && gameplay2.accountId !== accountId || typeof result.replayed !== "boolean" || !Number.isSafeInteger(gameplay2.version) || !object2(gameplay2.state)) throw new FullSetCommandError("full_set_undo_readback_invalid", 503);
   return { replayed: result.replayed, gameplay: { ...gameplay2, accountId }, nameSelection: names };
 }
 
@@ -61261,6 +61295,7 @@ function gameplayHandler(services2, authenticatePlayer2 = async (token) => {
 }) {
   const privateGrants = services2.ultraLuxeGrantAuthority === true;
   const fullSetAuthority = privateGrants && services2.ultraLuxeFullSetAuthority === true;
+  const undoAuthority = fullSetAuthority && services2.ultraLuxeUndoAuthority === true;
   const receiptRpc = privateGrants ? "read_online_game_receipt_ultra_luxe_v1" : "read_online_game_receipt_server_v1";
   const loadRpc = privateGrants ? "load_online_game_ultra_luxe_v1" : "load_online_game_server_v1";
   return async (request) => {
@@ -61297,7 +61332,14 @@ function gameplayHandler(services2, authenticatePlayer2 = async (token) => {
           await recordOutcome(result2.replayed ? "replayed" : "committed");
           return json(result2);
         }
+        if (body.command?.type === ULTRA_LUXE_UNDO_COMMAND) {
+          telemetryCommandType = ULTRA_LUXE_UNDO_COMMAND;
+          const result2 = await executeUltraLuxeUndoCommand({ enabled: undoAuthority, rpc: services2.rpc, hash: hash2 }, accountId, body);
+          await recordOutcome(result2.replayed ? "replayed" : "committed");
+          return json(result2);
+        }
         if (body.requestId.startsWith(ULTRA_LUXE_REQUEST_PREFIX)) throw new GameplayError("invalid_request");
+        if (body.requestId.startsWith(ULTRA_LUXE_UNDO_PREFIX)) throw new GameplayError("invalid_request");
         try {
           command = validateGameCommand(body.command);
           telemetryCommandType = command.type;
@@ -62772,6 +62814,7 @@ var services = {
   // Both opt-in flags require the unified server schema and completed rendering QA.
   ultraLuxeGrantAuthority: Deno.env.get("ULTRA_LUXE_GRANT_AUTHORITY") === "true",
   ultraLuxeFullSetAuthority: Deno.env.get("ULTRA_LUXE_FULL_SET_AUTHORITY") === "true",
+  ultraLuxeUndoAuthority: Deno.env.get("ULTRA_LUXE_FULL_SET_UNDO_AUTHORITY") === "true",
   authenticate: async (token) => (await authenticatePlayer(token))?.accountId ?? null,
   rpc: async (name, args) => {
     const response = await fetch(`${url}/rest/v1/rpc/${name}`, { method: "POST", headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json" }, body: JSON.stringify(args) });

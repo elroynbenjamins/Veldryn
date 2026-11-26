@@ -1,0 +1,34 @@
+{
+  "apps/mobile/assets/ascendant/sakura/blossom_crown.webp": {
+    "width": 1020,
+    "height": 615,
+    "bytes": 49848,
+    "sha256": "f783df154c2366a125cdfa358563ff5bafb8e8b71541d3fb79a96b64e4bfb330",
+    "alpha_gt_32_fraction": 0.20974,
+    "protected_max_alpha": 0
+  },
+  "apps/mobile/assets/ascendant/sakura/blossom_crown_standard.webp": {
+    "width": 1024,
+    "height": 576,
+    "bytes": 48290,
+    "sha256": "dbb03de1e6084f1f827e6037b71438955c221fa686c96fc14b870b18c47c6b83",
+    "alpha_gt_32_fraction": 0.21157,
+    "protected_max_alpha": 0
+  },
+  "apps/mobile/assets/ascendant/stormforged/steel_crown.webp": {
+    "width": 1020,
+    "height": 615,
+    "bytes": 39618,
+    "sha256": "0ba01e95a188035d73ab284dfdde931d032ca7a08cb3df67ced1bf0dbf27467c",
+    "alpha_gt_32_fraction": 0.19391,
+    "protected_max_alpha": 0
+  },
+  "apps/mobile/assets/ascendant/stormforged/steel_crown_standard.webp": {
+    "width": 1024,
+    "height": 576,
+    "bytes": 37986,
+    "sha256": "d957eecc1fe2ba01e474db84cb200133eb89b7d7da795c2745d4bf4e0f935608",
+    "alpha_gt_32_fraction": 0.19224,
+    "protected_max_alpha": 0
+  }
+}

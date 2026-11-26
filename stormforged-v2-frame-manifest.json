@@ -1,0 +1,46 @@
+{
+  "apps/mobile/assets/ascendant/stormforged/steel_crown_v2.webp": {
+    "width": 1020,
+    "height": 615,
+    "bytes": 119716,
+    "sha256": "3c2774af8bda91a3a7fbc3e6cb850bb397d34f61d7ad40a5becdc03a8f46492f",
+    "alpha_gt_32_fraction": 0.21165,
+    "protected_max_alpha": 0,
+    "all_maxes": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "apps/mobile/assets/ascendant/stormforged/steel_crown_v2_standard.webp": {
+    "width": 1024,
+    "height": 576,
+    "bytes": 116826,
+    "sha256": "2216104f3aea5b35beedb7bab30fd8a2e425019c89a09b4010f36c6032b624de",
+    "alpha_gt_32_fraction": 0.22073,
+    "protected_max_alpha": 0,
+    "all_maxes": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  }
+}

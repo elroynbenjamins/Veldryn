@@ -1,0 +1,14 @@
+{
+  "apps/mobile/assets/ascendant/sakura/petal_sanctuary.webp": {
+    "width": 1020,
+    "height": 615,
+    "bytes": 182402,
+    "sha256": "5c0f5373ce7fdd594201d51103f364d4c47d16240838f34e97388a0d11875617"
+  },
+  "apps/mobile/assets/ascendant/sakura/petal_sanctuary_square.webp": {
+    "width": 512,
+    "height": 512,
+    "bytes": 99220,
+    "sha256": "06dce1e514c8ff70604420e01c66ca75994942b369fde03c17bf65e2b7a30ca0"
+  }
+}

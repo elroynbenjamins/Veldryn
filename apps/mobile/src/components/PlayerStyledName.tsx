@@ -1,6 +1,8 @@
 import {useEffect,useMemo,useState} from 'react';
 import {Text,type StyleProp,type TextStyle} from 'react-native';
-import {playerNameCharacterColors,type PlayerNameStylePreference} from '../core/player-name-style';
+import {renderedPlayerNameColors} from './player-name-render-colors';
+import type {PlayerNameStylePreference} from '../core/player-name-style';
+import {ULTRA_LUXE_NAME_TICK_MS,ULTRA_LUXE_NAME_CYCLE_MS,ultraLuxeGradientForColors} from '../core/ultra-luxe-name-gradients';
 import {subscribeSharedTicker,useMotionEnabled} from './anim/motion';
 
 const DEFAULT_NAME_STYLE:PlayerNameStylePreference={mode:'default',animation:'none'};
@@ -9,12 +11,13 @@ export function PlayerStyledName({name,nameStyle,reduceMotion=false,style,number
  const normalized=nameStyle??DEFAULT_NAME_STYLE;
  const animated=useMotionEnabled(reduceMotion,normalized.mode==='gradient'&&normalized.animation!=='none');
  const [phase,setPhase]=useState(0);
+ const luxe=normalized.animation==='flow'&&!!ultraLuxeGradientForColors(normalized.gradientColors);
  useEffect(()=>{
   if(!animated){setPhase(0);return;}
   // One shared interval for every animated name; it sleeps while the app is in the background.
-  return subscribeSharedTicker(180,()=>setPhase(value=>(value+.035)%1));
- },[animated]);
- const colors=useMemo(()=>playerNameCharacterColors(name,normalized,phase),[name,normalized,phase]);
+  return subscribeSharedTicker(ULTRA_LUXE_NAME_TICK_MS,()=>setPhase(value=>(value+(luxe?ULTRA_LUXE_NAME_TICK_MS/ULTRA_LUXE_NAME_CYCLE_MS:.035))%1));
+ },[animated,luxe]);
+ const colors=useMemo(()=>renderedPlayerNameColors(name,normalized,animated?phase:0),[name,normalized,phase,animated]);
  if(!colors.length)return <Text numberOfLines={numberOfLines} style={style}>{name}</Text>;
  return <Text numberOfLines={numberOfLines} style={style}>{Array.from(name).map((char,index)=><Text key={index} style={{color:colors[index]}}>{char}</Text>)}</Text>;
 }

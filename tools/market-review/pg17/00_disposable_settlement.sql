@@ -1,7 +1,7 @@
 -- DISPOSABLE TEST ONLY. No deployment, no Supabase, no real players.
 DO $$ BEGIN
  IF current_database() <> 'eq2_market_review' OR current_setting('server_version_num')::int / 10000 <> 17
- OR inet_server_addr() IS DISTINCT FROM '127.0.0.1'::inet
+ OR current_user <> 'eq2_market_review' OR current_setting('market_review.disposable',true) IS DISTINCT FROM 'yes'
  THEN RAISE EXCEPTION 'disposable_pg17_localhost_only'; END IF;
 END $$;
 BEGIN;
@@ -111,7 +111,7 @@ BEGIN
      UPDATE market_review.custody SET state='pending_return',holder=NULL WHERE id=p_instance;
    END IF;
  ELSIF p_op IN ('claim','return','withdraw','deposit') THEN
-   IF c.owner<>p_actor OR c.state<>CASE p_op WHEN 'claim' THEN 'pending_delivery' WHEN 'return' THEN 'pending_return' WHEN 'withdraw' THEN 'bank' ELSE 'inventory' END
+   IF c.owner<>p_actor OR c.state<>(CASE p_op WHEN 'claim' THEN 'pending_delivery' WHEN 'return' THEN 'pending_return' WHEN 'withdraw' THEN 'bank' ELSE 'inventory' END)
       OR (p_op IN ('deposit','withdraw') AND c.protected) THEN RAISE EXCEPTION 'wrong_custody'; END IF;
    IF p_op='claim' AND NOT EXISTS(SELECT 1 FROM market_review.sale s WHERE s.instance=p_instance AND s.buyer=p_actor
         AND s.ordinal=(SELECT max(ordinal) FROM market_review.sale WHERE instance=p_instance)) THEN RAISE EXCEPTION 'paid_receipt_missing'; END IF;

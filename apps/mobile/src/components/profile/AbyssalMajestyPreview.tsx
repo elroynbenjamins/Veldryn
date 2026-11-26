@@ -1,5 +1,6 @@
-import {memo,useEffect,useMemo,useRef,useState,type ReactNode} from 'react';
-import {AccessibilityInfo,Animated,AppState,Easing,Image,StyleSheet,View,useWindowDimensions,type ImageSourcePropType} from 'react-native';
+import {memo,useMemo,useState,type ReactNode} from 'react';
+import {Animated,Image,StyleSheet,View,useWindowDimensions,type ImageSourcePropType} from 'react-native';
+import {useCosmeticMotionPolicy,useLoopProgress} from '../anim/motion';
 import {AbyssalBorderLight} from './AbyssalBorderLight';
 import {UltraLuxeIdentityMotionProvider} from './UltraLuxeIdentityMotion';
 import {ABYSSAL_BOXES as B,ABYSSAL_STAGE as S,ABYSSAL_BUDGET as Q,ABYSSAL_CYCLE_MS,ABYSSAL_MOTE_PATHS,ABYSSAL_POSE_ATLAS,abyssalPoseTimeline,abyssalPoseCell,abyssalAwakeningCurve,abyssalPetMode,abyssalStageSupported} from '../../core/abyssal-showcase-layout';
@@ -18,32 +19,6 @@ const IDLE_TILT=IDLE_PHASE.map(t=>1.4*Math.sin(2*Math.PI*4*periodic(t))+'deg');
 const pos=(k:number,x:number,y:number,w:number,h:number)=>({position:'absolute' as const,left:x*k,top:y*k,width:w*k,height:h*k});
 const box=(k:number,b:{x:number;y:number;w:number;h:number})=>pos(k,b.x,b.y,b.w,b.h);
 
-/** Fail static until the system motion preference resolves. Suspend when hidden
- * or backgrounded. All visual channels share one native non-interaction clock. */
-function useAbyssalClock(enabled:boolean){
- const clock=useRef(new Animated.Value(0)).current;
- const [foreground,setForeground]=useState(false);
- const [systemReduced,setSystemReduced]=useState(true);
- useEffect(()=>{
-  if(!enabled){setForeground(false);setSystemReduced(true);return;}
-  let live=true,changed=false;
-  setSystemReduced(true);
-  setForeground(AppState.currentState==='active');
-  const app=AppState.addEventListener('change',v=>{if(live)setForeground(v==='active');});
-  const motion=AccessibilityInfo.addEventListener('reduceMotionChanged',v=>{changed=true;if(live)setSystemReduced(v);});
-  AccessibilityInfo.isReduceMotionEnabled().then(v=>{if(live&&!changed)setSystemReduced(v);}).catch(()=>{});
-  return()=>{live=false;app.remove();motion.remove();};
- },[enabled]);
- const running=enabled&&foreground&&!systemReduced&&AppState.currentState==='active';
- useEffect(()=>{
-  clock.stopAnimation();clock.setValue(0);
-  if(!running)return;
-  const loop=Animated.loop(Animated.timing(clock,{toValue:1,duration:ABYSSAL_CYCLE_MS,easing:Easing.linear,useNativeDriver:true,isInteraction:false}));
-  loop.start();
-  return()=>{loop.stop();clock.stopAnimation();};
- },[clock,running]);
- return {clock,running};
-}
 const POSES=abyssalPoseTimeline();
 /** Optional idle sprite atlas uses the same clock; no additional timer.
  * Clip to a single padded cell; static mode renders the standalone pose instead. */
@@ -100,7 +75,8 @@ const AbyssalPet=memo(function AbyssalPet({clock,k,assets,running,mode,alternate
 export const AbyssalMajestyPreview=memo(function AbyssalMajestyPreview({assets,equippedPetId,alternatePetSource,petAccessibilityLabel,portrait,identity,badges,guild,fallback,fullSet=false,active=false,reduceMotion=false}:Props){
  const [width,setWidth]=useState(0),{fontScale}=useWindowDimensions();
  const supported=abyssalStageSupported(width,fontScale);
- const {clock,running}=useAbyssalClock(active&&supported&&!reduceMotion);
+ const {running}=useCosmeticMotionPolicy(active&&supported,reduceMotion);
+ const clock=useLoopProgress(ABYSSAL_CYCLE_MS,running);
  const k=width/S.width,mode=abyssalPetMode(equippedPetId,!!alternatePetSource);
  const verifiedFullSet=fullSet&&mode==='matching';
  return <View style={s.outer} onLayout={e=>{const next=e.nativeEvent.layout.width;setWidth(old=>Math.abs(old-next)<.5?old:next);}}>
@@ -115,8 +91,8 @@ export const AbyssalMajestyPreview=memo(function AbyssalMajestyPreview({assets,e
    <View style={[box(k,B.portrait),s.portrait]}>{portrait}</View>
    <UltraLuxeIdentityMotionProvider clock={clock} fullSet={verifiedFullSet} active={running}>
     <View style={[box(k,B.identity),s.protected]}>{identity}</View>
-    {badges?<View style={[box(k,B.badges),s.badges]}>{badges}</View>:null}
    </UltraLuxeIdentityMotionProvider>
+   {badges?<View style={[box(k,B.badges),s.badges]}>{badges}</View>:null}
    {guild?<View style={[box(k,B.guild),s.guild]}>{guild}</View>:null}
    <Decorative><Image source={assets.border} fadeDuration={0} resizeMode="stretch" style={s.fill}/>{running?<AbyssalBorderLight clock={clock} width={width} height={S.height*k} art={assets} showcase fullSet={verifiedFullSet}/>:null}</Decorative>
   </View>}

@@ -11,6 +11,7 @@ import {runEffectTriggerBoundaryReviewV2} from './effect-gem-trigger-review';
 import {inspectEffectGemInteractionsV2,EFFECT_INTERACTION_REVIEW_V2,type EffectInteractionActionV2} from '../effect-gem-interaction-review';
 import {runEffectEventProvenanceReviewV2} from './effect-gem-event-provenance-review';
 import {runEffectLifecycleReviewV2} from './effect-gem-lifecycle-review';
+import {createGentleStatCombatReviewV2} from './gentle-stat-gem-combat-review';
 import {STAT_GEMS_V1,EFFECT_GEMS_V1,gemItemId,type GemGrade,GEM_BALANCE_REVIEW_V2,STAT_GEMS_REVIEW_V2,EFFECT_GEMS_REVIEW_V2,EFFECT_GEM_REVIEW_MULTIPLIERS_V2} from '../../../equipment/gems/gem-catalog-v1';
 import type {V2GemSidecarState} from '../../../equipment/equipment-crafting-v2-gem-sidecar-types';
 import {writeFileSync} from 'node:fs';
@@ -1602,6 +1603,7 @@ function makeV21Loadout(classId:ClassIdV2,specIndex:0|1,targetTier:1|2|3|4,targe
  assert.equal(families.length,11);
  const rows:{classId:ClassIdV2;spec:number;slots:number;arm:string;channels:ReturnType<typeof inspectSocketStackingCapReviewV2>['channels'];diminishing:ReturnType<typeof inspectSocketStackingCapReviewV2>['channels'];gentle:ReturnType<typeof inspectSocketStackingCapReviewV2>['channels'];utility:ReturnType<typeof reviewUtilityGemSemanticsV2>;hasteDelta:number;attackDelta:number}[]=[];
  const coverage:{classId:ClassIdV2;spec:number;slots:number;missing:string[];downgraded:number}[]=[];
+ const statCombatRows:{classId:ClassIdV2;spec:number;arm:string;result:ReturnType<ReturnType<typeof createGentleStatCombatReviewV2>>}[]=[];
  for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[])for(const spec of [0,1] as const){
   const qa=makeV21Loadout(classId,spec,4,55);
   const n=qa.ids.length;
@@ -1612,6 +1614,8 @@ function makeV21Loadout(classId:ClassIdV2,specIndex:0|1,targetTier:1|2|3|4,targe
   const original=JSON.stringify(source.items);
   const baseline=reviewFrozenForgeSocketsV2(qa.actor,qa.build,source,{slots:[],receipts:[]},policy);
   const baselineUtility=reviewUtilityGemSemanticsV2(baseline);
+  const compiled=compileRealFrozenForgeActorV2(qa.actor,qa.build,source);
+  const fight=createGentleStatCombatReviewV2(compiled,baseline,{...boss,id:'BOSS_EXP_BELLBEAST',name:'The Bellbeast of Shiverlake',level:60},'GENTLE_'+classId+'_'+spec);
   assert.equal(baselineUtility.haste.incrementalGem,0);
   assert.ok(baselineUtility.potency.every(c=>c.incrementalGem===0));
   const arms=[...families,'mixed-role','mixed-all'];
@@ -1699,12 +1703,22 @@ function makeV21Loadout(classId:ClassIdV2,specIndex:0|1,targetTier:1|2|3|4,targe
     assert.ok(Math.abs(c.gem-n*def.values[5]*1.2)<1e-8);
     assert.equal(report.channels.filter(c=>c.gem>0).length,1);
    }
+   if(families.includes(arm)&&arm!=='stat_potent')statCombatRows.push({classId,spec,arm,result:fight(out)});
    rows.push({classId,spec,slots:n,arm,channels:report.channels,diminishing:continuous.channels,gentle:gentle.channels,utility,
     hasteDelta:out.stats.haste-baseline.stats.haste,attackDelta:out.stats.attackPower-baseline.stats.attackPower});
   }
   assert.equal(JSON.stringify(source.items),original);
  }
  assert.equal(rows.length,18*13);
+ assert.equal(statCombatRows.length,18*10);
+ console.log('GENTLE_STAT_GEM_COMBAT_REVIEW '+JSON.stringify({cases:statCombatRows.length,scope:'PRIVATE_STATIC_GEM_COMBAT_ONLY',
+  boss:'BOSS_EXP_BELLBEAST',durationMs:15000,excluded:['stat_potent','effect_gems'],
+  families:families.filter(f=>f!=='stat_potent').map(f=>{const a=statCombatRows.filter(r=>r.arm===f);return {family:f,cases:a.length,
+   meanDamageDelta:a.reduce((n,r)=>n+r.result.candidate.damage-r.result.baseline.damage,0)/a.length,
+   meanDamageTakenDelta:a.reduce((n,r)=>n+r.result.candidate.damageTaken-r.result.baseline.damageTaken,0)/a.length,
+   meanHealingDelta:a.reduce((n,r)=>n+r.result.candidate.healing-r.result.baseline.healing,0)/a.length,
+   lostVictories:a.filter(r=>r.result.baseline.victory&&!r.result.candidate.victory).length};}),
+  releaseEnabled:false,cpApproved:false}));
  console.log('FULL_FORGE_SOCKET_STACK_CALIBRATION '+JSON.stringify({scope:'CANDIDATE_SHARED_CAP_DIAGNOSTIC_ONLY',
   cases:rows.length,coverage,byFamily:families.map(family=>{
    const a=rows.filter(r=>r.arm===family);

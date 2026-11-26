@@ -1,11 +1,11 @@
 import {memo,useEffect,useMemo,useRef,useState,type ReactNode} from 'react';
 import {AccessibilityInfo,Animated,AppState,Easing,Image,StyleSheet,View,useWindowDimensions,type ImageSourcePropType} from 'react-native';
 import {UltraLuxeIdentityMotionProvider} from './UltraLuxeIdentityMotion';
-import {ABYSSAL_BOXES as B,ABYSSAL_STAGE as S,ABYSSAL_BUDGET as Q,ABYSSAL_CYCLE_MS,ABYSSAL_MOTE_PATHS,abyssalAwakeningCurve,abyssalPetMode,abyssalStageSupported} from '../../core/abyssal-showcase-layout';
+import {ABYSSAL_BOXES as B,ABYSSAL_STAGE as S,ABYSSAL_BUDGET as Q,ABYSSAL_CYCLE_MS,ABYSSAL_MOTE_PATHS,ABYSSAL_POSE_ATLAS,abyssalPoseTimeline,abyssalPoseCell,abyssalAwakeningCurve,abyssalPetMode,abyssalStageSupported} from '../../core/abyssal-showcase-layout';
 
 /** Review component only. All artwork is supplied by its caller; no release registration. */
 export type AbyssalSceneAssets={
- background:ImageSourcePropType;border:ImageSourcePropType;leviathan:ImageSourcePropType;
+ background:ImageSourcePropType;border:ImageSourcePropType;leviathan:ImageSourcePropType;idleAtlas?:ImageSourcePropType;
  tide:ImageSourcePropType;mote:ImageSourcePropType;aura:ImageSourcePropType;
 };
 type Props={assets:AbyssalSceneAssets;equippedPetId?:string|null;alternatePetSource?:ImageSourcePropType;petAccessibilityLabel?:string;portrait:ReactNode;identity:ReactNode;badges?:ReactNode;guild?:ReactNode;fallback:ReactNode;fullSet?:boolean;active?:boolean;reduceMotion?:boolean};
@@ -43,6 +43,23 @@ function useAbyssalClock(enabled:boolean){
  },[clock,running]);
  return {clock,running};
 }
+const POSES=abyssalPoseTimeline();
+/** Optional idle sprite atlas uses the same clock; no additional timer.
+ * Clip to a single padded cell; static mode renders the standalone pose instead. */
+const AbyssalPoseSprite=memo(function AbyssalPoseSprite({source,clock,width,height}:{source:ImageSourcePropType;clock:Animated.Value;width:number;height:number}){
+ const a=ABYSSAL_POSE_ATLAS,ratio=Math.min(width/a.frameWidth,height/a.frameHeight);
+ const w=a.frameWidth*ratio,h=a.frameHeight*ratio;
+ const phase=useMemo(()=>Animated.modulo(Animated.multiply(clock,a.cycles),1),[clock,a.cycles]);
+ const [x,y]=useMemo(()=>[
+  phase.interpolate({inputRange:POSES.inputRange,outputRange:POSES.frames.map(f=>-abyssalPoseCell(f).column*w),extrapolate:'clamp'}),
+  phase.interpolate({inputRange:POSES.inputRange,outputRange:POSES.frames.map(f=>-abyssalPoseCell(f).row*h),extrapolate:'clamp'}),
+ ] as const,[phase,w,h]);
+ return <View pointerEvents="none" accessible={false} style={{width,height,alignItems:'center',justifyContent:'center'}}>
+  <View style={{width:w,height:h,overflow:'hidden'}}>
+   <Animated.Image source={source} resizeMode="stretch" fadeDuration={0} style={{position:'absolute',left:0,top:0,width:w*a.columns,height:h*a.rows,transform:[{translateX:x},{translateY:y}]}}/>
+  </View>
+ </View>;
+});
 const Decorative=memo(function Decorative({children}:{children:ReactNode}){
  return <View pointerEvents="none" accessible={false} importantForAccessibility="no-hide-descendants" style={StyleSheet.absoluteFill}>{children}</View>;
 });
@@ -78,7 +95,7 @@ const AbyssalPet=memo(function AbyssalPet({clock,k,assets,running,mode,alternate
  if(mode!=='matching')return null;
  return <Decorative>
   {motion?<Animated.Image source={assets.aura} fadeDuration={0} resizeMode="contain" style={[box(k,B.aura),{opacity:motion.aura}]}/>:<Image source={assets.aura} fadeDuration={0} resizeMode="contain" style={[box(k,B.aura),{opacity:.28}]}/>}
-  {motion?<Animated.Image source={assets.leviathan} fadeDuration={0} resizeMode="contain" style={[box(k,B.leviathan),{transform:[{translateY:motion.lift},{rotate:motion.tilt}]}]}/>:<Image source={assets.leviathan} fadeDuration={0} resizeMode="contain" style={box(k,B.leviathan)}/>}
+  {motion&&assets.idleAtlas?<Animated.View style={[box(k,B.leviathan),{transform:[{translateY:motion.lift}]}]}><AbyssalPoseSprite source={assets.idleAtlas} clock={clock} width={B.leviathan.w*k} height={B.leviathan.h*k}/></Animated.View>:motion?<Animated.Image source={assets.leviathan} fadeDuration={0} resizeMode="contain" style={[box(k,B.leviathan),{transform:[{translateY:motion.lift},{rotate:motion.tilt}]}]}/>:<Image source={assets.leviathan} fadeDuration={0} resizeMode="contain" style={box(k,B.leviathan)}/>}
  </Decorative>;
 });
 export const AbyssalMajestyPreview=memo(function AbyssalMajestyPreview({assets,equippedPetId,alternatePetSource,petAccessibilityLabel,portrait,identity,badges,guild,fallback,fullSet=false,active=false,reduceMotion=false}:Props){

@@ -63,22 +63,32 @@ const AbyssalPoseSprite=memo(function AbyssalPoseSprite({source,clock,width,heig
 const Decorative=memo(function Decorative({children}:{children:ReactNode}){
  return <View pointerEvents="none" accessible={false} importantForAccessibility="no-hide-descendants" style={StyleSheet.absoluteFill}>{children}</View>;
 });
-const AbyssalTide=memo(function AbyssalTide({clock,k,assets,fullSet}:{clock:Animated.Value;k:number;assets:AbyssalSceneAssets;fullSet:boolean}){
+const AbyssalTide=memo(function AbyssalTide({clock,k,assets}:{clock:Animated.Value;k:number;assets:AbyssalSceneAssets}){
  const motion=useMemo(()=>{
-  const energy=clock.interpolate({inputRange:CURVE.phase,outputRange:CURVE.energy});
   const opacity=clock.interpolate({inputRange:CURVE.phase,outputRange:CURVE.energy.map(e=>.14+.55*e)});
   const rise=clock.interpolate({inputRange:CURVE.phase,outputRange:CURVE.energy.map(e=>-9*k*e)});
   const motes=ABYSSAL_MOTE_PATHS.map((p,i)=>{
    const inputRange=p.map((_,j)=>j/(p.length-1));
    return {x:clock.interpolate({inputRange,outputRange:p.map(([x])=>x*k)}),y:clock.interpolate({inputRange,outputRange:p.map(([,y])=>y*k)}),opacity:clock.interpolate({inputRange:CURVE.phase,outputRange:CURVE.energy.map(e=>.38+e*(.42-i*.04))})};
   });
-  return {energy,opacity,rise,motes,crest:Animated.multiply(energy,fullSet ? .78 : .45)};
- },[clock,k,fullSet]);
+  return {opacity,rise,motes};
+ },[clock,k]);
  const r=Q.moteRadius;
  return <Decorative>
   <Animated.Image source={assets.tide} fadeDuration={0} resizeMode="stretch" style={[pos(k,226,28,84,140),{opacity:motion.opacity,transform:[{translateY:motion.rise}]}]}/>
   {motion.motes.map((m,i)=><Animated.Image key={i} source={assets.mote} fadeDuration={0} resizeMode="contain" style={[pos(k,-r,-r,2*r,2*r),{opacity:m.opacity,transform:[{translateX:m.x},{translateY:m.y}]}]}/>)}
-  <Animated.Image source={assets.aura} fadeDuration={0} resizeMode="contain" style={[pos(k,148,8,44,26),{opacity:motion.crest}]}/>
+ </Decorative>;
+});
+/** Crest and pearl illumination above the actual frame, not hidden beneath it.
+ * Two small fixed-footprint ornaments; no extra clock or full-screen overlay. */
+const AbyssalFrameLight=memo(function AbyssalFrameLight({clock,k,source,fullSet}:{clock:Animated.Value;k:number;source:ImageSourcePropType;fullSet:boolean}){
+ const light=useMemo(()=>({
+  crest:clock.interpolate({inputRange:CURVE.phase,outputRange:CURVE.energy.map(e=>.10+(fullSet ? .78 : .52)*e)}),
+  pearl:clock.interpolate({inputRange:CURVE.phase,outputRange:CURVE.energy.map(e=>.08+(fullSet ? .68 : .44)*e)}),
+ }),[clock,fullSet]);
+ return <Decorative>
+  <Animated.Image source={source} fadeDuration={0} resizeMode="contain" style={[pos(k,157,5,26,26),{opacity:light.crest}]}/>
+  <Animated.Image source={source} fadeDuration={0} resizeMode="contain" style={[pos(k,158,176,24,24),{opacity:light.pearl}]}/>
  </Decorative>;
 });
 const AbyssalPet=memo(function AbyssalPet({clock,k,assets,running,mode,alternatePetSource}:{clock:Animated.Value;k:number;assets:AbyssalSceneAssets;running:boolean;mode:'matching'|'alternate'|'none';alternatePetSource?:ImageSourcePropType}){
@@ -108,7 +118,7 @@ export const AbyssalMajestyPreview=memo(function AbyssalMajestyPreview({assets,e
   {!supported?fallback:<View style={[s.card,{height:S.height*k}]}>
    <Decorative>
     <Image source={assets.background} fadeDuration={0} resizeMode="cover" style={s.fill}/>
-    {running?<AbyssalTide clock={clock} k={k} assets={assets} fullSet={verifiedFullSet}/>:null}
+    {running?<AbyssalTide clock={clock} k={k} assets={assets}/>:null}
     <AbyssalPet clock={clock} k={k} assets={assets} running={running} mode={mode} alternatePetSource={alternatePetSource}/>
    </Decorative>
    {mode!=='none'&&petAccessibilityLabel?<View accessible accessibilityLabel={petAccessibilityLabel} pointerEvents="none" style={box(k,mode==='matching'?B.leviathan:B.alternate)}/>:null}
@@ -119,7 +129,7 @@ export const AbyssalMajestyPreview=memo(function AbyssalMajestyPreview({assets,e
     {badges?<View style={[box(k,B.badges),s.badges]}>{badges}</View>:null}
    </UltraLuxeIdentityMotionProvider>
    {guild?<View style={[box(k,B.guild),s.guild]}>{guild}</View>:null}
-   <Decorative><Image source={assets.border} fadeDuration={0} resizeMode="stretch" style={s.fill}/></Decorative>
+   <Decorative><Image source={assets.border} fadeDuration={0} resizeMode="stretch" style={s.fill}/>{running?<AbyssalFrameLight clock={clock} k={k} source={assets.aura} fullSet={verifiedFullSet}/>:null}</Decorative>
   </View>}
  </View>;
 });

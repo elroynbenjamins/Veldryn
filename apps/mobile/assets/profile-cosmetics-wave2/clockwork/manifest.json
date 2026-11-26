@@ -1,5 +1,5 @@
 {
-  "status": "review-only; authored pixel rails and concept-derived portraits, not production-approved",
+  "status": "review-only; refined illustrated mechanical frame, not production-approved",
   "sourceFrame": [
     768,
     432
@@ -13,14 +13,14 @@
   "glows": [
     {
       "name": "dial",
-      "x": 0.5,
-      "y": 0.09027777777777778,
+      "x": 0.4934895833333333,
+      "y": 0.06712962962962964,
       "sizeDp": 9,
       "sourceRect": [
-        370,
-        25,
-        28,
-        28
+        367,
+        17,
+        24,
+        24
       ],
       "periodMs": 3200,
       "phaseMs": 0,
@@ -28,12 +28,12 @@
     },
     {
       "name": "upper-right",
-      "x": 0.9427083333333334,
-      "y": 0.06944444444444445,
+      "x": 0.9388020833333334,
+      "y": 0.08333333333333333,
       "sizeDp": 9,
       "sourceRect": [
-        712,
-        18,
+        709,
+        24,
         24,
         24
       ],
@@ -43,14 +43,14 @@
     },
     {
       "name": "right-valve",
-      "x": 0.9713541666666666,
-      "y": 0.5300925925925926,
+      "x": 0.9609375,
+      "y": 0.48842592592592593,
       "sizeDp": 9,
       "sourceRect": [
-        734,
-        215,
+        726,
+        199,
         24,
-        28
+        24
       ],
       "periodMs": 3000,
       "phaseMs": 1100,
@@ -58,12 +58,12 @@
     },
     {
       "name": "lower-right",
-      "x": 0.9427083333333334,
-      "y": 0.9259259259259259,
+      "x": 0.9388020833333334,
+      "y": 0.9143518518518519,
       "sizeDp": 9,
       "sourceRect": [
-        712,
-        388,
+        709,
+        383,
         24,
         24
       ],
@@ -73,14 +73,14 @@
     },
     {
       "name": "bottom-dial",
-      "x": 0.5,
-      "y": 0.9490740740740741,
+      "x": 0.4934895833333333,
+      "y": 0.9236111111111112,
       "sizeDp": 9,
       "sourceRect": [
-        370,
-        396,
-        28,
-        28
+        367,
+        387,
+        24,
+        24
       ],
       "periodMs": 3200,
       "phaseMs": 2300,
@@ -88,12 +88,12 @@
     },
     {
       "name": "lower-left",
-      "x": 0.0546875,
-      "y": 0.9259259259259259,
+      "x": 0.05078125,
+      "y": 0.9143518518518519,
       "sizeDp": 9,
       "sourceRect": [
-        30,
-        388,
+        27,
+        383,
         24,
         24
       ],
@@ -103,14 +103,14 @@
     },
     {
       "name": "left-valve",
-      "x": 0.0234375,
-      "y": 0.5300925925925926,
+      "x": 0.0390625,
+      "y": 0.48842592592592593,
       "sizeDp": 9,
       "sourceRect": [
-        6,
-        215,
+        18,
+        199,
         24,
-        28
+        24
       ],
       "periodMs": 3000,
       "phaseMs": 3500,
@@ -118,12 +118,12 @@
     },
     {
       "name": "upper-left",
-      "x": 0.0546875,
-      "y": 0.06944444444444445,
+      "x": 0.05078125,
+      "y": 0.08564814814814815,
       "sizeDp": 9,
       "sourceRect": [
-        30,
-        18,
+        27,
+        25,
         24,
         24
       ],
@@ -321,8 +321,8 @@
         432
       ],
       "mode": "RGBA",
-      "bytes": 8131,
-      "sha256": "dd0e3ca0e0a295df52b5ca97e2997c19145a2858d3595f58e5bc88aebdbd739a"
+      "bytes": 210542,
+      "sha256": "d6ebc930a471f7a2b904448af1fdee2d3adbed224c66b3f5b540ba14782ca274"
     },
     "static-effect.png": {
       "size": [
@@ -333,5 +333,103 @@
       "bytes": 2710,
       "sha256": "e3af741e58058b04b698c5938999d843d1313eaa8f0d3976a3fe345ecc7049cb"
     }
-  }
+  },
+  "reviewMetrics": [
+    {
+      "size": [
+        104,
+        72
+      ],
+      "v1": {
+        "opaque_pixels": 1276,
+        "pre_stencil_clipped_pixels": 0
+      },
+      "v2": {
+        "opaque_pixels": 1138,
+        "pre_stencil_clipped_pixels": 0
+      },
+      "glow_fragments": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "size": [
+        260,
+        174
+      ],
+      "v1": {
+        "opaque_pixels": 7443,
+        "pre_stencil_clipped_pixels": 0
+      },
+      "v2": {
+        "opaque_pixels": 6638,
+        "pre_stencil_clipped_pixels": 0
+      },
+      "glow_fragments": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "size": [
+        340,
+        205
+      ],
+      "v1": {
+        "opaque_pixels": 11173,
+        "pre_stencil_clipped_pixels": 0
+      },
+      "v2": {
+        "opaque_pixels": 9705,
+        "pre_stencil_clipped_pixels": 0
+      },
+      "glow_fragments": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "size": [
+        480,
+        270
+      ],
+      "v1": {
+        "opaque_pixels": 18711,
+        "pre_stencil_clipped_pixels": 56
+      },
+      "v2": {
+        "opaque_pixels": 17645,
+        "pre_stencil_clipped_pixels": 158
+      },
+      "glow_fragments": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    }
+  ]
 }

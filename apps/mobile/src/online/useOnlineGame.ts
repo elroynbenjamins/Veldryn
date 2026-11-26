@@ -1,4 +1,5 @@
-import {confirmUltraLuxeFullSetReadback,type FullSetPlan} from '../core/ultra-luxe-full-set-name';
+import {fullSetUndoCommand} from '../core/ultra-luxe-full-set-undo-command';
+import {confirmUltraLuxeFullSetReadback,type FullSetPlan,type FullSetScope} from '../core/ultra-luxe-full-set-name';
 import {ultraLuxeFullSetCommand} from '../core/ultra-luxe-full-set-command';
 import {invalidatePlayerIdentity} from './player-identity-cache';
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
@@ -17,6 +18,7 @@ import {previewCombatEquipmentCommand} from '../core/combat-equipment-optimistic
 declare const process:{env:Record<string,string|undefined>};
 // Closed until the unified server authority and generated Edge build are deployed.
 const fullSetReleased=typeof process!=='undefined'&&process.env.EXPO_PUBLIC_ULTRA_LUXE_FULL_SET==='true';
+const undoReleased=fullSetReleased&&process.env.EXPO_PUBLIC_ULTRA_LUXE_FULL_SET_UNDO==='true';
 export function useOnlineGame(){
  const {session}=useAuthSession(),accountId=session?.user.id;
  const repo=useMemo(()=>serverGameplayEnabled&&accountId?createOnlineGameRepository(accountId):null,[accountId]);
@@ -124,6 +126,16 @@ export function useOnlineGame(){
   if(result!=='confirmed')throw new Error(result==='superseded'?'Full set selection has since changed.':'Full set equip could not be confirmed.');
   return next;
  };
+ const undoUltraLuxeFullSet=async(scope:FullSetScope,equipRequestId:string)=>{
+  if(!undoReleased||!repo||active.current!==repo||repo.accountId!==scope.accountId||
+   repo.snapshot?.state.character?.id!==scope.characterId)throw new Error('Full set Undo unavailable for this character.');
+  const next=await execute(fullSetUndoCommand(scope,equipRequestId));
+  if(active.current!==repo)throw new Error('Account changed while saving.');
+  invalidatePlayerIdentity(repo.accountId);
+  if(next.accountId!==scope.accountId||next.state.character?.id!==scope.characterId||
+   next.ultraLuxeNameSelection?.accountId!==scope.accountId||typeof next.ultraLuxeFullSetReplayed!=='boolean')throw Error('Full set Undo could not be confirmed.');
+  return next;
+ };
  const refreshSnapshot=useCallback(async()=>{await refresh();},[refresh]);
  // After an external guild inventory mutation, do not reuse a read started before the receipt.
  const refreshAfterExternalWrite=useCallback(async()=>{
@@ -131,5 +143,5 @@ export function useOnlineGame(){
   if(!repo||active.current!==repo||commandSaving.current===repo)throw new Error('Gameplay state is changing. Refresh again.');
   const next=await refresh();if(!next||active.current!==repo||await repo.hasPending())throw new Error('Inventory refresh was not confirmed.');
  },[repo,refresh]);
- return {snapshot:snapshot?.accountId===accountId? snapshot:null,loading,busy,error,pending,foregroundRevision,refresh:refreshSnapshot,refreshAfterExternalWrite,refreshCommerce,execute,saveNameStyle,equipUltraLuxeFullSet:fullSetReleased?equipUltraLuxeFullSet:undefined};
+ return {snapshot:snapshot?.accountId===accountId? snapshot:null,loading,busy,error,pending,foregroundRevision,refresh:refreshSnapshot,refreshAfterExternalWrite,refreshCommerce,execute,saveNameStyle,equipUltraLuxeFullSet:fullSetReleased?equipUltraLuxeFullSet:undefined,undoUltraLuxeFullSet:undoReleased?undoUltraLuxeFullSet:undefined};
 }

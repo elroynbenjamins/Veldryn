@@ -1,6 +1,7 @@
 import {useMemo,useSyncExternalStore} from 'react';
 import {activeCombatHitProjection} from '../core/game';
 import type {GameState} from '../core/types';
+import {runWhileForeground} from '../online/foreground-tasks';
 
 type Snapshot={clock:number;fight:ReturnType<typeof activeCombatHitProjection>};
 type Listener=()=>void;
@@ -15,7 +16,7 @@ function createStore(state:GameState){
  const clock=Date.now();
  let snapshot:Snapshot={clock,fight:activeCombatHitProjection(state,clock)};
  const listeners=new Set<Listener>();
- let timer:ReturnType<typeof setInterval>|undefined;
+ let stopForegroundTicks:(()=>void)|undefined;
  const tick=()=>{
   const clock=Math.max(snapshot.clock,Date.now());
   if(clock===snapshot.clock)return;
@@ -26,13 +27,12 @@ function createStore(state:GameState){
   getSnapshot:()=>snapshot,
   subscribe:(listener:Listener)=>{
    listeners.add(listener);
-   if(timer===undefined){
-    tick();
-    timer=setInterval(tick,750);
-   }
+   // Keep one shared replay clock for visible subscribers, and suspend it
+   // whenever the app leaves the foreground. Resume catches up on the cursor.
+   if(!stopForegroundTicks)stopForegroundTicks=runWhileForeground(tick,750);
    return ()=>{
     listeners.delete(listener);
-    if(!listeners.size&&timer!==undefined){clearInterval(timer);timer=undefined;}
+    if(!listeners.size&&stopForegroundTicks){stopForegroundTicks();stopForegroundTicks=undefined;}
    };
   },
  };

@@ -2,9 +2,9 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
 const ts=require('typescript'),React=require('react'),{act,create}=require('react-test-renderer');
 globalThis.IS_REACT_ACT_ENVIRONMENT=true;
 const deferred=()=>{let resolve,reject;const promise=new Promise((yes,no)=>{resolve=yes;reject=no});return {promise,resolve,reject}};
-function load(file,dependencies){
+function load(file,dependencies,globals={}){
  const code=ts.transpileModule(fs.readFileSync(path.join(__dirname,'../',file),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX}}).outputText;
- const sandbox={exports:{},Error,Promise,setTimeout,clearTimeout,console:{warn:()=>{}},require:name=>dependencies[name]??(name==='react'?React:name==='react/jsx-runtime'?require(name):{})};
+ const sandbox={exports:{},Error,Promise,setTimeout,clearTimeout,console:{warn:()=>{}},...globals,require:name=>dependencies[name]??(name==='react'?React:name==='react/jsx-runtime'?require(name):{})};
  vm.runInNewContext(code,sandbox);return sandbox.exports;
 }
 const native={Pressable:'Pressable',Text:'Text',ActivityIndicator:'ActivityIndicator',StyleSheet:{create:styles=>styles},AppState:{currentState:'active',addEventListener:()=>({remove(){}})}};
@@ -137,6 +137,58 @@ async function socialBadgeParallelAndRecovery(){
  await act(async()=>renderer.unmount());
 }
 
+function rewardPreviewClock(){
+ const {activityRewardPreviewClock:clock}=load('src/components/activity-preview-clock.ts',{});
+ const combat={kind:'combat',lastClaimAtMs:1000};
+ assert.deepEqual([6000,8000,10000,12000,14000,16000].map(now=>clock(now,combat)),[5000,5000,10000,10000,10000,15000]);
+ assert.equal(clock(12000,{kind:'mining',lastClaimAtMs:11900}),11900,'New claims must not sample before their checkpoint');
+ assert.equal(clock(12000,{kind:'combat',lastClaimAtMs:13000}),12000,'Never sample in the future if server time leads the display clock');
+ for(const kind of ['woodcutting','fishing','herbalism','exploration'])assert.equal(clock(12000,{kind,lastClaimAtMs:0}),10000);
+ for(const kind of ['faith','alchemy','processing'])assert.equal(clock(12000,{kind,lastClaimAtMs:0}),12000,'Timed special activities retain their exact clock');
+ assert.equal(clock(12000,combat,true),12000,'Class training retains its original clock');
+ assert.equal(clock(12000),12000);
+ const app=fs.readFileSync(path.join(__dirname,'../App.tsx'),'utf8');
+ assert.ok(app.includes('previewActivityReward(state,activityPreviewMs):undefined,[state,activityPreviewMs]'),'The expensive root replay uses the sampled clock and invalidates on a new state');
+ assert.ok(app.includes('nowMs={now} reward={preview}'),'The top bar still receives the original live clock');
+}
+function foregroundTaskLifecycle(){
+ let onStatus,removed=0,ticks=0,currentTick,sequence=0;
+ const timers=new Map();
+ const appState={currentState:'background',addEventListener:(event,listener)=>{
+  assert.equal(event,'change');onStatus=listener;return {remove:()=>{removed++}};
+ }};
+ const {runWhileForeground}=load('src/online/foreground-tasks.ts',{'react-native':{AppState:appState}},{
+  setInterval:(fn,ms)=>{assert.equal(ms,750);const id=++sequence;timers.set(id,fn);return id;},
+  clearInterval:id=>timers.delete(id),
+ });
+ const stop=runWhileForeground(isCurrent=>{assert.ok(isCurrent());currentTick=isCurrent;ticks++},750);
+ assert.equal(ticks,0,'Background mounting must not start a replay timer');
+ assert.equal(timers.size,0);
+ onStatus('active');assert.equal(ticks,1);assert.equal(timers.size,1);
+ onStatus('active');assert.equal(ticks,1,'Duplicate active events must not start another timer');
+ [...timers.values()][0]();assert.equal(ticks,2);
+ const previousVisit=currentTick;
+ onStatus('background');assert.equal(timers.size,0);assert.equal(previousVisit(),false);
+ onStatus('active');assert.equal(ticks,3);assert.equal(timers.size,1);assert.equal(previousVisit(),false);
+ stop();assert.equal(timers.size,0);assert.equal(removed,1);assert.equal(currentTick(),false);
+}
+async function foregroundHuntReplay(){
+ let starts=0,stops=0,projections=0,latestA,latestB;
+ const {useLiveHuntProjection}=load('src/components/useLiveHuntProjection.ts',{
+  '../core/game':{activeCombatHitProjection:(_state,clock)=>{projections++;return {cursor:{atMs:clock}}}},
+  '../online/foreground-tasks':{runWhileForeground:(_task,interval)=>{assert.equal(interval,750);starts++;return ()=>{stops++}}},
+ });
+ const state={character:{id:'a'},activity:{kind:'combat'}};
+ function A(){latestA=useLiveHuntProjection(state,true);return null;}
+ function B(){latestB=useLiveHuntProjection(state,true);return null;}
+ let one,two;
+ await act(async()=>{one=create(React.createElement(A));two=create(React.createElement(B))});
+ assert.equal(starts,1,'One shared foreground clock serves both hunt surfaces');
+ assert.equal(projections,1,'Both surfaces share one initial projection');
+ assert.equal(latestA,latestB);
+ await act(async()=>one.unmount());assert.equal(stops,0);
+ await act(async()=>two.unmount());assert.equal(stops,1,'Last subscriber disposes the foreground clock');
+}
 function wiring(){
  const files=[];function walk(dir){for(const entry of fs.readdirSync(dir,{withFileTypes:true})){const file=path.join(dir,entry.name);if(entry.isDirectory())walk(file);else if(file.endsWith('.tsx'))files.push(file);}}
  walk(path.join(__dirname,'../src'));files.push(path.join(__dirname,'../App.tsx'));
@@ -154,4 +206,4 @@ function wiring(){
  assert.ok(!app.includes("showAlert('Online action'"),'Routine command failures use inline feedback');
  assert.ok(app.includes('message={onlineActionError}'),'Online failures remain visible inline');
 }
-(async()=>{await buttons();await commandBusy();await combatSwapOptimism();await socialBadgeParallelAndRecovery();wiring();console.log('PASS: online loading indicators, duplicate suppression, rejection recovery, overlapping-command busy state and non-blocking app feedback');})().catch(error=>{console.error(error);process.exitCode=1});
+(async()=>{await buttons();await commandBusy();await combatSwapOptimism();await socialBadgeParallelAndRecovery();rewardPreviewClock();foregroundTaskLifecycle();await foregroundHuntReplay();wiring();console.log('PASS: online loading indicators, duplicate suppression, rejection recovery, overlapping-command busy state and non-blocking app feedback');})().catch(error=>{console.error(error);process.exitCode=1});

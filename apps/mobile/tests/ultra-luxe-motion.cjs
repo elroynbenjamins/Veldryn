@@ -130,8 +130,8 @@ const badgeSource=read('components/PlayerBadges.tsx');
 assert(badgeSource.includes('const badgeMotion=useMemo(')&&badgeSource.includes('opacity:halo'));
 assert(badgeSource.includes('width:artSize,height:artSize,alignItems:'));
 assert(fx.includes("if(theme==='celestial')return <CelestialBorderLight"));
-assert(fx.includes("shiftClosed([...RAIL_PATH].reverse(),offset)"));
-assert(fx.includes('Animated.multiply(pulse(clock,offset),.55),Animated.multiply(energy,.45)'));
+assert(fx.includes("return <DraconicBorderLight"));
+assert(fx.includes('height={205*k} ember={particle} showcase'));
 console.log('Identity geometry, distinct pet reactions and synchronized rail energy passed.');
 
 const {CELESTIAL_ATLAS_LIFT,RAIL_GLOW_RADIUS,railGlowPoint,FRAME_ORNAMENTS}=mod.exports;
@@ -152,7 +152,7 @@ const celScene=read('components/profile/CelestialSovereignPreview.tsx'),dragonSc
 assert(celScene.includes('CELESTIAL_ATLAS_LIFT.map')&&celScene.includes('translateY:bodyLift'));
 assert(dragonScene.indexOf('style={[box(B.ring),{opacity:ringGlow}]}')<dragonScene.indexOf('translateY:bodyLift'),'ground ring remains independent of moving dragon');
 assert(celScene.includes('hitSlop={{top:10*scale')&&dragonScene.includes('hitSlop={{top:5*k'));
-assert(fx.includes('path.map(railGlowPoint)')&&fx.includes('FRAME_ORNAMENTS[theme]'));
+assert(fx.includes('CelestialBorderLight')&&fx.includes('DraconicBorderLight'));
 assert(read('components/profile/UltraLuxePetPoseSprite.tsx').includes('memo(UltraLuxePetPoseSpriteLayer)'));
 console.log('Smooth atlas lift, grounded ring, frame glow bounds and stable sprite rendering passed.');
 
@@ -228,3 +228,35 @@ assert(borderLayer.includes('pointerEvents="none"')&&borderLayer.includes('useMe
 assert(standardLayer.includes('running?<CelestialBorderLight'));
 assert(fx.includes('height={205*k} star={particle} showcase'));
 console.log('Celestial border polish: closed staggered motion, responsive perimeter, bounded node budget and existing clock passed.');
+
+const drBorder={exports:{}};
+new Function('exports','module','require',ts.transpileModule(read('core/draconic-border-motion.ts'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText)(drBorder.exports,drBorder,id=>id==='./profile-frame-layout'?layoutMod.exports:id==='./ultra-luxe-motion'?mod.exports:require(id));
+const {draconicBorderTracks,DRACONIC_BORDER_PHASE:dp,DRACONIC_BORDER_NODE_BUDGET:db}=drBorder.exports;
+assert.deepEqual(db,budget);
+assert.deepEqual(draconicBorderTracks(0,0,false),[]);
+assert.deepEqual(draconicBorderTracks(NaN,205,true),[]);
+for(const showcase of [false,true]){
+ for(const [w,h] of showcase?[[320,320*205/340],[340,205],[390,390*205/340],[480,480*205/340]]:[[44,44],[104,72],[260,174],[340,205],[480,270]]){
+  const tracks=draconicBorderTracks(w,h,showcase),k=Math.min(1,w/300,h/205),side=showcase?28*w/340:18*k,rail=showcase?32*w/340:24*k;
+  assert.equal(tracks.length,showcase?db.showcase:db.standard);
+  for(const t of tracks){
+   assert(t.size>0&&t.opacity.some(a=>a>=.5));
+   for(const seq of [t.x,t.y,t.opacity]){assert.equal(seq.length,dp.length);assert.equal(seq[0],seq.at(-1));}
+   for(let i=1;i<dp.length;i++)for(let j=0;j<=10;j++){
+    const q=j/10,x=t.x[i-1]+q*(t.x[i]-t.x[i-1]),y=t.y[i-1]+q*(t.y[i]-t.y[i-1]),r=t.size/2;
+    assert(x-r>=-1e-6&&x+r<=w+1e-6&&y-r>=-1e-6&&y+r<=h+1e-6);
+    assert(x+r<=side+1e-6||x-r>=w-side-1e-6||y+r<=rail+1e-6||y-r>=h-rail-1e-6);
+    assert(t.opacity[i]>=0&&t.opacity[i]<=.98);
+   }
+  }
+  const left=tracks.find(t=>t.key==='left-ember');
+  assert(Math.max(...left.y)-Math.min(...left.y)>.4*h);
+  assert(left.opacity[4]>left.opacity[12],'visible rise, dim return');
+  assert.notDeepEqual(left.opacity,tracks.find(t=>t.key==='right-ember').opacity);
+ }
+}
+const drLayer=read('components/profile/DraconicBorderLight.tsx');
+assert(!drLayer.includes('Animated.loop(')&&!drLayer.includes('setInterval('));
+assert(drLayer.includes('pointerEvents="none"')&&drLayer.includes('useMemo('));
+assert(dragonScene.includes('running?<DraconicBorderLight'));
+console.log('Draconic parity: rising embers, staggered molten ornament pulses, safe perimeter and equal native node budget passed.');

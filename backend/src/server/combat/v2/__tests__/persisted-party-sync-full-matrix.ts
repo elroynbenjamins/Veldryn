@@ -27,6 +27,11 @@ import {
 import {ENEMY_V2_RULESET} from '../../enemy-v2-prototype';
 import {bosses,profiles,setup} from './ten-slot-boss-fixture';
 
+import {ACTION_STREAM_RNG_QA_V1} from '../../deterministic-rng';
+const args=process.argv.slice(2);
+assert.ok(args.length===0||(args.length===1&&args[0]==='--action-stream-review'),'unknown matrix argument');
+const rngReviewPolicy=args.length?ACTION_STREAM_RNG_QA_V1:undefined;
+const rngEvidencePolicy=rngReviewPolicy??'legacy-cursor';
 const classes=Object.keys(CLASS_NAMES_V2) as ClassIdV2[];
 const tanks=classes.filter(c=>CLASS_ROLES_V2[c]==='tank');
 const damage=classes.filter(c=>CLASS_ROLES_V2[c]==='damage');
@@ -142,7 +147,7 @@ for(const specIndex of [0,1] as const)
     };
 
     const base=simulateUnifiedEquipmentPersistedPartyCombatV2(
-      input,builds,runtime,party,true,false);
+      input,builds,runtime,party,true,false,'tactical',rngReviewPolicy);
     // Personal calibration uses only the synchronized-OFF baseline. Reuse
     // actual engine results rather than adding another expensive simulation.
     for(const [i,classId] of ids.entries()){
@@ -152,9 +157,9 @@ for(const specIndex of [0,1] as const)
       }));
     }
     const sync=simulateUnifiedEquipmentPersistedPartyCombatV2(
-      input,builds,runtime,party,true,true);
+      input,builds,runtime,party,true,true,'tactical',rngReviewPolicy);
     assert.deepEqual(sync,simulateUnifiedEquipmentPersistedPartyCombatV2(
-      input,builds,runtime,party,true,true),'deterministic synchronized persisted party');
+      input,builds,runtime,party,true,true,'tactical',rngReviewPolicy),'deterministic synchronized persisted party');
     assert.deepEqual(base.equipmentEvidence,sync.equipmentEvidence);
     assert.deepEqual(base.combat.players.map(p=>p.definition.stats),
       sync.combat.players.map(p=>p.definition.stats));
@@ -179,11 +184,11 @@ for(const specIndex of [0,1] as const)
     const badDamage=isDamageOutlier(damageRatio),badHealing=isHealingOutlier(healingRatio);
     if(badDamage)balanceViolations.push({caseId,metric:'damage',ratio:damageRatio});
     if(badHealing)balanceViolations.push({caseId,metric:'healing',ratio:healingRatio});
-    if(badDamage||badHealing){
+    if(badDamage||badHealing||caseId==='PERSIST_SYNC_1_BOSS_EXP_BELLBEAST_BASTION_RAVAGER_KNIFE_DANCER_STONECALLER'){
       const extended={...input,maxDurationMs:30000};
-      const longBase=simulateUnifiedEquipmentPersistedPartyCombatV2(extended,builds,runtime,party,true,false);
-      const longSync=simulateUnifiedEquipmentPersistedPartyCombatV2(extended,builds,runtime,party,true,true);
-      console.log('PERSISTED_SYNC_OUTLIER '+JSON.stringify({caseId,classes:ids,specIndex,boss:boss.id,
+      const longBase=simulateUnifiedEquipmentPersistedPartyCombatV2(extended,builds,runtime,party,true,false,'tactical',rngReviewPolicy);
+      const longSync=simulateUnifiedEquipmentPersistedPartyCombatV2(extended,builds,runtime,party,true,true,'tactical',rngReviewPolicy);
+      console.log('PERSISTED_SYNC_OUTLIER '+JSON.stringify({rngEvidencePolicy,caseId,classes:ids,specIndex,boss:boss.id,
        damageRatio,healingRatio,links:sync.synchronizationReview?.active,
        originalWindowMs:input.maxDurationMs,extendedWindowMs:extended.maxDurationMs,
        original:diagnose(base.combat,sync.combat),
@@ -225,7 +230,7 @@ const summarize=(x:Bucket)=>({
 });
 console.log(JSON.stringify({
  kind:'PERSISTED_PARTY_SYNC_FULL_TUNING_EVIDENCE_NOT_RELEASE_APPROVAL',
- matchedPairs:cases,standardDungeonCompositions:36,bosses:6,specializationBands:2,
+ rngEvidencePolicy,matchedPairs:cases,standardDungeonCompositions:36,bosses:6,specializationBands:2,
  maxLinks,overall:summarize(overall),
  byLinks:Object.fromEntries([...byLinks.entries()].sort(([a],[b])=>a-b)
   .map(([links,row])=>[String(links),summarize(row)])),
@@ -246,6 +251,6 @@ assert.deepEqual(roleReport,summarizeRoleCalibrationV2([...roleObservations].rev
 assert.throws(()=>summarizeRoleCalibrationV2([...roleObservations,roleObservations[0]]),/duplicate_or_invalid_observation/);
 console.log('ROLE_POWER_CALIBRATION_NOT_CP '+JSON.stringify(roleReport));
 
-console.log('PERSISTED_SYNC_BALANCE_FENCES '+JSON.stringify({damage:[.85,1.50],healing:[.80,1.60],violations:balanceViolations,victoryLosses:overall.victoryLosses}));
+console.log('PERSISTED_SYNC_BALANCE_FENCES '+JSON.stringify({rngEvidencePolicy,damage:[.85,1.50],healing:[.80,1.60],violations:balanceViolations,victoryLosses:overall.victoryLosses}));
 assert.equal(overall.victoryLosses,0,'Synchronization must not turn a matched baseline victory into a loss in this fixture');
 assert.equal(balanceViolations.length,0,'persisted Synchronization numerical outliers: '+JSON.stringify(balanceViolations));

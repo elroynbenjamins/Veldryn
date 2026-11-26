@@ -1,4 +1,6 @@
 import {strict as assert} from 'node:assert';
+import {ACTION_STREAM_RNG_QA_V1} from '../../deterministic-rng';
+import {simulateCombatWithServerAuthoritiesV2,simulateCombat} from '../../engine';
 import type {CombatInput,PersistentActorState} from '../../types';
 import type {FrozenLoadoutSnapshot} from '../../../coop/loadout-snapshots';
 import type {ReadyCheckRecord,ReadyRosterMember} from '../../../coop/ready-checks';
@@ -159,3 +161,18 @@ console.log(JSON.stringify({kind:'PERSISTED_PARTY_10S_TRAITS_SYNC_REHEARSAL_NOT_
  synchronizationLinks:first.synchronizationReview?.active.length,
  traitEvents:first.combat.events.filter(e=>e.type==='equipment_trait_trigger').length,
  persistentState:'BOUND_TO_RUN_DIGEST',authoredPartyEnemyKit:'BOUND_AND_EXECUTED'}));
+
+const reviewRun=()=>simulateUnifiedEquipmentPersistedPartyCombatV2(
+ input,builds,runtime,party,true,true,'tactical',ACTION_STREAM_RNG_QA_V1);
+const review=reviewRun();
+assert.deepEqual(review,reviewRun(),'candidate action streams deterministic');
+assert.equal(review.combat.events[0].detail,ACTION_STREAM_RNG_QA_V1);
+assert.equal(first.combat.events[0].detail,undefined);
+assert.deepEqual(review.equipmentEvidence,first.equipmentEvidence);
+assert.deepEqual(review.partyPersistenceReview,first.partyPersistenceReview);
+assert.throws(()=>simulateUnifiedEquipmentPersistedPartyCombatV2(
+ input,builds,runtime,party,true,true,'authored-priority',ACTION_STREAM_RNG_QA_V1),/rng_review_scope/);
+assert.throws(()=>simulateUnifiedEquipmentPersistedPartyCombatV2(
+ input,builds,runtime,party,true,true,'tactical','unknown' as never),/unknown_rng_review_policy/);
+assert.throws(()=>simulateCombatWithServerAuthoritiesV2(input,{aiPolicy:'tactical',rngReviewPolicy:ACTION_STREAM_RNG_QA_V1}),/rng_review_scope/);
+assert.deepEqual(simulateCombat(input),simulateCombat({...input,rngReviewPolicy:ACTION_STREAM_RNG_QA_V1} as CombatInput),'client payload cannot select review RNG');

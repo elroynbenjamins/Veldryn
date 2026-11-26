@@ -41,6 +41,7 @@ import {craftedGearInstances,craftedGearDisplayQuality} from '../core/crafted-ge
 import {validateGatheringToolRoll,gatheringToolBonusLabel} from '../core/gathering-tool-rolls';
 import {gatheringToolDef} from '../content/gathering-tools';
 import {gatheringToolContribution,gatheringToolPercent} from '../core/gathering-tool-presentation';
+import {equippedGatheringToolRoll,equippedGatheringTools} from '../core/gathering-tools';
 import {indexInventoryGearCopies,inventoryInspectedGearLocations} from '../core/inventory-gear-lookup';
 import {auditCraftedGearOwnership,disposeCraftedGearInstance} from '../core/crafted-gear-ownership';
 import {canDisposeLegacyEquipment} from '../core/equipment-enhancement';
@@ -311,8 +312,19 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
     ?inventoryInspectedGearLocations(linkAudit,inspectId,location,state.character?.id).map(row=>exactRecordsById.get(row.instanceId)!).filter(Boolean)
     :[],[inspectingGear,linkAudit,inspectId,location,state.character?.id,exactRecordsById]);
   const selectedCopy=exactCopies.find(row=>row.id===selectedInstanceId)??exactCopies[0];
+  // A lone verified receipt is unambiguous. Never invent a specific rolled
+  // gear copy when multiple receipts share the same item ID.
+  const inspectedGearReceiptId=inspected?.type==='gear'
+    ?(exactCopies.some(row=>row.id===selectedInstanceId)?selectedInstanceId:exactCopies.length===1?exactCopies[0].id:null)
+    :selectedInstanceId;
   const inspectedToolDef=inspected?.type==='tool'?gatheringToolDef(inspected.id):undefined;
   const exactToolCopies=useMemo(()=>inspected?.type==='tool'?activeStacks.filter(row=>row.itemId===inspected.id&&!!row.instanceId).flatMap(row=>{const verified=validateGatheringToolRoll(toolRecordsById.get(row.instanceId!),row.itemId);return verified?[verified]:[]}):[],[activeStacks,inspected,toolRecordsById]);
+  // Four tool tiers equip independently. Compare only against the active
+  // physical copy in this same skill/tier, never another tier's combined buff.
+  const equippedSameTier=inspectedToolDef?equippedGatheringTools(state,inspectedToolDef.skillId).find(tool=>tool.tier===inspectedToolDef.tier):undefined;
+  const equippedSameTierCopy=equippedSameTier&&inspectedToolDef?equippedGatheringToolRoll(state,inspectedToolDef.skillId,inspectedToolDef.tier):undefined;
+  const equippedSameTierReceipt=inspectedToolDef?state.character?.equippedToolInstanceIdsByTier?.[inspectedToolDef.skillId]?.[inspectedToolDef.tier]:undefined;
+  const equippedSameTierSpeed=equippedSameTier?gatheringToolContribution(equippedSameTier,equippedSameTierCopy).adjustedBasePercent:undefined;
   const selectedCopyId=selectedCopy?.id;
   const inspectedCopySell=useMemo(()=>selectedCopyId?equipmentCopyDisposalDecision(state,selectedCopyId,'sell'):null,[state,selectedCopyId]);
   const inspectedCopySalvage=useMemo(()=>selectedCopyId?equipmentCopyDisposalDecision(state,selectedCopyId,'salvage'):null,[state,selectedCopyId]);
@@ -398,13 +410,28 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
     </View>
     {selectedCopy?<EquipmentDisposalStatus compact sellAllowed={!!inspectedCopySell?.allowed} salvageAllowed={!!inspectedCopySalvage?.allowed} sellReason={inspectedCopySell?.reason} salvageReason={inspectedCopySalvage?.reason}/>:null}
   </View>:undefined;
+  // Reuse the active same-tier reference once, even when Inventory has many
+  // separately rolled copies of the same tool.
+  const equippedToolComparison=equippedSameTier?<View style={s.toolComparePanel}>
+      <View style={s.toolCopyHeaderRow}>
+        <Text style={s.toolCompareEyebrow}>{gt('Equipped').toLocaleUpperCase(language)} · T{equippedSameTier.tier}</Text>
+        {equippedSameTierCopy?<Text style={[s.toolCopyCaption,{color:rarityMeta(equippedSameTierCopy.rarity).color}]}>{rarityMeta(equippedSameTierCopy.rarity).label} · Q{equippedSameTierCopy.quality}</Text>:null}
+      </View>
+      <Text style={s.toolCompareName}>{localizedItemName(language,equippedSameTier.id)} · +{gatheringToolPercent(equippedSameTierSpeed??0)}% {gt('Gathering Speed')}</Text>
+      <Text style={s.toolCompareBonus}>{equippedSameTierCopy?('+'+gatheringToolPercent(equippedSameTierCopy.bonus.basisPoints/100)+'% '+(equippedSameTierCopy.bonus.stat==='speed'?gt('Gathering Speed'):equippedSameTierCopy.bonus.stat==='rarity'?gt('Gathering Rarity Chance'):gl(equippedSameTier.skillId)+' XP')):equippedSameTierReceipt?gt('Tool roll record unavailable · no bonus is assumed.'):gt('Tier base · No bonus roll')}</Text>
+    </View>:null;
   const inspectActions=inspected?<View style={s.inspectActions}>
     {inspected.type==='tool'&&exactToolCopies.length>0?<View style={s.toolCopies}>
       {exactToolCopies.length>1?<Text style={s.quantityTitle}>{gt('GATHERING TOOLS')} · {exactToolCopies.length}</Text>:null}
+      {exactToolCopies.length>1?equippedToolComparison:null}
       {exactToolCopies.map((copy,index)=>{
         const contribution=inspectedToolDef?gatheringToolContribution(inspectedToolDef,copy):undefined;
+        const isEquipped=equippedSameTierCopy?.id===copy.id;
         return <View key={copy.id} style={s.toolCopyCard}>
-          {exactToolCopies.length>1?<Text style={[s.toolCopyCaption,{color:rarityMeta(copy.rarity).color}]}>{gt('Tool {number}',{number:index+1})} · {rarityMeta(copy.rarity).label} · Q{copy.quality}</Text>:null}
+          {exactToolCopies.length>1||isEquipped?<View style={s.toolCopyHeaderRow}>
+            {exactToolCopies.length>1?<Text style={[s.toolCopyCaption,{color:rarityMeta(copy.rarity).color}]}>{gt('Tool {number}',{number:index+1})} · {rarityMeta(copy.rarity).label} · Q{copy.quality}</Text>:<View/>}
+            {isEquipped?<View style={s.toolEquippedBadge}><Text style={s.toolEquippedBadgeText}>{gt('Equipped').toLocaleUpperCase(language)} · T{inspectedToolDef?.tier}</Text></View>:null}
+          </View>:null}
           <View style={s.toolStatRow}>
             <View style={s.toolStatDescription}>
               <Text style={s.toolStatEyebrow}>{gt('GATHERING SPEED')}</Text>
@@ -418,12 +445,13 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
               <Text style={s.toolStatEyebrow}>{gt('BONUS STAT ROLL')}</Text>
               <Text style={s.toolStatLabel}>{copy.bonus.stat==='speed'?gt('Gathering Speed'):copy.bonus.stat==='rarity'?gt('Gathering Rarity Chance'):gl(inspectedToolDef?.skillId)+' XP'}</Text>
             </View>
-            <Text style={s.toolBonusValue}>+{gatheringToolPercent(copy.bonus.basisPoints/100)}%</Text>
+            <Text style={[s.toolBonusValue,{color:rarityMeta(copy.rarity).color}]}>+{gatheringToolPercent(copy.bonus.basisPoints/100)}%</Text>
           </View>
+          {equippedSameTier&&!isEquipped&&exactToolCopies.length===1?equippedToolComparison:null}
           <View style={[s.toolActionRow,stackInspectorActions&&s.toolActionRowStacked]}>
-            <View style={[s.toolActionButton,stackInspectorActions&&s.toolActionButtonStacked]}><GameButton compact title={carried?gt('Equip'):gt('Withdraw')} loading={inventoryBusyLabel!==null} disabled={!onCommand||inventoryBusyLabel!==null} onPress={()=>void beginInventorySubmission('Updating gathering tool…',async()=>{const result=await onCommand!({type:carried?'equip_tool':'tool_move',args:carried?{id:copy.itemId,instanceId:copy.id}:{instanceId:copy.id,to:'inventory'}});if(result===false)throw new Error('Tool action was not confirmed.');closeInspect()})}/></View>
-            {carried?<View style={[s.toolActionButton,stackInspectorActions&&s.toolActionButtonStacked]}><GameButton compact title={gt('To Bank')} tone="secondary" loading={inventoryBusyLabel!==null} disabled={!onCommand||inventoryBusyLabel!==null} onPress={()=>void beginInventorySubmission('Moving tool to Bank…',async()=>{const result=await onCommand!({type:'tool_move',args:{instanceId:copy.id,to:'bank'}});if(result===false)throw new Error('Tool transfer was not confirmed.');closeInspect()})}/></View>:null}
-            <View style={[s.toolActionButton,stackInspectorActions&&s.toolActionButtonStacked]}><GameButton compact title={gt('Sell')} tone="danger" loading={inventoryBusyLabel!==null} disabled={!onCommand||inventoryBusyLabel!==null||lockedSet.has(copy.itemId)||favoriteSet.has(copy.itemId)||goalProtection.has(copy.itemId)} onPress={()=>{setToolSalePending({instanceId:copy.id,itemId:copy.itemId});closeInspect()}}/></View>
+            <View style={[s.toolActionButton,stackInspectorActions&&s.toolActionButtonStacked]}><GameButton compact title={carried?(isEquipped?gt('Equipped'):gt('Equip')):gt('Withdraw')} loading={inventoryBusyLabel!==null} disabled={!onCommand||inventoryBusyLabel!==null||isEquipped} onPress={()=>void beginInventorySubmission('Updating gathering tool…',async()=>{const result=await onCommand!({type:carried?'equip_tool':'tool_move',args:carried?{id:copy.itemId,instanceId:copy.id}:{instanceId:copy.id,to:'inventory'}});if(result===false)throw new Error('Tool action was not confirmed.');closeInspect()})}/></View>
+            {carried?<View style={[s.toolActionButton,stackInspectorActions&&s.toolActionButtonStacked]}><GameButton compact title={gt('To Bank')} tone="secondary" loading={inventoryBusyLabel!==null} disabled={!onCommand||inventoryBusyLabel!==null||isEquipped} onPress={()=>void beginInventorySubmission('Moving tool to Bank…',async()=>{const result=await onCommand!({type:'tool_move',args:{instanceId:copy.id,to:'bank'}});if(result===false)throw new Error('Tool transfer was not confirmed.');closeInspect()})}/></View>:null}
+            <View style={[s.toolActionButton,stackInspectorActions&&s.toolActionButtonStacked]}><GameButton compact title={gt('Sell')} tone="danger" loading={inventoryBusyLabel!==null} disabled={!onCommand||inventoryBusyLabel!==null||isEquipped||lockedSet.has(copy.itemId)||favoriteSet.has(copy.itemId)||goalProtection.has(copy.itemId)} onPress={()=>{setToolSalePending({instanceId:copy.id,itemId:copy.itemId});closeInspect()}}/></View>
           </View>
         </View>;
       })}
@@ -533,7 +561,7 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
    else await onEquip(id);
    setPreviewId(null);setPreviewInstanceId(null);
  }}
- onInspect={()=>{setSelectedInstanceId(previewInstanceId);setInspectQuantity(1);setInspectId(previewId);setPreviewId(null);setPreviewInstanceId(null)}}/><ItemQuickInspect state={state} itemId={inspectId} instanceId={selectedInstanceId} source={location} onClose={closeInspect}
+ onInspect={()=>{setSelectedInstanceId(previewInstanceId);setInspectQuantity(1);setInspectId(previewId);setPreviewId(null);setPreviewInstanceId(null)}}/><ItemQuickInspect state={state} itemId={inspectId} instanceId={inspectedGearReceiptId} source={location} onClose={closeInspect}
   favorite={inspectFavorite} locked={inspectLocked}
   onToggleFavorite={inspected?()=>beginInventorySubmission('Updating favorite…',()=>onToggleFavorite(inspected.id)):undefined}
   onToggleLock={inspected?changeInspectLock:undefined}
@@ -755,7 +783,14 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
   inspectActions:{gap:spacing.xs},
   toolCopies:{gap:8},
   toolCopyCard:{padding:12,gap:10,borderWidth:1,borderColor:C.line,borderRadius:12,backgroundColor:C.panel2},
-  toolCopyCaption:{...typography.caption,fontWeight:'800'},
+  toolCopyCaption:{...typography.caption,fontWeight:'800',flexShrink:1},
+  toolCopyHeaderRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8,flexWrap:'wrap'},
+  toolEquippedBadge:{paddingHorizontal:7,paddingVertical:3,borderRadius:6,borderWidth:1,borderColor:C.good,backgroundColor:C.goodSurface},
+  toolEquippedBadgeText:{fontSize:10,lineHeight:14,fontWeight:'900',color:C.good},
+  toolComparePanel:{padding:9,gap:4,borderWidth:1,borderRadius:8,borderColor:C.line,backgroundColor:C.panel},
+  toolCompareEyebrow:{fontSize:10,lineHeight:14,letterSpacing:.5,fontWeight:'900',color:C.good},
+  toolCompareName:{...typography.bodyStrong,color:C.text,flexShrink:1},
+  toolCompareBonus:{...typography.caption,color:C.muted,flexShrink:1},
   toolStatRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:10},
   toolStatDescription:{flex:1,minWidth:0,gap:3},
   toolStatEyebrow:{fontSize:10,lineHeight:14,letterSpacing:.6,fontWeight:'900',color:C.muted},

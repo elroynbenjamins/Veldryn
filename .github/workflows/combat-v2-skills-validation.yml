@@ -321,6 +321,11 @@ jobs:
           mkdir -p /tmp/v2-role-pressure
           set -o pipefail
           node backend/dist/server/combat/v2/__tests__/role-pressure-calibration-matrix.js 2>&1 | tee /tmp/v2-role-pressure/role-pressure.log
+      - name: Compare single-character Hexweaver and tank loadout alternatives under matched pressure
+        run: |
+          mkdir -p /tmp/v2-role-pressure
+          set -o pipefail
+          node backend/dist/server/combat/v2/__tests__/role-pressure-calibration-matrix.js --matched-loadouts 2>&1 | tee /tmp/v2-role-pressure/matched-role-loadouts.log
       - name: Retain private role pressure calibration evidence
         if: always()
         uses: actions/upload-artifact@v4

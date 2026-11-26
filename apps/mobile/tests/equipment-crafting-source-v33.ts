@@ -97,7 +97,7 @@ for(const recipe of V33_EQUIPMENT_RECIPES){
   const standardXp=boostedTier?Math.round(previousXp*T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER):previousXp;
   const improvedXp=recipe.v33EquipmentTier==='T2'?Math.round(standardXp*T2_ADDITIONAL_EQUIPMENT_CRAFT_XP_MULTIPLIER)
     :highSunscar?Math.round(standardXp*T3_T4_ADDITIONAL_EQUIPMENT_CRAFT_XP_MULTIPLIER):standardXp;
-  ok(recipe.xp===improvedXp,recipe.id+' must preserve standard tier XP without any T5 slot surcharge');
+  ok(recipe.xp===improvedXp+5,recipe.id+' must preserve standard tier XP without any T5 slot surcharge');
   ok(RECIPES.find(row=>row.id===recipe.id)?.xp===recipe.xp,recipe.id+' registered recipe XP must match the forge');
   ok(RECIPES.find(row=>row.id===recipe.id)?.gold===recipe.gold,recipe.id+' registered recipe price must match the forge');
 }

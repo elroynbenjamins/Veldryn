@@ -108,7 +108,8 @@ if(gemDustDismantling?.destination.kind==='inventory'){
 ok(gemDustDismantling?.availability.status==='ready','Gem Pouch can be opened at any level; this does not promise the player owns dismantleable gems');
 const catalystSources=workingTowardItemSourceEntries(state,'REGIONAL_CATALYST');
 const catalystDungeons=catalystSources.filter(source=>source.type==='dungeon'),catalystCrafting=catalystSources.filter(source=>source.type==='crafting');
-equal(catalystDungeons.length,6,'Regional Catalyst retains all six authoritative live dungeon sources');
+equal(catalystDungeons.length,4,'Regional Catalyst retains four later authoritative dungeon sources');
+ok(catalystDungeons.every(source=>source.destination.kind==='dungeon'&&!['COP_004','COP_005'].includes(source.destination.dungeonId)),'Early dungeons no longer offer Regional Catalyst');
 equal(catalystCrafting.length,1,'Regional Catalyst adds exactly one Enchanting synthesis source');
 ok(catalystDungeons.every(source=>source.typeLabel==='Dungeon'),'Dungeon material sources carry a distinct source type');
 ok(catalystDungeons.every(source=>source.availability.status==='locked'),'Fresh characters see level-gated dungeon material sources as locked rather than falsely ready');

@@ -30,7 +30,7 @@ const expected=[
 ] as const;
 ok(MEAL_BONUSES.length===6,'exactly six special meal buffs');
 for(const [recipeId,itemId,level,gold] of [
- ['COOK_SUNSCAR_SPICED_PLATTER','SUNSCAR_SPICED_PLATTER',30,384],
+ ['COOK_SUNSCAR_SPICED_PLATTER','SUNSCAR_SPICED_PLATTER',30,230],
 ] as const){
  const recipe=recipeDef(recipeId);
  if(!recipe)throw new Error('Missing recipe: '+recipeId);
@@ -88,7 +88,7 @@ for(const def of MEAL_BONUSES){
  const offline=commitMealActivityTime(stacked,{kind:'combat',targetId:'test',startedAtMs:now,lastClaimAtMs:now},{xp:0,gold:0,items:[],kills:0,elapsedSeconds:3600});
  ok(offline.character?.activeMealBuff?.remainingSeconds===MAX_MEAL_BUFF_SECONDS-3600,'active time drains stacked duration');
 }
-const resourceCosts:Record<string,number[]>={COOK_IRONWOOD_STEW:[6,3,3],COOK_SUNSCAR_SPICED_PLATTER:[12,4,3],COOK_GLASSFIN_FEAST:[9,3,3],COOK_ICEFISH:[9,3,3],COOK_EMBERFIN:[9,3,3],COOK_ASHLANDS_EMBER_STEW:[6,3,3]};
+const resourceCosts:Record<string,number[]>={COOK_IRONWOOD_STEW:[6,3,5],COOK_SUNSCAR_SPICED_PLATTER:[12,4,5],COOK_GLASSFIN_FEAST:[9,3,5],COOK_ICEFISH:[9,3,5],COOK_EMBERFIN:[9,3,5],COOK_ASHLANDS_EMBER_STEW:[10,5,5]};
 for(const [id,quantities] of Object.entries(resourceCosts))ok(JSON.stringify(recipeDef(id)?.inputs.map(row=>row.quantity))===JSON.stringify(quantities),id+' increased bonus meal material costs');
 let state=fresh();
 state=executeGameCommand(state,{type:'meal_bonus',args:{id:'GLASSFIN_FEAST'}},now).state;

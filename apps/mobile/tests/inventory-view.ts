@@ -115,7 +115,7 @@ ok(invalidBulkCommand,'Bulk commands cap selections at 100 stacks');
 const copperInspect=itemInspectModel(state,'COPPER_ORE');
 ok(copperInspect.sources.some(source=>source.title==='Copper Vein'&&source.kind==='gathering'),'Quick Inspect exposes gathering sources');
 ok(copperInspect.sources.some(source=>source.kind==='combat'),'Quick Inspect exposes combat drop sources');
-ok(copperInspect.usedIn.some(recipe=>recipe.name==='Smelt Copper Ingot'&&recipe.quantity===10),'Quick Inspect exposes crafting uses');
+ok(copperInspect.usedIn.some(recipe=>recipe.name==='Smelt Copper Ingot'&&recipe.quantity===15),'Quick Inspect exposes crafting uses');
 const ingotInspect=itemInspectModel(state,'COPPER_INGOT');
 ok(ingotInspect.sources.some(source=>source.kind==='crafting'&&source.title==='Smelt Copper Ingot'),'Quick Inspect exposes crafting acquisition sources');
 const gearInspect=itemInspectModel(state,'basic_sword');

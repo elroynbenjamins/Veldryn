@@ -108,7 +108,7 @@ console.log('PASS: VIP/VIP+/Supporter regional planning, auto travel, premium ex
 // batches remain in their reservation rather than vanishing with activity:null.
 const stock=(state:GameState,id:string)=>[...state.inventory.stacks,...state.bank.stacks,...state.overflow.stacks].filter(row=>row.itemId===id).reduce((n,row)=>n+row.quantity,0);
 let kitchen=leveled();
-kitchen={...kitchen,character:{...kitchen.character!,gold:10000},inventory:{...kitchen.inventory,stacks:[{itemId:'MEADOW_PERCH',quantity:20},{itemId:'GREENWOOD_LOG',quantity:4}]}} as GameState;
+kitchen={...kitchen,character:{...kitchen.character!,gold:10000},inventory:{...kitchen.inventory,stacks:[{itemId:'MEADOW_PERCH',quantity:20},{itemId:'GREENWOOD_LOG',quantity:20}]}} as GameState;
 const preparedCooking=startProcessingBatch(kitchen,'COOK_MEADOW_PERCH',4,t);
 const cookingCycle=preparedCooking.activity!.processing!.cycleSeconds;
 eq(stock(preparedCooking,'MEADOW_PERCH'),0,'Cooking inputs are reserved at start');
@@ -127,7 +127,7 @@ const cancelledCooking=executeGameCommand(partialCooking,{type:'stop'},t+Math.ce
 eq(cancelledCooking.activity,null,'Explicit Stop still ends Cooking');
 eq(stock(cancelledCooking,'COOKED_MEADOW_PERCH'),5,'Completed output survives manual stop after travel');
 eq(stock(cancelledCooking,'MEADOW_PERCH'),15,'Stop returns ingredients from unfinished Cooking batches');
-eq(stock(cancelledCooking,'GREENWOOD_LOG'),3,'Stop returns unused Cooking fuel');
+eq(stock(cancelledCooking,'GREENWOOD_LOG'),15,'Stop returns unused Cooking fuel');
 eq(cancelledCooking.character!.gold,kitchen.character!.gold-(preparedCooking.activity!.processing!.goldPerBatch),'Only completed Cooking consumes Gold');
 const repeatedStop=executeGameCommand(cancelledCooking,{type:'stop'},t+Math.ceil((cookingCycle+1)*1000)).state;
 eq(stock(repeatedStop,'MEADOW_PERCH'),15,'Repeated Stop cannot refund ingredients twice');

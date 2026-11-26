@@ -99,7 +99,7 @@ let processingQueued=createCharacter(newGame(now),'WAYFINDER','Processing Queue'
 ok(queueSkillReadiness(processingQueued,'smithing').ready&&queueSkillReadiness(processingQueued,'cooking').ready,'Cooking and Smithing are normal queue choices for every character');
 const futureSmelt={kind:'processing' as const,targetId:'SMELT_COPPER_INGOT'};
 ok(queuedActivityPlanningReadiness(processingQueued,futureSmelt).ready&&!queuedActivityReadiness(processingQueued,futureSmelt).ready,'A Smithing recipe may be queued before ingredients are available, but waits until it can start');
-processingQueued={...processingQueued,inventory:{...processingQueued.inventory,stacks:[...processingQueued.inventory.stacks,{itemId:'COPPER_ORE',quantity:10},{itemId:'GREENWOOD_LOG',quantity:2}]}};
+processingQueued={...processingQueued,inventory:{...processingQueued.inventory,stacks:[...processingQueued.inventory.stacks,{itemId:'COPPER_ORE',quantity:15},{itemId:'GREENWOOD_LOG',quantity:5}]}};
 processingQueued=executeGameCommand(processingQueued,{type:'queue_add',args:{kind:'processing',id:'SMELT_COPPER_INGOT'}},now).state;
 processingQueued=executeGameCommand(processingQueued,{type:'queue_add',args:{kind:'gathering',id:'GREENWOOD_TREE',goal:{kind:'duration_seconds',value:60}}},now).state;
 processingQueued=executeGameCommand(processingQueued,{type:'queue_start'},now).state;
@@ -107,7 +107,7 @@ ok(processingQueued.activity?.kind==='processing'&&processingQueued.activity.tar
 const processingAdvanced=claimActivity(processingQueued,now+60_000);
 ok(processingAdvanced.state.activity?.kind==='woodcutting'&&processingAdvanced.state.activity.targetId==='GREENWOOD_TREE','Finished queued Smithing hands off to the next activity');
 let cookingQueued=createCharacter(newGame(now),'WAYFINDER','Cooking Queue');
-cookingQueued={...cookingQueued,inventory:{...cookingQueued.inventory,stacks:[...cookingQueued.inventory.stacks,{itemId:'MEADOW_PERCH',quantity:5},{itemId:'GREENWOOD_LOG',quantity:1}]}};
+cookingQueued={...cookingQueued,inventory:{...cookingQueued.inventory,stacks:[...cookingQueued.inventory.stacks,{itemId:'MEADOW_PERCH',quantity:5},{itemId:'GREENWOOD_LOG',quantity:5}]}};
 cookingQueued=executeGameCommand(cookingQueued,{type:'queue_add',args:{kind:'processing',id:'COOK_MEADOW_PERCH'}},now).state;
 ok(queuedActivityReadiness(cookingQueued,cookingQueued.character?.activityQueue?.[0]).ready,'Queued Cooking checks its recipe, ingredients and Gold');
 cookingQueued=executeGameCommand(cookingQueued,{type:'queue_start'},now).state;

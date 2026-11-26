@@ -1,5 +1,6 @@
 import {memo,type ReactNode} from 'react';
 import {Animated,StyleSheet,View,type ImageSourcePropType} from 'react-native';
+import {CelestialBorderLight} from './CelestialBorderLight';
 import {FX_POINTS,RAIL_PATH,LOOP_PHASE,ORBIT_X,ORBIT_Y,SIGNATURE_PHASE,SIGNATURE_CURVE_PHASE,SIGNATURE_CURVE_ENERGY,shiftClosed,PET_IDLE_PHASE,PET_IDLE_POSES,AWAKENING_CURVES,AWAKENING_PET_LIFT,RAIL_GLOW_RADIUS,railGlowPoint,FRAME_ORNAMENTS,type PetIdleKind} from '../../core/ultra-luxe-motion';
 const GLOW=require('../../../assets/ascendant/shared/soft_glow.webp') as ImageSourcePropType;
 const HAZE=require('../../../assets/ascendant/shared/drifting_haze.webp') as ImageSourcePropType;
@@ -87,10 +88,11 @@ function DraconicHeatChannels({clock,scale:k}:{clock:Clock;scale:number}){
 
 /** Closed perimeter paths and crest illumination, not over the readable identity area. */
 function UltraLuxeRailLayer({clock,scale:k,theme,particle}:Common){
+ if(theme==='celestial')return <CelestialBorderLight clock={clock} width={340*k} height={205*k} star={particle} showcase/>;
  const energy=awakeningEnergy(clock,theme);
  return <Decorative>
   {[0,4].map(offset=>{
-   const path=shiftClosed(theme==='celestial'?RAIL_PATH:[...RAIL_PATH].reverse(),offset);
+   const path=shiftClosed([...RAIL_PATH].reverse(),offset);
    const railLight=Animated.add(Animated.multiply(pulse(clock,offset),.55),Animated.multiply(energy,.45));
    const x=clock.interpolate({inputRange:[...LOOP_PHASE],outputRange:path.map(p=>p[0]*k)});
    const y=clock.interpolate({inputRange:[...LOOP_PHASE],outputRange:path.map(p=>p[1]*k)});

@@ -28,6 +28,19 @@ function reviewMarketCopy(input) {
     if (action==="cancel") return owner ? result("recovery_candidate","cancel_to_owner") : deny("not_owner");
     return actor.internalWorker===true && now>=offer.expiresAt ? result("recovery_candidate","expired_to_owner") : deny("not_due_or_worker");
   }
+  // A purchased entitlement survives revocation. A trusted sale receipt must
+  // bind the paid copy, buyer, sale ordinal and original mint digest.
+  if (action==="claim") {
+    const paid=input.paidDelivery;
+    const eligible=recipient && recipient.verified===true && recipient.account===actor.account &&
+      id(recipient.character) && recipient.requirementPolicyVersion===mint.policyVersion && recipient.requirementsMet===true;
+    if (!owner || custody.state!=="pending_delivery" || !eligible || !paid ||
+        paid.committed!==true || paid.buyer!==actor.account || paid.instanceId!==mint.instanceId ||
+        paid.snapshotDigest!==mint.snapshotDigest || !id(paid.saleId) ||
+        !Number.isSafeInteger(paid.ordinal) || paid.ordinal<1 || paid.ordinal!==custody.completedSales)
+      return deny("claim_ineligible");
+    return result("recovery_candidate","requires_atomic_paid_claim");
+  }
   if (!policy || policy.approved!==true || policy.tradeable!==true || policy.bound!==false ||
       policy.version!==mint.policyVersion || policy.catalogueVersion!==mint.catalogueVersion ||
       policy.itemId!==mint.itemId || policy.source!==mint.source) return deny("source_policy_unapproved");
@@ -44,7 +57,6 @@ function reviewMarketCopy(input) {
     if (action==="buy" && (owner || !eligible)) return deny("buyer_ineligible");
     return result("candidate","requires_atomic_settlement");
   }
-  if (action==="claim") return owner && custody.state==="pending_delivery" && eligible ? result("candidate","requires_atomic_claim") : deny("claim_ineligible");
   if (action==="bank") return owner && ["held","banked"].includes(custody.state) && eligible && custody.protected===false && input.expectedRevision===custody.revision ? result("candidate","requires_atomic_bank_move") : deny("bank_ineligible");
   return deny("unknown_action");
 }
@@ -55,6 +67,7 @@ function runReviewTests() {
     custody:{state:"held",account:"seller",instanceId:"copy-1",snapshotDigest:"digest-test",copies:1,physical:true,revision:2,protected:false,completedSales:0},
     policy:{approved:true,tradeable:true,bound:false,version:"policy-test",catalogueVersion:"catalogue-test",itemId:"gear-1",source:"forge"},
     actor:{account:"seller",verified:true},recipient:{account:"buyer",character:"char-1",verified:true,requirementsMet:true,requirementPolicyVersion:"policy-test"},
+    paidDelivery:{committed:true,buyer:"buyer",instanceId:"copy-1",snapshotDigest:"digest-test",saleId:"sale-1",ordinal:1},
     offer:{id:"offer-1",instanceId:"copy-1",seller:"seller",revision:2,expiresAt:200}};
   const cases=[
     ["first sale",{}, "candidate"],
@@ -86,7 +99,12 @@ function runReviewTests() {
     ["underlevel",{action:"buy",custody:{state:"escrow"},actor:{account:"buyer"},recipient:{requirementsMet:false}},"deny"],
     ["foreign recipient",{action:"buy",custody:{state:"escrow"},actor:{account:"buyer"},recipient:{account:"other"}},"deny"],
     ["stale recipient policy",{action:"buy",custody:{state:"escrow"},actor:{account:"buyer"},recipient:{requirementPolicyVersion:"old"}},"deny"],
-    ["claim",{action:"claim",custody:{state:"pending_delivery",account:"buyer"},actor:{account:"buyer"}},"candidate"],
+    ["claim",{action:"claim",custody:{state:"pending_delivery",account:"buyer",completedSales:1},actor:{account:"buyer"}},"recovery_candidate"],
+    ["revoked paid claim",{action:"claim",custody:{state:"pending_delivery",account:"buyer",completedSales:1},actor:{account:"buyer"},policy:{approved:false}},"recovery_candidate"],
+    ["unpaid claim",{action:"claim",custody:{state:"pending_delivery",account:"buyer",completedSales:1},actor:{account:"buyer"},paidDelivery:null},"deny"],
+    ["foreign sale receipt",{action:"claim",custody:{state:"pending_delivery",account:"buyer",completedSales:1},actor:{account:"buyer"},paidDelivery:{buyer:"other"}},"deny"],
+    ["wrong sale ordinal",{action:"claim",custody:{state:"pending_delivery",account:"buyer",completedSales:2},actor:{account:"buyer"}},"deny"],
+    ["ineligible paid recipient",{action:"claim",custody:{state:"pending_delivery",account:"buyer",completedSales:1},actor:{account:"buyer"},recipient:{requirementsMet:false}},"deny"],
     ["double claim",{action:"claim",custody:{account:"buyer"},actor:{account:"buyer"}},"deny"],
     ["revoked cancellation",{action:"cancel",custody:{state:"escrow"},policy:{approved:false}},"recovery_candidate"],
     ["unauthorized cancel",{action:"cancel",custody:{state:"escrow"},actor:{account:"other"}},"deny"],
@@ -103,7 +121,7 @@ function runReviewTests() {
   ];
   for (const [name,patch,expected] of cases) {
     const obj={...base,...patch};
-    for (const k of ["mint","custody","policy","actor","recipient","offer"]) if (patch[k] && typeof patch[k]==="object") obj[k]={...base[k],...patch[k]};
+    for (const k of ["mint","custody","policy","actor","recipient","offer","paidDelivery"]) if (patch[k] && typeof patch[k]==="object") obj[k]={...base[k],...patch[k]};
     const got=reviewMarketCopy(obj);
     if(got.decision!==expected || got.marketAuthorized!==false) throw Error(name+": "+JSON.stringify(got));
   }

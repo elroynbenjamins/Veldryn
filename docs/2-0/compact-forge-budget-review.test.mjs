@@ -35,6 +35,10 @@ function project(piece,r,q,healingWeapon=false){
     if(!['attack_defense','attack_health'].includes(piece.profile))throw Error('support weapon profile changed');
     return {attack:round(budget*.6),defense:0,hp:0,healingPower:round(budget*.4)};
   }
+  if(healingWeapon&&piece.role==='support'&&piece.slot==='offhand'){
+    if(piece.profile!=='defense_health')throw Error('support offhand profile changed');
+    return {attack:0,defense:round(budget*.6),hp:0,healingPower:round(budget*.4)};
+  }
   const [a,d,h]=splits[piece.profile];
   return {attack:round(budget*a),defense:round(budget*d),hp:round(budget*h*4),healingPower:0};
 }
@@ -104,6 +108,12 @@ test('36 legal reference loadouts, 648 rarity/quality profiles, preserve combine
         const wp=items.find(i=>i.slot==='weapon');
         const single=project(wp,r,q,true);
         assert.equal(Object.values(single).filter(v=>v>0).length,2);
+        const offhand=items.find(i=>i.slot==='offhand');
+        if(offhand){
+          const shield=project(offhand,r,q,true);
+          assert.equal(Object.values(shield).filter(v=>v>0).length,2);
+          assert.ok(shield.defense>0&&shield.healingPower>0);
+        }
         assert.ok(candidate.defense<=old.defense&&candidate.hp<=old.hp);
       }else assert.deepEqual(candidate,old);
       const c=compactFullStats(p.id,levels[tier-1]);
@@ -128,6 +138,25 @@ test('T2 common Q50 representative compact builds preserve natural defense and a
     assert.ok(d.attack>o.attack,d.id+':'+o.id);
   for(const s of rows.filter(r=>r.role==='support'))for(const o of rows.filter(r=>r.role!=='support'))
     assert.ok(s.healing>o.healing,s.id+':'+o.id);
+  assert.ok(rows.find(r=>r.id==='DAWNKEEPER').healing>rows.find(r=>r.id==='STONECALLER').healing);
   // HP is not a gear-role fence: the support may favor HP intentionally.
   console.log('T2 common Q50 compact role references',JSON.stringify(rows.map(({id,hp,defense,attack,healing})=>({id,hp:round(hp),defense:round(defense),attack:round(attack),healing:round(healing)}))));
+});
+
+test('equal support armament healing budget regardless of hand configuration',()=>{
+  const dawn=compactClassProfiles.find(p=>p.id==='DAWNKEEPER');
+  const stone=compactClassProfiles.find(p=>p.id==='STONECALLER');
+  let checked=0;
+  for(const tier of [1,2,3,4])for(const r of Object.keys(rarity))for(const q of [0,50,100]){
+    const armaments=p=>choose(p,tier).filter(i=>['weapon','offhand'].includes(i.slot));
+    const a=sum(armaments(dawn),r,q,true),b=sum(armaments(stone),r,q,true);
+    assert.ok(Math.abs(a.healingPower-b.healingPower)<.021);
+    assert.ok(Math.abs(a.healingPower-19*tier*1.08*rarity[r]*(.75+q*.005)*.4)<.02);
+    for(const level of [1,25,50,75,100]){
+      assert.ok(compactFullStats(dawn.id,level).healingPower+a.healingPower>
+        compactFullStats(stone.id,level).healingPower+b.healingPower);
+    }
+    checked++;
+  }
+  assert.equal(checked,72);
 });

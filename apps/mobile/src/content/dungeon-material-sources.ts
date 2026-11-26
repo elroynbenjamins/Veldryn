@@ -3,7 +3,7 @@
  * server-side dungeon reward source.
  *
  * REGIONAL_CATALYST mirrors backend/src/server/equipment/gems/gem-acquisition-v1.ts:
- * COP_004–COP_009 each roll a Regional Catalyst at 15% on the canonical
+ * COP_006–COP_009 roll a Regional Catalyst at 3–5% on the canonical
  * dungeon-boss gem reward settlement. Dungeon names/minimum levels mirror the
  * live Sunscar/Frostmarch dungeon catalogs.
  */
@@ -17,12 +17,10 @@ export interface DungeonMaterialSource{
 }
 
 export const DUNGEON_MATERIAL_SOURCES:readonly DungeonMaterialSource[]=[
-  {itemId:'REGIONAL_CATALYST',dungeonId:'COP_004',dungeonName:'Caravan of Glass',minLevel:30,expectedMinutes:18,chance:.15},
-  {itemId:'REGIONAL_CATALYST',dungeonId:'COP_005',dungeonName:'Mirage Well',minLevel:36,expectedMinutes:20,chance:.15},
-  {itemId:'REGIONAL_CATALYST',dungeonId:'COP_006',dungeonName:'Buried Observatory',minLevel:40,expectedMinutes:23,chance:.15},
-  {itemId:'REGIONAL_CATALYST',dungeonId:'COP_007',dungeonName:'Whitepine Hunt',minLevel:52,expectedMinutes:19,chance:.15},
-  {itemId:'REGIONAL_CATALYST',dungeonId:'COP_008',dungeonName:'Shiverlake Descent',minLevel:58,expectedMinutes:21,chance:.15},
-  {itemId:'REGIONAL_CATALYST',dungeonId:'COP_009',dungeonName:'Choir Caverns',minLevel:64,expectedMinutes:23,chance:.15},
+  {itemId:'REGIONAL_CATALYST',dungeonId:'COP_006',dungeonName:'Buried Observatory',minLevel:40,expectedMinutes:23,chance:0.03},
+  {itemId:'REGIONAL_CATALYST',dungeonId:'COP_007',dungeonName:'Whitepine Hunt',minLevel:52,expectedMinutes:19,chance:0.03},
+  {itemId:'REGIONAL_CATALYST',dungeonId:'COP_008',dungeonName:'Shiverlake Descent',minLevel:58,expectedMinutes:21,chance:0.04},
+  {itemId:'REGIONAL_CATALYST',dungeonId:'COP_009',dungeonName:'Choir Caverns',minLevel:64,expectedMinutes:23,chance:0.05},
 ] as const;
 
 export function dungeonMaterialSourcesForItem(itemId:string){

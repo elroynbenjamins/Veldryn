@@ -9,7 +9,7 @@ import {isLiveSixPieceBonus} from './equipment-set-runtime';
 import {GameState,SkillId} from './types';
 import {workingTowardDestinationAvailability,workingTowardItemSourceEntries,type WorkingTowardDestination,type WorkingTowardDestinationAvailability} from './working-toward';
 import {enhancedGearStats,enhancedGearStatsAtRank,equippedCraftedInstance,gearEnhancement,normalizeEnhancementGemSlots,gemEffectDescription,gemSocketCapacity,gemSocketKind,gemSocketState,legacyGemBonusValue,MAX_UPGRADE_RANK,upgradeQuote} from './equipment-enhancement';
-import {canonicalGemMetaV1,formatGemValueV1} from './gem-progression-v1';
+import {canonicalGemMetaV1,formatGemValueV1,GEM_COMBINE_COSTS_V1,GEM_REFINE_COSTS_V1} from './gem-progression-v1';
 import {gemRolledValueV1,mobileGemFamilyV1} from '../content/gems-v1';
 import {gemPouchBonusDisplayV1} from './gem-pouch-bonus-display';
 import {effectiveStats} from './game';
@@ -105,6 +105,13 @@ export function itemInspectModel(state:GameState,itemId:string,instanceId?:strin
   const bankQuantity=state.bank.stacks.reduce((total,stack)=>total+(stack.itemId===itemId?stack.quantity:0),0);
   const pouchQuantity=isGemPouchItemId(itemId)?gemPouch(state).stacks.find(stack=>stack.itemId===itemId)?.quantity??0:0;
   const effectLines:string[]=[];
+  for(const cost of Object.values(GEM_COMBINE_COSTS_V1)){
+    if(cost.catalystId===itemId)effectLines.push(`Gem merging: Grade ${cost.to-1} → ${cost.to} · Enchanting Lv ${cost.level} · 1 required.`);
+  }
+  for(const [grade,cost] of Object.entries(GEM_REFINE_COSTS_V1)){
+    const reagent=cost.reagents.find(row=>row.itemId===itemId);
+    if(reagent&&itemId==='RADIANT_CATALYST')effectLines.push(`Gem refining: Grade ${grade} · Enchanting Lv ${cost.level} · ${reagent.quantity} required.`);
+  }
   if(itemId==='ASTERFALL_MINERAL_ESSENCE')effectLines.push('Rare Mining find · improves T1/T2 equipment (+1 to +4). Verdant Binding Resin remains a Forge material.');
   let upgrade:undefined|{rank:number;nextRank:number;successChance:number;dust:number;cores:number;gold:number;materials:{itemId:string;name:string;quantity:number}[];maxed:boolean;failures:number;equipped:boolean};
   let sockets:undefined|{filled:number;capacity:number;statGemName?:string;effectGemName?:string};

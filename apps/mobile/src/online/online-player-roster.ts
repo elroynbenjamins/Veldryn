@@ -60,9 +60,9 @@ export function useOnlinePlayerRoster(active:boolean,details=false){
  const capability=useRef<{accountId:string|undefined;missing:boolean}>({accountId,missing:false});
  const pending=useRef<{accountId:string;details:boolean;promise:Promise<void>}|null>(null);
  const [state,setState]=useState<{accountId:string;count:number|null;players:OnlinePlayer[];loading:boolean;error:string}|null>(null);
- const refresh=useCallback(async()=>{
+ const refresh=useCallback(async():Promise<void>=>{
   const client=supabase;
-  if(!client||!accountId||scope.current.accountId!==accountId||!scope.current.active)return;
+  if(!client||!accountId||scope.current.accountId!==accountId||!scope.current.active||(AppState.currentState!=='active'&&AppState.currentState!==null))return;
   if(capability.current.accountId!==accountId)capability.current={accountId,missing:false};
   const existing=pending.current;
   if(existing?.accountId===accountId){

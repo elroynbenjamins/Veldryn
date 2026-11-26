@@ -12,3 +12,11 @@ assert.match(name,/const normalized=nameStyle\?\?DEFAULT_NAME_STYLE/);
 assert.match(name,/if\(!animated\)\{setPhase\(0\);return;\}/);
 assert.match(art,/memo\(function GatheringToolArtwork/);
 console.log('PASS: shared motion lifecycle and static artwork render contracts');
+
+const theater=read('CombatTheaterModal.tsx');
+assert.match(theater,/useMotionEnabled\(reduceMotion,visible\)/);
+assert.match(theater,/if\(!animate\)return/);
+assert.match(theater,/loop.stop\(\);pulse.stopAnimation\(\)/);
+assert.match(theater,/useNativeDriver:LOOP_NATIVE_DRIVER,isInteraction:false/);
+assert.match(theater,/const \[pulse\]=useState\(\(\)=>new Animated.Value\(0\)\)/);
+assert.match(theater,/haloMotion=useMemo/);

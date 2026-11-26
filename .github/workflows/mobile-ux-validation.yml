@@ -76,6 +76,8 @@ jobs:
         run: node tests/compact-gathering-tools-redesign-ui.cjs
       - name: Verify hidden World Boss, Party Event and Market UI routes
         run: pnpm test:feature-hubs
+      - name: Validate isolated Abyssal geometry and motion
+        run: node tests/abyssal-showcase.cjs
       - name: Validate Ascendant showcase geometry and closed blessing gate
         run: node tests/celestial-showcase-layout.cjs && node tests/ascendant-blessings.cjs && node tests/ascendant-blessing-state.cjs && node tests/ascendant-celestial-assets.cjs && node tests/ultra-luxe-private-visibility.cjs && node tests/draconic-showcase.cjs && node tests/ultra-luxe-titles.cjs && node tests/ultra-luxe-motion.cjs && node tests/ultra-luxe-pet-poses.cjs && node tests/ultra-luxe-set-visuals.cjs && node tests/ultra-luxe-prestige.cjs && node tests/ultra-luxe-grants.cjs
       - name: Typecheck app

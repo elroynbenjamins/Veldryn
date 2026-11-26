@@ -46530,23 +46530,22 @@ function characterNameError(value) {
 
 // ../apps/mobile/src/core/quick-navigation.ts
 var QUICK_NAV_DESTINATIONS = [
-  "Home",
-  "Character",
-  "Skills",
-  "World",
-  "Inventory",
-  "More",
   "Guild",
-  "Dungeon",
   "Quests",
-  "Companions",
-  "Friends",
-  "Settings",
-  "Social",
+  "ResourceCodex",
   "Party",
-  "Empty"
+  "Activity",
+  "Forge",
+  "Dungeon",
+  "Companions",
+  "Pets",
+  "Collections",
+  "Friends",
+  "Social",
+  "Events",
+  "Settings"
 ];
-var DEFAULT_QUICK_NAV_DESTINATIONS = ["Quests", "Dungeon", "Companions", "Guild", "Settings"];
+var DEFAULT_QUICK_NAV_DESTINATIONS = ["Guild", "Quests", "ResourceCodex", "Party", "Activity"];
 var allowed = new Set(QUICK_NAV_DESTINATIONS);
 
 // ../apps/mobile/src/core/account-roster.ts

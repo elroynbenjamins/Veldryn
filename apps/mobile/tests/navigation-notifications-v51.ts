@@ -65,7 +65,8 @@ ok(!quick['Events'],'Legacy Event rewards do not create top-bar shortcut attenti
 ok(!primary.account.display?.includes('16'),'Event reward counts cannot inflate the primary Account badge');
 equal(quick['Guild']?.count,4,'Guild invite and application attention should merge on the Guild shortcut');
 equal(quick['Friends']?.count,2,'Friend requests should route directly to Friends in quick navigation');
-equal(quick['Home']?.count,3,'Finished Forge jobs should alert Home in quick navigation');
+equal(quick['Forge']?.count,3,'Finished Forge jobs should alert the Forge shortcut in quick navigation');
+ok(!quick['Home']?.dot,'Forge jobs no longer use the Home quick shortcut');
 ok(!quick['Skills']?.dot,'Finished Forge jobs should not alert the Skills shortcut');
 equal(buildSubrouteBadges(notifications)['home.forge']?.count,3,'Home Forge shortcut receives the claimable count');
 equal(buildNavigationBadges([...notifications,{key:'forge-1',kind:'equipment_craft_ready',count:3,unread:true}]).home.count,3,'Forge readiness is not double counted');

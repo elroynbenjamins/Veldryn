@@ -1,10 +1,9 @@
-export {};
+import {normalizeQuickNavDestinations} from '../src/core/quick-navigation';
 const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string};
 function ok(condition:boolean,message:string){if(!condition)throw new Error(message);}
 const read=(path:string)=>fs.readFileSync(path,'utf8');
 const app=read('App.tsx');
 const account=read('src/screens/MoreScreen.tsx');
-const quick=read('src/core/quick-navigation.ts');
 const icons=read('src/components/LineworkIcon.tsx');
 const partyRoute=read('src/screens/PartyScreen.tsx');
 const recruitmentRoute=read('src/screens/RecruitmentScreen.tsx');
@@ -37,7 +36,7 @@ ok(recruitment.includes('useSocialText()')&&recruitment.includes("st('No matchin
 ok(partyInvitation.includes('useSocialText()')&&partyInvitation.includes("st('Invite')")&&partyInvitation.includes('socialLabel(language,error)'),'Private Party invitations must localize user-facing labels and known errors without translating arbitrary backend text');
 ok(app.includes("tab==='Party'&&<PartyScreen")&&app.includes("tab==='Recruitment'||tab==='Social'")&&app.includes('<RecruitmentScreen'), 'Party and Recruitment must have independent route components');
 ok(!account.includes("items:['Social'")&&account.includes("items:['Party','Recruitment','Friends','Guild','Arena','Rankings']"),'Account must replace Social with two dedicated destinations');
-ok(quick.includes("'Social','Party','Empty'")&&app.includes("if(destination==='Social')destination='Recruitment'"),'Old Social shortcuts must migrate without dropping a saved shortcut');
+ok(normalizeQuickNavDestinations(['Dungeon','Social','Guild','Party','Events'])[1]==='Social'&&app.includes("if(destination==='Social')destination='Recruitment'"),'Old Social shortcuts must migrate without dropping a saved shortcut');
 ok(icons.includes("Social:'search'")&&icons.includes("Party:'party'")&&app.includes("case 'Social':return appText(language,'Recruitment')"),'Party and Recruitment must use distinct icons, with the legacy Social shortcut labeled Recruitment');
 ok(app.includes("onRecruitment={()=>{setSocialInitialTab('guild');setTab('Recruitment')}"),'Guild recruiting must navigate directly to Guild Recruitment');
 ok(partyRoute.includes('mode="party"')&&recruitmentRoute.includes('mode="recruitment"'),'Separate routes must use the corresponding dedicated flow');

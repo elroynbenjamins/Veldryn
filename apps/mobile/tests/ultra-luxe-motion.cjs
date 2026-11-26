@@ -83,8 +83,8 @@ for(const [curve,min,max] of [[to,.96,1],[bo,.92,1],[bs,1,1.09],[ps,1,1.04]]){
 }
 for(const layer of ['UltraLuxeEnvironment','UltraLuxeRail','UltraLuxePetAura','UltraLuxeAscendantFlourish'])assert(fx.includes('export const '+layer+'=memo('));
 assert(read('components/profile/UltraLuxeIdentityMotion.tsx').includes('outputRange:SIGNATURE_TITLE_OPACITY'));
-assert(read('components/PlayerBadges.tsx').includes('outputRange:SIGNATURE_BADGE_OPACITY'));
-console.log('Eased native signature, synchronized readable title/badge and memoized layers passed.');
+assert(!read('components/PlayerBadges.tsx').includes('SIGNATURE_BADGE_'));
+console.log('Eased native signature, synchronized readable title and static badges and memoized layers passed.');
 
 const {AWAKENING_PHASE,AWAKENING_ENERGY,AWAKENING_CURVES,AWAKENING_PET_LIFT}=mod.exports;
 assert.equal(AWAKENING_PHASE[0],0);assert.equal(AWAKENING_PHASE.at(-1),1);
@@ -127,8 +127,8 @@ assert.notDeepEqual(PET_REACTION_TRAJECTORIES.celestial,PET_REACTION_TRAJECTORIE
 assert(reaction.includes('PET_REACTION_TRAJECTORIES[theme]')&&reaction.includes('memo(UltraLuxePetReactionLayer)'));
 assert(reaction.includes('tracks.map((p,i)')&&!reaction.includes('Animated.loop('));
 const badgeSource=read('components/PlayerBadges.tsx');
-assert(badgeSource.includes('const badgeMotion=useMemo(')&&badgeSource.includes('opacity:halo'));
-assert(badgeSource.includes('width:artSize,height:artSize,alignItems:'));
+assert(!badgeSource.includes('badgeMotion')&&!badgeSource.includes('Animated.')&&!badgeSource.includes('useUltraLuxeIdentityMotion'));
+assert(badgeSource.includes('source={source} fadeDuration={0} resizeMode="contain" style={{width:artSize,height:artSize}}'));
 assert(fx.includes("if(theme==='celestial')return <CelestialBorderLight"));
 assert(fx.includes("return <DraconicBorderLight"));
 assert(fx.includes('height={205*k} ember={particle} showcase'));

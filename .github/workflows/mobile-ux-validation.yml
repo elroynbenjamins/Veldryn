@@ -79,7 +79,7 @@ jobs:
       - name: Validate ownership-safe profile quick equip
         run: node tests/profile-quick-set-equip.cjs
       - name: Validate Ascendant showcase geometry and closed blessing gate
-        run: node tests/celestial-showcase-layout.cjs && node tests/ascendant-blessings.cjs && node tests/ascendant-blessing-state.cjs && node tests/ascendant-celestial-assets.cjs && node tests/ultra-luxe-private-visibility.cjs && node tests/draconic-showcase.cjs && node tests/ultra-luxe-titles.cjs && node tests/ultra-luxe-motion.cjs && node tests/ultra-luxe-pet-poses.cjs && node tests/ultra-luxe-set-visuals.cjs && node tests/ultra-luxe-prestige.cjs && node tests/ultra-luxe-grants.cjs && node tests/next-premium-review.cjs && node tests/next-premium-frame-assets.cjs && node tests/next-premium-background-assets.cjs
+        run: node tests/celestial-showcase-layout.cjs && node tests/ascendant-blessings.cjs && node tests/ascendant-blessing-state.cjs && node tests/ascendant-celestial-assets.cjs && node tests/ultra-luxe-private-visibility.cjs && node tests/draconic-showcase.cjs && node tests/ultra-luxe-titles.cjs && node tests/ultra-luxe-motion.cjs && node tests/ultra-luxe-pet-poses.cjs && node tests/ultra-luxe-set-visuals.cjs && node tests/ultra-luxe-prestige.cjs && node tests/ultra-luxe-grants.cjs && node tests/next-premium-review.cjs && node tests/next-premium-frame-assets.cjs && node tests/next-premium-background-assets.cjs && node tests/next-premium-pet-review.cjs
       - name: Validate shared motion and static artwork lifecycle
         run: node tests/shared-motion-efficiency.cjs
       - name: Typecheck app

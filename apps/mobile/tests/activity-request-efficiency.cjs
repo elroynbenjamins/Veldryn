@@ -37,3 +37,15 @@ assert.ok(guildChat.includes('Date.now()-cached.loadedAt<60_000'));
 assert.ok(guildChat.includes('currentScope.current===scope&&mentionFlight.current===request'));
 assert.ok(guildChat.includes('mentionRoster?.scope===scope?mentionRoster.names:[]'));
 assert.ok(!guildChat.includes('setInterval(loadRoster'));
+
+const dungeon=fs.readFileSync(path.join(__dirname,'../src/screens/CoopExpeditionScreen.tsx'),'utf8');
+assert.ok(dungeon.includes('const browseVisible=!showLive&&!showLoadouts&&!selected&&!selectedEvent&&!run&&!eventRun&&!showShop'));
+assert.ok(dungeon.includes('const showRecruitment=foreground&&browseVisible'));
+assert.ok(dungeon.includes('if(!showRecruitment)return'));
+assert.ok(dungeon.includes('if(!foreground||!browseVisible||entrySource.kind'));
+assert.ok(dungeon.includes('if(!weeklyQuest||!foreground||!browseVisible'));
+assert.ok(dungeon.includes("const liveChatVisible=run?.mode==='live'&&run.phase!=='completed'&&run.phase!=='failed'&&!eventRun"));
+assert.ok(dungeon.includes('if(!foreground||!id||!liveChatVisible'));
+assert.ok(dungeon.includes("enabled:foreground&&entrySource.kind==='real'"),'run watchdog remains authoritative');
+assert.ok(dungeon.includes('const items=await coopClient.rewards(terminalRunId)'), 'terminal rewards retained');
+assert.ok(dungeon.includes('weeklyQuestRequest.current===request'),'obsolete quest reads cannot publish');

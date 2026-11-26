@@ -27,3 +27,44 @@ for(const f of ['PublicProfileScene.tsx','ProfileScenePreview.tsx','profile/Prof
  const live=fs.readFileSync(path.join(__dirname,'../src/components',f),'utf8');assert(!live.includes('paradox-showcase-layout'));
 }
 console.log('PASS: Paradox geometry, static badge budget, closed temporal glints, synchronized signature and isolation');
+
+const root=path.join(__dirname,'../src');
+const read=p=>fs.readFileSync(path.join(root,p),'utf8');
+const layout={exports:{}};
+new Function('exports','module',ts.transpileModule(read('core/profile-frame-layout.ts'),{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText)(layout.exports,layout);
+const border={exports:{}};
+new Function('exports','module','require',ts.transpileModule(read('core/paradox-border-motion.ts'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText)(border.exports,border,id=>id==='./profile-frame-layout'?layout.exports:id==='./paradox-showcase-layout'?mod.exports:require(id));
+const {PARADOX_BORDER_PHASE:BP,paradoxBorderTracks}=border.exports;
+assert(BP.every((v,i)=>!i||v>BP[i-1]));
+assert(BP.includes(.5)&&BP.includes(16/24));
+assert.deepEqual(paradoxBorderTracks(0,0),[]);
+assert.deepEqual(paradoxBorderTracks(NaN,205),[]);
+for(const showcase of [false,true]){
+ for(const [w,h] of showcase?[[320,320*205/340],[340,205],[390,390*205/340],[480,480*205/340]]:[[44,44],[104,72],[260,174],[340,205],[480,270]]){
+  const q=Math.min(1,w/300,h/205),k=w/340,side=showcase?28*k:18*q,rail=showcase?34*k:24*q;
+  const tracks=paradoxBorderTracks(w,h,showcase),full=paradoxBorderTracks(w,h,showcase,true);
+  assert.equal(tracks.length,showcase?Q.showcaseBorderNodes:Q.standardBorderNodes);
+  assert.equal(full.length,tracks.length);
+  for(let z=0;z<tracks.length;z++){
+   const t=tracks[z],u=full[z],r=t.size/2;
+   assert(t.size>0&&t.opacity.some(a=>a>=.5));
+   assert.deepEqual(t.x,u.x);assert.deepEqual(t.y,u.y);
+   assert(u.opacity.every((a,i)=>a>=t.opacity[i]&&a<=.98));
+   for(const seq of [t.x,t.y,t.opacity,u.opacity]){assert.equal(seq.length,BP.length);assert.equal(seq[0],seq.at(-1));}
+   for(let i=1;i<BP.length;i++)for(let j=0;j<=10;j++){
+    const v=j/10,x=t.x[i-1]+v*(t.x[i]-t.x[i-1]),y=t.y[i-1]+v*(t.y[i]-t.y[i-1]);
+    assert(x-r>=-1e-6&&x+r<=w+1e-6&&y-r>=-1e-6&&y+r<=h+1e-6);
+    assert(x+r<=side+1e-6||x-r>=w-side-1e-6||y+r<=rail+1e-6||y-r>=h-rail-1e-6);
+    if(showcase)for(const b of [B.plate,B.guild,B.aura])assert(x+r<=b.x*k+1e-6||x-r>=(b.x+b.w)*k-1e-6||y+r<=b.y*k+1e-6||y-r>=(b.y+b.h)*k-1e-6);
+   }
+  }
+  for(const t of tracks.slice(0,2))assert.equal(t.opacity[BP.indexOf(.5)],0);
+  assert(tracks[0].x[BP.indexOf(.5)]>tracks[0].x[0]);
+  assert(tracks[1].x[BP.indexOf(.5)]<tracks[1].x[0]);
+  if(showcase)assert(full.some((u,i)=>u.opacity.some((a,j)=>a>tracks[i].opacity[j])));
+ }
+}
+const native=read('components/profile/ParadoxBorderLight.tsx');
+assert(!native.includes('Animated.loop(')&&!native.includes('setInterval('));
+assert(native.includes('pointerEvents="none"')&&native.includes('running?<ParadoxBorderLight'));
+console.log('PASS: Paradox native frame tracks, six/eight node parity, fade-before-reversal and protected geometry');

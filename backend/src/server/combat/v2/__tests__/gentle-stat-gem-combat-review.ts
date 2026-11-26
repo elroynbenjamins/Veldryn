@@ -1,6 +1,6 @@
 /** PRIVATE TEST ONLY. First executable stat-gem sensitivity pass.
  * Do not import from gameplay routes, engine or release adapters.
- * No Potent approximation or effect-gem execution here. */
+ * Potent authored-output sensitivity is explicit opt-in; no effect-gem execution. */
 import {strict as assert} from 'node:assert';
 import type {CombatantDefinition,CombatInput,CombatResult} from '../../types';
 import {simulateCombat} from '../../engine';
@@ -11,15 +11,16 @@ import type {compileRealFrozenForgeActorV2} from '../equipment-frozen-forge-brid
 import type {reviewFrozenForgeSocketsV2} from '../frozen-forge-socket-review';
 import {inspectSocketStackingCapReviewV2,SOCKET_CAP_GENTLE_V2} from '../socket-stacking-cap-review';
 import {reviewUtilityGemSemanticsV2} from '../socket-utility-gem-review';
+import {reviewPotentAuthoredActorV2,assertPotentOutputBoundaryReviewV2} from './potent-authored-output-combat-review';
 type Projection=ReturnType<typeof reviewFrozenForgeSocketsV2>;
 type Compiled=ReturnType<typeof compileRealFrozenForgeActorV2>;
 const round=(x:number)=>Math.round(x*1e5)/1e5;
-export function gentleStatGemActorReviewV2(compiled:Compiled,p:Projection):CombatantDefinition{
+export function gentleStatGemActorReviewV2(compiled:Compiled,p:Projection,allowPotent=false):CombatantDefinition{
  assert.deepEqual(p.forgeEvidence,compiled.evidence);
  assert.equal(p.canExecuteCombat,false);assert.equal(p.releaseEnabled,false);
  assert.equal(p.cpApproved,false);
  assert.equal(p.deferredEffectSources.length,0,'effect gems not allowed in static pass');
- assert.ok(p.gemSources.every(g=>g.stat!=='potency'),'Potent requires authored periodic/support integration');
+ assert.ok(allowPotent||p.gemSources.every(g=>g.stat!=='potency'),'Potent requires explicit authored-output sensitivity policy');
  const report=inspectSocketStackingCapReviewV2(p,SOCKET_CAP_GENTLE_V2);
  const utility=reviewUtilityGemSemanticsV2(p);
  const actor=structuredClone(compiled.actor),meta=actor.combatV2,gear=meta?.equipmentEffects;
@@ -52,8 +53,9 @@ function metrics(result:CombatResult){
   interrupts:p.interrupts,casts:result.events.filter(e=>e.actorId===p.definition.id&&e.type==='cast_start').length,
   basics:result.events.filter(e=>e.actorId===p.definition.id&&e.type==='damage'&&e.abilityId==='BASIC').length};
 }
-export function createGentleStatCombatReviewV2(compiled:Compiled,p:Projection,enemy:CombatantDefinition,seed:string){
- const baseline=gentleStatGemActorReviewV2(compiled,p);
+export function createGentleStatCombatReviewV2(compiled:Compiled,p:Projection,enemy:CombatantDefinition,seed:string,allowPotent=false){
+ const baseActor=gentleStatGemActorReviewV2(compiled,p,allowPotent);
+ const baseline=allowPotent?reviewPotentAuthoredActorV2(baseActor,p).actor:baseActor;
  const snapshot=JSON.stringify(compiled);
  const proposal=prepareSoloEnemyKitsV2([enemy],{ruleset:ENEMY_V2_RULESET,region:'frostmarch',
   equipmentTier:4,encounterId:'QA_GENTLE_GEM_'+seed,serverSeed:seed});
@@ -70,13 +72,20 @@ export function createGentleStatCombatReviewV2(compiled:Compiled,p:Projection,en
  const before=run(baseline);
  assert.deepEqual(run(baseline),before);
  return (candidate:Projection)=>{
-  const actor=gentleStatGemActorReviewV2(compiled,candidate);
+  const staticActor=gentleStatGemActorReviewV2(compiled,candidate,allowPotent);
+  const potency=allowPotent?reviewPotentAuthoredActorV2(staticActor,candidate):null;
+  const actor=potency?.actor??staticActor;
+  const boundaryCases=allowPotent?assertPotentOutputBoundaryReviewV2(staticActor,candidate):0;
   const after=run(actor);
   assert.deepEqual(run(actor),after,'deterministic private combat replay');
   assert.equal(JSON.stringify(compiled),snapshot,'no source actor mutation');
   assert.deepEqual(run(baseline),before,'baseline unchanged by gem candidate');
   assert.ok(after.events.every(e=>e.amount===undefined||Number.isFinite(e.amount)));
+  const outputTotals=(fight:CombatResult)=>Object.fromEntries(['damage','dot_tick','heal','hot_tick','shield'].map(kind=>[kind,
+   fight.events.filter(e=>e.actorId===actor.id&&e.type===kind&&actor.abilities.some(a=>a.id===e.abilityId))
+    .reduce((n,e)=>n+(e.amount??0),0)]));
   return {baseline:metrics(before),candidate:metrics(after),statGemCopies:candidate.gemSources.length,
+   authoredOutputs:{baseline:outputTotals(before),candidate:outputTotals(after)},potentRows:potency?.rows??[],boundaryCases,
    canGrantRewards:false as const,releaseEnabled:false as const};
  };
 }

@@ -52,7 +52,9 @@ export function ItemQuickInspect({state,itemId,instanceId,source='inventory',onC
  const ui=(label:string)=>equipmentPouchText(language,label);
  const contentText=(value:string)=>itemDetailContent(language,value,gl);
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,height,fontScale}=useWindowDimensions(),compactHeader=width<390||fontScale>=1.25;
-  const scrollWholeSheet=height<650||fontScale>=1.25;
+  // Very narrow screens stack the footer even at normal font scale. Keep
+  // the entire inspector reachable instead of reserving an oversized footer.
+  const scrollWholeSheet=width<345||height<650||fontScale>=1.25;
   const [sourceDisclosure,setSourceDisclosure]=useState<Record<string,boolean>>({}),[craftingDisclosure,setCraftingDisclosure]=useState<Record<string,boolean>>({}),[useLimits,setUseLimits]=useState<Record<string,number>>({}),[detailsOpen,setDetailsOpen]=useState(false);
   useEffect(()=>{setDetailsOpen(false)},[itemId,instanceId,source]);
   const model=useMemo(()=>itemId?itemInspectModel(state,itemId,instanceId,source):undefined,[state,itemId,instanceId,source]);

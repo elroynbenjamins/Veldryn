@@ -3,6 +3,7 @@
  * All units remain in the canonical gem catalogue's vocabulary.
  */
 import {findStatGem,findEffectGem,gemItemId,type GemGrade,GEM_BALANCE_REVIEW_V2,type GemBalanceReviewPolicyV2,findStatGemReviewV2,findEffectGemReviewV2,RETIRED_STAT_GEM_FAMILIES_REVIEW_V2} from '../../equipment/gems/gem-catalog-v1';
+import {reviewEffectGemResonanceV2} from './effect-gem-resonance-review';
 import {verifyEquipmentV2GemSidecar} from '../../equipment/equipment-crafting-v2-gem-verifier';
 import type {V2GemSidecarState} from '../../equipment/equipment-crafting-v2-gem-sidecar-types';
 import {verifyEquipmentV2HiddenLedger} from '../../equipment/equipment-crafting-v2-delivery';
@@ -86,7 +87,8 @@ export function reviewPermanentGemSourcesV2(source:PermanentGemReviewSourceV2,ba
   const key=row.stat+':'+row.unit;
   totals[key]=round((totals[key]??0)+row.fraction);
  }
- return {receiptDigest:digest,statSources,effectSources,totals,...(balancePolicy?{balancePolicy}:{}),
+ const resonance=balancePolicy?reviewEffectGemResonanceV2(effectSources,worn):undefined;
+ return {receiptDigest:digest,statSources,effectSources,totals,...(balancePolicy?{balancePolicy,resonance}:{}),
   releaseEnabled:false as const,canApplyStats:false as const,canExecuteEffects:false as const,
   canContributeCP:false as const};
 }

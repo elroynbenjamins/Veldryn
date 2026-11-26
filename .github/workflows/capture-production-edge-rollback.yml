@@ -17,7 +17,17 @@ concurrency:
   group: supabase-deploy-production
   cancel-in-progress: false
 jobs:
+  visibility-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Reject public repository backup storage
+        env:
+          PRIVATE_REPOSITORY: ${{ github.event.repository.private }}
+        run: |
+          test "$PRIVATE_REPOSITORY" = true || { echo "::error::Production rollback source must not be uploaded to a public repository. Download it locally using the Supabase dashboard or use an authorized private repository."; exit 1; }
   capture:
+    needs: visibility-check
+    if: ${{ github.event.repository.private }}
     runs-on: ubuntu-latest
     environment: supabase-production
     timeout-minutes: 15
@@ -81,6 +91,7 @@ jobs:
           find gameplay coop -type f -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
           sha256sum -c SHA256SUMS
       - uses: actions/upload-artifact@v4
+        if: ${{ github.event.repository.private }}
         with:
           name: production-edge-rollback-${{ inputs.gameplay_version }}-${{ inputs.coop_version }}
           path: ${{ runner.temp }}/edge-rollback/archive/

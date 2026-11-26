@@ -2,7 +2,8 @@
  * Coordinates are in logical pixels; normal layouts use the common perimeter
  * rail budget, dedicated showcases use their authored 340:205 aperture. */
 import {PROFILE_SCENE_SAFE_LAYOUT} from './profile-frame-layout';
-export const CELESTIAL_BORDER_PHASE=Array.from({length:33},(_,i)=>i/32);
+import {AWAKENING_CURVES} from './ultra-luxe-motion';
+export const CELESTIAL_BORDER_PHASE=[...Array.from({length:33},(_,i)=>i/32),16/24].sort((a,b)=>a-b);
 export const CELESTIAL_BORDER_NODE_BUDGET={standard:6,showcase:8} as const;
 export type CelestialBorderTrack={key:string;kind:'star'|'glow';size:number;x:number[];y:number[];opacity:number[]};
 export function celestialBorderTracks(width:number,height:number,showcase:boolean):CelestialBorderTrack[]{
@@ -21,14 +22,22 @@ export function celestialBorderTracks(width:number,height:number,showcase:boolea
   x[x.length-1]=x[0];y[y.length-1]=y[0];opacity[opacity.length-1]=opacity[0];
   return {key,kind,size,x,y,opacity};
  };
- const glint=(t:number,o:number)=>.18+.72*Math.pow(pulse(t,o),1.6);
+ const energy=(t:number)=>{
+  if(!showcase)return 0;
+  const curve=AWAKENING_CURVES.celestial;
+  const i=curve.phase.findIndex(p=>p>=t);
+  if(i<=0)return curve.energy[0];
+  const a=curve.phase[i-1],b=curve.phase[i];
+  return curve.energy[i-1]+(curve.energy[i]-curve.energy[i-1])*(t-a)/(b-a);
+ };
+ const glint=(t:number,o:number)=>Math.min(.98,.18+.72*Math.pow(pulse(t,o),1.6)+.15*energy(t));
  const crestY=showcase?23*k:rail*.65;
  const lowerY=showcase?13*k:rail*.55;
  const tracks=[
   make('upper-rail','star',12,false,t=>width*(.10+.80*wave(t)),()=>rail*.40,t=>glint(t,.28)),
   make('lower-rail','star',10,true,t=>width*(.90-.80*wave(t)),()=>rail*.40,t=>glint(t,.70)),
-  make('crown-halo','glow',25,false,()=>width/2,()=>crestY,t=>.16+.57*pulse(t,.12)),
-  make('medallion-halo','glow',21,true,()=>width/2,()=>lowerY,t=>.12+.52*pulse(t,.58)),
+  make('crown-halo','glow',25,false,()=>width/2,()=>crestY,t=>Math.min(.94,.16+.50*pulse(t,.12)+.27*energy(t))),
+  make('medallion-halo','glow',21,true,()=>width/2,()=>lowerY,t=>Math.min(.9,.12+.45*pulse(t,.58)+.26*energy(t))),
   make('crown-star','star',13,false,()=>width/2,()=>crestY,t=>glint(t,.12)),
   make('medallion-star','star',11,true,()=>width/2,()=>lowerY,t=>glint(t,.58)),
  ];

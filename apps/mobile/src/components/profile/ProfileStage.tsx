@@ -1,3 +1,7 @@
+import {useAuthSession} from '../../online/AuthSessionProvider';
+import {useUltraLuxeCollectionProjection} from '../../online/useUltraLuxeCollectionProjection';
+import {candidateAppearanceHint,candidateAppearanceIds,ownedNewUltraLuxeCollections} from '../../core/ultra-luxe-owned-wardrobe';
+import {newLuxeBackground,newLuxeBorder,newLuxePet} from '../../theme/ultra-luxe-candidate-art';
 import {useUltraLuxeNameSelection} from '../../online/useUltraLuxeNameSelection';
 import {ownedUltraLuxeTitleColor,ownedUltraLuxeTitles} from '../../core/ultra-luxe-titles';
 import {profileT} from '../../i18n/profile';
@@ -43,22 +47,29 @@ export function ProfileStage({state,collapsed,onToggle,onAudiencePreview,trailin
  const privateName=useUltraLuxeNameSelection(active&&!collapsed&&ownedUltraLuxeTitles(state).length>0).style;
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),badges=usePlayerBadges();
  const character=state.character;
+ const accountId=useAuthSession().session?.user.id??'';
+ const raw={background:character?.profileBackgroundId,border:character?.profileBorderId,pet:character?.selectedCosmeticPetId};
+ const candidate=candidateAppearanceHint(raw);
+ const projection=useUltraLuxeCollectionProjection(collapsed&&candidate);
+ const allowed=ownedNewUltraLuxeCollections(state,{accountId,characterId:character?.id??''},projection).map(c=>c.id);
+ const safe=candidateAppearanceIds({...raw,displayedBadges:[]},allowed);
  if(!character)return null;
  const backgroundId=character.profileBackgroundId??'asterfall-night';
  const ownsBackground=canUseProfileCosmetic(state,'background',backgroundId),ownsBorder=!!character.profileBorderId&&canUseProfileCosmetic(state,'border',character.profileBorderId);
  const tester=profileCosmeticsTester(state);
  const visual=resolveTesterUltraLuxeVisuals({background:backgroundId,border:character.profileBorderId,displayedBadges:[]},{background:tester&&ownsBackground,border:tester&&ownsBorder,pet:false});
  const dedicated=ownsBackground&&ownsBorder&&((visual.background===CELESTIAL_IDS.background&&visual.border===CELESTIAL_IDS.border&&ultraLuxeSceneEffectCompatible(character.profileEffectId,'premium:celestial-sovereign:celestial-alignment'))||(visual.background===DRACONIC_IDS.background&&visual.border===DRACONIC_IDS.border&&ultraLuxeSceneEffectCompatible(character.profileEffectId,'premium:draconic-dominion:awakening-of-the-dragon')));
- const scene=profileBackgroundPreviewById.get(backgroundId),base=BASE_PROFILE_BACKGROUNDS.find(row=>row.id===backgroundId);
+ const safeBackground=safe.background??'asterfall-night',newBackground=newLuxeBackground(safeBackground);
+ const scene=newBackground??profileBackgroundPreviewById.get(safeBackground),base=BASE_PROFILE_BACKGROUNDS.find(row=>row.id===safeBackground);
  const borderAnimated=profileAnimatedPieceEnabled(state,'border',character.profileBorderId??''),effectAnimated=profileAnimatedPieceEnabled(state,'effect',character.profileEffectId??'');
  const borderArt=borderAnimated?cosmeticArtByBorder.get(character.profileBorderId??''):undefined,effectArt=effectAnimated?cosmeticArtByEffect.get(character.profileEffectId??''):undefined;
  const borderRuntime=borderAnimated?profileCosmeticRuntimeByBorder.get(character.profileBorderId??''):undefined,effectRuntime=effectAnimated?profileCosmeticRuntimeByEffect.get(character.profileEffectId??''):undefined;
- const directFrame=profileBorderSourceById.get(character.profileBorderId??'');
- const frame=borderArt?.border??directFrame??(borderRuntime?profileBorderSourceById.get(borderRuntime.fallbackBorderId):undefined),pet=petArtSource(character.selectedCosmeticPetId??'');
+ const directFrame=newLuxeBorder(safe.border)??profileBorderSourceById.get(safe.border??'');
+ const frame=borderArt?.border??directFrame??(borderRuntime?profileBorderSourceById.get(borderRuntime.fallbackBorderId):undefined),pet=newLuxePet(safe.pet)??petArtSource(safe.pet??'');
  const anchors=profileSceneContentAnchors(frame?8:1,true);
  const className=CLASSES.find(row=>row.id===character.classId)?.name??character.classId;
  const title=character.profileTitle??profileT(language,"New Adventurer");
- const art=scene?<CardBackground sources={personalBackgroundVariants.get(backgroundId)??{wide:scene.source,square:scene.source}}/>:base?<RegionArtwork regionId={base.region}/>:null;
+ const art=scene?<CardBackground sources={newBackground?.variants??personalBackgroundVariants.get(safeBackground)??{wide:scene.source,square:scene.source}}/>:base?<RegionArtwork regionId={base.region}/>:null;
 
  if(collapsed)return <Pressable accessibilityRole="button" accessibilityLabel={profileT(language,"Expand the profile stage")} onPress={onToggle} style={({pressed})=>[s.strip,pressed&&s.pressed]}>
   <View style={[s.stripArt,!!frame&&s.stripArtFramed]}><ProfileBorderBackdrop borderId={borderArt||directFrame?character.profileBorderId:(borderRuntime?.fallbackBorderId??character.profileBorderId)} source={frame} existingInset={5}>{art}<View style={s.stripScrim}/>{effectArt?<ProfileSceneEffect art={effectArt} active={false} reduceMotion/>:effectRuntime?<ProceduralProfileSceneEffect runtime={effectRuntime} active={false} reduceMotion/>:null}</ProfileBorderBackdrop></View>
@@ -71,7 +82,7 @@ export function ProfileStage({state,collapsed,onToggle,onAudiencePreview,trailin
   {frame?<ProfileFrameOverlay source={frame} sceneSafe/>:null}
  </Pressable>;
 
- if(dedicated)return <View style={s.dedicatedRoot}>
+ if(dedicated||candidate)return <View style={s.dedicatedRoot}>
   <ProfileScenePreview state={state} backgroundId={backgroundId} active={active}/>
   <View style={s.dedicatedTools}>
    {onAudiencePreview?<Pressable accessibilityRole="button" accessibilityLabel={profileT(language,"Preview as others see me")} onPress={onAudiencePreview} style={({pressed})=>[s.tool,pressed&&s.pressed]}><Text style={s.toolMark}>◎</Text></Pressable>:null}

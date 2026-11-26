@@ -1,6 +1,7 @@
--- REVIEW ONLY: do not execute until release QA and deployment approval.
+-- Ownership-only backwards-compatible release safeguard. Does not certify, grant or activate cosmetics.
 -- Private, pure helpers; no table access and no new public RPC.
 begin;
+set local lock_timeout = '3s';
 -- Fail on definition drift rather than overwrite newer privacy or profile fixes.
 do $$
 begin
@@ -33,7 +34,7 @@ returns text language sql immutable security invoker set search_path = '' as $$
  then coalesce(private.wave2_profile_owned_id_v1(p_account,'icon',p_account->>'profileIconId'),p_fallback)
  when p_hero_icon = any(array['cosmetic:tideborne:portrait-siren','cosmetic:tideborne:portrait-corsair','cosmetic:clockwork:portrait-artificer','cosmetic:clockwork:portrait-engineer','cosmetic:stormforged:portrait-tempest','cosmetic:stormforged:portrait-sentinel','cosmetic:crimson-oath:portrait-justicar','cosmetic:crimson-oath:portrait-knight']::text[])
  then coalesce(private.wave2_profile_owned_id_v1(p_account,'icon',nullif(p_account->>'profileIconId','')),p_fallback)
- else coalesce(p_hero_icon,p_fallback) end
+ else coalesce(private.wave2_profile_owned_id_v1(p_account,'icon',p_hero_icon),p_fallback) end
 $$;
 revoke all on function private.wave2_profile_icon_v1(jsonb,text,text) from public, anon, authenticated;
 
@@ -212,4 +213,13 @@ begin
  if private.wave2_profile_icon_v1('{"profileIconId":"cosmetic:tideborne:portrait-siren","unlockedProfileIconIds":["cosmetic:tideborne:portrait-siren"]}','class:IRONWARDEN','class:IRONWARDEN') is distinct from 'cosmetic:tideborne:portrait-siren' then raise exception 'account portrait not projected';end if;
  if private.wave2_profile_icon_v1('{"profileIconId":"cosmetic:tideborne:portrait-siren"}','cosmetic:tideborne:portrait-siren','class:IRONWARDEN') is distinct from 'class:IRONWARDEN' then raise exception 'unowned portrait exposed';end if;
 end $$;
+-- Keep existing RPC access and ensure the new helpers are not callable by clients.
+do $permissions$
+begin
+ if has_function_privilege('anon','public.profile_public_v43(uuid)','EXECUTE') or has_function_privilege('anon','public.profile_character_public_v1(uuid,uuid)','EXECUTE') then raise exception 'anonymous RPC access widened'; end if;
+ if not has_function_privilege('authenticated','public.profile_public_v43(uuid)','EXECUTE') or not has_function_privilege('authenticated','public.profile_character_public_v1(uuid,uuid)','EXECUTE') then raise exception 'authenticated RPC access lost';end if;
+ if has_function_privilege('authenticated','private.wave2_profile_owned_id_v1(jsonb,text,text)','EXECUTE') or has_function_privilege('anon','private.wave2_profile_owned_id_v1(jsonb,text,text)','EXECUTE') or has_function_privilege('authenticated','private.wave2_profile_icon_v1(jsonb,text,text)','EXECUTE') or has_function_privilege('anon','private.wave2_profile_icon_v1(jsonb,text,text)','EXECUTE') then raise exception 'private helper exposed';end if;
+ if private.wave2_profile_icon_v1('{}','effect_tideborne_tidal_reverie','class:IRONWARDEN') is distinct from 'class:IRONWARDEN' then raise exception 'wrong-slot hero portrait exposed';end if;
+end
+$permissions$;
 commit;

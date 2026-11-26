@@ -12,7 +12,7 @@ import {launchPlayer} from '../../content/launch-combat';
 import {ACTION_STREAM_RNG_QA_V1,ACTION_STREAM_RNG_QA_V2} from '../../deterministic-rng';
 import {observeRoleCalibrationV2,summarizeRoleCalibrationV2,type RoleCalibrationObservationV2} from '../role-power-calibration-review';
 import {simulateUnifiedEquipmentPersistedPartyCombatV2,type TrustedPersistedPartyExecutionV2} from '../unified-equipment-encounter';
-import {selectReviewSkillLoadoutV2} from '../ability-counterplay-strategies';
+import {selectReviewSkillLoadoutV2,selectBalancedRoleReviewLoadoutV2} from '../ability-counterplay-strategies';
 import {preparePartyEnemyKitsV2,type PersistedEnemyKitV2} from '../enemy-kit-composer';
 import {ENEMY_V2_RULESET} from '../../enemy-v2-prototype';
 import {bosses,profiles,setup} from './ten-slot-boss-fixture';
@@ -51,11 +51,13 @@ type Metric=ReturnType<typeof measure>;
 type Row={boss:string;party:number;spec:number;band:string;seedIndex:number;metrics:Metric};
 const rows:Row[]=[];
 const reviewLoadouts=process.argv.includes('--matched-loadouts');
+const balancedReview=process.argv.includes('--balanced-role-review');
 const args=process.argv.slice(2);
-assert.ok(args.every(a=>a==='--matched-loadouts'||a==='--full-range-review')&&new Set(args).size===args.length,'unknown matrix argument');
+assert.ok(args.every(a=>a==='--matched-loadouts'||a==='--full-range-review'||a==='--balanced-role-review')&&new Set(args).size===args.length&&(!balancedReview||reviewLoadouts),'unknown matrix argument');
 const rngPolicy=args.includes('--full-range-review')?ACTION_STREAM_RNG_QA_V2:ACTION_STREAM_RNG_QA_V1;
 const observations=new Map<string,RoleCalibrationObservationV2[]>();
-type FocusArm='generic'|'alternative'|'role-specialized';
+type FocusArm='generic'|'alternative'|'role-specialized'|'balanced-role';
+const focusArms:readonly FocusArm[]=balancedReview?['generic','alternative','role-specialized','balanced-role']:['generic','alternative','role-specialized'];
 type FocusRow={caseId:string;boss:string;band:string;classId:ClassIdV2;spec:string;arm:FocusArm;
  sameLoadout:boolean;before:{party:Metric;actor:RoleCalibrationObservationV2};
  after:{party:Metric;actor:RoleCalibrationObservationV2};};
@@ -153,9 +155,15 @@ for(const [partyIndex,ids] of parties.entries())for(const spec of [0,1] as const
     const classId=ids[i],build=builds[i],specializationId=build.selected.specializationId!;
     const identity={caseId:suffix,bossId:boss.id,classId,specializationId,actorId:players[i].id};
     const before={party:metrics,actor:observeRoleCalibrationV2(result.combat,identity)};
-    for(const arm of ['generic','alternative','role-specialized'] as const){
-     const activeSkills=arm==='role-specialized'?roleSpecialized(classId,players[i].level):
+    for(const arm of focusArms){
+     const activeSkills=arm==='balanced-role'?selectBalancedRoleReviewLoadoutV2(classId,specializationId,players[i],boss.id):
+      arm==='role-specialized'?roleSpecialized(classId,players[i].level):
       selectReviewSkillLoadoutV2(classId,specializationId,players[i],boss.id,arm).activeSkills;
+     if(arm==='balanced-role'){
+      assert.equal(new Set(activeSkills.map(s=>s.skillId)).size,2);
+      assert.deepEqual(activeSkills,selectBalancedRoleReviewLoadoutV2(classId,specializationId,players[i],boss.id));
+      assert.ok(activeSkills.every(s=>SKILLS_V2.some(k=>k.classId===classId&&k.id===s.skillId&&k.unlockLevel<=players[i].level&&k.variantIds.includes(s.variantId))));
+     }
      const sameLoadout=JSON.stringify(activeSkills)===JSON.stringify(build.selected.activeSkills);
      const chosen=builds.map((row,index)=>index===i?{...row,selected:{...row.selected,activeSkills}}:row);
      const next=sameLoadout?result:run(chosen);
@@ -188,8 +196,8 @@ for(const [partyIndex,ids] of parties.entries())for(const spec of [0,1] as const
  }
 if(reviewLoadouts){
  const expectedHex=18*2*6*2*2,expectedTank=36*2*2;
- assert.equal(focusRows.length,(expectedHex+expectedTank)*3);
- assert.equal(focusRows.filter(r=>r.classId==='HEXWEAVER').length,expectedHex*3);
+ assert.equal(focusRows.length,(expectedHex+expectedTank)*focusArms.length);
+ assert.equal(focusRows.filter(r=>r.classId==='HEXWEAVER').length,expectedHex*focusArms.length);
  const summarize=(group:FocusRow[])=>{
   const mean=(f:(r:FocusRow)=>number)=>group.reduce((n,r)=>n+f(r),0)/group.length;
   return {cases:group.length,changedLoadouts:group.filter(r=>!r.sameLoadout).length,
@@ -215,7 +223,7 @@ if(reviewLoadouts){
   (groups.get(key)??(groups.set(key,[]),groups.get(key)!)).push(row);
  }
  console.log('MATCHED_ROLE_LOADOUTS '+JSON.stringify({kind:'SINGLE_ACTOR_LOADOUT_COUNTERFACTUAL_NOT_RELEASE',
-  policy:rngPolicy,comparisons:focusRows.length,hexCases:expectedHex,tankCases:expectedTank,arms:3,
+  policy:rngPolicy,comparisons:focusRows.length,hexCases:expectedHex,tankCases:expectedTank,arms:focusArms.length,
   byStratum:Object.fromEntries([...groups.entries()].sort(([a],[b])=>a.localeCompare(b)).map(([k,g])=>[k,summarize(g)])),
   caveat:'one character changes two authored skills only; no coefficients or personal stat budgets changed'}));
  for(const row of focusRows.filter(r=>r.before.party.victory>r.after.party.victory||

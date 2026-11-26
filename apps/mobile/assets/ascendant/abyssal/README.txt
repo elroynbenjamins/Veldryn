@@ -1,0 +1,1 @@
+Abyssal Majesty review assets, pass 3. Upload only the WebP files to apps/mobile/assets/ascendant/abyssal on chatgpt/abyssal-majesty-foundation. No live activation. Manifest records dimensions and SHA-256. Preview is a composited illustration, not native game output. Pet atlas is provisional deformation of one generated pose.

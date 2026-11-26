@@ -47311,6 +47311,18 @@ function characterClassEffects(c) {
 init_faith2();
 init_faith();
 
+// ../apps/mobile/src/core/profile-cosmetic-wave2.ts
+var WAVE2_SETS = [
+  { id: "tideborne", name: "Tideborne", borderId: "cosmetic:tideborne:pearlframe", borderName: "Tideborne Pearlframe", effectId: "effect_tideborne_tidal_reverie", effectName: "Tidal Reverie", iconIds: ["cosmetic:tideborne:portrait-siren", "cosmetic:tideborne:portrait-corsair"], iconNames: ["Tideborne Siren", "Tideborne Corsair"] },
+  { id: "clockwork", name: "Clockwork Covenant", borderId: "cosmetic:clockwork:mechanism", borderName: "Clockwork Mechanism", effectId: "effect_clockwork_aetherwork_pulse", effectName: "Aetherwork Pulse", iconIds: ["cosmetic:clockwork:portrait-artificer", "cosmetic:clockwork:portrait-engineer"], iconNames: ["Covenant Artificer", "Covenant Engineer"] },
+  { id: "stormforged", name: "Stormforged", borderId: "cosmetic:stormforged:thunderframe", borderName: "Stormforged Thunderframe", effectId: "effect_stormforged_static_surge", effectName: "Static Surge", iconIds: ["cosmetic:stormforged:portrait-tempest", "cosmetic:stormforged:portrait-sentinel"], iconNames: ["Stormforged Tempest", "Stormforged Sentinel"] },
+  { id: "crimson-oath", name: "Crimson Oath", borderId: "cosmetic:crimson-oath:oathguard", borderName: "Crimson Oathguard", effectId: "effect_crimson_oath_scarlet_reverence", effectName: "Scarlet Reverence", iconIds: ["cosmetic:crimson-oath:portrait-justicar", "cosmetic:crimson-oath:portrait-knight"], iconNames: ["Crimson Justicar", "Crimson Knight"] }
+];
+var WAVE2_READY_SET_IDS = [];
+function wave2SetFor(kind, id) {
+  return WAVE2_SETS.find((row) => kind === "border" ? row.borderId === id : kind === "effect" ? row.effectId === id : row.iconIds.some((icon) => icon === id));
+}
+
 // ../apps/mobile/src/core/profile-cosmetic-icons.ts
 var PROFILE_COSMETIC_PORTRAITS = [
   { id: "cosmetic:gloamward:portrait-seer", name: "Gloamward Seer", collectionId: "gloamward", presentation: "female", artworkReady: true },
@@ -47320,7 +47332,8 @@ var PROFILE_COSMETIC_PORTRAITS = [
   { id: "cosmetic:amberglass:portrait-duelist", name: "Amberglass Duelist", collectionId: "amberglass", presentation: "female", artworkReady: true },
   { id: "cosmetic:amberglass:portrait-vanguard", name: "Amberglass Vanguard", collectionId: "amberglass", presentation: "male", artworkReady: true },
   { id: "cosmetic:briarbound:portrait-ranger", name: "Briarbound Ranger", collectionId: "briarbound", presentation: "female", artworkReady: true },
-  { id: "cosmetic:briarbound:portrait-warden", name: "Briarbound Warden", collectionId: "briarbound", presentation: "male", artworkReady: true }
+  { id: "cosmetic:briarbound:portrait-warden", name: "Briarbound Warden", collectionId: "briarbound", presentation: "male", artworkReady: true },
+  ...WAVE2_SETS.filter((row) => WAVE2_READY_SET_IDS.includes(row.id)).flatMap((row) => row.iconIds.map((id, i) => ({ id, name: row.iconNames[i], collectionId: row.id, presentation: i === 0 ? "female" : "male", artworkReady: true })))
 ];
 
 // ../apps/mobile/src/core/profile-icons.ts
@@ -47336,7 +47349,7 @@ var PROFILE_ICON_CATALOG = [
   { id: "starter:dune-warden", name: "Dune Warden", group: "Starter", source: "Available from the start." },
   { id: "creature:FALLEN_KNIGHT", name: "Fallen Knight", group: "Combat", source: "Defeat the Fallen Knight.", bossId: "FALLEN_KNIGHT" },
   { id: "guild:stormwatch-crest", name: "Stormwatch Crest", group: "Guild", source: "Guild Token Shop \xB7 Guild Level 4" },
-  ...PROFILE_COSMETIC_PORTRAITS.map((row) => ({ id: row.id, name: row.name, group: "Cosmetics", source: "Cosmetics set \xB7 Tester access", artworkReady: row.artworkReady })),
+  ...PROFILE_COSMETIC_PORTRAITS.map((row) => ({ id: row.id, name: row.name, group: "Cosmetics", source: wave2SetFor("icon", row.id) ? "Cosmetics set \xB7 Account ownership" : "Cosmetics set \xB7 Tester access", artworkReady: row.artworkReady })),
   ...DUNGEON_SHOP_PROFILE_ICONS_V1.map((row) => ({ id: row.id, name: row.name, group: "Dungeon", source: "Dungeon Marks Shop \xB7 " + row.region }))
 ];
 
@@ -48954,7 +48967,8 @@ var PROFILE_EFFECTS = [
   { id: "effect_gloamward_wisps", name: "Arcane Wisps", collection: "Gloamward", borderId: "cosmetic:gloamward:arcane-frame", borderName: "Gloamward Arcane Frame", fallbackBorderId: "frame_gloamward" },
   { id: "effect_frostbound_winter_veil", name: "Winter Veil", collection: "Frostbound Chime", borderId: "cosmetic:frostbound:chime-frame", borderName: "Frostbound Chime Frame", fallbackBorderId: "dungeon:frostmarch:frostbound-chime" },
   { id: "effect_amberglass_ember_motes", name: "Ember Motes", collection: "Amberglass Loop", borderId: "cosmetic:amberglass:loop-frame", borderName: "Amberglass Loop Frame", fallbackBorderId: "dungeon:sunscar:amberglass-loop" },
-  { id: "effect_briarbound_verdant_whispers", name: "Verdant Whispers", collection: "Briarbound", borderId: "cosmetic:briarbound:verdant-frame", borderName: "Briarbound Verdant Frame", fallbackBorderId: "dungeon:asterfall:briarbound-frame" }
+  { id: "effect_briarbound_verdant_whispers", name: "Verdant Whispers", collection: "Briarbound", borderId: "cosmetic:briarbound:verdant-frame", borderName: "Briarbound Verdant Frame", fallbackBorderId: "dungeon:asterfall:briarbound-frame" },
+  ...WAVE2_SETS.filter((row) => WAVE2_READY_SET_IDS.includes(row.id)).map((row) => ({ id: row.effectId, name: row.effectName, collection: row.name, borderId: row.borderId, borderName: row.borderName, fallbackBorderId: "" }))
 ];
 var PROFILE_ALL_EFFECTS = [...PROFILE_EFFECTS, ...PREMIUM_PROFILE_COSMETICS.map((row) => ({ id: row.effectId, name: row.effectName, collection: row.name, borderId: row.borderId, borderName: row.borderName, fallbackBorderId: row.fallbackBorderId }))];
 

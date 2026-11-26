@@ -4,6 +4,7 @@ import {LIVE_EVENT_CATALOG} from '../content/live-events';
 import {DUNGEON_SHOP_PROFILE_ICONS_V1} from '../content/dungeon-shop-collectibles-v1';
 import {DUNGEON_MARKS_SHOP_RELEASED,PROFILE_COSMETICS_STORE_RELEASED} from './release-flags';
 import {PROFILE_COSMETIC_PORTRAITS} from './profile-cosmetic-icons';
+import {wave2SetFor,wave2Owned} from './profile-cosmetic-wave2';
 import {profileCosmeticsTester} from './profile-cosmetic-access';
 import type {GameState} from './types';
 import {frostfallRewardsDiscoverable,FROSTFALL_2026_EVENT_ID} from './frostfall-reward-visibility';
@@ -31,7 +32,7 @@ export const PROFILE_ICON_CATALOG:readonly ProfileIconCatalogRow[] = [
  {id:'starter:dune-warden',name:'Dune Warden',group:'Starter',source:'Available from the start.'},
  {id:'creature:FALLEN_KNIGHT',name:'Fallen Knight',group:'Combat',source:'Defeat the Fallen Knight.',bossId:'FALLEN_KNIGHT'},
  {id:'guild:stormwatch-crest',name:'Stormwatch Crest',group:'Guild',source:'Guild Token Shop · Guild Level 4'},
- ...PROFILE_COSMETIC_PORTRAITS.map(row=>({id:row.id,name:row.name,group:'Cosmetics',source:'Cosmetics set · Tester access',artworkReady:row.artworkReady})),
+ ...PROFILE_COSMETIC_PORTRAITS.map(row=>({id:row.id,name:row.name,group:'Cosmetics',source:wave2SetFor('icon',row.id)?'Cosmetics set · Account ownership':'Cosmetics set · Tester access',artworkReady:row.artworkReady})),
  ...DUNGEON_SHOP_PROFILE_ICONS_V1.map(row=>({id:row.id,name:row.name,group:'Dungeon',source:'Dungeon Marks Shop · '+row.region})),
 ];
 export interface ProfileIconEntry {id:string;name:string;group:string;source:string;unlocked:boolean;artworkReady:boolean;selected:boolean;}
@@ -63,7 +64,7 @@ export function profileIconCollection(state:GameState,nowMs=Date.now()):ProfileI
  const owned=new Set(state.account.unlockedProfileIconIds??[]);
  const characters=[state.character,...(state.otherCharacters??[]).map(row=>row.character)];
  const tester=profileCosmeticsTester(state);
- const portraits=PROFILE_ICON_CATALOG.filter(row=>(row.group!=='Dungeon'||DUNGEON_MARKS_SHOP_RELEASED||owned.has(row.id))&&(row.group!=='Cosmetics'||PROFILE_COSMETICS_STORE_RELEASED||tester||owned.has(row.id))).map(row=>{const artworkReady=row.group==='Cosmetics'&&tester?true:row.artworkReady??true;return {...row,artworkReady,selected:selected===row.id,unlocked:
+ const portraits=PROFILE_ICON_CATALOG.filter(row=>!wave2SetFor('icon',row.id)||wave2Owned(state.account,'icon',row.id)).filter(row=>(row.group!=='Dungeon'||DUNGEON_MARKS_SHOP_RELEASED||owned.has(row.id))&&(row.group!=='Cosmetics'||PROFILE_COSMETICS_STORE_RELEASED||tester||owned.has(row.id))).map(row=>{const artworkReady=row.group==='Cosmetics'&&tester&&!wave2SetFor('icon',row.id)?true:row.artworkReady??true;return {...row,artworkReady,selected:selected===row.id,unlocked:
   row.group==='Starter'||(artworkReady&&owned.has(row.id))
   ||(row.monsterId!==undefined&&characters.some(c=>(c?.monsterMasteryPoints?.[row.monsterId!]??0)>=10))
   ||(row.bossId!==undefined&&state.defeatedBossIds.includes(row.bossId))}});

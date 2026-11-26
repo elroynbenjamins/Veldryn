@@ -1,6 +1,7 @@
+import {WAVE2_SETS,WAVE2_READY_SET_IDS,type Wave2Id} from './profile-cosmetic-wave2';
 export type ProfileCosmeticPortraitPresentation='female'|'male';
 export interface ProfileCosmeticPortraitDefinition{
- id:string;name:string;collectionId:'gloamward'|'frostbound'|'amberglass'|'briarbound';presentation:ProfileCosmeticPortraitPresentation;artworkReady:boolean;
+ id:string;name:string;collectionId:'gloamward'|'frostbound'|'amberglass'|'briarbound'|Wave2Id;presentation:ProfileCosmeticPortraitPresentation;artworkReady:boolean;
 }
 export const PROFILE_COSMETIC_PORTRAITS:readonly ProfileCosmeticPortraitDefinition[]=[
  {id:'cosmetic:gloamward:portrait-seer',name:'Gloamward Seer',collectionId:'gloamward',presentation:'female',artworkReady:true},
@@ -11,5 +12,6 @@ export const PROFILE_COSMETIC_PORTRAITS:readonly ProfileCosmeticPortraitDefiniti
  {id:'cosmetic:amberglass:portrait-vanguard',name:'Amberglass Vanguard',collectionId:'amberglass',presentation:'male',artworkReady:true},
  {id:'cosmetic:briarbound:portrait-ranger',name:'Briarbound Ranger',collectionId:'briarbound',presentation:'female',artworkReady:true},
  {id:'cosmetic:briarbound:portrait-warden',name:'Briarbound Warden',collectionId:'briarbound',presentation:'male',artworkReady:true},
+ ...WAVE2_SETS.filter(row=>WAVE2_READY_SET_IDS.includes(row.id)).flatMap(row=>row.iconIds.map((id,i)=>({id,name:row.iconNames[i],collectionId:row.id,presentation:(i===0?'female':'male') as ProfileCosmeticPortraitPresentation,artworkReady:true}))),
 ] as const;
 export function profileCosmeticPortraits(collectionId:string){return PROFILE_COSMETIC_PORTRAITS.filter(row=>row.collectionId===collectionId)}

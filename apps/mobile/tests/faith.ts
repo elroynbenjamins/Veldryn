@@ -10,7 +10,7 @@ import {faithPracticeAvailability,startFaithPractice,normalizeFaith} from '../sr
 import {blessingRows,faithLevel,selectFaithBlessing,setFaithFavorite,setFaithHideWeaker} from '../src/core/faith-effects';
 import {accountSkillLevel} from '../src/core/account-roster';
 import {totalXpAtLevel} from '../src/core/progression';
-import {eventEffectiveDropRate,eventDailyGift,eventWeeklyBoard,timedEventRewards} from '../src/core/live-events';
+import {eventEffectiveDropRate} from '../src/core/live-events';
 import {LIVE_EVENT_CATALOG} from '../src/content/live-events';
 import {combatBaselineProjection,dropExpectation} from '../src/core/balance-projection';
 import {migrateSave} from '../src/core/save-migrations';
@@ -57,7 +57,7 @@ test('Faith practice XP tapers increasingly at higher tiers without changing cos
  equal(FAITH_TIERS.map(tier=>tier.water),waterCosts,'Holy Water costs unchanged');
  ok(FAITH_TIERS.every(tier=>tier.seconds===30),'30-second practice duration unchanged');
 });
-test('Faith catalog has escalating water tiers and ordered blessings',()=>{equal(FAITH_TIERS.length,6,'tiers');equal(FAITH_BLESSINGS.length,22,'blessings');for(let i=1;i<FAITH_TIERS.length;i++){ok(FAITH_TIERS[i].level>FAITH_TIERS[i-1].level,'tier level');ok(FAITH_TIERS[i].water>FAITH_TIERS[i-1].water,'water');ok(FAITH_TIERS[i].xp/FAITH_TIERS[i].water>=FAITH_TIERS[i-1].xp/FAITH_TIERS[i-1].water,'efficiency');}});
+test('Faith catalog has escalating water tiers and ordered blessings',()=>{equal(FAITH_TIERS.length,6,'tiers');equal(FAITH_BLESSINGS.length,21,'blessings');for(let i=1;i<FAITH_TIERS.length;i++){ok(FAITH_TIERS[i].level>FAITH_TIERS[i-1].level,'tier level');ok(FAITH_TIERS[i].water>FAITH_TIERS[i-1].water,'water');ok(FAITH_TIERS[i].xp/FAITH_TIERS[i].water>=FAITH_TIERS[i-1].xp/FAITH_TIERS[i-1].water,'efficiency');}});
 test('Holy Water has authored enemy sources and cannot be sold',()=>{const s=water(fresh(),2);for(const source of HOLY_WATER_SOURCES){const monster=MONSTERS.find(x=>x.id===source.monsterId)!;ok(!!monster,'monster');ok(monster.drops.some(x=>x.itemId===HOLY_WATER_ID),'drop wired');}throws(()=>sellItem(s,HOLY_WATER_ID,1),'cannot be sold');equal(qty(s,HOLY_WATER_ID),2,'unchanged');});
 test('Holy Water odds stay whole-percent with tighter late-game sourcing',()=>{
  const originallyAuthored=[.20,.40,.35,.50,.60,.75];
@@ -148,12 +148,12 @@ test('Faith mastery stops practice and returns unused escrow',()=>{let s=faithAt
 test('save migration preserves valid Faith reservation and selected unlocked blessing',()=>{let s=faithAt(water(fresh(),5),10);s=selectFaithBlessing(s,'EMBER_VOW');s=startFaithPractice(s,'FAITH_QUIET',5,T);const copy=migrateSave(JSON.parse(JSON.stringify(s)));equal(copy.version,11,'schema');equal(copy.activity!.faithPractice,s.activity!.faithPractice,'escrow');equal(copy.character!.faith!.selectedBlessingId,'EMBER_VOW','blessing');});
 test('old saves gain Faith at level one without invented XP',()=>{const old:any=JSON.parse(JSON.stringify(fresh()));old.version=9;old.skills=old.skills.filter((x:any)=>x.skillId!=='faith');delete old.character.faith;const n=migrateSave(old);equal(n.skills.find(x=>x.skillId==='faith')?.xp,0,'xp');equal(n.skills.find(x=>x.skillId==='faith')?.level,1,'level');equal(n.character!.faith!.favoriteBlessingIds,[],'prefs');});
 
-test('Faith has three escalating tiers in the seven standard paths and one event-currency blessing',()=>{
- const families=['attack','defense','hp','combatSpeed','gathering','production','xp','eventCurrency'];
- equal(FAITH_BLESSING_GROUPS.length,5,'five visible groups');
+test('Faith has three escalating tiers in the seven standard paths',()=>{
+ const families=['attack','defense','hp','combatSpeed','gathering','production','xp'];
+ equal(FAITH_BLESSING_GROUPS.length,4,'four visible groups');
  for(const family of families){
   const rows=FAITH_BLESSINGS.filter(b=>b.family===family);
-  equal(rows.length,family==='eventCurrency'?1:3,`${family} has its intended tier count`);
+  equal(rows.length,3,`${family} has its intended tier count`);
   ok(rows.every((b,index)=>index===0||(b.level>rows[index-1].level&&b.bonus>rows[index-1].bonus)),`${family} scales`);
  }
  equal(faithBlessingEffectLabel(faithBlessingDef('ETERNAL_BASTION')!),'9% Damage reduction','defense is not falsely labeled as a positive bonus');
@@ -224,38 +224,28 @@ test('Faith combat tempo has three unlock tiers with a single active blessing',(
  equal(characterPermanentMultipliers(s).combatSpeedMultiplier,base.combatSpeedMultiplier,'damage blessing replaces the speed blessing');
  throws(()=>selectFaithBlessing(faithAt(fresh(),17),'QUICKENED_STEP'),'18');
 });
-test('Festival Faith adds up to 10% common activity currency without inflating fixed event rewards',()=>{
- const eventBranches=FAITH_BLESSINGS.filter(blessing=>blessing.family==='eventCurrency');
- equal(eventBranches.map(blessing=>[blessing.id,blessing.level,blessing.bonus]),[['FESTIVAL_FAVOR',30,.10]],'only level-30 +10% festival currency blessing remains');
- throws(()=>selectFaithBlessing(faithAt(fresh(),29),'FESTIVAL_FAVOR'),'30');
+test('Removed Festival Favor cannot be equipped or boost activity currency',()=>{
  const ev=LIVE_EVENT_CATALOG[0],id=ev.id,now=T,baseState=faithAt(fresh(),98);
  const s={...baseState,account:{...baseState.account,liveEvent:{eventId:id,enabled:true,startsAtMs:T-86400000,endsAtMs:T+86400000}}};
- const original=eventEffectiveDropRate(s,id,'gathering',now),gift=eventDailyGift(s,now),weekly=eventWeeklyBoard(s,now);
- const blessed=selectFaithBlessing(s,'FESTIVAL_FAVOR');
- const updated=eventEffectiveDropRate(blessed,id,'gathering',now);
- ok(original>0&&Math.abs(updated/original-1.10)<1e-10,'max Faith applies exactly 10% to common event activity currency');
- equal(eventDailyGift(blessed,now)?.gift.rewardCurrency,gift?.gift.rewardCurrency,'daily gifts do not change');
- equal(eventWeeklyBoard(blessed,now).map(row=>row.objective.rewardCurrency),weekly.map(row=>row.objective.rewardCurrency),'weekly contract payouts do not change');
- const moments=Array.from({length:1000},(_,i)=>now+1000+i*1000);
- const before=timedEventRewards(s,'gathering',moments).eventDrops??[],after=timedEventRewards(blessed,'gathering',moments).eventDrops??[];
- ok(after.reduce((t,row)=>t+row.quantity,0)>before.reduce((t,row)=>t+row.quantity,0),'actual credited currency increases');
- const inactive={...blessed,account:{...blessed.account,liveEvent:{...blessed.account.liveEvent!,endsAtMs:now}}};
- const unblessedInactive={...s,account:{...s.account,liveEvent:{...s.account.liveEvent!,endsAtMs:now}}};
- equal(eventEffectiveDropRate(inactive,id,'gathering',now),eventEffectiveDropRate(unblessedInactive,id,'gathering',now),'bonus cannot apply after event expiry');
- const replaced=selectFaithBlessing(blessed,'CELESTIAL_TEMPO');
- equal(eventEffectiveDropRate(replaced,id,'gathering',now),updated,'equipping combat speed preserves event bonus');
- equal(faithBlessingDef('SEASONAL_GRACE'),undefined,'removed 6% event blessing is unavailable');
- equal(faithBlessingDef('FESTIVAL_BEACON'),undefined,'removed level-98 event blessing is unavailable');
+ const removed={...s,character:{...s.character!,faith:{...normalizeFaith(s.character!.faith),selectedBlessingId:'FESTIVAL_FAVOR',selectedBlessingIds:{events:'FESTIVAL_FAVOR'} as any,favoriteBlessingIds:['FESTIVAL_FAVOR']}}};
+ equal(eventEffectiveDropRate(removed,id,'gathering',now),eventEffectiveDropRate(s,id,'gathering',now),'old selection grants no currency bonus');
+ const migrated=migrateSave(JSON.parse(JSON.stringify(removed)));
+ equal(migrated.character!.faith!.selectedBlessingIds,{},'obsolete group removed');
+ equal(migrated.character!.faith!.selectedBlessingId,undefined,'obsolete legacy selection removed');
+ equal(migrated.character!.faith!.favoriteBlessingIds,[],'obsolete favorite removed');
+ equal(faithLevel(migrated),faithLevel(s),'Faith level unchanged');
+ throws(()=>selectFaithBlessing(s,'FESTIVAL_FAVOR'),'Unknown blessing');
+ equal(faithBlessingDef('FESTIVAL_FAVOR'),undefined,'removed from catalog');
 });
 test('all authored blessing ids are unique and resolve',()=>{equal(new Set(FAITH_BLESSINGS.map(x=>x.id)).size,FAITH_BLESSINGS.length,'unique');for(const blessing of FAITH_BLESSINGS)equal(faithBlessingDef(blessing.id)?.id,blessing.id,'resolve');});
 console.log('Faith checks complete');
 
-test('all five inline Faith categories persist, stack across groups, and replace only within a group',()=>{
+test('all four inline Faith categories persist, stack across groups, and replace only within a group',()=>{
  let s=faithAt(fresh(),95);
  const base=characterPermanentMultipliers(s);
- for(const id of ['DAWN_COVENANT','HARVESTS_GRACE','MASTERS_BENEDICTION','ETERNAL_ENLIGHTENMENT','FESTIVAL_FAVOR'])s=selectFaithBlessing(s,id);
+ for(const id of ['DAWN_COVENANT','HARVESTS_GRACE','MASTERS_BENEDICTION','ETERNAL_ENLIGHTENMENT'])s=selectFaithBlessing(s,id);
  const selections=s.character!.faith!.selectedBlessingIds!;
- equal(Object.keys(selections).length,5,'all five selected');
+ equal(Object.keys(selections).length,4,'all four selected');
  const m=characterPermanentMultipliers(s);
  for(const key of ['attackMultiplier','gatheringSpeedMultiplier','craftingSpeedMultiplier','skillXpMultiplier','characterXpMultiplier'] as const)ok(Math.abs(m[key]/base[key]-1.06)<1e-10,key+' active simultaneously');
  const next=selectFaithBlessing(s,'ETERNAL_BASTION');

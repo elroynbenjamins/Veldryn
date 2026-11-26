@@ -144,7 +144,7 @@ let wantedTrack:MusicTrackId|null=null,musicPlayer:Player|null=null,playingTrack
 let fadeTimer:ReturnType<typeof setInterval>|undefined;
 const isForeground=()=>AppState.currentState==='active';
 const musicVolume=()=>AUDIO_LEVEL_VOLUME[prefs.music]*MUSIC_BASE;
-function applyMusicVolume(){try{if(musicPlayer)musicPlayer.volume=musicVolume();}catch{/* ignore */}}
+function applyMusicVolume(){try{if(musicPlayer&&!fadeTimer)musicPlayer.volume=musicVolume();}catch{/* ignore */}}
 function stopMusicPlayer(){
  if(fadeTimer){clearInterval(fadeTimer);fadeTimer=undefined;}
  if(musicPlayer)releasePlayer(musicPlayer);
@@ -154,7 +154,8 @@ function fade(player:Player,from:number,to:number,done?:()=>void){
  if(fadeTimer)clearInterval(fadeTimer);
  const steps=Math.max(1,Math.round(FADE_MS/40));let i=0;
  fadeTimer=setInterval(()=>{
-  i++;try{player.volume=from+(to-from)*Math.min(1,i/steps);}catch{/* ignore */}
+  // Fade-in tracks the current volume choice; a fade-out always ends at silence.
+  i++;try{const target=done?to:musicVolume();player.volume=from+(target-from)*Math.min(1,i/steps);}catch{/* ignore */}
   if(i>=steps){clearInterval(fadeTimer);fadeTimer=undefined;done?.();}
  },40);
 }
@@ -182,16 +183,16 @@ function startTrack(track:MusicTrackId){
 }
 /** Ask for a music track; null stops music. Repeated calls with the same track are no-ops. */
 function applyTrack(track:MusicTrackId|null):void{
- wantedTrack=track;
+ const previousWanted=wantedTrack;wantedTrack=track;
  watchAppState(track!==null);
  if(track===null){
   const player=musicPlayer;
-  if(player)fade(player,musicVolume(),0,()=>{if(musicPlayer===player)stopMusicPlayer();});
+  if(player&&(previousWanted!==null||!fadeTimer)){let from=musicVolume();try{from=player.volume;}catch{/* ignore */}fade(player,from,0,()=>{if(musicPlayer===player)stopMusicPlayer();});}
   return;
  }
  if(track===playingTrack&&musicPlayer){
   // Cancel an in-flight mute fade if the same scene becomes audible again.
-  if(fadeTimer){clearInterval(fadeTimer);fadeTimer=undefined;}
+  if(fadeTimer&&previousWanted===null){clearInterval(fadeTimer);fadeTimer=undefined;}
   applyMusicVolume();
   if(prefs.music>0&&isForeground())try{musicPlayer.play();}catch{/* ignore */}
  }else startTrack(track);

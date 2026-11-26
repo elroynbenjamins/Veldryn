@@ -57,14 +57,14 @@ const digest=(x:unknown):x is string=>typeof x==='string'&&/^[0-9a-f]{64}$/.test
 const revision=(x:unknown):boolean=>typeof x==='number'&&Number.isSafeInteger(x)&&x>=1;
 function exactStrings(left:readonly string[],right:readonly string[]):boolean{
  return Array.isArray(left)&&Array.isArray(right)&&left.length===right.length&&
-  left.every(validId)&&right.every(validId)&&
+  Array.from(left).every(validId)&&Array.from(right).every(validId)&&
   new Set(left).size===left.length&&new Set(right).size===right.length&&
   left.every(x=>right.includes(x));
 }
 function exactTraits(left:readonly Trait[],right:readonly Trait[]):boolean{
  if(!Array.isArray(left)||!Array.isArray(right)||left.length>2||right.length>2||
-  left.some(x=>!x||!validId(x.instanceId)||!validId(x.traitId))||
-  right.some(x=>!x||!validId(x.instanceId)||!validId(x.traitId)))return false;
+  Array.from(left).some(x=>!x||!validId(x.instanceId)||!validId(x.traitId))||
+  Array.from(right).some(x=>!x||!validId(x.instanceId)||!validId(x.traitId)))return false;
  return exactStrings(left.map(x=>x.instanceId),right.map(x=>x.instanceId))&&
   left.every(x=>right.some(y=>x.instanceId===y.instanceId&&x.traitId===y.traitId));
 }

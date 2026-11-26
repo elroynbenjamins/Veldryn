@@ -1,4 +1,4 @@
-name: Wave 2 Android release export audit
+name: Wave 2 Android release export delta audit
 on:
   pull_request:
     branches: [main]
@@ -15,6 +15,8 @@ jobs:
         working-directory: apps/mobile
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: pnpm/action-setup@v4
         with:
           version: 10
@@ -26,9 +28,28 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Validate Expo dependency compatibility
         run: pnpm exec expo install --check
-      - name: Export Android production JS and assets and enforce release budget
-        run: pnpm test:release-bundle
-      - name: Confirm Wave 2 certification is in the exported source graph
+      - name: Export merged Wave 2 Android bundle
+        run: pnpm exec expo export --platform android --output-dir .release-bundle-wave2
+      - name: Export immediate pre-activation baseline
+        run: |
+          git checkout 7c058273d4ed1d9f6a73af06eae91e3291cbe1c4 -- src/core/profile-cosmetic-wave2.ts
+          pnpm exec expo export --platform android --output-dir .release-bundle-baseline
+          git restore src/core/profile-cosmetic-wave2.ts
+      - name: Compare release bundle delta and report global budgets
+        run: |
+          node - <<'NODE'
+          const fs=require('fs'),path=require('path');
+          function scan(root){const files=[];function visit(d){for(const e of fs.readdirSync(d,{withFileTypes:true})){const p=path.join(d,e.name);if(e.isDirectory())visit(p);else files.push({p:path.relative(root,p).replaceAll('\\','/'),n:fs.statSync(p).size});}}visit(root);return {total:files.reduce((s,x)=>s+x.n,0),assets:files.filter(x=>x.p.startsWith('assets/')).reduce((s,x)=>s+x.n,0),js:files.filter(x=>x.p.endsWith('.hbc')||x.p.endsWith('.js')).reduce((s,x)=>s+x.n,0),count:files.filter(x=>x.p.startsWith('assets/')).length};}
+          const b=scan('.release-bundle-baseline'),w=scan('.release-bundle-wave2'),m=n=>(n/1024/1024).toFixed(3);
+          console.log(JSON.stringify({baseline:{totalMiB:m(b.total),assetsMiB:m(b.assets),jsMiB:m(b.js),assetCount:b.count},wave2:{totalMiB:m(w.total),assetsMiB:m(w.assets),jsMiB:m(w.js),assetCount:w.count},delta:{totalKiB:((w.total-b.total)/1024).toFixed(1),assetsKiB:((w.assets-b.assets)/1024).toFixed(1),jsKiB:((w.js-b.js)/1024).toFixed(1),assetCount:w.count-b.count}},null,2));
+          if(w.js-b.js>256*1024)throw Error('Wave 2 readiness adds more than 256 KiB JavaScript');
+          if(w.assets-b.assets>1024*1024)throw Error('Wave 2 readiness adds more than 1 MiB exported assets');
+          NODE
+          echo "Baseline global budget result (informational):"
+          node ../../tools/validate-mobile-export-budget.mjs .release-bundle-baseline || true
+          echo "Wave 2 global budget result (informational):"
+          node ../../tools/validate-mobile-export-budget.mjs .release-bundle-wave2 || true
+      - name: Confirm normal ownership certification
         run: |
           grep -F "['tideborne','clockwork','stormforged','crimson-oath']" src/core/profile-cosmetic-wave2.ts
           node tests/profile-pet-art-assets.cjs

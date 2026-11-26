@@ -91,7 +91,7 @@ export function ProfileCustomizeScreen({state,onChange,onSaveNameStyle,onNavigat
     <View style={[s.pill,dirty&&s.pillDirty]}><Text style={[s.pillText,dirty&&s.pillTextDirty]}>
      {dirty?profileT(language,"UNSAVED CHANGES"):profileT(language,'Collection {percent}%',{percent:progress.percent})}</Text></View>
    </View>
-   <ProfileStage state={previewState} collapsed={collapsed} active={!previewOpen} onToggle={()=>setExpandOverride(collapsed)} onAudiencePreview={()=>setPreviewOpen(true)}/>
+   <ProfileStage managedPrivateName={onEquipUltraLuxe?{style:verifiedNames.style}:undefined} state={previewState} collapsed={collapsed} active={!previewOpen} onToggle={()=>setExpandOverride(collapsed)} onAudiencePreview={()=>setPreviewOpen(true)}/>
    <View accessibilityRole="tablist" style={s.tabs}>
     {TABS.map(value=><Pressable key={value} accessibilityRole="tab" accessibilityState={{selected:tab===value}} onPress={()=>openTab(value)}
       style={({pressed})=>[s.tab,tab===value&&s.tabOn,pressed&&s.pressed]}>
@@ -106,7 +106,7 @@ export function ProfileCustomizeScreen({state,onChange,onSaveNameStyle,onNavigat
     onDirtyChange={setAppearanceDirty} onPreviewStateChange={setAppearancePreview} onNotice={setNotice}/>
   </View>
   <View style={tab==='Identity'?s.sectionShown:s.sectionHidden} pointerEvents={tab==='Identity'?'auto':'none'}>
-   <ProfileIdentityPanel state={state} draft={draft} nameStyle={nameStyle} onNameStyleChange={setNameStyle} onSaveNameStyle={applyNameStyle}
+   <ProfileIdentityPanel prestige={onEquipUltraLuxe?verifiedNames:undefined} state={state} draft={draft} nameStyle={nameStyle} onNameStyleChange={setNameStyle} onSaveNameStyle={applyNameStyle}
     onNameInputDirtyChange={setNameInputDirty} nameResetVersion={nameResetVersion} active={tab==='Identity'}/>
   </View>
   <View style={tab==='Showcase'?s.sectionShown:s.sectionHidden} pointerEvents={tab==='Showcase'?'auto':'none'}>

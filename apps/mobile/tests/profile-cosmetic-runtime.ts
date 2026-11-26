@@ -168,6 +168,6 @@ ok(storeSource.includes('resolveProfileBorderArtworkId(runtime.borderId,runtime.
 ok(wardrobeSource.includes('profileBorderSourceById.get(row.id)'),'wardrobe prefers dedicated frame artwork');
 console.log('PASS: standard frames use dedicated artwork without replacing dungeon reward assets');
 
-ok(selfSource.includes('directBorder=profileBorderSourceById.get(renderBorderId)')&&selfSource.includes('borderArt?.border??directBorder??'),'personal direct artwork takes priority');
+ok(selfSource.includes('directBorder=newLuxeBorder(renderBorderId)??profileBorderSourceById.get(renderBorderId)')&&selfSource.includes('borderArt?.border??directBorder??'),'personal direct artwork takes priority');
 ok(publicSource.includes('profileBorderSourceById.get(renderBorderId)')&&publicSource.includes('borderArt?.border??directBorder??'),'public direct artwork takes priority');
-ok(stageSource.includes('directFrame=profileBorderSourceById.get(character.profileBorderId')&&stageSource.includes('borderArt?.border??directFrame??'),'stage direct artwork takes priority');
+ok(stageSource.includes('directFrame=newLuxeBorder(safe.border)??profileBorderSourceById.get(safe.border')&&stageSource.includes('borderArt?.border??directFrame??'),'stage direct artwork takes priority');

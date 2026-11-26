@@ -1,3 +1,4 @@
+import {STORMFORGED_GLOWS,STORMFORGED_TRACKS,STORMFORGED_EFFECT_PERIOD_MS,STORMFORGED_GLOW_PERIOD_MS} from '../src/dev/stormforged-motion-review';
 import {PROFILE_COSMETIC_RUNTIME} from '../src/theme/profile-cosmetic-runtime-v1';
 import {cosmeticGlowOpacity,MOTION_STEPS,sampleCosmeticTrack,type MotionProfile,type MotionTrack} from '../src/core/profile-cosmetic-motion-v2';
 import {profileSceneFrameSegments} from '../src/core/profile-frame-layout';
@@ -135,3 +136,30 @@ for(const set of PREMIUM_PROFILE_COSMETICS){
 }
 ok(!wardrobeCollectionName(clear),'no label on clear');
 console.log('PASS consistent set labels without ownership or ID changes');
+
+ // Validate Stormforged motion authoring before bitmap import. Artwork geometry is
+ // deliberately not certified here. The full manifest checks above apply after import.
+const storm:Motion={collection:'Stormforged',motionProfile:'stormforged',effectPeriodMs:STORMFORGED_EFFECT_PERIOD_MS,glows:STORMFORGED_GLOWS,tracks:STORMFORGED_TRACKS};
+ok(storm.glows.length===8&&storm.tracks.length===5,'Stormforged matches standard node budget');
+ok(STORMFORGED_GLOW_PERIOD_MS===12000&&storm.effectPeriodMs===10800,'Stormforged shared clock and cadence');
+for(const [w,h] of [[104,72],[260,174],[340,205],[480,270]]){
+ const refs=standard.map(s=>metrics(s,w,h)),m=metrics(storm,w,h);
+ for(const key of ['area','opacity','glow'] as const){
+  ok(m[key]>=Math.min(...refs.map(v=>v[key]))*.85&&m[key]<=Math.max(...refs.map(v=>v[key]))*1.15,'Stormforged '+key+' standard parity');
+ }
+ for(const t of storm.tracks){
+  ok(t.maxDp<=18&&t.opacity>=.35&&t.opacity<=.78,'Stormforged bounded sprite');
+  ok(JSON.stringify(sampleCosmeticTrack(t,0,w,h))===JSON.stringify(sampleCosmeticTrack(t,1,w,h)),'Stormforged closed path clock');
+  for(const f of MOTION_STEPS){
+   const p=sampleCosmeticTrack(t,f,w,h);
+   ok(p.x>=-1e-6&&p.y>=-1e-6&&p.x+p.width<=w+1e-6&&p.y+p.height<=h+1e-6,'Stormforged track stays within card');
+  }
+ }
+}
+for(const g of storm.glows){
+ const samples=MOTION_STEPS.map(f=>cosmeticGlowOpacity('stormforged',f,g.periodMs,g.phaseMs,g.peakOpacity));
+ ok(samples.every(v=>v>=0&&v<=.86),'Stormforged bounded glow');
+ ok(samples[0]===samples[samples.length-1],'Stormforged closed glow clock');
+ ok(samples.slice(1).every((v,i)=>Math.abs(v-samples[i])<.18),'Stormforged gradual glow, not abrupt strobe');
+}
+console.log('PASS Stormforged authoring motion parity; artwork still required');

@@ -10,6 +10,14 @@ const cycle=(v:number)=>((v%1)+1)%1;
 const wave=(v:number)=>.5-.5*Math.cos(2*Math.PI*v);
 const clamp=(v:number)=>Math.max(0,Math.min(1,v));
 const frame=(x:number,y:number,opacity:number,scale:number,rotate:number):EnvironmentFrame=>({x,y,opacity:clamp(opacity),scale,rotate});
+/** Approximate landmark centers in the fitted 340×205 wide background.
+ * Final native composition must map to the actual fitted image rectangle.
+ * These affect the wide review stage only; square artwork remains static in this pass.
+ */
+export const NEXT_PREMIUM_ENVIRONMENT_ANCHORS={
+ 'petal-waltz':{haze:[90,177],light:[88,35]},
+ 'thunder-pulse':{haze:[275,175],light:[250,28]},
+} as const;
 export function nextPremiumEnvironmentTracks(theme:NextPremiumEnvironmentTheme,fullSet:boolean):EnvironmentTrack[]{
  const sakura=theme==='petal-waltz', strength=fullSet?1:.8;
  // The identity is right for Sakura, left for Stormforged.
@@ -26,8 +34,9 @@ export function nextPremiumEnvironmentTracks(theme:NextPremiumEnvironmentTheme,f
    return frame(x,y,(sakura?.68:.52)*strength*Math.sin(Math.PI*p)**2,1+.12*wave(p),sakura?25*Math.sin(2*Math.PI*p):0);
   }));
  }
- tracks.push(make('haze',8,t=>frame(mx(84),173,.10*strength*wave(t),1+.15*wave(t),0)));
- tracks.push(make('light',5,t=>frame(mx(68),51,.23*strength*wave(t+.3),1+.15*wave(t),0)));
+ const {haze,light}=NEXT_PREMIUM_ENVIRONMENT_ANCHORS[theme];
+ tracks.push(make('haze',8,t=>frame(haze[0],haze[1],.10*strength*wave(t),1+.15*wave(t),0)));
+ tracks.push(make('light',5,t=>frame(light[0],light[1],.23*strength*wave(t+.3),1+.15*wave(t),0)));
  return tracks;
 }
 /** No geometry intersects identity, guild or pet interaction boxes, even when inactive. */

@@ -3,7 +3,11 @@ name: Faith Edge bundle parity rebuild
 on:
   push:
     branches: ['faith/category-blessings-progression']
-    paths: ['.github/workflows/faith-edge-parity-rebuild.yml']
+    paths:
+      - '.github/workflows/faith-edge-parity-rebuild.yml'
+      - 'apps/mobile/src/**'
+      - 'backend/online/**'
+      - 'tools/build-online.mjs'
   workflow_dispatch:
 permissions:
   contents: write

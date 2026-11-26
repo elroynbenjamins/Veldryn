@@ -12,3 +12,8 @@ Obsidian/silver metal, violet crystalline fractures and pearlescent highlights. 
 - Verify protected aperture at 320/340/390/480 logical px, animation paths and actual device performance. Use same quality baseline as Celestial, Draconic and Abyssal.
  
 No art is uploaded yet. Foundation only, no live renderer, grant catalogue change, purchase, equip or release flag. Candidate IDs must be reviewed against server-owned grant projection before integration.
+
+
+## Complete artwork registry and parity pass
+All twelve WebP assets are present in the branch. The final eight uploaded files match the manifest byte lengths, WebP dimensions, transparency metadata, and independent SHA-256 readback. Review assets now resolve from a single registry; the review caller supplies only selection, trusted grant projection and identity UI, not arbitrary scene textures. CI requires all assets and the 1 MiB compressed budget (851,854 bytes total).
+Aeon idle atlas and matching-only 1.3s tap reaction use the shared clock and existing non-reentrant one-shot hook. Badges remain static. No live profile navigation or production grant registration.

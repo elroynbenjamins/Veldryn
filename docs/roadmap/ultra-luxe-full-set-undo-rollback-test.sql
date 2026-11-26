@@ -28,7 +28,7 @@ begin
   if ack->>'undoEquipRequestId' is distinct from equip_req then raise exception 'UNDO_TOKEN';end if;
   if (select count(*) from private.ultra_luxe_full_set_undo_v1 where account_id=uid)<>1 then raise exception 'UNDO_JOURNAL_COUNT';end if;
   begin
-   perform public.undo_ultra_luxe_full_set_server_v1(uid,cid,old_equip_req,ver,undo_req,h);raise exception 'STALE_NOT_REJECTED';
+   perform public.undo_ultra_luxe_full_set_server_v1(uid,cid,equip_req,ver,undo_req,h);raise exception 'STALE_NOT_REJECTED';
   exception when others then if sqlerrm<>'STALE_ULTRA_LUXE_GAMEPLAY' then raise;end if;end;
   begin
    perform public.undo_ultra_luxe_full_set_server_v1(uid,gen_random_uuid(),equip_req,ver+1,undo_req,h);raise exception 'WRONG_CHARACTER_NOT_REJECTED';
@@ -57,7 +57,7 @@ begin
   s:=l->'state';s:=jsonb_set(s,'{character,profileBackgroundId}',to_jsonb(c.background_id));s:=jsonb_set(s,'{character,profileBorderId}',to_jsonb(c.border_id));s:=jsonb_set(s,'{character,selectedCosmeticPetId}',to_jsonb(c.pet_id));s:=jsonb_set(s,'{character,profileTitle}',to_jsonb(c.title_name));s:=jsonb_set(s,'{character,gold}',to_jsonb(gold));s:=s#-'{character,profileEffectId}';
   equip_req:='luxe_full_set_'||replace(gen_random_uuid()::text,'-','');
   ack:=public.commit_ultra_luxe_full_set_server_v1(uid,cid,c.id,ver,gold,g,null,equip_req,h,jsonb_build_object('accountId',uid,'state',s,'version',ver+1,'serverNow',l->'serverNow'));
-  perform public.undo_ultra_luxe_full_set_server_v1(uid,cid,equip_req,ver,undo_req,h);
+  perform public.undo_ultra_luxe_full_set_server_v1(uid,cid,old_equip_req,ver,undo_req,h);
   if not exists(select 1 from private.ultra_luxe_full_set_undo_v1 where account_id=uid and equip_request_id=equip_req) then raise exception 'REPLAY_CONSUMED_NEW_UNDO';end if;
   update private.ultra_luxe_full_set_undo_v1 set expires_at=clock_timestamp()-interval '1 second' where account_id=uid;
   begin

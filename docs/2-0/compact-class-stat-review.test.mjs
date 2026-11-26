@@ -16,7 +16,7 @@ export const compactClassProfiles = Object.freeze([
   ['HEXWEAVER','damage',[92,18,9],[135,32,13]],
   ['WAYFINDER','damage',[94,18,9],[140,31,14]],
   ['DAWNKEEPER','support',[100,12,11],[155,19,19]],
-  ['STONECALLER','support',[102,17,10],[170,23,22]],
+  ['STONECALLER','support',[102,17,12],[170,23,22]],
 ].map(([id,role,start,level25])=>Object.freeze({
   id,role,start:Object.freeze(start),level25:Object.freeze(level25),
 })));

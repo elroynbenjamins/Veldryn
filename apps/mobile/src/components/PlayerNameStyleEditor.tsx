@@ -8,7 +8,7 @@ import {PlayerStyledName} from './PlayerStyledName';
 import {ownedUltraLuxeTitles} from '../core/ultra-luxe-titles';
 import {useUltraLuxeNameSelection} from '../online/useUltraLuxeNameSelection';
 import {UltraLuxeNameStylePicker} from './profile/UltraLuxeNameStylePicker';
-import type {UltraLuxeNamePresetId} from '../core/ultra-luxe-prestige';
+import {sixLuxeNamesEnabled,type UltraLuxeGradientId} from '../online/ultra-luxe-name-readback';
 import {SettingToggle} from './SettingToggle';
 import type {GameState} from '../core/types';
 import {
@@ -31,10 +31,10 @@ function colorFields(draft:PlayerNameStylePreference,fallback:string|undefined):
 export function PlayerNameStyleEditor({state,previewName,draft,onDraftChange,onSaveNameStyle,onInputDirtyChange,resetVersion=0,active=true,prestige}:{
  state:GameState;previewName?:string;draft:PlayerNameStylePreference;onDraftChange:(style:PlayerNameStylePreference)=>void;
  onSaveNameStyle:SavePlayerNameStyle;onInputDirtyChange?:(dirty:boolean)=>void;resetVersion?:number;active?:boolean;
- prestige?:{verifiedOwnedIds:readonly string[];selectedId?:string|null;saving?:boolean;onSelect:(id:UltraLuxeNamePresetId|null)=>void};
+ prestige?:{verifiedOwnedIds:readonly string[];selectedId?:string|null;saving?:boolean;onSelect:(id:UltraLuxeGradientId|null)=>void};
 }){
  const language=useGameLanguage();
- const privateSelection=useUltraLuxeNameSelection(active&&ownedUltraLuxeTitles(state).length>0);
+ const privateSelection=useUltraLuxeNameSelection(active&&(ownedUltraLuxeTitles(state).length>0||sixLuxeNamesEnabled&&!!state.account.unlockedTitleIds?.some(id=>id.startsWith('ascendant-'))));
  const privatePicker=prestige??privateSelection;
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),entitlements=playerNameStyleEntitlements(state);
  const fieldKey=JSON.stringify(colorFields(draft,state.account.vipPlusNameColor));

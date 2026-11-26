@@ -1,8 +1,10 @@
 import {strict as assert} from 'node:assert';
-import type {CombatInput,CombatantDefinition,DamageType} from '../../types';
+import type {CombatInput} from '../../types';
 import {bosses,profiles,setup} from './ten-slot-boss-fixture';
 import {compileExactEquipmentTraitSourceV2} from '../equipment-trait-exact-copy-adapter';
 import {enemyV2SnapshotDigest} from '../enemy-engine-authority';
+import {buildWorldBossAuthoredReviewV2} from '../world-boss-authored-review';
+import {reviewWorldBossContributionV2,reviewWorldBossFixedLedgerWeightV2} from '../world-boss-contribution-review';
 import {compileWorldBossRosterReviewV2,simulateWorldBossSharedEngineReviewV2,
  WORLD_BOSS_SHARED_ENGINE_REVIEW_LIVE,type WorldBossSharedRosterReviewV2,
  type WorldBossSharedPreviewBindingV2} from '../unified-equipment-encounter';
@@ -25,10 +27,13 @@ function fixture(b:typeof cases[number],phase:typeof phases[number],size:number)
  const traitPorts=ports.map((p,i)=>({...p,verifyPersisted:(rs:readonly typeof sources[number][],digest:string)=>
   rs.length===1&&enemyV2SnapshotDigest(rs[0])===enemyV2SnapshotDigest(sources[i])&&/^[a-f0-9]{64}$/.test(digest)}));
  const seed='QA_WORLD_'+b.id+'_'+phase+'_'+size;
- const boss:CombatantDefinition={...rows[0].input.enemies[0],id:b.id,name:b.name,
-  abilities:[{id:'qa_'+b.id+'_cast',name:b.cast,cooldownMs:6000,castTimeMs:1000,
-   target:'all_enemies',priority:100,interruptible:true,
-   effects:[{kind:'damage',coeff:phase==='enraged'?1.5:1,damageType:b.damageType as DamageType}]}]};
+ const authored=buildWorldBossAuthoredReviewV2({bossId:b.id,phase,
+  level:b.regional.level,stats:rows[0].input.enemies[0].stats,
+  localShieldAmount:phase==='armored'?300:150});
+ const boss=authored.definition;
+ assert.equal(authored.digest,enemyV2SnapshotDigest(boss));
+ assert.equal(boss.abilities.length,3);
+ assert.equal(boss.phases,undefined);
  const input:CombatInput={seed,players:rows.map(x=>x.actor),enemies:[boss],maxDurationMs:12000,tickMs:100};
  const scope:WorldBossSharedRosterReviewV2={accountId,eventId:'QA_WORLD_EVENT',
   reservationId:'QA_WORLD_RESERVATION',attempt:1,entitlementRevision:7,
@@ -63,6 +68,14 @@ for(const boss of cases)for(const phase of phases)for(let size=1;size<=3;size++)
  assert.ok(first.localBossHpLoss>=0&&first.localBossHpLoss<=f.input.enemies[0].stats.maxHp);
  assert.ok(first.combat.events.some(e=>e.type==='combat_start'));
  assert.ok(first.combat.events.some(e=>e.type==='combat_end'));
+ const contribution=reviewWorldBossContributionV2(first.combat);
+ assert.equal(contribution.localHpLoss,first.localBossHpLoss);
+ assert.equal(contribution.characters.length,size);
+ assert.equal(contribution.impactScore,null);
+ assert.equal(contribution.globalHpCredited,0);
+ assert.equal(contribution.shieldOwnerCredit,'unavailable');
+ assert.ok(contribution.bossShieldAbsorbed<=contribution.bossShieldGranted+1);
+ assert.deepEqual(reviewWorldBossContributionV2(run().combat),contribution);
  assert.deepEqual(simulateWorldBossSharedEngineReviewV2(f.input,[...f.builds].reverse(),
   [...f.runtime].reverse(),[...f.traitPorts].reverse(),f.scope,f.verify,true),first);
  count++;
@@ -85,3 +98,18 @@ assert.throws(()=>run({...f.input,enemies:[{...f.input.enemies[0],stats:{...f.in
 assert.throws(()=>run({...f.input,tickMs:5000}),/invalid_local_boss_scope/);
 assert.throws(()=>run({...f.input,initialPlayerState:{}}),/invalid_roster_scope/);
 console.log('WORLD_BOSS_SHARED_ENGINE_REVIEW: '+count+' synthetic local boss/phase/roster scenarios; no global settlement');
+
+for(const first of [0,1,100,10000])for(const extra of [0,1,10,100,10000]){
+ const baseline=reviewWorldBossFixedLedgerWeightV2([first]);
+ const two=reviewWorldBossFixedLedgerWeightV2([first,extra]);
+ assert.ok(two>=baseline);
+ assert.ok(reviewWorldBossFixedLedgerWeightV2([first,extra,1])>=two);
+}
+assert.equal(reviewWorldBossFixedLedgerWeightV2([1000,500,100]),1067);
+assert.throws(()=>reviewWorldBossFixedLedgerWeightV2([100,-1]),/invalid_fixed_ledger/);
+assert.throws(()=>reviewWorldBossFixedLedgerWeightV2(Array<number>(2)),/invalid_fixed_ledger/);
+const profile={bossId:'hollowroot' as const,phase:'armored' as const,
+ level:25,stats:f.input.enemies[0].stats,localShieldAmount:300};
+assert.throws(()=>buildWorldBossAuthoredReviewV2({...profile,localShieldAmount:profile.stats.maxHp}),/invalid_profile/);
+assert.throws(()=>buildWorldBossAuthoredReviewV2({...profile,stats:{...profile.stats,attackPower:NaN}}),/invalid_profile/);
+console.log('WORLD_BOSS_AUTHORED_AND_CONTRIBUTION_REVIEW: nine local profiles, fixed-ledger monotonic checks; no Impact or HP credit');

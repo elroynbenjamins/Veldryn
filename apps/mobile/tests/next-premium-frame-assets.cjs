@@ -1,7 +1,9 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const repo=path.resolve(__dirname,'../../..');
-const manifest=JSON.parse(fs.readFileSync(path.join(repo,'frame-candidate-manifest.json'),'utf8'));
+const manifest={...JSON.parse(fs.readFileSync(path.join(repo,'frame-candidate-manifest.json'),'utf8')),...JSON.parse(fs.readFileSync(path.join(repo,'sakura-v2-frame-manifest.json'),'utf8'))};
 const expected={
+ 'apps/mobile/assets/ascendant/sakura/blossom_crown_v2.webp':[1020,615,157670,'6fc85ad5d157d82a5501f8fc1a7b707b51674e1a2f0490253589b9777fed81d2'],
+ 'apps/mobile/assets/ascendant/sakura/blossom_crown_v2_standard.webp':[1024,576,155624,'6844f2520245c5cda5f6cf6efb3f5508865010b675035a8c051a692ab71427d5'],
  'apps/mobile/assets/ascendant/sakura/blossom_crown.webp':[1020,615,49848,'f783df154c2366a125cdfa358563ff5bafb8e8b71541d3fb79a96b64e4bfb330'],
  'apps/mobile/assets/ascendant/sakura/blossom_crown_standard.webp':[1024,576,48290,'dbb03de1e6084f1f827e6037b71438955c221fa686c96fc14b870b18c47c6b83'],
  'apps/mobile/assets/ascendant/stormforged/steel_crown.webp':[1020,615,39618,'0ba01e95a188035d73ab284dfdde931d032ca7a08cb3df67ced1bf0dbf27467c'],
@@ -20,13 +22,14 @@ for(const [file,[w,h,size,hash]] of Object.entries(expected)){
  assert.equal(b.readUIntLE(24,3)+1,w);assert.equal(b.readUIntLE(27,3)+1,h);
  assert(!(b[20]&2),'static texture, motion is native');
 }
-assert.equal(total,175742);
+assert.equal(total,489036);
 const src=path.join(repo,'apps/mobile/src');
 const registry=fs.readFileSync(path.join(src,'theme/next-premium-frame-review-assets.ts'),'utf8');
-for(const file of Object.keys(expected))assert(registry.includes(file.replace('apps/mobile/','../../')));
+for(const file of Object.keys(expected).filter(f=>!f.endsWith('/sakura/blossom_crown.webp')&&!f.endsWith('/sakura/blossom_crown_standard.webp')))assert(registry.includes(file.replace('apps/mobile/','../../')));
+for(const old of ['sakura/blossom_crown.webp','sakura/blossom_crown_standard.webp'])assert(!registry.includes(old));
 function walk(dir){return fs.readdirSync(dir,{withFileTypes:true}).flatMap(e=>e.isDirectory()?walk(path.join(dir,e.name)):[path.join(dir,e.name)]);}
 for(const file of walk(src)){
  if(!/\.[jt]sx?$/.test(file)||file.endsWith('next-premium-frame-review-assets.ts'))continue;
  assert(!fs.readFileSync(file,'utf8').includes('next-premium-frame-review-assets'),'review registry must remain disconnected: '+file);
 }
-console.log('Four pinned next-premium review textures verified; '+total+' bytes; no production imports.');
+console.log('Six pinned next-premium review textures verified; '+total+' bytes; no production imports.');

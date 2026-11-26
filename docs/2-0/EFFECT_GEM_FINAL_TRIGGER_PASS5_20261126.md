@@ -1,0 +1,9 @@
+# Effect gem trigger pass 5 — final four families
+
+Parent #1890 6e85240e3d8b06adfa6ee82f207de0a540e48b10: private integration job 140022214800 passed all 144 trigger comparisons (2121 reported assertions), Flow strict typing fixed and all 180 resonance cases still green. Add 36 scenarios (180 trigger scenarios total) for Last Stand, Benediction, Renewal and Battle Rhythm.
+
+- Last Stand: strict below 30/35% crossing on eligible hostile HP damage, once per encounter, never saves a downed actor, 6/8s window.
+- Benediction: 1/2 ten-second charges, oldest prior charge consumed once per qualifying authored action, all qualifying outputs in that action share the reserved bonus, new charge granted only after action completes, rank 3 2% haste for 4s. Review decision avoids same-action self-generated charge.
+- Renewal: 4/6s extra healing, rank 2+ 20% total boost, rank 3 up to two independently ticking applications per caster/target. Replace oldest when cap reached; inclusive final tick, exact per-tick total, no generated healing procs; recipient HP/alive checks remain engine responsibility. Apply after processing due ticks; same ID while active rejected, engine must provide non-reused event IDs even after expiry.
+- Battle Rhythm: only successful authored offense/support actions, 8/12s window, opposite category consumes one bonus per action, 6s cooldown on empowered alternations (catalogue interpretation), 2% haste 4s at rank 3. Neutral/basic/proc actions excluded. Future integration must preserve action identity and resolve success/bonus ordering consistently; hybrid classification remains to be specified.
+All 20 families now have review-only boundary logic. No live engine modifications. Remaining cross-family stress, source/cast lifecycle integration, CP, broader red mobile/Edge/sync gates. CI pending, no deployment.

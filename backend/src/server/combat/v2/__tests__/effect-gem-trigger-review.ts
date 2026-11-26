@@ -5,6 +5,8 @@ import {reviewPredatorHitV2,reviewGuardianBarrierV2,reviewUnyieldingDamageV2,rev
  reviewOpportunistApplicationV2,reviewOpportunistHitV2,reviewBulwarkTriggerV2,
  emptyEffectStackReviewV2,reviewEffectStackTransitionV2,type EffectStackReviewEventV2,
  reviewExecutionDamageV2,reviewOpeningStrikeV2,reviewRuinDamageV2,emptyRetaliationReviewV2,reviewRetaliationTakenV2,reviewRetaliationHitV2,
+ reviewLastStandV2,emptyBenedictionReviewV2,reviewBenedictionActionV2,reviewRenewalApplyV2,reviewRenewalTicksV2,
+ emptyBattleRhythmReviewV2,reviewBattleRhythmActionV2,
  type EffectTriggerReviewGroupV2,type UnyieldingReviewStateV2,type GuardianReductionReviewV2} from '../effect-gem-trigger-review';
 import type {CombatantDefinition,CombatantState} from '../../types';
 import {gemOutgoingDamageMultiplierV1,gemOnShieldAppliedV1,gemEffectiveDefenseV1,
@@ -299,6 +301,93 @@ export function runEffectTriggerBoundaryReviewV2(actor:CombatantDefinition,g:Eff
    const third=take(16000,threshold,second.state);
    close(hit(16001,third.state,true,true,999).heal,r===3?1:0);
    assertions=16;break;
+  }
+  case 'effect_last_stand':{
+   const empty={used:false,expiresAt:0},max=1000,threshold=r>=2?350:300;
+   const hit=(now:number,before:number,after:number,state=empty,eligible=true)=>
+    reviewLastStandV2(g,now,state,max,before,after,eligible);
+   assert.equal(hit(0,500,threshold).triggered,false);
+   assert.equal(hit(0,500,0).triggered,false);
+   assert.equal(hit(0,500,threshold-1,empty,false).triggered,false);
+   assert.equal(hit(0,threshold-1,threshold-2).triggered,false);
+   const first=hit(0,threshold,threshold-1);
+   assert.equal(first.triggered,true);close(first.reduction,value);
+   const duration=r===3?8000:6000;
+   assert.equal(first.state.expiresAt,duration);
+   const active=hit(duration-1,500,threshold-1,first.state);
+   close(active.reduction,value);assert.equal(active.triggered,false);
+   close(hit(duration,500,threshold-1,active.state).reduction,0);
+   assert.equal(hit(duration+1,500,threshold-1,active.state).triggered,false);
+   close(hit(100,threshold-1,0,first.state).reduction,0);
+   assertions=12;break;
+  }
+  case 'effect_benediction':{
+   const empty=emptyBenedictionReviewV2(),cap=r>=2?2:1;
+   const action=(now:number,seq:number,state=empty,support=true,output=true)=>
+    reviewBenedictionActionV2(g,now,state,seq,support,output);
+   const first=action(0,0);
+   assert.equal(first.consumed,false);assert.equal(first.granted,true);close(first.bonus,0);
+   assert.equal(first.state.expiries.length,1);
+   const duplicate=action(0,0,first.state);
+   assert.deepEqual(duplicate.state,first.state);assert.equal(duplicate.consumed,false);
+   const excluded=action(100,1,duplicate.state,false,true);
+   assert.equal(excluded.consumed,false);assert.equal(excluded.granted,false);
+   const prep=action(200,2,excluded.state,true,false);
+   assert.equal(prep.state.expiries.length,cap);
+   const used=action(300,3,prep.state);
+   assert.equal(used.consumed,true);close(used.bonus,value);close(used.haste,r===3?.02:0);
+   assert.equal(used.state.expiries.length,cap);
+   assert.equal(action(300,3,used.state).consumed,false);
+   const expired=action(10300,4,used.state);
+   assert.equal(expired.consumed,false);close(expired.haste,0);
+   assertions=17;break;
+  }
+  case 'effect_renewal':{
+   const input={id:'heal1',casterId:'caster',targetId:'ally',now:0,actualHeal:1000,authoredDirect:true,rows:[]};
+   const first=reviewRenewalApplyV2(g,input);
+   close(first.total,1000*value*(r>=2?1.2:1));
+   assert.equal(first.rows[0].expiresAt,r>=2?6000:4000);
+   assert.equal(reviewRenewalApplyV2(g,{...input,authoredDirect:false}).granted,false);
+   assert.equal(reviewRenewalApplyV2(g,{...input,actualHeal:0}).granted,false);
+   assert.equal(reviewRenewalApplyV2(g,{...input,rows:first.rows}).granted,false);
+   const tick=reviewRenewalTicksV2(first.rows,2000);
+   assert.equal(tick.heals.length,1);assert.equal(tick.heals[0].mayTriggerEffects,false);
+   assert.equal(reviewRenewalTicksV2(tick.rows,2000).heals.length,0);
+   const end=reviewRenewalTicksV2(tick.rows,10000);
+   assert.equal(end.rows.length,0);
+   close([...tick.heals,...end.heals].reduce((n,h)=>n+h.amount,0),first.total);
+   const second=reviewRenewalApplyV2(g,{...input,id:'heal2',now:100,rows:first.rows});
+   const other=reviewRenewalApplyV2(g,{...input,id:'other',casterId:'other',now:200,rows:second.rows});
+   const third=reviewRenewalApplyV2(g,{...input,id:'heal3',now:300,rows:other.rows});
+   assert.equal(third.rows.filter(x=>x.casterId==='caster').length,r===3?2:1);
+   assert.equal(third.rows.filter(x=>x.casterId==='other').length,1);
+   assert.equal(third.rows.some(x=>x.id==='heal1'),false);
+   assertions=13;break;
+  }
+  case 'effect_battle_rhythm':{
+   const empty=emptyBattleRhythmReviewV2(),window=r>=2?12000:8000;
+   const action=(now:number,seq:number,category:'offense'|'support'|'neutral',state=empty,eligible=true,successful=true)=>
+    reviewBattleRhythmActionV2(g,now,state,seq,category,eligible,successful);
+   const first=action(0,0,'offense');
+   close(first.bonus,0);assert.equal(first.state.windowUntil,window);
+   const neutral=action(100,1,'neutral',first.state);
+   assert.equal(neutral.state.previous,'offense');close(neutral.bonus,0);
+   const missed=action(200,2,'support',neutral.state,true,false);
+   close(missed.bonus,0);assert.equal(missed.state.previous,'offense');
+   const alternate=action(300,3,'support',missed.state);
+   close(alternate.bonus,value);close(alternate.haste,r===3?.02:0);
+   assert.equal(alternate.state.readyAt,6300);
+   const duplicate=action(300,3,'support',alternate.state);
+   close(duplicate.bonus,0);
+   const early=action(1000,4,'offense',duplicate.state);
+   close(early.bonus,0);
+   const next=action(6300,5,'support',early.state);
+   close(next.bonus,value);assert.equal(next.state.readyAt,12300);
+   const expired=action(window,1,'support',first.state);
+   close(expired.bonus,0);
+   const repeat=action(100,1,'offense',first.state);
+   close(repeat.bonus,0);
+   assertions=15;break;
   }
   default:return null;
  }

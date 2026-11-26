@@ -1,24 +1,17 @@
-import {useEffect,useRef,useState} from 'react';
-import {AccessibilityInfo,Animated,AppState,Easing,Image,StyleSheet,View} from 'react-native';
+import {useCosmeticMotionPolicy} from '../anim/motion';
+import {useEffect,useMemo,useState} from 'react';
+import {Animated,Easing,Image,StyleSheet,View} from 'react-native';
 import {getCelestialAssetBundle} from '../../theme/celestial-integration-assets';
 
 function useCelestialClock(active:boolean,reduceMotion:boolean,duration:number){
- const clock=useRef(new Animated.Value(0)).current;
- const [foreground,setForeground]=useState(AppState.currentState==='active');
- const [systemReduced,setSystemReduced]=useState(true);
- useEffect(()=>{const sub=AppState.addEventListener('change',state=>setForeground(state==='active'));return()=>sub.remove();},[]);
- useEffect(()=>{
-  let mounted=true,changed=false;
-  const sub=AccessibilityInfo.addEventListener('reduceMotionChanged',value=>{changed=true;if(mounted)setSystemReduced(value);});
-  AccessibilityInfo.isReduceMotionEnabled().then(value=>{if(mounted&&!changed)setSystemReduced(value);}).catch(()=>{});
-  return()=>{mounted=false;sub.remove();};
- },[]);
+ const [clock]=useState(()=>new Animated.Value(0));
+ const {running}=useCosmeticMotionPolicy(active,reduceMotion);
  useEffect(()=>{
   clock.stopAnimation();clock.setValue(0);
-  if(!active||reduceMotion||systemReduced||!foreground)return;
+  if(!running)return;
   const loop=Animated.loop(Animated.timing(clock,{toValue:1,duration,easing:Easing.linear,useNativeDriver:true,isInteraction:false}));
   loop.start();return()=>{loop.stop();clock.stopAnimation();};
- },[active,clock,duration,foreground,reduceMotion,systemReduced]);
+ },[running,clock,duration]);
  return clock;
 }
 
@@ -41,9 +34,9 @@ export function CelestialStandardBackgroundEffects({active,reduceMotion=false}:{
  * The richer rail/eclipsing signature belongs to CelestialSovereignPreview only. */
 export function CelestialStandardBorderEffects({active,reduceMotion=false}:{active:boolean;reduceMotion?:boolean}){
  const [width,setWidth]=useState(0),clock=useCelestialClock(active,reduceMotion,12000),star=getCelestialAssetBundle().scene.star;
- const travel=clock.interpolate({inputRange:[0,1],outputRange:[0,Math.max(0,width-42)]});
+ const travel=useMemo(()=>clock.interpolate({inputRange:[0,.5,1],outputRange:[0,Math.max(0,width-42),0]}),[clock,width]);
  const pulse=clock.interpolate({inputRange:[0,.35,.7,1],outputRange:[.25,.85,.35,.25]});
- return <View onLayout={event=>setWidth(event.nativeEvent.layout.width)} pointerEvents="none" accessible={false}
+ return <View onLayout={event=>{const next=event.nativeEvent.layout.width;setWidth(old=>Math.abs(old-next)<.5?old:next);}} pointerEvents="none" accessible={false}
   importantForAccessibility="no-hide-descendants" style={s.borderLayer}>
   <Animated.Image source={star} resizeMode="contain" style={[s.railStar,{opacity:pulse,transform:[{translateX:travel}]}]}/>
   <Animated.Image source={star} resizeMode="contain" style={[s.cornerStar,s.cornerTL,{opacity:pulse}]}/>

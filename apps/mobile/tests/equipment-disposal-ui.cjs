@@ -8,7 +8,9 @@ const pouch=fs.readFileSync(path.join(root,'components/EquipmentPouchPanel.tsx')
 const status=fs.readFileSync(path.join(root,'components/EquipmentDisposalStatus.tsx'),'utf8');
 assert.match(screen,/sellBlockReason=\{previewDisposal\.sellReason\}/,'comparison receives exact sell reason');
 assert.match(screen,/salvageBlockReason=\{previewDisposal\.salvageReason\}/,'comparison receives exact salvage reason');
-assert.match(screen,/equipmentCopyDisposalDecision\(state,selectedCopy\.id,'salvage'\)/,'unique-copy inspect uses validated salvage');
+assert.match(screen,/const selectedCopyId=selectedCopy\?\.id;/,'inspection uses the selected physical copy ID');
+assert.match(screen,/useMemo\(\(\)=>selectedCopyId\?equipmentCopyDisposalDecision\(state,selectedCopyId,'salvage'\):null,\[state,selectedCopyId\]\)/,'unique-copy inspect uses validated salvage and rechecks on snapshot or copy change');
+assert.match(screen,/useMemo\(\(\)=>selectedCopyId\?equipmentCopyDisposalDecision\(state,selectedCopyId,'sell'\):null,\[state,selectedCopyId\]\)/,'unique-copy inspect uses validated selling and rechecks on snapshot or copy change');
 assert.match(screen,/Salvage may need a free slot/,'full Inventory explains salvage limits');
 assert.match(preview,/<EquipmentDisposalStatus compact/,'expanded secondary actions explain blocked sell/salvage permissions');
 assert.doesNotMatch(preview,/actionsOpen|hasOtherActions/,'approved equipment actions must never require opening a drawer');

@@ -49,7 +49,8 @@ export function gameplayHandler(services:GameplayServices,authenticatePlayer:Aut
   if(!bearer)return json({error:'auth_required'},401);
   const player=await authenticatePlayer(bearer);if(!player)return json({error:'invalid_session'},401);
   const {accountId,adminQa}=player;
-  if(request.method==='GET'){try{await services.rpc('record_player_activity_server_v1',{p_account_id:accountId,p_kind:'foreground'});}catch{/* Activity analytics are best-effort and must never block gameplay. */}}
+  // Activity recording is best effort and independent of the authoritative read.
+  const recordActivity=(kind:string)=>services.rpc('record_player_activity_server_v1',{p_account_id:accountId,p_kind:kind}).catch(()=>undefined);
   let body:Record<string,unknown>|undefined,command:ReturnType<typeof validateGameCommand>|undefined,requestHash:string|undefined;
   if(request.method==='POST'){
    const raw=await request.text();if(raw.length>16384)return json({error:'request_too_large'},413);
@@ -58,11 +59,16 @@ export function gameplayHandler(services:GameplayServices,authenticatePlayer:Aut
    try{command=validateGameCommand(body.command);telemetryCommandType=command.type;}catch(e){throw new GameplayError(e instanceof Error?e.message:'invalid_command');}
    if(command.type.startsWith('qa_')&&!adminQa)throw new GameplayError('admin_qa_required',403);
    requestHash=await hash(canonical(command));
-   try{await services.rpc('record_player_activity_server_v1',{p_account_id:accountId,p_kind:command.type.startsWith('event_')?'event_action':'gameplay_action'});}catch{/* Activity analytics are best-effort and must never block gameplay. */}
-   const prior=await services.rpc<{response:unknown;requestHash:string}|null>(receiptRpc,{p_account_id:accountId,p_request_id:body.requestId});
+   const [prior]=await Promise.all([
+    services.rpc<{response:unknown;requestHash:string}|null>(receiptRpc,{p_account_id:accountId,p_request_id:body.requestId}),
+    recordActivity(command.type.startsWith('event_')?'event_action':'gameplay_action'),
+   ]);
    if(prior){if(prior.requestHash!==requestHash){await recordOutcome('conflict');return json({error:'idempotency_key_conflict'},409);}await recordOutcome('replayed');return json(prior.response);}
   }
-  const loaded=await services.rpc<LoadedGame>(loadRpc,{p_account_id:accountId});
+  const [loaded]=await Promise.all([
+   services.rpc<LoadedGame>(loadRpc,{p_account_id:accountId}),
+   request.method==='GET'?recordActivity('foreground'):Promise.resolve(),
+  ]);
   // A stored legacy claim must be frozen using trusted server data BEFORE the
   // old account projection is migrated to the currently active character.
   if(privateGrants&&!Array.isArray(loaded.ultraLuxeCollectionIds))throw new Error('ultra_luxe_grant_projection_missing');
@@ -85,15 +91,16 @@ export function gameplayHandler(services:GameplayServices,authenticatePlayer:Aut
   // unavailable projection never blocks a gameplay command. Zero while skills
   // are unreleased, so this is a no-op until the database owner releases them.
   state.guildSkillEffects=undefined;
-  if(state.account.guildMember){try{state.guildSkillEffects=await services.rpc('guild_skill_effects_server_v1',{p_account_id:accountId});}catch{/* no bonus this resolution */}}
-  // Only a server projection can grant Winter Hearth bonuses. Clear every read so
-  // switching guilds or event shutdown cannot retain stale seasonal power.
+  // The two account-scoped projections are independent; fail closed individually.
   state.winterHearthBonusWindows=undefined;
-  if(WINTER_HEARTH_GUILD_RELEASED&&state.account.guildMember){
-   try{
-    const windows=await services.rpc<unknown>('winter_hearth_2026_bonus_windows_server_v1',{p_account_id:accountId});
-    state.winterHearthBonusWindows=validateWinterHearthBonusWindows(windows);
-   }catch{/* Fail closed: no unverified XP or gathering-speed bonus. */}
+  if(state.account.guildMember){
+   await Promise.all([
+    (async()=>{try{state.guildSkillEffects=await services.rpc('guild_skill_effects_server_v1',{p_account_id:accountId});}catch{/* no bonus this resolution */}})(),
+    (async()=>{if(WINTER_HEARTH_GUILD_RELEASED){try{
+     const windows=await services.rpc<unknown>('winter_hearth_2026_bonus_windows_server_v1',{p_account_id:accountId});
+     state.winterHearthBonusWindows=validateWinterHearthBonusWindows(windows);
+    }catch{/* Fail closed: no unverified XP or gathering-speed bonus. */}}})(),
+   ]);
   }
   if(!body||!command)return json({state,version:loaded.version,serverNow:loaded.serverNow,accountId});
   if(body.expectedVersion!==loaded.version){

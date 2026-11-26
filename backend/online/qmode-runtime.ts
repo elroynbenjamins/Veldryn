@@ -146,8 +146,17 @@ export class OnlineQModeRuntime{
   return this.services.rpc('purchase_online_qmode_merchant_server_v1',{p_account_id:accountId,p_run_id:runId,p_expected_version:loaded.stateVersion,p_request_id:request.requestId,p_request_hash:hash,p_offer_id:request.offerId,p_actor_id:actorId,p_private_state:{run:next,seed},p_client_projection:client});
  }
  async choose(accountId:string,runId:string,request:CoopDecisionCommand){
-  const hash=digest(request),prior=await this.receipt(accountId,'qmode_choose_v1',runId,request.requestId,hash);if(prior)return prior.response;
-  const loaded=await this.services.rpc<Loaded>('load_online_qmode_server_v1',{p_account_id:accountId,p_run_id:runId});
+  const hash=digest(request);
+  // Both reads are account-scoped and non-mutating; keep the receipt authoritative
+  // even if a replay arrives after the run has closed or the snapshot read fails.
+  const [receiptRead,snapshotRead]=await Promise.allSettled([
+   this.receipt(accountId,'qmode_choose_v1',runId,request.requestId,hash),
+   this.services.rpc<Loaded>('load_online_qmode_server_v1',{p_account_id:accountId,p_run_id:runId}),
+  ]);
+  if(receiptRead.status==='rejected')throw receiptRead.reason;
+  const prior=receiptRead.value;if(prior)return prior.response;
+  if(snapshotRead.status==='rejected')throw snapshotRead.reason;
+  const loaded=snapshotRead.value;
   if(loaded.privateState.pending){const replay=await this.receipt(accountId,'qmode_choose_v1',runId,request.requestId,hash);if(replay)return replay.response;throw new GameplayError('node_resolving',409);}
   if(request.decisionRevision!==loaded.stateVersion||request.decisionId!==loaded.privateState.run.currentNodeId){const replay=await this.receipt(accountId,'qmode_choose_v1',runId,request.requestId,hash);if(replay)return replay.response;throw new GameplayError('stale_state',409);}
   const {run:before,seed}=loaded.privateState,repository=new MemoryQModeRunRepository();repository.save(before);

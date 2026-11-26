@@ -1,9 +1,10 @@
 import {memo,useCallback,useEffect,useMemo,useRef,useState} from 'react';
-import {Animated,AppState,Easing,Image,StyleSheet,View,type ImageSourcePropType,type LayoutChangeEvent,type NativeScrollEvent,type NativeSyntheticEvent} from 'react-native';
-import {profileFrameSegments,profileSceneFrameSegments,profileSceneGlowBounds} from '../core/profile-frame-layout';
+import {Animated,Easing,Image,StyleSheet,View,type ImageSourcePropType,type LayoutChangeEvent,type NativeScrollEvent,type NativeSyntheticEvent} from 'react-native';
+import {profileFrameSegments,profileSceneFrameSegments,profileSceneGlowBounds,profileSceneArtworkGlowBounds} from '../core/profile-frame-layout';
 import {sampleCosmeticTrack,cosmeticGlowOpacity,cosmeticViewportVisible,MOTION_STEPS as steps} from '../core/profile-cosmetic-motion-v2';
 import type {CosmeticArt} from '../theme/profile-cosmetic-art-v1';
-import type {ProfileCosmeticRuntime,ProfileParticleKind} from '../theme/profile-cosmetic-runtime-v1';
+import {usesArtworkGlowAnchors,type ProfileCosmeticRuntime,type ProfileParticleKind} from '../theme/profile-cosmetic-runtime-v1';
+import {useCosmeticMotionPolicy} from './anim/motion';
 const SW=768,SH=432;
 type Segment=ReturnType<typeof profileFrameSegments>[number];
 type Rect=readonly [number,number,number,number];
@@ -39,22 +40,21 @@ export function useCosmeticScrollVisibility(){
 function useClock(enabled:boolean,period:number){
  const [clock]=useState(()=>new Animated.Value(0));
  const [entryOpacity]=useState(()=>new Animated.Value(0));
- const [foreground,setForeground]=useState(AppState.currentState!=='background'&&AppState.currentState!=='inactive');
- useEffect(()=>{if(!enabled)return;setForeground(AppState.currentState!=='background'&&AppState.currentState!=='inactive');const sub=AppState.addEventListener('change',s=>setForeground(s==='active'));return ()=>sub.remove()},[enabled]);
  useEffect(()=>{
   clock.stopAnimation();entryOpacity.stopAnimation();entryOpacity.setValue(0);
-  if(!enabled||!foreground||AppState.currentState==='background'||AppState.currentState==='inactive')return;
+  if(!enabled)return;
   // Restart behind a short native opacity transition rather than flashing a reset phase.
   clock.setValue(0);
   const loop=Animated.loop(Animated.timing(clock,{toValue:1,duration:period,easing:Easing.linear,useNativeDriver:true,isInteraction:false}));
   const entry=Animated.timing(entryOpacity,{toValue:1,duration:180,easing:Easing.out(Easing.quad),useNativeDriver:true,isInteraction:false});
   loop.start();entry.start();
   return()=>{entry.stop();loop.stop();clock.stopAnimation();entryOpacity.stopAnimation();entryOpacity.setValue(0);};
- },[clock,entryOpacity,enabled,foreground,period]);
+ },[clock,entryOpacity,enabled,period]);
  return {clock,entryOpacity};
 }
-export const AnimatedProfileBorderGlows=memo(function AnimatedProfileBorderGlows({art,active,reduceMotion=false}:{art:CosmeticArt;active:boolean;reduceMotion?:boolean}){
- const [size,setSize]=useState({width:0,height:0});const enabled=active&&!reduceMotion&&size.width>0&&size.height>0;const {clock,entryOpacity}=useClock(enabled,12000);
+export const AnimatedProfileBorderGlows=memo(function AnimatedProfileBorderGlows({art,active,reduceMotion:requestedReduceMotion=false}:{art:CosmeticArt;active:boolean;reduceMotion?:boolean}){
+ const {reduced:reduceMotion,running}=useCosmeticMotionPolicy(active,requestedReduceMotion);
+ const [size,setSize]=useState({width:0,height:0});const enabled=active&&!reduceMotion&&size.width>0&&size.height>0;const {clock,entryOpacity}=useClock(running&&enabled,12000);
  const segments=useMemo(()=>profileSceneFrameSegments(size.width,size.height,16/9),[size.width,size.height]);
  const layers=useMemo(()=>!active||!size.width||!size.height?[]:art.glows.flatMap((g,index)=>{
   const pieces=segments.flatMap(p=>{const box=mapCosmeticSprite(p,g.sourceRect);return box?[{key:p.key,box}]:[];});
@@ -77,8 +77,9 @@ export const ProfileCosmeticExteriorMatte=memo(function ProfileCosmeticExteriorM
  {segments.map(p=><View key={p.key} style={{position:'absolute',left:p.x,top:p.y,width:p.width,height:p.height,overflow:'hidden'}}><Image source={source} fadeDuration={0} resizeMode="stretch" style={{position:'absolute',left:p.imageLeft,top:p.imageTop,width:p.imageWidth,height:p.imageHeight,tintColor:color}}/></View>)}
  </View>;
 });
-export const ProfileSceneEffect=memo(function ProfileSceneEffect({art,active,reduceMotion=false}:{art:CosmeticArt;active:boolean;reduceMotion?:boolean}){
- const [size,setSize]=useState({width:0,height:0});const enabled=active&&!reduceMotion&&size.width>0&&size.height>0;const {clock,entryOpacity}=useClock(enabled,art.effectPeriodMs);
+export const ProfileSceneEffect=memo(function ProfileSceneEffect({art,active,reduceMotion:requestedReduceMotion=false}:{art:CosmeticArt;active:boolean;reduceMotion?:boolean}){
+ const {reduced:reduceMotion,running}=useCosmeticMotionPolicy(active,requestedReduceMotion);
+ const [size,setSize]=useState({width:0,height:0});const enabled=active&&!reduceMotion&&size.width>0&&size.height>0;const {clock,entryOpacity}=useClock(running&&enabled,art.effectPeriodMs);
  const items=useMemo(()=>!enabled?[]:art.tracks.map((t,i)=>{
   const samples=steps.map(f=>sampleCosmeticTrack(t,f,size.width,size.height));
   const interp=(key:'x'|'y'|'opacity')=>clock.interpolate({inputRange:steps,outputRange:samples.map(p=>p[key])});
@@ -100,16 +101,23 @@ const ParticleShape=memo(function ParticleShape({kind,accent,soft,size}:{kind:Pr
  if(kind==='firefly')return <View style={{width:size,height:size,alignItems:'center',justifyContent:'center'}}><View style={{position:'absolute',width:size,height:size,borderRadius:99,backgroundColor:soft,opacity:.20}}/><View style={{width:size*.34,height:size*.34,borderRadius:99,backgroundColor:accent}}/></View>;
  return <View style={{width:size,height:size,alignItems:'center',justifyContent:'center'}}><View style={{position:'absolute',width:size*.78,height:size*.12,borderRadius:99,backgroundColor:soft}}/><View style={{position:'absolute',width:size*.12,height:size*.78,borderRadius:99,backgroundColor:soft}}/><View style={{width:size*.42,height:size*.42,backgroundColor:accent,transform:[{rotate:'45deg'}]}}/></View>;
 });
-export const ProceduralProfileBorderGlows=memo(function ProceduralProfileBorderGlows({runtime,active,reduceMotion=false}:{runtime:ProfileCosmeticRuntime;active:boolean;reduceMotion?:boolean}){
- const [size,setSize]=useState({width:0,height:0}),{clock,entryOpacity}=useClock(active&&!reduceMotion&&size.width>0&&size.height>0,12000);
- const glows=useMemo(()=>!active||!size.width||!size.height?[]:runtime.glows.map(g=>({g,opacity:reduceMotion?g.peakOpacity*.28:clock.interpolate({inputRange:steps,outputRange:steps.map(f=>cosmeticGlowOpacity(runtime.motionProfile,f,g.periodMs,g.phaseMs,g.peakOpacity))}),bounds:profileSceneGlowBounds(size.width,size.height,g.x,g.y,Math.min(g.size,Math.max(4,size.width*.035)))})),[active,reduceMotion,clock,runtime,size.width,size.height]);
+export const ProceduralProfileBorderGlows=memo(function ProceduralProfileBorderGlows({runtime,active,reduceMotion:requestedReduceMotion=false}:{runtime:ProfileCosmeticRuntime;active:boolean;reduceMotion?:boolean}){
+ const {reduced:reduceMotion,running}=useCosmeticMotionPolicy(active,requestedReduceMotion);
+ const [size,setSize]=useState({width:0,height:0}),{clock,entryOpacity}=useClock(running&&size.width>0&&size.height>0,12000);
+ const artworkAnchors=usesArtworkGlowAnchors(runtime.motionProfile);
+ const glows=useMemo(()=>!active||!size.width||!size.height?[]:runtime.glows.map(g=>{
+  const diameter=Math.min(g.size,Math.max(4,size.width*.035));
+  return {g,opacity:reduceMotion?g.peakOpacity*.28:clock.interpolate({inputRange:steps,outputRange:steps.map(f=>cosmeticGlowOpacity(runtime.motionProfile,f,g.periodMs,g.phaseMs,g.peakOpacity))}),bounds:artworkAnchors?profileSceneArtworkGlowBounds(size.width,size.height,g.x,g.y,diameter):profileSceneGlowBounds(size.width,size.height,g.x,g.y,diameter)};
+ }),[active,reduceMotion,clock,runtime,size.width,size.height,artworkAnchors]);
+ const crystal=runtime.motionProfile==='gloamward'||runtime.motionProfile==='frostbound';
  if(!active)return null;
  return <Animated.View pointerEvents="none" accessible={false} style={[StyleSheet.absoluteFill,{zIndex:11,opacity:reduceMotion?1:entryOpacity}]} onLayout={({nativeEvent:{layout}})=>setSize(old=>old.width===layout.width&&old.height===layout.height?old:{width:layout.width,height:layout.height})}>
-  {glows.map(({opacity,bounds},i)=>{if(!bounds)return null;const d=bounds.width;return <Animated.View key={i} style={{position:'absolute',left:bounds.x,top:bounds.y,width:d,height:d,borderRadius:99,opacity,backgroundColor:runtime.softAccent,alignItems:'center',justifyContent:'center'}}><View style={{width:d*.46,height:d*.46,borderRadius:99,backgroundColor:runtime.accent}}/></Animated.View>})}
+  {glows.map(({opacity,bounds},i)=>{if(!bounds)return null;const d=bounds.width;return <Animated.View key={i} style={{position:'absolute',left:bounds.x,top:bounds.y,width:d,height:d,borderRadius:99,opacity,backgroundColor:artworkAnchors?runtime.softAccent+'66':runtime.softAccent,alignItems:'center',justifyContent:'center'}}><View style={{width:d*.46,height:d*.46,borderRadius:crystal?1:99,backgroundColor:runtime.accent,transform:crystal?[{rotate:'45deg'}]:undefined}}/></Animated.View>})}
  </Animated.View>;
 });
-export const ProceduralProfileSceneEffect=memo(function ProceduralProfileSceneEffect({runtime,active,reduceMotion=false}:{runtime:ProfileCosmeticRuntime;active:boolean;reduceMotion?:boolean}){
- const [size,setSize]=useState({width:0,height:0}),enabled=active&&!reduceMotion&&size.width>0&&size.height>0,{clock,entryOpacity}=useClock(enabled,runtime.effectPeriodMs);
+export const ProceduralProfileSceneEffect=memo(function ProceduralProfileSceneEffect({runtime,active,reduceMotion:requestedReduceMotion=false}:{runtime:ProfileCosmeticRuntime;active:boolean;reduceMotion?:boolean}){
+ const {reduced:reduceMotion,running}=useCosmeticMotionPolicy(active,requestedReduceMotion);
+ const [size,setSize]=useState({width:0,height:0}),enabled=active&&!reduceMotion&&size.width>0&&size.height>0,{clock,entryOpacity}=useClock(running&&enabled,runtime.effectPeriodMs);
  const staticItems=useMemo(()=>!active||!reduceMotion||!size.width||!size.height?[]:runtime.tracks.map((t,i)=>({i,t,p:sampleCosmeticTrack(t,.38,size.width,size.height)})),[active,reduceMotion,runtime,size.width,size.height]);
  const items=useMemo(()=>!enabled?[]:runtime.tracks.map((t,i)=>{const samples=steps.map(f=>sampleCosmeticTrack(t,f,size.width,size.height));const interp=(key:'x'|'y'|'opacity')=>clock.interpolate({inputRange:steps,outputRange:samples.map(p=>p[key])});const rotation=clock.interpolate({inputRange:steps,outputRange:samples.map(p=>p.rotation+'deg')});return {i,t,width:samples[0].width,opacity:interp('opacity'),x:interp('x'),y:interp('y'),rotation};}),[enabled,clock,runtime,size.width,size.height]);
  if(!active)return null;

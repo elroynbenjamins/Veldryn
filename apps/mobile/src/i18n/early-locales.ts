@@ -15,6 +15,7 @@ import {RUSSIAN_RELEASE_POLISH_ROWS} from './russian-release-polish';
 
 // Extended RU/TR copy; missing phrases deliberately fall back to English.
 export const EARLY_LOCALE_ROWS={
+  "Animated sets": ["Анимированные наборы","Animasyonlu setler"],
   "Your account character class.": ["Класс одного из ваших персонажей.","Hesabındaki bir karakterin sınıfı."],
   "Account-wide": ["Для всей учётной записи","Hesap genelinde"],
   "Ascendant name styles": ["Стили имени Вознесённых","Yüceliş isim stilleri"],

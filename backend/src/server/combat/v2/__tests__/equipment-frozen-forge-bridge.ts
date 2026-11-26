@@ -1778,7 +1778,9 @@ function makeV21Loadout(classId:ClassIdV2,specIndex:0|1,targetTier:1|2|3|4,targe
  const parties:ClassIdV2[][]=[['IRONWARDEN','WAYFINDER','HEXWEAVER','STONECALLER'],
   ['BASTION','RAVAGER','KNIFE_DANCER','DAWNKEEPER'],['DREADGUARD','HEXWEAVER','RAVAGER','STONECALLER']];
  const arms=['stat_precision','stat_elusive','stat_potent','mixed-role'];
- const effectFamilies=['effect_execution','effect_opening_strike','effect_predator'];
+ const originalEffectFamilies=['effect_execution','effect_opening_strike','effect_predator'];
+ const stackEffectFamilies=['effect_momentum','effect_critical_surge','effect_flow'];
+ const effectFamilies=[...originalEffectFamilies,...stackEffectFamilies];
  const profiles=[{id:'BOSS_EXP_SPHINX',name:'The Veiled Sphinx',region:'sunscar' as const,tier:3 as const,level:40},
   {id:'BOSS_EXP_BELLBEAST',name:'The Bellbeast of Shiverlake',region:'frostmarch' as const,tier:4 as const,level:60}];
  const rows:{classId:ClassIdV2;spec:number;arm:string;boss:string;seed:number;result:ReturnType<ReturnType<typeof createGentleGemPartyPressureReviewV2>>}[]=[];
@@ -1845,13 +1847,23 @@ function makeV21Loadout(classId:ClassIdV2,specIndex:0|1,targetTier:1|2|3|4,targe
   }
  }
  assert.equal(baseEncounters,24);assert.equal(rows.length,384);
- assert.equal(effectRows.length,216);
+ assert.equal(effectRows.length,432);
  assert.ok(effectRows.filter(r=>r.family==='effect_opening_strike'||r.family==='effect_predator').every(r=>r.result.triggerCount>0));
- console.log('PRIVATE_DAMAGE_GEM_COMBAT_REVIEW '+JSON.stringify({cases:effectRows.length,baseEncounters,
-  scope:'THREE_EFFECT_FAMILY_EXECUTABLE_QA',byFamilyRank:effectFamilies.flatMap(family=>[1,2,3].map(rank=>{
+ console.log('PRIVATE_DAMAGE_GEM_COMBAT_REVIEW '+JSON.stringify({cases:effectRows.filter(r=>originalEffectFamilies.includes(r.family)).length,baseEncounters,
+  scope:'THREE_EFFECT_FAMILY_EXECUTABLE_QA',byFamilyRank:originalEffectFamilies.flatMap(family=>[1,2,3].map(rank=>{
    const a=effectRows.filter(r=>r.family===family&&r.rank===rank);return {family,rank,cases:a.length,
     activeEncounters:a.filter(r=>r.result.triggerCount>0).length,triggers:a.reduce((n,r)=>n+r.result.triggerCount,0),
     maxFraction:Math.max(...a.map(r=>r.result.maxFraction)),meanDpsDelta:a.reduce((n,r)=>n+r.result.after.dps-r.result.before.dps,0)/a.length,
+    lostVictories:a.filter(r=>r.result.before.victory>r.result.after.victory).length};})),releaseEnabled:false,cpApproved:false}));
+ const stackRows=effectRows.filter(r=>stackEffectFamilies.includes(r.family));
+ assert.equal(stackRows.length,216);
+ console.log('PRIVATE_STACK_GEM_COMBAT_REVIEW '+JSON.stringify({cases:stackRows.length,baseEncounters,
+  scope:'THREE_STACK_FAMILY_EXECUTABLE_QA',byFamilyRank:stackEffectFamilies.flatMap(family=>[1,2,3].map(rank=>{
+   const a=stackRows.filter(r=>r.family===family&&r.rank===rank);return {family,rank,cases:a.length,
+    activeEncounters:a.filter(r=>r.result.stackTriggers>0).length,
+    stackTriggers:a.reduce((n,r)=>n+r.result.stackTriggers,0),hasteUses:a.reduce((n,r)=>n+r.result.hasteUses,0),
+    maxStacks:Math.max(...a.map(r=>r.result.maxStacks)),maxFraction:Math.max(...a.map(r=>r.result.maxFraction)),
+    meanDpsDelta:a.reduce((n,r)=>n+r.result.after.dps-r.result.before.dps,0)/a.length,
     lostVictories:a.filter(r=>r.result.before.victory>r.result.after.victory).length};})),releaseEnabled:false,cpApproved:false}));
  const groups=new Map<string,typeof rows>();
  for(const r of rows){const k=CLASS_ROLES_V2[r.classId]+'|'+r.arm;groups.set(k,[...(groups.get(k)??[]),r]);}

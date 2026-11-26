@@ -107,15 +107,33 @@ export function createGentleGemPartyPressureReviewV2(members:readonly Member[],p
   assert.equal(JSON.stringify(members),snapshots);
   const a=measure(before,index),b=measure(after,index);
   assert.ok([...Object.values(a),...Object.values(b)].every(Number.isFinite));
-  const triggers=after.events.filter(e=>e.detail?.startsWith('private_qa_damage_gem:'));
-  assert.ok(!before.events.some(e=>e.detail?.startsWith('private_qa_damage_gem:')));
+  const isGemTrace=(e:{detail?:string})=>/^private_qa_(damage|stack|haste)_gem:/.test(e.detail??'');
+  const triggers=after.events.filter(isGemTrace);
+  const stackTriggers=triggers.filter(e=>e.detail?.startsWith('private_qa_stack_gem:'));
+  assert.ok(!before.events.some(isGemTrace));
+  const keys=stackTriggers.map(e=>e.detail!.split(':').slice(1,3).join(':'));
+  assert.equal(new Set(keys).size,keys.length,'one stack transition per family/action');
+  assert.ok(stackTriggers.every(e=>Number(e.detail!.split(':')[2])>0&&Number(e.detail!.split(':')[3])>0));
   assert.ok(triggers.every(e=>e.actorId===actor.id&&e.amount!==undefined&&e.amount>0&&
    (e.abilityId==='BASIC'||actor.abilities.some(a=>a.id===e.abilityId))));
   if(effectOnly){
    const report=p.effectResonanceReview!;
-   assert.ok(triggers.every(e=>report.families.some(g=>e.detail==='private_qa_damage_gem:'+g.familyId&&e.amount!<=g.peak.candidate+1e-9)));
+   assert.ok(triggers.every(e=>report.families.some(g=>e.detail!.split(':')[1]===g.familyId&&e.amount!<=g.peak.candidate+1e-9)));
+   const byFamily=new Map(report.families.map(g=>[g.familyId,g]));
+   for(const event of stackTriggers){
+    const [,family,,count]=event.detail!.split(':'),g=byFamily.get(family)!;
+    const cap=family==='effect_momentum'?(g.resonance>=2?6:5):(g.resonance>=2?4:3);
+    assert.ok(Number(count)<=cap&&Math.abs(event.amount!-Number(count)*g.totalValue)<1e-9);
+   }
+   for(const family of ['effect_momentum','effect_critical_surge']){
+    const xs=stackTriggers.filter(e=>e.detail!.split(':')[1]===family);
+    for(let i=1;i<xs.length;i++)assert.ok(xs[i].atMs-xs[i-1].atMs>=(family==='effect_momentum'?500:750));
+   }
    assert.deepEqual(after.players[index].definition,before.players[index].definition);
   }else assert.equal(triggers.length,0);
-  return {before:a,after:b,triggerCount:triggers.length,maxFraction:Math.max(0,...triggers.map(e=>e.amount??0)),releaseEnabled:false as const};
+  return {before:a,after:b,triggerCount:triggers.length,stackTriggers:stackTriggers.length,
+   hasteUses:triggers.filter(e=>e.detail?.startsWith('private_qa_haste_gem:')).length,
+   maxStacks:Math.max(0,...stackTriggers.map(e=>Number(e.detail!.split(':')[3]))),
+   maxFraction:Math.max(0,...triggers.map(e=>e.amount??0)),releaseEnabled:false as const};
  };
 }

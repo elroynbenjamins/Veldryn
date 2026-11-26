@@ -92,7 +92,7 @@ for(const row of DUNGEON_SHOP_COLLECTIBLES_V1){
  equal(COLLECTIBLES.some(item=>item.id===row.id),true,'registered dungeon collectible '+row.id);
 }
 for(const pet of DUNGEON_SHOP_COLLECTIBLES_V1.filter(row=>row.kind==='pet')){
- let owned=createCharacter(newGame(now),'IRONWARDEN','Dungeon Pet Owner');
+ let owned=createCharacter(newGame(now),'IRONWARDEN','Collection Main');
  owned.quests=owned.quests.map(q=>q.questId==='QST_003'?{...q,status:'claimed'}:q);
  owned={...owned,account:{...owned.account,unlockedCosmeticPetIds:[pet.id]}};
  owned=migrateSave(JSON.parse(JSON.stringify(owned)));

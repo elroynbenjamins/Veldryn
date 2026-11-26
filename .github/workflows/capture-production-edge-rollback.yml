@@ -1,0 +1,88 @@
+name: Capture production Edge rollback source (manual)
+on:
+  workflow_dispatch:
+    inputs:
+      gameplay_version:
+        description: Expected currently deployed gameplay version
+        required: true
+        default: '74'
+      coop_version:
+        description: Expected currently deployed coop version
+        required: true
+        default: '42'
+
+permissions:
+  contents: read
+concurrency:
+  group: supabase-deploy-production
+  cancel-in-progress: false
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    environment: supabase-production
+    timeout-minutes: 15
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      PROJECT_REF: nyjwigipamnvpdvpauuv
+      EXPECT_GAMEPLAY: ${{ inputs.gameplay_version }}
+      EXPECT_COOP: ${{ inputs.coop_version }}
+    steps:
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 3.3.0
+      - name: Capture source and verify unchanged deployment metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${SUPABASE_ACCESS_TOKEN:-}" || { echo "::error::Production access token is not configured."; exit 1; }
+          [[ "$EXPECT_GAMEPLAY" =~ ^[0-9]+$ && "$EXPECT_COOP" =~ ^[0-9]+$ ]]
+          cd "$RUNNER_TEMP"
+          mkdir edge-rollback
+          cd edge-rollback
+          supabase --version > cli-version.txt
+          supabase init --help >/dev/null
+          supabase init
+          # Support the pinned CLI's actual flags, rather than guessing a target.
+          list_help="$(supabase functions list --help)"
+          download_help="$(supabase functions download --help)"
+          list_args=()
+          download_args=()
+          if grep -q -- '--project-ref' <<<"$list_help"; then list_args+=(--project-ref "$PROJECT_REF")
+          elif grep -q -- '--remote' <<<"$list_help"; then list_args+=(--remote="$PROJECT_REF")
+          else echo "::error::No explicit remote selector for functions list"; exit 1; fi
+          if grep -q -- '--project-ref' <<<"$download_help"; then download_args+=(--project-ref "$PROJECT_REF")
+          elif grep -q -- '--remote' <<<"$download_help"; then download_args+=(--remote="$PROJECT_REF")
+          else echo "::error::No explicit remote selector for functions download"; exit 1; fi
+          grep -q -- '--use-api' <<<"$download_help" || { echo "::error::API download unsupported"; exit 1; }
+          snapshot() {
+            supabase functions list "${list_args[@]}" -o json | jq -eS '
+              (if type == "array" then . else .functions end)
+              | map(select(.slug == "gameplay" or .slug == "coop"))
+              | sort_by(.slug)
+            '
+          }
+          snapshot > before.json
+          jq -e --arg g "$EXPECT_GAMEPLAY" --arg c "$EXPECT_COOP" '
+            length == 2 and
+            any(.[]; .slug == "gameplay" and (.version|tostring) == $g and .status == "ACTIVE" and .verify_jwt == false) and
+            any(.[]; .slug == "coop" and (.version|tostring) == $c and .status == "ACTIVE" and .verify_jwt == false)
+          ' before.json >/dev/null
+          for fn in gameplay coop; do
+            supabase functions download "$fn" "${download_args[@]}" --use-api
+            test -s "supabase/functions/$fn/index.ts"
+          done
+          snapshot > after.json
+          cmp before.json after.json
+          # Upload only the two function trees and manifests, not local CLI config.
+          mkdir archive
+          cp -a supabase/functions/gameplay supabase/functions/coop archive/
+          cp before.json after.json cli-version.txt archive/
+          cd archive
+          find gameplay coop -type f -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+          sha256sum -c SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: production-edge-rollback-${{ inputs.gameplay_version }}-${{ inputs.coop_version }}
+          path: ${{ runner.temp }}/edge-rollback/archive/
+          if-no-files-found: error
+          retention-days: 14

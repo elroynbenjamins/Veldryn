@@ -25,3 +25,11 @@ One 24-second native clock, no frame-driven React updates. Early visible pulse b
 5. Test low-end Android, accessibility and lifecycle; require exact-head CI and explicit approval before live integration.
 
 Foundation only: no renderer import, no binary artwork, no actual animation loop or entitlement wiring yet.
+
+
+## Premium frame parity review — 26 November 2026
+Compared the actual repository showcase assets, not promotional mockups. All use the same 340:205 design aspect ratio. Celestial source 340×205 (9,878 bytes), Draconic 680×410 (94,854 bytes), Abyssal 1020×615 (137,782 bytes). Visually Celestial uses a slender gold rail with delicate wing ornaments; Draconic has the deepest upper wing ornaments and broad molten rails; Abyssal has substantial sculpted side rails and crest/pearl anchors. Abyssal is in the same broad weight class as Draconic; Celestial remains visibly finer. Source resolution is not a substitute for perceptual quality or measured rail thickness.
+
+Quality target for future premium art revisions: 680×410 minimum authored showcase resolution (1020×615 preferred), readable theme-specific silhouette at 320 logical pixels, transparent interior and no significant opaque artwork in the relevant protected boxes at 320/340/390/480px, distinct crest/rail awakening, matching pet idle atlas and accessible reduced-motion fallback. Don't enlarge frame rails indiscriminately or stretch low-resolution art to claim new detail. Retain the celestial gold/wing identity while planning a higher-resolution authored Celestial refresh separately. Paradox has no dedicated final showcase yet and cannot be judged as equal. This is a review criterion, not a live asset or entitlement change.
+
+Uploaded Abyssal art: all thirteen files are present, header dimensions, alpha flags and sizes agree with manifest (909,304 bytes total). Dedicated typed review bundle references every asset; hash verification is now included in the actual focused CI suite. No live renderer imports or private entitlement changes. Device visual/performance comparison remains necessary.

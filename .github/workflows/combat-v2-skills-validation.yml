@@ -316,3 +316,16 @@ jobs:
         run: node backend/dist/server/combat/v2/__tests__/balance-diagnostics.js
       - name: Run 540 synthetic class-spec-tier-gear-enemy fixtures
         run: node backend/dist/server/combat/v2/__tests__/full-cross-tier-balance-matrix.js
+      - name: Observe all 18 specializations under fixed boss pressure without Synchronization
+        run: |
+          mkdir -p /tmp/v2-role-pressure
+          set -o pipefail
+          node backend/dist/server/combat/v2/__tests__/role-pressure-calibration-matrix.js 2>&1 | tee /tmp/v2-role-pressure/role-pressure.log
+      - name: Retain private role pressure calibration evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v2-role-pressure-${{ github.sha }}
+          path: /tmp/v2-role-pressure/
+          if-no-files-found: ignore
+          retention-days: 14

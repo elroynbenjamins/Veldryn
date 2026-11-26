@@ -7,7 +7,8 @@ import {v2ServerBaseStatProjection,v2ServerCreateExactTemplate,v2ServerExactTemp
  v2ServerWeightedBaseBudget} from '../../../equipment/equipment-crafting-v2-instances';
 const ascending=['common','uncommon','rare','epic','legendary','mythic'] as const;
 const qualities=[0,50,100] as const;
-const qualityDraw={0:0,50:580000,100:999999};
+// The generator floors pow(unit,1.25)*101; choose the midpoint of each bucket.
+const qualityDraw={0:0,50:Math.floor(Math.pow(50.5/101,.8)*1000000),100:999999};
 const starts=new Map<V2Rarity,number>();
 let offset=0;
 for(const band of V2_SERVER_RARITY_BANDS){starts.set(band.rarity,offset);offset+=band.buckets;}

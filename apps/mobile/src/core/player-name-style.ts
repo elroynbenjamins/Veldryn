@@ -1,4 +1,5 @@
 import type {GameState} from './types';
+import {ultraLuxeGradientColor,ultraLuxeGradientForColors} from './ultra-luxe-name-gradients';
 import {accountEntitlementBenefits} from './account-entitlements';
 
 export type PlayerNameAnimation='none'|'flow'|'prismatic';
@@ -125,6 +126,8 @@ export function playerNameCharacterColors(name:string,style:PlayerNameStylePrefe
   let stops=(normalized.gradientColors??[]).map(color=>normalizeHexColor(color));
   if(normalized.animation==='prismatic'&&stops.length<4)stops=[...SUPPORTER_NAME_PRESETS.find(row=>row.id==='prismatic')!.colors];
   const chars=Array.from(name),count=Math.max(1,chars.length-1),offset=normalized.animation==='none'?0:phase%1;
+  const luxe=normalized.animation==='flow'?ultraLuxeGradientForColors(stops):undefined;
+  if(luxe)return chars.map((_,index)=>ultraLuxeGradientColor(luxe.id,index/count,offset)??stops[0]);
   return chars.map((_,index)=>{
     const progress=(index/count+offset)%1;
     const scaled=progress*(stops.length-1),left=Math.floor(scaled),right=Math.min(stops.length-1,left+1);

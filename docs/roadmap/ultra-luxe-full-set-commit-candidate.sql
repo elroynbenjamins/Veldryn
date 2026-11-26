@@ -3,7 +3,7 @@
 -- Do not apply to production. Service-only entrypoint; authenticated Edge command
 -- must derive account/character from current state and compute authoritative p_response.
 -- Request hash must cover action kind, character ID, collection, expected name selection,
--- expected revision and exact wardrobe changes; reserve luxe_full_set: for this command.
+-- expected revision and exact wardrobe changes; reserve luxe_full_set_ for this command.
 
 create function private.ultra_luxe_full_set_definition_v1(p_collection_id text)
 returns table(background_id text,border_id text,pet_id text,title_name text,preset_id text)
@@ -37,7 +37,7 @@ declare
  selected_name text; existing_receipt jsonb; ack jsonb; hero jsonb; readback jsonb;
 begin
  if p_account_id is null or p_character_id is null or p_expected_version is null or p_expected_gold is null
-  or p_request_id is null or p_request_id !~ '^luxe_full_set:[A-Za-z0-9_-]{16,80}$'
+  or p_request_id is null or p_request_id !~ '^luxe_full_set_[A-Za-z0-9_-]{16,80}$'
   or p_request_hash is null or p_request_hash !~ '^[a-f0-9]{64}$' then
   raise exception 'INVALID_ULTRA_LUXE_FULL_SET_REQUEST';
  end if;

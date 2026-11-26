@@ -489,6 +489,7 @@ export interface WorldBossSharedRosterReviewV2{
  readonly attempt:number;
  readonly entitlementRevision:number;
  readonly unlockedCharacterSlots:number;
+ readonly rosterDigest:string;
  readonly contentVersion:string;
  readonly balanceVersion:string;
  readonly seed:string;
@@ -497,6 +498,9 @@ export interface WorldBossSharedRosterReviewV2{
  readonly members:readonly {
   readonly characterId:string;
   readonly actorId:string;
+  readonly snapshotId:string;
+  readonly sourceRevision:number;
+  readonly sourceHash:string;
   readonly equipmentReceiptRevision:number;
   readonly equipmentReceiptDigest:string;
  }[];
@@ -518,7 +522,7 @@ export function compileWorldBossRosterReviewV2(
  if(!scope||![scope.accountId,scope.eventId,scope.reservationId,scope.contentVersion,
   scope.balanceVersion].every(wbReviewId)||!Number.isSafeInteger(scope.attempt)||
   scope.attempt<1||scope.attempt>3||!Number.isSafeInteger(scope.entitlementRevision)||
-  scope.entitlementRevision<1||!Number.isSafeInteger(scope.unlockedCharacterSlots)||
+  scope.entitlementRevision<1||!wbReviewHash(scope.rosterDigest)||!Number.isSafeInteger(scope.unlockedCharacterSlots)||
   scope.unlockedCharacterSlots<1||scope.unlockedCharacterSlots>3||
   !['hollowroot','sunscar','frostmarch'].includes(scope.bossId)||
   !['armored','exposed','enraged'].includes(scope.phase)||
@@ -527,11 +531,18 @@ export function compileWorldBossRosterReviewV2(
   input.enemyDamageProfile!==undefined||input.players.length<1||
   input.players.length>scope.unlockedCharacterSlots||
   !Array.isArray(scope.members)||scope.members.length!==input.players.length||
-  !Array.isArray(traitPorts)||traitPorts.length!==input.players.length)
+  Array.from(scope.members).some(m=>!m||!wbReviewId(m.snapshotId)||
+   !Number.isSafeInteger(m.sourceRevision)||m.sourceRevision<1||!wbReviewHash(m.sourceHash))||
+  !Array.isArray(traitPorts)||traitPorts.length!==input.players.length||
+  Array.from(traitPorts).some(p=>!p||!wbReviewId(p.characterId)))
   wbReviewFail('invalid_roster_scope');
  const {players,evidence,byId,gearById}=compileEquippedEncounterActors(input,builds,runtime);
- const memberByActor=new Map(scope.members.map(m=>[m.actorId,m]));
- const portByCharacter=new Map(traitPorts.map(p=>[p.characterId,p]));
+ const memberByActor=new Map<string,WorldBossSharedRosterReviewV2['members'][number]>(
+  scope.members.map((m:WorldBossSharedRosterReviewV2['members'][number])=>[m.actorId,m]));
+ const portByCharacter=new Map<string,TrustedEquipmentTraitReceiptPortV2>(
+  traitPorts.map((p:TrustedEquipmentTraitReceiptPortV2)=>[p.characterId,p]));
+ const snapshots=new Set(scope.members.map((m:WorldBossSharedRosterReviewV2['members'][number])=>m.snapshotId));
+ if(snapshots.size!==players.length)wbReviewFail('duplicate_snapshot');
  if(memberByActor.size!==players.length||portByCharacter.size!==players.length)
   wbReviewFail('duplicate_member_or_port');
  const characters=new Set<string>();

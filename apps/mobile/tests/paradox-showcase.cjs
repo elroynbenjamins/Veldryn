@@ -124,7 +124,7 @@ for(const [name,w,h,bytes,sha] of [
  assert.equal(buf.readUInt16LE(26)&16383,w);assert.equal(buf.readUInt16LE(28)&16383,h);
  assert(registry.includes(name));
 }
-assert(review.includes('background:getParadoxReviewBackgrounds().showcase'));
+assert(review.includes('assets={getParadoxReviewAssets().scene}'));
 console.log('PASS: uploaded wide and square background integrity and fixed review selection');
 
 const {PARADOX_POSE_ATLAS:A,paradoxPoseTimeline,paradoxPoseCell}=mod.exports;
@@ -170,7 +170,8 @@ assert.equal(pending.files.reduce((sum,f)=>sum+f.bytes,0),375090);
 let present=0;
 for(const art of pending.files){
  const file=path.join(artDir,art.name);
- if(!fs.existsSync(file))continue;
+ assert(fs.existsSync(file),'required artwork missing: '+art.name);
+ assert(registry.includes(art.name));
  present++;
  const buf=fs.readFileSync(file);
  assert.equal(buf.length,art.bytes,art.name);
@@ -185,4 +186,7 @@ for(const art of pending.files){
   assert(bits&(1<<28));assert.equal(1+(bits&16383),art.width);assert.equal(1+((bits>>>14)&16383),art.height);
  }else assert.fail('Missing transparency header: '+art.name);
 }
-console.log('PASS: localized Aeon reaction and asset integrity contract; '+present+'/8 final assets present (registration remains gated)');
+assert.equal(present,8);
+assert.equal((registry.match(/require\(/g)||[]).length,12);
+assert(375090+305454+171310<1024*1024);
+console.log('PASS: all twelve required Paradox assets, exact hashes, registered bundle and localized reaction');

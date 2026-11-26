@@ -1,6 +1,7 @@
 import {useEffect,useMemo,useState} from 'react';
 import {Text,type StyleProp,type TextStyle} from 'react-native';
-import {playerNameCharacterColors,type PlayerNameStylePreference} from '../core/player-name-style';
+import {renderedPlayerNameColors} from './player-name-render-colors';
+import type {PlayerNameStylePreference} from '../core/player-name-style';
 import {ULTRA_LUXE_NAME_TICK_MS,ULTRA_LUXE_NAME_CYCLE_MS,ultraLuxeGradientForColors} from '../core/ultra-luxe-name-gradients';
 import {subscribeSharedTicker,useMotionEnabled} from './anim/motion';
 
@@ -16,7 +17,7 @@ export function PlayerStyledName({name,nameStyle,reduceMotion=false,style,number
   // One shared interval for every animated name; it sleeps while the app is in the background.
   return subscribeSharedTicker(ULTRA_LUXE_NAME_TICK_MS,()=>setPhase(value=>(value+(luxe?ULTRA_LUXE_NAME_TICK_MS/ULTRA_LUXE_NAME_CYCLE_MS:.035))%1));
  },[animated,luxe]);
- const colors=useMemo(()=>playerNameCharacterColors(name,normalized,animated?phase:0),[name,normalized,phase,animated]);
+ const colors=useMemo(()=>renderedPlayerNameColors(name,normalized,animated?phase:0),[name,normalized,phase,animated]);
  if(!colors.length)return <Text numberOfLines={numberOfLines} style={style}>{name}</Text>;
  return <Text numberOfLines={numberOfLines} style={style}>{Array.from(name).map((char,index)=><Text key={index} style={{color:colors[index]}}>{char}</Text>)}</Text>;
 }

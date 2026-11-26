@@ -16,7 +16,6 @@ import {RUSSIAN_RELEASE_POLISH_ROWS} from './russian-release-polish';
 // Extended RU/TR copy; missing phrases deliberately fall back to English.
 export const EARLY_LOCALE_ROWS={
   "Quick set equip": ["Быстрое надевание комплекта","Hızlı set kuşanma"],
-  "Equip set": ["Надеть комплект","Seti kuşan"],
   "Equip owned matching pieces on this character. Badges stay unchanged.": ["Наденьте принадлежащие вам части комплекта на этого персонажа. Значки не изменятся.","Sahip olduğun uyumlu parçaları bu karaktere kuşandır. Rozetler değişmez."],
   "Your account character class.": ["Класс одного из ваших персонажей.","Hesabındaki bir karakterin sınıfı."],
   "Account-wide": ["Для всей учётной записи","Hesap genelinde"],

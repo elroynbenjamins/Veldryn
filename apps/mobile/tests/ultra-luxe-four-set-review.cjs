@@ -113,7 +113,7 @@ for(const route of [self,pub]){
  assert(route.includes('VerifiedCandidateBorderEffects'));
 }
 assert(self.includes('ownedNewUltraLuxeCollections(state,{accountId,characterId:character.id},projection)'));
-assert(pub.includes('profile.ultraLuxeAppearanceVerified===true'));
+assert(pub.includes('publicCandidateAppearanceCollections(profile.ultraLuxeAppearanceVerified'));
 assert(stage.includes('if(dedicated||candidate)'));
 const badgesArt=read('components/player-badge-artwork.ts');
 assert(badgesArt.includes("ascendant_monarch_of_deep:require(")&&badgesArt.includes("ascendant_beyond_existence:require("));
@@ -155,8 +155,20 @@ for(const s of nextPair){
  const denied=wardrobe.candidateAppearanceIds(appearance,wardrobe.LEGACY_CANDIDATE_WARDROBE.map(c=>c.id));
  assert.equal(denied.background,'asterfall-night');assert.equal(denied.border,undefined);assert.equal(denied.pet,undefined);
 }
-assert(pub.includes('LEGACY_CANDIDATE_WARDROBE.map(c=>c.id)'));
+assert(pub.includes('publicCandidateAppearanceCollections(profile.ultraLuxeAppearanceVerified,profile.ultraLuxeAppearanceVersion,sixLuxeNamesEnabled)'));
 assert(self.includes('candidateAppearanceHint(raw),sixLuxeNamesEnabled'));
 assert(stage.includes('collapsed&&candidate,sixLuxeNamesEnabled'));
 assert(panel.includes('newLuxeBackground(row.id)?.variants.square')&&panel.includes('newLuxeBorder(row.id)')&&panel.includes('newLuxePet(row.id)'));
 console.log('PASS: new pair gated wardrobe and individual art routes; legacy public marker cannot authorize new pieces');
+
+const publicIds=wardrobe.publicCandidateAppearanceCollections;
+const legacy=wardrobe.LEGACY_CANDIDATE_WARDROBE.map(c=>c.id),expanded=wardrobe.NEW_ULTRA_LUXE_WARDROBE.map(c=>c.id);
+for(const v of [undefined,null,4,'6',7,true])assert.deepEqual(publicIds(true,v,true),legacy);
+assert.deepEqual(publicIds(false,6,true),[]);
+assert.deepEqual(publicIds('true',6,true),[]);
+assert.deepEqual(publicIds(true,6,false),legacy);
+assert.deepEqual(publicIds(true,6,true),expanded);
+const schema=fs.readFileSync(path.resolve(__dirname,'../../../docs/roadmap/ultra-luxe-six-set-grant-schema-candidate.sql'),'utf8');
+assert(schema.includes("'ultraLuxeAppearanceVersion',6"));
+assert(!schema.includes("'ultraLuxeCollectionIds',g"));
+console.log('PASS: public six-set version gate, legacy fallback and no public grant list');

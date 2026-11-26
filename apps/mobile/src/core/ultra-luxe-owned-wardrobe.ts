@@ -91,3 +91,11 @@ const ULTRA_LUXE_EFFECTS={
 export function candidateVerifiedTitle(title:string|undefined|null,id:unknown,allowed:readonly string[]){
  return NEW_ULTRA_LUXE_WARDROBE.find(c=>allowed.includes(c.id)&&c.titleId===id&&c.titleName===title);
 }
+
+/** The v1 boolean was emitted by the four-set sanitizer. Only the exact numeric
+ * six-set version from the authenticated public RPC widens the appearance vocabulary.
+ * This is a schema marker, not a list of the target account's private entitlements. */
+export function publicCandidateAppearanceCollections(verified:unknown,version:unknown,allowSix:boolean){
+ if(verified!==true)return [];
+ return (allowSix&&version===6?NEW_ULTRA_LUXE_WARDROBE:LEGACY_CANDIDATE_WARDROBE).map(c=>c.id);
+}

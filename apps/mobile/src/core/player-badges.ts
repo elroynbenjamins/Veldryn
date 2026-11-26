@@ -1,7 +1,7 @@
 import {isUltraLuxeBadge} from './ultra-luxe-cosmetics';
 
 /** Player badges are verified by server identity, never by a client-chosen unlock. */
-export const COLLECTIBLE_PLAYER_BADGE_IDS=['founder','veteran','guild_leader','community_champion','event_champion','ascendant_sovereign_of_stars','ascendant_dragon_sovereign','ascendant_monarch_of_deep','ascendant_beyond_existence'] as const;
+export const COLLECTIBLE_PLAYER_BADGE_IDS=['founder','veteran','guild_leader','community_champion','event_champion','ascendant_sovereign_of_stars','ascendant_dragon_sovereign','ascendant_monarch_of_deep','ascendant_beyond_existence','ascendant_sakura_blossom_crest','ascendant_stormforged_wolf_crest'] as const;
 export const VIP_BADGE_IDS=['vip','vip_plus'] as const;
 export const SUPPORTER_BADGE_IDS=['supporter','supporter_3m','supporter_6m','supporter_12m'] as const;
 export type CollectiblePlayerBadgeId=typeof COLLECTIBLE_PLAYER_BADGE_IDS[number];
@@ -32,6 +32,7 @@ export const PLAYER_BADGE_LABELS:Record<PlayerBadgeId,string>={
  founder:'Founder',veteran:'Veteran',guild_leader:'Guild Leader',
  community_champion:'Community Champion',event_champion:'Event Champion',
  ascendant_sovereign_of_stars:'Sovereign of the Stars',ascendant_dragon_sovereign:'Dragon Sovereign',ascendant_monarch_of_deep:'Monarch of the Deep',ascendant_beyond_existence:'Beyond Existence',
+ ascendant_sakura_blossom_crest:'Sakura Blossom Crest',ascendant_stormforged_wolf_crest:'Stormforged Wolf Crest',
 };
 /** Friendly explanations for badge info bubbles, independent of ownership or unlock state. */
 export const PLAYER_BADGE_DESCRIPTIONS:Record<PlayerBadgeId,string>={
@@ -49,6 +50,7 @@ export const PLAYER_BADGE_DESCRIPTIONS:Record<PlayerBadgeId,string>={
  community_champion:'Awarded for outstanding community contributions.',
  event_champion:'Awarded for special event achievements.',
  ascendant_sovereign_of_stars:'Ascendant badge from the Celestial Sovereign collection.',ascendant_dragon_sovereign:'Ascendant badge from the Draconic Dominion collection.',ascendant_monarch_of_deep:'Ascendant badge from the Abyssal Majesty collection.',ascendant_beyond_existence:'Ascendant badge from the Paradox Eternal collection.',
+ ascendant_sakura_blossom_crest:'Ascendant badge from the Sakura Enchantment collection.',ascendant_stormforged_wolf_crest:'Ascendant badge from the Stormforged Sovereign collection.',
 };
 export const PLAYER_BADGE_UNLOCK_HINTS:Record<CollectiblePlayerBadgeId,string>={
  founder:'Awarded to founding players.',
@@ -57,6 +59,7 @@ export const PLAYER_BADGE_UNLOCK_HINTS:Record<CollectiblePlayerBadgeId,string>={
  community_champion:'Awarded for outstanding community contributions.',
  event_champion:'Awarded for special event achievements.',
  ascendant_sovereign_of_stars:'Ascendant collection entitlement.',ascendant_dragon_sovereign:'Ascendant collection entitlement.',ascendant_monarch_of_deep:'Ascendant collection entitlement.',ascendant_beyond_existence:'Ascendant collection entitlement.',
+ ascendant_sakura_blossom_crest:'Ascendant collection entitlement.',ascendant_stormforged_wolf_crest:'Ascendant collection entitlement.',
 };
 export const VIP_BADGE_UNLOCK_HINTS:Record<VipBadgeId,string>={
  vip:'Unlock with VIP or VIP+ on your account.',

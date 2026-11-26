@@ -1,4 +1,5 @@
-import {candidateAppearanceIds,candidateShowcase,candidateVerifiedTitle,LEGACY_CANDIDATE_WARDROBE} from '../core/ultra-luxe-owned-wardrobe';
+import {sixLuxeNamesEnabled} from '../online/ultra-luxe-name-readback';
+import {candidateAppearanceIds,candidateShowcase,candidateVerifiedTitle,publicCandidateAppearanceCollections} from '../core/ultra-luxe-owned-wardrobe';
 import {newLuxeBackground,newLuxeBorder,newLuxePet} from '../theme/ultra-luxe-candidate-art';
 import {VerifiedCandidateShowcase,VerifiedCandidateBorderEffects} from './profile/VerifiedCandidateShowcase';
 import {UltraLuxeTitleText} from './profile/UltraLuxeIdentityMotion';
@@ -51,7 +52,7 @@ export function PublicProfileScene({profile,height=205,reduceMotion=false,showGu
  const displayedBadges=[...playerBadgeIds(profile.playerBadges,badgeNow),...profileBadgeIds(profile.playerBadges,badgeNow)];
  // The older boolean marker certifies only the legacy pair. New public IDs need
  // a six-set server appearance projection before they can render for other players.
- const allowed=profile.ultraLuxeAppearanceVerified===true?LEGACY_CANDIDATE_WARDROBE.map(c=>c.id):[];
+ const allowed=publicCandidateAppearanceCollections(profile.ultraLuxeAppearanceVerified,profile.ultraLuxeAppearanceVersion,sixLuxeNamesEnabled);
  const safe=candidateAppearanceIds({background:profile.backgroundId,border:profile.borderId,pet:profile.petId,displayedBadges},allowed);
  const candidateTitle=candidateVerifiedTitle(profile.title,profile.ultraLuxeTitleId,allowed);
  const verifiedTitleId=candidateTitle?.titleId??(verifiedUltraLuxeTitleColor(profile.title,profile.ultraLuxeTitleId)?profile.ultraLuxeTitleId:undefined);

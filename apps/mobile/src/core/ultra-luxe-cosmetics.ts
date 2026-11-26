@@ -17,6 +17,7 @@ const ULTRA_LUXE_PET_IDS=new Set<string>([
 ]);
 const ULTRA_LUXE_BADGE_IDS=new Set<string>([
  'ascendant_sovereign_of_stars','ascendant_dragon_sovereign','ascendant_monarch_of_deep','ascendant_beyond_existence',
+ 'ascendant_sakura_blossom_crest','ascendant_stormforged_wolf_crest',
 ]);
 
 export type UltraLuxeProfileKind='background'|'border'|'pet';

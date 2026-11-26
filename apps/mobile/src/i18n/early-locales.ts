@@ -15,6 +15,8 @@ import {RUSSIAN_RELEASE_POLISH_ROWS} from './russian-release-polish';
 
 // Extended RU/TR copy; missing phrases deliberately fall back to English.
 export const EARLY_LOCALE_ROWS={
+  "Static cosmetics": ["Статические косметические предметы","Statik kozmetikler"],
+  "Premium animated sets": ["Премиальные анимированные наборы","Premium animasyonlu setler"],
   "Animated sets": ["Анимированные наборы","Animasyonlu setler"],
   "Quick set equip": ["Быстрое надевание комплекта","Hızlı set kuşanma"],
   "Equip owned matching pieces on this character. Badges stay unchanged.": ["Наденьте принадлежащие вам части комплекта на этого персонажа. Значки не изменятся.","Sahip olduğun uyumlu parçaları bu karaktere kuşandır. Rozetler değişmez."],

@@ -305,6 +305,7 @@ async function testNonpayingLedgerV97():Promise<void>{
  const saved=new Map<string,NonpayingReviewReceiptV97>();
  const locks=new Map<string,Promise<void>>();
  let failInsert=false;
+ let readbackFault:'none'|'missing'|'incorrect'='none';
  const store:ReviewLedgerStoreV97={
   async transact<T>(key:string,fn:(tx:{
    read:(key:string)=>Promise<NonpayingReviewReceiptV97|null>;
@@ -317,10 +318,18 @@ async function testNonpayingLedgerV97():Promise<void>{
    await previous;
    const pending=new Map(saved);
    try{
+    let inserted=false;
     const value=await fn({
-     read:async k=>pending.get(k)??null,
+     read:async k=>{
+      const row=pending.get(k)??null;
+      if(inserted&&readbackFault==='missing')return null;
+      if(inserted&&readbackFault==='incorrect'&&row)
+       return {...row,eventId:'QA_CORRUPTED_READBACK'};
+      return row;
+     },
      insert:async receipt=>{
       pending.set(receipt.key,receipt);
+      inserted=true;
       if(failInsert){failInsert=false;throw Error('qa_insert_fault');}
      },
     });
@@ -336,6 +345,14 @@ async function testNonpayingLedgerV97():Promise<void>{
   replay:replayedReview,store,
  },true),/qa_insert_fault/);
  assert.equal(saved.size,0,'failed insert must roll back in QA store');
+ for(const fault of ['missing','incorrect'] as const){
+  readbackFault=fault;
+  await assert.rejects(recordNonpayingPartyReviewV97({
+   replay:replayedReview,store,
+  },true),new RegExp('party_event_v97_'+fault+'_readback'));
+  assert.equal(saved.size,0,'readback rejection must roll back in QA store: '+fault);
+ }
+ readbackFault='none';
  const [winner,replayer]=await Promise.all([
   recordNonpayingPartyReviewV97({replay:replayedReview,store},true),
   recordNonpayingPartyReviewV97({replay:replayedReview,store},true),

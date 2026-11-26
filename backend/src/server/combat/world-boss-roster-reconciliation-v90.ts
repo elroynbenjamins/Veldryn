@@ -161,8 +161,12 @@ export interface WorldBossOwnedRosterSourceV90 {
   readonly equipmentReceiptRevision:number;
  }[];
 }
+export interface FrozenWorldBossOwnedReservationV90 extends FrozenWorldBossReservationV90 {
+ readonly entitlementRevision:number;
+ readonly unlockedCharacterSlots:number;
+}
 export function reviewWorldBossOwnedRosterV90(
- reservation:FrozenWorldBossReservationV90,
+ reservation:FrozenWorldBossOwnedReservationV90,
  projection:WorldBossCompilerProjectionV90,
  owned:WorldBossOwnedRosterSourceV90,
 ){
@@ -175,6 +179,8 @@ export function reviewWorldBossOwnedRosterV90(
  if(!reservation||!owned||owned.accountId!==reservation.accountId||
   owned.reservationId!==reservation.reservationId||owned.rosterDigest!==reservation.rosterDigest||
   !revision(owned.entitlementRevision)||
+  owned.entitlementRevision!==reservation.entitlementRevision||
+  owned.unlockedCharacterSlots!==reservation.unlockedCharacterSlots||
   !Number.isSafeInteger(owned.unlockedCharacterSlots)||
   owned.unlockedCharacterSlots<1||owned.unlockedCharacterSlots>5||
   !Array.isArray(owned.eligibleCharacters)||!Array.isArray(reservation.members)){

@@ -16,7 +16,7 @@ import {rememberOnlineSnapshot} from '../core/online-snapshot-cache';
 import {previewCombatEquipmentCommand} from '../core/combat-equipment-optimistic';
 declare const process:{env:Record<string,string|undefined>};
 // Closed until the unified server authority and generated Edge build are deployed.
-const fullSetReleased=process.env.EXPO_PUBLIC_ULTRA_LUXE_FULL_SET==='true';
+const fullSetReleased=typeof process!=='undefined'&&process.env.EXPO_PUBLIC_ULTRA_LUXE_FULL_SET==='true';
 export function useOnlineGame(){
  const {session}=useAuthSession(),accountId=session?.user.id;
  const repo=useMemo(()=>serverGameplayEnabled&&accountId?createOnlineGameRepository(accountId):null,[accountId]);

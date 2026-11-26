@@ -13,7 +13,7 @@ import {canUseProfileCosmetic} from '../../core/profile-cosmetics';
 import {Image,Pressable,StyleSheet,Text,View} from 'react-native';
 import {CLASSES} from '../../content/classes';
 import type {GameState} from '../../core/types';
-import {effectivePlayerNameStyle} from '../../core/player-name-style';
+import {effectivePlayerNameStyle,type PlayerNameStylePreference} from '../../core/player-name-style';
 import {BASE_PROFILE_BACKGROUNDS} from '../../core/profile-cosmetics';
 import {profileBackgroundPreviewById} from '../../theme/profile-background-assets';
 import {profileBorderSourceById} from '../../theme/profile-border-assets';
@@ -37,11 +37,12 @@ import {RegionArtwork} from '../RegionArtwork';
 
 /** The customization stage: always on screen while browsing, so a tap's effect is visible.
  * Collapses to a single strip once the wardrobe is scrolled, and expands again on demand. */
-export function ProfileStage({state,collapsed,onToggle,onAudiencePreview,trailing,active=true}:{
- state:GameState;collapsed:boolean;onToggle:()=>void;onAudiencePreview?:()=>void;trailing?:string;active?:boolean;
+export function ProfileStage({state,collapsed,onToggle,onAudiencePreview,trailing,active=true,managedPrivateName}:{
+ state:GameState;collapsed:boolean;onToggle:()=>void;onAudiencePreview?:()=>void;trailing?:string;active?:boolean;managedPrivateName?:{style?:PlayerNameStylePreference};
 }){
  const language=useGameLanguage();
- const privateName=useUltraLuxeNameSelection(active&&(ownedUltraLuxeTitles(state).length>0||sixLuxeNamesEnabled&&!!state.account.unlockedTitleIds?.some(id=>id.startsWith('ascendant-')))).style;
+ const localPrivateName=useUltraLuxeNameSelection(!managedPrivateName&&active&&(ownedUltraLuxeTitles(state).length>0||sixLuxeNamesEnabled&&!!state.account.unlockedTitleIds?.some(id=>id.startsWith('ascendant-')))).style;
+ const privateName=managedPrivateName?managedPrivateName.style:localPrivateName;
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),badges=usePlayerBadges();
  const character=state.character;
  if(!character)return null;

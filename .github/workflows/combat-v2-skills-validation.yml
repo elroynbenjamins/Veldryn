@@ -349,6 +349,11 @@ jobs:
           mkdir -p /tmp/v2-role-pressure
           set -o pipefail
           node backend/dist/server/combat/v2/__tests__/role-pressure-calibration-matrix.js --full-range-review --matched-loadouts --balanced-role-review 2>&1 | tee /tmp/v2-role-pressure/full-range-matched-loadouts.log
+      - name: Measure individual equipment source value under matched boss pressure
+        run: |
+          mkdir -p /tmp/v2-role-pressure
+          set -o pipefail
+          node backend/dist/server/combat/v2/__tests__/equipment-marginal-pressure-matrix.js 2>&1 | tee /tmp/v2-role-pressure/equipment-marginals.log
       - name: Retain private role pressure calibration evidence
         if: always()
         uses: actions/upload-artifact@v4

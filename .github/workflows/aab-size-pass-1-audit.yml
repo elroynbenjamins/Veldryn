@@ -1,4 +1,4 @@
-name: AAB size pass 1 asset audit (temporary)
+name: AAB size pass 1 compression benchmark (temporary)
 on:
   pull_request:
     branches: [main]
@@ -9,69 +9,85 @@ on:
 permissions:
   contents: read
 jobs:
-  asset-audit:
+  benchmark:
     if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'chatgpt/aab-size-pass-1'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Ensure image inspection tools
+      - name: Install image tools
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends imagemagick webp ripgrep >/dev/null
-      - name: Audit largest runtime images
+      - name: Benchmark high-quality card background recompression
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess,tempfile
+          root=Path('apps/mobile/assets/card-backgrounds')
+          print('CARD_BACKGROUND_BENCH')
+          totals={82:[0,0],85:[0,0]}
+          for p in sorted(root.glob('*.webp')):
+              old=p.stat().st_size
+              refs=subprocess.run(['rg','-l','-F',p.name,'apps/mobile/src'],capture_output=True,text=True).stdout.splitlines()
+              if old<1024*1024 or not refs: continue
+              row=[f'{p.name}|{old/1024:.1f}KB|refs={len(refs)}']
+              for q in (85,82):
+                  out=Path('/tmp')/(p.stem+f'-q{q}.webp')
+                  subprocess.run(['cwebp','-quiet','-q',str(q),'-m','6','-metadata','none',str(p),'-o',str(out)],check=True)
+                  new=out.stat().st_size
+                  psnr=subprocess.run(['compare','-metric','PSNR',str(p),str(out),'null:'],capture_output=True,text=True).stderr.strip()
+                  totals[q][0]+=old;totals[q][1]+=new
+                  row.append(f'q{q}={new/1024:.1f}KB/{100*new/old:.1f}%/PSNR={psnr}')
+              print('|'.join(row))
+          for q,(old,new) in totals.items():
+              print(f'CARD_Q{q}_TOTAL old={old/1024/1024:.2f}MiB new={new/1024/1024:.2f}MiB save={(old-new)/1024/1024:.2f}MiB')
+          PY
+      - name: Benchmark pet portrait PNG to WebP
         run: |
           python3 - <<'PY'
           from pathlib import Path
           import subprocess
-          root=Path('apps/mobile')
-          files=[]
-          for p in (root/'assets').rglob('*'):
-              if p.is_file() and p.suffix.lower() in {'.png','.webp','.jpg','.jpeg'}:
-                  files.append((p.stat().st_size,p))
-          for p in (root/'src').rglob('*'):
-              if p.is_file() and p.suffix.lower() in {'.png','.webp','.jpg','.jpeg'}:
-                  files.append((p.stat().st_size,p))
-          files.sort(reverse=True)
-          print('TOP_IMAGE_ASSETS')
-          for size,p in files[:120]:
-              try:
-                  out=subprocess.check_output(['identify','-format','%wx%h|%m|%[channels]',str(p)],text=True,stderr=subprocess.DEVNULL).strip()
-              except Exception:
-                  out='unknown'
-              # reference count outside the asset file itself
-              name=p.name
-              proc=subprocess.run(['rg','-l','-F',name,'apps/mobile/src','apps/mobile/tests','backend','tools'],text=True,capture_output=True)
-              refs=[x for x in proc.stdout.splitlines() if x]
-              print(f'{size/1024:.1f}KB|{out}|refs={len(refs)}|{p}')
-          print('CATEGORY_TOTALS')
-          cats={}
-          for size,p in files:
-              rel=p.relative_to(root)
-              parts=rel.parts
-              cat='/'.join(parts[:2]) if parts[0]=='assets' and len(parts)>1 else '/'.join(parts[:3])
-              cats.setdefault(cat,[0,0]);cats[cat][0]+=size;cats[cat][1]+=1
-          for cat,(size,n) in sorted(cats.items(),key=lambda x:x[1][0],reverse=True)[:40]:
-              print(f'{size/1024/1024:.2f}MiB|files={n}|{cat}')
+          roots=[Path('apps/mobile/assets/master_roster/pets/portraits_512'),Path('apps/mobile/assets/guild-token-shop/pets/portraits')]
+          rows=[]
+          totals={'lossless':[0,0],'q90':[0,0]}
+          for root in roots:
+              for p in sorted(root.glob('*.png')):
+                  old=p.stat().st_size
+                  vals=[]
+                  for mode,args in [('lossless',['-lossless','-z','9']),('q90',['-q','90','-m','6','-alpha_q','100'])]:
+                      out=Path('/tmp')/(p.stem+'-'+mode+'.webp')
+                      subprocess.run(['cwebp','-quiet',*args,'-metadata','none',str(p),'-o',str(out)],check=True)
+                      new=out.stat().st_size
+                      psnr=subprocess.run(['compare','-metric','PSNR',str(p),str(out),'null:'],capture_output=True,text=True).stderr.strip()
+                      totals[mode][0]+=old;totals[mode][1]+=new
+                      vals.append((mode,new,psnr))
+                  rows.append((old,p,vals))
+          print('PET_PORTRAIT_BENCH')
+          for old,p,vals in sorted(rows,reverse=True)[:50]:
+              print(f'{p}|old={old/1024:.1f}KB|'+'|'.join(f'{m}={n/1024:.1f}KB/{100*n/old:.1f}%/PSNR={psnr}' for m,n,psnr in vals))
+          for mode,(old,new) in totals.items():
+              print(f'PET_{mode.upper()}_TOTAL old={old/1024/1024:.2f}MiB new={new/1024/1024:.2f}MiB save={(old-new)/1024/1024:.2f}MiB')
           PY
-      - name: Trial-lossless recompression potential on PNGs
+      - name: Benchmark large runtime PNGs
         run: |
-          mkdir -p /tmp/aab-audit
           python3 - <<'PY'
           from pathlib import Path
-          import subprocess,shutil
-          rows=[]
-          for p in Path('apps/mobile').rglob('*.png'):
-              if not p.is_file(): continue
-              size=p.stat().st_size
-              if size<100*1024: continue
-              out=Path('/tmp/aab-audit')/p.name
-              subprocess.run(['convert',str(p),'-strip',str(out)],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
-              if out.exists():
+          import subprocess
+          paths=[
+            Path('apps/mobile/assets/gem-sprite-v2.png'),
+            Path('apps/mobile/assets/unrefined-gem.png'),
+            Path('apps/mobile/assets/regional-resources-v2.png'),
+            Path('apps/mobile/assets/events/frostfall/candy_frostmint.png'),
+          ]
+          print('RUNTIME_PNG_BENCH')
+          for p in paths:
+              old=p.stat().st_size
+              row=[f'{p}|old={old/1024:.1f}KB']
+              for mode,args in [('lossless',['-lossless','-z','9']),('q90',['-q','90','-m','6','-alpha_q','100'])]:
+                  out=Path('/tmp')/(p.stem+'-'+mode+'.webp')
+                  subprocess.run(['cwebp','-quiet',*args,'-metadata','none',str(p),'-o',str(out)],check=True)
                   new=out.stat().st_size
-                  rows.append((size-new,size,new,p))
-          rows.sort(reverse=True)
-          print('PNG_STRIP_POTENTIAL')
-          for save,old,new,p in rows[:80]:
-              print(f'save={save/1024:.1f}KB|{100*save/old:.1f}%|old={old/1024:.1f}KB|new={new/1024:.1f}KB|{p}')
-          print(f'TOTAL_PNG_STRIP_SAVE={sum(max(0,x[0]) for x in rows)/1024/1024:.2f}MiB')
+                  psnr=subprocess.run(['compare','-metric','PSNR',str(p),str(out),'null:'],capture_output=True,text=True).stderr.strip()
+                  row.append(f'{mode}={new/1024:.1f}KB/{100*new/old:.1f}%/PSNR={psnr}')
+              print('|'.join(row))
           PY

@@ -52,5 +52,6 @@ export async function executeUltraLuxeFullSetCommand(services:FullSetCommandServ
   !Number.isSafeInteger(gameplay.version)||!object(gameplay.state))throw new FullSetCommandError('full_set_readback_invalid',503);
  // Normalize the existing load response's missing accountId on replay. The
  // authenticated session and service-owned name projection already match.
- return {replayed:result.replayed,gameplay:{...gameplay,accountId},nameSelection:names};
+ return {replayed:result.replayed,gameplay:{...gameplay,accountId},nameSelection:names,
+  undoEquipRequestId:result.undoEquipRequestId===body.requestId?body.requestId:undefined};
 }

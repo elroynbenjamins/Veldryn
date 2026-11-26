@@ -105,3 +105,24 @@ export function nextPremiumOwnedNamePresets(scope:NextPremiumScope,grant:NextPre
   id:s.nameStyle,name:NEXT_PREMIUM_PRESTIGE.find(p=>p.id===s.id)!.namePreset,colors:[...s.colors],
  }));
 }
+
+/** Filter candidate fields only. Other families remain the responsibility of the
+ * existing public appearance sanitizer. Never add anything to viewer inventory. */
+export function sanitizeNextPremiumAppearance(selection:NextPremiumAppearance,allowed:readonly string[],enabled=false):NextPremiumAppearance{
+ const allowedRow=(id:string)=>enabled&&has(allowed,id);
+ const background=NEXT_PREMIUM_SETS.find(s=>s.background===selection.background);
+ const border=NEXT_PREMIUM_SETS.find(s=>s.border===selection.border);
+ const pet=NEXT_PREMIUM_SETS.find(s=>s.pet===selection.pet);
+ const title=NEXT_PREMIUM_SETS.find(s=>s.title===selection.verifiedTitleId);
+ const effect=NEXT_PREMIUM_SETS.find(s=>s.showcase===selection.effect);
+ return {...selection,
+  background:background&&!allowedRow(background.id)?'asterfall-night':selection.background,
+  border:border&&!allowedRow(border.id)?undefined:selection.border,
+  pet:pet&&!allowedRow(pet.id)?undefined:selection.pet,
+  verifiedTitleId:title&&!allowedRow(title.id)?undefined:selection.verifiedTitleId,
+  effect:effect&&!allowedRow(effect.id)?undefined:selection.effect,
+  displayedBadges:selection.displayedBadges.filter(id=>{
+   const row=NEXT_PREMIUM_SETS.find(s=>s.badge===id);return !row||allowedRow(row.id);
+  }),
+ };
+}

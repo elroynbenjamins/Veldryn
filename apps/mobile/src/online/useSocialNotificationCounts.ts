@@ -26,7 +26,7 @@ export interface SocialNotificationCounts{
 
 const ZERO:SocialNotificationCounts={friendRequests:0,chatUnread:0,chatMentions:0,guildChatUnread:0,guildChatMentions:0,guildFirstUnreadMessageId:undefined,partyChatUnread:0,partyChatMentions:0,partyFirstUnreadMessageId:undefined,guild:0,guildApplications:0,guildInvites:0,guildProjectRewards:0,party:0,partyInvites:0,events:0,account:0};
 
-export function useSocialNotificationCounts(){
+export function useSocialNotificationCounts(pollEnabled=true){
   const {session}=useAuthSession(),accountId=session?.user.id;
   const [counts,setCounts]=useState<SocialNotificationCounts>(ZERO);
   const activeAccount=useRef(accountId),countsAccount=useRef(accountId),inFlight=useRef<{accountId:string;promise:Promise<void>;refreshAgain:boolean}|null>(null);
@@ -95,6 +95,11 @@ export function useSocialNotificationCounts(){
   },[accountId]);
   useEffect(()=>{
     inFlight.current=null;confirmedGuild.current=null;countsAccount.current=accountId;setCounts(ZERO);
+  },[accountId]);
+  useEffect(()=>{
+    // Optional background reads wait for the first usable gameplay screen.
+    // Explicit refresh remains available, and pausing polls preserves badges.
+    if(!pollEnabled||!accountId)return;
     let previous=AppState.currentState,stopped=false,generation=0;
     let timer:ReturnType<typeof setTimeout>|undefined;
     const clearTimer=()=>{if(timer!==undefined){clearTimeout(timer);timer=undefined;}};
@@ -107,7 +112,7 @@ export function useSocialNotificationCounts(){
     };
     void poll();
     const sub=AppState.addEventListener('change',status=>{const resumed=previous!=='active'&&status==='active';previous=status;if(status!=='active'){generation++;clearTimer();}else if(resumed)void poll(true);});
-    return()=>{stopped=true;generation++;inFlight.current=null;clearTimer();sub.remove();};
-  },[accountId,refresh]);
+    return()=>{stopped=true;generation++;clearTimer();sub.remove();};
+  },[accountId,refresh,pollEnabled]);
   return {counts:countsAccount.current===accountId?counts:ZERO,refresh};
 }

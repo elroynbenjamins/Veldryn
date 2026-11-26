@@ -27,6 +27,14 @@ for(const [i,set] of ids.entries()){
  assert(!m.ultraLuxeFullSetEquipped(after,after,set,read,scope));
  assert(m.ultraLuxeFullSetEquipped(after,after,set,{...read,selectedId:id},scope));
  const committed={...read,selectedId:id};
+ const receipt={replayed:false,gameplay:{accountId:'a',state:{character:{id:'c',profileBackgroundId:after.scene,profileBorderId:after.frame,selectedCosmeticPetId:after.pet,profileTitle:after.title}}},nameSelection:committed};
+ assert.equal(m.confirmUltraLuxeFullSetReadback(plan,scope,receipt),'confirmed');
+ assert.equal(m.confirmUltraLuxeFullSetReadback(plan,switched,receipt),'scope-changed');
+ assert.equal(m.confirmUltraLuxeFullSetReadback(plan,scope,{...receipt,nameSelection:{...committed,accountId:'b'}}),'unconfirmed');
+ assert.equal(m.confirmUltraLuxeFullSetReadback(plan,scope,{...receipt,nameSelection:read}),'unconfirmed');
+ assert.equal(m.confirmUltraLuxeFullSetReadback(plan,scope,{...receipt,replayed:true,nameSelection:read}),'superseded');
+ assert.equal(m.confirmUltraLuxeFullSetReadback(plan,scope,{...receipt,replayed:true,nameSelection:{...committed,ownedIds:[]}}),'superseded');
+ assert.equal(m.confirmUltraLuxeFullSetReadback(plan,scope,{...receipt,replayed:true}),'unconfirmed');
  assert.deepEqual(m.undoUltraLuxeFullSet(plan.after,plan,scope,committed),plan.before);
  assert.equal(m.undoUltraLuxeFullSet(plan.after,plan,switched,committed),null);
  assert.equal(m.undoUltraLuxeFullSet(plan.after,plan,scope,{...committed,ownedIds:[id]}).namePresetId,null);
@@ -47,3 +55,18 @@ for(const s of NEXT_PREMIUM_SETS){
  assert(!n.nextPremiumFullSetPlanAllowed({...plan,after:{...plan.after,wardrobe:{...plan.after.wardrobe,scene:'tampered'}}},scope,grant,pieces,names,ready));
 }
 console.log('Six-set matching preset, scoped equip plan, revocation and independent edit undo contract passed.');
+
+const repo=path.resolve(__dirname,'../../..');
+const commitSql=fs.readFileSync(path.join(repo,'docs/roadmap/ultra-luxe-full-set-commit-candidate.sql'),'utf8');
+const namesSql=fs.readFileSync(path.join(repo,'docs/roadmap/ultra-luxe-six-name-authority-candidate.sql'),'utf8');
+for(const [i,set] of ids.entries()){
+ const row=g.ULTRA_LUXE_GRADIENTS[i];
+ assert(commitSql.includes("'ascendant-"+set+"'"));
+ assert(commitSql.includes("'"+row.id+"'"));
+ assert(namesSql.includes("('"+row.id+"',array["+row.colors.map(c=>"'"+c+"'").join(',')+"])"));
+}
+assert(commitSql.includes("security invoker set search_path='' as $full_set$"));
+assert(commitSql.includes("from public,anon,authenticated;"));
+assert(commitSql.indexOf('if existing_receipt is not null then')<commitSql.indexOf('insert into private.ultra_luxe_name_selection_v1'));
+assert(commitSql.indexOf('ack:=public.commit_online_game_ultra_luxe_v1')<commitSql.indexOf('insert into private.ultra_luxe_name_selection_v1'));
+console.log('Scoped readback and six-palette SQL source parity checks passed (not SQL execution).');

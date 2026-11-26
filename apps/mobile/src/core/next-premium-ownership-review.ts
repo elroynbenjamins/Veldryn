@@ -1,6 +1,7 @@
 import type {WardrobeCategory,WardrobeEquipped,WardrobeRow} from './profile-wardrobe';
 import type {QuickCosmeticSet} from './profile-quick-set-equip';
 import type {PlayerNameStylePreference} from './player-name-style';
+import {planUltraLuxeFullSet,ultraLuxeFullSetPlanAllowed,type FullSetPlan,type VerifiedFullSetNames} from './ultra-luxe-full-set-name';
 import {ultraLuxeGradient} from './ultra-luxe-name-gradients';
 import {NEXT_PREMIUM_SETS} from './next-premium-set-review';
 
@@ -34,10 +35,11 @@ export function nextPremiumOwnedSets(scope:NextPremiumScope,grant:NextPremiumGra
 }
 export function nextPremiumQuickSets(scope:NextPremiumScope,grant:NextPremiumGrantSnapshot|undefined,pieces:NextPremiumOwnedPieces|undefined,ready:NextPremiumReadiness=NEXT_PREMIUM_REVIEW_READINESS):QuickCosmeticSet[]{
  return nextPremiumOwnedSets(scope,grant,pieces,ready).map(s=>({id:s.id,name:s.name,accent:s.colors[0],choices:[{
-  id:s.id,name:s.name,patch:{scene:s.background,frame:s.border,pet:s.pet,title:s.titleName,effect:''},
+  id:s.id,name:s.name,namePresetId:s.nameStyle,patch:{scene:s.background,frame:s.border,pet:s.pet,title:s.titleName,effect:''},
  }]}));
 }
-/** Draft only; preserve icon and account-wide badge/name preference. Existing queue must
+/** Character-only draft helper; full set callers must use nextPremiumFullSetPlan.
+ * Preserve icon and independently selected badge. Existing queue must
  * recheck the same account/character and fresh projection immediately before saving. */
 export function nextPremiumQuickSelection(scope:NextPremiumScope,requested:NextPremiumScope,grant:NextPremiumGrantSnapshot|undefined,pieces:NextPremiumOwnedPieces|undefined,current:WardrobeEquipped,id:string,ready:NextPremiumReadiness=NEXT_PREMIUM_REVIEW_READINESS):WardrobeEquipped|null{
  if(!sameScope(scope,requested))return null;
@@ -127,4 +129,20 @@ export function sanitizeNextPremiumAppearance(selection:NextPremiumAppearance,al
    const row=NEXT_PREMIUM_SETS.find(s=>s.badge===id);return !row||allowedRow(row.id);
   }),
  };
+}
+
+/** Full set draft includes its matching account-wide name. Never report success
+ * using the character-only draft when the preset cannot be saved atomically. */
+export function nextPremiumFullSetPlan(scope:NextPremiumScope,requested:NextPremiumScope,grant:NextPremiumGrantSnapshot|undefined,pieces:NextPremiumOwnedPieces|undefined,current:WardrobeEquipped,id:string,names:VerifiedFullSetNames|undefined,ready:NextPremiumReadiness=NEXT_PREMIUM_REVIEW_READINESS){
+ if(!ready.namePresets)return null;
+ const after=nextPremiumQuickSelection(scope,requested,grant,pieces,current,id,ready);
+ const row=nextPremiumOwnedSets(scope,grant,pieces,ready).find(s=>s.id===id);
+ if(!after||!row||!has(pieces?.nameStyles,row.nameStyle))return null;
+ return planUltraLuxeFullSet(scope,id,current,after,names);
+}
+export function nextPremiumFullSetPlanAllowed(plan:FullSetPlan,scope:NextPremiumScope,grant:NextPremiumGrantSnapshot|undefined,pieces:NextPremiumOwnedPieces|undefined,names:VerifiedFullSetNames|undefined,ready:NextPremiumReadiness=NEXT_PREMIUM_REVIEW_READINESS){
+ const row=nextPremiumOwnedSets(scope,grant,pieces,ready).find(s=>s.id===plan.setId);
+ if(!ready.namePresets||!row||!has(pieces?.nameStyles,row.nameStyle)||!ultraLuxeFullSetPlanAllowed(plan,scope,names))return false;
+ const expected=nextPremiumQuickSelection(scope,plan.scope,grant,pieces,plan.before.wardrobe,plan.setId,ready);
+ return !!expected&&Object.keys(expected).every(key=>expected[key as keyof WardrobeEquipped]===plan.after.wardrobe[key as keyof WardrobeEquipped]);
 }

@@ -205,5 +205,15 @@ function wiring(){
  assert.ok(!app.includes("pointerEvents={serverGameplayEnabled&&online.busy?'none':'auto'}"),'Network saves must not freeze scrolling and navigation');
  assert.ok(!app.includes("showAlert('Online action'"),'Routine command failures use inline feedback');
  assert.ok(app.includes('message={onlineActionError}'),'Online failures remain visible inline');
+ // Foreground refresh can finish with a durable pending command. That must
+ // never leave a full-screen touch shield waiting for a claim that cannot run.
+ assert.ok(!app.includes('onlineForegroundSettlementRef'),'Online foreground refresh cannot latch offline settlement UI');
+ assert.ok(/useEffect\(\(\)=>\{if\(serverGameplayEnabled\)return;\s*const subscription=AppState\.addEventListener\('change',nextStatus=>\{[^\n]*settlingRef\.current=true;setOfflineSettling\(true\)/.test(app),'Only local mode registers the foreground settlement listener');
+ assert.ok(app.includes('{!serverGameplayEnabled&&offlineSettling&&<View style={s.offlineLoadingOverlay}>'),'Full-screen settlement is local-only');
+ assert.ok(app.includes('{serverGameplayEnabled&&(offlineSettling||(online.busy&&!quietCraftSaving))?<View pointerEvents="none"'),'Online settlement status never intercepts touches');
+ assert.ok(app.includes('online.loading||online.busy||online.pending||onlineStartupSettlementAccountRef.current===arrivalKey'),'Automatic settlement still waits for existing commands');
+ assert.ok(app.includes('disabled={online.busy} onPress={()=>perform()}'),'Pending command stays explicitly retryable');
+ assert.ok(app.includes('finally{if(welcomeBack)setOfflineSettling(false);}'),'Actual claim status clears on success or failure');
+
 }
 (async()=>{await buttons();await commandBusy();await combatSwapOptimism();await socialBadgeParallelAndRecovery();rewardPreviewClock();foregroundTaskLifecycle();await foregroundHuntReplay();wiring();console.log('PASS: online loading indicators, duplicate suppression, rejection recovery, overlapping-command busy state and non-blocking app feedback');})().catch(error=>{console.error(error);process.exitCode=1});

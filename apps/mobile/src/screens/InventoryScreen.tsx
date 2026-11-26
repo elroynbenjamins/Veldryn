@@ -41,8 +41,8 @@ import {craftedGearInstances,craftedGearDisplayQuality} from '../core/crafted-ge
 import {validateGatheringToolRoll,gatheringToolBonusLabel} from '../core/gathering-tool-rolls';
 import {gatheringToolDef} from '../content/gathering-tools';
 import {gatheringToolContribution,gatheringToolPercent} from '../core/gathering-tool-presentation';
-import {indexInventoryGearCopies} from '../core/inventory-gear-lookup';
-import {auditCraftedGearOwnership,craftedGearCopiesAt,disposeCraftedGearInstance} from '../core/crafted-gear-ownership';
+import {indexInventoryGearCopies,inventoryInspectedGearLocations} from '../core/inventory-gear-lookup';
+import {auditCraftedGearOwnership,disposeCraftedGearInstance} from '../core/crafted-gear-ownership';
 import {canDisposeLegacyEquipment} from '../core/equipment-enhancement';
 import type {GameCommand} from '../core/game-commands';
 import {bulkSelectionSummary,inventoryBulkSelectionId,type BulkStorageLocation} from '../core/inventory-bulk';
@@ -108,7 +108,7 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
   const [inventoryIntent,setInventoryIntent]=useState<InventoryFeedbackIntent|null>(null),[inventoryFeedback,setInventoryFeedback]=useState<InventoryActionFeedback|null>(null);
   const [inventoryBusyLabel,setInventoryBusyLabel]=useState<string|null>(null),inventoryBusyRef=useRef(false);
   const carriedGold=state.character?.gold??0,bankGold=state.bank.gold??0,customGoldAmount=Number(bankGoldAmount),validCustomGold=Number.isSafeInteger(customGoldAmount)&&customGoldAmount>0;
- const gearStorage=equipmentPouch(state),freeGearSlots=Math.max(0,gearStorage.capacity-gearStorage.stacks.length);
+ const gearStorage=useMemo(()=>equipmentPouch(state),[state]),freeGearSlots=Math.max(0,gearStorage.capacity-gearStorage.stacks.length);
  const gearLabel=(label:string,params:Record<string,string|number>={})=>equipmentPouchText(language,label,params);
   useEffect(()=>{const next=equipmentSnapshot,previous=equipmentSnapshotRef.current;equipmentSnapshotRef.current=next;if(previous.characterId!==next.characterId){setEquipMoment(null);return;}const result=equipmentChangeFeedback(previous,next);if(result)setEquipMoment(result)},[equipmentSnapshot]);
   useEffect(()=>{if(!inventoryIntent)return;const result=resolveInventoryActionFeedback(inventoryIntent,state);if(result){setInventoryFeedback(result);setInventoryIntent(null)}},[state,inventoryIntent]);
@@ -158,6 +158,8 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
   // scan or re-normalize every crafted copy for every visible inventory tile.
   const exactRecords=useMemo(()=>craftedGearInstances(state),[state.account.craftedGearInstances]);
   const exactRecordsById=useMemo(()=>indexInventoryGearCopies(exactRecords),[exactRecords]);
+  const toolRecordsById=useMemo(()=>indexInventoryGearCopies(state.account.craftedGatheringToolInstances??[]),[state.account.craftedGatheringToolInstances]);
+  const commandAvailable=!!onCommand;
   // Preview actions always target the NEW Inventory copy, never the equipped slot.
   // Dry-run the existing disposal reducers so protected and stale copies stay disabled.
   const previewDisposal=useMemo(()=>{
@@ -176,7 +178,7 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
       if(method==='salvage'&&!equipmentSalvageReward(previewId))
         return {allowed:false,reason:'This equipment has no salvage recipe'};
       if(previewInstanceId){
-        if(!onCommand)return {allowed:false,reason:'Equipment actions are unavailable while offline'};
+        if(!commandAvailable)return {allowed:false,reason:'Equipment actions are unavailable while offline'};
         return equipmentCopyDisposalDecision(state,previewInstanceId,method);
       }
       try{
@@ -191,7 +193,7 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
     };
     const sell=eligible('sell'),salvage=eligible('salvage');
     return {sell:sell.allowed,salvage:salvage.allowed,sellReason:sell.reason,salvageReason:salvage.reason};
-  },[state,previewId,previewInstanceId,goalProtection,favoriteSet,lockedSet,onCommand]);
+  },[state,previewId,previewInstanceId,goalProtection,favoriteSet,lockedSet,commandAvailable]);
   const selectedSet=useMemo(()=>new Set(selectedIds),[selectedIds]);
    const hasUnselectedShown=gridEntries.some(stack=>stack!==null&&!selectedSet.has(inventoryBulkSelectionId(stack)));
    const selectionSummary=useMemo(()=>bulkSelectionSummary(state,protectionMode?[]:selectedIds,location),[state,selectedIds,location,protectionMode]);
@@ -238,7 +240,7 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
   };
   const closeInspect=()=>{if(inspectId&&newItemSet.has(inspectId))run(()=>onAcknowledgeItem(inspectId));setInspectId(null);setSelectedInstanceId(null)};
   const renderStack=(stack:ItemStack)=>{
-    const item=itemDef(stack.itemId),exactRecord=stack.instanceId?exactRecordsById.get(stack.instanceId):undefined,toolRecord=stack.instanceId?validateGatheringToolRoll(state.account.craftedGatheringToolInstances?.find(row=>row.id===stack.instanceId),stack.itemId):undefined,favorite=favoriteSet.has(item.id),locked=lockedSet.has(item.id)||exactRecord?.locked===true,newItem=newItemSet.has(item.id),selected=selectedSet.has(inventoryBulkSelectionId(stack)),autoEat=state.character?.equippedFoodId===item.id,rarity=rarityMeta(exactRecord?.rarity??itemRarity(item)),displayRarity=toolRecord?rarityMeta(toolRecord.rarity):rarity,goalProtected=goalProtection.has(item.id);
+    const item=itemDef(stack.itemId),exactRecord=stack.instanceId?exactRecordsById.get(stack.instanceId):undefined,toolRecord=stack.instanceId?validateGatheringToolRoll(toolRecordsById.get(stack.instanceId),stack.itemId):undefined,favorite=favoriteSet.has(item.id),locked=lockedSet.has(item.id)||exactRecord?.locked===true,newItem=newItemSet.has(item.id),selected=selectedSet.has(inventoryBulkSelectionId(stack)),autoEat=state.character?.equippedFoodId===item.id,rarity=rarityMeta(exactRecord?.rarity??itemRarity(item)),displayRarity=toolRecord?rarityMeta(toolRecord.rarity):rarity,goalProtected=goalProtection.has(item.id);
     const label=[gt('{name}, {count} owned',{name:localizedItemName(language,item.id),count:formatGameNumber(stack.quantity,state.settings.numberMode,state.settings.language)}),favorite?gt('favorite'):'',locked?gt('Locked'):'',exactRecord||toolRecord?displayRarity.label:'',toolRecord?'Q'+toolRecord.quality+' · +'+gatheringToolPercent(toolRecord.bonus.basisPoints/100)+'% '+gt(toolRecord.bonus.stat==='speed'?'Gathering Speed':'Gathering Rarity Chance'):'',newItem?gt('New'):'',goalProtected?gt('needed for Working Toward'):''].filter(Boolean).join(', ');
     return <View key={`${location}:${item.id}:${stack.instanceId??'legacy'}`} style={[s.itemTile,{width:tileSize,height:tileSize,borderColor:displayRarity.color,borderWidth:displayRarity.borderWidth,backgroundColor:selected?C.selection:C.panel2}]}>
       <Pressable accessibilityRole={selectMode?'checkbox':'button'} accessibilityLabel={selectMode?gt(selected?'Deselect {label}':'Select {label}',{label}):label} accessibilityHint={selectMode?gt("Select this stack for bulk management"):item.type==='gear'&&location==='inventory'?gl("Preview the equipment swap before equipping"):gt("Open item details, sources and crafting uses")} accessibilityState={selectMode?{checked:selected}:undefined} onPress={()=>{if(selectMode){toggleSelection(inventoryBulkSelectionId(stack));return;}if(item.type==='gear'&&location==='inventory'){setPreviewInstanceId(stack.instanceId??null);setPreviewId(item.id);return;}setSelectedInstanceId(stack.instanceId??null);setInspectQuantity(stack.instanceId?1:transferAmount(stack.quantity,quantity));setInspectId(item.id)}} style={({pressed})=>[s.itemOpen,pressed&&s.pressed]}>
@@ -257,9 +259,9 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
   const goalWarningText=goalWarning?gt('Working Toward is using this item for {goal}. Additional goals: {count}.',{goal:goalWarning.goalTitles[0],count:goalWarning.goalTitles.length-1}):'';
   const message=[(pending?.kind==='sell'||pending?.kind==='bank_sell')?gt('Sell {count} for {gold} gold. This cannot be undone.',{count:pending.quantity,gold:formatGameNumber(itemVendorSellGold(pending.item)*pending.quantity,state.settings.numberMode,state.settings.language)}):pending?.kind==='deposit'?gt('Move {count}× {name} to {destination}?',{count:pending.quantity,name:localizedItemName(language,pending.item.id),destination:gemDepositDestination(state,pending.item.id)==='gem_pouch'?'Gem Pouch':'Bank'}):pending?.item&&equipmentSalvageReward(pending.item.id)?gt('Destroy 1 item for {count}× {name}.',{count:equipmentSalvageReward(pending.item.id)!.quantity,name:localizedItemName(language,equipmentSalvageReward(pending.item.id)!.itemId)}):'',pending?.kind==='deposit'||pending?.kind==='sell'||pending?.kind==='bank_sell'?foodWarning:'',goalWarningText].filter(Boolean).join(' ');
   const copyDisposalRecord=copyPending?exactRecordsById.get(copyPending.instanceId):undefined;
-  const copyDisposalDecision=useMemo(()=>copyPending&&onCommand
+  const copyDisposalDecision=useMemo(()=>copyPending&&commandAvailable
     ?equipmentCopyDisposalDecision(state,copyPending.instanceId,copyPending.method)
-    :{allowed:false,reason:'Equipment actions are unavailable'},[state,copyPending,onCommand]);
+    :{allowed:false,reason:'Equipment actions are unavailable'},[state,copyPending,commandAvailable]);
   const copyDisposalValid=copyDisposalDecision.allowed;
   // The modal owns an immutable set of IDs. Recheck those IDs against the latest
   // snapshot instead of relying on the selection behind the modal.
@@ -289,8 +291,8 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
       ?[bulkPending.kind==='sell'?gt('Sell {stacks} eligible stacks ({items} items) for {gold} gold?',{stacks:selectionSummary.sellableStackCount,items:selectionSummary.sellableUnitCount,gold:formatGameNumber(selectionSummary.sellGold,state.settings.numberMode,state.settings.language)}):gt('Salvage {stacks} eligible equipment stacks ({items} items)?',{stacks:selectionSummary.salvageableStackCount,items:selectionSummary.salvageableUnitCount}),bulkPending.kind==='sell'?(selectionSummary.sellProtectedCount?(selectionSummary.sellProtectedCount?gt('{count} selected stacks are excluded by protection or sell rules.',{count:selectionSummary.sellProtectedCount}):''):''):(selectionSummary.salvageProtectedCount?gt('{count} selected stacks are protected or not salvageable.',{count:selectionSummary.salvageProtectedCount}):''),selectionSummary.goalProtectedCount?gt('{count} Working Toward stacks remain protected.',{count:selectionSummary.goalProtectedCount}):'',gt('This cannot be undone.')].filter(Boolean).join(' ')
       :'';
   const confirmBulk=()=>{if(!bulkPending||!disposalSelectionValid)return;const action=bulkPending,actionLocation=bulkPending.location,summary=disposalSummary??selectionSummary,request:InventoryFeedbackRequest=action.kind==='transfer'?{kind:'bulk_transfer',direction:actionLocation==='inventory'?"deposit":"withdraw",stacks:selectionSummary.transferableStackCount,units:selectionSummary.transferableUnitCount}:action.kind==='sell'?{kind:'bulk_sell',stacks:summary.sellableStackCount,units:summary.sellableUnitCount,gold:summary.sellGold}:{kind:'bulk_salvage',stacks:summary.salvageableStackCount,units:summary.salvageableUnitCount};setBulkPending(null);exitSelection();scheduleAfterPaint(()=>{if(actionLocation==='bank'&&action.kind!=='transfer'){void beginInventorySubmission(action.kind==='sell'?gt('Selling items…'):gt('Updating inventory…'),()=>onBulkAction(action.kind,actionLocation,action.ids));}else runInventory(request,()=>onBulkAction(action.kind,actionLocation,action.ids));})};
-  const remaining=useMemo(()=>claimOverflowToBank(state).overflow.stacks.reduce((sum,item)=>sum+item.quantity,0),[state]);
-  const overflowCount=state.overflow.stacks.reduce((sum,item)=>sum+item.quantity,0);
+  const overflowCount=useMemo(()=>state.overflow.stacks.reduce((sum,item)=>sum+item.quantity,0),[state.overflow.stacks]);
+  const remaining=useMemo(()=>state.overflow.stacks.length?claimOverflowToBank(state).overflow.stacks.reduce((sum,item)=>sum+item.quantity,0):0,[state]);
   const inventoryUpgrade=useMemo(()=>storageUpgradePreview(state,'inventory'),[state]),bankUpgrade=useMemo(()=>storageUpgradePreview(state,'bank'),[state]);
    const activeUpgrade=location==='inventory'?inventoryUpgrade:bankUpgrade;
    const canUpgradeStorage=!!activeUpgrade&&inventoryBusyLabel===null&&(state.character?.level??0)>=activeUpgrade.level&&carriedGold>=activeUpgrade.cost;
@@ -301,18 +303,26 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
      :null;
   const inspected=inspectId?itemDef(inspectId):undefined,carried=location==='inventory';
 
-  const exactCopies=inspected?.type==='gear'?craftedGearCopiesAt(state,inspected.id,location).map(row=>exactRecordsById.get(row.instanceId)!).filter(Boolean):[];
+  // One read-only ownership audit per authoritative snapshot while inspecting gear.
+  // The same fail-closed projection serves both located and legacy-link candidates.
+  const inspectingGear=inspected?.type==='gear';
+  const linkAudit=useMemo(()=>inspectingGear?auditCraftedGearOwnership(state):undefined,[state,inspectingGear]);
+  const exactCopies=useMemo(()=>inspectingGear&&linkAudit
+    ?inventoryInspectedGearLocations(linkAudit,inspectId,location,state.character?.id).map(row=>exactRecordsById.get(row.instanceId)!).filter(Boolean)
+    :[],[inspectingGear,linkAudit,inspectId,location,state.character?.id,exactRecordsById]);
   const selectedCopy=exactCopies.find(row=>row.id===selectedInstanceId)??exactCopies[0];
   const inspectedToolDef=inspected?.type==='tool'?gatheringToolDef(inspected.id):undefined;
-  const exactToolCopies=inspected?.type==='tool'?state[location].stacks.filter(row=>row.itemId===inspected.id&&!!row.instanceId).flatMap(row=>{const verified=validateGatheringToolRoll(state.account.craftedGatheringToolInstances?.find(copy=>copy.id===row.instanceId),row.itemId);return verified?[verified]:[]}):[];
-  const inspectedCopySell=selectedCopy?equipmentCopyDisposalDecision(state,selectedCopy.id,'sell'):null;
-  const inspectedCopySalvage=selectedCopy?equipmentCopyDisposalDecision(state,selectedCopy.id,'salvage'):null;
+  const exactToolCopies=useMemo(()=>inspected?.type==='tool'?activeStacks.filter(row=>row.itemId===inspected.id&&!!row.instanceId).flatMap(row=>{const verified=validateGatheringToolRoll(toolRecordsById.get(row.instanceId!),row.itemId);return verified?[verified]:[]}):[],[activeStacks,inspected,toolRecordsById]);
+  const selectedCopyId=selectedCopy?.id;
+  const inspectedCopySell=useMemo(()=>selectedCopyId?equipmentCopyDisposalDecision(state,selectedCopyId,'sell'):null,[state,selectedCopyId]);
+  const inspectedCopySalvage=useMemo(()=>selectedCopyId?equipmentCopyDisposalDecision(state,selectedCopyId,'salvage'):null,[state,selectedCopyId]);
   const hasLegacyStack=inspected?state[location].stacks.some(row=>row.itemId===inspected.id&&row.instanceId===undefined&&row.quantity>0):false;
   const legacyStackIndex=inspected?state[location].stacks.findIndex(row=>row.itemId===inspected.id&&row.instanceId===undefined&&row.quantity>0):-1;
-  const linkAudit=inspected?.type==='gear'?auditCraftedGearOwnership(state):undefined;
-  const unlinkedForgeCopies=inspected?.type==='gear'&&linkAudit&&!linkAudit.problems.length
-    ?exactRecords.filter(row=>row.itemId===inspected.id&&linkAudit.unlocatedInstanceIds.includes(row.id))
-    :[];
+  const unlinkedForgeCopies=useMemo(()=>{
+    if(!inspectingGear||!linkAudit||linkAudit.problems.length)return [];
+    const unlocated=new Set(linkAudit.unlocatedInstanceIds);
+    return exactRecords.filter(row=>row.itemId===inspectId&&unlocated.has(row.id));
+  },[inspectingGear,linkAudit,exactRecords,inspectId]);
   const inspectStock=inspected?state[location].stacks.reduce((total,stack)=>total+(stack.itemId===inspected.id&&!stack.instanceId?stack.quantity:0),0):0;
   const inspectAmount=transferAmount(inspectStock,inspectQuantity??1);
   const inspectAmountValid=inspectQuantity!==null&&inspectAmount>0;

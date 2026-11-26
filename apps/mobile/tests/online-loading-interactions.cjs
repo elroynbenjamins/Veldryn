@@ -4,7 +4,7 @@ globalThis.IS_REACT_ACT_ENVIRONMENT=true;
 const deferred=()=>{let resolve,reject;const promise=new Promise((yes,no)=>{resolve=yes;reject=no});return {promise,resolve,reject}};
 function load(file,dependencies){
  const code=ts.transpileModule(fs.readFileSync(path.join(__dirname,'../',file),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX}}).outputText;
- const sandbox={exports:{},Error,Promise,console:{warn:()=>{}},require:name=>dependencies[name]??(name==='react'?React:name==='react/jsx-runtime'?require(name):{})};
+ const sandbox={exports:{},Error,Promise,setTimeout,clearTimeout,console:{warn:()=>{}},require:name=>dependencies[name]??(name==='react'?React:name==='react/jsx-runtime'?require(name):{})};
  vm.runInNewContext(code,sandbox);return sandbox.exports;
 }
 const native={Pressable:'Pressable',Text:'Text',ActivityIndicator:'ActivityIndicator',StyleSheet:{create:styles=>styles},AppState:{currentState:'active',addEventListener:()=>({remove(){}})}};
@@ -87,6 +87,56 @@ async function combatSwapOptimism(){
  await act(async()=>renderer.unmount());
 }
 
+async function socialBadgeParallelAndRecovery(){
+ let latest,account='a',mode='first',reward=deferred(),applications=deferred(),friend=deferred(),started=[];
+ let membership={account_id:'a',guild_id:'g',role:'leader'};
+ const {useSocialNotificationCounts}=load('src/online/useSocialNotificationCounts.ts',{
+  'react-native':native,
+  './AuthSessionProvider':{useAuthSession:()=>({session:account?{user:{id:account}}:null})},
+  './social':{
+   incomingFriendRequestCount:async()=>{if(mode==='failure')throw Error('offline');return mode==='first'?friend.promise:2;},
+   socialInvitations:async()=>{if(mode==='failure')throw Error('offline');return {guild:[1],party:[1,2]};},
+   socialChatAttention:async()=>({guild:{unread:3,mentions:1},party:{unread:0,mentions:0}}),
+   myGuild:async()=>{if(mode==='failure')throw Error('offline');return mode==='left'?null:membership;},
+   guildApplications:()=>{started.push('applications');return mode==='newGuildFailure'?Promise.reject(Error('offline')):applications.promise;},
+  },
+  './guild-projects-v18':{claimableOnlineGuildProjectRewardCount:()=>{started.push('rewards');return mode==='newGuildFailure'?Promise.reject(Error('offline')):reward.promise;}},
+ });
+ function Harness(){latest=useSocialNotificationCounts();return null;}
+ let renderer;
+ await act(async()=>{renderer=create(React.createElement(Harness));});
+ assert.deepEqual(started,['rewards','applications'],'Guild badge reads must start before either guild read or the independent friend request resolves');
+ await act(async()=>{friend.resolve(2);reward.resolve(4);applications.resolve([1,2,3]);});
+ assert.equal(latest.counts.guildProjectRewards,4);
+ assert.equal(latest.counts.guildApplications,3);
+ assert.equal(latest.counts.guild,4);
+ assert.equal(latest.counts.friendRequests,2);
+ assert.equal(latest.counts.partyInvites,2);
+ mode='failure';
+ await act(async()=>{await latest.refresh();});
+ assert.equal(latest.counts.guildProjectRewards,4,'An unknown membership must not erase a confirmed reward count');
+ assert.equal(latest.counts.guildApplications,3);
+ assert.equal(latest.counts.friendRequests,2);
+ assert.equal(latest.counts.partyInvites,2);
+ membership={...membership,guild_id:'g2'};mode='newGuildFailure';
+ await act(async()=>{await latest.refresh();});
+ assert.equal(latest.counts.guildProjectRewards,0,'A new guild cannot inherit the former guild reward count');
+ assert.equal(latest.counts.guildApplications,0);
+ mode='left';
+ await act(async()=>{await latest.refresh();});
+ assert.equal(latest.counts.guildProjectRewards,0,'Confirmed non-membership clears guild-specific badges');
+ assert.equal(latest.counts.guildApplications,0);
+ mode='first';reward=deferred();applications=deferred();
+ let old;
+ await act(async()=>{old=latest.refresh();});
+ account=undefined;
+ await act(async()=>{renderer.update(React.createElement(Harness));});
+ await act(async()=>{reward.resolve(99);applications.resolve([1,2,3]);await old;});
+ assert.equal(latest.counts.guildProjectRewards,0,'A prior account response cannot populate signed-out badges');
+ assert.equal(latest.counts.friendRequests,0);
+ await act(async()=>renderer.unmount());
+}
+
 function wiring(){
  const files=[];function walk(dir){for(const entry of fs.readdirSync(dir,{withFileTypes:true})){const file=path.join(dir,entry.name);if(entry.isDirectory())walk(file);else if(file.endsWith('.tsx'))files.push(file);}}
  walk(path.join(__dirname,'../src'));files.push(path.join(__dirname,'../App.tsx'));
@@ -104,4 +154,4 @@ function wiring(){
  assert.ok(!app.includes("showAlert('Online action'"),'Routine command failures use inline feedback');
  assert.ok(app.includes('message={onlineActionError}'),'Online failures remain visible inline');
 }
-(async()=>{await buttons();await commandBusy();await combatSwapOptimism();wiring();console.log('PASS: online loading indicators, duplicate suppression, rejection recovery, overlapping-command busy state and non-blocking app feedback');})().catch(error=>{console.error(error);process.exitCode=1});
+(async()=>{await buttons();await commandBusy();await combatSwapOptimism();await socialBadgeParallelAndRecovery();wiring();console.log('PASS: online loading indicators, duplicate suppression, rejection recovery, overlapping-command busy state and non-blocking app feedback');})().catch(error=>{console.error(error);process.exitCode=1});

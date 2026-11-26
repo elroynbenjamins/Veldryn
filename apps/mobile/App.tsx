@@ -223,7 +223,6 @@ function VeldrynApp(){
   const [recoveryLanguage,setRecoveryLanguage]=useState<Language>('en');
   useEffect(()=>{gameAlerts.configure({themeId:displayedThemeId,language:state?.settings.language??recoveryLanguage,reduceMotion:state?.settings.reduceMotion??false});},[displayedThemeId,state?.settings.language,state?.settings.reduceMotion,recoveryLanguage]);
   const [tab,setCurrentTab]=useState<Tab>('Home');
-  useDungeonWeeklyReminder(auth.session?.user.id,()=>setCurrentTab('Coop'));
   const [transitionKind,setTransitionKind]=useState<ScreenTransitionKind>('none');
   const systemReduceMotion=useSystemReduceMotion();
   const tabRef=useRef(tab);tabRef.current=tab;
@@ -394,6 +393,8 @@ function VeldrynApp(){
     return()=>{active=false};
   },[optionalUpdateSeenKey]);
   const loadOptionalContent=!startupBlocking&&!startupOverlayVisible&&!versionGateOwnsScreen;
+  // Optional reminder registration must not compete with startup gameplay/auth reads.
+  useDungeonWeeklyReminder(loadOptionalContent&&ready&&!auth.recovering?auth.session?.user.id:undefined,()=>setCurrentTab('Coop'));
   useEffect(()=>{
     if(!loadOptionalContent&&!showWhatsNew)return;
     return runWhileForeground(isCurrent=>{
@@ -507,7 +508,9 @@ function VeldrynApp(){
   }),[goBack]);
   const loadGame=useCallback(async()=>{setReady(false);setLoadError('');try{setRecoveryLanguage(await repo.loadLanguage());const saved=await repo.load();if(initialCharacterAtLaunchRef.current===undefined)initialCharacterAtLaunchRef.current=!!saved?.character;const restored=retireGoalPlanner(normalizeProfileIcon(migrateRetiredStoryRewards(saved??newGame(Date.now()),Date.now())));const startup=saved?settleStartupActivity(restored,Date.now()):{state:restored,reward:null,activity:null};const next=startup.state;if(saved)queueCustomizationUnlocks(restored,next);stateRef.current=next;setState(next);setRecoveryLanguage(next.settings.language);if(startup.reward)setCollected({reward:startup.reward,activity:startup.activity,welcomeBack:true,welcomeReport:buildWelcomeBackFromStates(restored,next,startup.reward,startup.activity),progressionMoments:rewardProgressionMoments(restored,next)});if(saved){try{await repo.save(next)}catch{showAlert('Save upgrade pending','Your progress loaded, but the upgraded save could not be written yet. Keep the app open and try another saved action.')}}}catch(error){stateRef.current=null;setState(null);setLoadError(error instanceof Error?error.message:'The local save could not be read.')}finally{setReady(true)}},[]);
   useEffect(()=>{if(!serverGameplayEnabled)void loadGame()},[loadGame]);
-  useEffect(()=>{if(!serverGameplayEnabled)return;const snapshot=online.snapshot,next=snapshot?.state?retireGoalPlanner(migrateRetiredStoryRewards(snapshot.state,Date.now())):null,before=stateRef.current;queuePreparationNotices(before,next);if(before&&next&&before.createdAtMs===next.createdAtMs)queueCustomizationUnlocks(before,next);if(!before&&next&&initialCharacterAtLaunchRef.current===undefined)initialCharacterAtLaunchRef.current=!!next.character;if(!before&&next&&snapshot?.reward&&rewardHasProgress(snapshot.reward)){setCollected({reward:snapshot.reward,activity:snapshot.activity??null,welcomeBack:true,progressionMoments:[]});}stateRef.current=next;setState(next);setReady(!online.loading);setLoadError('');},[online.snapshot,online.loading]);
+  useEffect(()=>{if(!serverGameplayEnabled)return;const snapshot=online.snapshot,next=snapshot?.state?retireGoalPlanner(migrateRetiredStoryRewards(snapshot.state,Date.now())):null,before=stateRef.current;queuePreparationNotices(before,next);if(before&&next&&before.createdAtMs===next.createdAtMs)queueCustomizationUnlocks(before,next);if(!before&&next&&initialCharacterAtLaunchRef.current===undefined)initialCharacterAtLaunchRef.current=!!next.character;if(!before&&next&&snapshot?.reward&&rewardHasProgress(snapshot.reward)){setCollected({reward:snapshot.reward,activity:snapshot.activity??null,welcomeBack:true,progressionMoments:[]});}stateRef.current=next;setState(next);setLoadError('');},[online.snapshot]);
+  // Loading-only changes must not rerun save migrations or reward/unlock projections.
+  useEffect(()=>{if(serverGameplayEnabled){setReady(!online.loading);setLoadError('');}},[online.loading]);
   useEffect(()=>{
     const snapshot=online.snapshot;
     if(!auth.session?.user.id){onlineStartupSettlementAccountRef.current=undefined;return;}
@@ -765,12 +768,16 @@ function VeldrynApp(){
     if(serverGameplayEnabled){
       if(!current)return;
       // Ignore already-applied appearances before classifying settings or profile commands.
-      if(JSON.stringify(candidate)===JSON.stringify(current))return;
-      if(JSON.stringify(candidate)===JSON.stringify({...current,settings:candidate.settings})){await perform({type:'settings',args:{settings:settingsForOnlineCommand(candidate.settings)}});return;}
-      if(candidate.activity===null&&JSON.stringify(candidate)===JSON.stringify({...current,activity:null})){await perform({type:'stop'});return;}
+      if(candidate===current)return;
+      // Serialize the candidate once. Retain exact existing JSON equality semantics
+      // so this optimization cannot admit additional server-owned changes.
+      const serializedCandidate=JSON.stringify(candidate);
+      if(serializedCandidate===JSON.stringify(current))return;
+      if(serializedCandidate===JSON.stringify({...current,settings:candidate.settings})){await perform({type:'settings',args:{settings:settingsForOnlineCommand(candidate.settings)}});return;}
+      if(candidate.activity===null&&serializedCandidate===JSON.stringify({...current,activity:null})){await perform({type:'stop'});return;}
       const profileKeys=['profileIconId','profileTitle','profileBackgroundId','profileBorderId','profileEffectId','selectedCosmeticPetId'] as const;
       if(current.character&&candidate.character){const patch=Object.fromEntries(profileKeys.map(key=>[key,candidate.character![key]]));
-        if(JSON.stringify(candidate)===JSON.stringify({...current,character:{...current.character,...patch}})){const changed=profileKeys.filter(key=>current.character![key]!==candidate.character![key]);if(!changed.length)return;const result=await perform({type:'profile',args:Object.fromEntries(changed.map(key=>[key,patch[key]??null]))});if(result&&changed.includes('profileIconId')&&auth.session?.user.id&&result.state.character)publishOwnProfileIcon(result.accountId,accountProfileIconId(result.state),result.state.character.classId);return;}}
+        if(serializedCandidate===JSON.stringify({...current,character:{...current.character,...patch}})){const changed=profileKeys.filter(key=>current.character![key]!==candidate.character![key]);if(!changed.length)return;const result=await perform({type:'profile',args:Object.fromEntries(changed.map(key=>[key,patch[key]??null]))});if(result&&changed.includes('profileIconId')&&auth.session?.user.id&&result.state.character)publishOwnProfileIcon(result.accountId,accountProfileIconId(result.state),result.state.character.classId);return;}}
       showAlert('Server-owned progress','This change requires an online gameplay action.');return;
     }
     if(current?.character&&candidate.character&&current.character.selectedCosmeticPetId!==candidate.character.selectedCosmeticPetId){
@@ -931,6 +938,22 @@ const next=normalizeProfileIcon(migrateGemPouch(migrateRetiredStoryRewards(expli
   // presentation clock, so unrelated root re-renders (tab changes, popups, chat, alerts)
   // reuse the last result instead of re-simulating.
   const activityPreview=useMemo(()=>state?.character?previewActivityReward(state,now):undefined,[state,now]);
+  // Shell projections depend on the save and presentation clock, not tab, chat,
+  // modal or cosmetic-preview changes. Keep the existing time-sensitive cadence.
+  const shellAttentionReady=versionGateChecked&&!versionGateOwnsScreen&&ready&&(!serverGameplayEnabled||(!auth.loading&&!online.loading&&!!auth.session&&!auth.recovering&&!!online.snapshot));
+  const shellAttention=useMemo(()=>{
+    if(!shellAttentionReady||!state?.character)return null;
+    const companionsUnlocked=earlyFeatureUnlocked(state,'companions'),dailySuppliesUnlocked=earlyFeatureUnlocked(state,'dailySupplies'),contractsUnlocked=earlyFeatureUnlocked(state,'contracts'),friendsUnlocked=earlyFeatureUnlocked(state,'friends'),socialUnlocked=earlyFeatureUnlocked(state,'social'),guildUnlocked=earlyFeatureUnlocked(state,'guild');
+    const companionAttention=companionsUnlocked?companionAttentionSummary(state,now):{total:0,hasAttention:false,expeditionClaims:0,bondRewards:0,ascensions:0,sanctuaryClaims:0,codexClaims:0,monthlyTrialClaims:0,recentUnlocks:0};
+    const dailySuppliesReady=dailySuppliesUnlocked&&dailySuppliesStatus(state,now).canClaim;
+    const forgeReadyCount=state.account.equipmentCraftingQueue?.length
+      ? projectedEquipmentCraftingQueue(state,now).filter(job=>job.completesAtMs<=now).length
+      : 0;
+    const questClaims=questClaimAttention(state,now);
+    const overflowStackCount=state.overflow.stacks.filter(stack=>stack.quantity>0).length;
+    const lockedAccountDestinations=Object.fromEntries((['DailySupplies','AccountBonuses','Companions','Friends','Recruitment','MasteryHall','Guild','Rankings'] as MoreDestination[]).flatMap(destination=>{const reason=earlyFeatureLockReason(state,destination);return reason?[[destination,reason]]:[]})) as Partial<Record<MoreDestination,string>>;
+    return {companionsUnlocked,dailySuppliesUnlocked,contractsUnlocked,friendsUnlocked,socialUnlocked,guildUnlocked,companionAttention,dailySuppliesReady,forgeReadyCount,questClaims,overflowStackCount,lockedAccountDestinations};
+  },[state,now,shellAttentionReady]);
   const renderApp=()=>{
   if(!versionGateChecked)return <View style={s.startupUnderlay}/>;
   if(versionGate?.maintenanceMode&&versionGate.policy)return <UpdateRequiredScreen maintenance title={appText(languageRef.current,"VELDRYN maintenance")} message={versionGate.policy.maintenanceMessage} currentVersion={versionGate.currentVersion} onUpdate={()=>{}}/>;
@@ -946,15 +969,8 @@ const next=normalizeProfileIcon(migrateGemPouch(migrateRetiredStoryRewards(expli
   if(__DEV__&&showCoopUiGallery)return <SafeAreaView style={s.safe} {...backSwipe.panHandlers}><StatusBar style="light"/><CoopUiGalleryScreen language={state.settings.language} onClose={()=>setShowCoopUiGallery(false)}/></SafeAreaView>;
   const theme=resolveTheme(displayedThemeId);
   const preview=activityPreview??previewActivityReward(state,now);
-  const companionsUnlocked=earlyFeatureUnlocked(state,'companions'),dailySuppliesUnlocked=earlyFeatureUnlocked(state,'dailySupplies'),contractsUnlocked=earlyFeatureUnlocked(state,'contracts'),friendsUnlocked=earlyFeatureUnlocked(state,'friends'),socialUnlocked=earlyFeatureUnlocked(state,'social'),guildUnlocked=earlyFeatureUnlocked(state,'guild');
-  const companionAttention=companionsUnlocked?companionAttentionSummary(state,now):{total:0,hasAttention:false,expeditionClaims:0,bondRewards:0,ascensions:0,sanctuaryClaims:0,codexClaims:0,monthlyTrialClaims:0,recentUnlocks:0};
-  const dailySuppliesReady=dailySuppliesUnlocked&&dailySuppliesStatus(state,now).canClaim;
-  const forgeReadyCount=state.account.equipmentCraftingQueue?.length
-    ? projectedEquipmentCraftingQueue(state,now).filter(job=>job.completesAtMs<=now).length
-    : 0;
-  const questClaims=questClaimAttention(state,now),storyClaimCount=questClaims.story;
-  const overflowStackCount=state.overflow.stacks.filter(stack=>stack.quantity>0).length;
-  const lockedAccountDestinations=Object.fromEntries((['DailySupplies','AccountBonuses','Companions','Friends','Recruitment','MasteryHall','Guild','Rankings'] as MoreDestination[]).flatMap(destination=>{const reason=earlyFeatureLockReason(state,destination);return reason?[[destination,reason]]:[]})) as Partial<Record<MoreDestination,string>>;
+  const {companionsUnlocked,dailySuppliesUnlocked,contractsUnlocked,friendsUnlocked,socialUnlocked,guildUnlocked,companionAttention,dailySuppliesReady,forgeReadyCount,questClaims,overflowStackCount,lockedAccountDestinations}=shellAttention!;
+  const storyClaimCount=questClaims.story;
   const partyContractClaims=partySocial.accountId===auth.session?.user.id&&partySocial.party?partyContractClaimableRewardIds(partySocial.contracts).length:0;
   const navigationNotifications:NavigationNotification[]=[
     ...actionableClaimNotifications({storyRewards:storyClaimCount,challengeRewards:questClaims.challenges,milestoneRewards:questClaims.milestones,overflowStacks:overflowStackCount}),
@@ -1050,7 +1066,7 @@ const next=normalizeProfileIcon(migrateGemPouch(migrateRetiredStoryRewards(expli
       if(source.kind==='gathering'){setSelectedSkill(source.skillId as SkillId);setSkillsMode('gathering');setTab('Skills');return;}
       if(source.kind==='events')setTab('Events');
     }}/>}
-    {tab==='Activity'&&<ActivityOverviewScreen state={state} now={now} onSwitch={id=>{if(serverGameplayEnabled){void perform({type:'roster_switch',args:{id}});return;}void runCompanionCommand({type:'roster_switch',args:{id}})}} onCreate={()=>setCreatingRoster(true)} onDelete={async(id,confirmation)=>{if(serverGameplayEnabled){if(!await perform({type:'roster_delete',args:{id,confirmation}}))throw new Error('Character deletion was not confirmed.');return;}const current=stateRef.current;if(!current)throw new Error('Load your character first.');const result=executeGameCommand(current,{type:'roster_delete',args:{id,confirmation}},Date.now());await commit(result.state)}}/>}
+    {tab==='Activity'&&<ActivityOverviewScreen state={state} now={now} accountId={auth.session?.user.id} gameplayBusy={serverGameplayEnabled&&online.busy} onSwitch={async id=>{if(serverGameplayEnabled){await perform({type:'roster_switch',args:{id}},true,false,false,true);return;}await runCompanionCommand({type:'roster_switch',args:{id}})}} onCreate={()=>setCreatingRoster(true)} onDelete={async(id,confirmation)=>{if(serverGameplayEnabled){if(!await perform({type:'roster_delete',args:{id,confirmation}}))throw new Error('Character deletion was not confirmed.');return;}const current=stateRef.current;if(!current)throw new Error('Load your character first.');const result=executeGameCommand(current,{type:'roster_delete',args:{id,confirmation}},Date.now());await commit(result.state)}}/>}
     {tab==='Character'&&<CharacterScreen state={state} onEquip={itemId=>runCompanionCommand({type:'equip',args:{id:itemId}})} onEquipInstance={instanceId=>runCompanionCommand({type:'gear_equip',args:{instanceId}})} onEquipPouch={itemId=>runCompanionCommand({type:'equipment_pouch_equip',args:{itemId}})} onProfile={()=>{setProfileCustomizeSection('Look');setTab('ProfileCustomize')}} onCompanions={()=>setTab('Companions')} loadouts={<SavedLoadoutsPanel state={state} onChange={commit} onCommand={runCompanionCommand}/>} onUpgrade={async itemId=>{if(serverGameplayEnabled){await perform({type:'upgrade',args:{id:itemId}});return;}try{const attempt=attemptEquipmentUpgrade(state,itemId);await commit(attempt.state);}catch(error){showAlert('Cannot upgrade',error instanceof Error?error.message:'Please try again.')}}} onSocket={async (itemId,gemId)=>{if(serverGameplayEnabled){if(!await perform({type:'socket',args:{id:itemId,gemId}}))throw new Error('Gem socket was not confirmed by the server.');return;}try{await commit(socketGem(state,itemId,gemId))}catch(error){showAlert('Cannot socket gem',error instanceof Error?error.message:'Please try again.')}}} onReplaceGem={async (itemId,gemId)=>{if(serverGameplayEnabled){if(!await perform({type:'replace_socket',args:{id:itemId,gemId}}))throw new Error('Gem replacement or reroll was not confirmed by the server.');return;}try{await commit(replaceGem(state,itemId,gemId))}catch(error){showAlert('Cannot replace gem',error instanceof Error?error.message:'Please try again.')}}} onGemRefine={async (familyId,grade)=>{if(serverGameplayEnabled){await perform({type:'gem_refine',args:{familyId,grade}});return;}try{await commit(startGemRefinement(state,gemRefineRecipeIdV1(familyId,grade),Date.now()).state)}catch(error){showAlert('Cannot refine gem',error instanceof Error?error.message:'Please try again.')}}} onGemCombine={async (familyId,grade)=>{if(serverGameplayEnabled){await perform({type:'gem_combine',args:{familyId,grade}});return;}try{await commit(startGemCombine(state,gemCombineRecipeIdV1(familyId,grade),Date.now()).state)}catch(error){showAlert('Cannot combine gems',error instanceof Error?error.message:'Please try again.')}}} onGemDismantle={async (gemId,quantity)=>{if(serverGameplayEnabled){await perform({type:'gem_dismantle',args:{gemId,quantity}});return;}try{await commit(dismantleGemV1(state,gemId,quantity))}catch(error){showAlert('Cannot dismantle gem',error instanceof Error?error.message:'Please try again.')}}} onGemCacheClaim={async familyId=>{if(serverGameplayEnabled){await perform({type:'resonance_cache_claim',args:{familyId}});return;}try{await commit(claimResonanceCacheV1(state,familyId,Date.now()))}catch(error){showAlert('Cannot claim Resonance Cache',error instanceof Error?error.message:'Please try again.')}}} onInventory={()=>setTab('Inventory')} onSave={()=>serverGameplayEnabled?online.refresh():repo.save(state)} onUnequip={async slot=>{const instanceId=state.character?.equipmentInstanceIds?.[slot];if(instanceId){await runCompanionCommand({type:'gear_unequip',args:{instanceId}});return;}if(serverGameplayEnabled){if(!await perform({type:'unequip',args:{slot}}))throw new Error('Equipment change was not confirmed.');}else await commit(unequipItem(state,slot));}} onCrafting={()=>{setSkillsMode('novice');setTab('Skills')}} onEquipSet={async()=>{if(serverGameplayEnabled){if(!await perform({type:'equip_set'}))throw new Error('Set equip was not confirmed.');return;}const settled=claimActivity(state,Date.now());const next=equipNoviceSet(settled.state);await commit(next);}}><ProfileEditor key={profileAttentionScope} state={state} onChange={commit} onCommand={runCompanionCommand} onSaveNameStyle={saveNameStyle}/></CharacterScreen>}
     {tab==='Friends'&&<FriendsScreen onNotificationsChanged={()=>void refreshSocialNotifications()}/>}
     {FEATURE_HUB_QA_ENABLED&&isFeatureHubPreviewRoute(tab)&&<FeaturePreviewScreen key={tab} route={tab} onClose={()=>setTab('More')} onOpenParty={()=>setTab('Party')} onOpenPartyChat={()=>{setChatInitialChannel('party');setShowChatOverlay(true)}} partyUnread={notificationCounts.partyChatUnread} reduceMotion={state.settings.reduceMotion}/>}

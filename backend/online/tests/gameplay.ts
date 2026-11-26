@@ -1,3 +1,5 @@
+import {withVerifiedUltraLuxeGrants} from '../../../apps/mobile/src/core/ultra-luxe-grants';
+import {ULTRA_LUXE_FULL_SET_DEFINITIONS} from '../../../apps/mobile/src/core/ultra-luxe-full-set-command';
 import assert from 'node:assert/strict';
 import {gameplayHandler,GameplayError,type GameplayServices} from '../gameplay';
 import {totalXpAtLevel,characterTotalXpAtLevel} from '../../../apps/mobile/src/core/progression';
@@ -114,8 +116,89 @@ async function fullSetHttpRouting(){
  console.log('PASS combined Ultra Luxe HTTP dispatch, independent authority flags, receipt prefix, account scope and stale conflict');
 }
 
+
+/** Exercise the real authenticated ordinary gameplay route with a mock grant-aware
+ * database. SQL persistence and locking are separately covered by rollback fixtures.
+ * Raw saved ownership is deliberately poisoned; only the trusted grant list wins. */
+async function premiumOrdinaryGameplayPersistence(){
+ const uid='premium-owner',first='11111111-1111-4111-8111-111111111111',second='22222222-2222-4222-8222-222222222222';
+ for(const [id,scene,frame,pet,title] of ULTRA_LUXE_FULL_SET_DEFINITIONS){
+  let stored=createCharacter(newGame(0),'IRONWARDEN','Premium Hero');
+  stored.character!.id=first;
+  stored.account.unlockedCharacterSlots=2;
+  stored.account.unlockedProfileBackgroundIds=['ironwood-dawn','ascendant-forged-background'];
+  stored.account.unlockedCosmeticPetIds=['ascendant-forged-pet'];
+  const initialGold=stored.character!.gold;
+  stored.otherCharacters=[{character:{...stored.character!,id:second,name:'Second Hero',classId:'BASTION',profileTitle:'New Adventurer'},inventory:structuredClone(stored.inventory),overflow:structuredClone(stored.overflow),activity:null,skills:structuredClone(stored.skills),quests:structuredClone(stored.quests),currentRegionId:stored.currentRegionId}];
+  let grants:string[]=[id],version=7,commits=0;
+  const receipts=new Map<string,{requestHash:string;response:{state:GameState;version:number;accountId:string;serverNow:number}}>();
+  const services:GameplayServices={ultraLuxeGrantAuthority:true,ultraLuxeFullSetAuthority:true,
+   authenticate:async token=>token==='valid'?uid:null,randomId:()=>first,randomRoll:()=>.25,
+   rpc:async<T>(name:string,args:Record<string,unknown>):Promise<T>=>{
+    assert.equal(args.p_account_id,uid);
+    if(name==='record_player_activity_server_v1'||name==='record_online_command_outcome_server_v1')return null as T;
+    if(name==='load_online_game_ultra_luxe_v1')return {state:structuredClone(stored),version,serverNow:1000,characterId:stored.character!.id,walletGold:stored.character!.gold,guildMember:false,communityProgress:{},ultraLuxeCollectionIds:[...grants]} as T;
+    if(name==='read_online_game_receipt_ultra_luxe_v1'){
+     const receipt=receipts.get(String(args.p_request_id));
+     return (receipt?{...receipt,response:{...receipt.response,state:withVerifiedUltraLuxeGrants(receipt.response.state,grants,true,true)}}:null) as T;
+    }
+    if(name==='commit_online_game_ultra_luxe_v1'){
+     assert.equal(args.p_expected_version,version);
+     assert.deepEqual(args.p_expected_grants,[...grants].sort());
+     assert.equal(args.p_expected_gold,stored.character!.gold);
+     assert.deepEqual(args.p_contributions,[]);
+     const response=args.p_response as {state:GameState;version:number;accountId:string;serverNow:number};
+     stored=withVerifiedUltraLuxeGrants(response.state,grants,true,true);
+     version=response.version;commits++;
+     const saved={...response,state:stored};
+     receipts.set(String(args.p_request_id),{requestHash:String(args.p_request_hash),response:structuredClone(saved)});
+     return saved as T;
+    }
+    throw Error('unexpected premium fixture RPC '+name);
+   }};
+  const handle=gameplayHandler(services),headers={Authorization:'Bearer valid'};
+  const get=async()=>{const r=await handle(new Request('https://example.invalid/gameplay',{headers}));assert.equal(r.status,200);return await r.json();};
+  const post=(type:string,args:Record<string,unknown>,requestId:string,expectedVersion=version)=>handle(new Request('https://example.invalid/gameplay',{method:'POST',headers,body:JSON.stringify({command:{type,args},requestId,expectedVersion})}));
+  const read=await get();
+  assert.ok(read.state.account.unlockedProfileBackgroundIds.includes(scene));
+  assert.ok(read.state.account.unlockedProfileBackgroundIds.includes('ironwood-dawn'));
+  assert.ok(!read.state.account.unlockedProfileBackgroundIds.includes('ascendant-forged-background'));
+  assert.ok(!read.state.account.unlockedCosmeticPetIds.includes('ascendant-forged-pet'));
+  assert.notEqual(read.state.character.profileBackgroundId,scene,'grant does not equip');
+  const appearance={profileBackgroundId:scene,profileBorderId:frame,selectedCosmeticPetId:pet,profileTitle:title};
+  const equipped=await post('profile',appearance,'premium-equip-001');
+  assert.equal(equipped.status,200,id+' individual profile equip');
+  assert.equal((await get()).state.character.profileBackgroundId,scene);
+  assert.equal(stored.character!.gold,initialGold);
+  const switched=await post('roster_switch',{id:second},'premium-switch-001');
+  assert.equal(switched.status,200);
+  assert.equal(stored.character!.id,second);
+  assert.notEqual(stored.character!.profileBackgroundId,scene,'character look is independent');
+  assert.ok(stored.account.unlockedProfileBackgroundIds?.includes(scene),'ownership remains account-wide');
+  const back=await post('roster_switch',{id:first},'premium-switch-002');
+  assert.equal(back.status,200);
+  assert.equal(stored.character!.profileBackgroundId,scene);
+  assert.equal(stored.character!.selectedCosmeticPetId,pet);
+  grants=[];
+  const revoked=await get();
+  assert.equal(revoked.state.character.profileBackgroundId,'asterfall-night');
+  assert.equal(revoked.state.character.profileTitle,'New Adventurer');
+  assert.equal(revoked.state.character.selectedCosmeticPetId,undefined);
+  assert.ok(!revoked.state.account.unlockedProfileBackgroundIds.includes(scene));
+  const replay=await post('profile',appearance,'premium-equip-001',7);
+  assert.equal(replay.status,200,'old receipt remains readable but is sanitized');
+  assert.equal((await replay.json()).state.character.profileBackgroundId,'asterfall-night');
+  const denied=await post('profile',appearance,'premium-denied-001');
+  assert.equal(denied.status,400,'revoked pieces cannot be equipped again');
+  assert.equal(commits,3,'replays and denied actions do not commit');
+  assert.equal(stored.character!.gold,initialGold);
+ }
+ console.log('PASS six premium ordinary gameplay saves, character scope, account ownership, revocation and sanitized receipt replay (mock grant RPC)');
+}
+
 async function main(){
  await latencyReadOverlap();
+ await premiumOrdinaryGameplayPersistence();
  await fullSetHttpRouting();
  let state:GameState|null=null,version=0,commits=0,clock=1700000000000,transportFailure=false,suppressLiveEvent=false,generatedIds=0,blockedDeleteCharacterId:string|null=null,deletedCommitCharacterId:string|null=null;
  const commandMetrics:Record<string,unknown>[]=[],guildQuestCalls:Record<string,unknown>[]=[];

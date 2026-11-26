@@ -282,7 +282,7 @@ console.log('PASS: all seven new T1 stat affixes reach solo, story boss and froz
  * grant sanitizer and co-op loadout builder, not a second mock catalogue.
  * Revision is deliberately held constant to isolate cosmetic data. */
 for(const definition of CLASSES){
- const state=createCharacter(newGame(0),definition.id,'Premium Dungeon Parity');
+ const state=createCharacter(newGame(0),definition.id,'Premium Dungeon');
  state.character!.level=25;state.character!.xp=legacyCharacterTotalXpAtLevel(25);
  state.character!.equipment=Object.fromEntries(noviceSetFor(definition.id).slots.map(slot=>[slot,noviceItemId(definition.id,slot)]));
  const original=JSON.stringify(state),base=withVerifiedUltraLuxeGrants(state,[],true,true);

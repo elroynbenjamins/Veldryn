@@ -1,3 +1,6 @@
+import {confirmUltraLuxeFullSetReadback,type FullSetPlan} from '../core/ultra-luxe-full-set-name';
+import {ultraLuxeFullSetCommand} from '../core/ultra-luxe-full-set-command';
+import {invalidatePlayerIdentity} from './player-identity-cache';
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {AppState} from 'react-native';
 import {useAuthSession} from './AuthSessionProvider';
@@ -11,6 +14,9 @@ import type {PlayerNameStylePreference} from '../core/player-name-style';
 import {updateOnlinePlayerNameStyle} from './social';
 import {rememberOnlineSnapshot} from '../core/online-snapshot-cache';
 import {previewCombatEquipmentCommand} from '../core/combat-equipment-optimistic';
+declare const process:{env:Record<string,string|undefined>};
+// Closed until the unified server authority and generated Edge build are deployed.
+const fullSetReleased=process.env.EXPO_PUBLIC_ULTRA_LUXE_FULL_SET==='true';
 export function useOnlineGame(){
  const {session}=useAuthSession(),accountId=session?.user.id;
  const repo=useMemo(()=>serverGameplayEnabled&&accountId?createOnlineGameRepository(accountId):null,[accountId]);
@@ -107,6 +113,17 @@ export function useOnlineGame(){
   catch(e){if(active.current===repo)setError(e instanceof Error?e.message:'Could not save name style.');throw e;}
   finally{if(nameStyleSaving.current===repo)nameStyleSaving.current=null;if(active.current===repo)setBusy(false);}
  };
+ const equipUltraLuxeFullSet=async(plan:FullSetPlan)=>{
+  if(!fullSetReleased||!repo||active.current!==repo||repo.accountId!==plan.scope.accountId||
+   repo.snapshot?.state.character?.id!==plan.scope.characterId)throw new Error('Full set equip unavailable for this character.');
+  const next=await execute(ultraLuxeFullSetCommand(plan));
+  if(active.current!==repo)throw new Error('Account changed while saving.');
+  invalidatePlayerIdentity(repo.accountId);
+  const scope={accountId:repo.accountId,characterId:repo.snapshot?.state.character?.id??''};
+  const result=confirmUltraLuxeFullSetReadback(plan,scope,{replayed:next.ultraLuxeFullSetReplayed,gameplay:next,nameSelection:next.ultraLuxeNameSelection});
+  if(result!=='confirmed')throw new Error(result==='superseded'?'Full set selection has since changed.':'Full set equip could not be confirmed.');
+  return next;
+ };
  const refreshSnapshot=useCallback(async()=>{await refresh();},[refresh]);
  // After an external guild inventory mutation, do not reuse a read started before the receipt.
  const refreshAfterExternalWrite=useCallback(async()=>{
@@ -114,5 +131,5 @@ export function useOnlineGame(){
   if(!repo||active.current!==repo||commandSaving.current===repo)throw new Error('Gameplay state is changing. Refresh again.');
   const next=await refresh();if(!next||active.current!==repo||await repo.hasPending())throw new Error('Inventory refresh was not confirmed.');
  },[repo,refresh]);
- return {snapshot:snapshot?.accountId===accountId? snapshot:null,loading,busy,error,pending,foregroundRevision,refresh:refreshSnapshot,refreshAfterExternalWrite,refreshCommerce,execute,saveNameStyle};
+ return {snapshot:snapshot?.accountId===accountId? snapshot:null,loading,busy,error,pending,foregroundRevision,refresh:refreshSnapshot,refreshAfterExternalWrite,refreshCommerce,execute,saveNameStyle,equipUltraLuxeFullSet:fullSetReleased?equipUltraLuxeFullSet:undefined};
 }

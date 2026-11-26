@@ -6,6 +6,7 @@ import {CELESTIAL_IDS} from './ascendant-cosmetics';
 import {DRACONIC_IDS} from './draconic-showcase-layout';
 import {ownedUltraLuxeTitles} from './ultra-luxe-titles';
 import {profileAnimatedCosmeticsEnabled} from './profile-cosmetic-access';
+import {wave2SetFor,wave2Complete} from './profile-cosmetic-wave2';
 
 export type QuickSetChoice={id:string;name:string;patch:Partial<WardrobeEquipped>};
 export type QuickCosmeticSet={id:string;name:string;accent:string;choices:QuickSetChoice[]};
@@ -17,15 +18,19 @@ const READY_LUXE=[
 /** Only owned, supported, complete visual sets. Never invent grants or expose
  * unfinished collections; pick actual owned IDs, not render-only aliases. */
 export function quickCosmeticSets(state:GameState):QuickCosmeticSet[]{
- if(!state.character||!profileAnimatedCosmeticsEnabled(state))return [];
+ if(!state.character)return [];
+ const legacyEnabled=profileAnimatedCosmeticsEnabled(state);
  const sets:QuickCosmeticSet[]=[];
  const a=state.account;
  for(const row of PROFILE_COSMETIC_STORE_COLLECTIONS){
+  const wave2=wave2SetFor('border',row.border.itemId);
+  if(wave2?!wave2Complete(a,wave2):!legacyEnabled)continue;
   if(!profileCosmeticCollectionOwnership(state,row).setOwned||!row.portraits.every(p=>p.artworkReady))continue;
   sets.push({id:row.id,name:row.name,accent:row.accent,choices:row.portraits.map(p=>({
    id:p.id,name:p.name,patch:{frame:row.border.itemId,effect:row.effect.itemId,icon:p.id},
   }))});
  }
+ if(!legacyEnabled)return sets;
  for(const def of READY_LUXE){
   const row=PREMIUM_PROFILE_COSMETICS.find(p=>p.id===def.catalogue);
   if(!row||!a.unlockedProfileEffectIds?.includes(row.effectId))continue;

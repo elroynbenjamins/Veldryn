@@ -51,8 +51,8 @@ test('Activity names use authored catalog names instead of raw IDs across all sk
  equal(activityTargetLabel({kind:'faith',targetId:'FAITH_UNKNOWN_MODE'}),'Faith Unknown Mode','unknown saved ID is readable');
 });
 
-test('Faith practice XP uses the 20% lower rewards at every tier without changing costs or duration',()=>{
- const expected=[96,208,448,960,2048,4352],waterCosts=[1,2,4,8,16,32];
+test('Faith practice XP tapers increasingly at higher tiers without changing costs or duration',()=>{
+ const expected=[90,192,408,864,1824,3840],waterCosts=[1,2,4,8,16,32];
  equal(FAITH_TIERS.map(tier=>tier.xp),expected,'all six practice XP awards');
  equal(FAITH_TIERS.map(tier=>tier.water),waterCosts,'Holy Water costs unchanged');
  ok(FAITH_TIERS.every(tier=>tier.seconds===30),'30-second practice duration unchanged');
@@ -136,10 +136,10 @@ test('legacy Faith reservations use the authored 30-second cycle, not a fixed 60
  equal(claimed.reward.faithActions,1,'half-cycle plus 15 seconds completes exactly one practice');
  equal(claimed.state.activity!.faithPractice!.remainingPractices,1,'remaining reservation is preserved');
 });
-test('completed practices consume reserved water and award Faith XP only',()=>{const s=startFaithPractice(water(fresh(),4),'FAITH_QUIET',4,T);const r=claimActivity(s,T+60_000);equal(r.reward.faithActions,2,'rites');equal(r.reward.holyWaterConsumed,2,'water');equal(r.reward.xp,192,'faith xp');equal(r.state.character!.xp,0,'no combat');equal(r.state.skills.find(x=>x.skillId==='faith')!.xp,192,'skill');equal(qty(r.state,HOLY_WATER_ID),0,'remaining two stay escrowed');});
+test('completed practices consume reserved water and award Faith XP only',()=>{const s=startFaithPractice(water(fresh(),4),'FAITH_QUIET',4,T);const r=claimActivity(s,T+60_000);equal(r.reward.faithActions,2,'rites');equal(r.reward.holyWaterConsumed,2,'water');equal(r.reward.xp,180,'faith xp');equal(r.state.character!.xp,0,'no combat');equal(r.state.skills.find(x=>x.skillId==='faith')!.xp,180,'skill');equal(qty(r.state,HOLY_WATER_ID),0,'remaining two stay escrowed');});
 test('stopping returns unfinished and partial-practice water exactly once',()=>{const s=startFaithPractice(water(fresh(),5),'FAITH_QUIET',5,T);const settled=claimActivity(s,T+75_000).state;const stopped=stopActivity(settled);equal(qty(stopped,HOLY_WATER_ID),3,'three unfinished returned');equal(stopActivity(stopped),stopped,'no second');});
 test('account transition settles another activity before reserving Faith water',()=>{let s=water(fresh(),10);s=startCombat(s,'MOSS_RAT',T);const n=transitionAccountFaithPractice(s,T+60_000,'FAITH_QUIET',2).state;equal(n.activity!.kind,'faith','switched');equal(n.activity!.faithPractice!.remainingPractices,2,'reservation');});
-test('blessings unlock from authoritative Faith XP and only one can be active',()=>{let s=faithAt(fresh(),10);throws(()=>selectFaithBlessing(s,'SUNFIRE_VOW'),'40');s=selectFaithBlessing(s,'WARD_OF_STONE');equal(s.character!.faith!.selectedBlessingId,'WARD_OF_STONE','first');s=selectFaithBlessing(s,'EMBER_VOW');equal(s.character!.faith!.selectedBlessingId,'EMBER_VOW','replaced');});
+test('blessings unlock from authoritative Faith XP and only one per category can be active',()=>{let s=faithAt(fresh(),10);throws(()=>selectFaithBlessing(s,'SUNFIRE_VOW'),'40');s=selectFaithBlessing(s,'WARD_OF_STONE');equal(s.character!.faith!.selectedBlessingId,'WARD_OF_STONE','first');s=selectFaithBlessing(s,'EMBER_VOW');equal(s.character!.faith!.selectedBlessingId,'EMBER_VOW','replaced');});
 test('active blessing changes the intended modifier; favorites do not grant power',()=>{let s=faithAt(fresh(),40),base=characterPermanentMultipliers(s);s=setFaithFavorite(s,'SUNFIRE_VOW',true);equal(characterPermanentMultipliers(s),base,'favorite cosmetic');s=selectFaithBlessing(s,'SUNFIRE_VOW');ok(characterPermanentMultipliers(s).attackMultiplier>base.attackMultiplier,'attack');});
 test('hide weaker only hides same-family unlocked lower blessings and preserves favorites',()=>{let s=faithAt(fresh(),40);s=setFaithHideWeaker(s,true);let rows=blessingRows(s);ok(!rows.some(x=>x.id==='EMBER_VOW'),'weaker hidden');s=setFaithFavorite(s,'EMBER_VOW',true);rows=blessingRows(s);ok(rows.some(x=>x.id==='EMBER_VOW'),'favorite remains');ok(rows.some(x=>x.family==='defense'),'other family remains');});
 test('blessing changes settle old partial combat before future encounters use the new blessing',()=>{let s=faithAt(fresh(),40);s=startCombat(s,'MOSS_RAT',T);const before=s.activity!.classTrainingSnapshot!.faithBlessingId;const n=setAccountFaithBlessing(s,'SUNFIRE_VOW',T+1000);equal(n.activity!.classTrainingSnapshot!.faithBlessingId,before,'partial snapshot unchanged');equal(n.character!.faith!.selectedBlessingId,'SUNFIRE_VOW','future selected');});
@@ -165,7 +165,7 @@ test('Gathering Faith bonus applies only while that blessing is equipped',()=>{
  ok(Math.abs(boost.gatheringSpeedMultiplier/base.gatheringSpeedMultiplier-1.06)<1e-10,'6% gathering speed');
  equal(boost.craftingSpeedMultiplier,base.craftingSpeedMultiplier,'does not boost production');
  const switched=selectFaithBlessing(gathering,'SUNFIRE_VOW');
- equal(characterPermanentMultipliers(switched).gatheringSpeedMultiplier,base.gatheringSpeedMultiplier,'switch removes old buff');
+ equal(characterPermanentMultipliers(switched).gatheringSpeedMultiplier,boost.gatheringSpeedMultiplier,'combat selection preserves gathering');
 });
 test('Production Faith affects new timed batches but not outputs or XP',()=>{
  const s=faithAt(fresh(),75),recipe={id:'FAITH_PACE_TEST',skillId:'smithing' as const,seconds:100,xp:200};
@@ -186,7 +186,7 @@ test('Experience Faith grants combat and profession XP but not Faith practice XP
  const blessedForge=professionActionPace(blessed,recipe,'forge');
  ok(Math.abs(blessedForge.xpPerAction/defaultForge.xpPerAction-1.06)<1e-10,'Faith XP covers forge crafting');
  const practicing=startFaithPractice(blessed,'FAITH_QUIET',1,T),r=claimActivity(practicing,T+30_000);
- equal(r.reward.faithXp,96,'Faith practice XP deliberately excluded');
+ equal(r.reward.faithXp,90,'Faith practice XP deliberately excluded');
 });
 test('Faith HP buffs increase maximum health without introducing a damage bonus',()=>{
  const s=faithAt(fresh(),90),before=effectiveStats(s);
@@ -243,9 +243,30 @@ test('Festival Faith adds up to 10% common activity currency without inflating f
  const unblessedInactive={...s,account:{...s.account,liveEvent:{...s.account.liveEvent!,endsAtMs:now}}};
  equal(eventEffectiveDropRate(inactive,id,'gathering',now),eventEffectiveDropRate(unblessedInactive,id,'gathering',now),'bonus cannot apply after event expiry');
  const replaced=selectFaithBlessing(blessed,'CELESTIAL_TEMPO');
- equal(eventEffectiveDropRate(replaced,id,'gathering',now),original,'equipping speed removes event bonus');
+ equal(eventEffectiveDropRate(replaced,id,'gathering',now),updated,'equipping combat speed preserves event bonus');
  equal(faithBlessingDef('SEASONAL_GRACE'),undefined,'removed 6% event blessing is unavailable');
  equal(faithBlessingDef('FESTIVAL_BEACON'),undefined,'removed level-98 event blessing is unavailable');
 });
 test('all authored blessing ids are unique and resolve',()=>{equal(new Set(FAITH_BLESSINGS.map(x=>x.id)).size,FAITH_BLESSINGS.length,'unique');for(const blessing of FAITH_BLESSINGS)equal(faithBlessingDef(blessing.id)?.id,blessing.id,'resolve');});
 console.log('Faith checks complete');
+
+test('all five inline Faith categories persist, stack across groups, and replace only within a group',()=>{
+ let s=faithAt(fresh(),95);
+ const base=characterPermanentMultipliers(s);
+ for(const id of ['DAWN_COVENANT','HARVESTS_GRACE','MASTERS_BENEDICTION','ETERNAL_ENLIGHTENMENT','FESTIVAL_FAVOR'])s=selectFaithBlessing(s,id);
+ const selections=s.character!.faith!.selectedBlessingIds!;
+ equal(Object.keys(selections).length,5,'all five selected');
+ const m=characterPermanentMultipliers(s);
+ for(const key of ['attackMultiplier','gatheringSpeedMultiplier','craftingSpeedMultiplier','skillXpMultiplier','characterXpMultiplier'] as const)ok(Math.abs(m[key]/base[key]-1.06)<1e-10,key+' active simultaneously');
+ const next=selectFaithBlessing(s,'ETERNAL_BASTION');
+ equal(next.character!.faith!.selectedBlessingIds,{...selections,combat:'ETERNAL_BASTION'},'only combat replaced');
+ equal(characterPermanentMultipliers(next).attackMultiplier,base.attackMultiplier,'old attack removed');
+ equal(migrateSave(JSON.parse(JSON.stringify(next))).character!.faith!.selectedBlessingIds,next.character!.faith!.selectedBlessingIds,'all selections survive save');
+});
+test('legacy selection migrates once; invalid or locked group entries do not grant bonuses',()=>{
+ const xp=totalXpAtLevel(10);
+ const legacy=normalizeFaith({xp,selectedBlessingId:'WARD_OF_STONE'});
+ equal(legacy.selectedBlessingIds,{combat:'WARD_OF_STONE'},'legacy combat migration');
+ const corrupt=normalizeFaith({xp,selectedBlessingIds:{combat:'HARVESTS_GRACE',gathering:'VERDANT_WHISPER',production:'MASTERS_BENEDICTION',events:'FESTIVAL_FAVOR',bogus:'EMBER_VOW'}});
+ equal(corrupt.selectedBlessingIds,{gathering:'VERDANT_WHISPER'},'invalid entries discarded');
+});

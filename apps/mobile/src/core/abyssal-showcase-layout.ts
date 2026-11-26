@@ -98,3 +98,8 @@ export const ABYSSAL_RAIL_PATHS=[
  [[320,105],[320,105],[320,160],[291,182],[256,190],[256,190]],
 ] as const;
 export const ABYSSAL_RAIL_OPACITY=[0,0,.42,.8,.25,0] as const;
+
+/** Localized rising bubble response. Three motes and one halo, one-shot only. */
+export const ABYSSAL_REACTION={center:{x:268,y:105},halo:{w:52,h:48,maxScale:1.20},moteRadius:3,bubbles:[
+ {x:-18,y:12,dx:-8,dy:-27},{x:15,y:9,dx:9,dy:-31},{x:0,y:20,dx:3,dy:-33},
+]} as const;

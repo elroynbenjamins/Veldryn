@@ -1,9 +1,10 @@
 import {memo,useMemo,useState,type ReactNode} from 'react';
-import {Animated,Image,StyleSheet,View,useWindowDimensions,type ImageSourcePropType} from 'react-native';
+import {Animated,Image,Pressable,StyleSheet,View,useWindowDimensions,type ImageSourcePropType} from 'react-native';
 import {useCosmeticMotionPolicy,useLoopProgress} from '../anim/motion';
+import {useUltraLuxePetReaction} from './UltraLuxePetReaction';
 import {AbyssalBorderLight} from './AbyssalBorderLight';
 import {UltraLuxeIdentityMotionProvider} from './UltraLuxeIdentityMotion';
-import {ABYSSAL_BOXES as B,ABYSSAL_STAGE as S,ABYSSAL_BUDGET as Q,ABYSSAL_CYCLE_MS,ABYSSAL_MOTE_PATHS,ABYSSAL_POSE_ATLAS,abyssalPoseTimeline,abyssalPoseCell,abyssalAwakeningCurve,abyssalPetMode,abyssalStageSupported} from '../../core/abyssal-showcase-layout';
+import {ABYSSAL_BOXES as B,ABYSSAL_STAGE as S,ABYSSAL_BUDGET as Q,ABYSSAL_CYCLE_MS,ABYSSAL_MOTE_PATHS,ABYSSAL_POSE_ATLAS,ABYSSAL_REACTION,abyssalPoseTimeline,abyssalPoseCell,abyssalAwakeningCurve,abyssalPetMode,abyssalStageSupported} from '../../core/abyssal-showcase-layout';
 
 /** Review component only. All artwork is supplied by its caller; no release registration. */
 export type AbyssalSceneAssets={
@@ -55,6 +56,18 @@ const AbyssalTide=memo(function AbyssalTide({clock,k,assets}:{clock:Animated.Val
   {motion.motes.map((m,i)=><Animated.Image key={i} source={assets.mote} fadeDuration={0} resizeMode="contain" style={[pos(k,-r,-r,2*r,2*r),{opacity:m.opacity,transform:[{translateX:m.x},{translateY:m.y}]}]}/>)}
  </Decorative>;
 });
+const AbyssalPetReaction=memo(function AbyssalPetReaction({reaction,k,assets}:{reaction:Animated.Value;k:number;assets:AbyssalSceneAssets}){
+ const {center,halo,bubbles,moteRadius:r}=ABYSSAL_REACTION;
+ const effects=useMemo(()=>({
+  scale:reaction.interpolate({inputRange:[0,1],outputRange:[.75,halo.maxScale]}),
+  opacity:Animated.multiply(reaction,.72),
+  bubbles:bubbles.map(p=>({...p,xMotion:Animated.multiply(reaction,p.dx*k),yMotion:Animated.multiply(reaction,p.dy*k)})),
+ }),[reaction,k,halo,bubbles]);
+ return <Decorative>
+  <Animated.Image source={assets.aura} fadeDuration={0} resizeMode="contain" style={[pos(k,center.x-halo.w/2,center.y-halo.h/2,halo.w,halo.h),{opacity:effects.opacity,transform:[{scale:effects.scale}]}]}/>
+  {effects.bubbles.map((p,i)=><Animated.Image key={i} source={assets.mote} fadeDuration={0} resizeMode="contain" style={[pos(k,center.x+p.x-r,center.y+p.y-r,2*r,2*r),{opacity:reaction,transform:[{translateX:p.xMotion},{translateY:p.yMotion}]}]}/>)}
+ </Decorative>;
+});
 const AbyssalPet=memo(function AbyssalPet({clock,k,assets,running,mode,alternatePetSource}:{clock:Animated.Value;k:number;assets:AbyssalSceneAssets;running:boolean;mode:'matching'|'alternate'|'none';alternatePetSource?:ImageSourcePropType}){
  const motion=useMemo(()=>{
   if(!running||mode!=='matching')return null;
@@ -79,14 +92,17 @@ export const AbyssalMajestyPreview=memo(function AbyssalMajestyPreview({assets,e
  const clock=useLoopProgress(ABYSSAL_CYCLE_MS,running);
  const k=width/S.width,mode=abyssalPetMode(equippedPetId,!!alternatePetSource);
  const verifiedFullSet=fullSet&&mode==='matching';
+ const reactionEnabled=running&&mode==='matching';
+ const {reaction,trigger}=useUltraLuxePetReaction(reactionEnabled);
  return <View style={s.outer} onLayout={e=>{const next=e.nativeEvent.layout.width;setWidth(old=>Math.abs(old-next)<.5?old:next);}}>
   {!supported?fallback:<View style={[s.card,{height:S.height*k}]}>
    <Decorative>
     <Image source={assets.background} fadeDuration={0} resizeMode="cover" style={s.fill}/>
     {running?<AbyssalTide clock={clock} k={k} assets={assets}/>:null}
     <AbyssalPet clock={clock} k={k} assets={assets} running={running} mode={mode} alternatePetSource={alternatePetSource}/>
+    {reactionEnabled?<AbyssalPetReaction reaction={reaction} k={k} assets={assets}/>:null}
    </Decorative>
-   {mode!=='none'&&petAccessibilityLabel?<View accessible accessibilityLabel={petAccessibilityLabel} pointerEvents="none" style={box(k,mode==='matching'?B.leviathan:B.alternate)}/>:null}
+   {reactionEnabled?<Pressable accessibilityRole="button" accessibilityLabel={petAccessibilityLabel??"Nhal'Zuun, the Abyssborn"} onPress={trigger} style={box(k,B.leviathan)}/>:mode!=='none'&&petAccessibilityLabel?<View accessible accessibilityLabel={petAccessibilityLabel} pointerEvents="none" style={box(k,mode==='matching'?B.leviathan:B.alternate)}/>:null}
    <View style={[box(k,B.plate),s.plate]}/>
    <View style={[box(k,B.portrait),s.portrait]}>{portrait}</View>
    <UltraLuxeIdentityMotionProvider clock={clock} fullSet={verifiedFullSet} active={running}>

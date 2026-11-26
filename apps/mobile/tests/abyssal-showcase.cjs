@@ -188,3 +188,21 @@ const borderLayer=source('components/profile/AbyssalBorderLight.tsx');
 assert(!borderLayer.includes('Animated.loop(')&&!borderLayer.includes('setInterval('));
 assert(borderLayer.includes('pointerEvents="none"')&&borderLayer.includes('running?<AbyssalBorderLight'));
 console.log('PASS: Abyssal tidal border parity, protected geometry, full-set intensity and native lifecycle');
+
+const {ABYSSAL_REACTION:reactionSpec}=mod.exports;
+const {center,halo,bubbles,moteRadius}=reactionSpec;
+assert.equal(bubbles.length,Q.maxPetMotes);
+for(const w of [320,340,390,480]){
+ const k=w/S.width,a=B.aura;
+ function within(x,y,rx,ry){
+  assert((x-rx)*k>=a.x*k&&(x+rx)*k<=(a.x+a.w)*k&&(y-ry)*k>=a.y*k&&(y+ry)*k<=(a.y+a.h)*k);
+ }
+ within(center.x,center.y,halo.w*halo.maxScale/2,halo.h*halo.maxScale/2);
+ for(const p of bubbles)for(let j=0;j<=20;j++){
+  const v=j/20;within(center.x+p.x+v*p.dx,center.y+p.y+v*p.dy,moteRadius,moteRadius);
+ }
+}
+assert(preview.includes("reactionEnabled=running&&mode==='matching'"));
+assert(preview.includes('useUltraLuxePetReaction(reactionEnabled)'));
+assert(preview.includes('reactionEnabled?<AbyssalPetReaction')&&preview.includes('onPress={trigger}'));
+console.log('PASS: matching leviathan tap, bounded tidal bubbles and static fallback');

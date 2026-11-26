@@ -3,8 +3,7 @@ import {WAVE2_SETS,WAVE2_READY_SET_IDS,wave2SetFor,type Wave2Id} from '../core/p
 import {PROFILE_EFFECTS} from '../core/profile-effects';
 import {profileCosmeticPortraits,type ProfileCosmeticPortraitDefinition} from '../core/profile-cosmetic-icons';
 
-type LegacyCollectionId='gloamward'|'frostbound'|'amberglass'|'briarbound';
-export type ProfileCosmeticCollectionId=LegacyCollectionId|Wave2Id;
+export type ProfileCosmeticCollectionId='gloamward'|'frostbound'|'amberglass'|'briarbound';
 export type ProfileCosmeticStoreProductKind='set';
 
 export interface ProfileCosmeticSetPiece{
@@ -19,13 +18,13 @@ export interface ProfileCosmeticStoreCollection{
  fallbackBorderId:string;checkoutEnabled:false;billing:'one_time';tier:'standard';
 }
 
-const META:Record<LegacyCollectionId,{name:string;tagline:string;description:string;accent:string;slug:string}> = {
+const META:Record<ProfileCosmeticCollectionId,{name:string;tagline:string;description:string;accent:string;slug:string}> = {
  gloamward:{name:'Gloamward',tagline:'Arcane lanternlight',description:'Purple crystal light, subtle lantern pulses and drifting arcane sparks.',accent:'#B998FF',slug:'gloamward'},
  frostbound:{name:'Frostbound Chime',tagline:'Winter crystal hush',description:'Icy glints with slow rotating snowflakes descending from the upper profile edge.',accent:'#D8F3FF',slug:'frostbound'},
  amberglass:{name:'Amberglass Loop',tagline:'Emberlit gold',description:'Warm amber highlights with sparse glowing shards rising through the profile scene.',accent:'#FFD58A',slug:'amberglass'},
  briarbound:{name:'Briarbound',tagline:'Living woodland',description:'Emerald accents, drifting leaves and quiet fireflies moving across the scene.',accent:'#9DE59A',slug:'briarbound'},
 };
-const KEY_BY_COLLECTION:Record<string,LegacyCollectionId>={
+const KEY_BY_COLLECTION:Record<string,ProfileCosmeticCollectionId>={
  Gloamward:'gloamward','Frostbound Chime':'frostbound','Amberglass Loop':'amberglass',Briarbound:'briarbound',
 };
 
@@ -53,7 +52,8 @@ const WAVE2_META:Record<Wave2Id,{tagline:string;description:string;accent:string
  stormforged:{tagline:'Stormsteel',description:'Restrained lightning sparks and steel glints.',accent:'#91BEFF'},
  'crimson-oath':{tagline:'Royal crimson',description:'Silver ornaments, ruby pulses and falling petals.',accent:'#D76381'},
 };
-export const PROFILE_COSMETIC_WARDROBE_COLLECTIONS:readonly ProfileCosmeticStoreCollection[]=[
+export type ProfileCosmeticWardrobeCollection=Omit<ProfileCosmeticStoreCollection,'id'>&{id:ProfileCosmeticCollectionId|Wave2Id};
+export const PROFILE_COSMETIC_WARDROBE_COLLECTIONS:readonly ProfileCosmeticWardrobeCollection[]=[
  ...PROFILE_COSMETIC_STORE_COLLECTIONS,
  ...WAVE2_SETS.filter(row=>WAVE2_READY_SET_IDS.includes(row.id)).map(row=>{
   const portraits=profileCosmeticPortraits(row.id);
@@ -69,7 +69,7 @@ export const PROFILE_COSMETIC_STORE_PRODUCTS=PROFILE_COSMETIC_STORE_COLLECTIONS.
  ...collection.set,collectionId:collection.id,checkoutEnabled:false as const,billing:'one_time' as const,tier:'standard' as const,
 }));
 
-export function profileCosmeticCollectionOwnership(state:GameState,collection:ProfileCosmeticStoreCollection){
+export function profileCosmeticCollectionOwnership(state:GameState,collection:ProfileCosmeticWardrobeCollection){
  const borderOwned=state.account.unlockedProfileBorderIds?.includes(collection.border.itemId)??false;
  const effectOwned=state.account.unlockedProfileEffectIds?.includes(collection.effect.itemId)??false;
  const portraitsOwned=collection.portraits.map(row=>state.account.unlockedProfileIconIds?.includes(row.id)??false) as [boolean,boolean];

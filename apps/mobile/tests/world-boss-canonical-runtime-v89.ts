@@ -103,3 +103,77 @@ assert.equal(auditWorldBossCanonicalRuntimeV89(undefined as never).blockers[0],
 // V89 is deliberately an integration coverage oracle, NOT an authority issuer.
 assert.equal(auditWorldBossCanonicalRuntimeV89(source).releaseReady,false);
 console.log('WORLD_BOSS_CANONICAL_V89_STRUCTURAL_OK: 45 boss/phase/roster cases, canonical 16 channels, 5 trait hooks, 1s tick parity, item-copy exclusivity; production gate stays closed');
+
+
+/** V90A reuses V89 fixtures but compares independently shaped receipt summaries. */
+import {reviewWorldBossRosterV90,WORLD_BOSS_ROSTER_V90_LIVE,
+ type FrozenWorldBossReservationV90,type WorldBossCompilerProjectionV90,
+} from '../../../backend/src/server/combat/world-boss-roster-reconciliation-v90';
+const frozen=(runtime:WorldBossCanonicalEvidenceV89):FrozenWorldBossReservationV90=>({
+ eventId:runtime.eventId,accountId:runtime.accountId,reservationId:'reservation_1',
+ attempt:2,bossId:runtime.bossId,phase:runtime.phase,bossMaxHp:runtime.bossMaxHp,
+ rosterDigest:runtime.rosterDigest,contentVersion:'content_2',balanceVersion:'balance_2',
+ members:runtime.actors.map((a,i)=>({characterId:a.characterId,snapshotId:a.snapshotId,
+ sourceRevision:a.sourceRevision,sourceHash:a.sourceHash,
+ equipmentReceiptDigest:(i+10).toString(16).repeat(64),equipmentReceiptRevision:3})),
+});
+const projected=(runtime:WorldBossCanonicalEvidenceV89,
+ reserve:FrozenWorldBossReservationV90):WorldBossCompilerProjectionV90=>({
+ reservationId:reserve.reservationId,attempt:reserve.attempt,
+ contentVersion:reserve.contentVersion,balanceVersion:reserve.balanceVersion,runtime,
+ equipment:runtime.actors.map((a,i)=>({accountId:reserve.accountId,characterId:a.characterId,
+ actorId:a.actorId,revision:reserve.members[i].equipmentReceiptRevision,
+ equipmentReceiptDigest:reserve.members[i].equipmentReceiptDigest,
+ ownedEquippedInstanceIds:[...a.equippedCopyIds],traits:a.activeTraits.map(t=>({...t}))})),
+});
+let v90Cases=0;
+for(const bossId of bossIds)for(const phase of phases)for(let size=1;size<=5;size++){
+ const runtime={...base(size),bossId,phase};
+ const reserve=frozen(runtime),projection=projected(runtime,reserve);
+ const before=JSON.stringify([reserve,projection]);
+ const ok=reviewWorldBossRosterV90(reserve,projection);
+ assert.equal(ok.structurallyCompatible,true);
+ assert.deepEqual(ok.blockers,[]);
+ assert.equal(ok.releaseReady,false);
+ assert.equal(ok.canAuthorizeCombat,false);
+ assert.equal(ok.canGrantRewards,false);
+ assert.equal(ok.canPersistState,false);
+ assert.equal(JSON.stringify([reserve,projection]),before);
+ assert.deepEqual(reviewWorldBossRosterV90(reserve,{
+  ...projection,equipment:[...projection.equipment].reverse(),
+ }),ok);
+ v90Cases++;
+}
+assert.equal(v90Cases,45);
+assert.equal(WORLD_BOSS_ROSTER_V90_LIVE,false);
+const r90=frozen(base(3)),p90=projected(base(3),r90);
+const bad90=(r:FrozenWorldBossReservationV90,p:WorldBossCompilerProjectionV90,code:string)=>{
+ const outcome=reviewWorldBossRosterV90(r,p);
+ assert.equal(outcome.structurallyCompatible,false);
+ assert.ok(outcome.blockers.includes(code),JSON.stringify(outcome.blockers));
+ assert.equal(outcome.canAuthorizeCombat,false);
+};
+bad90(r90,{...p90,attempt:3},'reservation_scope_mismatch');
+bad90({...r90,attempt:4},{...p90,attempt:4},'reservation_scope_mismatch');
+bad90(r90,{...p90,balanceVersion:'old'},'reservation_scope_mismatch');
+bad90(r90,{...p90,runtime:{...p90.runtime,phase:'exposed'}},'reservation_scope_mismatch');
+bad90(r90,{...p90,equipment:p90.equipment.slice(1)},'roster_cardinality_mismatch');
+bad90(r90,{...p90,equipment:[p90.equipment[0],p90.equipment[0],p90.equipment[2]]},
+ 'invalid_or_duplicate_equipment_receipt');
+const changeReceipt=(edit:Partial<WorldBossCompilerProjectionV90['equipment'][number]>)=>({
+ ...p90,equipment:[{...p90.equipment[0],...edit},...p90.equipment.slice(1)],
+});
+bad90(r90,changeReceipt({accountId:'foreign'}),'equipment_receipt_scope_mismatch');
+bad90(r90,changeReceipt({actorId:'wrong'}),'equipment_receipt_scope_mismatch');
+bad90(r90,changeReceipt({revision:2}),'equipment_receipt_scope_mismatch');
+bad90(r90,changeReceipt({equipmentReceiptDigest:'f'.repeat(64)}),'equipment_receipt_scope_mismatch');
+bad90(r90,changeReceipt({ownedEquippedInstanceIds:['copy_1']}),'equipped_copy_set_mismatch');
+bad90(r90,changeReceipt({ownedEquippedInstanceIds:['copy_0','copy_0']}),'equipped_copy_set_mismatch');
+bad90(r90,changeReceipt({traits:[]}),'selected_trait_set_mismatch');
+bad90(r90,changeReceipt({traits:[{instanceId:'copy_0',traitId:'echoing_strike'}]}),'selected_trait_set_mismatch');
+bad90({...r90,members:[{...r90.members[0],sourceRevision:7},...r90.members.slice(1)]},
+ p90,'frozen_loadout_mismatch');
+bad90({...r90,members:[r90.members[0],r90.members[0],r90.members[2]]},
+ p90,'invalid_or_duplicate_reserved_member');
+bad90(r90,{...p90,runtime:{...p90.runtime,eventTimeResolutionMs:5000}},'v89:subsecond_or_1s_timing_required');
+console.log('WORLD_BOSS_ROSTER_V90A_STRUCTURAL_OK: 45 scope cases and mismatch regressions; no authorization');

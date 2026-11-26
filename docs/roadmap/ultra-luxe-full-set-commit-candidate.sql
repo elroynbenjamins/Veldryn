@@ -19,7 +19,11 @@ language sql immutable security invoker set search_path='' as $definition$
 $definition$;
 revoke all on function private.ultra_luxe_full_set_definition_v1(text) from public,anon,authenticated;
 
--- Definer only to access private selection table/helper, with an explicit service-role ACL.
+-- Service-only invoker, with narrow grants on the existing private table/helpers.
+-- service_role already bypasses RLS, but no client role gains table access.
+grant select,insert,update on private.ultra_luxe_name_selection_v1 to service_role;
+grant execute on function private.ultra_luxe_full_set_definition_v1(text),private.ultra_luxe_owned_names_v1(uuid),private.ultra_luxe_selected_name_v1(uuid) to service_role;
+
 -- Never grant this function to authenticated/anon. Existing commit performs the
 -- authoritative revision/wallet/receipt validation. Any failed postcondition aborts
 -- the entire PostgreSQL transaction, including the gameplay commit and receipt.
@@ -27,7 +31,7 @@ create function public.commit_ultra_luxe_full_set_server_v1(
  p_account_id uuid,p_character_id uuid,p_collection_id text,
  p_expected_version bigint,p_expected_gold bigint,p_expected_grants jsonb,
  p_expected_name_id text,p_request_id text,p_request_hash text,p_response jsonb
-) returns jsonb language plpgsql security definer set search_path='' as $full_set$
+) returns jsonb language plpgsql security invoker set search_path='' as $full_set$
 declare
  d record; current_game jsonb; current_grants jsonb; owned_names text[];
  selected_name text; existing_receipt jsonb; ack jsonb; hero jsonb; readback jsonb;

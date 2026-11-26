@@ -4,7 +4,7 @@
  */
 import {strict as assert} from 'node:assert';
 import {reviewFrozenForgeSocketsV2} from '../frozen-forge-socket-review';
-import {STAT_GEMS_V1,EFFECT_GEMS_V1,gemItemId,type GemGrade} from '../../../equipment/gems/gem-catalog-v1';
+import {STAT_GEMS_V1,EFFECT_GEMS_V1,gemItemId,type GemGrade,GEM_BALANCE_REVIEW_V2,STAT_GEMS_REVIEW_V2,EFFECT_GEMS_REVIEW_V2,EFFECT_GEM_REVIEW_MULTIPLIERS_V2} from '../../../equipment/gems/gem-catalog-v1';
 import type {V2GemSidecarState} from '../../../equipment/equipment-crafting-v2-gem-sidecar-types';
 import {writeFileSync} from 'node:fs';
 import {launchPlayer} from '../../content/launch-combat';
@@ -382,6 +382,57 @@ function make(classId:ClassIdV2,specIndex:0|1,
   families:STAT_GEMS_V1.map(def=>({id:def.familyId,stat:def.stat,unit:def.unit,
    supported:compatible.has(def.familyId),g1Min:def.values[1]*.8,g5Max:def.values[5]*1.2})),
   rows:qaRows}));
+}
+// Approved magnitude direction, independently versioned and digest-bound.
+{
+ const grades=[1,2,3,4,5] as const;
+ assert.equal(STAT_GEMS_REVIEW_V2.length,12);assert.equal(EFFECT_GEMS_REVIEW_V2.length,20);
+ for(const old of STAT_GEMS_V1){
+  const next=STAT_GEMS_REVIEW_V2.find(x=>x.familyId===old.familyId)!;
+  const {values:_a,...identity}=old,{values:_b,...nextIdentity}=next;
+  assert.deepEqual(nextIdentity,identity);
+  for(const grade of grades)assert.ok(Math.abs(next.values[grade]-old.values[grade]*2)<1e-10);
+ }
+ for(const old of EFFECT_GEMS_V1){
+  const next=EFFECT_GEMS_REVIEW_V2.find(x=>x.familyId===old.familyId)!;
+  const {values:_a,...identity}=old,{values:_b,...nextIdentity}=next;
+  assert.deepEqual(nextIdentity,identity);
+  const factor=EFFECT_GEM_REVIEW_MULTIPLIERS_V2[old.familyId];
+  assert.ok(factor===1.25||factor===1.5);
+  for(const grade of grades)assert.ok(Math.abs(next.values[grade]-old.values[grade]*factor)<1e-10);
+ }
+ const qa=make('IRONWARDEN',0);
+ const source={...qa.source,ledgerRevision:7,verifyPersisted:(digest:string,revision:number)=>revision===7&&/^[0-9a-f]{64}$/.test(digest)};
+ const legacy={version:'QA_GEM_STRENGTH',maxFinalHp:1e8,maxFinalDefense:1e8};
+ const policy={...legacy,gemBalancePolicy:GEM_BALANCE_REVIEW_V2};
+ const socket=(gemId:string,kind:'stat'|'effect'):V2GemSidecarState=>({
+  slots:[{instanceId:qa.mint.id,[kind]:{gemId,rollPercent:120}}],
+  receipts:[{requestId:'QA_MAGNITUDE_RECEIPT',fingerprint:'gem:'+qa.mint.id+':'+gemId,
+   instanceId:qa.mint.id,socket:kind,gemId,source:'gem_pouch',rollPercent:120,burnedGemId:null,version:7}],
+ });
+ const empty=reviewFrozenForgeSocketsV2(qa.actor,qa.build,source,{slots:[],receipts:[]},policy);
+ const original=JSON.stringify(source.items);
+ for(const family of ['stat_vitality','stat_iron','stat_keen','stat_precision'])for(const grade of grades){
+  const state=socket(gemItemId(family,grade),'stat');
+  const before=reviewFrozenForgeSocketsV2(qa.actor,qa.build,source,state,legacy);
+  const after=reviewFrozenForgeSocketsV2(qa.actor,qa.build,source,state,policy);
+  assert.notEqual(after.digest,before.digest);
+  assert.ok(Math.abs(after.gemSources[0].fraction-before.gemSources[0].fraction*2)<1e-9);
+  assert.equal(after.canExecuteCombat,false);assert.equal(after.cpApproved,false);
+ }
+ for(const def of EFFECT_GEMS_REVIEW_V2)for(const grade of grades){
+  const state=socket(gemItemId(def.familyId,grade),'effect');
+  const out=reviewFrozenForgeSocketsV2(qa.actor,qa.build,source,state,policy);
+  assert.deepEqual(out.stats,empty.stats);assert.deepEqual(out.advanced,empty.advanced);
+  assert.equal(out.deferredEffectSources[0].runtimeEnabled,false);
+  assert.ok(Math.abs(out.deferredEffectSources[0].candidateFraction!-def.values[grade]*1.2)<1e-9);
+ }
+ assert.throws(()=>reviewFrozenForgeSocketsV2(qa.actor,qa.build,source,socket('gem:stat_might:g5','stat'),policy),/unreconciled_stat_gem/);
+ assert.equal(JSON.stringify(source.items),original);
+ console.log('GEM_BALANCE_REVIEW_V2 '+JSON.stringify({policy:GEM_BALANCE_REVIEW_V2,
+  statFamilies:12,statFactor:2,effectFamilies:20,effectFactors:EFFECT_GEM_REVIEW_MULTIPLIERS_V2,
+  maxVitalityTenSockets:.03*1.2*10,compatibleSocketComparisons:20,deferredEffectComparisons:100,
+  releaseEnabled:false}));
 }
 let checked=0,actualFrozenPositive=0,mappedAffixes=0;
 for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){

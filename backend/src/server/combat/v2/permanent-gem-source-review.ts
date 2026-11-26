@@ -2,7 +2,7 @@
  * No CombatStats mutation, CP, gem proc, mint, or release authority.
  * All units remain in the canonical gem catalogue's vocabulary.
  */
-import {findStatGem,findEffectGem,gemItemId,type GemGrade} from '../../equipment/gems/gem-catalog-v1';
+import {findStatGem,findEffectGem,gemItemId,type GemGrade,GEM_BALANCE_REVIEW_V2,type GemBalanceReviewPolicyV2,findStatGemReviewV2,findEffectGemReviewV2} from '../../equipment/gems/gem-catalog-v1';
 import {verifyEquipmentV2GemSidecar} from '../../equipment/equipment-crafting-v2-gem-verifier';
 import type {V2GemSidecarState} from '../../equipment/equipment-crafting-v2-gem-sidecar-types';
 import {verifyEquipmentV2HiddenLedger} from '../../equipment/equipment-crafting-v2-delivery';
@@ -21,7 +21,8 @@ export type PermanentGemReviewSourceV2=Pick<TrustedFrozenForgeCombatSourceV2,
 const fail=(reason:string):never=>{throw Error('combat_v2_gem_review_'+reason);};
 const id=(x:unknown):x is string=>typeof x==='string'&&x.length>0&&x.length<=128;
 const round=(n:number)=>Math.round(n*1e9)/1e9;
-export function reviewPermanentGemSourcesV2(source:PermanentGemReviewSourceV2){
+export function reviewPermanentGemSourcesV2(source:PermanentGemReviewSourceV2,balancePolicy?:GemBalanceReviewPolicyV2){
+ if(balancePolicy!==undefined&&balancePolicy!==GEM_BALANCE_REVIEW_V2)fail('unknown_balance_policy');
  if(!source||!id(source.accountId)||!id(source.characterId)||
    !Number.isSafeInteger(source.ledgerRevision)||source.ledgerRevision<1||
    typeof source.verifyPersisted!=='function'||
@@ -44,7 +45,7 @@ export function reviewPermanentGemSourcesV2(source:PermanentGemReviewSourceV2){
  const expectedWorn=[...source.equippedInstanceIds].sort();
  if(worn.length!==expectedWorn.length||worn.some((x,i)=>x!==expectedWorn[i]))
   fail('worn_copy_set_mismatch');
- const snapshotDigest=()=>enemyV2SnapshotDigest({accountId:source.accountId,characterId:source.characterId,
+ const snapshotDigest=()=>enemyV2SnapshotDigest({...(balancePolicy?{balancePolicy}:{}),accountId:source.accountId,characterId:source.characterId,
   ledgerRevision:source.ledgerRevision,items:source.items,jobs:source.jobs,
   awards:source.awards,claims:source.claims,reservations:source.reservations,
   custodyReceipts:source.custodyReceipts,sidecar:source.sidecar,equippedInstanceIds:[...source.equippedInstanceIds].sort()});
@@ -54,7 +55,7 @@ export function reviewPermanentGemSourcesV2(source:PermanentGemReviewSourceV2){
  const statSources:{instanceId:string;gemId:string;stat:GemDefinition['stat'];
   unit:GemDefinition['unit'];grade:GemGrade;rollPercent:number;fraction:number}[]=[];
  const effectSources:{instanceId:string;gemId:string;familyId:string;grade:GemGrade;
-  rollPercent:number;runtimeEnabled:false}[]=[];
+  rollPercent:number;candidateFraction?:number;runtimeEnabled:false}[]=[];
  const slots=new Map(source.sidecar.slots.map(row=>[row.instanceId,row]));
  for(const instanceId of worn){
   const row=slots.get(instanceId);
@@ -66,15 +67,15 @@ export function reviewPermanentGemSourcesV2(source:PermanentGemReviewSourceV2){
    const grade=Number(match[2]) as GemGrade;
    if(gemItemId(match[1],grade)!==gem.gemId)fail('invalid_catalogue_id');
    if(kind==='stat'){
-    const def=findStatGem(match[1]);
+    const def=balancePolicy?findStatGemReviewV2(match[1]):findStatGem(match[1]);
     if(!def)throw Error('combat_v2_gem_review_missing_stat_definition');
     statSources.push({instanceId,gemId:gem.gemId,stat:def.stat,unit:def.unit,grade,
       rollPercent:gem.rollPercent,fraction:round(def.values[grade]*gem.rollPercent/100)});
    }else{
-    const def=findEffectGem(match[1]);
+    const def=balancePolicy?findEffectGemReviewV2(match[1]):findEffectGem(match[1]);
     if(!def)throw Error('combat_v2_gem_review_missing_effect_definition');
     effectSources.push({instanceId,gemId:gem.gemId,familyId:def.familyId,grade,
-      rollPercent:gem.rollPercent,runtimeEnabled:false});
+      rollPercent:gem.rollPercent,...(balancePolicy?{candidateFraction:round(def.values[grade]*gem.rollPercent/100)}:{}),runtimeEnabled:false});
    }
   }
  }
@@ -83,7 +84,7 @@ export function reviewPermanentGemSourcesV2(source:PermanentGemReviewSourceV2){
   const key=row.stat+':'+row.unit;
   totals[key]=round((totals[key]??0)+row.fraction);
  }
- return {receiptDigest:digest,statSources,effectSources,totals,
+ return {receiptDigest:digest,statSources,effectSources,totals,...(balancePolicy?{balancePolicy}:{}),
   releaseEnabled:false as const,canApplyStats:false as const,canExecuteEffects:false as const,
   canContributeCP:false as const};
 }

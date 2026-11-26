@@ -65,3 +65,20 @@ export function sakuraV2OrnamentTracks(mode:'showcase'|'standard',fullSet:boolea
   return {...f,x:x*340/a.width,y:y*205/a.height};
  })}));
 }
+
+/** Visually calibrated source pixel coordinates; normalized to the fitted review aperture.
+ * Wolf crest, bottom diamond, upper rail jewels and lower rail jewels.
+ * Keep the blue pulses subtle; avoid duplicating baked lightning with a second clock. */
+export const STORMFORGED_V2_ANCHORS={
+ showcase:{width:1020,height:615,railX:[35,983],fixed:[[510,46],[510,570],[202,49],[769,578],[818,49],[251,578]]},
+ standard:{width:1024,height:576,railX:[35,987],fixed:[[512,46],[512,531],[202,49],[771,539],[822,49],[253,539]]},
+} as const;
+export function stormforgedV2OrnamentTracks(mode:'showcase'|'standard',fullSet:boolean):OrnamentTrack[]{
+ const a=STORMFORGED_V2_ANCHORS[mode];
+ const tracks=nextPremiumOrnamentTracks('thunder-pulse',mode==='showcase',fullSet);
+ return tracks.map((track,i)=>({...track,frames:track.frames.map(f=>{
+  if(i<2)return {...f,x:a.railX[i]*340/a.width};
+  const [x,y]=a.fixed[i-2];
+  return {...f,x:x*340/a.width,y:y*205/a.height};
+ })}));
+}

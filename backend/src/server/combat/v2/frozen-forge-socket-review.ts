@@ -7,13 +7,21 @@ import type {CombatantDefinition,CombatStats} from '../types';
 import type {VerifiedSkillBuildV2} from './skill-effects';
 import {compileRealFrozenForgeActorV2,type TrustedFrozenForgeCombatSourceV2} from './equipment-frozen-forge-bridge';
 import {reviewPermanentGemSourcesV2} from './permanent-gem-source-review';
-import type {GemBalanceReviewPolicyV2} from '../../equipment/gems/gem-catalog-v1';
+import {GEM_BALANCE_REVIEW_V2,type GemBalanceReviewPolicyV2} from '../../equipment/gems/gem-catalog-v1';
 import type {V2GemSidecarState} from '../../equipment/equipment-crafting-v2-gem-sidecar-types';
 import {enemyV2SnapshotDigest} from './enemy-engine-authority';
 
+/** Candidate semantics, not an approved migration or combat authority.
+ * Keep these mappings independently versioned from the approved magnitudes. */
+export const FORGE_SOCKET_MECHANICS_REVIEW_V2='forge-socket-mechanics-review-v2-20261126' as const;
+export interface ForgeSocketMechanicsReviewV2{
+ readonly version:typeof FORGE_SOCKET_MECHANICS_REVIEW_V2;
+ readonly maxFinalAttackPower:number;
+}
 export interface ForgeSocketReviewPolicyV2{
  readonly version:string;
  readonly gemBalancePolicy?:GemBalanceReviewPolicyV2;
+ readonly mechanicsReview?:ForgeSocketMechanicsReviewV2;
  readonly maxFinalHp:number;
  readonly maxFinalDefense:number;
 }
@@ -27,6 +35,10 @@ export function reviewFrozenForgeSocketsV2(
 ){
  if(!policy||!policy.version||!finite(policy.maxFinalHp)||policy.maxFinalHp<=0||
    !finite(policy.maxFinalDefense))fail('invalid_policy');
+ const mechanics=policy.mechanicsReview;
+ if(mechanics!==undefined&&(!mechanics||mechanics.version!==FORGE_SOCKET_MECHANICS_REVIEW_V2||
+  policy.gemBalancePolicy!==GEM_BALANCE_REVIEW_V2||!finite(mechanics.maxFinalAttackPower)||
+  mechanics.maxFinalAttackPower<=0))fail('invalid_mechanics_review_policy');
  // The generic persisted digest intentionally rejects Set and executable
  // objects. Project only the two known non-JSON fields; never relax that
  // digest or stringify arbitrary source objects. The selected class profile
@@ -71,6 +83,9 @@ export function reviewFrozenForgeSocketsV2(
   gems:gems.receiptDigest,policy});
  if(guardedSource.verifyPersisted(digest,source.ledgerRevision)!==true)fail('unverified_combined_snapshot');
  const supported=new Set(['maxHp:percent','armor:percent','critRate:percentage_point','accuracy:percentage_point']);
+ if(mechanics)for(const key of ['power:percent','ward:percent','critDamage:percent',
+  'penetration:percentage_point','haste:percent','potency:percent','evasion:percentage_point','tenacity:percent'])
+  supported.add(key);
  const unsupported=gems.statSources.filter(s=>!supported.has(s.stat+':'+s.unit));
  if(unsupported.length)fail('unreconciled_stat_gem');
  const base=compiled.evidence.stages.afterFrozenBase;
@@ -89,6 +104,28 @@ export function reviewFrozenForgeSocketsV2(
  if(!effects)throw Error('combat_v2_forge_socket_review_missing_effects');
  const advanced={...effects};
  if(g('accuracy:percentage_point'))advanced.accuracyPp=round(raw('accuracy_pp')+g('accuracy:percentage_point'));
+ // Separate candidate interpretation of legacy units, based on the
+ // pre-affix stage and original Forge rolls. Never modify frozen copies.
+ // Savage adds to the crit multiplier; Swift multiplies base haste only.
+ // Ward/Resolute are explicit proposed point conversions, Might maps to
+ // attack, Potent to authored direct skill damage, not generic healing/DoT.
+ if(mechanics){
+  if(g('power:percent'))stats.attackPower=round(base.attackPower*(1+raw('attack_pct')+g('power:percent')));
+  if(g('critDamage:percent'))stats.critMultiplier=round(base.critMultiplier*(1+raw('crit_damage_pct'))+g('critDamage:percent'));
+  if(g('haste:percent'))stats.haste=round(base.haste*(1+g('haste:percent'))+raw('haste_pp'));
+  if(g('ward:percent'))advanced.wardPp=round(raw('ward_pp')+g('ward:percent'));
+  if(g('penetration:percentage_point'))advanced.penetrationPp=round(raw('penetration_pp')+g('penetration:percentage_point'));
+  if(g('potency:percent'))advanced.abilityDamagePct=round(raw('ability_damage_pct')+g('potency:percent'));
+  if(g('evasion:percentage_point'))advanced.evasionPp=round(raw('evasion_pp')+g('evasion:percentage_point'));
+  if(g('tenacity:percent'))advanced.tenacityPp=round(raw('tenacity_pp')+g('tenacity:percent'));
+  if(stats.attackPower>mechanics.maxFinalAttackPower||stats.haste>source.affixPolicy.maxFinalHaste||
+    stats.critMultiplier>source.affixPolicy.maxFinalCritMultiplier||stats.critMultiplier<1)
+   fail('combined_stat_cap');
+  for(const key of ['wardPp','penetrationPp','abilityDamagePct','evasionPp','tenacityPp'] as const){
+   const value=advanced[key]??0,cap=source.affixPolicy.maxAdvancedEffects?.[key];
+   if(value>0&&(!finite(cap)||cap>1||value>cap))fail('combined_stat_cap');
+  }
+ }
  const accuracyCap=source.affixPolicy.maxAdvancedEffects?.accuracyPp;
  if(!Object.values(stats).every(finite)||stats.maxHp<=0||stats.maxHp>policy.maxFinalHp||
    stats.defense>policy.maxFinalDefense||stats.critChance>source.affixPolicy.maxFinalCritChance||
@@ -97,6 +134,7 @@ export function reviewFrozenForgeSocketsV2(
  return {scope:'PRIVATE_EXACT_FORGE_SOCKET_PROJECTION_V1' as const,digest,
   equippedInstanceIds:ids,stats,advanced,gemSources:gems.statSources,
   deferredEffectSources:gems.effectSources,forgeEvidence:compiled.evidence,
-  policyVersion:policy.version,canExecuteCombat:false as const,cpApproved:false as const,
+  policyVersion:policy.version,...(mechanics?{mechanicsReview:mechanics.version,requiresMigrationApproval:true as const}:{}),
+  canExecuteCombat:false as const,cpApproved:false as const,
   releaseEnabled:false as const};
 }

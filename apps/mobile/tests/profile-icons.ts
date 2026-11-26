@@ -1,7 +1,9 @@
 import {createCharacter,newGame,effectiveStats} from '../src/core/game';
-import {EVENT_PROFILE_ICON_ARTWORK_IDS,profileIconCollection,selectProfileIcon,normalizeProfileIcon,canUseProfileIcon,newlyUnlockedProfileIcons} from '../src/core/profile-icons';
+import {EVENT_PROFILE_ICON_ARTWORK_IDS,profileIconCollection,selectProfileIcon,normalizeProfileIcon,canUseProfileIcon,newlyUnlockedProfileIcons,accountProfileIconId} from '../src/core/profile-icons';
 import {executeGameCommand} from '../src/core/game-commands';
 import {LIVE_EVENT_CATALOG} from '../src/content/live-events';
+import {purchaseEventOffer} from '../src/core/live-events';
+import {FROSTFALL_EVENT} from '../src/content/annual-events-v2';
 import {collectionOwnershipSnapshotFromGameState} from '../src/core/collection-sets-v45';
 import {normalizeSave} from '../src/core/save-normalization';
 function check(value:unknown,message:string):asserts value{if(!value)throw new Error(message);}
@@ -13,8 +15,20 @@ const otherClassCharacter=createCharacter(newGame(1000),'WAYFINDER','New Wayfind
 check(otherClassCharacter.character!.profileIconId==='class:WAYFINDER','another class starts with its own portrait');
 check(newlyUnlockedProfileIcons(newGame(1000),otherClassCharacter).length===0,'another class starter icon is not announced');
 check(newlyUnlockedProfileIcons(state,otherClassCharacter).length===0,'changing active class does not announce a free class portrait');
-check(profileIconCollection(state).length===15,'catalog includes a locked guild icon alongside class, starters, boss and three event icons');
+check(profileIconCollection(state).length===17,'catalog includes class, starters, boss, guild, two Veilbreak and three released Dungeon icons');
+const dungeonIcons=profileIconCollection(state).filter(row=>row.group==='Dungeon');
+check(dungeonIcons.length===3,'all three Dungeon portraits are visible');
+for(const icon of dungeonIcons){
+ check(!icon.unlocked&&icon.artworkReady,'unowned Dungeon portrait stays locked with artwork: '+icon.id);
+ rejects(()=>selectProfileIcon(state,icon.id));
+ const purchased={...state,account:{...state.account,unlockedProfileIconIds:[icon.id]}};
+ check(selectProfileIcon(purchased,icon.id).character!.profileIconId===icon.id,'purchased Dungeon portrait can be selected: '+icon.id);
+}
 check(profileIconCollection(state).filter(row=>row.unlocked).length===10,'current class emblem and nine starter portraits available');
+check(!profileIconCollection(state).some(row=>row.group==='Cosmetics'),'unreleased cosmetic-set portraits stay out of the normal collection');
+const cosmeticPortraitOwned={...state,account:{...state.account,unlockedProfileIconIds:['cosmetic:gloamward:portrait-seer']}};
+check(profileIconCollection(cosmeticPortraitOwned).some(row=>row.id==='cosmetic:gloamward:portrait-seer'),'owned unreleased portrait may be represented for migration/ops visibility');
+check(canUseProfileIcon(cosmeticPortraitOwned,'cosmetic:gloamward:portrait-seer'),'owned cosmetic-set portrait is selectable after approved atlas artwork is installed');
 check(canUseProfileIcon(state,'starter:hooded-ranger'),'starter portrait available');
 check(!canUseProfileIcon(state,'guild:stormwatch-crest'),'guild icon is locked until purchased');
 check(canUseProfileIcon({...state,account:{...state.account,unlockedProfileIconIds:['guild:stormwatch-crest']}},'guild:stormwatch-crest'),'purchased guild icon becomes usable');
@@ -53,8 +67,58 @@ for(const id of ['event:veilbreak-2026-lantern-warden','event:veilbreak-2026-pum
  check(profileIconCollection({...state,account:{...state.account,unlockedProfileIconIds:[id]}}).find(row=>row.id===id)?.artworkReady,'Veilbreak event profile icon reports its artwork as ready');
 }
 check(EVENT_PROFILE_ICON_ARTWORK_IDS.has('event:frostfall-2026-snowbell'),'Frostfall icon must have runtime artwork before launch');
-check(profileIconCollection(state).find(row=>row.id==='event:frostfall-2026-snowbell')?.artworkReady,'Frostfall shop icon must render as artwork ready');
+check(!profileIconCollection(state).some(row=>row.id.startsWith('event:frostfall-2026-')),'Unearned Frostfall portraits stay hidden without the authoritative runtime');
 check(JSON.stringify(effectiveStats(eventSelected))===before,'event icon grants no bonus');
 check(collectionOwnershipSnapshotFromGameState(earned).ownedKeys['profile_icon:'+eventIcon.id],'event icon tracked in collections');
 check(normalizeProfileIcon({...state,character:{...state.character!,profileIconId:'unknown'}}).character!.profileIconId==='class:IRONWARDEN','invalid icon falls back to class');
+// Frostfall seasonal portraits use ordinary authoritative event-shop ownership.
+const frostNow=Date.UTC(2026,11,10),frostEnd=Date.UTC(2026,11,27),frostGrace=Date.UTC(2026,11,29);
+const frostIds=['event:frostfall-2026-snowbell','event:frostfall-2026-maiden','event:frostfall-2026-adventurer'];
+const frostOffers=FROSTFALL_EVENT.shop.filter(row=>row.reward.kind==='profile_icon');
+check(frostOffers.length===3&&frostOffers.every(row=>row.cost===1400&&row.currency==='common'&&row.limit===1&&row.reward.rarity==='epic'),'Three equally priced Frostfall portraits');
+let winter={...state,account:{...state.account,liveEvent:{eventId:FROSTFALL_EVENT.id,enabled:true,startsAtMs:Date.UTC(2026,11,3),endsAtMs:frostEnd,graceEndsAtMs:frostGrace},eventCurrencyBalanceById:{[FROSTFALL_EVENT.id]:4200}}};
+for(const id of frostIds){check(EVENT_PROFILE_ICON_ARTWORK_IDS.has(id),'Dedicated Frostfall art registered: '+id);rejects(()=>selectProfileIcon(winter,id));
+ check(!profileIconCollection(winter,Date.UTC(2026,11,3)-1).some(row=>row.id===id),'Frostfall portrait stays hidden before start');
+ check(profileIconCollection(winter,frostNow).some(row=>row.id===id&&row.artworkReady&&!row.unlocked),'Frostfall portrait becomes visible but locked during the live event');
+ check(!profileIconCollection(winter,frostGrace).some(row=>row.id===id),'Unearned portrait hides after claim grace');}
+let purchased:typeof state=winter;
+for(const offer of frostOffers){purchased=purchaseEventOffer(purchased,offer.id,frostNow);check(canUseProfileIcon(purchased,offer.reward.id),'Purchased Frostfall icon unlocked');check(normalizeSave(selectProfileIcon(purchased,offer.reward.id)).character!.profileIconId===offer.reward.id,'Purchased Frostfall icon survives normalization');rejects(()=>purchaseEventOffer(purchased,offer.id,frostNow));}
+check(purchased.account.eventCurrencyBalanceById?.[FROSTFALL_EVENT.id]===0,'Three Frostfall portraits cost 4,200 tokens total');
+check(frostIds.every(id=>purchased.account.unlockedProfileIconIds?.includes(id)),'Account owns all three Frostfall portraits');
+rejects(()=>purchaseEventOffer(winter,frostOffers[0].id,frostGrace));
+check(canUseProfileIcon({...purchased,account:{...purchased.account,liveEvent:undefined}},frostIds[0]),'Frostfall portrait ownership persists beyond season');
+check(purchaseEventOffer(winter,frostOffers[0].id,frostEnd).account.unlockedProfileIconIds?.includes(frostIds[0]),'Frostfall cosmetic purchase remains allowed in claim grace');
+
+console.log('Profile icon selection, ownership, commands and zero-bonus checks passed');
+
+
+// Account profile identity: first-created local hero wins regardless of active/roster order.
+const first={...state.character!,id:'LOCAL_CHAR_1',profileIconId:'starter:hooded-ranger'};
+const alt={...otherClassCharacter.character!,id:'LOCAL_CHAR_2',profileIconId:'starter:runic-scholar'};
+const multi={...state,character:alt,otherCharacters:[{character:first,inventory:state.inventory,overflow:state.overflow,activity:null,skills:state.skills,quests:state.quests,currentRegionId:state.currentRegionId}],account:{...state.account}};
+const migrated=normalizeProfileIcon(multi);
+check(accountProfileIconId(migrated)==='starter:hooded-ranger','first-created character icon seeds account, not active alt');
+check(migrated.character!.profileIconId==='starter:hooded-ranger'&&migrated.otherCharacters![0].character.profileIconId==='starter:hooded-ranger','all character projections use shared icon');
+const changed=executeGameCommand(migrated,{type:'profile',args:{profileIconId:'starter:runic-scholar'}},1000).state;
+check(changed.account.profileIconId==='starter:runic-scholar','validated profile command writes account icon');
+check(changed.otherCharacters![0].character.profileIconId==='starter:runic-scholar','icon change mirrors other character');
+const switched=executeGameCommand(changed,{type:'roster_switch',args:{id:'LOCAL_CHAR_1'}},1000).state;
+check(switched.character!.profileIconId==='starter:runic-scholar','character switch preserves account icon');
+check(normalizeSave(switched).account.profileIconId==='starter:runic-scholar','shared icon survives save normalization');
+const titleOnly=executeGameCommand(switched,{type:'profile',args:{profileTitle:'Adventurer'}},1000).state;
+check(titleOnly.account.profileIconId==='starter:runic-scholar','unrelated title write preserves icon');
+rejects(()=>executeGameCommand(switched,{type:'profile',args:{profileIconId:'class:DAWNKEEPER'}},1000));
+const unseededOnline={...multi,character:{...alt,id:'00000000-0000-0000-0000-000000000002'},otherCharacters:[{...multi.otherCharacters[0],character:{...first,id:'00000000-0000-0000-0000-000000000001'}}]};
+check(normalizeProfileIcon(unseededOnline).account.profileIconId===undefined,'online legacy multi-roster cannot guess first-created UUID');
+
+for(const id of ['ascendant-celestial-crown-icon','ascendant-draconic-ruby-icon']){
+ check(!profileIconCollection(state).some(row=>row.id===id),'private icon invisible before grant');
+ rejects(()=>selectProfileIcon(state,id));
+ const granted={...state,account:{...state.account,unlockedProfileIconIds:[id]}};
+ check(profileIconCollection(granted).find(row=>row.id===id)?.artworkReady,'granted icon has bundled artwork');
+ const privateSelection=selectProfileIcon(granted,id);
+ check(normalizeProfileIcon(privateSelection).character?.profileIconId===id,'granted icon survives icon normalization');
+ check(normalizeProfileIcon({...privateSelection,account:{...privateSelection.account,unlockedProfileIconIds:[]}}).character?.profileIconId==='class:IRONWARDEN','revocation restores class portrait');
+ check(JSON.stringify(effectiveStats(privateSelection))===before,'private icon grants no power');
+}
 console.log('Profile icon selection, ownership, commands and zero-bonus checks passed');

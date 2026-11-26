@@ -45,11 +45,17 @@ export const SOUND_EFFECT_ASSETS={
 export const MUSIC_TRACK_ASSETS={
   asterfall:{source:require('../../assets/audio/music/asterfall.mp3') as AudioSource},
   boss:{source:require('../../assets/audio/music/boss.mp3') as AudioSource},
+  boss_A:{source:require('../../assets/audio/music/boss_A.mp3') as AudioSource},
+  boss_B:{source:require('../../assets/audio/music/boss_B.mp3') as AudioSource},
   dungeon:{source:require('../../assets/audio/music/dungeon.mp3') as AudioSource},
+  dungeon_A:{source:require('../../assets/audio/music/dungeon_A.mp3') as AudioSource},
+  dungeon_B:{source:require('../../assets/audio/music/dungeon_B.mp3') as AudioSource},
+  frostfall_dungeon:{source:require('../../assets/audio/music/frostfall_dungeon.mp3') as AudioSource},
   frostmarch:{source:require('../../assets/audio/music/frostmarch.mp3') as AudioSource},
   sunscar:{source:require('../../assets/audio/music/sunscar.mp3') as AudioSource},
-  town:{source:require('../../assets/audio/music/town.mp3') as AudioSource},
   world_boss:{source:require('../../assets/audio/music/world_boss.mp3') as AudioSource},
+  world_boss_A:{source:require('../../assets/audio/music/world_boss_A.mp3') as AudioSource},
+  world_boss_B:{source:require('../../assets/audio/music/world_boss_B.mp3') as AudioSource},
 } as const;
 export type SoundEffectId=keyof typeof SOUND_EFFECT_ASSETS;
 export type MusicTrackId=keyof typeof MUSIC_TRACK_ASSETS;

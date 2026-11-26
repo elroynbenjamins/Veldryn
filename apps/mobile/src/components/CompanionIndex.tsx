@@ -1,10 +1,10 @@
 import {useMemo,useState} from 'react';
 import {Image,Pressable,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
-import {COMBAT_COMPANIONS} from '../content/combat-companions';
+import {visibleCombatCompanions} from '../content/combat-companions';
 import {UiIcon} from './UiIcon';
 import type {UiIconName} from '../theme/ui-icons';
 import {formatLocalizedNumber} from '../i18n/translator';
-import {COMPANION_INDEX_COUNTS,companionIndexGroup} from '../core/companion-index-availability';
+import {companionIndexGroup} from '../core/companion-index-availability';
 import {GUILD_SHOP_CATALOGUE} from '../../../../packages/guild-shop/src/catalogue';
 import type {CombatCompanionRole,CompanionUnlockRequirementType} from '../core/combat-companion-types';
 import type {GameState} from '../core/types';
@@ -31,6 +31,7 @@ const roleOrder:readonly Role[]=['all','damage','tank','support'];
 
 export interface CompanionIndexProps{
  state:GameState;
+ now?:number;
  hiddenIds:ReadonlySet<string>;
  onOpen:(id:string)=>void;
  onTrain:(id:string)=>void;
@@ -39,25 +40,27 @@ export interface CompanionIndexProps{
 }
 
 /** A single intent per tab: manage what you own, earn available recruits, or review past events. */
-export function CompanionIndex({state,hiddenIds,onOpen,onTrain,onBond,onCodex}:CompanionIndexProps){
+export function CompanionIndex({state,now=Date.now(),hiddenIds,onOpen,onTrain,onBond,onCodex}:CompanionIndexProps){
  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]),language=useGameLanguage(),t=companionTranslator(language);
  const {width}=useWindowDimensions(),wide=width>=680;
  const [tab,setTab]=useState<IndexTab>(()=>(state.account.unlockedCombatCompanionIds?.length??0)>0?'owned':'unlock'),[role,setRole]=useState<Role>('all'),[roleMenuOpen,setRoleMenuOpen]=useState(false),[query,setQuery]=useState('');
  const ownedIds=new Set(state.account.unlockedCombatCompanionIds??[]);
- const inIndex=COMBAT_COMPANIONS.filter(def=>companionIndexGroup(def)!=='comingSoon');
+ const roster=visibleCombatCompanions(state.account,now);
+ const groupFor=(def:typeof roster[number])=>def.origin.type==='event'?'event':companionIndexGroup(def);
+ const inIndex=roster.filter(def=>groupFor(def)!=='comingSoon');
  const unlocked=inIndex.filter(def=>ownedIds.has(def.id)).length;
- const publicTotal=COMPANION_INDEX_COUNTS.available+COMPANION_INDEX_COUNTS.event;
- const unlockCount=inIndex.filter(def=>companionIndexGroup(def)==='available'&&!ownedIds.has(def.id)).length;
+ const publicTotal=inIndex.length;
+ const unlockCount=inIndex.filter(def=>groupFor(def)==='available'&&!ownedIds.has(def.id)).length;
  const tabs:{id:IndexTab;title:string;count:number}[]=[
   {id:'owned',title:t('My companions'),count:unlocked},
   {id:'unlock',title:t('Unlock'),count:unlockCount},
-  {id:'event',title:t('Past events'),count:COMPANION_INDEX_COUNTS.event},
+  {id:'event',title:t('Past events'),count:inIndex.filter(def=>groupFor(def)==='event').length},
  ];
  const sectionTitle=tab==='owned'?t('Your companions'):tab==='unlock'?t('Companions to unlock'):t('Previously released companions');
  const visible=useMemo(()=>{
   const q=query.trim().toLocaleLowerCase(language);
-  return COMBAT_COMPANIONS.filter(def=>{
-   const group=companionIndexGroup(def);
+  return roster.filter(def=>{
+   const group=groupFor(def);
    if(group==='comingSoon')return false;
    const owned=ownedIds.has(def.id),hidden=!owned&&hiddenIds.has(def.id);
    if(tab==='owned'&&!owned)return false;
@@ -82,9 +85,9 @@ export function CompanionIndex({state,hiddenIds,onOpen,onTrain,onBond,onCodex}:C
    }
    return a.name.localeCompare(b.name);
   });
- },[state,tab,role,query,hiddenIds,language]);
- const candidate=companionNextUnlockTargets(state,COMBAT_COMPANIONS.length)
-  .find(({def})=>companionIndexGroup(def)==='available'&&!hiddenIds.has(def.id)&&def.origin.id!=='GUILD_TOKEN_SHOP');
+ },[state,now,tab,role,query,hiddenIds,language]);
+ const candidate=companionNextUnlockTargets(state,roster.length)
+  .find(({def})=>groupFor(def)==='available'&&!hiddenIds.has(def.id)&&def.origin.id!=='GUILD_TOKEN_SHOP');
  const candidateArt=candidate?companionArtSource(candidate.def.id):undefined;
  const switchTab=(next:IndexTab)=>{setTab(next);setRole('all');setQuery('');setRoleMenuOpen(false);};
  const resetFilters=()=>{setRole('all');setQuery('');setRoleMenuOpen(false);};

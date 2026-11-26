@@ -21,6 +21,8 @@ assert.ok(auth.includes('!googleLinked&&googleAccountLinkingEnabled&&<GoogleBran
 assert.ok(auth.includes('googleAccountLinkingEnabled&&<><GoogleBrandButton'),'Signed-out Google login also waits for verified nonce-bound Android builds');
 const googleSignIn=read('src/online/google-signin.ts');
 assert.ok(googleSignIn.includes("process.env.EXPO_PUBLIC_GOOGLE_ACCOUNT_LINKING_ENABLED==='true'"),'Linking requires a deliberate release flag and stays disabled by default');
+assert.ok(!app.includes('signInAsGuest(')&&!app.includes('guestBootstrapRef'),'App startup never creates guest accounts without explicit input');
+assert.ok(app.includes("await perform({type:'roster_switch',args:{id}},true,false,false,true)"),'Character switching awaits the authenticated gameplay command and propagates its failure, rather than performing an auth action');
 assert.ok(auth.includes('signInAsGuest()')&&auth.includes('upgradeGuestAccount(email,username,accountId)'),'Guest entry and guest-owner linking are preserved');
 assert.ok(auth.includes('accountLinkStep(auth.session.user)')&&auth.includes("linkStep==='set_password'"),'Verified account setup uses the authoritative state machine');
 assert.ok(auth.includes('finishGuestAccount(password,accountId)')&&auth.includes('resendGuestAccountConfirmation(accountId)')&&auth.includes('auth.refreshAccount()'),'Resend, verification refresh and password setup stay connected to real auth');

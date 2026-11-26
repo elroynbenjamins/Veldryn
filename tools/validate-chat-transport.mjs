@@ -92,7 +92,7 @@ const identityCache=load('apps/mobile/src/online/player-identity-cache.ts',{
 const socialListProjection=load('apps/mobile/src/core/social-list-projection.ts',{});
 const socialNameGate={ACCOUNT_SOCIAL_IDENTITY_RELEASED:false};
 const senderProjection=load('apps/mobile/src/core/chat-sender-projection.ts',{});
-const social=load('apps/mobile/src/online/social.ts',{'./supabase':{supabase:client},'./social-identity-client-gate':socialNameGate,'../core/chat-sender-projection':senderProjection,'./chat-history':chatHistory,'./player-identity-cache':identityCache,'../core/social-list-projection':socialListProjection,'../core/player-badges':{normalizePlayerBadges:value=>value},'../core/identity-names':{},'../core/player-name-style-save':nameStyleSave});
+const social=load('apps/mobile/src/online/social.ts',{'./supabase':{supabase:client},'./social-identity-client-gate':socialNameGate,'../core/chat-sender-projection':senderProjection,'./chat-history':chatHistory,'./player-identity-cache':identityCache,'../core/social-list-projection':socialListProjection,'../core/player-badges':{normalizePlayerBadges:value=>value},'../core/identity-names':{},'../core/player-name-style-save':nameStyleSave,'../core/guild-customization':{isFrostfallGuildCosmetic:()=>false}});
 const party=load('apps/mobile/src/online/party-social.ts',{'./supabase':{supabase:client},'./chat-history':chatHistory,'./social':social,'../core/party-social':{},'../core/feature-unlocks':{PARTY_UNLOCK_LEVEL:10}});
 
 assert.equal(chatHistory.CHAT_RECENT_MESSAGE_LIMIT,25);

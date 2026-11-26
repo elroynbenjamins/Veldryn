@@ -41,6 +41,7 @@ export function migrateSave(input:unknown):GameState{
     || activity?.kind==='alchemy'
     || activity?.kind==='processing'
     || !!character?.faith?.selectedBlessingId
+    || !!character?.faith?.selectedBlessingIds && Object.keys(character.faith.selectedBlessingIds).length>0
     || Number((raw.skills as any[])?.find((skill:any)=>skill?.skillId==='alchemy')?.xp)>0
     || Number((raw.rewardRemainders as any)?.['xp:alchemy'])>0
     || !!raw.account && (!!(raw.account as any).collectionPreferences || !!(raw.account as any).guideState)

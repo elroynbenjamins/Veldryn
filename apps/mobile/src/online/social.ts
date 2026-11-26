@@ -1,7 +1,8 @@
+import {isFrostfallGuildCosmetic} from '../core/guild-customization';
 import {supabase} from './supabase';
 import {ACCOUNT_SOCIAL_IDENTITY_RELEASED} from './social-identity-client-gate';
 import {projectChatSenderNames,type CurrentChatSenderName} from '../core/chat-sender-projection';
-import {currentPlayerIdentityViewer,ensurePlayerIdentityViewer,peekPlayerIdentity,playerIdentityDetailsNeedRefresh,playerIdentityNeedsRefresh,storePlayerIdentities,type CachedPlayerIdentity} from './player-identity-cache';
+import {currentPlayerIdentityViewer,ensurePlayerIdentityViewer,peekPlayerIdentity,playerIdentityDetailsNeedRefresh,playerIdentityNeedsRefresh,storePlayerIdentities,playerIdentityIconWriteVersion,type CachedPlayerIdentity} from './player-identity-cache';
 import {CHAT_RECENT_MESSAGE_LIMIT,GUILD_CHAT_RECENT_MESSAGE_LIMIT} from './chat-history';
 import {socialListIdentityIds,withSocialListIdentities} from '../core/social-list-projection';
 import {normalizePlayerBadges,type PlayerBadgeIdentity} from '../core/player-badges';
@@ -81,10 +82,11 @@ export async function guildIdentities(accountIds:readonly string[]):Promise<Map<
   for(let i=0;i<missing.length;i+=100){
    const batch=missing.slice(i,i+100);
    const query=(async()=>{
-    const args={p_account_ids:batch};
+    const args={p_account_ids:batch},iconWriteVersion=playerIdentityIconWriteVersion();
+    let hasIcon=includeIcon;
     let result=await client.rpc(includeIcon?'guild_identities_v3':'guild_identities_v2',args);
-    if(result.error?.code==='PGRST202')result=await client.rpc('guild_identities_v2',args);
-    if(result.error?.code==='PGRST202')result=await client.rpc('guild_identities',args);
+    if(result.error?.code==='PGRST202'){hasIcon=false;result=await client.rpc('guild_identities_v2',args);}
+    if(result.error?.code==='PGRST202'){hasIcon=false;result=await client.rpc('guild_identities',args);}
     if(result.error)throw result.error;
     if(currentPlayerIdentityViewer()!==viewer)return;
     const found=new Map<string,CachedPlayerIdentity>();
@@ -95,7 +97,7 @@ export async function guildIdentities(accountIds:readonly string[]):Promise<Map<
       player_name_style:row.player_name_style??null,player_badges:normalizePlayerBadges(row.player_badges),
      });
     }
-    storePlayerIdentities(found,Date.now(),includeIcon);
+    storePlayerIdentities(found,Date.now(),hasIcon,iconWriteVersion);
    })();
    for(const id of batch)pendingIdentityQueries.set(viewer+':'+id,query);
    void query.finally(()=>{for(const id of batch){if(pendingIdentityQueries.get(viewer+':'+id)===query)pendingIdentityQueries.delete(viewer+':'+id);}}).catch(()=>{});
@@ -229,26 +231,32 @@ export async function guildAppearanceEntitlements(){
  if(constructed.error&&constructed.error.code!=='PGRST202'&&constructed.error.code!=='42883')
   throw constructed.error;
  const row=base.data?.[0];
+ const eventCosmeticIds=(row?.event_cosmetic_ids??[]) as string[];
+ const seasonal=eventCosmeticIds.some(isFrostfallGuildCosmetic)?await client.rpc('guild_frostfall_cosmetic_releases_v1'):null;
+ const releasedEventCosmeticIds=seasonal&&!seasonal.error&&Array.isArray(seasonal.data)?seasonal.data.filter((id:unknown):id is string=>typeof id==='string'&&isFrostfallGuildCosmetic(id)):[];
  const rewardRows=(Array.isArray(constructed.data)?constructed.data:[]) as
   Array<{unlock_id:string;cosmetic_kind:string;owned:boolean;released:boolean}>;
  return {
   guildLevel:Number(row?.guild_level??1),
   bannerGalleryTier:Number(row?.banner_gallery_tier??0),
   pveAchievementIds:(row?.pve_achievement_ids??[]) as string[],
-  eventCosmeticIds:(row?.event_cosmetic_ids??[]) as string[],
+  eventCosmeticIds,releasedEventCosmeticIds,
   revealedEventColorIds:(row?.revealed_event_color_ids??[]) as string[],
   constructionUnlockIds:rewardRows.filter(reward=>reward.owned).map(reward=>reward.unlock_id),
   constructionReleasedIds:rewardRows.filter(reward=>reward.released).map(reward=>reward.unlock_id),
  } satisfies GuildAppearanceEntitlements;
 }
 export async function updateGuildAppearance(input:{backgroundId:GuildBackgroundId;bannerId:GuildBannerId;borderId:GuildFrameId;nameColorId:GuildNameColorId;tagColorId:GuildTagColorId;nameplateId:GuildNameplateId;motto:string}){const client=requireClient();const usesConstruction=input.bannerId==='guild_banner_stormwatch'||input.borderId==='guild_frame_verdant';
- let {data,error}=await client.rpc(usesConstruction?'update_guild_appearance_with_construction_v1':'update_guild_appearance_with_background_v3',{p_background_id:input.backgroundId,p_banner_id:input.bannerId,p_border_id:input.borderId,p_name_color_id:input.nameColorId,p_tag_color_id:input.tagColorId,p_nameplate_id:input.nameplateId,p_motto:input.motto});if(error)throw error;if(!data?.[0])throw new Error('Guild appearance update was not confirmed.');return data[0] as {background_id?:GuildBackgroundId;guild_id:string;banner_id:GuildBannerId;border_id:GuildFrameId;name_color_id:GuildNameColorId;tag_color_id:GuildTagColorId;nameplate_id:GuildNameplateId;motto:string;revision:number}|undefined;}
+ const usesFrostfall=[input.backgroundId,input.bannerId,input.borderId,input.nameColorId].some(isFrostfallGuildCosmetic);
+ let {data,error}=await client.rpc(usesFrostfall?'update_guild_appearance_with_frostfall_v1':usesConstruction?'update_guild_appearance_with_construction_v1':'update_guild_appearance_with_background_v3',{p_background_id:input.backgroundId,p_banner_id:input.bannerId,p_border_id:input.borderId,p_name_color_id:input.nameColorId,p_tag_color_id:input.tagColorId,p_nameplate_id:input.nameplateId,p_motto:input.motto});if(error)throw error;if(!data?.[0])throw new Error('Guild appearance update was not confirmed.');return data[0] as {background_id?:GuildBackgroundId;guild_id:string;banner_id:GuildBannerId;border_id:GuildFrameId;name_color_id:GuildNameColorId;tag_color_id:GuildTagColorId;nameplate_id:GuildNameplateId;motto:string;revision:number}|undefined;}
 export type GuildWeeklyState={guild_id:string;project_progress:number;project_goal:number;boss_hp:number;boss_max_hp:number};
 export async function guildWeeklyState(){const client=requireClient();const {data,error}=await client.rpc('guild_weekly_state');if(error)throw error;return (data?.[0]??null) as GuildWeeklyState|null;}
 export async function guildContribute(kind:'project'|'boss',amount:number){const client=requireClient();const {data,error}=await client.rpc('guild_contribute',{p_kind:kind,p_amount:amount});if(error)throw error;return (data?.[0]??null) as {project_progress:number;boss_hp:number}|null;}
 export async function searchPlayers(query:string){const client=requireClient();const clean=query.trim();if(clean.length<2)throw new Error('Enter at least two characters.');const {data,error}=await client.rpc('social_player_search',{p_query:clean,p_limit:20});if(error)throw error;return withGuildIdentities((data??[]) as FriendSearchResult[]);}
 export async function friends(){const client=requireClient();const {data,error}=await client.rpc('friend_list');if(error)throw error;return withGuildIdentities((data??[]) as FriendEntry[]);}
 export async function friendRequests(){const client=requireClient();const {data,error}=await client.rpc('friend_request_list');if(error)throw error;return withGuildIdentities((data??[]) as FriendRequest[]);}
+/** Badge polling only needs a count, not public profile or guild identity enrichment. */
+export async function incomingFriendRequestCount():Promise<number>{const client=requireClient();const {data,error}=await client.rpc('friend_request_list');if(error)throw error;return ((data??[]) as FriendRequest[]).filter(request=>request.direction==='incoming').length;}
 /** Load social lists once, then resolve public cosmetics in one bounded batch.
  * Membership and block decisions still come from the existing server RPCs.
  * Blocked players are not included in the public cosmetic lookup.

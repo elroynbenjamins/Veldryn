@@ -31,7 +31,7 @@ export function RecruitmentComposer({initial,busy,onPublish,onCancel}:{initial:P
    <Text style={s.postType}>{presentation.shortLabel}</Text>
   </View>
   <View style={s.section}>
-   <Text style={s.label}>{st('Title')}</Text>
+   <Text style={s.label}>{st('Advert title')}</Text>
    <TextInput accessibilityLabel={st('Advert title')} placeholder={st('Looking for active adventurers')} placeholderTextColor={C.muted} value={draft.title} maxLength={80} onChangeText={title=>update({title})} style={s.input}/>
   </View>
   <View style={s.section}>

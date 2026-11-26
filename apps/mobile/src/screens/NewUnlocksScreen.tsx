@@ -11,8 +11,8 @@ import {DisclosureRow} from '../components/DisclosureControl';
 import {unlockInboxDisplayName,type UnlockInboxEntry} from '../core/unlock-inbox';
 import {unlockInboxArtwork} from '../theme/unlock-inbox-art';
 
-const icons={title:'character',background:'world',border:'account',profile_icon:'character',pet:'companions',emote:'chat',guild_cosmetic:'guild'} as const;
-const labels={title:'TITLE',background:'PROFILE BACKGROUND',border:'PROFILE BORDER',profile_icon:'PROFILE ICON',emote:'EMOTE',guild_cosmetic:'GUILD COSMETIC'} as const;
+const icons={title:'character',background:'world',border:'account',effect:'account',profile_icon:'character',pet:'companions',emote:'chat',guild_cosmetic:'guild'} as const;
+const labels={title:'TITLE',background:'PROFILE BACKGROUND',border:'PROFILE BORDER',effect:'SHOWCASE EFFECT',profile_icon:'PROFILE ICON',emote:'EMOTE',guild_cosmetic:'GUILD COSMETIC'} as const;
 export function NewUnlocksScreen({language,entries,onCustomize}:{language:Language;entries:readonly UnlockInboxEntry[];onBack:()=>void;onCustomize:()=>void}){
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const [showAll,setShowAll]=useState(false),[filter,setFilter]=useState<'all'|'title'|'pet'|'other'>('all'),[expanded,setExpanded]=useState<string|null>(null);

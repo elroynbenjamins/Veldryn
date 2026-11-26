@@ -34,7 +34,7 @@ export function PartyRecruitmentComposer({initial,party,busy,onPublish,onCancel}
   </View>
   {recruiting?<Text style={s.hint}>{st('Party language and minimum level follow your Party settings.')}</Text>:null}
   <View style={s.section}>
-   <Text style={s.label}>{st('Title')}</Text>
+   <Text style={s.label}>{st('Recruitment title')}</Text>
    <TextInput accessibilityLabel={st('Recruitment title')} value={draft.title} maxLength={80} onChangeText={title=>patch({title})} placeholder={st('Looking for active teammates')} placeholderTextColor={C.muted} style={s.input}/>
   </View>
   <View style={s.section}>

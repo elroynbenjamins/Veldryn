@@ -1,5 +1,4 @@
 import {COMBAT_COMPANIONS,COMPANION_ASCENSION_BASE_COST,COMPANION_BOND_CONFIG,COMPANION_LEVEL_CURVE,COMPANION_RARITY_CONFIG,COMPANION_SANCTUARY_BOND_BONUS,COMPANION_SANCTUARY_CONFIG,COMPANION_SANCTUARY_TRAINING_XP_PER_DAY,COMPANION_SANCTUARY_WEEKLY_ESSENCE,COMPANION_STAGE_CAPS,SILVERBROOK_STARTER_FISHING_NODES,combatCompanionDef} from '../content/combat-companions';
-import {normalizeClassSkills} from './class-skills';
 import {companionMasteryBonuses} from './companion-mastery';
 import {normalizeMonsterMastery,monsterMasteryRankFromKills} from './monster-mastery';
 import {companionHousingEarnedTier,companionHousingLevelEssenceCost,companionHousingStatMultiplier,companionHousingTier,companionHousingTrainingXpMultiplier,normalizeCompanionHousingTiers} from './companion-housing';
@@ -239,7 +238,6 @@ export function companionUnlockRequirementMet(state:CombatCompanionStateHost,req
   // Companion ownership is account-wide. Any one qualifying character can
   // satisfy a character-bound milestone, including an inactive roster slot.
   const characters=[state.character,...(state.otherCharacters??[]).map(row=>row.character)].filter((row):row is HostCharacter=>!!row);
-  if(target==='KNIFE_DANCER_SKILL_TOTAL')return characters.some(character=>character.classId==='KNIFE_DANCER'&&normalizeClassSkills('KNIFE_DANCER',character.classSkills).reduce((sum,s)=>sum+s.level,0)>=amount);
   if(requirement.type==='monster_mastery')return characters.some(character=>monsterMasteryRankFromKills(normalizeMonsterMastery(character.monsterMasteryPoints)[target]??0)>=amount)||(state.account.companionUnlockProgress?.[target]??0)>=amount;
   if(target==='ASTERFALL_MASTERY_20_ALL')return characters.some(character=>Object.values(normalizeMonsterMastery(character.monsterMasteryPoints)).filter(n=>monsterMasteryRankFromKills(n)>=20).length>=amount)||(state.account.companionUnlockProgress?.[target]??0)>=amount;
   if(requirement.type==='meta'&&target.startsWith('COMPANION_BOND:')){
@@ -498,8 +496,17 @@ export function isCompanionAvailable(def:CompanionDefinition,context:{activeEven
 /** Previously obtained event companions remain owned/equippable even when the event is not currently active. */
 export function canUseOwnedCompanion(state:CombatCompanionStateHost,id:string){return (state.account.unlockedCombatCompanionIds??[]).includes(id)&&!!combatCompanionDef(id);}
 
+/** Batch UI reads share one normalized account snapshot, without persisting it. */
+export function combatCompanionUiModels(state:CombatCompanionStateHost,ids:readonly string[]){
+  if(!ids.length)return [];
+  const clean=sanitizeCombatCompanionState(state);
+  return ids.map(id=>combatCompanionUiModelFromClean(clean,id));
+}
 export function combatCompanionUiModel(state:CombatCompanionStateHost,id:string){
-  const clean=sanitizeCombatCompanionState(state),def=combatCompanionDef(id);if(!def)return undefined;const owned=(clean.account.unlockedCombatCompanionIds??[]).includes(id),p=owned?clean.account.combatCompanionProgress?.[id]:undefined;
+  return combatCompanionUiModelFromClean(sanitizeCombatCompanionState(state),id);
+}
+function combatCompanionUiModelFromClean(clean:CombatCompanionStateHost,id:string){
+  const def=combatCompanionDef(id);if(!def)return undefined;const owned=(clean.account.unlockedCombatCompanionIds??[]).includes(id),p=owned?clean.account.combatCompanionProgress?.[id]:undefined;
   const compatible=!!clean.character,cap=p?companionCurrentLevelCap(def,p):10,max=companionMaxLevel(def),cost=p&&p.level<cap?companionHousingAdjustedLevelCost(def,p,companionHousingTier(id,clean.account.companionHousingTiers)):undefined,tier=p?nextCompanionAscension(def,p):undefined;
   return {def,owned,progress:p,compatible,equipped:clean.character?.equippedCombatCompanionId===id,usableRoles:usableCompanionRoles(def.role),levelCap:cap,maxLevel:max,nextLevelCost:cost,nextAscensionTier:tier,nextAscensionCost:tier?companionAscensionCost(def,tier):undefined,abilityValue:p?companionAbilityValue(def,p):def.activeAbility.scaling.baseValue};
 }

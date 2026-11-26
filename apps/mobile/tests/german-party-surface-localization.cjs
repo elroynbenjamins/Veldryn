@@ -41,26 +41,26 @@ for(const token of [
  'contract.targetPoints.toLocaleString(language)',
 ])assert.ok(source.includes(token),'Party UI lost German guidance or localized control: '+token);
 
-// Compact quick-post delegates minimum-level/language editing to Party settings.
- // Preserve locale-aware copy, server preferences, expiry and submission safety.
+const quickChoices=fs.readFileSync(path.join(__dirname,'../src/components/RecruitmentQuickPostChoices.tsx'),'utf8');
+const socialCatalog=fs.readFileSync(path.join(__dirname,'../src/i18n/social.ts'),'utf8');
 for(const token of [
  'st=useSocialText()',
  "st('Party language and minimum level follow your Party settings.')",
- "st('Recruitment title')",
- "st('Recruitment description')",
  "st('Automatically expires after 24 hours')",
  'if(busy||draft.title.trim().length<3)return;',
  'onPublish({...draft,title:draft.title.trim(),durationDays:1,',
- 'roles:[],requiredRoleCounts:{},flexibleRoles:true,',
+ 'roles:[],requiredRoleCounts:{},flexibleRoles:true',
  "language:recruiting?(prefs.language==='any'?undefined:prefs.language):draft.language",
  'minCombatLevel:recruiting?(prefs.minimumLevel||undefined):undefined',
- 'disabled={busy||draft.title.trim().length<3}',
 ])assert.ok(composer.includes(token),'Party recruitment editor lost localization or submission guard: '+token);
-const social=fs.readFileSync(path.join(__dirname,'../src/i18n/social.ts'),'utf8');
-const choices=fs.readFileSync(path.join(__dirname,'../src/components/RecruitmentQuickPostChoices.tsx'),'utf8');
-assert.ok(social.includes('contextLanguage=useGameLanguage()'),'Quick-post copy must follow game locale');
-for(const token of ['st=useSocialText()', "st('Main interest')","st('Expected activity')",'st(activityHint[activityLevel])'])
- assert.ok(choices.includes(token),'Quick-post choices lost localized copy: '+token);
+for(const key of ['Party language and minimum level follow your Party settings.','Automatically expires after 24 hours','Main interest','Expected activity','Occasional play, no pressure.','Plays several times a week.','Plays most days.','Very dedicated, frequent play.']){
+ const row=socialCatalog.split('\n').find(line=>line.trim().startsWith(JSON.stringify(key)+':'));
+ assert.ok(row,'Missing recruitment translation: '+key);
+ const values=JSON.parse(row.slice(row.indexOf('['),row.lastIndexOf(']')+1));
+ assert.equal(values.length,5);
+ assert.ok(values[0]&&values[0]!==key,'Missing German recruitment copy: '+key);
+}
+for(const key of ['Main interest','Expected activity'])assert.ok(quickChoices.includes("st('"+key+"')"),'Quick-post choice must use localized labels: '+key);
 for(const token of [
  'state.dailyPoints.toLocaleString(language)',
  'state.personalWeeklyPoints.toLocaleString(language)',

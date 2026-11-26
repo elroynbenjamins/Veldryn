@@ -49,6 +49,17 @@ const saveLegacyProfile=(row:ProfileExtensionSelfV43,bio:string,fallbackCharacte
   recordShowcaseIds:row.recordShowcaseIds,masteryShowcaseActionIds:row.masteryShowcaseActionIds,
  });
 
+/** Known validation failures are actionable; unexpected errors stay generic. */
+export function showcaseSaveError(cause:unknown):string{
+ const message=typeof cause==='object'&&cause!==null&&'message' in cause?String(cause.message):'';
+ switch(message){
+  case 'ACHIEVEMENT_NOT_UNLOCKED':return 'One of the selected achievements is not unlocked. Remove it and retry.';
+  case 'RECORD_NOT_AVAILABLE':return 'One of the selected personal records is unavailable. Remove it and retry.';
+  case 'COLLECTION_NOT_OWNED':return 'One of the selected collectibles is not owned. Remove it and retry.';
+  default:return 'Unable to save this character showcase.';
+ }
+}
+
 export function useProfileExtensionDraft(fallbackCharacterId?:string):ProfileExtensionDraft{
  const {session}=useAuthSession();
  const accountId=session?.user.id??'';
@@ -179,8 +190,8 @@ export function useProfileExtensionDraft(fallbackCharacterId?:string):ProfileExt
    setSavedValue(current=>current?.selectedCharacterId===characterId?{...current,...result}:current);
    if(!ACCOUNT_SOCIAL_IDENTITY_RELEASED)setBioState((result as ProfileExtensionSelfV43).bio);
    setNotice(ACCOUNT_SOCIAL_IDENTITY_RELEASED?'Character showcase saved.':'Profile saved.');
-  }catch{
-   if(mounted.current&&version===requestVersion.current)setError('Unable to save this character showcase.');
+  }catch(cause){
+   if(mounted.current&&version===requestVersion.current)setError(showcaseSaveError(cause));
   }finally{if(mounted.current&&version===requestVersion.current)setBusy(false)}
  },[value,bio,busy,guest,showcaseDirty,fallbackCharacterId]);
 

@@ -7,6 +7,8 @@ on:
     paths:
       - '.github/workflows/dungeon-collectibles-hotfix-edge.yml'
       - 'apps/mobile/src/**'
+      - 'apps/mobile/tests/account-collectibles.ts'
+      - 'apps/mobile/tests/expedition-marks-shop-contract.cjs'
       - 'backend/online/**'
       - 'backend/src/**'
       - 'backend/package.json'

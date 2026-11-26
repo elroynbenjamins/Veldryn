@@ -75,8 +75,8 @@ assert(preview.includes('Animated.modulo(Animated.multiply(clock,a.cycles),1)'))
 assert(preview.includes("width:w,height:h,overflow:'hidden'"));
 console.log('PASS: bounded single-clock Abyssal pet atlas and static fallback');
 
-assert(preview.includes('running?<AbyssalFrameLight'));
-assert(preview.indexOf('source={assets.border}')<preview.indexOf('running?<AbyssalFrameLight'));
+assert(preview.includes('running?<AbyssalBorderLight'));
+assert(preview.indexOf('source={assets.border}')<preview.indexOf('running?<AbyssalBorderLight'));
 assert(!preview.includes('motion.crest'));
 for(const b of [{x:157,y:5,w:26,h:26},{x:158,y:176,w:24,h:24}]){
  assert(b.x>=0&&b.y>=0&&b.x+b.w<=S.width&&b.y+b.h<=S.height);
@@ -149,6 +149,45 @@ for(const track of RR){
   }
  }
 }
-assert(preview.includes('fullSet?ABYSSAL_RAIL_PATHS.map'));
-assert(preview.includes('rails.map'));
+assert(preview.includes('showcase fullSet={verifiedFullSet}'));
 console.log('PASS: private review gate, exact matching tiers and safe full-set rail animation');
+
+const root=path.join(__dirname,'../src');
+const source=p=>fs.readFileSync(path.join(root,p),'utf8');
+const layoutMod={exports:{}};
+new Function('exports','module',ts.transpileModule(source('core/profile-frame-layout.ts'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText)(layoutMod.exports,layoutMod);
+const borderMod={exports:{}};
+new Function('exports','module','require',ts.transpileModule(source('core/abyssal-border-motion.ts'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText)(borderMod.exports,borderMod,id=>id==='./profile-frame-layout'?layoutMod.exports:id==='./abyssal-showcase-layout'?mod.exports:require(id));
+const {abyssalBorderTracks,ABYSSAL_BORDER_PHASE:BP,ABYSSAL_BORDER_NODE_BUDGET:NB}=borderMod.exports;
+assert.deepEqual(NB,{standard:6,showcase:8});
+assert.deepEqual(abyssalBorderTracks(0,0),[]);
+assert.deepEqual(abyssalBorderTracks(NaN,205),[]);
+for(const showcase of [false,true]){
+ for(const [w,h] of showcase?[[320,320*205/340],[340,205],[390,390*205/340],[480,480*205/340]]:[[44,44],[104,72],[260,174],[340,205],[480,270]]){
+  const q=Math.min(1,w/300,h/205),k=w/340,side=showcase?28*k:18*q,rail=showcase?34*k:24*q;
+  const tracks=abyssalBorderTracks(w,h,showcase,false),full=abyssalBorderTracks(w,h,showcase,true);
+  assert.equal(tracks.length,showcase?NB.showcase:NB.standard);
+  assert.equal(full.length,tracks.length);
+  for(let z=0;z<tracks.length;z++){
+   const t=tracks[z],u=full[z],r=t.size/2;
+   assert(t.size>0&&t.opacity.some(a=>a>=.5));
+   assert.deepEqual(t.x,u.x);assert.deepEqual(t.y,u.y);
+   assert(u.opacity.every((a,i)=>a>=t.opacity[i]&&a<=.98));
+   for(const seq of [t.x,t.y,t.opacity,u.opacity]){assert.equal(seq.length,BP.length);assert.equal(seq[0],seq.at(-1));}
+   for(let i=1;i<BP.length;i++)for(let j=0;j<=10;j++){
+    const v=j/10,x=t.x[i-1]+v*(t.x[i]-t.x[i-1]),y=t.y[i-1]+v*(t.y[i]-t.y[i-1]);
+    assert(x-r>=-1e-6&&x+r<=w+1e-6&&y-r>=-1e-6&&y+r<=h+1e-6);
+    assert(x+r<=side+1e-6||x-r>=w-side-1e-6||y+r<=rail+1e-6||y-r>=h-rail-1e-6);
+    if(showcase)for(const b of [B.plate,B.guild,B.aura])assert(x+r<=b.x*k+1e-6||x-r>=(b.x+b.w)*k-1e-6||y+r<=b.y*k+1e-6||y-r>=(b.y+b.h)*k-1e-6);
+   }
+  }
+  const left=tracks[0],right=tracks[1];
+  assert(Math.max(...left.y)-Math.min(...left.y)>.4*h);
+  assert.notDeepEqual(left.opacity,right.opacity);
+  if(showcase)assert(full.some((u,i)=>u.opacity.some((a,j)=>a>tracks[i].opacity[j])));
+ }
+}
+const borderLayer=source('components/profile/AbyssalBorderLight.tsx');
+assert(!borderLayer.includes('Animated.loop(')&&!borderLayer.includes('setInterval('));
+assert(borderLayer.includes('pointerEvents="none"')&&borderLayer.includes('running?<AbyssalBorderLight'));
+console.log('PASS: Abyssal tidal border parity, protected geometry, full-set intensity and native lifecycle');

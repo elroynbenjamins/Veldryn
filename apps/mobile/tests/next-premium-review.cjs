@@ -72,3 +72,24 @@ for(const mode of ['standard','showcase'])for(const full of [false,true]){
 }
 assert.notDeepEqual(m.stormforgedV2OrnamentTracks('standard',false)[2].frames,m.stormforgedV2OrnamentTracks('showcase',false)[2].frames);
 console.log('Stormforged V2 calibration: '+stormChecks+' interpolated bounds and opacity/scale assertions passed.');
+
+const env=load('next-premium-environment-review');
+let envChecks=0;
+assert.equal(env.NEXT_ENVIRONMENT_PHASE.length,97);
+for(const theme of ['petal-waltz','thunder-pulse'])for(const full of [false,true]){
+ const tracks=env.nextPremiumEnvironmentTracks(theme,full);
+ assert.equal(tracks.length,6);
+ for(const {radius,frames} of tracks){
+  assert.deepEqual(frames[0],frames.at(-1));
+  for(let i=1;i<frames.length;i++)for(let j=0;j<=10;j++){
+   const a=frames[i-1],b=frames[i],t=j/10;
+   const f=Object.fromEntries(Object.keys(a).map(k=>[k,a[k]+(b[k]-a[k])*t]));
+   assert(env.nextPremiumEnvironmentFits(f,radius));
+   assert(f.opacity>=0&&f.opacity<=.68&&f.scale>=1&&f.scale<=1.15+1e-9);
+   assert(Math.abs(f.rotate)<=25);
+   envChecks+=3;
+  }
+ }
+}
+assert.notDeepEqual(env.nextPremiumEnvironmentTracks('petal-waltz',true),env.nextPremiumEnvironmentTracks('thunder-pulse',true));
+console.log('Next premium environment: '+envChecks+' interpolated safety assertions passed.');

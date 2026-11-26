@@ -329,6 +329,7 @@
   ".core-build/apps/mobile/tests/profile-cosmetic-runtime.js",
   ".core-build/apps/mobile/tests/profile-cosmetic-standard-parity.js",
   ".core-build/apps/mobile/tests/profile-cosmetic-wave2.js",
+  ".core-build/apps/mobile/tests/profile-cosmetic-wave2-integration.js",
   ".core-build/apps/mobile/tests/tideborne-motion-review.js",
   ".core-build/apps/mobile/tests/profile-cosmetic-responsive.js",
   ".core-build/apps/mobile/tests/profile-cosmetic-store.js",

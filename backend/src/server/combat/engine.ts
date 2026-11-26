@@ -1,5 +1,5 @@
 import { clamp, defenseMitigation, damageAfterMitigation, hitChance, roleAdjustedAttackPower } from './calculations';
-import { CombatRng,ActionStreamRngReview,ACTION_STREAM_RNG_QA_V1,type ActionStreamRngReviewPolicy } from './deterministic-rng';
+import { CombatRng,ActionStreamRngReview,ACTION_STREAM_RNG_QA_V1,ACTION_STREAM_RNG_QA_V2,type ActionStreamRngReviewPolicy } from './deterministic-rng';
 import {applyEnemyV2Periodic,applyEnemyV2Modifier,enemyV2AllowedShieldAmount} from './enemy-v2-status-rules';
 import {authorizeEnemyV2EngineExecution,type EnemyV2EngineAuthority} from './v2/enemy-engine-authority';
 import {authorizeEquipmentV2TraitEngine,type EquipmentV2TraitEngineAuthority} from './v2/equipment-trait-engine-authority';
@@ -75,21 +75,21 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
   if(dungeonRewardAuthority!==undefined&&partySyncAuthority!==undefined)throw Error('combat_v2_dungeon_reward_party_sync_unreconciled');
   const syncSources=authorizePartySyncV2(input,partySyncAuthority);
   if(rngReviewPolicy!==undefined){
-    if(rngReviewPolicy!==ACTION_STREAM_RNG_QA_V1)throw Error('combat_v2_unknown_rng_review_policy');
+    if(rngReviewPolicy!==ACTION_STREAM_RNG_QA_V1&&rngReviewPolicy!==ACTION_STREAM_RNG_QA_V2)throw Error('combat_v2_unknown_rng_review_policy');
     if(!enemyV2Authority||!equipmentTraitAuthority||input.players.length!==4||
        input.players.some(p=>p.team!=='players'||p.combatV2?.version!==2)||
        input.enemyDamageProfile!==undefined||dungeonRewardAuthority!==undefined||
        eq2PrivateHitAuthority!==undefined||reviewAiPolicy!=='tactical')
       throw Error('combat_v2_rng_review_scope');
   }
-  const actionRng=rngReviewPolicy===ACTION_STREAM_RNG_QA_V1?new ActionStreamRngReview(input.seed):undefined;
+  const actionRng=rngReviewPolicy!==undefined?new ActionStreamRngReview(input.seed,rngReviewPolicy):undefined;
   const sync=(a:CombatantState,k:SyncStatV2)=>(syncSources.get(a.definition.id)?.[k]??0)/10000;
   const maxMs=input.maxDurationMs ?? 180_000; const tick=input.tickMs ?? 100; const mitigationConstant=input.mitigationConstant ?? 1200; const accuracyScale=input.accuracyScale ?? 1400;
   const players=input.players.map(def=>init(def,input.initialPlayerState?.[def.id])), enemies=input.enemies.map(def=>init(def)), all=[...players,...enemies];
   const v2Encounter=players.some(player=>Boolean(player.definition.combatV2));
   const tacticalAi=v2Encounter&&reviewAiPolicy==='tactical';
   const sequenceHoldsV2=new Map<string,number>();
-  const rng=new CombatRng(input.seed); const events:CombatEvent[]=[{atMs:0,type:'combat_start',...(actionRng?{detail:ACTION_STREAM_RNG_QA_V1}:{})}];
+  const rng=new CombatRng(input.seed,rngReviewPolicy===ACTION_STREAM_RNG_QA_V2); const events:CombatEvent[]=[{atMs:0,type:'combat_start',...(actionRng?{detail:rngReviewPolicy}:{})}];
   let runCapstone:(actor:CombatantState,kind:CapstoneTriggerV2,now:number,target?:CombatantState,ctx?:CapstoneContextV2)=>void=()=>{};
   let runReactive:(actor:CombatantState,kind:ReactiveTriggerV2,now:number,target?:CombatantState,ctx?:ReactiveContextV2)=>void=()=>{};
   const resource=(actor:CombatantState,kind:Parameters<typeof awardCombatResourceV2>[1],now:number,id:string)=>{

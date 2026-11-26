@@ -1,6 +1,6 @@
 # Abyssal Majesty artwork staging (review only)
 
-Upload the thirteen WebP assets from the pass-3 archive here, individually extracted. Do not upload the ZIP or preview image. The supplied manifest contains the expected SHA-256 hashes, dimensions and alpha checks.
+All thirteen WebP assets from the pass-3 archive are present. The supplied manifest contains their expected SHA-256 hashes, dimensions and alpha checks. The focused Abyssal CI test validates every file and the isolated typed asset registry.
 
 | File | Dimensions |
 | --- | --- |
@@ -18,4 +18,4 @@ Upload the thirteen WebP assets from the pass-3 archive here, individually extra
 | abyssal_mote.webp | 48×48 |
 | abyssal_aura.webp | 128×128 |
 
-No live imports or grant changes are authorized here. After upload, verify the file bytes and decoded geometry, then wire a review-only bundle to the isolated preview. The static badge is prepared for a synchronized native animation, not a separate animated GIF. The idle atlas is a provisional deformed pose, pending device review.
+No live imports or grant changes are authorized here. The review-only bundle is registered in `src/theme/abyssal-integration-assets.ts`; no live profile imports exist. Native appearance and decoded geometry still require device QA. The static badge is prepared for a synchronized native animation, not a separate animated GIF. The idle atlas is a provisional deformed pose, pending device review.

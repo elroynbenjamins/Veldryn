@@ -1,0 +1,22 @@
+name: Hidden EQ2 Market source review
+on:
+  pull_request:
+    paths:
+      - 'tools/market-review/**'
+      - '.github/workflows/hidden-eq2-market-source-review.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node tools/market-review/eq2-provenance-contract-v31.mjs
+      - run: node tools/market-review/eq2-settlement-review-v33.mjs

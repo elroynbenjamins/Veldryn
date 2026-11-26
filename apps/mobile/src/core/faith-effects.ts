@@ -1,4 +1,4 @@
-export {blessingRows,faithLevel,selectedFaithBlessing} from './faith';
+export {blessingRows,faithLevel,selectedFaithBlessing,selectedFaithBlessings} from './faith';
 import {updateFaithPreference} from './faith';
 import type {GameState} from './types';
 export const selectFaithBlessing=(state:GameState,id:string)=>updateFaithPreference(state,'blessing',id);

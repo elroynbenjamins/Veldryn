@@ -124,7 +124,7 @@ export function normalizeSave(input:any):GameState{
       :normalizeEnemyFamilyMastery(savedCharacter.familyMasteryPoints),
     masteryMaterialRemainders:Object.fromEntries(Object.entries(savedCharacter.masteryMaterialRemainders??{}).filter(([id,v])=>ITEMS.some(i=>i.id===id&&i.type==='material')&&typeof v==='number'&&Number.isFinite(v)&&v>=0&&v<1)),
     classSkills:normalizeClassSkills(savedCharacter.classId,savedCharacter.classSkills),
-    faith:normalizeFaith(savedCharacter.faith),
+    faith:normalizeFaith({...savedCharacter.faith,xp:Math.max(savedCharacter.faith?.xp??0,Array.isArray(input.skills)?input.skills.find((skill:any)=>skill.skillId==='faith')?.xp??0:0)}),
     trainingFocus:normalizeTrainingFocus(savedCharacter.trainingFocus),
     herbalismMethodId:['balanced','quick','careful','bountiful'].includes(savedCharacter.herbalismMethodId)?savedCharacter.herbalismMethodId:'balanced',
     classTraining:input.activity?undefined:normalizeClassDrills(savedCharacter.classTraining),
@@ -269,6 +269,7 @@ export function normalizeSave(input:any):GameState{
   if(Array.isArray(input.otherCharacters)&&input.otherCharacters.length>4)throw new Error('Account roster exceeds the five-character limit.');
   const rosterIds=new Set<string>();
   const roster=Array.isArray(input.otherCharacters)?input.otherCharacters.filter((entry:any)=>entry?.character?.id).map((entry:any)=>{const id=String(entry.character.id);if(rosterIds.has(id))throw new Error('Duplicate account character.');rosterIds.add(id);const candy=entry.character.activeEventCandy;return {...entry,skills:Array.isArray(entry.skills)?(entry.skills.some((row:any)=>row?.skillId==='forge')?entry.skills:[...entry.skills,{skillId:'forge',xp:0,level:1}]):[{skillId:'forge',xp:0,level:1}],character:{...entry.character,
+ faith:normalizeFaith({...entry.character.faith,xp:Math.max(entry.character.faith?.xp??0,Array.isArray(entry.skills)?entry.skills.find((skill:any)=>skill.skillId==='faith')?.xp??0:0)}),
  familyMasteryPoints:entry.character.familyMasteryPoints===undefined
   ?backfillEnemyFamilyMastery(entry.character.monsterMasteryPoints)
   :normalizeEnemyFamilyMastery(entry.character.familyMasteryPoints),

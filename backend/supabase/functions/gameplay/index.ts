@@ -238,27 +238,39 @@ var init_faith = __esm({
 });
 
 // ../apps/mobile/src/core/faith.ts
-function normalizeFaith(raw2) {
-  const xp = typeof raw2?.xp === "number" && Number.isFinite(raw2.xp) ? Math.max(0, Math.min(MAX_XP, Math.floor(raw2.xp))) : 0;
-  const selected2 = faithBlessingDef(raw2?.selectedBlessingId), p = raw2?.practice, tier = FAITH_TIERS.find((t) => t.id === p?.tierId);
-  const level = levelFromXp(xp), selectedBlessingIds = {};
+function validFaithSelections(raw2, level) {
+  const selections = {};
   if (raw2?.selectedBlessingIds && typeof raw2.selectedBlessingIds === "object") {
     for (const group of FAITH_BLESSING_GROUPS) {
       const blessing = faithBlessingDef(raw2.selectedBlessingIds[group.id]);
-      if (blessing && blessing.level <= level && faithBlessingGroup(blessing) === group.id) selectedBlessingIds[group.id] = blessing.id;
+      if (blessing && blessing.level <= level && faithBlessingGroup(blessing) === group.id) selections[group.id] = blessing.id;
     }
-  } else if (selected2 && selected2.level <= level) {
-    const group = faithBlessingGroup(selected2);
-    if (group) selectedBlessingIds[group] = selected2.id;
+  } else {
+    const blessing = faithBlessingDef(raw2?.selectedBlessingId);
+    if (blessing && blessing.level <= level) {
+      const group = faithBlessingGroup(blessing);
+      if (group) selections[group] = blessing.id;
+    }
   }
+  return selections;
+}
+function safeFaithXp(xp) {
+  return typeof xp === "number" && Number.isFinite(xp) ? Math.max(0, Math.min(MAX_XP, Math.floor(xp))) : 0;
+}
+function stateFaithXp(state) {
+  return Math.max(safeFaithXp(state.character?.faith?.xp), safeFaithXp(state.skills.find((s) => s.skillId === "faith")?.xp));
+}
+function normalizeFaith(raw2) {
+  const xp = safeFaithXp(raw2?.xp);
+  const selected2 = faithBlessingDef(raw2?.selectedBlessingId), p = raw2?.practice, tier = FAITH_TIERS.find((t) => t.id === p?.tierId);
+  const selectedBlessingIds = validFaithSelections(raw2, levelFromXp(xp));
   const legacy = selected2 && Object.values(selectedBlessingIds).includes(selected2.id) ? selected2.id : Object.values(selectedBlessingIds)[0];
   const practice = tier && Number.isSafeInteger(p.remaining) && p.remaining > 0 && p.remaining <= MAX_FAITH_PRACTICES && Number.isSafeInteger(p.lastClaimAtMs) && p.lastClaimAtMs >= 0 && Number.isSafeInteger(p.progressMs) && p.progressMs >= 0 && p.progressMs < tier.seconds * 1e3 ? { tierId: tier.id, remaining: p.remaining, lastClaimAtMs: p.lastClaimAtMs, progressMs: p.progressMs } : void 0;
   return { xp, selectedBlessingId: legacy, selectedBlessingIds, favoriteBlessingIds: Array.isArray(raw2?.favoriteBlessingIds) ? [...new Set(raw2.favoriteBlessingIds.filter((id) => typeof id === "string" && faithBlessingDef(id)))] : [], hideWeakerBlessings: raw2?.hideWeakerBlessings !== false, practice };
 }
 function activeFaithPreferences(state) {
   const raw2 = state.character?.faith;
-  const storedXp = typeof raw2?.xp === "number" && Number.isFinite(raw2.xp) ? raw2.xp : 0;
-  return normalizeFaith({ ...raw2, xp: Math.max(storedXp, state.skills.find((s) => s.skillId === "faith")?.xp ?? 0) });
+  return normalizeFaith({ ...raw2, xp: stateFaithXp(state) });
 }
 function updateFaithPreference(state, kind, id, enabled) {
   if (!state.character) throw new Error("Create a character first.");
@@ -288,7 +300,7 @@ function removeWater(stacks, quantity2) {
 }
 function reserveFaithPractice(state, tierId, count, now) {
   if (!state.character) throw new Error("Create a character first.");
-  const faith = normalizeFaith(state.character.faith), tier = FAITH_TIERS.find((t) => t.id === tierId);
+  const faith = activeFaithPreferences(state), tier = FAITH_TIERS.find((t) => t.id === tierId);
   if (faith.practice) throw new Error("Stop the current practice first.");
   if (!tier || tier.level > faithLevel(state)) throw new Error("Faith tier is locked.");
   if (faith.xp >= MAX_XP) throw new Error("Faith is mastered.");
@@ -300,7 +312,7 @@ function reserveFaithPractice(state, tierId, count, now) {
 }
 function settleFaithPractice(state, now, capSeconds) {
   const empty2 = { xp: 0, gold: 0, kills: 0, items: [], elapsedSeconds: 0, faithActions: 0, faithXp: 0, holyWaterConsumed: 0 };
-  const normalized = normalizeFaith(state.character?.faith), skillXp = state.skills.find((s) => s.skillId === "faith")?.xp ?? 0, faith = { ...normalized, xp: Math.max(normalized.xp, skillXp) }, reservation = state.activity?.faithPractice, reservationTier = FAITH_TIERS.find((t) => t.id === reservation?.tierId);
+  const faith = activeFaithPreferences(state), reservation = state.activity?.faithPractice, reservationTier = FAITH_TIERS.find((t) => t.id === reservation?.tierId);
   const p = faith.practice ?? (reservation && reservationTier ? { tierId: reservation.tierId, remaining: reservation.remainingPractices, lastClaimAtMs: reservation.lastClaimAtMs, progressMs: Math.floor(Math.max(0, Math.min(0.999999, reservation.progressFraction)) * reservationTier.seconds * 1e3) } : void 0), tier = FAITH_TIERS.find((t) => t.id === p?.tierId);
   if (!state.character || !p || !tier || now < p.lastClaimAtMs) return { state, reward: empty2, refund: 0 };
   const elapsed = Math.min(capSeconds * 1e3, now - p.lastClaimAtMs), speed = mealSpeedFactor(state.character, "noncombat"), total = p.progressMs + elapsed * speed;
@@ -312,7 +324,7 @@ function settleFaithPractice(state, now, capSeconds) {
   return { state: { ...state, activity: nextActivity, character: { ...state.character, faith: { ...faith, xp: faith.xp + xp, practice: nextPractice } } }, refund, reward: { ...empty2, xp, elapsedSeconds: Math.floor(elapsed / 1e3), qualifyingActivitySeconds, faithActions: actions, faithXp: xp, holyWaterConsumed: actions * tier.water, faithWaterRefund: refund } };
 }
 function cancelFaithPractice(state) {
-  const faith = normalizeFaith(state.character?.faith), reservation = state.activity?.faithPractice, p = faith.practice ?? (reservation ? { tierId: reservation.tierId, remaining: reservation.remainingPractices, lastClaimAtMs: reservation.lastClaimAtMs, progressMs: 0 } : void 0), tier = FAITH_TIERS.find((t) => t.id === p?.tierId);
+  const faith = activeFaithPreferences(state), reservation = state.activity?.faithPractice, p = faith.practice ?? (reservation ? { tierId: reservation.tierId, remaining: reservation.remainingPractices, lastClaimAtMs: reservation.lastClaimAtMs, progressMs: 0 } : void 0), tier = FAITH_TIERS.find((t) => t.id === p?.tierId);
   if (!state.character || !p || !tier) return { state, refund: 0 };
   return { state: { ...state, character: { ...state.character, faith: { ...faith, practice: void 0 } } }, refund: p.remaining * tier.water };
 }
@@ -330,14 +342,19 @@ var init_faith2 = __esm({
     init_progression();
     MAX_XP = totalXpAtLevel(100);
     MAX_FAITH_PRACTICES = 1e3;
-    faithLevel = (state) => levelFromXp(Array.isArray(state) ? state.find((s) => s.skillId === "faith")?.xp ?? 0 : Math.max(normalizeFaith(state.character?.faith).xp, state.skills.find((s) => s.skillId === "faith")?.xp ?? 0));
+    faithLevel = (state) => levelFromXp(Array.isArray(state) ? safeFaithXp(state.find((s) => s.skillId === "faith")?.xp) : stateFaithXp(state));
     selectedFaithBlessing = (state, group) => {
-      const faith = activeFaithPreferences(state);
-      return faithBlessingDef(group ? faith.selectedBlessingIds[group] : faith.selectedBlessingId);
+      const raw2 = state.character?.faith;
+      if (!raw2) return void 0;
+      const selections = validFaithSelections(raw2, faithLevel(state));
+      const ids2 = Object.values(selections);
+      return faithBlessingDef(group ? selections[group] : raw2.selectedBlessingId && ids2.includes(raw2.selectedBlessingId) ? raw2.selectedBlessingId : ids2[0]);
     };
     selectedFaithBlessings = (state) => {
-      const faith = activeFaithPreferences(state);
-      return FAITH_BLESSINGS.filter((blessing) => Object.values(faith.selectedBlessingIds).includes(blessing.id));
+      const raw2 = state.character?.faith;
+      if (!raw2) return [];
+      const ids2 = Object.values(validFaithSelections(raw2, faithLevel(state)));
+      return ids2.map((id) => faithBlessingDef(id));
     };
     holyWaterAvailable = (state) => [...state.inventory.stacks, ...state.bank.stacks].filter((s) => s.itemId === HOLY_WATER_ID).reduce((n, s) => n + s.quantity, 0);
     faithPracticeAvailability = (state, tierId, count) => {

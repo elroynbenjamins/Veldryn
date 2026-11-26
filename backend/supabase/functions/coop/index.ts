@@ -96,19 +96,11 @@ var init_progression = __esm({
 });
 
 // ../apps/mobile/src/content/faith.ts
-var HOLY_WATER_ID, FAITH_TIERS, FAITH_BLESSINGS, FAITH_BLESSING_GROUPS, HOLY_WATER_SOURCES, faithBlessingDef, faithBlessingGroup;
+var HOLY_WATER_ID, FAITH_BLESSINGS, FAITH_BLESSING_GROUPS, HOLY_WATER_SOURCES, faithBlessingDef, faithBlessingGroup;
 var init_faith = __esm({
   "../apps/mobile/src/content/faith.ts"() {
     "use strict";
     HOLY_WATER_ID = "HOLY_WATER";
-    FAITH_TIERS = [
-      { id: "FAITH_QUIET", name: "Quiet prayer", level: 1, water: 1, xp: 90, seconds: 30 },
-      { id: "FAITH_CANDLE", name: "Candle vigil", level: 10, water: 2, xp: 192, seconds: 30 },
-      { id: "FAITH_LITANY", name: "Sacred litany", level: 25, water: 4, xp: 408, seconds: 30 },
-      { id: "FAITH_DEVOTION", name: "Devotion", level: 40, water: 8, xp: 864, seconds: 30 },
-      { id: "FAITH_COMMUNION", name: "Communion", level: 60, water: 16, xp: 1824, seconds: 30 },
-      { id: "FAITH_ASCENDANT", name: "Ascendant prayer", level: 80, water: 32, xp: 3840, seconds: 30 }
-    ];
     FAITH_BLESSINGS = [
       { id: "EMBER_VOW", name: "Ember Vow", level: 1, family: "attack", bonus: 2 / 100 },
       { id: "VERDANT_WHISPER", name: "Verdant Whisper", level: 5, family: "gathering", bonus: 2 / 100 },
@@ -177,29 +169,29 @@ var init_meal_buffs = __esm({
 });
 
 // ../apps/mobile/src/core/faith.ts
-function normalizeFaith(raw2) {
-  const xp = typeof raw2?.xp === "number" && Number.isFinite(raw2.xp) ? Math.max(0, Math.min(MAX_XP, Math.floor(raw2.xp))) : 0;
-  const selected2 = faithBlessingDef(raw2?.selectedBlessingId), p = raw2?.practice, tier = FAITH_TIERS.find((t) => t.id === p?.tierId);
-  const level = levelFromXp(xp), selectedBlessingIds = {};
+function validFaithSelections(raw2, level) {
+  const selections = {};
   if (raw2?.selectedBlessingIds && typeof raw2.selectedBlessingIds === "object") {
     for (const group of FAITH_BLESSING_GROUPS) {
       const blessing = faithBlessingDef(raw2.selectedBlessingIds[group.id]);
-      if (blessing && blessing.level <= level && faithBlessingGroup(blessing) === group.id) selectedBlessingIds[group.id] = blessing.id;
+      if (blessing && blessing.level <= level && faithBlessingGroup(blessing) === group.id) selections[group.id] = blessing.id;
     }
-  } else if (selected2 && selected2.level <= level) {
-    const group = faithBlessingGroup(selected2);
-    if (group) selectedBlessingIds[group] = selected2.id;
+  } else {
+    const blessing = faithBlessingDef(raw2?.selectedBlessingId);
+    if (blessing && blessing.level <= level) {
+      const group = faithBlessingGroup(blessing);
+      if (group) selections[group] = blessing.id;
+    }
   }
-  const legacy = selected2 && Object.values(selectedBlessingIds).includes(selected2.id) ? selected2.id : Object.values(selectedBlessingIds)[0];
-  const practice = tier && Number.isSafeInteger(p.remaining) && p.remaining > 0 && p.remaining <= MAX_FAITH_PRACTICES && Number.isSafeInteger(p.lastClaimAtMs) && p.lastClaimAtMs >= 0 && Number.isSafeInteger(p.progressMs) && p.progressMs >= 0 && p.progressMs < tier.seconds * 1e3 ? { tierId: tier.id, remaining: p.remaining, lastClaimAtMs: p.lastClaimAtMs, progressMs: p.progressMs } : void 0;
-  return { xp, selectedBlessingId: legacy, selectedBlessingIds, favoriteBlessingIds: Array.isArray(raw2?.favoriteBlessingIds) ? [...new Set(raw2.favoriteBlessingIds.filter((id) => typeof id === "string" && faithBlessingDef(id)))] : [], hideWeakerBlessings: raw2?.hideWeakerBlessings !== false, practice };
+  return selections;
 }
-function activeFaithPreferences(state) {
-  const raw2 = state.character?.faith;
-  const storedXp = typeof raw2?.xp === "number" && Number.isFinite(raw2.xp) ? raw2.xp : 0;
-  return normalizeFaith({ ...raw2, xp: Math.max(storedXp, state.skills.find((s2) => s2.skillId === "faith")?.xp ?? 0) });
+function safeFaithXp(xp) {
+  return typeof xp === "number" && Number.isFinite(xp) ? Math.max(0, Math.min(MAX_XP, Math.floor(xp))) : 0;
 }
-var MAX_XP, MAX_FAITH_PRACTICES, selectedFaithBlessing, selectedFaithBlessings;
+function stateFaithXp(state) {
+  return Math.max(safeFaithXp(state.character?.faith?.xp), safeFaithXp(state.skills.find((s2) => s2.skillId === "faith")?.xp));
+}
+var MAX_XP, faithLevel, selectedFaithBlessing, selectedFaithBlessings;
 var init_faith2 = __esm({
   "../apps/mobile/src/core/faith.ts"() {
     "use strict";
@@ -207,14 +199,19 @@ var init_faith2 = __esm({
     init_faith();
     init_progression();
     MAX_XP = totalXpAtLevel(100);
-    MAX_FAITH_PRACTICES = 1e3;
+    faithLevel = (state) => levelFromXp(Array.isArray(state) ? safeFaithXp(state.find((s2) => s2.skillId === "faith")?.xp) : stateFaithXp(state));
     selectedFaithBlessing = (state, group) => {
-      const faith = activeFaithPreferences(state);
-      return faithBlessingDef(group ? faith.selectedBlessingIds[group] : faith.selectedBlessingId);
+      const raw2 = state.character?.faith;
+      if (!raw2) return void 0;
+      const selections = validFaithSelections(raw2, faithLevel(state));
+      const ids2 = Object.values(selections);
+      return faithBlessingDef(group ? selections[group] : raw2.selectedBlessingId && ids2.includes(raw2.selectedBlessingId) ? raw2.selectedBlessingId : ids2[0]);
     };
     selectedFaithBlessings = (state) => {
-      const faith = activeFaithPreferences(state);
-      return FAITH_BLESSINGS.filter((blessing) => Object.values(faith.selectedBlessingIds).includes(blessing.id));
+      const raw2 = state.character?.faith;
+      if (!raw2) return [];
+      const ids2 = Object.values(validFaithSelections(raw2, faithLevel(state)));
+      return ids2.map((id) => faithBlessingDef(id));
     };
   }
 });

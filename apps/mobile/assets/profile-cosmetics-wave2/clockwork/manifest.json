@@ -294,8 +294,8 @@
         256
       ],
       "mode": "RGBA",
-      "bytes": 158331,
-      "sha256": "d6cce756c8446abce2b5269cb153b831b045c10f8908d6cd82e757b32d18212e"
+      "bytes": 153757,
+      "sha256": "96b4784455052cc4af4640644c32652f5805499604ef68c9416fccb0126f01b2"
     },
     "engineer.png": {
       "size": [
@@ -431,5 +431,10 @@
         1
       ]
     }
-  ]
+  ],
+  "portraitReview": {
+    "decorativeBorder": "none intended",
+    "change": "edge crop to remove concept-sheet corner trim; original item IDs and backgrounds retained",
+    "nativeReview": "pending"
+  }
 }

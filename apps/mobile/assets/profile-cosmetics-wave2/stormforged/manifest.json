@@ -294,8 +294,8 @@
         256
       ],
       "mode": "RGBA",
-      "bytes": 165033,
-      "sha256": "403b63fca0e33fe67ed17c16628a1928fd8f7839da159dca36ea02221eee575f"
+      "bytes": 161750,
+      "sha256": "2b0c37e653873fbb0f093b512c112bd8466947006f495a648882825a2d92b189"
     },
     "static-effect.png": {
       "size": [
@@ -321,8 +321,8 @@
         256
       ],
       "mode": "RGBA",
-      "bytes": 169205,
-      "sha256": "25950cdfab598f7f88eb0a5c8e55e9a2fa4822ee6512ace471e4ca83c8c64bd3"
+      "bytes": 166012,
+      "sha256": "6df6712904a40b083485123e1ebfa57d4a29882344705a1e920aa7a207715d3f"
     },
     "thunderframe.png": {
       "size": [
@@ -407,5 +407,10 @@
         1
       ]
     }
-  ]
+  ],
+  "portraitReview": {
+    "decorativeBorder": "none intended",
+    "change": "edge crop to remove concept-sheet corner trim; original item IDs and backgrounds retained",
+    "nativeReview": "pending"
+  }
 }

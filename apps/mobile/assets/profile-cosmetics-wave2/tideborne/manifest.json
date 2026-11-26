@@ -237,8 +237,8 @@
         256
       ],
       "mode": "RGBA",
-      "sha256": "4a256705d8217c6cf405f8ee2d9cfd0adbc0de129f866c93eb29392b906c835b",
-      "bytes": 140180
+      "sha256": "cd5b362c21f55694c5586fe2e61fcc4402f73610e3446df1ebf6dc0c4f77be9e",
+      "bytes": 142427
     },
     "pearl-glint.png": {
       "size": [
@@ -341,5 +341,10 @@
         "side_rail_midspan_px": 16
       }
     }
-  ]
+  ],
+  "portraitReview": {
+    "decorativeBorder": "none intended",
+    "change": "edge crop to remove concept-sheet corner trim; original item IDs and backgrounds retained",
+    "nativeReview": "pending"
+  }
 }

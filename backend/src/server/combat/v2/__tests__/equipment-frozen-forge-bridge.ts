@@ -3,7 +3,7 @@
  * Strictly QA mock custody verification; NOT real authenticated DB or live.
  */
 import {strict as assert} from 'node:assert';
-import {reviewFrozenForgeSocketsV2} from '../frozen-forge-socket-review';
+import {reviewFrozenForgeSocketsV2,FORGE_SOCKET_MECHANICS_REVIEW_V2,type ForgeSocketReviewPolicyV2} from '../frozen-forge-socket-review';
 import {STAT_GEMS_V1,EFFECT_GEMS_V1,gemItemId,type GemGrade,GEM_BALANCE_REVIEW_V2,STAT_GEMS_REVIEW_V2,EFFECT_GEMS_REVIEW_V2,EFFECT_GEM_REVIEW_MULTIPLIERS_V2} from '../../../equipment/gems/gem-catalog-v1';
 import type {V2GemSidecarState} from '../../../equipment/equipment-crafting-v2-gem-sidecar-types';
 import {writeFileSync} from 'node:fs';
@@ -433,6 +433,71 @@ function make(classId:ClassIdV2,specIndex:0|1,
   statFamilies:12,statFactor:2,effectFamilies:20,effectFactors:EFFECT_GEM_REVIEW_MULTIPLIERS_V2,
   maxVitalityTenSockets:.03*1.2*10,compatibleSocketComparisons:20,deferredEffectComparisons:100,
   releaseEnabled:false}));
+}
+// Eight newly mapped semantics are a separate private proposal. The
+// stronger magnitudes alone must not enable an implicit unit migration.
+{
+ const policy:ForgeSocketReviewPolicyV2={version:'QA_GEM_FULL_MECHANICS',
+  gemBalancePolicy:GEM_BALANCE_REVIEW_V2,mechanicsReview:{version:FORGE_SOCKET_MECHANICS_REVIEW_V2,maxFinalAttackPower:1e8},
+  maxFinalHp:1e8,maxFinalDefense:1e8};
+ const families=['stat_might','stat_ward','stat_savage','stat_piercing','stat_swift','stat_potent','stat_elusive','stat_resolute'];
+ const grades=[1,2,3,4,5] as const,rolls=[80,100,120] as const;
+ const round5=(n:number)=>Math.round(n*1e5)/1e5;
+ const rows:{classId:ClassIdV2;spec:number;family:string;grade:number;roll:number;fraction:number;delta:number}[]=[];
+ const socket=(instanceId:string,gemId:string,rollPercent:number):V2GemSidecarState=>({
+  slots:[{instanceId,stat:{gemId,rollPercent}}],
+  receipts:[{requestId:'QA_MECHANIC_SOCKET_RECEIPT',fingerprint:'gem:'+instanceId+':'+gemId,
+   instanceId,socket:'stat',gemId,source:'gem_pouch',rollPercent,burnedGemId:null,version:7}],
+ });
+ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[])for(const spec of [0,1] as const){
+  const qa=make(classId,spec);
+  const source={...qa.source,ledgerRevision:7,verifyPersisted:(digest:string,revision:number)=>revision===7&&/^[0-9a-f]{64}$/.test(digest)};
+  const baseline=reviewFrozenForgeSocketsV2(qa.actor,qa.build,source,{slots:[],receipts:[]},policy);
+  const raw=(id:string)=>baseline.forgeEvidence.affixSources.filter(x=>x.id===id).reduce((n,x)=>n+x.value,0);
+  const base=baseline.forgeEvidence.stages.afterFrozenBase;
+  const snapshot=JSON.stringify(source.items);
+  for(const family of families)for(const grade of grades)for(const roll of rolls){
+   const def=STAT_GEMS_REVIEW_V2.find(x=>x.familyId===family)!;
+   const state=socket(qa.mint.id,gemItemId(family,grade),roll);
+   const out=reviewFrozenForgeSocketsV2(qa.actor,qa.build,source,state,policy);
+   const fraction=Math.round(def.values[grade]*roll/100*1e9)/1e9;
+   assert.equal(out.gemSources[0].fraction,fraction);
+   const stats={...baseline.stats},effects={...baseline.advanced};
+   let delta:number;
+   switch(family){
+    case 'stat_might':stats.attackPower=round5(base.attackPower*(1+raw('attack_pct')+fraction));delta=stats.attackPower-baseline.stats.attackPower;break;
+    case 'stat_savage':stats.critMultiplier=round5(base.critMultiplier*(1+raw('crit_damage_pct'))+fraction);delta=stats.critMultiplier-baseline.stats.critMultiplier;break;
+    case 'stat_swift':stats.haste=round5(base.haste*(1+fraction)+raw('haste_pp'));delta=stats.haste-baseline.stats.haste;break;
+    case 'stat_ward':effects.wardPp=round5(raw('ward_pp')+fraction);delta=effects.wardPp-baseline.advanced.wardPp;break;
+    case 'stat_piercing':effects.penetrationPp=round5(raw('penetration_pp')+fraction);delta=effects.penetrationPp-baseline.advanced.penetrationPp;break;
+    case 'stat_potent':effects.abilityDamagePct=round5(raw('ability_damage_pct')+fraction);delta=effects.abilityDamagePct-(baseline.advanced.abilityDamagePct??0);break;
+    case 'stat_elusive':effects.evasionPp=round5(raw('evasion_pp')+fraction);delta=effects.evasionPp-baseline.advanced.evasionPp;break;
+    case 'stat_resolute':effects.tenacityPp=round5(raw('tenacity_pp')+fraction);delta=effects.tenacityPp-(baseline.advanced.tenacityPp??0);break;
+    default:throw Error('unknown QA gem');
+   }
+   assert.deepEqual(out.stats,stats);assert.deepEqual(out.advanced,effects);
+   assert.ok(Number.isFinite(delta)&&delta>=-1e-8);
+   assert.equal(out.mechanicsReview,FORGE_SOCKET_MECHANICS_REVIEW_V2);
+   assert.equal(out.requiresMigrationApproval,true);
+   assert.equal(out.canExecuteCombat,false);assert.equal(out.cpApproved,false);assert.equal(out.releaseEnabled,false);
+   rows.push({classId,spec,family,grade,roll,fraction,delta});
+  }
+  assert.equal(JSON.stringify(source.items),snapshot);
+ }
+ assert.equal(rows.length,18*8*5*3);
+ const qa=make('IRONWARDEN',0);
+ const source={...qa.source,ledgerRevision:7,verifyPersisted:(digest:string,revision:number)=>revision===7&&/^[0-9a-f]{64}$/.test(digest)};
+ const state=socket(qa.mint.id,'gem:stat_might:g5',120);
+ const {mechanicsReview:_,...strengthOnly}=policy;
+ assert.throws(()=>reviewFrozenForgeSocketsV2(qa.actor,qa.build,source,state,strengthOnly),/unreconciled_stat_gem/);
+ assert.throws(()=>reviewFrozenForgeSocketsV2(qa.actor,qa.build,source,state,{...policy,gemBalancePolicy:undefined}),/invalid_mechanics_review_policy/);
+ assert.throws(()=>reviewFrozenForgeSocketsV2(qa.actor,qa.build,source,state,{...policy,mechanicsReview:{version:FORGE_SOCKET_MECHANICS_REVIEW_V2,maxFinalAttackPower:1}}),/combined_stat_cap/);
+ const caps={...source.affixPolicy,maxAdvancedEffects:{...source.affixPolicy.maxAdvancedEffects!,wardPp:0}};
+ assert.throws(()=>reviewFrozenForgeSocketsV2(qa.actor,qa.build,{...source,affixPolicy:caps},socket(qa.mint.id,'gem:stat_ward:g5',120),policy),/combined_stat_cap/);
+ console.log('FORGE_SOCKET_MECHANICS_CALIBRATION '+JSON.stringify({policy:FORGE_SOCKET_MECHANICS_REVIEW_V2,
+  projections:rows.length,families,grades,rolls,requiresMigrationApproval:true,cpApproved:false,releaseEnabled:false,
+  byFamily:families.map(family=>{const a=rows.filter(r=>r.family===family);return {family,cases:a.length,zero:a.filter(r=>r.delta===0).length,
+   minDelta:Math.min(...a.map(r=>r.delta)),maxDelta:Math.max(...a.map(r=>r.delta))};})}));
 }
 let checked=0,actualFrozenPositive=0,mappedAffixes=0;
 for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){

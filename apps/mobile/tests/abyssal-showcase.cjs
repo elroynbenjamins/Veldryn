@@ -117,3 +117,38 @@ for(const name of ['PublicProfileScene.tsx','ProfileScenePreview.tsx','profile/P
  assert(!live.includes('abyssal-integration-assets'),'review registry must remain isolated');
 }
 console.log('PASS: all thirteen uploaded artwork files match manifest and typed review registry');
+
+const {ABYSSAL_PRIVATE_REVIEW:R,abyssalReviewTier,ABYSSAL_RAIL_PHASE:RP,ABYSSAL_RAIL_PATHS:RR,ABYSSAL_RAIL_OPACITY:RO}=mod.exports;
+const actual={background:I.background,border:I.border,pet:I.pet,effect:R.effectId,verifiedTitleId:R.titleId,displayedBadges:[I.badge]};
+assert.equal(abyssalReviewTier(false,[R.collectionId],actual),'hidden');
+assert.equal(abyssalReviewTier(true,[],actual),'hidden');
+assert.equal(abyssalReviewTier(true,['ascendant-celestial-sovereign'],actual),'hidden');
+assert.equal(abyssalReviewTier(true,[R.collectionId],{...actual,border:'other'}),'hidden');
+assert.equal(abyssalReviewTier(true,[R.collectionId],{...actual,effect:'other'}),'hidden');
+assert.equal(abyssalReviewTier(true,[R.collectionId],{...actual,pet:null}),'paired');
+assert.equal(abyssalReviewTier(true,[R.collectionId],{...actual,pet:'PET_001'}),'paired');
+assert.equal(abyssalReviewTier(true,[R.collectionId],{...actual,verifiedTitleId:null}),'awakened');
+assert.equal(abyssalReviewTier(true,[R.collectionId],{...actual,displayedBadges:[] }),'awakened');
+assert.equal(abyssalReviewTier(true,[R.collectionId],{...actual,effect:null}),'ascendant');
+assert.equal(abyssalReviewTier(true,[R.collectionId],actual),'ascendant');
+const review=fs.readFileSync(path.join(__dirname,'../src/components/profile/AbyssalReviewScene.tsx'),'utf8');
+assert(review.includes('reviewEnabled=false'));
+assert(review.includes("tier==='hidden'"));
+assert(review.includes("fullSet={tier==='ascendant'}"));
+assert(review.includes('getAbyssalReviewAssets().scene'));
+assert(RR.length<=Q.maxRailMotes);
+assert.equal(RO[0],0);assert.equal(RO.at(-1),0);
+assert.equal(RP[RO.indexOf(Math.max(...RO))],16/24);
+for(const track of RR){
+ assert.equal(track.length,RP.length);
+ for(let i=1;i<track.length;i++){
+  for(let j=0;j<=20;j++){
+   const t=j/20,x=track[i-1][0]+t*(track[i][0]-track[i-1][0]),y=track[i-1][1]+t*(track[i][1]-track[i-1][1]),r=4;
+   assert(x-r>=0&&x+r<=S.width&&y-r>=0&&y+r<=S.height);
+   for(const b of [B.plate,B.guild,B.aura])assert(x+r<=b.x||x-r>=b.x+b.w||y+r<=b.y||y-r>=b.y+b.h);
+  }
+ }
+}
+assert(preview.includes('fullSet?ABYSSAL_RAIL_PATHS.map'));
+assert(preview.includes('rails.map'));
+console.log('PASS: private review gate, exact matching tiers and safe full-set rail animation');

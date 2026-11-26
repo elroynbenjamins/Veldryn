@@ -120,7 +120,7 @@ export function PublicProfileScene({profile,height=205,reduceMotion=false,showGu
   {!review&&newLuxeBorder(renderBorderId)?<VerifiedCandidateBorderEffects id={renderBorderId} active={active} reduceMotion={reduceMotion}/>:null}
  </View>;
  const candidate=!review&&height>=205?candidateShowcase({...visualSelection,effect:profile.effectId},allowed):undefined;
- if(candidate)return <VerifiedCandidateShowcase collectionId={candidate.id} fullSet={candidate.fullSet} equippedPetId={visualSelection.pet} alternatePetSource={pet} active={active} reduceMotion={reduceMotion} fallback={standard}
+ if(candidate)return <VerifiedCandidateShowcase collectionId={candidate.id} displayedBadges={displayedBadges} fullSet={candidate.fullSet} equippedPetId={visualSelection.pet} alternatePetSource={pet} active={active} reduceMotion={reduceMotion} fallback={standard}
   portrait={<CharacterPortraitSelection classId={classId} body={profile.character.bodyPresentation} profileIconId={profile.character.profileIconId} compact style={{width:'100%',height:'100%'}}/>}
   identity={<View style={s.draconicIdentity}>
    <GuildTaggedPlayerName accountId={profile.accountId} badges={profile.playerBadges} name={profile.character.name||profile.displayName} nameStyle={profile.nameStyle??undefined} reduceMotion={!active||reduceMotion} style={s.draconicName} badgeSize={11}/>

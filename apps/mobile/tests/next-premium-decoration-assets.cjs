@@ -86,6 +86,6 @@ for(const file of Object.keys(expected))assert(registry.includes(file.replace('a
 function walk(dir){return fs.readdirSync(dir,{withFileTypes:true}).flatMap(e=>e.isDirectory()?walk(path.join(dir,e.name)):[path.join(dir,e.name)]);}
 for(const file of walk(src)){
  if(!/\.[jt]sx?$/.test(file)||file.endsWith(name+'.ts')||file===path.join(src,'components/profile/NextPremiumShowcaseReview.tsx'))continue;
- assert(!fs.readFileSync(file,'utf8').includes(name),'review registry must remain disconnected: '+file);
+ assert(!fs.readFileSync(file,'utf8').includes(name),'review registry imports remain restricted: '+file);
 }
 console.log('Verified ten pinned static badge and FX textures; '+total+' bytes.');

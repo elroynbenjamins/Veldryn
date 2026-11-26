@@ -112,7 +112,7 @@ export function ProfileScenePreview({state,backgroundId,active=false}:{state:Gam
   {newLuxeBorder(renderBorderId)?<VerifiedCandidateBorderEffects id={renderBorderId} active={active} reduceMotion={state.settings.reduceMotion}/>:null}
  </View>;
  const candidate=candidateShowcase({...visualSelection,effect:character.profileEffectId},allowed);
- if(candidate)return <VerifiedCandidateShowcase collectionId={candidate.id} fullSet={candidate.fullSet} equippedPetId={visualSelection.pet} alternatePetSource={petSource} active={active} reduceMotion={state.settings.reduceMotion} fallback={standard}
+ if(candidate)return <VerifiedCandidateShowcase collectionId={candidate.id} displayedBadges={displayedBadges} fullSet={candidate.fullSet} equippedPetId={visualSelection.pet} alternatePetSource={petSource} active={active} reduceMotion={state.settings.reduceMotion} fallback={standard}
   portrait={<CharacterPortrait state={state} compact style={{width:'100%',height:'100%'}}/>}
   identity={<View style={s.draconicIdentity}>
    <View style={s.nameRow}><PlayerStyledName name={character.name} nameStyle={privateName??effectivePlayerNameStyle(state)} reduceMotion={!active||state.settings.reduceMotion} numberOfLines={1} style={s.draconicName}/><PlayerBadges identity={badges.identity} size={12}/></View>

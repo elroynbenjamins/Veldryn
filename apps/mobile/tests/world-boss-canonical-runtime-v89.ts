@@ -185,17 +185,21 @@ const owned90:WorldBossOwnedRosterSourceV90={
  entitlementRevision:9,unlockedCharacterSlots:3,
  eligibleCharacters:r90.members.map(m=>({...m,accountId:r90.accountId})),
 };
-const goodOwned90=reviewWorldBossOwnedRosterV90(r90,p90,owned90);
+const entitled90={...r90,entitlementRevision:9,unlockedCharacterSlots:3};
+const goodOwned90=reviewWorldBossOwnedRosterV90(entitled90,p90,owned90);
 assert.equal(goodOwned90.structurallyCompatible,true);
 assert.equal(goodOwned90.canAuthorizeCombat,false);
 assert.equal(goodOwned90.canGrantRewards,false);
-const badOwned90=(owned:WorldBossOwnedRosterSourceV90,code:string)=>{
- const result=reviewWorldBossOwnedRosterV90(r90,p90,owned);
+const badOwned90=(owned:WorldBossOwnedRosterSourceV90,code:string,reservation=entitled90)=>{
+ const result=reviewWorldBossOwnedRosterV90(reservation,p90,owned);
  assert.equal(result.structurallyCompatible,false);
  assert.ok(result.blockers.includes(code),JSON.stringify(result.blockers));
  assert.equal(result.releaseReady,false);
 };
-badOwned90({...owned90,unlockedCharacterSlots:2},'unlocked_character_slots_exceeded');
+badOwned90({...owned90,unlockedCharacterSlots:2},'unlocked_character_slots_exceeded',
+ {...entitled90,unlockedCharacterSlots:2});
+badOwned90({...owned90,unlockedCharacterSlots:4},'invalid_owned_roster_source');
+badOwned90({...owned90,entitlementRevision:10},'invalid_owned_roster_source');
 badOwned90({...owned90,unlockedCharacterSlots:0},'invalid_owned_roster_source');
 badOwned90({...owned90,unlockedCharacterSlots:6},'invalid_owned_roster_source');
 badOwned90({...owned90,entitlementRevision:0},'invalid_owned_roster_source');

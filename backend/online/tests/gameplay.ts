@@ -66,14 +66,20 @@ async function fullSetHttpRouting(){
  const collection='ascendant-sakura-enchantment',preset='ascendant-sakura-name';
  const command={type:'ultra_luxe_full_set',args:{collectionId:collection,characterId:cid,expectedNameId:null}};
  const body={requestId:'luxe_full_set_http_fixture_123456789',expectedVersion:7,command};
- let reads=0,commits=0,mode:'normal'|'stale'='normal';
+ let reads=0,commits=0,undos=0,mode:'normal'|'stale'='normal';
  const services:GameplayServices={
   authenticate:async token=>token==='alice-token'?uid:null,randomId:()=>{throw Error('unexpected_random');},randomRoll:()=>{throw Error('unexpected_random');},
   rpc:async<T>(name:string,args:Record<string,unknown>):Promise<T>=>{
    if(name==='record_online_command_outcome_server_v1')return null as T;
    assert.equal(args.p_account_id,uid);
    if(name==='load_online_game_ultra_luxe_v1'){reads++;return {state,version:7,walletGold:state.character!.gold,serverNow:1,ultraLuxeCollectionIds:[collection]} as T;}
-   assert.equal(name,'commit_ultra_luxe_full_set_server_v1');commits++;
+   if(name==='undo_ultra_luxe_full_set_server_v1'){
+     undos++;assert.equal(args.p_equip_request_id,body.requestId);assert.equal(args.p_character_id,cid);
+     assert.equal(args.p_expected_version,8);assert.equal(Object.keys(args).length,6);
+     if(mode==='stale')throw new GameplayError('STALE_ULTRA_LUXE_UNDO');
+     return {gameplay:{accountId:uid,state,version:9,serverNow:2},replayed:false,nameSelection:{accountId:uid,ownedIds:[preset],selectedId:null}} as T;
+    }
+    assert.equal(name,'commit_ultra_luxe_full_set_server_v1');commits++;
    if(mode==='stale')throw new GameplayError('STALE_ULTRA_LUXE_NAME_SELECTION');
    const response=args.p_response as {state:GameState;version:number};
    assert.equal(response.state.character?.profileTitle,'Sakura Dreamkeeper');
@@ -95,6 +101,16 @@ async function fullSetHttpRouting(){
  assert.equal(reads,1);assert.equal(commits,1);
  mode='stale';assert.equal((await request(enabled)).status,409);
  assert.equal(reads,2);assert.equal(commits,2);
+ const undoBody={requestId:'luxe_undo_set_http_fixture_123456789',expectedVersion:8,command:{type:'ultra_luxe_full_set_undo',args:{characterId:cid,equipRequestId:body.requestId}}};
+ const undoEnabled={...enabled,ultraLuxeUndoAuthority:true};
+ assert.equal((await request(enabled,undoBody)).status,403);
+ assert.equal((await request({ultraLuxeUndoAuthority:true},undoBody)).status,403);
+ assert.equal((await request(undoEnabled,undoBody,'invalid-token')).status,401);
+ assert.equal((await request(undoEnabled,{...undoBody,command:{type:'claim'}})).status,400);
+ assert.equal(undos,0);
+ mode='normal';const undone=await request(undoEnabled,undoBody);assert.equal(undone.status,200);assert.equal((await undone.json()).nameSelection.selectedId,null);
+ mode='stale';assert.equal((await request(undoEnabled,undoBody)).status,409);
+ assert.equal(undos,2);assert.equal(reads,2);assert.equal(commits,2);
  console.log('PASS combined Ultra Luxe HTTP dispatch, independent authority flags, receipt prefix, account scope and stale conflict');
 }
 

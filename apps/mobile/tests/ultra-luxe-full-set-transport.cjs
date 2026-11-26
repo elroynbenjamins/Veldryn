@@ -42,7 +42,7 @@ const sql=fs.readFileSync(path.join(repo,'docs/roadmap/ultra-luxe-full-set-commi
    const p=args.p_response,hero=p.state.character;
    assert.deepEqual(hero.equipment,state.character.equipment);assert.equal(hero.gold,123);assert.equal(hero.profileIconId,'old-icon');
    assert.equal(hero.profileBackgroundId,scene);assert.equal(hero.profileBorderId,frame);assert.equal(hero.selectedCosmeticPetId,pet);assert.equal(hero.profileTitle,title);assert.equal(hero.profileEffectId,undefined);
-   return {replayed,gameplay:replayed?{state:p.state,version:8,serverNow:1}:p,nameSelection:{accountId,ownedIds:[preset],selectedId:preset}};
+   return {replayed,gameplay:replayed?{state:p.state,version:8,serverNow:1}:p,nameSelection:{accountId,ownedIds:[preset],selectedId:preset},undoEquipRequestId:requestId};
   }};
   await assert.rejects(server.executeUltraLuxeFullSetCommand({...services,enabled:false},accountId,body),/feature_not_released/);
   await assert.rejects(server.executeUltraLuxeFullSetCommand(services,'',body),/auth_required/);
@@ -51,6 +51,7 @@ const sql=fs.readFileSync(path.join(repo,'docs/roadmap/ultra-luxe-full-set-commi
   }
   assert.equal(calls.length,0);
   const result=await server.executeUltraLuxeFullSetCommand(services,accountId,body);
+  assert.equal(result.undoEquipRequestId,requestId);
   assert.equal(m.confirmUltraLuxeFullSetReadback(plan,scope,result),'confirmed');
   replayed=true;
   const replay=await server.executeUltraLuxeFullSetCommand(services,accountId,body);

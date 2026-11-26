@@ -237,8 +237,8 @@
         256
       ],
       "mode": "RGBA",
-      "sha256": "cd5b362c21f55694c5586fe2e61fcc4402f73610e3446df1ebf6dc0c4f77be9e",
-      "bytes": 142427
+      "sha256": "a08d7014f2a44926426b584a9051d3716451cd074fef08c9d0ff366877b2a71b",
+      "bytes": 121591
     },
     "pearl-glint.png": {
       "size": [
@@ -273,8 +273,8 @@
         256
       ],
       "mode": "RGBA",
-      "sha256": "1682ceff2051d3dc58bcec37bb328afc034bba329e2b5e988a89045798c048bd",
-      "bytes": 144781
+      "sha256": "ed333dac9ca978c7204a9cc2fba195e6219bade26838c47abc29055470c14a20",
+      "bytes": 133050
     },
     "static-effect.png": {
       "size": [
@@ -346,5 +346,6 @@
     "decorativeBorder": "none intended",
     "change": "edge crop to remove concept-sheet corner trim; original item IDs and backgrounds retained",
     "nativeReview": "pending"
-  }
+  },
+  "portraitTreatment": "Regenerated borderless transparent bust candidates; same collection identity and IDs; native visual approval pending."
 }

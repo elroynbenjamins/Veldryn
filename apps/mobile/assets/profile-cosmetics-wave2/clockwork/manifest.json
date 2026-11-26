@@ -294,8 +294,8 @@
         256
       ],
       "mode": "RGBA",
-      "bytes": 153757,
-      "sha256": "96b4784455052cc4af4640644c32652f5805499604ef68c9416fccb0126f01b2"
+      "bytes": 125795,
+      "sha256": "0628d84629c390eaa8dad65301afb8e421c6eee0b664f5f777f080a0cb3e299f"
     },
     "engineer.png": {
       "size": [
@@ -303,8 +303,8 @@
         256
       ],
       "mode": "RGBA",
-      "bytes": 146073,
-      "sha256": "ab1b9f4241267237e37ba3daa071750da7bca434ec93944d58c1441a81c8f5fa"
+      "bytes": 113121,
+      "sha256": "8e3540e6d8244cfbdd1add0994f2c7dc6b6b5d3bcba9e94ccb075447d1ed1603"
     },
     "gear-mote.png": {
       "size": [
@@ -436,5 +436,6 @@
     "decorativeBorder": "none intended",
     "change": "edge crop to remove concept-sheet corner trim; original item IDs and backgrounds retained",
     "nativeReview": "pending"
-  }
+  },
+  "portraitTreatment": "Regenerated borderless transparent bust candidates; same collection identity and IDs; native visual approval pending."
 }

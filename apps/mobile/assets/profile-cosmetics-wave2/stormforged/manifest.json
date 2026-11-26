@@ -294,8 +294,8 @@
         256
       ],
       "mode": "RGBA",
-      "bytes": 161750,
-      "sha256": "2b0c37e653873fbb0f093b512c112bd8466947006f495a648882825a2d92b189"
+      "bytes": 126233,
+      "sha256": "1ce308e33d4810d43628e68efc59b780d55f786719744c61616da2d0387fb907"
     },
     "static-effect.png": {
       "size": [
@@ -321,8 +321,8 @@
         256
       ],
       "mode": "RGBA",
-      "bytes": 166012,
-      "sha256": "6df6712904a40b083485123e1ebfa57d4a29882344705a1e920aa7a207715d3f"
+      "bytes": 133447,
+      "sha256": "a206ef782b8ac796a9bdbebc3dd4b3f4e66f34e2228d9259f602c1b872c79083"
     },
     "thunderframe.png": {
       "size": [
@@ -412,5 +412,6 @@
     "decorativeBorder": "none intended",
     "change": "edge crop to remove concept-sheet corner trim; original item IDs and backgrounds retained",
     "nativeReview": "pending"
-  }
+  },
+  "portraitTreatment": "Regenerated borderless transparent bust candidates; same collection identity and IDs; native visual approval pending."
 }

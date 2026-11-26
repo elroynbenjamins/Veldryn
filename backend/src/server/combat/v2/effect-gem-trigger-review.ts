@@ -201,3 +201,74 @@ export function reviewBulwarkTriggerV2(g:EffectTriggerReviewGroupV2,
  const next=refresh?now+(g.resonance>=2?5000:4000):expiresAt;
  return {expiresAt:next,reduction:next>now?g.totalValue:0,refreshed:refresh};
 }
+
+/** Private encounter-local stack state. Event sequence is monotonically
+ * increasing for each owner; repeated targets/effects from one authored
+ * action reuse the same sequence. No live actor state is changed. */
+export interface EffectStackReviewStateV2{
+ readonly expiries:readonly number[];readonly readyAt:number;
+ readonly lastAt:number;readonly lastActionSequence:number;
+ readonly previousAbilityId:string|null;
+}
+export interface EffectStackReviewEventV2{
+ readonly now:number;readonly actionSequence:number;
+ readonly kind:'direct_hit'|'ability'|'ally_support'|'tick';
+ readonly eligible:boolean;readonly successful:boolean;
+ readonly critical?:boolean;readonly abilityId?:string;
+}
+export const emptyEffectStackReviewV2=():EffectStackReviewStateV2=>({
+ expiries:[],readyAt:0,lastAt:0,lastActionSequence:-1,previousAbilityId:null,
+});
+/** Shared refresh families preserve a fixed first expiry and stagger
+ * rank-3 decay by two seconds, mirroring the prior authored convention.
+ * Repeated or ineligible actions do not extend their lifespan. */
+export function reviewEffectStackTransitionV2(g:EffectTriggerReviewGroupV2,
+ state:EffectStackReviewStateV2,event:EffectStackReviewEventV2){
+ const family=g.familyId;
+ if(!['effect_momentum','effect_critical_surge','effect_flow','effect_shared_resolve'].includes(family))
+  fail('stack_family');
+ group(g,family);
+ const {now,actionSequence}=event;
+ if(![now,state.lastAt,state.readyAt].every(finite)||now<state.lastAt||
+  !Number.isSafeInteger(actionSequence)||actionSequence<0||
+  !Number.isSafeInteger(state.lastActionSequence)||state.lastActionSequence< -1||
+  state.expiries.some(x=>!finite(x)))fail('stack_input');
+ const cap=family==='effect_momentum'?(g.resonance>=2?6:5):
+  family==='effect_shared_resolve'?(g.resonance===3?3:2):(g.resonance>=2?4:3);
+ if(state.expiries.length>cap)fail('stack_cap');
+ let expiries=state.expiries.filter(x=>x>now).sort((a,b)=>a-b);
+ let readyAt=state.readyAt,lastActionSequence=state.lastActionSequence;
+ let previousAbilityId=state.previousAbilityId,triggered=false;
+ const fresh=actionSequence>lastActionSequence;
+ // Tick reads never spend an action identity. A failed/ineligible
+ // per-target result cannot prevent a later qualifying result of the same
+ // action. Only accepted trigger or eligible Flow observation spends it.
+ if(fresh&&event.eligible&&event.successful){
+  if(family==='effect_momentum'&&event.kind==='direct_hit'&&now>=readyAt){
+   if(expiries.length<cap)expiries.push(now+4000);
+   expiries=expiries.map((_,i)=>now+4000+(g.resonance===3?i*2000:0));
+   readyAt=now+500;lastActionSequence=actionSequence;triggered=true;
+  }else if(family==='effect_critical_surge'&&event.kind==='direct_hit'&&event.critical===true&&now>=readyAt){
+   if(expiries.length<cap){expiries.push(now+5000);triggered=true;}
+   else if(g.resonance===3){expiries[0]=now+5000;triggered=true;}
+   readyAt=now+750;lastActionSequence=actionSequence;
+  }else if(family==='effect_flow'&&event.kind==='ability'){
+   if(!event.abilityId)fail('flow_ability_id');
+   const different=previousAbilityId!==null&&previousAbilityId!==event.abilityId;
+   previousAbilityId=event.abilityId;lastActionSequence=actionSequence;
+   if(different){
+    if(expiries.length<cap)expiries.push(now+6000);
+    expiries=expiries.map((_,i)=>now+6000+(g.resonance===3?i*2000:0));
+    triggered=true;
+   }
+  }else if(family==='effect_shared_resolve'&&event.kind==='ally_support'){
+   if(expiries.length<cap){expiries.push(now+(g.resonance>=2?8000:6000));triggered=true;}
+   lastActionSequence=actionSequence;
+  }
+ }
+ expiries.sort((a,b)=>a-b);
+ return {state:{expiries,readyAt,lastAt:now,lastActionSequence,previousAbilityId},
+  stacks:expiries.length,bonus:expiries.length*g.totalValue,triggered,
+  unit:family==='effect_momentum'?'damage_fraction':family==='effect_shared_resolve'?'support_output_fraction':'haste_fraction',
+  releaseEnabled:false as const};
+}

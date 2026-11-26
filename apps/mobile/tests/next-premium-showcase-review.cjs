@@ -4,7 +4,12 @@ const component=path.join(src,'components/profile/NextPremiumShowcaseReview.tsx'
 // Render pure component structure with a mock native host. This is not device or visual QA.
 const clock={interpolate:config=>({config})};
 const jsx=(type,props)=>typeof type==='function'?type(props):({type,props});
-const rn={View:'View',Image:'Image',Animated:{Image:'Animated.Image',multiply:()=>clock,modulo:()=>clock},StyleSheet:{create:x=>x,absoluteFill:{position:'absolute'}}};
+let starts=0,stops=0,finish,cleanups=[];
+const rn={View:'View',Image:'Image',Pressable:'Pressable',Easing:{linear:x=>x},
+ Animated:{Image:'Animated.Image',View:'Animated.View',multiply:()=>clock,modulo:()=>clock,
+ Value:class {constructor(v){this.v=v;} interpolate(config){return {config};} setValue(v){this.v=v;}},
+ timing:(value,cfg)=>({start:cb=>{starts++;finish=cb;assert.equal(cfg.useNativeDriver,true);assert.equal(cfg.isInteraction,false);},stop:()=>{stops++;}})},
+ StyleSheet:{create:x=>x,absoluteFill:{position:'absolute'}}};
 const cache=new Map();
 function load(file){
  if(cache.has(file))return cache.get(file);
@@ -13,7 +18,7 @@ function load(file){
  assert(!transpile.diagnostics.some(d=>d.category===ts.DiagnosticCategory.Error),file);
  const mod={exports:{}};cache.set(file,mod.exports);
  const req=name=>{
-  if(name==='react')return {memo:x=>x,useMemo:f=>f()};
+  if(name==='react')return {memo:x=>x,useMemo:f=>f(),useRef:x=>({current:x}),useEffect:f=>{const cleanup=f();if(cleanup)cleanups.push(cleanup);}};
   if(name==='react/jsx-runtime')return {jsx,jsxs:jsx,Fragment:'Fragment'};
   if(name==='react-native')return rn;
   if(name.endsWith('.webp'))return name;
@@ -43,16 +48,21 @@ for(const [i,set] of sets.entries()){
  assert.equal(bySource(live,badge).length,1);
  assert.equal(bySource(live,badge)[0].type,'Image'); // badge never animated
  assert.equal(bySource(live,badge)[0].props.accessibilityLabel,set.badgeName);
+ const press=nodes(live).find(n=>n.type==='Pressable');assert(press);
+ assert.equal(press.props.accessibilityLabel,set.petName);
+ const before=starts;press.props.onPress();press.props.onPress();assert.equal(starts,before+1);
+ finish({finished:true});press.props.onPress();assert.equal(starts,before+2);
+ const previousStops=stops;for(const cleanup of cleanups)cleanup();cleanups=[];assert.equal(stops,previousStops+1);
  const still=render({...p,running:false});
- assert.equal(count(still,'Animated.Image'),0);
+ assert.equal(count(still,'Animated.Image'),0);assert.equal(count(still,'Pressable'),0);
  assert.equal(bySource(still,stem+'_showcase').length,1);
  assert.equal(bySource(still,badge).length,1);
  const alternate=render({...p,petId:'other',alternatePetArt:'other.webp'});
- assert.equal(count(alternate,'Animated.Image'),14);
+ assert.equal(count(alternate,'Animated.Image'),14);assert.equal(count(alternate,'Pressable'),0);
  assert.equal(bySource(alternate,'other.webp').length,1);
  assert.equal(bySource(alternate,stem+'_idle_atlas').length,0);
  const noPet=render({...p,petId:undefined});
- assert.equal(count(noPet,'Animated.Image'),14);
+ assert.equal(count(noPet,'Animated.Image'),14);assert.equal(count(noPet,'Pressable'),0);
  assert.equal(bySource(noPet,stem).length,0);
  assert.equal(bySource(render({...p,badgeId:'other'}),badge).length,0);
  for(const width of [320,480])assert.equal(count(render({...p,width}),'Animated.Image'),15);

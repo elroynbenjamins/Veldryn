@@ -48,6 +48,9 @@ jobs:
           PY
           pnpm install --no-frozen-lockfile
           pnpm exec expo install --check
+          # The core tsconfig resolves Node types from backend/node_modules/@types.
+          # Mirror the established Mobile Core workflow instead of weakening typing.
+          pnpm --dir ../../backend install --frozen-lockfile
           pnpm run typecheck:core
       - name: Verify and package exact dependency outputs
         run: |

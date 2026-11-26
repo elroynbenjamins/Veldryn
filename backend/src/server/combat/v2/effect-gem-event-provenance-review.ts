@@ -122,7 +122,7 @@ export function createEffectEventProvenanceReviewV2(projections:readonly {actorI
   if(family==='effect_retaliation'||family==='effect_sustenance'){
    const maxHp=actorMaxHp.get(e.actorId)!;
    if(!recoverySnapshot||!finite(recoverySnapshot.hp)||recoverySnapshot.hp<=0||
-    recoverySnapshot.hp>maxHp||!finite(recoverySnapshot.shield))fail('recovery_snapshot');
+    recoverySnapshot.hp>maxHp||!finite(recoverySnapshot.shield))throw Error('effect_event_provenance_review_recovery_snapshot');
    if(family==='effect_retaliation'){
     const next=reviewRetaliationHitV2(g,e.at,retaliation.get(e.actorId)??emptyRetaliationReviewV2(),
      maxHp,recoverySnapshot.hp,true,true,true);

@@ -27,13 +27,15 @@ import {
 import {ENEMY_V2_RULESET} from '../../enemy-v2-prototype';
 import {bosses,profiles,setup} from './ten-slot-boss-fixture';
 
-import {ACTION_STREAM_RNG_QA_V1} from '../../deterministic-rng';
+import {ACTION_STREAM_RNG_QA_V1,ACTION_STREAM_RNG_QA_V2} from '../../deterministic-rng';
 const args=process.argv.slice(2);
 const seedArgs=args.filter(a=>a.startsWith('--seed-batch='));
-assert.ok(args.every(a=>a==='--action-stream-review'||/^--seed-batch=[123]$/.test(a))&&
+assert.ok(args.every(a=>a==='--action-stream-review'||a==='--full-range-review'||/^--seed-batch=[123]$/.test(a))&&
+ !(args.includes('--action-stream-review')&&args.includes('--full-range-review'))&&
  new Set(args).size===args.length&&seedArgs.length<=1,'unknown or duplicate matrix argument');
 const seedBatch=seedArgs.length?Number(seedArgs[0].slice('--seed-batch='.length)):0;
-const rngReviewPolicy=args.includes('--action-stream-review')?ACTION_STREAM_RNG_QA_V1:undefined;
+const rngReviewPolicy=args.includes('--full-range-review')?ACTION_STREAM_RNG_QA_V2:
+ args.includes('--action-stream-review')?ACTION_STREAM_RNG_QA_V1:undefined;
 const rngEvidencePolicy=rngReviewPolicy??'legacy-cursor';
 const classes=Object.keys(CLASS_NAMES_V2) as ClassIdV2[];
 const tanks=classes.filter(c=>CLASS_ROLES_V2[c]==='tank');

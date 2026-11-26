@@ -9,7 +9,7 @@ import {CLASS_NAMES_V2,SPECIALIZATIONS_V2,SKILL_IDENTITIES_V2,SKILLS_V2} from '.
 import type {BuildSelectionV2} from '../build-contract';
 import {enemyV2SnapshotDigest} from '../enemy-engine-authority';
 import {launchPlayer} from '../../content/launch-combat';
-import {ACTION_STREAM_RNG_QA_V1} from '../../deterministic-rng';
+import {ACTION_STREAM_RNG_QA_V1,ACTION_STREAM_RNG_QA_V2} from '../../deterministic-rng';
 import {observeRoleCalibrationV2,summarizeRoleCalibrationV2,type RoleCalibrationObservationV2} from '../role-power-calibration-review';
 import {simulateUnifiedEquipmentPersistedPartyCombatV2,type TrustedPersistedPartyExecutionV2} from '../unified-equipment-encounter';
 import {selectReviewSkillLoadoutV2} from '../ability-counterplay-strategies';
@@ -51,26 +51,33 @@ type Metric=ReturnType<typeof measure>;
 type Row={boss:string;party:number;spec:number;band:string;seedIndex:number;metrics:Metric};
 const rows:Row[]=[];
 const reviewLoadouts=process.argv.includes('--matched-loadouts');
-assert.ok(process.argv.slice(2).every(a=>a==='--matched-loadouts'),'unknown matrix argument');
+const args=process.argv.slice(2);
+assert.ok(args.every(a=>a==='--matched-loadouts'||a==='--full-range-review')&&new Set(args).size===args.length,'unknown matrix argument');
+const rngPolicy=args.includes('--full-range-review')?ACTION_STREAM_RNG_QA_V2:ACTION_STREAM_RNG_QA_V1;
 const observations=new Map<string,RoleCalibrationObservationV2[]>();
 type FocusArm='generic'|'alternative'|'role-specialized';
 type FocusRow={caseId:string;boss:string;band:string;classId:ClassIdV2;spec:string;arm:FocusArm;
  sameLoadout:boolean;before:{party:Metric;actor:RoleCalibrationObservationV2};
  after:{party:Metric;actor:RoleCalibrationObservationV2};};
 const focusRows:FocusRow[]=[];
-const explicitSkills:Partial<Record<ClassIdV2,readonly [string,string]>>={
- HEXWEAVER:['Black Thread','Hex Detonation'],
- BASTION:['Layered Fortress','Fortress Rebuff'],
- DREADGUARD:['Grim Resolve','Dark Mantle'],
- IRONWARDEN:['Oathwall','Rune Bash'],
+// Later damage/mitigation skills unlock at 30; level 25 uses unlocked alternatives.
+const explicitSkills:Partial<Record<ClassIdV2,readonly [string,readonly string[]]>>={
+ HEXWEAVER:['Black Thread',['Hex Detonation','Arcane Needle']],
+ BASTION:['Layered Fortress',['Fortress Rebuff']],
+ DREADGUARD:['Grim Resolve',['Dark Mantle','Binding Chain']],
+ IRONWARDEN:['Oathwall',['Rune Bash']],
 };
 function roleSpecialized(classId:ClassIdV2,level:number):BuildSelectionV2['activeSkills']{
  const names=explicitSkills[classId];assert.ok(names);
- return names.map(name=>{
-  const skill=SKILL_IDENTITIES_V2.find(x=>x.classId===classId&&x.name===name);
-  assert.ok(skill&&SKILLS_V2.some(x=>x.id===skill.id&&x.unlockLevel<=level),'unlocked explicit skill '+classId+':'+name);
+ const candidates=[[names[0]],names[1]];
+ const selected=candidates.map(options=>{
+  const skill=options.map(name=>SKILL_IDENTITIES_V2.find(x=>x.classId===classId&&x.name===name))
+   .find(x=>x&&SKILLS_V2.some(row=>row.id===x.id&&row.unlockLevel<=level));
+  assert.ok(skill,'unlocked explicit skill '+classId+':'+options.join('/'));
   return {skillId:skill.id,variantId:skill.variants[0].id};
  });
+ assert.equal(new Set(selected.map(s=>s.skillId)).size,2);
+ return selected;
 }
 const fixedReference=new Map(bosses.map(boss=>{
  const roster=classes.map(c=>launchPlayer(CLASS_NAMES_V2[c],boss.level));
@@ -118,12 +125,12 @@ for(const [partyIndex,ids] of parties.entries())for(const spec of [0,1] as const
   const frozen=JSON.stringify({input,builds:builds.map(x=>x.selected),snapshot,
    items:runtime.map(r=>r.instancesById)});
   const run=(chosen:typeof builds=builds)=>simulateUnifiedEquipmentPersistedPartyCombatV2(
-   input,chosen,runtime,party,true,false,'tactical',ACTION_STREAM_RNG_QA_V1);
+   input,chosen,runtime,party,true,false,'tactical',rngPolicy);
   const result=run();
   // One fixed replay sample per boss/band/spec; all original RNG matrix
   // cases already verify the full deterministic replay contract.
   if(partyIndex===0&&seedIndex===0)assert.deepEqual(result,run(),suffix+' deterministic replay');
-  assert.equal(result.combat.events[0].detail,ACTION_STREAM_RNG_QA_V1);
+  assert.equal(result.combat.events[0].detail,rngPolicy);
   assert.equal(JSON.stringify({input,builds:builds.map(x=>x.selected),snapshot,
    items:runtime.map(r=>r.instancesById)}),frozen);
   {
@@ -161,7 +168,7 @@ for(const [partyIndex,ids] of parties.entries())for(const spec of [0,1] as const
      assert.equal(next.partyPersistenceReview?.binding.combatInputDigest,
       enemyV2SnapshotDigest({...input,players:next.combat.players.map(p=>p.definition),
        enemies:next.combat.enemies.map(e=>e.definition)}));
-     assert.equal(next.combat.events[0].detail,ACTION_STREAM_RNG_QA_V1);
+     assert.equal(next.combat.events[0].detail,rngPolicy);
      const after={party:measure(next.combat),actor:observeRoleCalibrationV2(next.combat,identity)};
      assert.ok(Object.values(after.party).every(Number.isFinite));
      focusRows.push({caseId:suffix,boss:boss.id,band:band.id,classId,spec:specializationId,arm,sameLoadout,before,after});
@@ -208,7 +215,7 @@ if(reviewLoadouts){
   (groups.get(key)??(groups.set(key,[]),groups.get(key)!)).push(row);
  }
  console.log('MATCHED_ROLE_LOADOUTS '+JSON.stringify({kind:'SINGLE_ACTOR_LOADOUT_COUNTERFACTUAL_NOT_RELEASE',
-  comparisons:focusRows.length,hexCases:expectedHex,tankCases:expectedTank,arms:3,
+  policy:rngPolicy,comparisons:focusRows.length,hexCases:expectedHex,tankCases:expectedTank,arms:3,
   byStratum:Object.fromEntries([...groups.entries()].sort(([a],[b])=>a.localeCompare(b)).map(([k,g])=>[k,summarize(g)])),
   caveat:'one character changes two authored skills only; no coefficients or personal stat budgets changed'}));
  for(const row of focusRows.filter(r=>r.before.party.victory>r.after.party.victory||
@@ -223,7 +230,7 @@ function summary(key:string,group:Row[]){
   totals:Object.fromEntries(fields.map(k=>[k,group.reduce((n,r)=>n+r.metrics[k],0)]))};
 }
 console.log('ROLE_PRESSURE_MATRIX '+JSON.stringify({kind:'ROLE_PRESSURE_NOT_CP_OR_RELEASE',
- policy:ACTION_STREAM_RNG_QA_V1,synchronization:false,caseCount:rows.length,seedReplicates:2,
+ policy:rngPolicy,synchronization:false,caseCount:rows.length,seedReplicates:2,
  compositionCount:36,bossCount:6,specializationBands:2,pressureBands:bands,
  fixedReference:Object.fromEntries(fixedReference),maxDurationMs:90000,
  byBand:bands.map(b=>summary(b.id,rows.filter(r=>r.band===b.id))),

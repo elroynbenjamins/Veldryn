@@ -125,6 +125,20 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
       }
     }
   };
+  const emitPrivateStack=(now:number,actor:CombatantState,abilityId:string,rows:readonly {familyId:string;fraction:number;sequence:number;stacks:number}[])=>{
+    for(const row of rows)events.push({atMs:now,type:'gem_state',actorId:actor.definition.id,abilityId,
+      amount:row.fraction,detail:'private_qa_stack_gem:'+row.familyId+':'+row.sequence+':'+row.stacks});
+  };
+  const beginPrivateGemAction=(now:number,actor:CombatantState,abilityId:string)=>{
+    if(privateDamageGem)emitPrivateStack(now,actor,abilityId,privateDamageGem.beginAction(now,actor,abilityId));
+  };
+  const privateGemHaste=(now:number,actor:CombatantState,abilityId:string)=>{
+    if(!privateDamageGem)return 0;
+    const rows=privateDamageGem.haste(now,actor);
+    for(const row of rows)events.push({atMs:now,type:'gem_state',actorId:actor.definition.id,abilityId,
+      amount:row.fraction,detail:'private_qa_haste_gem:'+row.familyId});
+    return rows.reduce((n,r)=>n+r.fraction,0);
+  };
   const spend=(actor:CombatantState,ability:AbilityDefinition,now:number)=>{
     const queued=consumeQueuedCombatBonusV2(actor,ability);
     const resolved=spendCombatResourceV2(actor,queued,now);
@@ -143,6 +157,7 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
       actor.combatV2.scheduledTotemAt=actor.definition.combatV2.capstoneId?.endsWith(':ritual_surge')
         ?[now+6000]:[];
     }
+    beginPrivateGemAction(now,actor,ability.id);
     return resolved.ability;
   };
   // Stable priority and phase ordering are immutable within one fight.
@@ -435,6 +450,8 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
         events.push({atMs:now,type:'heal',actorId:source.definition.id,targetId:source.definition.id,
           abilityId:'V2_LIFESTEAL:'+abilityId,amount:Number(healed.toFixed(2))});}
     }
+    if(privateDamageGem&&eventType==='damage')emitPrivateStack(now,source,abilityId,
+      privateDamageGem.afterDirectHit(now,source,target,abilityId,crit,dealt));
     gemOnDamageTakenV1(now,target,dealt);emitGemState(now);
     if(eventType==='damage'&&!abilityId.startsWith('V2_COUNTER:')){const proc=gemOnDirectHitV1(now,source,target,abilityId,crit);emitGemState(now);if(proc.selfHeal>0&&source.alive){const amount=Math.min(source.definition.stats.maxHp-source.hp,source.definition.stats.maxHp*proc.selfHeal);source.hp+=amount;if(amount>0)events.push({atMs:now,type:'heal',actorId:source.definition.id,targetId:source.definition.id,abilityId:'GEM_RETALIATION',amount:Number(amount.toFixed(2))});}}
     addThreat(target,source,dealt*(effect.threatMultiplier??1)); events.push({atMs:now,type:eventType,actorId:source.definition.id,targetId:target.definition.id,abilityId,amount:Number(dealt.toFixed(2)),...(eventType==='damage'?{critical:crit}:{}),...(heavyHit?{detail:'heavy_hit'}:{}),...(absorbed>0?{absorbed:Number(absorbed.toFixed(2))}:{})});
@@ -942,8 +959,8 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
         else if(ab)ab=sequenceDamageActionV2(actor,ab,ordered,foes,now,available,sequenceHoldsV2);
       }
       if(ab){ const coordinated=healPlanFor(ab);
-        const ts=predictiveTargets??(coordinated?.target?[coordinated.target]:tacticalAi?supportTargetsV2(ab.target,actor,allies,foes,rng,`${now}:${ab.id}:select`,ab):targetsFor(ab.target,actor,allies,foes,rng,`${now}:${ab.id}:select`)); const t=ts[0]; if(t){ sequenceHoldsV2.delete(actor.definition.id+':'+ab.id); actor.cooldownReadyAt[ab.id]=now+Math.round(ab.cooldownMs/(Math.max(.25,1+gemEffectiveHasteV1(actor,now)+eq2Haste(actor,now)+(v2Encounter?Math.max(-.2,Math.min(.2,modifier(actor,'haste',now)+reactiveHasteV2(actor))):0))*(1+sync(actor,'haste_pct')))); if(ab.castTimeMs>0){actor.casting={abilityId:ab.id,completesAt:now+ab.castTimeMs,targetId:t.definition.id};events.push({atMs:now,type:'cast_start',actorId:actor.definition.id,targetId:t.definition.id,abilityId:ab.id});}else{gemOnAbilityUsedV1(now,actor,ab);emitGemState(now);const executed=spend(actor,ab,now);for(const fx of executed.effects){for(const x of (fx.target&&!(((tacticalAi&&(tankV2(actor)||damageV2(actor)))&&predictiveTargets||coordinated?.target)&&fx.target===ab.target)?(tacticalAi?supportTargetsV2(fx.target,actor,allies,foes,rng,`${now}:${ab.id}:effect`,ab,fx):targetsFor(fx.target,actor,allies,foes,rng,`${now}:${ab.id}:effect`)):ts)){if(x.alive)applyEffect(now,actor,x,fx,ab.id);}}} continue; } }
-      if(actor.nextBasicAt<=now){ const t=chooseEnemy(actor,foes,rng,`${now}:${actor.definition.id}:basic`); if(t){applyDamage(now,actor,t,{kind:'damage',coeff:actor.definition.basicAttackCoeff,damageType:'physical',threatMultiplier:actor.definition.role==='tank'?2.5:1},'BASIC');actor.nextBasicAt=now+Math.round(actor.definition.basicAttackMs/(Math.max(.25,1+gemEffectiveHasteV1(actor,now)+eq2Haste(actor,now)+(v2Encounter?Math.max(-.2,Math.min(.2,modifier(actor,'haste',now)+reactiveHasteV2(actor))):0))*(1+sync(actor,'haste_pct'))));} }
+        const ts=predictiveTargets??(coordinated?.target?[coordinated.target]:tacticalAi?supportTargetsV2(ab.target,actor,allies,foes,rng,`${now}:${ab.id}:select`,ab):targetsFor(ab.target,actor,allies,foes,rng,`${now}:${ab.id}:select`)); const t=ts[0]; if(t){ sequenceHoldsV2.delete(actor.definition.id+':'+ab.id); actor.cooldownReadyAt[ab.id]=now+Math.round(ab.cooldownMs/(Math.max(.25,1+gemEffectiveHasteV1(actor,now)+eq2Haste(actor,now)+privateGemHaste(now,actor,ab.id)+(v2Encounter?Math.max(-.2,Math.min(.2,modifier(actor,'haste',now)+reactiveHasteV2(actor))):0))*(1+sync(actor,'haste_pct')))); if(ab.castTimeMs>0){actor.casting={abilityId:ab.id,completesAt:now+ab.castTimeMs,targetId:t.definition.id};events.push({atMs:now,type:'cast_start',actorId:actor.definition.id,targetId:t.definition.id,abilityId:ab.id});}else{gemOnAbilityUsedV1(now,actor,ab);emitGemState(now);const executed=spend(actor,ab,now);for(const fx of executed.effects){for(const x of (fx.target&&!(((tacticalAi&&(tankV2(actor)||damageV2(actor)))&&predictiveTargets||coordinated?.target)&&fx.target===ab.target)?(tacticalAi?supportTargetsV2(fx.target,actor,allies,foes,rng,`${now}:${ab.id}:effect`,ab,fx):targetsFor(fx.target,actor,allies,foes,rng,`${now}:${ab.id}:effect`)):ts)){if(x.alive)applyEffect(now,actor,x,fx,ab.id);}}} continue; } }
+      if(actor.nextBasicAt<=now){ const t=chooseEnemy(actor,foes,rng,`${now}:${actor.definition.id}:basic`); if(t){beginPrivateGemAction(now,actor,'BASIC');applyDamage(now,actor,t,{kind:'damage',coeff:actor.definition.basicAttackCoeff,damageType:'physical',threatMultiplier:actor.definition.role==='tank'?2.5:1},'BASIC');actor.nextBasicAt=now+Math.round(actor.definition.basicAttackMs/(Math.max(.25,1+gemEffectiveHasteV1(actor,now)+eq2Haste(actor,now)+privateGemHaste(now,actor,'BASIC')+(v2Encounter?Math.max(-.2,Math.min(.2,modifier(actor,'haste',now)+reactiveHasteV2(actor))):0))*(1+sync(actor,'haste_pct'))));} }
     }
   }
   events.push({atMs:maxMs,type:'combat_end',detail:'timeout'}); return {victory:false,durationMs:maxMs,reason:'timeout',events,players,enemies};

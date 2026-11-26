@@ -66,3 +66,32 @@ export function rawGemItemId(familyId:string,grade:GemGrade):string{return `raw_
 export function findStatGem(familyId:string):StatGemDefinition|undefined{return STAT_GEMS_V1.find(v=>v.familyId===familyId);}
 export function findEffectGem(familyId:string):EffectGemDefinition|undefined{return EFFECT_GEMS_V1.find(v=>v.familyId===familyId);}
 export function validateGemCatalogV1():string[]{const errors:string[]=[];const ids=[...STAT_GEMS_V1,...EFFECT_GEMS_V1].map(v=>v.familyId);if(new Set(ids).size!==ids.length)errors.push('duplicate_family_id');if(STAT_GEMS_V1.length!==12)errors.push('stat_family_count');if(EFFECT_GEMS_V1.length!==20)errors.push('effect_family_count');for(const e of EFFECT_GEMS_V1)if(e.maxEquippedCopies!==3)errors.push(`${e.familyId}:max_copies`);return errors;}
+
+/** Owner-approved magnitude direction for hidden Combat 2.0 calibration.
+ * V1 remains unchanged. Effect magnitudes are provisional and not runtime
+ * authority; retain all trigger, duration, cap and resonance metadata. */
+export const GEM_BALANCE_REVIEW_V2='gem-balance-review-v2-20261126' as const;
+export type GemBalanceReviewPolicyV2=typeof GEM_BALANCE_REVIEW_V2;
+export const EFFECT_GEM_REVIEW_MULTIPLIERS_V2:Readonly<Record<string,1.25|1.5>>=Object.freeze({
+ effect_momentum:1.25,effect_execution:1.5,effect_opening_strike:1.5,
+ effect_predator:1.25,effect_critical_surge:1.25,effect_ruin:1.25,
+ effect_bulwark:1.25,effect_aegis:1.25,effect_last_stand:1.5,
+ effect_retaliation:1.5,effect_unyielding:1.25,
+ effect_mercy:1.25,effect_benediction:1.5,effect_guardians_gift:1.25,
+ effect_renewal:1.5,effect_shared_resolve:1.25,effect_sustenance:1.5,
+ effect_battle_rhythm:1.5,effect_flow:1.25,effect_opportunist:1.5,
+});
+function scaledGemValuesV2(values:Readonly<Record<GemGrade,number>>,factor:number){
+ return Object.freeze(Object.fromEntries(([1,2,3,4,5] as const).map(g=>[g,
+  Math.round(values[g]*factor*1e9)/1e9])) as Record<GemGrade,number>);
+}
+export const STAT_GEMS_REVIEW_V2:readonly StatGemDefinition[]=Object.freeze(
+ STAT_GEMS_V1.map(def=>Object.freeze({...def,values:scaledGemValuesV2(def.values,2)})));
+export const EFFECT_GEMS_REVIEW_V2:readonly EffectGemDefinition[]=Object.freeze(
+ EFFECT_GEMS_V1.map(def=>{
+  const factor=EFFECT_GEM_REVIEW_MULTIPLIERS_V2[def.familyId];
+  if(!factor)throw Error('gem_v2_missing_effect_magnitude');
+  return Object.freeze({...def,values:scaledGemValuesV2(def.values,factor)});
+ }));
+export function findStatGemReviewV2(familyId:string){return STAT_GEMS_REVIEW_V2.find(v=>v.familyId===familyId);}
+export function findEffectGemReviewV2(familyId:string){return EFFECT_GEMS_REVIEW_V2.find(v=>v.familyId===familyId);}

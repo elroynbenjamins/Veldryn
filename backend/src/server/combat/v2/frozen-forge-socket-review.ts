@@ -7,11 +7,13 @@ import type {CombatantDefinition,CombatStats} from '../types';
 import type {VerifiedSkillBuildV2} from './skill-effects';
 import {compileRealFrozenForgeActorV2,type TrustedFrozenForgeCombatSourceV2} from './equipment-frozen-forge-bridge';
 import {reviewPermanentGemSourcesV2} from './permanent-gem-source-review';
+import type {GemBalanceReviewPolicyV2} from '../../equipment/gems/gem-catalog-v1';
 import type {V2GemSidecarState} from '../../equipment/equipment-crafting-v2-gem-sidecar-types';
 import {enemyV2SnapshotDigest} from './enemy-engine-authority';
 
 export interface ForgeSocketReviewPolicyV2{
  readonly version:string;
+ readonly gemBalancePolicy?:GemBalanceReviewPolicyV2;
  readonly maxFinalHp:number;
  readonly maxFinalDefense:number;
 }
@@ -60,7 +62,7 @@ export function reviewFrozenForgeSocketsV2(
  }};
  const compiled=compileRealFrozenForgeActorV2(actor,build,guardedSource);
  const ids=[...compiled.evidence.equippedInstanceIds].sort();
- const gems=reviewPermanentGemSourcesV2({...guardedSource,sidecar,equippedInstanceIds:ids});
+ const gems=reviewPermanentGemSourcesV2({...guardedSource,sidecar,equippedInstanceIds:ids},policy.gemBalancePolicy);
  // Both independent verifiers read the same source object/revision. Bind the
  // two complete digests and the policy into one additional readback proof.
  const digest=enemyV2SnapshotDigest({source:'QA_FORGE_SOCKET_COMBINED_V1',

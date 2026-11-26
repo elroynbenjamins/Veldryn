@@ -126,3 +126,25 @@ for(const [name,w,h,bytes,sha] of [
 }
 assert(review.includes('background:getParadoxReviewBackgrounds().showcase'));
 console.log('PASS: uploaded wide and square background integrity and fixed review selection');
+
+const {PARADOX_POSE_ATLAS:A,paradoxPoseTimeline,paradoxPoseCell}=mod.exports;
+assert.equal(A.columns*A.rows,A.frames);
+assert.equal(A.frames/A.seconds,Q.petAtlasFps);
+assert.equal(A.seconds*A.cycles*1000,ms);
+assert(A.frames<=Q.maxPetFrames);
+assert(A.frameWidth*A.frameHeight*A.frames*4<=2100000);
+const poseTimeline=paradoxPoseTimeline();
+assert.equal(poseTimeline.inputRange.length,73);
+assert.equal(poseTimeline.frames.length,73);
+assert.equal(poseTimeline.frames[0],0);
+assert.equal(poseTimeline.frames.at(-1),0);
+assert(poseTimeline.inputRange.every((t,i)=>!i||t>poseTimeline.inputRange[i-1]));
+for(const frame of poseTimeline.frames){
+ const cell=paradoxPoseCell(frame);
+ assert(frame>=0&&frame<A.frames&&cell.column<A.columns&&cell.row<A.rows);
+}
+assert(preview.includes('motion&&assets.idleAtlas?'));
+assert(preview.includes('Animated.modulo(Animated.multiply(clock,a.cycles),1)'));
+assert(preview.includes("width:w,height:h,overflow:'hidden'"));
+assert(preview.includes('source={assets.aeon}'));
+console.log('PASS: Aeon native atlas, bounded cells, loop continuity and standalone fallback');

@@ -52,3 +52,32 @@ export function newUltraLuxePatchAllowed(state:GameState,scope:ReviewScope,proje
   patch.scene===c.ids.background||patch.frame===c.ids.border||patch.pet===c.ids.pet||patch.title?.trim().toLowerCase()===c.titleName.toLowerCase()
  )||owned.some(row=>row.id===c.id));
 }
+
+/** Appearance authorization is separate from ownership discovery. Public callers
+ * pass only the server's sanitized appearance marker, never private grant lists. */
+export type NewLuxeAppearance={background?:string|null;border?:string|null;pet?:string|null;effect?:string|null;verifiedTitleId?:string|null;displayedBadges:readonly string[]};
+export function candidateAppearanceIds(selection:NewLuxeAppearance,allowed:readonly string[]){
+ const rows=NEW_ULTRA_LUXE_WARDROBE;
+ const resolve=(kind:'background'|'border'|'pet',id:string|null|undefined)=>{
+  const row=rows.find(c=>c.ids[kind]===id);
+  return row&&!allowed.includes(row.id)?kind==='background'?'asterfall-night':undefined:id;
+ };
+ return {...selection,background:resolve('background',selection.background),border:resolve('border',selection.border),pet:resolve('pet',selection.pet)};
+}
+export function candidateAppearanceHint(selection:Pick<NewLuxeAppearance,'background'|'border'|'pet'>){
+ return NEW_ULTRA_LUXE_WARDROBE.some(c=>c.ids.background===selection.background||c.ids.border===selection.border||c.ids.pet===selection.pet);
+}
+export function candidateShowcase(selection:NewLuxeAppearance,allowed:readonly string[]){
+ const row=NEW_ULTRA_LUXE_WARDROBE.find(c=>allowed.includes(c.id)&&c.ids.background===selection.background&&c.ids.border===selection.border);
+ if(!row)return undefined;
+ const effect=ULTRA_LUXE_EFFECTS[row.id];
+ if(selection.effect&&selection.effect!==effect)return undefined;
+ return {id:row.id,fullSet:selection.pet===row.ids.pet&&selection.verifiedTitleId===row.titleId&&selection.displayedBadges.includes(row.ids.badge)};
+}
+const ULTRA_LUXE_EFFECTS={
+ 'ascendant-abyssal-majesty':'premium:abyssal-majesty:call-of-the-deep',
+ 'ascendant-paradox-eternal':'premium:paradox-eternal:reality-rewritten',
+} as const;
+export function candidateVerifiedTitle(title:string|undefined|null,id:unknown,allowed:readonly string[]){
+ return NEW_ULTRA_LUXE_WARDROBE.find(c=>allowed.includes(c.id)&&c.titleId===id&&c.titleName===title);
+}

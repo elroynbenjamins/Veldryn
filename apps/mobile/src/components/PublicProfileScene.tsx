@@ -62,7 +62,7 @@ export function PublicProfileScene({profile,height=205,reduceMotion=false,showGu
  const effectAnimated=wave2SetFor('effect',profile.effectId??'')?wave2PublicRenderable('effect',profile.effectId??''):animated;
  const equippedBorderArt=!review&&borderAnimated&&renderBorderId?cosmeticArtByBorder.get(renderBorderId):undefined;
  const borderArt=review?.borderArt??equippedBorderArt,effectArt=review?.effectArt??(!review&&effectAnimated&&profile.effectId?cosmeticArtByEffect.get(profile.effectId):undefined);
- const borderRuntime=review?.borderRuntime??(!review&&borderAnimated&&renderBorderId?profileCosmeticRuntimeByBorder.get(renderBorderId):undefined),effectRuntime=review?.effectRuntime??(!review&&animated&&profile.effectId?profileCosmeticRuntimeByEffect.get(profile.effectId):undefined);
+ const borderRuntime=review?.borderRuntime??(!review&&borderAnimated&&renderBorderId?profileCosmeticRuntimeByBorder.get(renderBorderId):undefined),effectRuntime=review?.effectRuntime??(!review&&effectAnimated&&profile.effectId?profileCosmeticRuntimeByEffect.get(profile.effectId):undefined);
  const reviewBorderId=review?.borderRuntime?.borderId;
  const runtimeFallbackBorderId=review?.borderRuntime?.fallbackBorderId??borderRuntime?.fallbackBorderId;
  const directBorder=!review&&renderBorderId?profileBorderSourceById.get(renderBorderId):undefined;

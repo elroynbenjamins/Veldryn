@@ -54,7 +54,7 @@ jobs:
               for p in sorted(root.glob('*.png')):
                   old=p.stat().st_size
                   vals=[]
-                  for mode,args in [('lossless',['-lossless','-z','9']),('q90',['-q','90','-m','6','-alpha_q','100'])]:
+                  for mode,args in [('lossless',['-lossless','-z','6']),('q90',['-q','90','-m','6','-alpha_q','100'])]:
                       out=Path('/tmp')/(p.stem+'-'+mode+'.webp')
                       subprocess.run(['cwebp','-quiet',*args,'-metadata','none',str(p),'-o',str(out)],check=True)
                       new=out.stat().st_size
@@ -83,7 +83,7 @@ jobs:
           for p in paths:
               old=p.stat().st_size
               row=[f'{p}|old={old/1024:.1f}KB']
-              for mode,args in [('lossless',['-lossless','-z','9']),('q90',['-q','90','-m','6','-alpha_q','100'])]:
+              for mode,args in [('lossless',['-lossless','-z','6']),('q90',['-q','90','-m','6','-alpha_q','100'])]:
                   out=Path('/tmp')/(p.stem+'-'+mode+'.webp')
                   subprocess.run(['cwebp','-quiet',*args,'-metadata','none',str(p),'-o',str(out)],check=True)
                   new=out.stat().st_size

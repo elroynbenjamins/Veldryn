@@ -12,7 +12,7 @@ begin
 end $acl$;
 set local role service_role;
 do $test$
-declare uid uuid:=nullif(current_setting('veldryn.test_account',true),'')::uuid; cid uuid; c record; l jsonb; s jsonb; resp jsonb; ack jsonb; g jsonb; ver bigint; gold bigint; equip_req text; undo_req text; edit_req text; slots jsonb; expected jsonb; h text:=repeat('b',64); n int:=0;
+declare uid uuid:=nullif(current_setting('veldryn.test_account',true),'')::uuid; cid uuid; c record; l jsonb; s jsonb; resp jsonb; ack jsonb; g jsonb; ver bigint; gold bigint; equip_req text; old_equip_req text; undo_req text; edit_req text; slots jsonb; expected jsonb; h text:=repeat('b',64); n int:=0;
 begin
  if uid is null then raise exception 'FIXTURE_MISSING';end if;
  for c in select id,d.* from unnest(array['ascendant-celestial-sovereign','ascendant-draconic-dominion','ascendant-abyssal-majesty','ascendant-paradox-eternal','ascendant-sakura-enchantment','ascendant-stormforged-sovereign']) x(id)
@@ -28,7 +28,7 @@ begin
   if ack->>'undoEquipRequestId' is distinct from equip_req then raise exception 'UNDO_TOKEN';end if;
   if (select count(*) from private.ultra_luxe_full_set_undo_v1 where account_id=uid)<>1 then raise exception 'UNDO_JOURNAL_COUNT';end if;
   begin
-   perform public.undo_ultra_luxe_full_set_server_v1(uid,cid,equip_req,ver,undo_req,h);raise exception 'STALE_NOT_REJECTED';
+   perform public.undo_ultra_luxe_full_set_server_v1(uid,cid,old_equip_req,ver,undo_req,h);raise exception 'STALE_NOT_REJECTED';
   exception when others then if sqlerrm<>'STALE_ULTRA_LUXE_GAMEPLAY' then raise;end if;end;
   begin
    perform public.undo_ultra_luxe_full_set_server_v1(uid,gen_random_uuid(),equip_req,ver+1,undo_req,h);raise exception 'WRONG_CHARACTER_NOT_REJECTED';
@@ -50,6 +50,7 @@ begin
   if (public.load_online_game_ultra_luxe_v1(uid)->>'walletGold')::bigint is distinct from gold then raise exception 'UNDO_WALLET_CHANGED';end if;
   ack:=public.undo_ultra_luxe_full_set_server_v1(uid,cid,equip_req,ver+1,undo_req,h);
   if not (ack->>'replayed')::boolean then raise exception 'UNDO_REPLAY';end if;
+  old_equip_req:=equip_req;
   -- Re-equip creates a fresh journal; replay of the consumed undo must not
   -- consume this new journal. A revocation invalidates it permanently.
   l:=public.load_online_game_ultra_luxe_v1(uid);ver:=(l->>'version')::bigint;
@@ -58,6 +59,10 @@ begin
   ack:=public.commit_ultra_luxe_full_set_server_v1(uid,cid,c.id,ver,gold,g,null,equip_req,h,jsonb_build_object('accountId',uid,'state',s,'version',ver+1,'serverNow',l->'serverNow'));
   perform public.undo_ultra_luxe_full_set_server_v1(uid,cid,equip_req,ver,undo_req,h);
   if not exists(select 1 from private.ultra_luxe_full_set_undo_v1 where account_id=uid and equip_request_id=equip_req) then raise exception 'REPLAY_CONSUMED_NEW_UNDO';end if;
+  update private.ultra_luxe_full_set_undo_v1 set expires_at=clock_timestamp()-interval '1 second' where account_id=uid;
+  begin
+   perform public.undo_ultra_luxe_full_set_server_v1(uid,cid,equip_req,ver+1,'luxe_undo_set_'||replace(gen_random_uuid()::text,'-',''),h);raise exception 'EXPIRED_NOT_REJECTED';
+  exception when others then if sqlerrm<>'STALE_ULTRA_LUXE_UNDO' then raise;end if;end;
   perform public.set_ultra_luxe_grant_server_v1(uid,c.id,false,'undo rollback revoke');
   perform public.set_ultra_luxe_grant_server_v1(uid,c.id,true,'undo rollback regrant');
   if exists(select 1 from private.ultra_luxe_full_set_undo_v1 where account_id=uid) then raise exception 'UNDO_REVIVED';end if;

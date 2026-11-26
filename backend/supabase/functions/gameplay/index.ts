@@ -56675,10 +56675,18 @@ var ULTRA_LUXE_GRANT_COLLECTIONS = [
   { id: "ascendant-celestial-sovereign", background: "ascendant-celestial-astral-sanctum", border: "ascendant-celestial-crown-of-the-cosmos", pet: "ascendant-celestial-aetherion", icon: "ascendant-celestial-crown-icon", title: "ascendant-celestial-title", titleName: "Sovereign of the Stars", badge: "ascendant_sovereign_of_stars", nameStyle: "ascendant-celestial-name" },
   { id: "ascendant-draconic-dominion", background: "ascendant-draconic-dominion-of-ash", border: "ascendant-draconic-throne-of-embers", pet: "ascendant-draconic-vharaxis", icon: "ascendant-draconic-ruby-icon", title: "ascendant-draconic-title", titleName: "Dragon Sovereign", badge: "ascendant_dragon_sovereign", nameStyle: "ascendant-draconic-name" }
 ];
-function ultraLuxeGrantProjection(raw2) {
+var ULTRA_LUXE_CANDIDATE_GRANT_COLLECTIONS = [
+  { id: "ascendant-abyssal-majesty", background: "ascendant-abyssal-forgotten-abyss", border: "ascendant-abyssal-crown-of-the-depths", pet: "ascendant-abyssal-nhalzuun", icon: null, title: "ascendant-abyssal-title", titleName: "Monarch of the Deep", badge: "ascendant_monarch_of_deep", nameStyle: null },
+  { id: "ascendant-paradox-eternal", background: "ascendant-paradox-beyond-the-veil", border: "ascendant-paradox-fractured-eternity", pet: "ascendant-paradox-aeon", icon: null, title: "ascendant-paradox-title", titleName: "Beyond Existence", badge: "ascendant_beyond_existence", nameStyle: null }
+];
+var ALL_COLLECTIONS = [...ULTRA_LUXE_GRANT_COLLECTIONS, ...ULTRA_LUXE_CANDIDATE_GRANT_COLLECTIONS];
+function grantRows(includeCandidates) {
+  return includeCandidates ? ALL_COLLECTIONS : ULTRA_LUXE_GRANT_COLLECTIONS;
+}
+function ultraLuxeGrantProjection(raw2, includeCandidates = false) {
   const ids2 = new Set(Array.isArray(raw2) ? raw2.filter((id) => typeof id === "string") : []);
-  const rows2 = ULTRA_LUXE_GRANT_COLLECTIONS.filter((row) => ids2.has(row.id));
-  return { collectionIds: rows2.map((row) => row.id), backgrounds: rows2.map((row) => row.background), borders: rows2.map((row) => row.border), pets: rows2.map((row) => row.pet), icons: rows2.map((row) => row.icon), titles: rows2.map((row) => row.title), badges: rows2.map((row) => row.badge), nameStyles: rows2.map((row) => row.nameStyle) };
+  const rows2 = grantRows(includeCandidates).filter((row) => ids2.has(row.id));
+  return { collectionIds: rows2.map((row) => row.id), backgrounds: rows2.map((row) => row.background), borders: rows2.map((row) => row.border), pets: rows2.map((row) => row.pet), icons: rows2.flatMap((row) => row.icon ? [row.icon] : []), titles: rows2.map((row) => row.title), badges: rows2.map((row) => row.badge), nameStyles: rows2.flatMap((row) => row.nameStyle ? [row.nameStyle] : []) };
 }
 var privateId = (id) => id.startsWith("ascendant-") || id.startsWith("ascendant_");
 function replacePrivate(existing, verified) {
@@ -56687,10 +56695,10 @@ function replacePrivate(existing, verified) {
 function allowed2(id, owned) {
   return !id || !privateId(id) || owned.includes(id);
 }
-function withVerifiedUltraLuxeGrants(state, raw2) {
-  const grants = ultraLuxeGrantProjection(raw2);
+function withVerifiedUltraLuxeGrants(state, raw2, includeCandidates = false) {
+  const grants = ultraLuxeGrantProjection(raw2, includeCandidates);
   const sanitize = (c) => {
-    const title2 = ULTRA_LUXE_GRANT_COLLECTIONS.find((row) => row.titleName.toLowerCase() === c.profileTitle?.trim().toLowerCase());
+    const title2 = ALL_COLLECTIONS.find((row) => row.titleName.toLowerCase() === c.profileTitle?.trim().toLowerCase());
     return {
       ...c,
       profileBackgroundId: allowed2(c.profileBackgroundId, grants.backgrounds) ? c.profileBackgroundId : "asterfall-night",
@@ -56716,7 +56724,7 @@ function withVerifiedUltraLuxeGrants(state, raw2) {
   };
 }
 function canUsePrivateTitleText(state, title2) {
-  const reserved = ULTRA_LUXE_GRANT_COLLECTIONS.find((row) => row.titleName.toLowerCase() === title2?.trim().toLowerCase());
+  const reserved = ALL_COLLECTIONS.find((row) => row.titleName.toLowerCase() === title2?.trim().toLowerCase());
   return !reserved || (state.account.unlockedTitleIds?.includes(reserved.title) ?? false);
 }
 
@@ -61170,7 +61178,7 @@ function gameplayHandler(services2, authenticatePlayer2 = async (token) => {
         request.method === "GET" ? recordActivity("foreground") : Promise.resolve()
       ]);
       if (privateGrants && !Array.isArray(loaded.ultraLuxeCollectionIds)) throw new Error("ultra_luxe_grant_projection_missing");
-      const storedState = rebaseCombatGameState(privateGrants ? withVerifiedUltraLuxeGrants(loaded.state ?? newGame(loaded.serverNow), loaded.ultraLuxeCollectionIds) : loaded.state ?? newGame(loaded.serverNow));
+      const storedState = rebaseCombatGameState(privateGrants ? withVerifiedUltraLuxeGrants(loaded.state ?? newGame(loaded.serverNow), loaded.ultraLuxeCollectionIds, true) : loaded.state ?? newGame(loaded.serverNow));
       const trustedState = request.method === "POST" ? snapshotEarnedLegacySeasonalClaims(storedState, loaded.serverNow) : storedState;
       const state = reconcileAccountProfileIcon(restoreCumulativeMonsterUnlocks(ensurePersonalSeasonalState(trustedState)));
       state.account.longTermAccountScopeId = accountId;
@@ -61254,7 +61262,7 @@ function gameplayHandler(services2, authenticatePlayer2 = async (token) => {
       ];
       const response = { guildProjectEffort, guildPveEffort, state: restoreCumulativeMonsterUnlocks(result.state), version: loaded.version + 1, serverNow: loaded.serverNow, accountId, reward: result.reward, activity: result.activity, message: result.message, won: result.won, storyBossBattle: result.storyBossBattle, upgrade: result.upgrade, forgeResults: result.forgeResults };
       const commitRpc = privateGrants ? "commit_online_game_ultra_luxe_v1" : "commit_online_game_guild_pve_v1";
-      const committed = await services2.rpc(commitRpc, { p_account_id: accountId, p_expected_version: loaded.version, p_expected_gold: loaded.walletGold, p_request_id: body.requestId, p_request_hash: requestHash, p_response: response, p_contributions: contributions, ...privateGrants ? { p_expected_grants: [...ultraLuxeGrantProjection(loaded.ultraLuxeCollectionIds).collectionIds].sort() } : {}, ...command.type === "roster_delete" ? { p_deleted_character_id: command.args.id } : {} });
+      const committed = await services2.rpc(commitRpc, { p_account_id: accountId, p_expected_version: loaded.version, p_expected_gold: loaded.walletGold, p_request_id: body.requestId, p_request_hash: requestHash, p_response: response, p_contributions: contributions, ...privateGrants ? { p_expected_grants: [...ultraLuxeGrantProjection(loaded.ultraLuxeCollectionIds, true).collectionIds].sort() } : {}, ...command.type === "roster_delete" ? { p_deleted_character_id: command.args.id } : {} });
       if (contributions.length > 0) try {
         await services2.rpc("guild_quest_record_contributions_v1", { p_account_id: accountId, p_contributions: contributions.map((e) => ({ ...e, units: e.questUnits ?? e.units })) });
       } catch {

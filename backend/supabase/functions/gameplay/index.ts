@@ -856,6 +856,27 @@ var EQUIPMENT_RESALE_UPLIFT_RELEASED = false;
 var PROFILE_ANIMATED_COSMETICS_RELEASED = false;
 var PROFILE_COSMETICS_STORE_RELEASED = false;
 
+// ../apps/mobile/src/core/profile-cosmetic-wave2.ts
+var WAVE2_SETS = [
+  { id: "tideborne", name: "Tideborne", borderId: "cosmetic:tideborne:pearlframe", borderName: "Tideborne Pearlframe", effectId: "effect_tideborne_tidal_reverie", effectName: "Tidal Reverie", iconIds: ["cosmetic:tideborne:portrait-siren", "cosmetic:tideborne:portrait-corsair"], iconNames: ["Tideborne Siren", "Tideborne Corsair"] },
+  { id: "clockwork", name: "Clockwork Covenant", borderId: "cosmetic:clockwork:mechanism", borderName: "Clockwork Mechanism", effectId: "effect_clockwork_aetherwork_pulse", effectName: "Aetherwork Pulse", iconIds: ["cosmetic:clockwork:portrait-artificer", "cosmetic:clockwork:portrait-engineer"], iconNames: ["Covenant Artificer", "Covenant Engineer"] },
+  { id: "stormforged", name: "Stormforged", borderId: "cosmetic:stormforged:thunderframe", borderName: "Stormforged Thunderframe", effectId: "effect_stormforged_static_surge", effectName: "Static Surge", iconIds: ["cosmetic:stormforged:portrait-tempest", "cosmetic:stormforged:portrait-sentinel"], iconNames: ["Stormforged Tempest", "Stormforged Sentinel"] },
+  { id: "crimson-oath", name: "Crimson Oath", borderId: "cosmetic:crimson-oath:oathguard", borderName: "Crimson Oathguard", effectId: "effect_crimson_oath_scarlet_reverence", effectName: "Scarlet Reverence", iconIds: ["cosmetic:crimson-oath:portrait-justicar", "cosmetic:crimson-oath:portrait-knight"], iconNames: ["Crimson Justicar", "Crimson Knight"] }
+];
+var WAVE2_READY_SET_IDS = [];
+function wave2SetFor(kind, id) {
+  return WAVE2_SETS.find((row) => kind === "border" ? row.borderId === id : kind === "effect" ? row.effectId === id : row.iconIds.some((icon) => icon === id));
+}
+function wave2Ready(kind, id, ready = WAVE2_READY_SET_IDS) {
+  const row = wave2SetFor(kind, id);
+  return !!row && ready.includes(row.id);
+}
+function wave2Owned(account, kind, id, ready = WAVE2_READY_SET_IDS) {
+  if (!wave2Ready(kind, id, ready)) return false;
+  const ids2 = kind === "border" ? account.unlockedProfileBorderIds : kind === "effect" ? account.unlockedProfileEffectIds : account.unlockedProfileIconIds;
+  return ids2?.includes(id) ?? false;
+}
+
 // ../apps/mobile/src/core/profile-cosmetic-icons.ts
 var PROFILE_COSMETIC_PORTRAITS = [
   { id: "cosmetic:gloamward:portrait-seer", name: "Gloamward Seer", collectionId: "gloamward", presentation: "female", artworkReady: true },
@@ -865,7 +886,8 @@ var PROFILE_COSMETIC_PORTRAITS = [
   { id: "cosmetic:amberglass:portrait-duelist", name: "Amberglass Duelist", collectionId: "amberglass", presentation: "female", artworkReady: true },
   { id: "cosmetic:amberglass:portrait-vanguard", name: "Amberglass Vanguard", collectionId: "amberglass", presentation: "male", artworkReady: true },
   { id: "cosmetic:briarbound:portrait-ranger", name: "Briarbound Ranger", collectionId: "briarbound", presentation: "female", artworkReady: true },
-  { id: "cosmetic:briarbound:portrait-warden", name: "Briarbound Warden", collectionId: "briarbound", presentation: "male", artworkReady: true }
+  { id: "cosmetic:briarbound:portrait-warden", name: "Briarbound Warden", collectionId: "briarbound", presentation: "male", artworkReady: true },
+  ...WAVE2_SETS.filter((row) => WAVE2_READY_SET_IDS.includes(row.id)).flatMap((row) => row.iconIds.map((id, i) => ({ id, name: row.iconNames[i], collectionId: row.id, presentation: i === 0 ? "female" : "male", artworkReady: true })))
 ];
 
 // ../apps/mobile/src/core/profile-cosmetic-access.ts
@@ -875,6 +897,9 @@ function profileCosmeticsTester(state) {
 }
 function profileAnimatedCosmeticsEnabled(state) {
   return PROFILE_ANIMATED_COSMETICS_RELEASED || profileCosmeticsTester(state);
+}
+function profileAnimatedPieceEnabled(state, kind, id) {
+  return wave2SetFor(kind, id) ? wave2Owned(state.account, kind, id) : profileAnimatedCosmeticsEnabled(state);
 }
 
 // ../apps/mobile/src/core/frostfall-reward-visibility.ts
@@ -910,7 +935,7 @@ var PROFILE_ICON_CATALOG = [
   { id: "starter:dune-warden", name: "Dune Warden", group: "Starter", source: "Available from the start." },
   { id: "creature:FALLEN_KNIGHT", name: "Fallen Knight", group: "Combat", source: "Defeat the Fallen Knight.", bossId: "FALLEN_KNIGHT" },
   { id: "guild:stormwatch-crest", name: "Stormwatch Crest", group: "Guild", source: "Guild Token Shop \xB7 Guild Level 4" },
-  ...PROFILE_COSMETIC_PORTRAITS.map((row) => ({ id: row.id, name: row.name, group: "Cosmetics", source: "Cosmetics set \xB7 Tester access", artworkReady: row.artworkReady })),
+  ...PROFILE_COSMETIC_PORTRAITS.map((row) => ({ id: row.id, name: row.name, group: "Cosmetics", source: wave2SetFor("icon", row.id) ? "Cosmetics set \xB7 Account ownership" : "Cosmetics set \xB7 Tester access", artworkReady: row.artworkReady })),
   ...DUNGEON_SHOP_PROFILE_ICONS_V1.map((row) => ({ id: row.id, name: row.name, group: "Dungeon", source: "Dungeon Marks Shop \xB7 " + row.region }))
 ];
 function initialIconCharacter(state) {
@@ -941,8 +966,8 @@ function profileIconCollection(state, nowMs = Date.now()) {
   const owned = new Set(state.account.unlockedProfileIconIds ?? []);
   const characters = [state.character, ...(state.otherCharacters ?? []).map((row) => row.character)];
   const tester = profileCosmeticsTester(state);
-  const portraits = PROFILE_ICON_CATALOG.filter((row) => (row.group !== "Dungeon" || DUNGEON_MARKS_SHOP_RELEASED || owned.has(row.id)) && (row.group !== "Cosmetics" || PROFILE_COSMETICS_STORE_RELEASED || tester || owned.has(row.id))).map((row) => {
-    const artworkReady = row.group === "Cosmetics" && tester ? true : row.artworkReady ?? true;
+  const portraits = PROFILE_ICON_CATALOG.filter((row) => !wave2SetFor("icon", row.id) || wave2Owned(state.account, "icon", row.id)).filter((row) => (row.group !== "Dungeon" || DUNGEON_MARKS_SHOP_RELEASED || owned.has(row.id)) && (row.group !== "Cosmetics" || PROFILE_COSMETICS_STORE_RELEASED || tester || owned.has(row.id))).map((row) => {
+    const artworkReady = row.group === "Cosmetics" && tester && !wave2SetFor("icon", row.id) ? true : row.artworkReady ?? true;
     return { ...row, artworkReady, selected: selected2 === row.id, unlocked: row.group === "Starter" || artworkReady && owned.has(row.id) || row.monsterId !== void 0 && characters.some((c) => (c?.monsterMasteryPoints?.[row.monsterId] ?? 0) >= 10) || row.bossId !== void 0 && state.defeatedBossIds.includes(row.bossId) };
   });
   const known2 = new Set(portraits.map((row) => row.id));
@@ -56712,11 +56737,13 @@ var PROFILE_EFFECTS = [
   { id: "effect_gloamward_wisps", name: "Arcane Wisps", collection: "Gloamward", borderId: "cosmetic:gloamward:arcane-frame", borderName: "Gloamward Arcane Frame", fallbackBorderId: "frame_gloamward" },
   { id: "effect_frostbound_winter_veil", name: "Winter Veil", collection: "Frostbound Chime", borderId: "cosmetic:frostbound:chime-frame", borderName: "Frostbound Chime Frame", fallbackBorderId: "dungeon:frostmarch:frostbound-chime" },
   { id: "effect_amberglass_ember_motes", name: "Ember Motes", collection: "Amberglass Loop", borderId: "cosmetic:amberglass:loop-frame", borderName: "Amberglass Loop Frame", fallbackBorderId: "dungeon:sunscar:amberglass-loop" },
-  { id: "effect_briarbound_verdant_whispers", name: "Verdant Whispers", collection: "Briarbound", borderId: "cosmetic:briarbound:verdant-frame", borderName: "Briarbound Verdant Frame", fallbackBorderId: "dungeon:asterfall:briarbound-frame" }
+  { id: "effect_briarbound_verdant_whispers", name: "Verdant Whispers", collection: "Briarbound", borderId: "cosmetic:briarbound:verdant-frame", borderName: "Briarbound Verdant Frame", fallbackBorderId: "dungeon:asterfall:briarbound-frame" },
+  ...WAVE2_SETS.filter((row) => WAVE2_READY_SET_IDS.includes(row.id)).map((row) => ({ id: row.effectId, name: row.effectName, collection: row.name, borderId: row.borderId, borderName: row.borderName, fallbackBorderId: "" }))
 ];
 var PROFILE_ALL_EFFECTS = [...PROFILE_EFFECTS, ...PREMIUM_PROFILE_COSMETICS.map((row) => ({ id: row.effectId, name: row.effectName, collection: row.name, borderId: row.borderId, borderName: row.borderName, fallbackBorderId: row.fallbackBorderId }))];
 function canUseProfileEffect(state, id) {
   if (!id) return true;
+  if (wave2SetFor("effect", id)) return wave2Owned(state.account, "effect", id);
   return state.account.unlockedProfileEffectIds?.includes(id) ?? false;
 }
 
@@ -61007,8 +61034,8 @@ function executeGameCommand(previous, value, now, options = {}) {
       if (!canUsePrivateTitleText(state, patch.profileTitle)) throw new Error("cosmetic_not_owned");
       if (patch.profileIconId && !canUseProfileIcon(state, patch.profileIconId)) throw new Error("cosmetic_not_owned");
       if (patch.profileBackgroundId && !["asterfall-night", "ironwood-dawn", "silverbrook-mist", "oathglass-hall", ...state.account.unlockedProfileBackgroundIds ?? []].includes(patch.profileBackgroundId)) throw new Error("cosmetic_not_owned");
-      if (patch.profileBorderId && !state.account.unlockedProfileBorderIds?.includes(patch.profileBorderId)) throw new Error("cosmetic_not_owned");
-      if (patch.profileEffectId && !profileAnimatedCosmeticsEnabled(state) && patch.profileEffectId !== state.character.profileEffectId) throw new Error("feature_not_released");
+      if (patch.profileBorderId && (wave2SetFor("border", patch.profileBorderId) ? !wave2Owned(state.account, "border", patch.profileBorderId) : !state.account.unlockedProfileBorderIds?.includes(patch.profileBorderId))) throw new Error("cosmetic_not_owned");
+      if (patch.profileEffectId && !profileAnimatedPieceEnabled(state, "effect", patch.profileEffectId) && patch.profileEffectId !== state.character.profileEffectId) throw new Error("feature_not_released");
       if (patch.profileEffectId && !canUseProfileEffect(state, patch.profileEffectId)) throw new Error("cosmetic_not_owned");
       if (patch.selectedCosmeticPetId && !state.account.unlockedCosmeticPetIds?.includes(patch.selectedCosmeticPetId)) throw new Error("cosmetic_not_owned");
       const icon = patch.profileIconId;

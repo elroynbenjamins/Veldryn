@@ -34,3 +34,7 @@ After successful deployment, check the pages.dev URL and add playveldryn.com as 
 ## Rollback
 
 Use Cloudflare Pages deployments to roll back to the previous working deployment, or revert the website-only commit. Game release and Supabase remain unaffected.
+
+## Store branding
+
+The English Google Play badge at `website/brand/google-play-en.svg` is an unchanged copy of the January 2025 SVG export mirrored at https://github.com/pioug/google-play-badges/blob/main/svg/en.svg (blob `f01a95012743eac5ed291e433a8117565dd294b8`). The mirror documents trimming the outer border. The current Google branding reference is https://partnermarketinghub.withgoogle.com/brands/google-play/google-play/lockups-icons-badges/ ; replace the mirrored export with a direct official download if available. Keep the badge colors and artwork unchanged, preserve clear space, and use only for the existing Play listing. The website hosts the badge locally and makes no additional third-party request. Discord CTAs retain Blurple and the white Clyde mark.

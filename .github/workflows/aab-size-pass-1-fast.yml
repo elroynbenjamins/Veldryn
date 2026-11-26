@@ -1,4 +1,4 @@
-name: AAB size pass 1 fast compression totals (temporary)
+name: AAB size pass 1 quality gate (temporary)
 on:
   pull_request:
     branches: [main]
@@ -7,7 +7,7 @@ on:
 permissions:
   contents: read
 jobs:
-  totals:
+  quality:
     if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'chatgpt/aab-size-pass-1'
     runs-on: ubuntu-latest
     steps:
@@ -15,29 +15,27 @@ jobs:
       - run: |
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends webp ripgrep >/dev/null
-      - name: Calculate card and portrait savings
+      - name: Measure high-quality WebP encode PSNR and savings
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          import subprocess
+          import subprocess,re
           def enc(p,q,out):
-              subprocess.run(['cwebp','-quiet','-q',str(q),'-m','4','-alpha_q','100','-metadata','none',str(p),'-o',str(out)],check=True)
-              return out.stat().st_size
-          old=new=0;n=0
+              x=subprocess.run(['cwebp','-q',str(q),'-m','4','-alpha_q','100','-metadata','none','-print_psnr',str(p),'-o',str(out)],capture_output=True,text=True,check=True)
+              txt=x.stdout+x.stderr
+              m=re.search(r'PSNR Y: ([0-9.]+)',txt)
+              return out.stat().st_size,float(m.group(1)) if m else None
+          cards=[]
           for p in Path('apps/mobile/assets/card-backgrounds').glob('*.webp'):
               if p.stat().st_size<1024*1024: continue
-              refs=subprocess.run(['rg','-l','-F',p.name,'apps/mobile/src'],capture_output=True,text=True).stdout.strip()
-              if not refs: continue
-              o=p.stat().st_size;z=enc(p,85,Path('/tmp')/(p.stem+'-card.webp'));old+=o;new+=z;n+=1
-          print(f'CARDS_Q85 files={n} old={old/1048576:.2f}MiB new={new/1048576:.2f}MiB save={(old-new)/1048576:.2f}MiB')
-          old=new=0;n=0
-          roots=[Path('apps/mobile/assets/master_roster/pets/portraits_512'),Path('apps/mobile/assets/guild-token-shop/pets/portraits')]
-          for root in roots:
-              for p in root.glob('*.png'):
-                  o=p.stat().st_size;z=enc(p,90,Path('/tmp')/(p.stem+'-pet.webp'));old+=o;new+=z;n+=1
-          print(f'PETS_Q90 files={n} old={old/1048576:.2f}MiB new={new/1048576:.2f}MiB save={(old-new)/1048576:.2f}MiB')
-          old=new=0;n=0
-          for p in [Path('apps/mobile/assets/gem-sprite-v2.png'),Path('apps/mobile/assets/unrefined-gem.png'),Path('apps/mobile/assets/regional-resources-v2.png'),Path('apps/mobile/assets/events/frostfall/candy_frostmint.png')]:
-              o=p.stat().st_size;z=enc(p,90,Path('/tmp')/(p.stem+'-runtime.webp'));old+=o;new+=z;n+=1
-          print(f'RUNTIME_Q90 files={n} old={old/1048576:.2f}MiB new={new/1048576:.2f}MiB save={(old-new)/1048576:.2f}MiB')
+              if not subprocess.run(['rg','-l','-F',p.name,'apps/mobile/src'],capture_output=True,text=True).stdout.strip(): continue
+              cards.append(p)
+          pets=[*Path('apps/mobile/assets/master_roster/pets/portraits_512').glob('*.png'),*Path('apps/mobile/assets/guild-token-shop/pets/portraits').glob('*.png')]
+          runtime=[Path('apps/mobile/assets/gem-sprite-v2.png'),Path('apps/mobile/assets/unrefined-gem.png'),Path('apps/mobile/assets/regional-resources-v2.png'),Path('apps/mobile/assets/events/frostfall/candy_frostmint.png')]
+          for label,paths,q in [('CARDS',cards,85),('PETS',pets,90),('RUNTIME',runtime,90)]:
+              old=new=0;ps=[]
+              for i,p in enumerate(paths):
+                  z,v=enc(p,q,Path('/tmp')/f'{label}-{i}.webp');old+=p.stat().st_size;new+=z
+                  if v is not None: ps.append(v)
+              print(f'{label}_QUALITY q={q} files={len(paths)} old={old/1048576:.2f}MiB new={new/1048576:.2f}MiB save={(old-new)/1048576:.2f}MiB psnr_min={min(ps) if ps else None} psnr_avg={sum(ps)/len(ps) if ps else None}')
           PY

@@ -1,4 +1,4 @@
--- Staging-only, run after the four-collection candidate, combined commit and six-name
+-- Staging-only, run after the six-collection candidate, combined commit and six-name
 -- authority extension, all inside one outer transaction. The caller must ROLLBACK.
 select set_config('veldryn.test_account',(select account_id::text from public.online_game_states where jsonb_typeof(state->'character')='object' and character_id is not null and (state->>'version')::int in (6,11) limit 1),true);
 do $acl$
@@ -12,7 +12,7 @@ do $test$
 declare uid uuid:=nullif(current_setting('veldryn.test_account',true),'')::uuid; cid uuid; c record; l jsonb; st jsonb; resp jsonb; ack jsonb; gr jsonb; ver bigint; gold bigint; req text; h text:=repeat('b',64); n int:=0;
 begin
  if uid is null then raise exception 'FIXTURE_MISSING';end if;
- for c in select id,d.* from unnest(array['ascendant-celestial-sovereign','ascendant-draconic-dominion','ascendant-abyssal-majesty','ascendant-paradox-eternal']) as x(id) cross join lateral private.ultra_luxe_full_set_definition_v1(id) d loop
+ for c in select id,d.* from unnest(array['ascendant-celestial-sovereign','ascendant-draconic-dominion','ascendant-abyssal-majesty','ascendant-paradox-eternal','ascendant-sakura-enchantment','ascendant-stormforged-sovereign']) as x(id) cross join lateral private.ultra_luxe_full_set_definition_v1(id) d loop
   perform public.set_ultra_luxe_grant_server_v1(uid,c.id,true,'combined equip rollback fixture');
   l:=public.load_online_game_ultra_luxe_v1(uid);gr:=l->'ultraLuxeCollectionIds';ver:=(l->>'version')::bigint;gold:=(l->>'walletGold')::bigint;cid:=(l#>>'{state,character,id}')::uuid;
   if gr is distinct from jsonb_build_array(c.id) then raise exception 'FIXTURE_GRANT_SCOPE';end if;
@@ -42,11 +42,11 @@ begin
   perform public.set_ultra_luxe_grant_server_v1(uid,c.id,false,'combined equip cleanup fixture');
   n:=n+1;
  end loop;
- if n<>4 then raise exception 'FIXTURE_COUNT';end if;
- raise notice 'Four actual combined commits, stale selection, hash mismatch, replay, wallet, revoke/regrant passed';
+ if n<>6 then raise exception 'FIXTURE_COUNT';end if;
+ raise notice 'Six actual combined commits, stale selection, hash mismatch, replay, wallet, revoke/regrant passed';
 end $test$;
 reset role;
 rollback;
-select '4 combined equip transactions and rollback checks passed' as result,
+select '6 combined equip transactions and rollback checks passed' as result,
  to_regclass('private.ultra_luxe_collection_grants_v1') is null as grants_rolled_back,
  to_regprocedure('public.commit_ultra_luxe_full_set_server_v1(uuid,uuid,text,bigint,bigint,jsonb,text,text,text,jsonb)') is null as commit_rolled_back;

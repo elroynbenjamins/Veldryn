@@ -12,6 +12,7 @@ import {inspectEffectGemInteractionsV2,EFFECT_INTERACTION_REVIEW_V2,type EffectI
 import {runEffectEventProvenanceReviewV2} from './effect-gem-event-provenance-review';
 import {runEffectLifecycleReviewV2} from './effect-gem-lifecycle-review';
 import {createGentleStatCombatReviewV2} from './gentle-stat-gem-combat-review';
+import {createGentleGemPartyPressureReviewV2} from './gentle-gem-party-pressure-review';
 import {STAT_GEMS_V1,EFFECT_GEMS_V1,gemItemId,type GemGrade,GEM_BALANCE_REVIEW_V2,STAT_GEMS_REVIEW_V2,EFFECT_GEMS_REVIEW_V2,EFFECT_GEM_REVIEW_MULTIPLIERS_V2} from '../../../equipment/gems/gem-catalog-v1';
 import type {V2GemSidecarState} from '../../../equipment/equipment-crafting-v2-gem-sidecar-types';
 import {writeFileSync} from 'node:fs';
@@ -1767,6 +1768,81 @@ function makeV21Loadout(classId:ClassIdV2,specIndex:0|1,targetTier:1|2|3|4,targe
    min:Math.min(...potent.map(r=>r.utility.potency[i].incrementalGem)),
    max:Math.max(...potent.map(r=>r.utility.potency[i].incrementalGem))})),
   requiresMigrationApproval:true,cpApproved:false,releaseEnabled:false}));
+}
+// Stronger fresh party pressure, full-range action RNG, original exact
+// Forge source copies. No set effects or live party authorization.
+{
+ const policy:ForgeSocketReviewPolicyV2={version:'QA_GENTLE_PARTY_GEMS_V2',gemBalancePolicy:GEM_BALANCE_REVIEW_V2,
+  mechanicsReview:{version:FORGE_SOCKET_MECHANICS_REVIEW_V2,maxFinalAttackPower:1e8},
+  maxFinalHp:1e8,maxFinalDefense:1e8};
+ const parties:ClassIdV2[][]=[['IRONWARDEN','WAYFINDER','HEXWEAVER','STONECALLER'],
+  ['BASTION','RAVAGER','KNIFE_DANCER','DAWNKEEPER'],['DREADGUARD','HEXWEAVER','RAVAGER','STONECALLER']];
+ const arms=['stat_precision','stat_elusive','stat_potent','mixed-role'];
+ const profiles=[{id:'BOSS_EXP_SPHINX',name:'The Veiled Sphinx',region:'sunscar' as const,tier:3 as const,level:40},
+  {id:'BOSS_EXP_BELLBEAST',name:'The Bellbeast of Shiverlake',region:'frostmarch' as const,tier:4 as const,level:60}];
+ const rows:{classId:ClassIdV2;spec:number;arm:string;boss:string;seed:number;result:ReturnType<ReturnType<typeof createGentleGemPartyPressureReviewV2>>}[]=[];
+ let baseEncounters=0;
+ for(const profile of profiles){
+  const level=profile.level;
+  const fixtures=new Map<ClassIdV2,ReturnType<typeof makeV21Loadout>[]>();
+  for(const id of Object.keys(CLASS_NAMES_V2) as ClassIdV2[])fixtures.set(id,[makeV21Loadout(id,0,profile.tier,level),makeV21Loadout(id,1,profile.tier,level)]);
+  // One fixed pressure reference per boss across all compositions, never
+  // rescaled to the socket variant or selected party.
+  const reference=[...fixtures.values()].flat().map(x=>compileRealFrozenForgeActorV2(x.actor,x.build,x.source).actor);
+  const meanHp=reference.reduce((n,x)=>n+x.stats.maxHp,0)/reference.length;
+  const meanAttack=reference.reduce((n,x)=>n+x.stats.attackPower,0)/reference.length;
+  const enemy={...boss,id:profile.id,name:profile.name,level,
+   stats:{...boss.stats,maxHp:Math.round(meanAttack*4*30),attackPower:Math.round(meanHp*.30)}};
+  for(const [partyIndex,ids] of parties.entries())for(const spec of [0,1] as const){
+   const members=ids.map(classId=>{
+    const qa=fixtures.get(classId)![spec];
+    const chosen=selectReviewSkillLoadoutV2(classId,qa.build.selected.specializationId!,qa.actor,profile.id,'targeted');
+    const build={...qa.build,selected:{...qa.build.selected,activeSkills:chosen.activeSkills}};
+    const revision=qa.source.ledgerRevision+qa.ids.length;
+    const source={...qa.source,ledgerRevision:revision,verifyPersisted:(d:string,r:number)=>r===revision&&/^[a-f0-9]{64}$/.test(d)};
+    const compiled=compileRealFrozenForgeActorV2(qa.actor,build,source);
+    const baseline=reviewFrozenForgeSocketsV2(qa.actor,build,source,{slots:[],receipts:[]},policy);
+    const variants=arms.map(arm=>{
+     const role=CLASS_ROLES_V2[classId];
+     const pool=arm==='mixed-role'?(role==='tank'?['stat_vitality','stat_iron','stat_ward','stat_elusive']:
+      role==='damage'?['stat_might','stat_keen','stat_savage','stat_piercing','stat_potent','stat_precision']:
+      ['stat_swift','stat_potent','stat_vitality','stat_ward']):[arm];
+     const sockets:V2GemSidecarState={slots:[],receipts:[]};
+     for(const [i,instanceId] of qa.ids.entries()){
+      const gemId=gemItemId(pool[i%pool.length],5);
+      sockets.slots.push({instanceId,stat:{gemId,rollPercent:120}});
+      sockets.receipts.push({requestId:'QA_PARTY_GEM_'+i,fingerprint:'gem:'+instanceId+':'+gemId,instanceId,
+       socket:'stat',gemId,source:'gem_pouch',rollPercent:120,burnedGemId:null,version:qa.source.ledgerRevision+i+1});
+     }
+     return reviewFrozenForgeSocketsV2(qa.actor,build,source,sockets,policy);
+    });
+    return {classId,accountId:source.accountId,characterId:source.characterId,revision,compiled,baseline,variants};
+   });
+   for(const seed of [0,1]){
+    const fight=createGentleGemPartyPressureReviewV2(members,{region:profile.region,tier:profile.tier,enemy},
+     [profile.id,partyIndex,spec,seed].join('_'));
+    baseEncounters++;
+    for(const [i,member] of members.entries())for(const [j,arm] of arms.entries())
+     rows.push({classId:member.classId,spec,arm,boss:profile.id,seed,result:fight(i,member.variants[j],seed===0&&j===0)});
+   }
+  }
+ }
+ assert.equal(baseEncounters,24);assert.equal(rows.length,384);
+ const groups=new Map<string,typeof rows>();
+ for(const r of rows){const k=CLASS_ROLES_V2[r.classId]+'|'+r.arm;groups.set(k,[...(groups.get(k)??[]),r]);}
+ console.log('GENTLE_GEM_PARTY_PRESSURE_REVIEW '+JSON.stringify({cases:rows.length,baseEncounters,seedCount:2,
+  bosses:profiles.map(p=>p.id),classes:new Set(rows.map(r=>r.classId)).size,scope:'PRIVATE_FULL_RANGE_PARTY_GEM_SENSITIVITY',
+  byRoleArm:Object.fromEntries([...groups].map(([key,a])=>[key,{cases:a.length,
+   meanDpsDelta:a.reduce((n,r)=>n+r.result.after.dps-r.result.before.dps,0)/a.length,
+   meanHpsDelta:a.reduce((n,r)=>n+r.result.after.hps-r.result.before.hps,0)/a.length,
+   meanDamageTakenDelta:a.reduce((n,r)=>n+r.result.after.damageTaken-r.result.before.damageTaken,0)/a.length,
+   meanShieldDelta:a.reduce((n,r)=>n+r.result.after.shield-r.result.before.shield,0)/a.length,
+   critDelta:a.reduce((n,r)=>n+r.result.after.crits-r.result.before.crits,0),
+   missDelta:a.reduce((n,r)=>n+r.result.after.misses-r.result.before.misses,0),
+   survivorGains:a.filter(r=>r.result.after.partyAlive>r.result.before.partyAlive).length,
+   survivorLosses:a.filter(r=>r.result.after.partyAlive<r.result.before.partyAlive).length,
+   lostVictories:a.filter(r=>r.result.before.victory>r.result.after.victory).length}])),
+  releaseEnabled:false,cpApproved:false}));
 }
 // Exact-copy effect magnitude and resonance: every family at 1/2/3
 // copies, low, mixed and max strength. No execution of effect hooks here.

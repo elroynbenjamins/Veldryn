@@ -48977,7 +48977,12 @@ var ULTRA_LUXE_CANDIDATE_GRANT_COLLECTIONS = [
   { id: "ascendant-abyssal-majesty", background: "ascendant-abyssal-forgotten-abyss", border: "ascendant-abyssal-crown-of-the-depths", pet: "ascendant-abyssal-nhalzuun", icon: null, title: "ascendant-abyssal-title", titleName: "Monarch of the Deep", badge: "ascendant_monarch_of_deep", nameStyle: null },
   { id: "ascendant-paradox-eternal", background: "ascendant-paradox-beyond-the-veil", border: "ascendant-paradox-fractured-eternity", pet: "ascendant-paradox-aeon", icon: null, title: "ascendant-paradox-title", titleName: "Beyond Existence", badge: "ascendant_beyond_existence", nameStyle: null }
 ];
-var ALL_COLLECTIONS = [...ULTRA_LUXE_GRANT_COLLECTIONS, ...ULTRA_LUXE_CANDIDATE_GRANT_COLLECTIONS];
+var FOUR_COLLECTIONS = [...ULTRA_LUXE_GRANT_COLLECTIONS, ...ULTRA_LUXE_CANDIDATE_GRANT_COLLECTIONS];
+var SIX_ONLY_COLLECTIONS = [
+  { id: "ascendant-sakura-enchantment", background: "ascendant-sakura-petal-sanctuary", border: "ascendant-sakura-blossom-crown", pet: "ascendant-sakura-spirit-fox", icon: null, title: "ascendant-sakura-title", titleName: "Sakura Dreamkeeper", badge: "ascendant_sakura_blossom_crest", nameStyle: "ascendant-sakura-name" },
+  { id: "ascendant-stormforged-sovereign", background: "ascendant-stormforged-thunderkeep", border: "ascendant-stormforged-steel-crown", pet: "ascendant-stormforged-direwolf", icon: null, title: "ascendant-stormforged-title", titleName: "Stormforged Warden", badge: "ascendant_stormforged_wolf_crest", nameStyle: "ascendant-stormforged-name" }
+];
+var ALL_COLLECTIONS = [...ULTRA_LUXE_GRANT_COLLECTIONS, { ...ULTRA_LUXE_CANDIDATE_GRANT_COLLECTIONS[0], nameStyle: "ascendant-abyssal-name" }, { ...ULTRA_LUXE_CANDIDATE_GRANT_COLLECTIONS[1], nameStyle: "ascendant-paradox-name" }, ...SIX_ONLY_COLLECTIONS];
 
 // ../apps/mobile/src/core/profile-premium-cosmetics.ts
 var PREMIUM_PROFILE_COSMETICS = [

@@ -2,7 +2,7 @@
  * No CombatStats mutation, CP, gem proc, mint, or release authority.
  * All units remain in the canonical gem catalogue's vocabulary.
  */
-import {findStatGem,findEffectGem,gemItemId,type GemGrade,GEM_BALANCE_REVIEW_V2,type GemBalanceReviewPolicyV2,findStatGemReviewV2,findEffectGemReviewV2} from '../../equipment/gems/gem-catalog-v1';
+import {findStatGem,findEffectGem,gemItemId,type GemGrade,GEM_BALANCE_REVIEW_V2,type GemBalanceReviewPolicyV2,findStatGemReviewV2,findEffectGemReviewV2,RETIRED_STAT_GEM_FAMILIES_REVIEW_V2} from '../../equipment/gems/gem-catalog-v1';
 import {verifyEquipmentV2GemSidecar} from '../../equipment/equipment-crafting-v2-gem-verifier';
 import type {V2GemSidecarState} from '../../equipment/equipment-crafting-v2-gem-sidecar-types';
 import {verifyEquipmentV2HiddenLedger} from '../../equipment/equipment-crafting-v2-delivery';
@@ -67,6 +67,8 @@ export function reviewPermanentGemSourcesV2(source:PermanentGemReviewSourceV2,ba
    const grade=Number(match[2]) as GemGrade;
    if(gemItemId(match[1],grade)!==gem.gemId)fail('invalid_catalogue_id');
    if(kind==='stat'){
+    if(balancePolicy&&RETIRED_STAT_GEM_FAMILIES_REVIEW_V2.includes(match[1]))
+     fail('retired_stat_gem_requires_migration');
     const def=balancePolicy?findStatGemReviewV2(match[1]):findStatGem(match[1]);
     if(!def)throw Error('combat_v2_gem_review_missing_stat_definition');
     statSources.push({instanceId,gemId:gem.gemId,stat:def.stat,unit:def.unit,grade,

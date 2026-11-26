@@ -70,7 +70,7 @@ export function validateGemCatalogV1():string[]{const errors:string[]=[];const i
 /** Owner-approved magnitude direction for hidden Combat 2.0 calibration.
  * V1 remains unchanged. Effect magnitudes are provisional and not runtime
  * authority; retain all trigger, duration, cap and resonance metadata. */
-export const GEM_BALANCE_REVIEW_V2='gem-balance-review-v2-20261126' as const;
+export const GEM_BALANCE_REVIEW_V2='gem-balance-review-v2-20261126-no-resolute' as const;
 export type GemBalanceReviewPolicyV2=typeof GEM_BALANCE_REVIEW_V2;
 export const EFFECT_GEM_REVIEW_MULTIPLIERS_V2:Readonly<Record<string,1.25|1.5>>=Object.freeze({
  effect_momentum:1.25,effect_execution:1.5,effect_opening_strike:1.5,
@@ -85,8 +85,12 @@ function scaledGemValuesV2(values:Readonly<Record<GemGrade,number>>,factor:numbe
  return Object.freeze(Object.fromEntries(([1,2,3,4,5] as const).map(g=>[g,
   Math.round(values[g]*factor*1e9)/1e9])) as Record<GemGrade,number>);
 }
+/** Retired only from the new gem balance pool. Preserve V1 identity and
+ * historical socket receipts until an explicit replacement policy exists. */
+export const RETIRED_STAT_GEM_FAMILIES_REVIEW_V2:readonly string[]=Object.freeze(['stat_resolute']);
 export const STAT_GEMS_REVIEW_V2:readonly StatGemDefinition[]=Object.freeze(
- STAT_GEMS_V1.map(def=>Object.freeze({...def,values:scaledGemValuesV2(def.values,2)})));
+ STAT_GEMS_V1.filter(def=>!RETIRED_STAT_GEM_FAMILIES_REVIEW_V2.includes(def.familyId))
+  .map(def=>Object.freeze({...def,values:scaledGemValuesV2(def.values,2)})));
 export const EFFECT_GEMS_REVIEW_V2:readonly EffectGemDefinition[]=Object.freeze(
  EFFECT_GEMS_V1.map(def=>{
   const factor=EFFECT_GEM_REVIEW_MULTIPLIERS_V2[def.familyId];

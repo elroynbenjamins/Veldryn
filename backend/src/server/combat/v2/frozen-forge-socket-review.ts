@@ -84,7 +84,7 @@ export function reviewFrozenForgeSocketsV2(
  if(guardedSource.verifyPersisted(digest,source.ledgerRevision)!==true)fail('unverified_combined_snapshot');
  const supported=new Set(['maxHp:percent','armor:percent','critRate:percentage_point','accuracy:percentage_point']);
  if(mechanics)for(const key of ['power:percent','ward:percent','critDamage:percent',
-  'penetration:percentage_point','haste:percent','potency:percent','evasion:percentage_point','tenacity:percent'])
+  'penetration:percentage_point','haste:percent','potency:percent','evasion:percentage_point'])
   supported.add(key);
  const unsupported=gems.statSources.filter(s=>!supported.has(s.stat+':'+s.unit));
  if(unsupported.length)fail('unreconciled_stat_gem');
@@ -107,8 +107,9 @@ export function reviewFrozenForgeSocketsV2(
  // Separate candidate interpretation of legacy units, based on the
  // pre-affix stage and original Forge rolls. Never modify frozen copies.
  // Savage adds to the crit multiplier; Swift multiplies base haste only.
- // Ward/Resolute are explicit proposed point conversions, Might maps to
- // attack, Potent to authored direct skill damage, not generic healing/DoT.
+ // Ward is an explicit proposed point conversion; Might maps to attack,
+ // Potent to authored direct skill damage, not generic healing/DoT.
+ // Resolute is retired; existing non-gem Tenacity stays untouched.
  if(mechanics){
   if(g('power:percent'))stats.attackPower=round(base.attackPower*(1+raw('attack_pct')+g('power:percent')));
   if(g('critDamage:percent'))stats.critMultiplier=round(base.critMultiplier*(1+raw('crit_damage_pct'))+g('critDamage:percent'));
@@ -117,7 +118,6 @@ export function reviewFrozenForgeSocketsV2(
   if(g('penetration:percentage_point'))advanced.penetrationPp=round(raw('penetration_pp')+g('penetration:percentage_point'));
   if(g('potency:percent'))advanced.abilityDamagePct=round(raw('ability_damage_pct')+g('potency:percent'));
   if(g('evasion:percentage_point'))advanced.evasionPp=round(raw('evasion_pp')+g('evasion:percentage_point'));
-  if(g('tenacity:percent'))advanced.tenacityPp=round(raw('tenacity_pp')+g('tenacity:percent'));
   if(stats.attackPower>mechanics.maxFinalAttackPower||stats.haste>source.affixPolicy.maxFinalHaste||
     stats.critMultiplier>source.affixPolicy.maxFinalCritMultiplier||stats.critMultiplier<1)
    fail('combined_stat_cap');

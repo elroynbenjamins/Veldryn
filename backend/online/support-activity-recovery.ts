@@ -68,24 +68,33 @@ export type AuthorizedSupportJob={
 // authoritative gameplay gateway, normal idempotent commit and target-account
 // revision CAS. Audit authorization MUST be durable before dispatch; replay
 // must be checked before fresh execution. Never connect this to a public route.
+export type SupportRecoveryResult={status:'committed'|'already_at_destination';version:number;plan:SupportActivityPlan};
 export interface SupportRecoveryPorts{
- authorizeAndAudit(job:AuthorizedSupportJob):Promise<void>;
+ // Must bind actor, account, character, intent, approval and revision to the
+ // immutable job ID, and return a durable prior result for an exact replay.
+ authorizeAndAudit(job:AuthorizedSupportJob):Promise<{replay?:SupportRecoveryResult}>;
  read(accountId:string):Promise<SupportRecoverySnapshot>;
- dispatch(step:SupportRecoveryStep):Promise<{version:number}>;
+ dispatch(step:SupportRecoveryStep):Promise<{version:number;selectedCharacterId:string;regionId:string;activity?:{kind:string;targetId:string}|null}>;
+ recordResult(job:AuthorizedSupportJob,result:SupportRecoveryResult):Promise<void>;
 }
 export async function executeSupportActivityStep(ports:SupportRecoveryPorts,job:AuthorizedSupportJob){
  if(!job.operatorAccountId||!job.accountId||!job.characterId||!job.reason.trim()||job.reason.length>500||
  !/^support_[a-zA-Z0-9_-]{8,100}$/.test(job.requestId)||!Number.isSafeInteger(job.expectedVersion)||job.expectedVersion<0)throw new Error('support_invalid_job');
- await ports.authorizeAndAudit(job);
+ const authorized=await ports.authorizeAndAudit(job);
+ if(authorized.replay)return authorized.replay;
  const snapshot=await ports.read(job.accountId);
  if(snapshot.accountId!==job.accountId||snapshot.version!==job.expectedVersion)throw new Error('support_stale_scope');
  const plan=planSupportActivityRecovery(snapshot.state,job.characterId,job.intent,snapshot.serverNow);
  if(plan.requiresSelectionApproval&&!job.approveSelection)throw new Error('support_selection_approval_required');
  const command=plan.steps[0];
- if(!command)return {status:'already_at_destination' as const,version:snapshot.version,plan};
+ if(!command){const result={status:'already_at_destination' as const,version:snapshot.version,plan};await ports.recordResult(job,result);return result;}
  // One command per operator-approved step; do not silently retry or proceed
  // after a conflict. Re-read and explicitly approve the next step (if any).
  const result=await ports.dispatch({accountId:job.accountId,characterId:job.characterId,expectedVersion:snapshot.version,requestId:job.requestId,command});
- if(result.version!==snapshot.version+1)throw new Error('support_unconfirmed_commit');
- return {status:'committed' as const,version:result.version,plan};
+ if(result.version!==snapshot.version+1||result.selectedCharacterId!==job.characterId||
+ (command.type==='travel'&&result.regionId!==command.args?.id)||
+ (command.type==='start'&&result.activity?.targetId!==command.args?.id))throw new Error('support_unconfirmed_commit');
+ const completed={status:'committed' as const,version:result.version,plan};
+ await ports.recordResult(job,completed);
+ return completed;
 }

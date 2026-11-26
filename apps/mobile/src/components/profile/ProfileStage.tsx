@@ -26,7 +26,7 @@ import {PlayerBadges,PlayerBadgeShowcase} from '../PlayerBadges';
 import {PlayerStyledName} from '../PlayerStyledName';
 import {ProfileFrameOverlay} from '../ProfileFrameOverlay';
 import {AnimatedProfileBorderGlows,ProceduralProfileBorderGlows,ProceduralProfileSceneEffect,ProfileSceneEffect} from '../ProfileCosmeticMotion';
-import {cosmeticArtByBorder,cosmeticArtByEffect} from '../../theme/profile-cosmetic-art-v1';
+import {cosmeticArtByBorder,cosmeticArtByEffect} from '../../theme/profile-cosmetic-render-art';
 import {profileCosmeticRuntimeByBorder,profileCosmeticRuntimeByEffect} from '../../theme/profile-cosmetic-runtime-v1';
 import {profileAnimatedPieceEnabled} from '../../core/profile-cosmetic-access';
 import {ProfileBorderBackdrop} from '../ProfileBorderBackdrop';

@@ -1,0 +1,55 @@
+name: Hidden 2.0 compact stat review
+
+on:
+  pull_request:
+    branches:
+      - review/v2-private-gem-isolation-hardening-20261126
+    paths:
+      - 'docs/2-0/compact-*-review.test.mjs'
+      - '.github/workflows/compact-stat-review.yml'
+      - 'backend/src/server/equipment/equipment-crafting-v2-*.ts'
+  push:
+    branches:
+      - review/v2-compact-class-stat-scale-20261126
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compact-source-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate compact class curves and canonical Forge budget sensitivity
+        run: node --test docs/2-0/compact-forge-budget-review.test.mjs
+
+  compact-engine-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - run: pnpm --dir backend install --frozen-lockfile
+      - run: pnpm --dir backend build
+      - name: Run real-engine compact unit and pressure sensitivity
+        shell: bash
+        run: |
+          set -o pipefail
+          node --test docs/2-0/compact-combat-review.test.mjs | tee compact-engine-review.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: compact-engine-review
+          path: compact-engine-review.log

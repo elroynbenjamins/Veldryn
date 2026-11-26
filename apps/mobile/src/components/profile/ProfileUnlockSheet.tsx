@@ -1,3 +1,4 @@
+import {wardrobeCollectionLabel} from './wardrobe-visual-tiers';
 import {profileT,profileSourceText} from '../../i18n/profile';
 import {useGameLanguage} from '../../i18n/GameLanguageProvider';
 import {useMemo,type ReactNode} from 'react';
@@ -18,7 +19,7 @@ export function ProfileUnlockSheet({row,artwork,reduceMotion,tryingOn,onTryOn,on
  const language=useGameLanguage();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  return <GameModalSurface visible={!!row} reduceMotion={reduceMotion} onClose={onClose} backdropLabel={profileT(language,"Close the unlock details")} surfaceStyle={s.sheet}>
-  <GameModalHeader eyebrow={profileT(language,"HOW TO UNLOCK")} title={row?.name??''} onClose={onClose}/>
+  <GameModalHeader eyebrow={profileT(language,"HOW TO UNLOCK")} title={row?(wardrobeCollectionLabel(row)?.fullName??row.name):''} onClose={onClose}/>
   {row?<>
    <View style={s.head}>
     {artwork?<View style={s.art}>{artwork}</View>:null}

@@ -6,7 +6,8 @@ import {attemptEquipmentUpgrade,replaceGem,socketGem,unsocketGem} from './equipm
 import {canUsePrivateTitleText} from './ultra-luxe-grants';
 import {selectProfileIcon,canUseProfileIcon,reconcileAccountProfileIcon} from './profile-icons';
 import {canUseProfileEffect} from './profile-effects';
-import {profileAnimatedCosmeticsEnabled} from './profile-cosmetic-access';
+import {profileAnimatedPieceEnabled} from './profile-cosmetic-access';
+import {wave2SetFor,wave2Owned} from './profile-cosmetic-wave2';
 import {transitionActivity} from './playability';
 import {SUPPORTED_LANGUAGES} from '../i18n/languages';
 import {QUICK_NAV_DESTINATIONS} from './quick-navigation';
@@ -541,8 +542,8 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
    if(!canUsePrivateTitleText(state,patch.profileTitle))throw new Error('cosmetic_not_owned');
    if(patch.profileIconId&&!canUseProfileIcon(state,patch.profileIconId))throw new Error('cosmetic_not_owned');
    if(patch.profileBackgroundId&&!['asterfall-night','ironwood-dawn','silverbrook-mist','oathglass-hall',...(state.account.unlockedProfileBackgroundIds??[])].includes(patch.profileBackgroundId))throw new Error('cosmetic_not_owned');
-   if(patch.profileBorderId&&!state.account.unlockedProfileBorderIds?.includes(patch.profileBorderId))throw new Error('cosmetic_not_owned');
-   if(patch.profileEffectId&&!profileAnimatedCosmeticsEnabled(state)&&patch.profileEffectId!==state.character.profileEffectId)throw new Error('feature_not_released');
+   if(patch.profileBorderId&&(wave2SetFor('border',patch.profileBorderId)?!wave2Owned(state.account,'border',patch.profileBorderId):!state.account.unlockedProfileBorderIds?.includes(patch.profileBorderId)))throw new Error('cosmetic_not_owned');
+   if(patch.profileEffectId&&!profileAnimatedPieceEnabled(state,'effect',patch.profileEffectId)&&patch.profileEffectId!==state.character.profileEffectId)throw new Error('feature_not_released');
    if(patch.profileEffectId&&!canUseProfileEffect(state,patch.profileEffectId))throw new Error('cosmetic_not_owned');
    if(patch.selectedCosmeticPetId&&!state.account.unlockedCosmeticPetIds?.includes(patch.selectedCosmeticPetId))throw new Error('cosmetic_not_owned');
    // An explicit validated icon write changes the account. Other cosmetics remain character-scoped.

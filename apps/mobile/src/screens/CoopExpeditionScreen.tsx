@@ -85,6 +85,7 @@ export function CoopExpeditionScreen({onClose,onOpenChat,language,state,entrySou
     return ()=>onRunActiveChange?.(false);
   },[isActiveRun,onRunActiveChange]);
   const [showLive,setShowLive]=useState(false);
+  const [showShop,setShowShop]=useState(false);
   const [marksShopOpen,setMarksShopOpen]=useState(false);
   const [marksShopSnapshot,setMarksShopSnapshot]=useState<DungeonMarksShopSnapshot|null>(null);
   const [marksShopError,setMarksShopError]=useState('');
@@ -129,7 +130,8 @@ export function CoopExpeditionScreen({onClose,onOpenChat,language,state,entrySou
   const selectableLoadouts=useMemo(()=>state.character?(entry?.loadouts??[]).map(loadout=>presentCoopLoadout(loadout,state.character!.id)).filter(loadout=>loadout.selectable):[],[entry,state.character]);
   const runIcons=useCoopProfileIcons('run',displayRun?[displayRun.runId]:[],entrySource.kind==='real',displayRun?.roleSlots.map(slot=>slot.memberId??'').sort().join(','));
   const runWithIcons=useMemo(()=>displayRun&&entrySource.kind==='real'?{...displayRun,roleSlots:displayRun.roleSlots.map(slot=>({...slot,...(runIcons.get(slot.memberId??'')??noCoopProfileIcon)}))}:displayRun,[displayRun,entrySource.kind,runIcons]);
-  const showRecruitment=mode==='live'&&coopLiveReadyEnabled&&entrySource.kind==='real'&&!showLive&&!showLoadouts&&!selected&&!selectedEvent&&!run&&!eventRun;
+  const browseVisible=!showLive&&!showLoadouts&&!selected&&!selectedEvent&&!run&&!eventRun&&!showShop&&!(dungeonMarksShopPreview&&marksShopOpen);
+  const showRecruitment=foreground&&browseVisible&&mode==='live'&&coopLiveReadyEnabled&&entrySource.kind==='real';
   const recruitmentIcons=useCoopProfileIcons('lfg',(entry?.liveRecruitment??[]).map(post=>post.id),showRecruitment);
   const recruitmentWithIcons=useMemo(()=>(entry?.liveRecruitment??[]).map(post=>({...post,...(recruitmentIcons.get(post.id)??noCoopProfileIcon)})),[entry?.liveRecruitment,recruitmentIcons]);
   const activeRunId=useRef<string|undefined>(undefined);activeRunId.current=run?.runId;
@@ -158,35 +160,39 @@ export function CoopExpeditionScreen({onClose,onOpenChat,language,state,entrySou
     if(discovered.length)setRecipeUnlocks(previous=>{const knownFamilies=new Set(previous.map(item=>item.familyId));return [...previous,...discovered.filter(item=>!knownFamilies.has(item.familyId))];});
   },[state,run?.runId]);
   const [rematchOpen,setRematchOpen]=useState(false);
-  const [showShop,setShowShop]=useState(false);
   const [weeklyQuest,setWeeklyQuest]=useState<DungeonWeeklyQuestSnapshot>();
   const [weeklyQuestLoading,setWeeklyQuestLoading]=useState(false);
   const [weeklyQuestError,setWeeklyQuestError]=useState('');
   const [weeklyQuestClaiming,setWeeklyQuestClaiming]=useState(false);
   const weeklyQuestCharacterRef=useRef(characterId);weeklyQuestCharacterRef.current=characterId;
+  const weeklyQuestEligible=(state.character?.level??0)>=10;
+  const weeklyQuestRequest=useRef(0);
   const refreshDungeonWeeklyQuest=useCallback(async()=>{
-   if(entrySource.kind!=='real'||!characterId||(state.character?.level??0)<10)return;
+   if(entrySource.kind!=='real'||!characterId||!weeklyQuestEligible)return;
+   const request=++weeklyQuestRequest.current;
+   const current=()=>weeklyQuestCharacterRef.current===characterId&&weeklyQuestRequest.current===request;
    setWeeklyQuestLoading(true);setWeeklyQuestError('');
    try{
     const snapshot=validateDungeonWeeklyQuestSnapshot(await coopClient.dungeonWeeklyQuest());
-    if(weeklyQuestCharacterRef.current===characterId)setWeeklyQuest(snapshot);
+    if(current())setWeeklyQuest(snapshot);
    }catch(reason){
-    if(weeklyQuestCharacterRef.current===characterId){setWeeklyQuest(undefined);setWeeklyQuestError(coopErrorMessage(reason,'Could not verify weekly dungeon quest.'));}
-   }finally{if(weeklyQuestCharacterRef.current===characterId)setWeeklyQuestLoading(false);}
-  },[entrySource.kind,characterId,state.character?.level]);
+    if(current()){setWeeklyQuest(undefined);setWeeklyQuestError(coopErrorMessage(reason,'Could not verify weekly dungeon quest.'));}
+   }finally{if(current())setWeeklyQuestLoading(false);}
+  },[entrySource.kind,characterId,weeklyQuestEligible]);
+  useEffect(()=>{setWeeklyQuest(undefined);setWeeklyQuestError('');setWeeklyQuestLoading(false);},[characterId,entrySource.kind]);
   useEffect(()=>{
-   setWeeklyQuest(undefined);
-   if(!foreground||entrySource.kind!=='real'||!characterId||(state.character?.level??0)<10)return;
+   if(!foreground||!browseVisible||entrySource.kind!=='real'||!characterId||!weeklyQuestEligible)return;
    void refreshDungeonWeeklyQuest();
-  },[foreground,entrySource.kind,characterId,state.character?.level,refreshDungeonWeeklyQuest]);
+   return()=>{weeklyQuestRequest.current++;};
+  },[foreground,browseVisible,entrySource.kind,characterId,weeklyQuestEligible,refreshDungeonWeeklyQuest]);
   // Keep the dungeon card correct if a player leaves this screen open over
   // Monday's UTC reset; only the server decides the new weekly objective.
   useEffect(()=>{
-   if(!weeklyQuest||!foreground||entrySource.kind!=='real')return;
+   if(!weeklyQuest||!foreground||!browseVisible||entrySource.kind!=='real')return;
    const remaining=weeklyQuest.resetAtMs-Date.now();
    const timer=setTimeout(()=>void refreshDungeonWeeklyQuest(),Math.max(1000,remaining+1000));
    return()=>clearTimeout(timer);
-  },[weeklyQuest?.resetAtMs,foreground,entrySource.kind,refreshDungeonWeeklyQuest]);
+  },[weeklyQuest?.resetAtMs,foreground,browseVisible,entrySource.kind,refreshDungeonWeeklyQuest]);
   const claimDungeonWeeklyQuest=async()=>{
    if(!weeklyQuest||weeklyQuest.claimed||weeklyQuest.progress<weeklyQuest.target||weeklyQuestClaiming||busy)return;
    setWeeklyQuestClaiming(true);setNotice('');
@@ -310,11 +316,11 @@ export function CoopExpeditionScreen({onClose,onOpenChat,language,state,entrySou
   useEffect(()=>{let cancelled=false;if(coopLiveReadyEnabled&&entrySource.kind==='real')void coopClient.liveQueue().then(value=>{if(!cancelled&&value.ticket&&['queued','reserved'].includes(value.ticket.status))setShowLive(true);}).catch(()=>{});return()=>{cancelled=true;};},[entrySource]);
   useEffect(()=>{if(entrySource.kind==='real')void coopClient.hasPending().then(setPending).catch(()=>{});},[entrySource]);
   useEffect(()=>{
-    if(!foreground||mode!=='live'||!coopLiveReadyEnabled||entrySource.kind!=='real'||showLive||showLoadouts||selected||selectedEvent||run||eventRun)return;
+    if(!showRecruitment)return;
     let stopped=false,inFlight=false;
     const refreshBoard=async()=>{if(stopped||inFlight)return;inFlight=true;try{const posts=await coopClient.liveRecruitment();if(!stopped)setEntry(current=>current?{...current,liveRecruitment:posts}:current);}catch{}finally{inFlight=false;}};
     void refreshBoard();const timer=setInterval(()=>void refreshBoard(),15_000);return()=>{stopped=true;clearInterval(timer);};
-  },[entrySource.kind,mode,foreground,showLive,showLoadouts,selected,selectedEvent,run,eventRun]);
+  },[showRecruitment]);
   const syncRunId=eventRun?.runId??run?.runId;
   const syncMode=eventRun?'event':run?.mode??'qmode';
   const syncPhase=eventRun?.phase??run?.phase;
@@ -329,10 +335,12 @@ export function CoopExpeditionScreen({onClose,onOpenChat,language,state,entrySou
     enabled:foreground&&entrySource.kind==='real',
     refresh:refreshActiveRun,setError:setSyncError,
   });
+  // The terminal result does not render a chat bar. Keep run/reward sync intact.
+  const liveChatVisible=run?.mode==='live'&&run.phase!=='completed'&&run.phase!=='failed'&&!eventRun;
   // Chat has its own bounded cadence and never rides on every battle/vote update.
   useEffect(()=>{
     const id=run?.runId;
-    if(!foreground||!id||run?.mode!=='live'||eventRun||entrySource.kind!=='real')return;
+    if(!foreground||!id||!liveChatVisible||entrySource.kind!=='real')return;
     let stopped=false,inFlight=false;
     const update=async()=>{
       if(stopped||inFlight)return;
@@ -344,7 +352,7 @@ export function CoopExpeditionScreen({onClose,onOpenChat,language,state,entrySou
     void update();
     const timer=setInterval(()=>void update(),COOP_CHAT_REFRESH_MS);
     return()=>{stopped=true;clearInterval(timer);};
-  },[foreground,run?.runId,run?.mode,eventRun?.runId,entrySource.kind]);
+  },[foreground,run?.runId,liveChatVisible,entrySource.kind]);
   // Final rewards are immutable until claimed, not a per-frame polling dependency.
   const terminalRunId=run&&['completed','failed'].includes(run.phase)?run.runId:undefined;
   useEffect(()=>{
@@ -533,7 +541,7 @@ export function CoopExpeditionScreen({onClose,onOpenChat,language,state,entrySou
     const view=runWithIcons!,marks=eventRun.settlement.rewardMarks??0;
     return <View style={{flex:1}}>{retry}<CoopRunOverview language={language} run={view} vipPlus={vipPlus} playbackSpeed={dungeonPlaybackSpeed} onPlaybackSpeedChange={updateDungeonPlaybackSpeed} seasonal eventName={eventRun.eventName} notice={notice} syncError={syncError} busy={busy} reduceMotion={state.settings.reduceMotion} onBack={()=>{setEventRun(undefined);void load();}} onRefresh={()=>action(async()=>{await refreshEventRun(eventRun.runId);setSyncError('')})} onChoose={nodeId=>void action(async()=>{if(!eventRun.decisionId||eventRun.decisionRevision===undefined)throw new Error(st("Refresh this run before choosing."));acceptEventRun(await coopClient.chooseEvent(eventRun.runId,{requestId:coopRequestId(),decisionId:eventRun.decisionId,decisionRevision:eventRun.decisionRevision,optionId:nodeId}));})} terminalAction={eventRun.phase==='completed'?{label:st('Collect {marks} event currency',{marks}),claimed:eventRun.settlement.status==='claimed',completeText:st('{marks} event currency collected.',{marks}),onPress:()=>void action(async()=>{acceptEventRun(await coopClient.claimEvent(eventRun.runId));setNotice(st('{marks} event currency and reputation collected.',{marks}));await onRewardsChanged?.();})}:undefined}/></View>;
   }
-  if(run)return <View style={{flex:1}}>{retry}<CoopRunOverview key={run.runId} language={language} run={runWithIcons!} vipPlus={vipPlus} playbackSpeed={dungeonPlaybackSpeed} onPlaybackSpeedChange={updateDungeonPlaybackSpeed} myVotedNodeId={myLiveVote?.runId===run.runId&&myLiveVote.decisionId===run.decisionId?myLiveVote.optionId:undefined} selfVoter={state.character?{name:state.character.name,profileIconId:state.character.profileIconId,className:state.character.classId}:undefined} notice={notice} syncError={syncError} busy={busy} rewards={rewards} combatMarks={combatMarkReceipt?.runId===run.runId?combatMarkReceipt.marks:undefined} recipeUnlocks={recipeUnlocks} rewardBudget={entry?.rewardBudget} liveFellowshipRemaining={entry?.liveFellowshipRemaining} chatMessages={chatMessages} onChatSend={run.mode==='live'?async text=>{const response=await coopClient.chat(run.runId,text);setChatMessages(response.messages);}:undefined} reduceMotion={state.settings.reduceMotion} onBack={()=>{setRun(undefined);setChatMessages([]);setRewards([]);void load();void refreshDungeonWeeklyQuest();}} onRefresh={()=>action(async()=>{await refreshRun(run.runId);if(run.mode==='live'){const chat=await coopClient.partyChat(run.runId);if(activeRunId.current===run.runId)setChatMessages(chat.messages);}if(['completed','failed'].includes(run.phase)){const items=await coopClient.rewards(run.runId);if(activeRunId.current===run.runId)setRewards(items);void coopClient.combatMarks(run.runId).then(marks=>{if(activeRunId.current===run.runId)setCombatMarkReceipt({runId:run.runId,marks});}).catch(()=>{});}setSyncError('')})} onChoose={(nodeId,boonId)=>void action(async()=>{if(!run.decisionId||run.decisionRevision===undefined)throw new Error(st("Refresh this run before choosing."));const body={requestId:coopRequestId(),decisionId:run.decisionId,decisionRevision:run.decisionRevision,optionId:nodeId,...(boonId?{boonId}:{})};const voting=run.mode==='live'&&run.options.length>1;const result=voting?await coopClient.vote(run.runId,body):await coopClient.choose(run.runId,body);if(voting)setMyLiveVote({runId:run.runId,decisionId:run.decisionId,optionId:nodeId});acceptRun(result);})} dungeonTonic={entrySource.kind==='real'?dungeonTonicView(run,state):undefined} onPrepareTonic={entrySource.kind==='real'?potionId=>void action(async()=>{
+  if(run)return <View style={{flex:1}}>{retry}<CoopRunOverview key={run.runId} language={language} run={runWithIcons!} vipPlus={vipPlus} playbackSpeed={dungeonPlaybackSpeed} onPlaybackSpeedChange={updateDungeonPlaybackSpeed} myVotedNodeId={myLiveVote?.runId===run.runId&&myLiveVote.decisionId===run.decisionId?myLiveVote.optionId:undefined} selfVoter={state.character?{name:state.character.name,profileIconId:state.character.profileIconId,className:state.character.classId}:undefined} notice={notice} syncError={syncError} busy={busy} rewards={rewards} combatMarks={combatMarkReceipt?.runId===run.runId?combatMarkReceipt.marks:undefined} recipeUnlocks={recipeUnlocks} rewardBudget={entry?.rewardBudget} liveFellowshipRemaining={entry?.liveFellowshipRemaining} chatMessages={chatMessages} onChatSend={run.mode==='live'?async text=>{const response=await coopClient.chat(run.runId,text);setChatMessages(response.messages);}:undefined} reduceMotion={state.settings.reduceMotion} onBack={()=>{setRun(undefined);setChatMessages([]);setRewards([]);void load();}} onRefresh={()=>action(async()=>{await refreshRun(run.runId);if(liveChatVisible){const chat=await coopClient.partyChat(run.runId);if(activeRunId.current===run.runId)setChatMessages(chat.messages);}if(['completed','failed'].includes(run.phase)){const items=await coopClient.rewards(run.runId);if(activeRunId.current===run.runId)setRewards(items);void coopClient.combatMarks(run.runId).then(marks=>{if(activeRunId.current===run.runId)setCombatMarkReceipt({runId:run.runId,marks});}).catch(()=>{});}setSyncError('')})} onChoose={(nodeId,boonId)=>void action(async()=>{if(!run.decisionId||run.decisionRevision===undefined)throw new Error(st("Refresh this run before choosing."));const body={requestId:coopRequestId(),decisionId:run.decisionId,decisionRevision:run.decisionRevision,optionId:nodeId,...(boonId?{boonId}:{})};const voting=run.mode==='live'&&run.options.length>1;const result=voting?await coopClient.vote(run.runId,body):await coopClient.choose(run.runId,body);if(voting)setMyLiveVote({runId:run.runId,decisionId:run.decisionId,optionId:nodeId});acceptRun(result);})} dungeonTonic={entrySource.kind==='real'?dungeonTonicView(run,state):undefined} onPrepareTonic={entrySource.kind==='real'?potionId=>void action(async()=>{
      acceptRun(await coopClient.prepareTonic(run.runId,potionId));
      refreshConsumableInventory();
     }):undefined} healingPotion={entrySource.kind==='real'?dungeonHealingPotionView(run,state):undefined} onUseHealingPotion={entrySource.kind==='real'?()=>void action(async()=>{

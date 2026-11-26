@@ -62,11 +62,12 @@ async function latencyReadOverlap(){
 async function main(){
  await latencyReadOverlap();
  let state:GameState|null=null,version=0,commits=0,clock=1700000000000,transportFailure=false,suppressLiveEvent=false,generatedIds=0,blockedDeleteCharacterId:string|null=null,deletedCommitCharacterId:string|null=null;
- const commandMetrics:Record<string,unknown>[]=[];
+ const commandMetrics:Record<string,unknown>[]=[],guildQuestCalls:Record<string,unknown>[]=[];
  const receipts=new Map<string,{response:unknown;requestHash:string}>();
  const services:GameplayServices={authenticate:async token=>token==='alice-token'?'alice':null,randomId:()=>['11111111-1111-4111-8111-111111111111','33333333-3333-4333-8333-333333333333'][generatedIds++]??'44444444-4444-4444-8444-444444444444',randomRoll:()=>.25,
   rpc:async<T>(name:string,args:Record<string,unknown>):Promise<T>=>{
    if(name==='record_online_command_outcome_server_v1'){commandMetrics.push(args);return null as T;}
+   if(name==='guild_quest_record_contributions_v1'){guildQuestCalls.push(args);return null as T;}
    if(name==='read_online_game_receipt_server_v1')return (receipts.get(args.p_request_id as string)??null) as T;
    if(name==='load_online_game_server_v1')return {state:structuredClone(state),version,serverNow:clock,characterId:state?.character?.id??null,walletGold:state?.character?.gold??null,guildMember:false,liveEvent:suppressLiveEvent?undefined:state?.account.liveEvent,communityProgress:{}} as T;
    if(name==='character_delete_coop_guard_server_v1')return {blocked:args.p_character_id===blockedDeleteCharacterId,reason:'Leave the Live co-op queue or ready check before deleting this character.'} as T;
@@ -85,12 +86,17 @@ async function main(){
  assert.equal((await request({type:'claim',args:{xp:100000}},'inject-xp-01',0)).status,400);
  assert.equal((await request({type:'create',args:{classId:'IRONWARDEN',name:'Alice Hero'}},'create-00001',0)).status,200);
  assert.equal((await request({args:{name:'Alice Hero',classId:'IRONWARDEN'},type:'create'},'create-00001',0)).status,200);assert.equal(commits,1,'canonical replay');
+ assert.equal(guildQuestCalls.length,0,'creation and replay have no guild quest contribution call');
  state={...state!,inventory:{...state!.inventory,stacks:[...state!.inventory.stacks,{itemId:'HOLY_WATER',quantity:1}]},character:{...state!.character!,gold:100},skills:state!.skills.map(skill=>skill.skillId==='alchemy'||skill.skillId==='herbalism'?{...skill,xp:0,level:1}:skill)};
  assert.equal((await request({type:'faith_practice',args:{tierId:'FAITH_QUIET',count:1}},'faith-00001',1)).status,200,'Faith reservation persists through online command');
  assert.equal((await request({type:'stop'},'faith-stop-01',2)).status,200,'Faith refund persists through online command');
  assert.equal((await request({type:'start',args:{kind:'gathering',id:'DEWLEAF_PATCH'}},'herb-start-01',3)).status,200,'Herbalism activity starts online');
+ assert.equal(guildQuestCalls.length,0,'faith and activity start without earned contributions skip the bridge');
  clock+=60000;
  const herbClaim=await request({type:'claim'},'herb-claim-01',4);assert.equal(herbClaim.status,200,'Herbalism settlement persists online');const herbPayload=await herbClaim.json();assert.equal(herbPayload.guildProjectEffort[0].kind,'skilling');assert.equal(herbPayload.guildProjectEffort[0].endsAtMs-herbPayload.guildProjectEffort[0].startsAtMs,60000);assert.deepEqual(herbPayload.guildPveEffort,[],'Gathering does not damage bosses');
+ assert.equal(guildQuestCalls.length,1,'earned gathering contribution still reaches bridge');
+ assert.equal(guildQuestCalls[0].p_account_id,'alice');
+ assert.ok((guildQuestCalls[0].p_contributions as Array<{kind:string;units:number}>).some(e=>e.kind==='gathering'&&e.units>0),'actual quest units preserved');
  // The healing potion recipe now charges five times the original ingredients.
  const dewleafCost=alchemyRecipeDef('BREW_DEWLEAF_DRAUGHT')!.inputs.find(input=>input.itemId==='DEWLEAF')!.quantity;
  state={...state!,inventory:{...state!.inventory,stacks:state!.inventory.stacks.map(stack=>stack.itemId==='DEWLEAF'?{...stack,quantity:dewleafCost}:stack)}};

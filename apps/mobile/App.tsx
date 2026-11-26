@@ -648,7 +648,7 @@ function VeldrynApp(){
 
   }
   async function perform(command?:GameCommand,presentRewards=true,welcomeBack=false,silentFailure=false,throwOnFailure=false){if(welcomeBack)setOfflineSettling(true);try{
-    const before=stateRef.current,result=await online.execute(command);
+    const before=stateRef.current,result=await online.execute(command,welcomeBack);
     setOnlineActionError('');
     queuePreparationNotices(before,result.state);stateRef.current=result.state;setState(result.state);queueCustomizationUnlocks(before,result.state);
     if(result.executedCommand.type==='quest')queueFeatureUnlockMoments(before,result.state);

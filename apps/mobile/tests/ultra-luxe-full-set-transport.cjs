@@ -7,6 +7,7 @@ function load(file){
  assert(!code.diagnostics.some(d=>d.category===ts.DiagnosticCategory.Error),file);
  new Function('exports','module','require',code.outputText)(mod.exports,mod,id=>load(path.resolve(path.dirname(file),id+'.ts')));return mod.exports;
 }
+const nameReadback=load(path.join(repo,'apps/mobile/src/online/ultra-luxe-name-readback.ts'));
 const command=load(path.join(core,'ultra-luxe-full-set-command.ts')),m=load(path.join(core,'ultra-luxe-full-set-name.ts')),server=load(path.join(repo,'backend/online/ultra-luxe-full-set-command.ts')),r=load(path.join(core,'online-game-repository.ts'));
 const accountId='account-a',characterId='00000000-0000-4000-8000-000000000001',scope={accountId,characterId};
 const before={icon:'old-icon',scene:'old-scene',frame:'old-frame',effect:'old-effect',pet:'old-pet',title:'old-title'};
@@ -17,6 +18,14 @@ const sql=fs.readFileSync(path.join(repo,'docs/roadmap/ultra-luxe-full-set-commi
   assert(sql.includes("("+[...def,preset].map(v=>"'"+v+"'").join(',')+")"));
   const state={character:{id:characterId,profileIconId:'old-icon',profileTitle:before.title,gold:123,equipment:{weapon:'untouched'}},account:{unlockedProfileBackgroundIds:[scene],unlockedProfileBorderIds:[frame],unlockedCosmeticPetIds:[pet],unlockedTitleIds:['ascendant-'+stem+'-title']},settings:{reduceMotion:false}};
   const names={accountId,ownedIds:[preset],selectedId:null};
+  assert.deepEqual(nameReadback.normalizeLuxeNameReadback({...names,ownedIds:[preset,preset,'unknown']},accountId,true),names);
+  assert.equal(nameReadback.normalizeLuxeNameReadback({...names,selectedId:'unknown'},accountId,true),undefined);
+  assert.equal(nameReadback.normalizeLuxeNameReadback({...names,selectedId:preset,ownedIds:[]},accountId,true),undefined);
+  assert.equal(nameReadback.normalizeLuxeNameReadback(names,'other',true),undefined);
+  assert.equal(nameReadback.normalizeLuxeNameReadback({...names,selectedId:preset},accountId,true).selectedId,preset);
+  assert.equal(nameReadback.ownedLuxePickerPresets([preset],true).length,1);
+  assert.equal(nameReadback.verifiedLuxeNameReadbackStyle({...names,selectedId:preset}).animation,'flow');
+  if(!['ascendant-celestial-name','ascendant-draconic-name'].includes(preset))assert.equal(nameReadback.ownedLuxePickerPresets([preset],false).length,0);
   const plan=command.verifiedUltraLuxeFullSetPlan(state,scope,id,before,names);assert(plan);
   assert.equal(command.verifiedUltraLuxeFullSetPlan({...state,account:{...state.account,unlockedTitleIds:[]}},scope,id,before,names),null);
   assert.equal(command.verifiedUltraLuxeFullSetPlan(state,{...scope,accountId:'other'},id,before,names),null);
@@ -62,5 +71,15 @@ const sql=fs.readFileSync(path.join(repo,'docs/roadmap/ultra-luxe-full-set-commi
  assert(panel.includes('ultraLuxeFullSetEquipped(selection,choice.patch'));
  const hook=fs.readFileSync(path.join(repo,'apps/mobile/src/online/useOnlineGame.ts'),'utf8');
  assert(hook.includes("EXPO_PUBLIC_ULTRA_LUXE_FULL_SET==='true'"));assert(hook.includes('invalidatePlayerIdentity(repo.accountId)'));
- console.log('Six combined equip route and durable recovery mocks passed; closed feature gate and UI receipt checks.');
+ const root=fs.readFileSync(path.join(repo,'apps/mobile/App.tsx'),'utf8'),custom=fs.readFileSync(path.join(repo,'apps/mobile/src/screens/ProfileCustomizeScreen.tsx'),'utf8');
+ assert(root.includes('onEquipUltraLuxe={online.equipUltraLuxeFullSet}'));
+ assert(custom.includes('verifiedNames.projection'));assert(custom.includes('fullSetEnabled={!!onEquipUltraLuxe||!!fullSetPort}'));
+ assert(panel.includes('if(fullSetEnabled&&!fullSetPort&&ultraLuxeFullSetNamePreset(setId))return;'));
+ const route=fs.readFileSync(path.join(repo,'backend/online/gameplay.ts'),'utf8');
+ assert(route.includes('privateGrants&&services.ultraLuxeFullSetAuthority===true'));
+ assert(route.indexOf('executeUltraLuxeFullSetCommand({enabled:fullSetAuthority')<route.indexOf('command=validateGameCommand(body.command)'));
+ assert(route.includes("if(body.requestId.startsWith(ULTRA_LUXE_REQUEST_PREFIX))throw new GameplayError('invalid_request')"));
+ const edge=fs.readFileSync(path.join(repo,'backend/online/edge.ts'),'utf8');
+ assert(edge.includes("Deno.env.get('ULTRA_LUXE_FULL_SET_AUTHORITY')==='true'"));
+ console.log('Six combined equip route and durable recovery mocks passed; closed feature gate, verified name readback and root/route source checks.');
 })().catch(e=>{console.error(e);process.exitCode=1;});

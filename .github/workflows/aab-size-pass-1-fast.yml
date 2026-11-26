@@ -12,30 +12,59 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - run: |
           sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends webp ripgrep >/dev/null
-      - name: Measure high-quality WebP encode PSNR and savings
+          sudo apt-get install -y --no-install-recommends webp ripgrep python3-pil >/dev/null
+      - name: Measure decoded image fidelity and exact alpha before selecting candidates
         run: |
-          python3 - <<'PY'
+          /usr/bin/python3 - <<'PY'
           from pathlib import Path
-          import subprocess,re
-          def enc(p,q,out):
-              x=subprocess.run(['cwebp','-q',str(q),'-m','4','-alpha_q','100','-metadata','none','-print_psnr',str(p),'-o',str(out)],capture_output=True,text=True,check=True)
-              txt=x.stdout+x.stderr
-              m=re.search(r'PSNR Y: ([0-9.]+)',txt)
-              return out.stat().st_size,float(m.group(1)) if m else None
-          cards=[]
-          for p in Path('apps/mobile/assets/card-backgrounds').glob('*.webp'):
-              if p.stat().st_size<1024*1024: continue
-              if not subprocess.run(['rg','-l','-F',p.name,'apps/mobile/src'],capture_output=True,text=True).stdout.strip(): continue
-              cards.append(p)
-          pets=[*Path('apps/mobile/assets/master_roster/pets/portraits_512').glob('*.png'),*Path('apps/mobile/assets/guild-token-shop/pets/portraits').glob('*.png')]
-          runtime=[Path('apps/mobile/assets/gem-sprite-v2.png'),Path('apps/mobile/assets/unrefined-gem.png'),Path('apps/mobile/assets/regional-resources-v2.png'),Path('apps/mobile/assets/events/frostfall/candy_frostmint.png')]
-          for label,paths,q in [('CARDS',cards,85),('PETS',pets,90),('RUNTIME',runtime,90)]:
-              old=new=0;ps=[]
-              for i,p in enumerate(paths):
-                  z,v=enc(p,q,Path('/tmp')/f'{label}-{i}.webp');old+=p.stat().st_size;new+=z
-                  if v is not None: ps.append(v)
-              print(f'{label}_QUALITY q={q} files={len(paths)} old={old/1048576:.2f}MiB new={new/1048576:.2f}MiB save={(old-new)/1048576:.2f}MiB psnr_min={min(ps) if ps else None} psnr_avg={sum(ps)/len(ps) if ps else None}')
+          from PIL import Image, ImageChops, ImageStat
+          import math, subprocess, tempfile
+          def measure(a, b):
+              assert a.size == b.size, 'Encoded image dimensions changed'
+              alpha_equal = ImageChops.difference(a.getchannel('A'), b.getchannel('A')).getbbox() is None
+              scores = []
+              for bg in [(16, 24, 35, 255), (236, 221, 193, 255)]:
+                  base = Image.new('RGBA', a.size, bg)
+                  x = Image.alpha_composite(base, a).convert('RGB')
+                  y = Image.alpha_composite(base, b).convert('RGB')
+                  mse = sum(ImageStat.Stat(ImageChops.difference(x, y)).sum2) / (3 * a.width * a.height)
+                  scores.append(math.inf if mse == 0 else 10 * math.log10(255**2 / mse))
+              return alpha_equal, min(scores)
+          def benchmark(p, args, out, original):
+              subprocess.run(['cwebp', '-quiet', *args, '-metadata', 'none', str(p), '-o', str(out)], check=True)
+              with Image.open(out) as decoded:
+                  alpha, score = measure(original, decoded.convert('RGBA'))
+              return out.stat().st_size, alpha, score
+          cards = [p for p in sorted(Path('apps/mobile/assets/card-backgrounds').glob('*.webp'))
+                   if p.stat().st_size >= 1024*1024 and subprocess.run(['rg','-l','-F',p.name,'apps/mobile/src'],capture_output=True,text=True).stdout.strip()]
+          pets = sorted([*Path('apps/mobile/assets/master_roster/pets/portraits_512').glob('*.png'), *Path('apps/mobile/assets/guild-token-shop/pets/portraits').glob('*.png')])
+          runtime = [Path('apps/mobile/assets/gem-sprite-v2.png'),Path('apps/mobile/assets/unrefined-gem.png'),Path('apps/mobile/assets/regional-resources-v2.png'),Path('apps/mobile/assets/events/frostfall/candy_frostmint.png')]
+          lossy = lambda q: ['-q',str(q),'-m','4','-alpha_q','100']
+          lossless = ['-lossless','-z','4','-exact']
+          # Thresholds are triage criteria, not permission to replace art without native visual QA.
+          groups = [('CARDS',cards,[('q85',lossy(85),38),('q90',lossy(90),38)]),
+                    ('PETS',pets,[('q90',lossy(90),42),('lossless',lossless,math.inf)]),
+                    ('RUNTIME',runtime,[('lossless',lossless,math.inf)])]
+          with tempfile.TemporaryDirectory() as tmp:
+              for label, paths, modes in groups:
+                  assert paths, f'No inputs found for {label}'
+                  stats = {name:[0,0,0,0,math.inf] for name,_,_ in modes}
+                  for i,p in enumerate(paths):
+                      assert p.is_file(), f'Missing {p}'
+                      old = p.stat().st_size
+                      with Image.open(p) as raw:
+                          original = raw.convert('RGBA')
+                      for name,args,minimum in modes:
+                          out = Path(tmp)/f'{label}-{i}-{name}.webp'
+                          size,alpha,score = benchmark(p,args,out,original)
+                          eligible = alpha and score >= minimum and size < old
+                          s = stats[name]
+                          s[0] += old; s[1] += size; s[2] += int(eligible); s[3] += old-size if eligible else 0; s[4] = min(s[4],score)
+                          print(f'{label} {name} {p} {original.width}x{original.height} old={old} new={size} alpha_exact={alpha} psnr_min={score:.2f} candidate={eligible}')
+                  for name,s in stats.items():
+                      print(f'{label}_QUALITY {name} files={len(paths)} total_save={(s[0]-s[1])/1048576:.2f}MiB candidates={s[2]} candidate_save={s[3]/1048576:.2f}MiB psnr_min={s[4]:.2f}')
           PY

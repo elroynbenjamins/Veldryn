@@ -1,0 +1,337 @@
+{
+  "status": "review-only; authored pixel rails and concept-derived portraits, not production-approved",
+  "sourceFrame": [
+    768,
+    432
+  ],
+  "portraitSize": [
+    256,
+    256
+  ],
+  "effectPeriodMs": 12000,
+  "glowClockMs": 12000,
+  "glows": [
+    {
+      "name": "dial",
+      "x": 0.5,
+      "y": 0.09027777777777778,
+      "sizeDp": 9,
+      "sourceRect": [
+        370,
+        25,
+        28,
+        28
+      ],
+      "periodMs": 3200,
+      "phaseMs": 0,
+      "peakOpacity": 0.86
+    },
+    {
+      "name": "upper-right",
+      "x": 0.9427083333333334,
+      "y": 0.06944444444444445,
+      "sizeDp": 9,
+      "sourceRect": [
+        712,
+        18,
+        24,
+        24
+      ],
+      "periodMs": 2800,
+      "phaseMs": 550,
+      "peakOpacity": 0.86
+    },
+    {
+      "name": "right-valve",
+      "x": 0.9713541666666666,
+      "y": 0.5300925925925926,
+      "sizeDp": 9,
+      "sourceRect": [
+        734,
+        215,
+        24,
+        28
+      ],
+      "periodMs": 3000,
+      "phaseMs": 1100,
+      "peakOpacity": 0.86
+    },
+    {
+      "name": "lower-right",
+      "x": 0.9427083333333334,
+      "y": 0.9259259259259259,
+      "sizeDp": 9,
+      "sourceRect": [
+        712,
+        388,
+        24,
+        24
+      ],
+      "periodMs": 3400,
+      "phaseMs": 1700,
+      "peakOpacity": 0.86
+    },
+    {
+      "name": "bottom-dial",
+      "x": 0.5,
+      "y": 0.9490740740740741,
+      "sizeDp": 9,
+      "sourceRect": [
+        370,
+        396,
+        28,
+        28
+      ],
+      "periodMs": 3200,
+      "phaseMs": 2300,
+      "peakOpacity": 0.86
+    },
+    {
+      "name": "lower-left",
+      "x": 0.0546875,
+      "y": 0.9259259259259259,
+      "sizeDp": 9,
+      "sourceRect": [
+        30,
+        388,
+        24,
+        24
+      ],
+      "periodMs": 3400,
+      "phaseMs": 2900,
+      "peakOpacity": 0.86
+    },
+    {
+      "name": "left-valve",
+      "x": 0.0234375,
+      "y": 0.5300925925925926,
+      "sizeDp": 9,
+      "sourceRect": [
+        6,
+        215,
+        24,
+        28
+      ],
+      "periodMs": 3000,
+      "phaseMs": 3500,
+      "peakOpacity": 0.86
+    },
+    {
+      "name": "upper-left",
+      "x": 0.0546875,
+      "y": 0.06944444444444445,
+      "sizeDp": 9,
+      "sourceRect": [
+        30,
+        18,
+        24,
+        24
+      ],
+      "periodMs": 2800,
+      "phaseMs": 4100,
+      "peakOpacity": 0.86
+    }
+  ],
+  "tracks": [
+    {
+      "sprite": "gear-mote",
+      "points": [
+        [
+          0.12,
+          0.85
+        ],
+        [
+          0.22,
+          0.64
+        ],
+        [
+          0.34,
+          0.42
+        ],
+        [
+          0.46,
+          0.24
+        ]
+      ],
+      "phase": 5,
+      "width": 0.039,
+      "maxDp": 17,
+      "opacity": 0.68,
+      "rotation": 190,
+      "cycles": 1
+    },
+    {
+      "sprite": "aether-spark",
+      "points": [
+        [
+          0.81,
+          0.86
+        ],
+        [
+          0.72,
+          0.63
+        ],
+        [
+          0.82,
+          0.42
+        ],
+        [
+          0.9,
+          0.17
+        ]
+      ],
+      "phase": 28,
+      "width": 0.034,
+      "maxDp": 15,
+      "opacity": 0.65,
+      "rotation": -45,
+      "cycles": 1.15
+    },
+    {
+      "sprite": "aether-glint",
+      "points": [
+        [
+          0.18,
+          0.32
+        ],
+        [
+          0.31,
+          0.38
+        ],
+        [
+          0.46,
+          0.25
+        ],
+        [
+          0.6,
+          0.2
+        ]
+      ],
+      "phase": 49,
+      "width": 0.029,
+      "maxDp": 13,
+      "opacity": 0.54,
+      "rotation": 90,
+      "cycles": 0.95
+    },
+    {
+      "sprite": "gear-mote",
+      "points": [
+        [
+          0.66,
+          0.74
+        ],
+        [
+          0.73,
+          0.53
+        ],
+        [
+          0.8,
+          0.31
+        ],
+        [
+          0.92,
+          0.2
+        ]
+      ],
+      "phase": 70,
+      "width": 0.026,
+      "maxDp": 12,
+      "opacity": 0.47,
+      "rotation": -200,
+      "cycles": 0.85
+    },
+    {
+      "sprite": "aether-glint",
+      "points": [
+        [
+          0.28,
+          0.83
+        ],
+        [
+          0.39,
+          0.64
+        ],
+        [
+          0.52,
+          0.54
+        ],
+        [
+          0.66,
+          0.38
+        ]
+      ],
+      "phase": 91,
+      "width": 0.022,
+      "maxDp": 10,
+      "opacity": 0.43,
+      "rotation": 0,
+      "cycles": 1.1
+    }
+  ],
+  "files": {
+    "aether-glint.png": {
+      "size": [
+        64,
+        64
+      ],
+      "mode": "RGBA",
+      "bytes": 406,
+      "sha256": "92b5ea2d857ff55ec5c21f65dea0713ae96ca59937368bff7211d808556a9b2b"
+    },
+    "aether-spark.png": {
+      "size": [
+        64,
+        64
+      ],
+      "mode": "RGBA",
+      "bytes": 398,
+      "sha256": "e0e398fd962599c54390884aa7cce64a25ac105694b8c84dead4a269b75f9c2a"
+    },
+    "artificer.png": {
+      "size": [
+        256,
+        256
+      ],
+      "mode": "RGBA",
+      "bytes": 158331,
+      "sha256": "d6cce756c8446abce2b5269cb153b831b045c10f8908d6cd82e757b32d18212e"
+    },
+    "engineer.png": {
+      "size": [
+        256,
+        256
+      ],
+      "mode": "RGBA",
+      "bytes": 146073,
+      "sha256": "ab1b9f4241267237e37ba3daa071750da7bca434ec93944d58c1441a81c8f5fa"
+    },
+    "gear-mote.png": {
+      "size": [
+        64,
+        64
+      ],
+      "mode": "RGBA",
+      "bytes": 437,
+      "sha256": "b06692cd05b7e0a9d222a6d6253cd375343b7ba51844de64b1fa7eb641379f3f"
+    },
+    "mechanism.png": {
+      "size": [
+        768,
+        432
+      ],
+      "mode": "RGBA",
+      "bytes": 8131,
+      "sha256": "dd0e3ca0e0a295df52b5ca97e2997c19145a2858d3595f58e5bc88aebdbd739a"
+    },
+    "static-effect.png": {
+      "size": [
+        768,
+        432
+      ],
+      "mode": "RGBA",
+      "bytes": 2710,
+      "sha256": "e3af741e58058b04b698c5938999d843d1313eaa8f0d3976a3fe345ecc7049cb"
+    }
+  }
+}

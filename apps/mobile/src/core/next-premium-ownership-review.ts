@@ -94,3 +94,14 @@ export function nextPremiumTitleAllowed(text:string|undefined,scope:NextPremiumS
  const row=nextPremiumReservedTitle(text);
  return !row||nextPremiumOwnedSets(scope,grant,pieces,ready).some(s=>s.id===row.id);
 }
+
+/** Badge selection is independently account-wide. Only verified owned rows appear. */
+export function nextPremiumOwnedBadges(scope:NextPremiumScope,grant:NextPremiumGrantSnapshot|undefined,pieces:NextPremiumOwnedPieces|undefined,ready:NextPremiumReadiness=NEXT_PREMIUM_REVIEW_READINESS){
+ return nextPremiumOwnedSets(scope,grant,pieces,ready).map(s=>({id:s.badge,name:s.badgeName}));
+}
+export function nextPremiumOwnedNamePresets(scope:NextPremiumScope,grant:NextPremiumGrantSnapshot|undefined,pieces:NextPremiumOwnedPieces|undefined,ready:NextPremiumReadiness=NEXT_PREMIUM_REVIEW_READINESS){
+ if(!ready.namePresets)return [];
+ return nextPremiumOwnedSets(scope,grant,pieces,ready).filter(s=>has(pieces?.nameStyles,s.nameStyle)).map(s=>({
+  id:s.nameStyle,name:NEXT_PREMIUM_PRESTIGE.find(p=>p.id===s.id)!.namePreset,colors:[...s.colors],
+ }));
+}

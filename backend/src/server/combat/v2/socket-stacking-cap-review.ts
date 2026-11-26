@@ -23,14 +23,19 @@ const lanes={
  * This is a contribution budget, not the final hit/crit chance. */
 export const SOCKET_CAP_REFERENCE_V2='reference-v4' as const;
 export const SOCKET_CAP_DIMINISHING_V2='continuous-diminishing-v2' as const;
-export type SocketStackCapPolicyV2=typeof SOCKET_CAP_REFERENCE_V2|typeof SOCKET_CAP_DIMINISHING_V2;
+export const SOCKET_CAP_GENTLE_V2='continuous-diminishing-gentle-v2' as const;
+export type SocketStackCapPolicyV2=typeof SOCKET_CAP_REFERENCE_V2|typeof SOCKET_CAP_DIMINISHING_V2|typeof SOCKET_CAP_GENTLE_V2;
 export type SocketStackLaneV2=keyof typeof lanes;
-export function diminishingSocketContributionV2(key:SocketStackLaneV2,raw:number):number{
- if(!Object.prototype.hasOwnProperty.call(lanes,key)||!Number.isFinite(raw)||raw<0)
+export function diminishingSocketContributionV2(key:SocketStackLaneV2,raw:number,
+ policy:typeof SOCKET_CAP_DIMINISHING_V2|typeof SOCKET_CAP_GENTLE_V2=SOCKET_CAP_DIMINISHING_V2):number{
+ if(!Object.prototype.hasOwnProperty.call(lanes,key)||!Number.isFinite(raw)||raw<0||
+  (policy!==SOCKET_CAP_DIMINISHING_V2&&policy!==SOCKET_CAP_GENTLE_V2))
   throw Error('socket_diminishing_review_input');
  const {knee}=lanes[key];
  if(raw<=knee)return raw;
- const scale=2*knee;
+ // Gentler owner-requested candidate: 50% wider transition scale.
+ // Keep full-value threshold and natural probability bound identical.
+ const scale=(policy===SOCKET_CAP_GENTLE_V2?3:2)*knee;
  const growth=scale*Math.log1p((raw-knee)/scale);
  const bounded=key==='ward:percent'||key.endsWith(':percentage_point');
  return bounded?knee+(1-knee)*(-Math.expm1(-growth/(1-knee))):knee+growth;
@@ -39,7 +44,7 @@ const round=(x:number)=>Math.round(x*1e9)/1e9;
 const cap=(raw:number,knee:number,hard:number)=>Math.min(hard,raw<=knee?raw:knee+(raw-knee)/2);
 export function inspectSocketStackingCapReviewV2(projection:ReturnType<typeof reviewFrozenForgeSocketsV2>,
  policy:SocketStackCapPolicyV2=SOCKET_CAP_REFERENCE_V2){
- if(policy!==SOCKET_CAP_REFERENCE_V2&&policy!==SOCKET_CAP_DIMINISHING_V2)
+ if(policy!==SOCKET_CAP_REFERENCE_V2&&policy!==SOCKET_CAP_DIMINISHING_V2&&policy!==SOCKET_CAP_GENTLE_V2)
   throw Error('socket_stacking_review_policy');
  if(projection.mechanicsReview!==FORGE_SOCKET_MECHANICS_REVIEW_V2||
    projection.canExecuteCombat!==false||projection.cpApproved!==false||projection.releaseEnabled!==false)
@@ -61,7 +66,7 @@ export function inspectSocketStackingCapReviewV2(projection:ReturnType<typeof re
   // is not relative haste, and crit_damage_pct is not additive Savage).
   const affix=affixes.get(lane.channel)??0,gem=gems.get(key)??0;
   const evaluate=(n:number)=>policy===SOCKET_CAP_REFERENCE_V2?cap(n,lane.knee,lane.hard):
-   diminishingSocketContributionV2(key as SocketStackLaneV2,n);
+   diminishingSocketContributionV2(key as SocketStackLaneV2,n,policy);
   const raw=round(affix+gem),baseline=round(evaluate(affix));
   const effective=round(evaluate(raw));
   return {key,channel:lane.channel,affix,gem,raw,baseline,effective,

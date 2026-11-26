@@ -10,6 +10,8 @@ import {existsSync,readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 function ok(value:unknown,message:string){if(!value)throw new Error(message);}
 type Glow={periodMs:number;phaseMs:number;peakOpacity:number};
+type ManifestGlow=Glow&{sourceRect?:number[]};
+type ManifestTrack=MotionTrack&{sprite:string};
 type Motion={collection:string;motionProfile:MotionProfile;effectPeriodMs:number;glows:readonly Glow[];tracks:readonly MotionTrack[]};
 function metrics(row:Motion,w:number,h:number){
  let area=0,opacity=0,glow=0;
@@ -26,7 +28,7 @@ for(const set of WAVE2_SETS){
  if(!existsSync(dir+'/manifest.json')){
   ok(!WAVE2_READY_SET_IDS.includes(set.id),set.name+' cannot be ready without asset manifest');continue;
  }
- const manifest=JSON.parse(readFileSync(dir+'/manifest.json','utf8')) as {effectPeriodMs:number;glowClockMs:number;glows:Glow[];tracks:MotionTrack[];files:Record<string,{size:number[];bytes:number;sha256:string}>};
+ const manifest=JSON.parse(readFileSync(dir+'/manifest.json','utf8')) as {effectPeriodMs:number;glowClockMs:number;glows:ManifestGlow[];tracks:ManifestTrack[];files:Record<string,{size:number[];bytes:number;sha256:string}>};
  const motionProfile=set.id as MotionProfile;
  const row:Motion={collection:set.name,motionProfile,effectPeriodMs:manifest.effectPeriodMs,glows:manifest.glows,tracks:manifest.tracks};
  ok(row.glows.length===8&&row.tracks.length===5,set.name+' standard motion budget');
@@ -51,6 +53,33 @@ for(const set of WAVE2_SETS){
  ok(art.includes("motionProfile:'"+set.id+"'"),set.name+' distinct motion identity');
  const rects=[...art.matchAll(/sourceRect:\[([^\]]+)\]/g)].map(m=>m[1].split(',').map(Number));
  ok(rects.length===8,set.name+' eight actual sprite anchors');
+ // Validate the actual native source, not only the descriptive manifest. The
+ // generated registry deliberately uses one single-line object per glow/track.
+ const actualGlows=[...art.matchAll(/source:require\('([^']+)'\),sourceRect:\[([^\]]+)\],periodMs:([\d.]+),phaseMs:([\d.]+),peakOpacity:([\d.]+)/g)].map(m=>({source:m[1],sourceRect:m[2].split(',').map(Number),periodMs:Number(m[3]),phaseMs:Number(m[4]),peakOpacity:Number(m[5])}));
+ const actualTracks=[...art.matchAll(/source:require\('([^']+)'\),points:(\[\[.*?\]\]),phase:([\d.]+),width:([\d.]+),maxDp:([\d.]+),opacity:([\d.]+),rotation:(-?[\d.]+),cycles:([\d.]+)/g)].map(m=>({source:m[1],points:JSON.parse(m[2]),phase:Number(m[3]),width:Number(m[4]),maxDp:Number(m[5]),opacity:Number(m[6]),rotation:Number(m[7]),cycles:Number(m[8])}));
+ const prefix='../../'+dir+'/';
+ ok(actualGlows.length===manifest.glows.length&&actualTracks.length===manifest.tracks.length,set.name+' runtime node counts match manifest');
+ ok(art.includes('effectPeriodMs:'+manifest.effectPeriodMs+','),set.name+' native period matches manifest');
+ const knownAsset=(source:string)=>source.startsWith(prefix)&&Object.prototype.hasOwnProperty.call(manifest.files,source.slice(prefix.length));
+ for(const [i,g] of actualGlows.entries()){
+  const expected=manifest.glows[i];
+  ok(knownAsset(g.source),set.name+' glow references its own hashed sprite');
+  ok(g.periodMs===expected.periodMs&&g.phaseMs===expected.phaseMs&&g.peakOpacity===expected.peakOpacity,set.name+' actual glow curve matches manifest');
+  if(expected.sourceRect)ok(JSON.stringify(g.sourceRect)===JSON.stringify(expected.sourceRect),set.name+' actual glow rectangle matches manifest');
+ }
+ for(const [i,t] of actualTracks.entries()){
+  const {sprite,...expected}=manifest.tracks[i],{source,...actual}=t;
+  ok(knownAsset(source)&&source===prefix+sprite+'.png',set.name+' track uses its own intended sprite');
+  for(const key of ['points','phase','width','maxDp','opacity','rotation','cycles'] as const)ok(JSON.stringify(actual[key])===JSON.stringify(expected[key]),set.name+' actual track '+key+' matches manifest');
+ }
+ const requiredSources=[...art.matchAll(/(?:border|wisp|particle|staticEffect):require\('([^']+)'\)/g)].map(m=>m[1]);
+ ok(requiredSources.length===4&&requiredSources.every(knownAsset),set.name+' native frame and static fallback reference hashed assets');
+ for(const id of set.iconIds){
+  const marker="'"+id+"':require('",start=registry.indexOf(marker);
+  ok(start>=0,set.name+' portrait registered');
+  const source=registry.slice(start+marker.length).split("'")[0];
+  ok(knownAsset(source),set.name+' portrait uses its own hashed asset');
+ }
  for(const [w,h] of [[104,72],[260,174],[340,205],[480,270]]){
   const segments=profileSceneFrameSegments(w,h,16/9);
   for(const [x,y,sw,sh] of rects){

@@ -61228,7 +61228,7 @@ function gameplayHandler(services2, authenticatePlayer2 = async (token) => {
       const response = { guildProjectEffort, guildPveEffort, state: restoreCumulativeMonsterUnlocks(result.state), version: loaded.version + 1, serverNow: loaded.serverNow, accountId, reward: result.reward, activity: result.activity, message: result.message, won: result.won, storyBossBattle: result.storyBossBattle, upgrade: result.upgrade, forgeResults: result.forgeResults };
       const commitRpc = privateGrants ? "commit_online_game_ultra_luxe_v1" : "commit_online_game_guild_pve_v1";
       const committed = await services2.rpc(commitRpc, { p_account_id: accountId, p_expected_version: loaded.version, p_expected_gold: loaded.walletGold, p_request_id: body.requestId, p_request_hash: requestHash, p_response: response, p_contributions: contributions, ...privateGrants ? { p_expected_grants: [...ultraLuxeGrantProjection(loaded.ultraLuxeCollectionIds).collectionIds].sort() } : {}, ...command.type === "roster_delete" ? { p_deleted_character_id: command.args.id } : {} });
-      try {
+      if (contributions.length > 0) try {
         await services2.rpc("guild_quest_record_contributions_v1", { p_account_id: accountId, p_contributions: contributions.map((e) => ({ ...e, units: e.questUnits ?? e.units })) });
       } catch {
       }

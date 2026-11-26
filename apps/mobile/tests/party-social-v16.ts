@@ -9,6 +9,9 @@ import {
   recruitmentPostExpired,
   recruitmentPostTypePresentation,
   recruitmentContextLabels,
+  recruitmentMainInterest,
+  recruitmentStoredInterest,
+  recruitmentVisibleTags,
   shouldShowPartyChat,
   type PartyContractView,
   type PersistentPartySummary,
@@ -33,6 +36,17 @@ assert(!personalContributionEligible(contract),'minimum personal contribution sh
 const now=Date.UTC(2026,8,12,12);assert(recruitmentTimeLabel(now+5*3600000,now).urgency==='soon','six-hour expiry warning');
 const card:RecruitmentCardView={id:'r',postType:'looking_for_party',ownerName:'A',title:'Weekend party',body:'Mixed contracts',roles:['damage'],focus:'mixed',activityTags:['contracts'],playstyleTags:['casual'],availabilityTags:['weekends'],guildInterestTags:[],expiresAtMs:now+86400000};
 assert(filterRecruitmentCards([card],{query:'weekend',postTypes:['looking_for_party'],focuses:['mixed'],roles:['damage'],activityTags:['contracts']}).length===1,'filters should compose');
+const savedCrafting=recruitmentStoredInterest('crafting',['friendly']);
+assert(savedCrafting.focus==='skilling','Crafting must use an existing database-safe focus');
+assert(savedCrafting.playstyleTags.includes('interest:crafting'),'Crafting interest must survive round-trip as a tag');
+const craftingCard={...card,focus:savedCrafting.focus,playstyleTags:savedCrafting.playstyleTags};
+assert(recruitmentMainInterest(craftingCard)==='crafting','Crafting must display distinctly on saved adverts');
+assert(!recruitmentVisibleTags(craftingCard.playstyleTags).includes('interest:crafting'),'Internal metadata must not leak into visible tags');
+assert(recruitmentVisibleTags(craftingCard.playstyleTags).includes('friendly'),'Regular player tags stay visible');
+assert(recruitmentStoredInterest('combat',savedCrafting.playstyleTags).playstyleTags.every(tag=>tag!=='interest:crafting'),'Changing interest removes stale crafting metadata');
+assert(filterRecruitmentCards([craftingCard],{query:'crafting',postTypes:[],focuses:[],roles:[],activityTags:[]}).length===1,'Crafting advert must be discoverable by text search');
+assert(filterRecruitmentCards([craftingCard],{query:'',postTypes:[],focuses:['skilling'],roles:[],activityTags:[]}).length===1,'Existing Skilling filter must include Crafting posts');
+
 const filters={query:'',postTypes:[],focuses:[],roles:[],activityTags:[],availabilityTags:['weekends'],playstyleTags:['casual'],region:'eu',maxMinCombatLevel:20};
 assert(filterRecruitmentCards([{...card,region:'EU',minCombatLevel:10}],filters,now).length===1,'extended availability/playstyle/region/level filters');
 assert(filterRecruitmentCards([{...card,expiresAtMs:now}],{...filters,region:undefined},now).length===0,'expired cards disappear at the exact deadline');

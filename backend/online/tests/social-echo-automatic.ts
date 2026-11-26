@@ -99,6 +99,13 @@ async function main(){
  assert.ok(result&&typeof result==='object');
  assert.equal(publishedCount,1,'Only selected contacts are snapshotted on run start');
  assert.equal(runMembers.length,4);
+ const frozen=runMembers as {memberKind:string;snapshot:{characterLevel:number;normalized:{effectiveLevel:number;snapshot:{level:number};normalizationVersion:string}}}[];
+ const ownerLevel=deriveOnlineCoopLoadout('host-account',owner,21).characterLevel;
+ const donorLevel=deriveOnlineCoopLoadout('friend-account',friend,23).characterLevel;
+ assert.equal(frozen[0].snapshot.normalized.effectiveLevel,ownerLevel,'Host keeps authoritative visible level');
+ assert.equal(frozen[0].snapshot.normalized.snapshot.level,ownerLevel);
+ assert.equal(frozen[0].snapshot.normalized.normalizationVersion,'coop-host-level-v1');
+ assert.equal(frozen.find(row=>row.memberKind==='echo')?.snapshot.normalized.effectiveLevel,Math.min(ownerLevel,donorLevel));
  const echo=runMembers.map(v=>v as {memberKind:string;profileId?:string}).find(v=>v.memberKind==='echo');
  assert.equal(echo?.profileId,profileId,'The committed seat uses the authoritative publication ID, never client stats');
  assert.equal(runMembers.filter(v=>(v as {memberKind:string}).memberKind==='npc').length,2,'Missing roles still use NPCs');

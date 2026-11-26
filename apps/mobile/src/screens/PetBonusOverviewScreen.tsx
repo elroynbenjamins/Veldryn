@@ -3,8 +3,8 @@ import {companionUnlockRequirement,companionContent,companionMessage,companionTr
 import {useMemo,useState} from 'react';
 import {Image,Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import type {GameState} from '../core/types';
-import {COLLECTIBLES,COLLECTIBLE_TARGET_LABELS} from '../content/collectibles';
-import {collectibleJournal,collectionBonusBreakdown,selectCollectible} from '../core/collectibles';
+import {COLLECTIBLE_TARGET_LABELS} from '../content/collectibles';
+import {collectibleCatalogForState,collectibleJournal,collectionBonusBreakdown,selectCollectible} from '../core/collectibles';
 import {GameButton} from '../components/GameButton';
 import {Panel} from '../components/Panel';
 import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
@@ -13,7 +13,7 @@ import {GameModalHeader,GameModalSurface} from '../components/GameModalSurface';
 import {petArtSource} from '../theme/pet-art';
 import {earlyFeatureUnlockProgress} from '../core/feature-unlocks';
 
-const PETS=COLLECTIBLES.filter(row=>row.kind==='pet');
+
 const pct=(bps:number)=>(bps/100).toFixed(2)+'%';
 const viewOptions=['All','Owned','Locked','Core','Event'] as const;
 const regionOptions=['All regions','Asterfall','Sunscar','Frostmarch','Ashlands'] as const;
@@ -27,6 +27,7 @@ export function PetBonusOverviewScreen({state,onChange}:{state:GameState;onChang
  const [pickerOpen,setPickerOpen]=useState(false),[viewFilter,setViewFilter]=useState<ViewFilter>('All'),[regionFilter,setRegionFilter]=useState<RegionFilter>('All regions'),[filterOpen,setFilterOpen]=useState<'view'|'region'|null>(null),[showBonusHelp,setShowBonusHelp]=useState(false);
  const unlock=earlyFeatureUnlockProgress(state,'pets');
  if(!unlock.unlocked)return <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}><Text style={s.kicker}>{t("ACCOUNT BONUSES")}</Text><Text accessibilityRole="header" style={s.heading}>{t("Pet Bonus Overview")}</Text><Panel><View style={s.lockedBox}><Text style={s.lockGlyph}>◆</Text><Text style={s.title}>{t("Pet system locked")}</Text><Text style={s.sub}>{t("Pets are introduced after the early combat and gathering loop so the opening game stays focused.")}</Text><Text style={s.lockRequirement}>{t("UNLOCK · {value0}", {value0: companionUnlockRequirement(language,unlock.requirement)})}</Text><Text style={s.sub}>{companionContent(language,unlock.description)}</Text></View></Panel></ScrollView>;
+ const PETS=collectibleCatalogForState(state).filter(row=>row.kind==='pet');
  const journal=collectibleJournal(state,PETS),owned=journal.filter(row=>row.owned),active=journal.find(row=>row.selected),breakdown=collectionBonusBreakdown(state,PETS);
  const corePets=journal.filter(row=>row.collectionGroup==='core'),eventPets=journal.filter(row=>row.collectionGroup==='event');
  const visiblePets=journal.filter(row=>{

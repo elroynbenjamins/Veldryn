@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {OnlineQModeRuntime,type OnlineQModeState} from '../qmode-runtime';
+import {OnlineLiveRuntime} from '../live-runtime';
 import {createCharacter,newGame} from '../../../apps/mobile/src/core/game';
 import {combatPowerRating} from '../../../apps/mobile/src/core/combat-power';
 import {legacyCharacterTotalXpAtLevel} from '../../../apps/mobile/src/core/progression';
@@ -19,6 +20,42 @@ async function main(){
  assert.deepEqual(await runtime.choose('actor','run',request),saved);
  assert.equal(reads,2);
  await assert.rejects(()=>runtime.choose('actor','run',{...request,optionId:'changed'}),/idempotency_key_conflict/);
+ // A committed receipt must still win if the overlapping snapshot read fails.
+ let snapshotStarted=false;
+ const replayRuntime=new OnlineQModeRuntime({randomId:()=>{throw new Error('unexpected_random');},rpc:async<T>(name:string):Promise<T>=>{
+  if(name==='read_online_coop_receipt_server_v1'){await Promise.resolve();assert.ok(snapshotStarted,'snapshot read overlaps receipt');return {requestHash:hash,response:saved} as T;}
+  if(name==='load_online_qmode_server_v1'){snapshotStarted=true;throw new Error('NOT_PARTICIPANT');}
+  throw new Error('unexpected_mutation');
+ }});
+ assert.deepEqual(await replayRuntime.choose('actor','run',request),saved);
+
+ // Live votes and direct boss choices must retain the same receipt priority.
+ // Assert account scoping and absence of any mutation, even on failed reads.
+ for(const operation of ['choose','vote'] as const){
+  let snapshotReads=0,receiptReads=0;
+  let receiptMode:'match'|'missing'|'conflict'|'error'='match';
+  const live=new OnlineLiveRuntime({randomId:()=>{throw new Error('unexpected_random');},rpc:async<T>(name:string,args:Record<string,unknown>):Promise<T>=>{
+   if(name==='read_online_coop_receipt_server_v1'){
+    receiptReads++;assert.equal(args.p_account_id,'actor');assert.equal(args.p_resource_id,'run');assert.equal(args.p_operation,`live_${operation}_v1`);assert.equal(args.p_request_id,request.requestId);
+    await Promise.resolve();assert.equal(snapshotReads,receiptReads,'Live snapshot overlaps each receipt read');
+    if(receiptMode==='error')throw new Error('receipt unavailable');
+    if(receiptMode==='missing')return null as T;
+    return {requestHash:receiptMode==='conflict'?'different-hash':hash,response:saved} as T;
+   }
+   if(name==='load_coop_runtime_server_v1'){
+    snapshotReads++;assert.equal(args.p_actor_account_id,'actor');assert.equal(args.p_run_id,'run');
+    throw new Error('snapshot unavailable');
+   }
+   throw new Error('unexpected mutation: '+name);
+  }});
+  const invoke=()=>live[operation]('actor','run',request);
+  assert.deepEqual(await invoke(),saved,'Committed Live receipt wins despite snapshot failure');
+  receiptMode='conflict';await assert.rejects(invoke,/idempotency_key_conflict/);
+  receiptMode='missing';await assert.rejects(invoke,/snapshot unavailable/);
+  receiptMode='error';await assert.rejects(invoke,/receipt unavailable/);
+  assert.equal(receiptReads,4);assert.equal(snapshotReads,4);
+ }
+
 
  // Regression: ordinary gathering/combat advances the account revision after the
  // loadout card says Ready. Q-Mode must freeze the current *server* character and

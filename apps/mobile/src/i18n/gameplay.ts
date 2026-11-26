@@ -9,6 +9,13 @@ import {useMemo} from 'react';
 // Every row is complete, in en/de/es/nl/it/fr order. English phrases are typed keys.
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
+ "ACTION TIME":["ACTION TIME","AKTIONSZEIT","TIEMPO DE ACCIÓN","ACTIETIJD","TEMPO AZIONE","TEMPS D’ACTION"],
+ "RARE FINDS":["RARE FINDS","SELTENE FUNDE","HALLAZGOS RAROS","ZELDZAME VONDSTEN","RITROVAMENTI RARI","TROUVAILLES RARES"],
+ "Shorter gathering actions":["Shorter gathering actions","Kürzere Sammelaktionen","Recolección más rápida","Kortere verzamelacties","Raccolta più rapida","Actions de récolte plus courtes"],
+ "Slower without tools":["Slower without tools","Langsamer ohne Werkzeuge","Más lento sin herramientas","Langzamer zonder gereedschap","Più lento senza attrezzi","Plus lent sans outils"],
+ "How tool bonuses work":["How tool bonuses work","So wirken Werkzeugboni","Cómo funcionan los bonos","Hoe gereedschapsbonussen werken","Come funzionano i bonus","Comment fonctionnent les bonus"],
+ "Not equipped":["Not equipped","Nicht ausgerüstet","Sin equipar","Niet uitgerust","Non equipaggiato","Non équipé"],
+ "tier time":["tier time","Stufenzeit","tiempo de nivel","rangtijd","tempo del livello","temps du palier"],
  // Isolated release: gathering tool vault, retaining latest main inspection strings.
  "TOOL TIERS · SELECT TO INSPECT":["TOOL TIERS · SELECT TO INSPECT","WERKZEUGSTUFEN · ZUM ANSEHEN WÄHLEN","NIVELES DE HERRAMIENTA · TOCA PARA VER","GEREEDSCHAPSNIVEAUS · KIES OM TE BEKIJKEN","LIVELLI ATTREZZI · SELEZIONA","PALIERS D’OUTILS · SÉLECTIONNER"],
  "saved copies":["saved copies","gespeicherte Exemplare","copias guardadas","opgeslagen exemplaren","copie salvate","copies enregistrées"],
@@ -1892,6 +1899,12 @@ for(const [english,pair] of Object.entries(toolDetailsEarlyLocales)){
 }
 export const gameplayTranslate=createTranslator<GameplayKey>(gameplayCatalogs);
 
+const plainKeysByLowercase=new Map<string,GameplayKey>();
+for(const key of Object.keys(rows) as GameplayKey[]){
+ if(key.includes('{'))continue;
+ const lower=key.toLowerCase();
+ if(!plainKeysByLowercase.has(lower))plainKeysByLowercase.set(lower,key);
+}
 const templates=(Object.keys(rows) as GameplayKey[]).filter(key=>key.includes('{')).map(key=>{
   const names:string[]=[];
   const escaped=key.replace(/[.*+?^$()|[\]\\]/g,'\\$&');
@@ -1905,7 +1918,7 @@ export function localizeGameplay(language:Language,value:string|undefined):strin
   const equipmentMetadata=equipmentMaterialMetadataText(language,value);
   if(equipmentMetadata!==undefined)return equipmentMetadata;
   if(Object.prototype.hasOwnProperty.call(rows,value))return gameplayTranslate(language,value as GameplayKey);
-  const key=(Object.keys(rows) as GameplayKey[]).find(entry=>!entry.includes('{')&&entry.toLowerCase()===value.toLowerCase());
+  const key=plainKeysByLowercase.get(value.toLowerCase());
   if(key){const translated=gameplayTranslate(language,key);return value===value.toUpperCase()?translated.toLocaleUpperCase(language):translated;}
   // German source labels take priority over generic interpolated templates.
   if(language==='de'){const translated=germanCoverageText(value);if(translated!==undefined)return translated;}

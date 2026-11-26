@@ -9,7 +9,8 @@ import {migrateSave} from '../src/core/save-migrations';
 import {reconcileAccountCollections} from '../src/core/account-collections';
 import {createAccountCharacter,deleteAccountCharacter,switchAccountCharacter} from '../src/core/account-actions';
 import {profileBackgroundUnlocked,profileTitleUnlocked} from '../src/core/profile-unlocks';
-import {EVENTS_RELEASED,FROSTFALL_REWARDS_RELEASED} from '../src/core/release-flags';
+import {DUNGEON_SHOP_COLLECTIBLES_V1} from '../src/content/dungeon-shop-collectibles-v1';
+import {EVENTS_RELEASED,FROSTFALL_REWARDS_RELEASED,DUNGEON_MARKS_SHOP_RELEASED} from '../src/core/release-flags';
 
 const fail=(message:string)=>{throw new Error(message)};
 const equal=(actual:unknown,expected:unknown,message:string)=>{if(actual!==expected)fail(`${message}: expected ${String(expected)}, got ${String(actual)}`)};
@@ -22,7 +23,7 @@ equal(EVENT_PET_COLLECTIBLES.length,FROSTFALL_REWARDS_RELEASED?4:2,'Frostfall pe
 equal(EVENT_PET_COLLECTIBLES.map(row=>row.id).sort().join(','),FROSTFALL_REWARDS_RELEASED?'EVT_PET_013,EVT_PET_014,EVT_PET_015,EVT_PET_017':'EVT_PET_013,EVT_PET_014','only released event pets enter the runtime collection catalog');
 equal(
   COLLECTIBLES.length,
-  CORE_PET_COLLECTIBLES.length+GUILD_PET_COLLECTIBLES.length+(EVENTS_RELEASED?EVENT_PET_COLLECTIBLES.length:0)+PROFILE_COLLECTIBLES.filter(row=>row.collectionGroup!=='event').length,
+  CORE_PET_COLLECTIBLES.length+GUILD_PET_COLLECTIBLES.length+(DUNGEON_MARKS_SHOP_RELEASED?DUNGEON_SHOP_COLLECTIBLES_V1.length:0)+(EVENTS_RELEASED?EVENT_PET_COLLECTIBLES.length:0)+PROFILE_COLLECTIBLES.filter(row=>row.collectionGroup!=='event').length,
   'combined collectible catalog count',
 );
 
@@ -84,4 +85,24 @@ const migratedAltOnly=migrateSave(legacyAltOnly);
 if(!migratedAltOnly.account.unlockedCosmeticPetIds?.includes('PET_018'))fail('legacy pet owned only by inactive character must migrate to account');
 equal(migratedAltOnly.character?.selectedCosmeticPetId,'PET_018','old selected pet survives account-wide migration');
 
+// Reproduce a server-purchased pet arriving in an existing account save, without granting it again.
+equal(DUNGEON_MARKS_SHOP_RELEASED,true,'released dungeon rewards are registered');
+equal(DUNGEON_SHOP_COLLECTIBLES_V1.length,9,'three pets, three borders and three backgrounds');
+for(const row of DUNGEON_SHOP_COLLECTIBLES_V1){
+ equal(COLLECTIBLES.some(item=>item.id===row.id),true,'registered dungeon collectible '+row.id);
+}
+for(const pet of DUNGEON_SHOP_COLLECTIBLES_V1.filter(row=>row.kind==='pet')){
+ let owned=createCharacter(newGame(now),'IRONWARDEN','Collection Main');
+ owned.quests=owned.quests.map(q=>q.questId==='QST_003'?{...q,status:'claimed'}:q);
+ owned={...owned,account:{...owned.account,unlockedCosmeticPetIds:[pet.id]}};
+ owned=migrateSave(JSON.parse(JSON.stringify(owned)));
+ equal(owned.account.unlockedCosmeticPetIds?.includes(pet.id),true,'purchase survives save migration '+pet.id);
+ equal(collectionBonusBreakdown(owned).find(row=>row.target===pet.target)?.ownedRawBps,50,'owned dungeon pet bonus '+pet.id);
+ owned=selectCollectible(owned,'pet',pet.id);
+ equal(owned.character?.selectedCosmeticPetId,pet.id,'equip purchased dungeon pet '+pet.id);
+ equal(collectionBonusBreakdown(owned).find(row=>row.target===pet.target)?.activeRawBps,300,'active dungeon pet bonus '+pet.id);
+ let rejected=false;
+ try{selectCollectible({...owned,account:{...owned.account,unlockedCosmeticPetIds:[]}},'pet',pet.id)}catch{rejected=true}
+ equal(rejected,true,'unowned dungeon pet cannot be equipped '+pet.id);
+}
 console.log('account collectibles PASS');

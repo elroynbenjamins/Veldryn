@@ -3,7 +3,10 @@ import * as game from './game';
 import {migrateRetiredStoryRewards} from './retired-story-rewards';
 import * as events from './live-events';
 import {attemptEquipmentUpgrade,replaceGem,socketGem,unsocketGem} from './equipment-enhancement';
-import {selectProfileIcon,canUseProfileIcon} from './profile-icons';
+import {canUsePrivateTitleText} from './ultra-luxe-grants';
+import {selectProfileIcon,canUseProfileIcon,reconcileAccountProfileIcon} from './profile-icons';
+import {canUseProfileEffect} from './profile-effects';
+import {profileAnimatedCosmeticsEnabled} from './profile-cosmetic-access';
 import {transitionActivity} from './playability';
 import {SUPPORTED_LANGUAGES} from '../i18n/languages';
 import {QUICK_NAV_DESTINATIONS} from './quick-navigation';
@@ -55,6 +58,9 @@ export interface GameCommand {type:string;args?:Record<string,unknown>}
 export interface VerifiedActivity {kind:'combat'|'gathering'|'crafting'|'boss';contentId:string;units:number;startedAtMs?:number}
 export type ForgeCraftResult=ReturnType<typeof claimEquipmentCraft>['result'];
 export interface GameCommandResult {state:GameState;reward?:RewardBundle;activity:GameState['activity'];message?:string;won?:boolean;storyBossBattle?:FallenKnightBattleResult;upgrade?:ReturnType<typeof attemptEquipmentUpgrade>['result'];forgeResults?:ForgeCraftResult[];contributions:VerifiedActivity[]}
+// Exact tool copies may have 200-character receipt IDs plus the inventory selection prefix.
+const TOOL_INSTANCE_ID_MAX=200;
+const INVENTORY_SELECTION_ID_MAX=TOOL_INSTANCE_ID_MAX+'copy:'.length;
 const fields:Record<string,readonly string[]>={
  class_training:[],class_focus:['focus'],herbalism_method:['method'],faith_practice:['tierId','count'],faith_blessing:['id'],faith_favorite:['id','enabled'],faith_hide:['enabled'],alchemy_start:['id','batches','batchMode'],processing_start:['id','batches','batchMode'],
  companion_monthly:['id'],companion_supplies:[],companion_bond_reward:['id','level'],companion_boss_rematch:[],
@@ -64,9 +70,9 @@ const fields:Record<string,readonly string[]>={
  roster_create:['classId','name','body'],roster_switch:['id'],roster_delete:['id','confirmation'],
  equip:['id'],unequip:['slot'],gear_equip:['instanceId'],gear_unequip:['instanceId'],gear_move:['instanceId','to'],equipment_pouch_move:['itemId','quantity','from','to'],equipment_pouch_equip:['itemId'],equipment_pouch_upgrade:[],equipment_pouch_sell:['ids'],equipment_pouch_salvage:['ids'], gear_lock:['instanceId','locked'],gear_sell:['instanceId'],gear_salvage:['instanceId'],gear_autosell:['enabled'],gear_link_legacy:['instanceId','from','stackIndex'],food:['id'],food_queue:['ids'],eat:['id'],meal_bonus:['id'],sell:['id','quantity'],salvage:['id'],
  bank_sell:['id','quantity'],bank_salvage:['id'],bank_gold_deposit:['amount'],bank_gold_withdraw:['amount'],deposit:['id','quantity'],withdraw:['id','quantity'],deposit_materials:[],bulk_transfer:['location','ids'],bulk_sell:['location','ids'],bulk_salvage:['location','ids'],storage:['location'],gem_pouch_upgrade:[],gem_pouch_sell:['itemId','quantity'],gem_pouch_bulk_sell:['ids'],gem_pouch_bulk_dismantle:['ids'],overflow:[],
- equip_tool:['id','instanceId'],unequip_tool:['id'],tool_vault_save:['id','instanceId'],tool_vault_activate:['skillId','tier'],tool_vault_withdraw:['skillId','tier'],tool_move:['instanceId','to'],tool_sell:['instanceId'],equip_set:[],upgrade:['id'],socket:['id','gemId'],replace_socket:['id','gemId'],unsocket:['id','index'],gem_combine:['familyId','grade'],gem_refine:['familyId','grade'],gem_research:['familyId'],gem_dismantle:['gemId','quantity'],resonance_cache_claim:['familyId'],profile_icon:['id'],
+ equip_tool:['id','instanceId'],unequip_tool:['id','to'],tool_vault_save:['id','instanceId'],tool_vault_activate:['skillId','tier'],tool_vault_withdraw:['skillId','tier','to'],tool_move:['instanceId','to'],tool_sell:['instanceId'],equip_set:[],upgrade:['id'],socket:['id','gemId'],replace_socket:['id','gemId'],unsocket:['id','index'],gem_combine:['familyId','grade'],gem_refine:['familyId','grade'],gem_research:['familyId'],gem_dismantle:['gemId','quantity'],resonance_cache_claim:['familyId'],profile_icon:['id'],
  loadout_save:['index','name'],loadout_apply:['id'],loadout_delete:['id'],arena_slot:['index','characterId'],goals_set:['goals'],idle_rules_set:['rules','activeId'],daily_supplies_claim:['characterId','choiceType'],daily_supplies_activate:['type'],
- quest:['id'],seasonal:['period','id','choiceId'],monthly_quest_milestone:['month','threshold','characterId','skillId'],settings:['settings'],inventory_preference:['id','kind','enabled'],inventory_preference_bulk:['ids','kind','enabled'],inventory_seen_all:[],profile:['profileIconId','profileTitle','profileBackgroundId','profileBorderId','selectedCosmeticPetId'],
+ quest:['id'],seasonal:['period','id','choiceId'],monthly_quest_milestone:['month','threshold','characterId','skillId'],settings:['settings'],inventory_preference:['id','kind','enabled'],inventory_preference_bulk:['ids','kind','enabled'],inventory_seen_all:[],profile:['profileIconId','profileTitle','profileBackgroundId','profileBorderId','profileEffectId','selectedCosmeticPetId'],
  event_daily:[],event_cache:[],event_milestones:[],event_discovery:['id'],event_reward:['id'],event_accept:['id'],
  event_objective:['id'],event_weekly:['id'],event_project:['id'],event_contribute:['quantity'],event_community:['percent'],event_purchase:['id'],event_candy:['kind','companionId'],
  qa_prepare:['classId'],qa_refill:[],qa_switch_class:['classId'],
@@ -94,10 +100,10 @@ export function validateGameCommand(value:unknown):GameCommand{
  if((row.type==='roster_switch'||row.type==='roster_delete')&&typeof (args as Record<string,unknown>).id!=='string')throw new Error('invalid_id');
  if(row.type==='roster_delete'&&typeof (args as Record<string,unknown>).confirmation!=='string')throw new Error('invalid_confirmation');
  if(row.type==='start'||row.type==='queue_add'){const start=args as Record<string,unknown>,kind=oneOf(start.kind,row.type==='queue_add'?['combat','gathering','faith','exploration','alchemy','processing']:['combat','gathering']);if(start.tacticId!==undefined)oneOf(start.tacticId,COMBAT_TACTIC_IDS);if(start.goalId!==undefined)oneOf(start.goalId,HUNT_GOAL_IDS);if(kind!=='combat'&&(start.tacticId!==undefined||start.goalId!==undefined))throw new Error('invalid_combat_activity_option');if(row.type==='queue_add'){if(kind==='faith')integer(start,'count',1,1000);if(kind!=='faith'&&start.count!==undefined)throw new Error('invalid_count');const goal=start.goal===undefined?undefined:normalizeActivityQueueGoal(start.goal);if(start.goal!==undefined&&!goal)throw new Error('invalid_queue_goal');if(goal&&(kind==='faith'||kind==='alchemy'||kind==='processing'||kind==='combat'&&!['duration_seconds','session_kills'].includes(goal.kind)||kind==='gathering'&&goal.kind==='session_kills'||kind==='exploration'&&goal.kind!=='duration_seconds'))throw new Error('invalid_queue_goal');}}
- if(row.type==='bulk_transfer'){const bulk=args as Record<string,unknown>;oneOf(bulk.location,['inventory','bank']);stringArray(bulk,'ids');}
- if(row.type==='inventory_preference_bulk'){const bulk=args as Record<string,unknown>;stringArray(bulk,'ids',100,190);oneOf(bulk.kind,['lock','favorite']);if(typeof bulk.enabled!=='boolean')throw new Error('invalid_inventory_preference');}
+ if(row.type==='bulk_transfer'){const bulk=args as Record<string,unknown>;oneOf(bulk.location,['inventory','bank']);stringArray(bulk,'ids',100,INVENTORY_SELECTION_ID_MAX);}
+ if(row.type==='inventory_preference_bulk'){const bulk=args as Record<string,unknown>;stringArray(bulk,'ids',100,INVENTORY_SELECTION_ID_MAX);oneOf(bulk.kind,['lock','favorite']);if(typeof bulk.enabled!=='boolean')throw new Error('invalid_inventory_preference');}
  if(row.type==='gem_pouch_bulk_sell'||row.type==='gem_pouch_bulk_dismantle')stringArray(args as Record<string,unknown>,'ids',100,120);
-  if(row.type==='bulk_sell'||row.type==='bulk_salvage'){const bulk=args as Record<string,unknown>;stringArray(bulk,'ids',100,180);if(bulk.location!==undefined)oneOf(bulk.location,['inventory','bank']);}
+  if(row.type==='bulk_sell'||row.type==='bulk_salvage'){const bulk=args as Record<string,unknown>;stringArray(bulk,'ids',100,INVENTORY_SELECTION_ID_MAX);if(bulk.location!==undefined)oneOf(bulk.location,['inventory','bank']);}
  return {type:row.type,args:args as Record<string,unknown>};
 }
 function text(args:Record<string,unknown>,key:string,max=100):string{const value=args[key];if(typeof value!=='string'||!value.trim()||value.length>max)throw new Error(`invalid_${key}`);return value.trim();}
@@ -169,7 +175,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
  // granting account-bound titles, including on a quest-only command.
  if(options.accountId)state.account.longTermAccountScopeId=options.accountId;
  // Reconcile retired story rewards within the same authoritative command write.
- state=migrateRetiredStoryRewards(state,now);
+ state=reconcileAccountProfileIcon(migrateRetiredStoryRewards(state,now));
  // Advance all running Forge slots exactly once before a command can replace
  // or activate a Supply tier. In particular, never give past work a fresh
  // Crafting Speed boost. Alchemy/processing retains priority if concurrently
@@ -428,23 +434,23 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'deposit':state=game.depositToBank(state,text(a,'id'),integer(a,'quantity'));break;
   case 'withdraw':state=game.withdrawFromBank(state,text(a,'id'),integer(a,'quantity'));break;
   case 'deposit_materials':state=game.depositAllMaterials(state);break;
-  // A copy:<instanceId> selector may be 185 characters (180-char validated instance ID + prefix).
-  case 'bulk_transfer':state=bulkTransferSelected(state,stringArray(a,'ids',100,185),oneOf(a.location,['inventory','bank']));break;
-  case 'bulk_sell':state=bulkSellSelected(state,stringArray(a,'ids',100,180),oneOf(a.location??'inventory',['inventory','bank'] as const));break;
-  case 'bulk_salvage':state=bulkSalvageSelected(state,stringArray(a,'ids',100,180),oneOf(a.location??'inventory',['inventory','bank'] as const));break;
+  // Exact copy selections use the same receipt ID and prefix limit as validation.
+  case 'bulk_transfer':state=bulkTransferSelected(state,stringArray(a,'ids',100,INVENTORY_SELECTION_ID_MAX),oneOf(a.location,['inventory','bank']));break;
+  case 'bulk_sell':state=bulkSellSelected(state,stringArray(a,'ids',100,INVENTORY_SELECTION_ID_MAX),oneOf(a.location??'inventory',['inventory','bank'] as const));break;
+  case 'bulk_salvage':state=bulkSalvageSelected(state,stringArray(a,'ids',100,INVENTORY_SELECTION_ID_MAX),oneOf(a.location??'inventory',['inventory','bank'] as const));break;
   case 'storage':state=game.upgradeStorage(state,oneOf(a.location,['inventory','bank']));break;
   case 'gem_pouch_upgrade':state=upgradeGemPouch(state);message='Gem Pouch capacity upgraded';break;
   case 'gem_pouch_sell':{const itemId=text(a,'itemId'),quantity=integer(a,'quantity');state=sellPouchGem(state,itemId,quantity);message='Gems sold from Gem Pouch';break;}
   case 'gem_pouch_bulk_sell':state=disposeGemPouchSelected(state,stringArray(a,'ids',100,120),'sell');message='Selected Gem Pouch stacks sold';break;
   case 'gem_pouch_bulk_dismantle':state=disposeGemPouchSelected(state,stringArray(a,'ids',100,120),'dismantle');message='Selected Gem Pouch stacks dismantled';break;
   case 'overflow':state=game.claimOverflowToBank(state);break;
-  case 'equip_tool':state=game.equipGatheringTool(state,text(a,'id'),now,a.instanceId===undefined?undefined:text(a,'instanceId',200));break;
-  case 'tool_vault_save':state=game.saveGatheringToolReserve(state,text(a,'id'),a.instanceId===undefined?undefined:text(a,'instanceId',200),now);message='Tool saved to its reserve slot';break;
+  case 'equip_tool':state=game.equipGatheringTool(state,text(a,'id'),now,a.instanceId===undefined?undefined:text(a,'instanceId',TOOL_INSTANCE_ID_MAX));break;
+  case 'tool_vault_save':state=game.saveGatheringToolReserve(state,text(a,'id'),a.instanceId===undefined?undefined:text(a,'instanceId',TOOL_INSTANCE_ID_MAX),now);message='Tool saved to its reserve slot';break;
   case 'tool_vault_activate':state=game.activateGatheringToolReserve(state,oneOf(a.skillId,['mining','woodcutting','fishing'] as const),integer(a,'tier',1,4) as 1|2|3|4,now);message='Saved tool activated';break;
-  case 'tool_vault_withdraw':state=game.withdrawGatheringToolReserve(state,oneOf(a.skillId,['mining','woodcutting','fishing'] as const),integer(a,'tier',1,4) as 1|2|3|4);message='Saved tool moved to Inventory';break;
-  case 'tool_move':state=game.moveGatheringToolCopy(state,text(a,'instanceId',200),oneOf(a.to,['inventory','bank']));break;
-  case 'tool_sell':state=game.sellGatheringToolCopy(state,text(a,'instanceId',200));break;
-  case 'unequip_tool':{const toolId=text(a,'id'),tool=gatheringToolDef(toolId);if(!tool)throw new Error('Not a gathering tool');state=game.unequipGatheringTool(state,tool.skillId,now,toolId);break;}
+  case 'tool_vault_withdraw':{const to=oneOf(a.to??'inventory',['inventory','bank'] as const);state=game.withdrawGatheringToolReserve(state,oneOf(a.skillId,['mining','woodcutting','fishing'] as const),integer(a,'tier',1,4) as 1|2|3|4,to);message=to==='bank'?'Saved tool moved to Bank':'Saved tool moved to Inventory';break;}
+  case 'tool_move':state=game.moveGatheringToolCopy(state,text(a,'instanceId',TOOL_INSTANCE_ID_MAX),oneOf(a.to,['inventory','bank']));break;
+  case 'tool_sell':state=game.sellGatheringToolCopy(state,text(a,'instanceId',TOOL_INSTANCE_ID_MAX));break;
+  case 'unequip_tool':{const toolId=text(a,'id'),tool=gatheringToolDef(toolId);if(!tool)throw new Error('Not a gathering tool');state=game.unequipGatheringTool(state,tool.skillId,now,toolId,oneOf(a.to??'inventory',['inventory','bank'] as const));break;}
   case 'equip_set':state=game.equipNoviceSet(state);break;
   case 'upgrade':{if(options.randomRoll===undefined)throw new Error('trusted_random_required');const result=attemptEquipmentUpgrade(state,text(a,'id'),options.randomRoll);state=result.state;upgrade=result.result;break;}
   case 'socket':{if(options.randomRoll===undefined)throw new Error('trusted_random_required');state=socketGem(state,text(a,'id'),text(a,'gemId'),options.randomRoll);break;}
@@ -515,7 +521,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
     break;
   }
   case 'inventory_preference_bulk':{
-     const ids=stringArray(a,'ids',100,190),kind=oneOf(a.kind,['lock','favorite']);
+     const ids=stringArray(a,'ids',100,INVENTORY_SELECTION_ID_MAX),kind=oneOf(a.kind,['lock','favorite']);
      if(typeof a.enabled!=='boolean')throw new Error('invalid_inventory_preference');
      state=applyBulkInventoryProtection(state,ids,kind,a.enabled);
      message=`${ids.length} item stacks ${a.enabled?'protected':'unprotected'}`;
@@ -532,11 +538,18 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
    const patch:Record<string,string|undefined>={};
    for(const [key,input] of Object.entries(a)){if(input!==null&&(typeof input!=='string'||input.length>80))throw new Error('invalid_profile');patch[key]=input===null?undefined:input as string;}
    if(patch.profileTitle!==undefined&&patch.profileTitle.length>32)throw new Error('invalid_profile_title');
+   if(!canUsePrivateTitleText(state,patch.profileTitle))throw new Error('cosmetic_not_owned');
    if(patch.profileIconId&&!canUseProfileIcon(state,patch.profileIconId))throw new Error('cosmetic_not_owned');
    if(patch.profileBackgroundId&&!['asterfall-night','ironwood-dawn','silverbrook-mist','oathglass-hall',...(state.account.unlockedProfileBackgroundIds??[])].includes(patch.profileBackgroundId))throw new Error('cosmetic_not_owned');
    if(patch.profileBorderId&&!state.account.unlockedProfileBorderIds?.includes(patch.profileBorderId))throw new Error('cosmetic_not_owned');
+   if(patch.profileEffectId&&!profileAnimatedCosmeticsEnabled(state)&&patch.profileEffectId!==state.character.profileEffectId)throw new Error('feature_not_released');
+   if(patch.profileEffectId&&!canUseProfileEffect(state,patch.profileEffectId))throw new Error('cosmetic_not_owned');
    if(patch.selectedCosmeticPetId&&!state.account.unlockedCosmeticPetIds?.includes(patch.selectedCosmeticPetId))throw new Error('cosmetic_not_owned');
-   state={...state,character:{...state.character,...patch}};break;
+   // An explicit validated icon write changes the account. Other cosmetics remain character-scoped.
+   const icon=patch.profileIconId;delete patch.profileIconId;
+   state={...state,character:{...state.character,...patch}};
+   if(icon)state=selectProfileIcon(state,icon);
+   break;
   }
   case 'event_daily':state=events.claimEventDailyGift(state,now);break;
   case 'event_cache':state=events.claimEventRepeatCache(state,now);break;
@@ -557,7 +570,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
  // Includes loot added by combat, quests, co-op and old save actions.
  // Re-evaluate milestones earned by this command (fishing, mastery, bosses,
  // crafting or quests), not just those completed before it started.
- state=recordAccountProgress(reconcileAccountCollections(refreshCompanions(migrateGemPouch(state),now)));
+ state=reconcileAccountProfileIcon(recordAccountProgress(reconcileAccountCollections(refreshCompanions(migrateGemPouch(state),now))));
  if(state.character&&(!Number.isSafeInteger(state.character.gold)||state.character.gold<0))throw new Error('invalid_wallet');
  return {state,reward,activity,message,won,storyBossBattle,upgrade,forgeResults,contributions};
 }

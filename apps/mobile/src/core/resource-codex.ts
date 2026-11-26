@@ -94,12 +94,16 @@ for(const mission of COMPANION_MISSIONS){
  for(const id of Object.keys(mission.costs?.materials??{}))
   recordUse(id,'Sanctuary Expedition provisions');
 }
+/** Exact known companion consumers only; never substitute the Codex's generic fallback. */
+export function companionMaterialUseLabels(itemId:string):readonly string[]{
+ return [...(companionUses.get(itemId)??[])];
+}
 export function resourceCodexUse(entry:ResourceCodexEntry){
  if(entry.id==='essence')return 'Companion training, ascension, techniques and Sanctuary upgrades.';
  if(entry.id==='bondstones')return 'Companion ascensions and Prestige Mastery.';
  if(entry.id==='TRIAL_SANCTUARY_MATERIAL')return 'Higher-tier companion ascensions and Sanctuary progression.';
  if(entry.companionRelated){
-  const uses=[...(companionUses.get(entry.id)??[])];
+  const uses=companionMaterialUseLabels(entry.id);
   return uses.length?uses.slice(0,5).join(' · ')+(uses.length>5?` · +${uses.length-5} more`:''):'Companion ascensions, Sanctuary upgrades or expedition provisions. Check the companion screen for exact costs.';
  }
  if(entry.id==='ASTERFALL_MINERAL_ESSENCE')return 'Rare Mining find used for +1 to +4 enchanting improvements on Tier 1 and Tier 2 equipment. Verdant Binding Resin is reserved for forging the equipment.';

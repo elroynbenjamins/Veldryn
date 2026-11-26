@@ -10,6 +10,7 @@ function equal(actual:unknown,expected:unknown,message:string){if(actual!==expec
 
 const expected=[
   ['UNIT_005','monster_mastery','LANTERN_WRETCH',20],
+  ['UNIT_007','monster_mastery','GLOAM_MITE',20],
   ['UNIT_008','skill_level','faith',30],
   ['UNIT_009','monster_mastery','ECHO_BAT',20],
   ['UNIT_011','boss_kills','FALLEN_KNIGHT',3],
@@ -48,9 +49,10 @@ for(const [id,type,target,amount] of expected){
 }
 
 let mastery=createCharacter(newGame(1),'IRONWARDEN','Asterfall Mastery');
-mastery={...mastery,character:{...mastery.character!,monsterMasteryPoints:{LANTERN_WRETCH:monsterMasteryKillsForRank(20),ECHO_BAT:monsterMasteryKillsForRank(20)}}};
+mastery={...mastery,character:{...mastery.character!,monsterMasteryPoints:{LANTERN_WRETCH:monsterMasteryKillsForRank(20),GLOAM_MITE:monsterMasteryKillsForRank(20),ECHO_BAT:monsterMasteryKillsForRank(20)}}};
 mastery=reconcileCombatCompanionUnlocks(mastery,100);
 ok(mastery.account.unlockedCombatCompanionIds?.includes('UNIT_005'),'Lantern Wisp unlocks through Lantern Wretch mastery');
+ok(mastery.account.unlockedCombatCompanionIds?.includes('UNIT_007'),'Gloamknife Shade unlocks through Gloam Mite mastery regardless of class');
 ok(mastery.account.unlockedCombatCompanionIds?.includes('UNIT_009'),'Echo Stalker unlocks through Echo Bat mastery');
 
 let faith=createCharacter(newGame(1),'IRONWARDEN','Faith Keeper');
@@ -76,7 +78,7 @@ equal(progress.current,1,'special challenge progress displays completion');
 special=reconcileCombatCompanionUnlocks(special,100);
 ok(special.account.unlockedCombatCompanionIds?.includes('UNIT_012'),'completed special challenge reconciles Oathglass Knightling ownership');
 
-for(const id of ['UNIT_005','UNIT_008','UNIT_009','UNIT_011','UNIT_012']){
+for(const id of ['UNIT_005','UNIT_007','UNIT_008','UNIT_009','UNIT_011','UNIT_012']){
   const def=combatCompanionDef(id)!;
   ok(def.unlockRequirements.every(req=>!['LANTERNWATCH_SIEGE','COOP_EFFECTIVE_SUPPORT','POSITIVE_ECHO_OBJECTIVES','FALLEN_PROCESSION_OUTCOMES','ASTERFALL_COOP_SET'].includes(req.target??'')),`${id} has no stale placeholder unlock target`);
 }

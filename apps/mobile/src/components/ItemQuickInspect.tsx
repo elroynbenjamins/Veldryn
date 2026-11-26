@@ -11,6 +11,7 @@ import {Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'rea
 import {GameModalSurface} from './GameModalSurface';
 import {GameState} from '../core/types';
 import {itemInspectModel} from '../core/item-inspect';
+import {companionMaterialUseLabels} from '../core/resource-codex';
 import {equipmentPouch} from '../core/equipment-pouch';
 import {prioritizeItemSources,prioritizeItemUses} from '../core/item-source-display';
 import {rarityMeta,rarityNameColor} from '../core/item-rarity';
@@ -74,6 +75,7 @@ export function ItemQuickInspect({state,itemId,instanceId,source='inventory',onC
   const traitLine=item.type==='gear'?item.passive?.trim():undefined;
   const otherEffectLines=model.effectLines.filter(line=>!isBonusRoll(line)&&(!traitLine||line!==traitLine)&&!(item.type==='tool'&&(line.includes(' · Q')||line.startsWith('Tool roll record unavailable'))));
   const sources=prioritizeItemSources(model.sources),uses=prioritizeItemUses(model.usedIn);
+  const companionUses=item.type==='material'?companionMaterialUseLabels(item.id):[];
   const primarySource=sources[0],otherSources=sources.slice(1),otherSourcesOpen=!!sourceDisclosure[itemId];
   const craftingOpen=!!craftingDisclosure[itemId],useLimit=useLimits[itemId]??4,useRows=uses.slice(0,useLimit);
   const readyUses=uses.filter(row=>row.availability.status==='ready').length;
@@ -119,7 +121,7 @@ export function ItemQuickInspect({state,itemId,instanceId,source='inventory',onC
             <Text style={s.disclosureText}>{ui('Details & sources')}</Text><Text style={s.disclosureMark}>{detailsOpen?'−':'+'}</Text>
           </Pressable>
           {detailsOpen&&<>
-          {(otherEffectLines.length>0||(model.craftedCopies>1&&item.type==='gear'&&!gearDecision?.alreadyEquipped))&&<Section title={gt("WHAT IT DOES")}>{model.craftedCopies>1&&item.type==='gear'&&!gearDecision?.alreadyEquipped?<Text style={s.note}>{gt("Choose a specific equipment copy to compare")}</Text>:null}{otherEffectLines.map((line,index)=><Text key={index} style={s.body}>{'• '+contentText(line)}</Text>)}</Section>}
+          {(otherEffectLines.length>0||companionUses.length>0||(model.craftedCopies>1&&item.type==='gear'&&!gearDecision?.alreadyEquipped))&&<Section title={gt("WHAT IT DOES")}>{model.craftedCopies>1&&item.type==='gear'&&!gearDecision?.alreadyEquipped?<Text style={s.note}>{gt("Choose a specific equipment copy to compare")}</Text>:null}{otherEffectLines.map((line,index)=><Text key={index} style={s.body}>{'• '+contentText(line)}</Text>)}{companionUses.map(use=><Text key={use} style={s.body}>{'• '+contentText(use)}</Text>)}</Section>}
           {toolDef?<Section title={gt('GATHERING TOOL DETAILS')}>
             {(detailToolCopies.length?detailToolCopies:instanceId?[]:[undefined]).map((copy,index)=>{
               const breakdown=gatheringToolContribution(toolDef,copy);

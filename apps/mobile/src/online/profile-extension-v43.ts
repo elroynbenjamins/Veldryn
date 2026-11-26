@@ -8,7 +8,7 @@ import type {ProfileGuildIdentity} from '../core/profile-guild';
 import type {PlayerNameStylePreference} from '../core/player-name-style';
 
 export type ProfileVisibilityV43='public'|'guild'|'private';
-export type ProfileCollectionKindV43='item'|'pet'|'companion'|'profile_icon'|'background'|'border';
+export type ProfileCollectionKindV43='item'|'pet'|'companion'|'profile_icon'|'background'|'border'|'effect';
 export interface ProfileCollectionRefV43{kind:ProfileCollectionKindV43;id:string}
 export interface ProfileExtensionSelfV43{
  accountId:string;visibility:ProfileVisibilityV43;worldFeedOptOut:boolean;selectedCharacterId?:string|null;bio:string;
@@ -23,7 +23,7 @@ export interface PublicPlayerProfileV43{
  equippedGear?:ProfileEquippedGear[];
  guildTag?:string|null;guildTagColorId?:string|null;nameStyle?:PlayerNameStylePreference|null;playerBadges?:PlayerBadgeIdentity;
  character:{id:string;name:string;classId:string;level:number;bodyPresentation:'male'|'female';profileIconId:string};
- title:string;backgroundId:string;borderId?:string|null;petId?:string|null;bio:string;favoriteSkillId?:string|null;favoriteCompanionId?:string|null;
+ title:string;/** Verified server grant */ ultraLuxeTitleId?:string|null;backgroundId:string;borderId?:string|null;effectId?:string|null;petId?:string|null;cosmeticsPreview?:boolean;bio:string;favoriteSkillId?:string|null;favoriteCompanionId?:string|null;
  achievementShowcaseIds:string[];collectionShowcase:ProfileCollectionRefV43[];recordShowcaseIds:string[];masteryShowcaseActionIds:string[];recordEntries?:Record<string,{recordId:string;value:number;achievedAtMs:number;characterId?:string;contextLabel?:string}>;revision:number;
 }
 function client(){if(!supabase)throw new Error('Online services are not configured in this build.');return supabase;}

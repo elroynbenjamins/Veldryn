@@ -2,19 +2,19 @@ import {useEffect,useMemo,useState} from 'react';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import type {Language} from '../i18n/languages';
 import {recentScreenText} from '../i18n/recent-screens';
-import {musicContextPreference,MUSIC_CONTEXTS,type MusicContextId,type AudioPreferences,type AudioLevel} from '../core/audio-preferences';
+import {musicContextPreference,MUSIC_TRACKS,type MusicSelectionId,type MusicContextId,type AudioPreferences,type AudioLevel} from '../core/audio-preferences';
 import {playSound,playMusicPreview,stopMusicPreview,useAudioPreferences} from '../storage/audio';
 import {Panel} from './Panel';
 import {useGameTheme} from '../theme/ThemeContext';
 import {typography,type ThemeColors} from '../theme/theme';
 
 const REGIONS:readonly MusicContextId[]=['asterfall','sunscar','frostmarch'];
-// The former town/menu track is retained for existing saved choices, but not offered anew.
-const MUSIC_CHOICES=MUSIC_CONTEXTS.filter(track=>track!=='town');
+const MUSIC_CHOICES=MUSIC_TRACKS;
 const ACTIVITIES:readonly MusicContextId[]=['dungeon','boss','world_boss'];
-const LABELS:Record<MusicContextId,string>={
- town:'Town & Menus',asterfall:'Asterfall',sunscar:'Sunscar',frostmarch:'Frostmarch',
+const LABELS:Record<MusicSelectionId,string>={
+ asterfall:'Asterfall',sunscar:'Sunscar',frostmarch:'Frostmarch',
  dungeon:'Dungeons & Co-op',boss:'Boss battles',world_boss:'World boss encounters',
+ boss_A:'Shatter the Crown',boss_B:'No Retreat',dungeon_A:'Iron Cathedral',dungeon_B:'Clockwork Descent',frostfall_dungeon:'Bells of the Frozen Citadel',world_boss_A:'Heavenfall Engine',world_boss_B:'Last Light of Eternity',
 };
 const LEVELS:readonly AudioLevel[]=[0,1,2,3];
 
@@ -28,7 +28,7 @@ export function MusicSettingsPanel({language}:{language:Language}){
   setAudio({...audio,[channel]:level});
   if(channel==='effects'&&level>0)playSound('ui_confirm');
  };
- const chooseContext=(id:MusicContextId,part:Partial<{enabled:boolean;track:MusicContextId|null}>)=>{
+ const chooseContext=(id:MusicContextId,part:Partial<{enabled:boolean;track:MusicSelectionId|null}>)=>{
   const current=musicContextPreference(audio,id);
   const musicContexts:AudioPreferences['musicContexts']={...audio.musicContexts,[id]:{...current,...part}};
   setAudio({...audio,musicContexts});
@@ -58,7 +58,7 @@ export function MusicSettingsPanel({language}:{language:Language}){
     <Text style={s.chevron}>{open?'▴':'▾'}</Text>
    </Pressable>
    {open?<View style={s.choices}>
-    {([null,...MUSIC_CHOICES] as (MusicContextId|null)[]).map(track=>{
+    {([null,...MUSIC_CHOICES] as (MusicSelectionId|null)[]).map(track=>{
      const selected=choice.track===track;
      const text=track?a(LABELS[track]):a('Default theme');
      return <View key={track??'default'} style={[s.option,selected&&s.optionSelected]}>

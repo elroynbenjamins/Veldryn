@@ -16,6 +16,11 @@ const draft=fs.readFileSync('src/online/useProfileExtensionDraft.ts','utf8');
 const releaseFlags=fs.readFileSync('src/core/release-flags.ts','utf8');
 const socialClientGate=fs.readFileSync('src/online/social-identity-client-gate.ts','utf8');
 const preview=fs.readFileSync('src/components/ProfileAudiencePreviewModal.tsx','utf8');
+const cosmeticRuntime=fs.readFileSync('src/theme/profile-cosmetic-runtime-v1.ts','utf8');
+const cosmeticMotion=fs.readFileSync('src/components/ProfileCosmeticMotion.tsx','utf8');
+const appIndex=fs.readFileSync('index.js','utf8');
+const cosmeticsStore=fs.readFileSync('src/screens/StoreScreen.tsx','utf8');
+const cosmeticsCatalog=fs.readFileSync('src/content/profile-cosmetic-store.ts','utf8');
 
 ok(app.includes('profileCustomizeDirty'),'App must track profile customization dirty state');
 ok(app.includes('<ProfileDiscardChangesModal')&&discard.includes('Discard profile changes?')&&discard.includes('Keep editing')&&discard.includes('Discard changes'),'Leaving customization must require an explicit discard choice');
@@ -40,6 +45,17 @@ ok(look.includes('onDirtyChange?:(dirty:boolean)=>void')&&look.includes('onPrevi
 const chips=fs.readFileSync('src/components/profile/ProfileWardrobeChips.tsx','utf8');
 ok(look.includes('profileWardrobe(state,WARDROBE_ASSETS)')&&screen.includes('profileWardrobe(state,WARDROBE_ASSETS)'),'The wardrobe model must drive both the chips and the grid');
 ok(chips.includes('row.owned')&&chips.includes('row.total'),'Category chips must carry their owned/total unlock counts');
+const wardrobe=fs.readFileSync('src/core/profile-wardrobe.ts','utf8');
+ok(wardrobe.includes("['icon','scene','frame','effect','pet','title']")&&wardrobe.includes("effect:'Effects'"),'Effects must be a first-class wardrobe family between Frames and Pets');
+ok(releaseFlags.includes('PROFILE_ANIMATED_COSMETICS_RELEASED=false')&&wardrobe.includes("kind=>kind!=='effect'"),'Animated profile effects must remain hidden from the player wardrobe until the release gate is approved');
+ok(look.includes("chip==='effect'?live.effect")&&look.includes('cosmeticArtByEffect'),'Effect selection must use its own equipped slot and themed static artwork');
+ok(stage.includes('character.profileEffectId')&&(stage.includes('<ProfileSceneEffect')||stage.includes('<ProceduralProfileSceneEffect')),'The pinned stage must preview the selected showcase effect independently from the border');
+ok(cosmeticRuntime.includes("T('snowflake',")&&cosmeticRuntime.includes("T('leaf',")&&cosmeticRuntime.includes("T('ember',")&&cosmeticRuntime.includes("T('arcane',"),'Native cosmetics fallback must keep distinct themed particle silhouettes');
+ok(cosmeticMotion.includes('ProceduralProfileSceneEffect')&&cosmeticMotion.includes('ProceduralProfileBorderGlows'),'Native review must not depend on binary V3 imports');
+ok(appIndex.includes("EXPO_PUBLIC_VISUAL_QA_SCREEN==='profile-cosmetics-store'")&&appIndex.includes("require('./src/dev/ProfileCosmeticsStoreReview').default"),'Hidden Cosmetics catalog must have a developer-only native review route');
+ok(cosmeticsStore.includes("type StoreSection='Memberships'|'Cosmetics'")&&cosmeticsStore.includes('STORE_COSMETICS_VISIBLE=PROFILE_COSMETICS_STORE_RELEASED'),'The Store models Cosmetics as its second category but keeps it release-gated');
+const cosmeticStorePreview=fs.readFileSync('src/components/StoreCosmeticsCatalog.tsx','utf8');
+ok(cosmeticsCatalog.includes('checkoutEnabled:false as const')&&cosmeticsCatalog.includes("kind:'set' as const")&&cosmeticsCatalog.includes('...collection.set,collectionId:collection.id,checkoutEnabled:false as const')&&cosmeticStorePreview.includes('The Store does not sell any of the four set contents separately.')&&cosmeticStorePreview.includes('CHECKOUT OFF'),'Cosmetics catalog must define standard set-only products without an active checkout path');
 const pager=fs.readFileSync('src/components/OptionPager.tsx','utf8');
 ok(chips.includes('<OptionPager')&&chips.includes("{key:'badge'"),'Every cosmetic category, Badges included, must stay reachable from the pinned header');
 ok(pager.includes('onPanResponderRelease')&&pager.includes('accessibilityRole="adjustable"')&&pager.includes('s.dotTarget'),'A category must be reachable by arrow, by drag and by its own dot, and the control must announce itself as adjustable');
@@ -58,6 +74,7 @@ ok(stage.includes('ProfileFrameOverlay')&&!stage.includes('minCorner'),'The stag
 ok(stage.includes('!!frame&&s.identityFramed')&&stage.includes('!!frame&&s.surfaceFramed'),'A framed stage must tuck its art and identity inside the frame instead of being struck through by it');
 ok(showcase.includes('<PlayerBadges identity={badges.identity}')&&stage.includes('<PlayerBadges identity={badges.identity}'),'Earned badges must show beside the name on the profile, on the stage and on the showcase card');
 ok(preview.includes('playerBadges:badges.identity'),'The audience preview must hand its own badges to the public scene, which has no published identity to read offline');
+ok(preview.includes('effectId:character.profileEffectId??null'),'Audience preview must project the character-scoped effect choice');
 
 // The Character screen keeps its own inline editor, so its contract still holds.
 ok(appearance.includes("['All','Starter','Class','Combat','Event']")&&!appearance.includes("['All','Starter','Class','Companion','Combat','Event']"),'Profile icon filters must not expose the retired Companion tab');

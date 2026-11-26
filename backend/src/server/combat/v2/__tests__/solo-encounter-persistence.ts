@@ -41,12 +41,16 @@ const source=async():Promise<TrustedCompiledSoloSourceV2>=>{
   eliteEnemyIds:[basicEnemy.id],
  });
  const stages={...player.stats};
+ const noDelta:CombatStats={maxHp:0,attackPower:0,healingPower:0,defense:0,
+  accuracy:0,evasion:0,critChance:0,critMultiplier:0,haste:0};
  const evidence={
   actorId:player.id,classPolicyVersion:'class-baseline-fixture-v2',
   statStages:{
    classOnly:{...stages},afterSkills:{...stages},
    afterItemBase:{...stages},afterSets:{...stages},afterAffixes:{...stages},
   },
+  statContributions:{classOnly:{...stages},skills:{...noDelta},
+   itemBase:{...noDelta},sets:{...noDelta},affixes:{...noDelta}},
   baseSources:[],setEffects:[],affixSources:[],
  };
  return {

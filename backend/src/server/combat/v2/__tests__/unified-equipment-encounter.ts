@@ -9,7 +9,8 @@ import {resolveVerifiedEquipmentBaseV2} from '../equipment-base-stats';
 import {applyVerifiedSetBonusesV2} from '../equipment-set-effects';
 import {compileTrustedEquipmentAffixesV2} from '../equipment-affixes';
 import {validateBuildV2} from '../build-contract';
-import {evaluatePowerCompositionV2} from '../power-composition';
+import {evaluatePowerCompositionV2,reviewPowerAttributionV2} from '../power-composition';
+import {simulateCombat,simulateCombatWithServerAuthoritiesV2} from '../../engine';
 import {equipmentQualityMultiplierV2} from '../equipment-scaling-policy';
 import {serverBuildCatalogV2} from '../skill-catalog';
 import {prepareSoloEnemyKitsV2,type PersistedEnemyKitV2} from '../enemy-kit-composer';
@@ -116,6 +117,8 @@ assert.equal(evidence.statStages.afterSets.defense,
 assert.equal(evidence.statStages.classOnly.attackPower,fixtureClassStats.attackPower);
 
 assert.equal(evidence.composition,undefined,'No unapproved CP weighting may be assumed');
+assert.deepEqual(simulateCombatWithServerAuthoritiesV2(input,{}),simulateCombat(input));
+assert.throws(()=>simulateCombatWithServerAuthoritiesV2(input,{partySync:{}} as never),/unknown_authority_channel/);
 const weights=Object.fromEntries(keys.map(x=>[x,x==='attackPower'?1:0])) as Record<keyof CombatStats,number>;
 const policy={
  targetClassShare:{min:.15,max:.18},weights,requiredEquipmentSlots:10,
@@ -126,6 +129,12 @@ const good=evaluatePowerCompositionV2(syntheticClass,syntheticFull,10,policy);
 assert.equal(good.classShare,.16);
 assert.equal(good.withinTarget,true);
 assert.equal(good.otherShare,.84);
+const rated=simulateUnifiedEquipmentCombatV2(input,[build],[{...runtime,compositionPolicy:policy}],true);
+const attribution=reviewPowerAttributionV2(evidence.statStages,evidence.baseSources.length,policy);
+assert.deepEqual(rated.equipmentEvidence[0].powerAttribution,attribution);
+assert.deepEqual(rated.combat,enabled.combat);
+assert.equal(attribution.cpApproved,false);
+assert.ok(Math.abs(attribution.rows.reduce((n,r)=>n+r.value,0)-attribution.partialWeightedTotal)<1e-6);
 assert.equal(evaluatePowerCompositionV2(syntheticClass,syntheticFull,9,policy).withinTarget,null,
  'Partly equipped characters must not be judged against full-gear targets');
 assert.equal(evaluatePowerCompositionV2(syntheticClass,
@@ -154,6 +163,33 @@ const expectedWithSet=round6(expectedDefenseBase*1.02);
 const expectedWithAffix=round5(expectedWithSet*1.03);
 // Class/spec first, then quality/rarity, set, and finally the random roll.
 assert.equal(resolved.stats.defense,expectedWithAffix);
+ // Marginal accounting must reconstruct every personal stat. It must not
+ // reapply percentages to an already resolved total or price temporary effects.
+ const contributions=evidence.statContributions;
+ for(const key of keys){
+  const reconstructed=contributions.classOnly[key]+contributions.skills[key]+
+   contributions.itemBase[key]+contributions.sets[key]+contributions.affixes[key];
+  assert.ok(Math.abs(reconstructed-resolved.stats[key])<1e-8,'contribution mismatch '+key);
+ }
+ assert.equal(contributions.itemBase.defense,
+  evidence.statStages.afterItemBase.defense-evidence.statStages.afterSkills.defense);
+ assert.equal(contributions.sets.defense,expectedWithSet-expectedDefenseBase);
+ assert.equal(contributions.affixes.defense,expectedWithAffix-expectedWithSet);
+ // Neither upstream final ceiling can be bypassed by the last affix stage.
+ const midCeiling=(expectedWithSet+expectedWithAffix)/2;
+ assert.throws(()=>simulateUnifiedEquipmentCombatV2(input,[build],[
+  {...runtime,basePolicy:{...basePolicy,ceilings:{...ceilings,defense:midCeiling}}},
+ ],true),/final_personal_stat_exceeds_ceiling:defense/);
+ assert.throws(()=>simulateUnifiedEquipmentCombatV2(input,[build],[
+  {...runtime,setsPolicy:{...setPolicy,ceilings:{...ceilings,defense:midCeiling}}},
+ ],true),/final_personal_stat_exceeds_ceiling:defense/);
+ // Exact boundary stays eligible and retains the old numerical result.
+ const exactCap=simulateUnifiedEquipmentCombatV2(input,[build],[
+  {...runtime,basePolicy:{...basePolicy,ceilings:{...ceilings,defense:expectedWithAffix}},
+   setsPolicy:{...setPolicy,ceilings:{...ceilings,defense:expectedWithAffix}}},
+ ],true);
+ assert.deepEqual(exactCap.combat,enabled.combat);
+
 
 assert.ok(resolved.tags?.includes('combat-v2-class-base-only'));
 assert.notEqual(resolved.stats,actor.stats,'Output must use a separately issued stat object');
@@ -213,6 +249,17 @@ assert.throws(()=>simulateUnifiedEquipmentCombatV2({
 },[build],[runtime],true),/persistent_state_adapter_required/);
 assert.throws(()=>simulateUnifiedEquipmentCombatV2(input,[build],[],true),/complete_build_and_gear_snapshots_required/);
 assert.throws(()=>simulateUnifiedEquipmentCombatV2(input,[build,build],[runtime],true),/complete_build_and_gear_snapshots_required/);
+
+
+// Duplicate identity or cross-character physical copies must fail before combat.
+const secondActor={...classActor,id:'QA_SECOND_ACTOR'};
+const secondBuild={...build,actor:secondActor};
+const secondRuntime={...runtime,actorId:secondActor.id};
+const dualInput={...input,players:[classActor,secondActor]};
+assert.throws(()=>simulateUnifiedEquipmentCombatV2(dualInput,[build,secondBuild],[runtime,secondRuntime],true),/duplicate_or_missing_equipment_character/);
+const otherRuntime={...secondRuntime,characterId:'CHAR_2',
+ instancesById:Object.fromEntries(Object.entries(runtime.instancesById).map(([key,item])=>[key,{...item,ownerCharacterId:'CHAR_2'}]))};
+assert.throws(()=>simulateUnifiedEquipmentCombatV2(dualInput,[build,secondBuild],[runtime,otherRuntime],true),/duplicate_encounter_equipment_copy/);
 
 // A separate, authenticated persistence reader may supply one fully prepared
 // Enemy 2.0 kit; this must bypass the generic Class V2 enemy kit compiler.

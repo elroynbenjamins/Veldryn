@@ -15,7 +15,8 @@ import {
  reactiveHealingMultiplierV2,reactiveShieldMultiplierV2,
  type ReactiveContextV2,type ReactiveTriggerV2,
 } from './v2/reactive-passive-runtime';
-import type { AbilityDefinition, AbilityEffect, CombatEvent, CombatGemStateSnapshot, CombatInput, CombatResult, CombatantDefinition, CombatantState, PersistentActorState, TargetRule } from './types';
+import type { AbilityDefinition, AbilityEffect, CombatEvent, CombatGemStateSnapshot, CombatInput, CombatResult, CombatantDefinition, CombatantState, PersistentActorState } from './types';
+import {living,hpPct,modifier,chooseEnemy,targetsFor,conditionOk} from './combat-state-query';
 import {gemConsumeSupportChargeV1,gemEffectiveDefenseV1,gemEffectiveHasteV1,gemHealingMultiplierV1,gemIncomingDamageMultiplierV1,gemOnAbilityUsedV1,gemOnBossPhaseV1,gemOnBuffAppliedV1,gemOnDamageTakenV1,gemOnDebuffAppliedV1,gemOnDirectHealV1,gemOnDirectHitV1,gemOnKillV1,gemOnShieldAppliedV1,gemOutgoingDamageMultiplierV1,gemShieldMultiplierV1} from './gem-effects-v1';
 
 function init(def: CombatantDefinition, carried?:PersistentActorState): CombatantState {
@@ -24,74 +25,29 @@ function init(def: CombatantDefinition, carried?:PersistentActorState): Combatan
   return { definition:def, combatV2:initCombatResourceV2(def), hp, shield:0, alive:!downed&&hp>0, downed, threat:{}, cooldownReadyAt:{...(carried?.cooldownRemainingMs??{})}, nextBasicAt:carried?.basicAttackRemainingMs??0, periodic:[], modifiers:[], damageDone:0, healingDone:0, damageTaken:0, interrupts:0, triggeredPhases:[] };
 }
 
-function living(xs: CombatantState[]) { return xs.filter(x=>x.alive); }
-function hpPct(x: CombatantState) { return x.hp / Math.max(1, x.definition.stats.maxHp); }
-
-function modifier(state: CombatantState, tag: string, now: number): number {
-  return state.modifiers.filter(m=>m.tag===tag && m.expiresAt>now).reduce((s,m)=>s+m.value,0);
-}
-
 const VISIBLE_GEM_STATE_TAGS=new Set([
   'gem:momentum','gem:critical_surge','gem:flow','gem:unyielding','gem:predator_boost','gem:opening_phase',
   'gem:retaliation_ready','gem:battle_offense_ready','gem:battle_support_ready','gem:damage_reduction',
   'gem:shared_resolve','gem:benediction_charge','gem:haste_bonus','gem:opportunist_ready',
 ]);
 
-function chooseEnemy(actor: CombatantState, enemies: CombatantState[], rng: CombatRng, label: string): CombatantState | undefined {
-  const live=living(enemies); if (!live.length) return undefined;
-  if (actor.definition.team === 'enemies') {
-    const tank = live.find(x=>x.definition.role==='tank');
-    if (tank) return tank;
-    return live.reduce((a,b)=>((actor.threat[b.definition.id]||0)>(actor.threat[a.definition.id]||0)?b:a), live[0]);
-  }
-  return rng.pick(live,label);
+/** Named, server-only handoff for new V2 assembly callers. The old
+ * positional API stays intact until all existing call sites are reconciled.
+ * Future party Synchronization authorities require their own named field. */
+export interface ServerCombatAuthoritiesV2 {
+ readonly enemy?:EnemyV2EngineAuthority;
+ readonly equipmentTrait?:EquipmentV2TraitEngineAuthority;
+ readonly dungeonReward?:DungeonRewardEngineAuthorityV2;
+ readonly privateHit?:Eq2PrivateHitAuthorityV22;
 }
-
-function threatenedAlly(allies:CombatantState[],enemies:CombatantState[]):CombatantState|undefined{
-  const liveAllies=new Map(living(allies).map(ally=>[ally.definition.id,ally]));
-  const candidates=living(enemies).flatMap(enemy=>{
-    if(!enemy.casting)return[];
-    const ability=enemy.definition.abilities.find(item=>item.id===enemy.casting!.abilityId);
-    if(!ability||ability.target==='all_enemies'||ability.target==='all_allies'||ability.target==='self')return[];
-    const target=liveAllies.get(enemy.casting.targetId);if(!target)return[];
-    if(!ability.effects.some(effect=>effect.kind==='damage'||effect.kind==='dot'))return[];
-    return[{enemy,target,completesAt:enemy.casting.completesAt}];
-  });
-  candidates.sort((a,b)=>a.completesAt-b.completesAt||Number(Boolean(b.enemy.definition.boss))-Number(Boolean(a.enemy.definition.boss))||a.enemy.definition.id.localeCompare(b.enemy.definition.id));
-  return candidates[0]?.target;
-}
-
-function targetsFor(rule: TargetRule, actor: CombatantState, allies: CombatantState[], enemies: CombatantState[], rng: CombatRng, label: string): CombatantState[] {
-  switch(rule) {
-    case 'self': return [actor];
-    case 'lowest_hp_ally': { const live=living(allies); return live.length ? [live.reduce((a,b)=>hpPct(b)<hpPct(a)?b:a)] : []; }
-    case 'lowest_hp_ally_with_dot': { const live=living(allies),poisoned=live.filter(x=>x.periodic.some(p=>p.kind==='dot')),candidates=poisoned.length?poisoned:live;return candidates.length?[candidates.reduce((a,b)=>hpPct(b)<hpPct(a)?b:a)]:[]; }
-    case 'two_lowest_hp_allies':return [...living(allies)].sort((a,b)=>hpPct(a)-hpPct(b)||a.definition.id.localeCompare(b.definition.id)).slice(0,2);
-    case 'all_allies': return living(allies);
-    case 'all_enemies': return living(enemies);
-    case 'random_enemy': { const live=living(enemies); return live.length ? [rng.pick(live,label)] : []; }
-    case 'interruptible_casting_enemy': {
-      const live=living(enemies).filter(enemy=>enemy.casting&&(enemy.definition.abilities.find(ability=>ability.id===enemy.casting!.abilityId)?.interruptible??false));
-      if(!live.length)return [];
-      live.sort((a,b)=>(a.casting!.completesAt-b.casting!.completesAt)||Number(Boolean(b.definition.boss))-Number(Boolean(a.definition.boss))||a.definition.id.localeCompare(b.definition.id));
-      return [live[0]];
-    }
-    case 'threatened_ally': {const threatened=threatenedAlly(allies,enemies);if(threatened)return[threatened];const live=living(allies);return live.length?[live.reduce((a,b)=>hpPct(b)<hpPct(a)?b:a)]:[];}
-    case 'current_target': default: { const t=chooseEnemy(actor,enemies,rng,label); return t?[t]:[]; }
-  }
-}
-
-function conditionOk(a: AbilityDefinition, actor: CombatantState, allies: CombatantState[], enemies: CombatantState[]) {
-  switch(a.aiCondition || 'always') {
-    case 'self_below_50': return hpPct(actor)<0.5;
-    case 'ally_below_50': return living(allies).some(x=>hpPct(x)<0.5);
-    case 'ally_below_50_or_dot': return living(allies).some(x=>hpPct(x)<0.5||x.periodic.some(p=>p.kind==='dot'));
-    case 'ally_below_80': return living(allies).some(x=>hpPct(x)<0.8);
-    case 'ally_below_80_or_targeted': return Boolean(threatenedAlly(allies,enemies))||living(allies).some(x=>hpPct(x)<0.8);
-    case 'target_casting': return living(enemies).some(x=>!!x.casting && (x.definition.abilities.find(z=>z.id===x.casting!.abilityId)?.interruptible ?? false));
-    case 'multiple_enemies': return living(enemies).length>=2;
-    default: return true;
-  }
+export function simulateCombatWithServerAuthoritiesV2(
+ input:CombatInput,authorities:ServerCombatAuthoritiesV2,
+):CombatResult{
+ if(!authorities||typeof authorities!=='object'||Array.isArray(authorities)||
+   Object.keys(authorities).some(key=>!['enemy','equipmentTrait','dungeonReward','privateHit'].includes(key)))
+  throw Error('combat_v2_unknown_authority_channel');
+ return simulateCombat(input,authorities.enemy,authorities.equipmentTrait,
+  authorities.dungeonReward,authorities.privateHit);
 }
 
 /** Optional server-issued second parameter is never parsed from CombatInput JSON. */

@@ -15,7 +15,15 @@ const otherClassCharacter=createCharacter(newGame(1000),'WAYFINDER','New Wayfind
 check(otherClassCharacter.character!.profileIconId==='class:WAYFINDER','another class starts with its own portrait');
 check(newlyUnlockedProfileIcons(newGame(1000),otherClassCharacter).length===0,'another class starter icon is not announced');
 check(newlyUnlockedProfileIcons(state,otherClassCharacter).length===0,'changing active class does not announce a free class portrait');
-check(profileIconCollection(state).length===14,'catalog includes class, starters, boss, guild and two released Veilbreak event icons');
+check(profileIconCollection(state).length===17,'catalog includes class, starters, boss, guild, two Veilbreak and three released Dungeon icons');
+const dungeonIcons=profileIconCollection(state).filter(row=>row.group==='Dungeon');
+check(dungeonIcons.length===3,'all three Dungeon portraits are visible');
+for(const icon of dungeonIcons){
+ check(!icon.unlocked&&icon.artworkReady,'unowned Dungeon portrait stays locked with artwork: '+icon.id);
+ rejects(()=>selectProfileIcon(state,icon.id));
+ const purchased={...state,account:{...state.account,unlockedProfileIconIds:[icon.id]}};
+ check(selectProfileIcon(purchased,icon.id).character!.profileIconId===icon.id,'purchased Dungeon portrait can be selected: '+icon.id);
+}
 check(profileIconCollection(state).filter(row=>row.unlocked).length===10,'current class emblem and nine starter portraits available');
 check(!profileIconCollection(state).some(row=>row.group==='Cosmetics'),'unreleased cosmetic-set portraits stay out of the normal collection');
 const cosmeticPortraitOwned={...state,account:{...state.account,unlockedProfileIconIds:['cosmetic:gloamward:portrait-seer']}};

@@ -4,6 +4,7 @@
   "private": true,
   "main": "index.js",
   "scripts": {
+    "test:profile-quick-set-equip": "node tests/profile-quick-set-equip.cjs",
     "test:skill-navigator": "node tests/skill-navigator-compact-ui.cjs",
     "test:chat-self-profile": "node tests/chat-self-active-profile.cjs",
     "test:character-roster": "node tests/character-roster-compact-ui.cjs",

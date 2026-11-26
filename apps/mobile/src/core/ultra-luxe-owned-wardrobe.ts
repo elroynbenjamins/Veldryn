@@ -24,7 +24,7 @@ export function ownedNewUltraLuxeCollections(state:GameState,scope:ReviewScope,p
 export function appendOwnedUltraLuxeWardrobe(categories:WardrobeCategory[],state:GameState,scope:ReviewScope,projection:ReviewGrantSnapshot|undefined):WardrobeCategory[]{
  const c=state.character,owned=ownedNewUltraLuxeCollections(state,scope,projection);
  if(!c||!owned.length)return categories;
- const additions:WardrobeRow[]=owned.flatMap(row=>[
+ const additions:WardrobeRow[]=owned.flatMap<WardrobeRow>(row=>[
   {kind:'scene',id:row.ids.background,name:row.backgroundName,group:'Ascendant',unlocked:true,equipped:c.profileBackgroundId===row.ids.background},
   {kind:'frame',id:row.ids.border,name:row.borderName,group:'Ascendant',unlocked:true,equipped:c.profileBorderId===row.ids.border},
   {kind:'pet',id:row.ids.pet,name:row.petName,group:'Ascendant',unlocked:true,equipped:c.selectedCosmeticPetId===row.ids.pet},

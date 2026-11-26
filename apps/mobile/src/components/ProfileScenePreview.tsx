@@ -54,7 +54,7 @@ export function ProfileScenePreview({state,backgroundId,active=false}:{state:Gam
  const character=state.character!;
  const accountId=useAuthSession().session?.user.id??'';
  const raw={background:backgroundId,border:character.profileBorderId,pet:character.selectedCosmeticPetId};
- const projection=useUltraLuxeCollectionProjection(active&&candidateAppearanceHint(raw),sixLuxeNamesEnabled);
+ const projection=useUltraLuxeCollectionProjection(candidateAppearanceHint(raw),sixLuxeNamesEnabled);
  const owned=ownedNewUltraLuxeCollections(state,{accountId,characterId:character.id},projection);
  const allowed=owned.map(c=>c.id);
  const safe=candidateAppearanceIds({...raw,displayedBadges:[]},allowed);

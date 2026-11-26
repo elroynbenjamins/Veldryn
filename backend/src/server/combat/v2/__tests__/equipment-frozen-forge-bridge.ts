@@ -1806,7 +1806,7 @@ function makeV21Loadout(classId:ClassIdV2,specIndex:0|1,targetTier:1|2|3|4,targe
  assert.throws(()=>reviewEffectGemResonanceV2([sample],qa.ids.filter(id=>id!==sample.instanceId)),/invalid_scope|invalid_copy/);
  assert.equal(JSON.stringify(source.items),original);
  assert.equal(rows.length,20*3*3);
- assert.equal(triggers.length,16*3*3);
+ assert.equal(triggers.length,20*3*3);
  console.log('EFFECT_GEM_TRIGGER_BOUNDARY_REVIEW '+JSON.stringify({cases:triggers.length,
   assertions:triggers.reduce((n,r)=>n+r.assertions,0),legacyGapCases:triggers.filter(r=>r.legacyGap).length,
   families:[...new Set(triggers.map(r=>r.family))],releaseEnabled:false}));

@@ -353,3 +353,117 @@ export function reviewRetaliationHitV2(g:EffectTriggerReviewGroupV2,now:number,
   healCooldownUntil:healReady?now+10000:state.healCooldownUntil},
   consumed,bonus:consumed?g.totalValue:0,heal,mayTriggerEffects:false as const};
 }
+
+/** Last Stand is a once-per-encounter threshold crossing, not a
+ * persistent low-HP condition. Cannot rescue an already downed actor. */
+export interface LastStandReviewStateV2{readonly used:boolean;readonly expiresAt:number;}
+export function reviewLastStandV2(g:EffectTriggerReviewGroupV2,now:number,
+ state:LastStandReviewStateV2,maxHp:number,beforeHp:number,afterHp:number,eligibleHostileDamage:boolean){
+ group(g,'effect_last_stand');
+ if(![now,maxHp,beforeHp,afterHp,state.expiresAt].every(finite)||maxHp<=0||beforeHp>maxHp||afterHp>maxHp)
+  fail('last_stand_input');
+ const threshold=g.resonance>=2?.35:.30;
+ const triggered=!state.used&&eligibleHostileDamage&&afterHp>0&&afterHp<beforeHp&&
+  beforeHp/maxHp>=threshold&&afterHp/maxHp<threshold;
+ const next={used:state.used||triggered,expiresAt:triggered?now+(g.resonance===3?8000:6000):state.expiresAt};
+ return {state:next,threshold,triggered,reduction:afterHp>0&&next.expiresAt>now?g.totalValue:0};
+}
+export interface BenedictionReviewStateV2{
+ readonly expiries:readonly number[];readonly hasteUntil:number;readonly lastActionSequence:number;readonly lastAt:number;
+}
+export const emptyBenedictionReviewV2=():BenedictionReviewStateV2=>({
+ expiries:[],hasteUntil:0,lastActionSequence:-1,lastAt:0,
+});
+/** Complete one authored action atomically. Consume at most one prior
+ * charge for all qualifying outputs; grant new charge only afterward.
+ * Future engine must reserve that charge before resolving the action. */
+export function reviewBenedictionActionV2(g:EffectTriggerReviewGroupV2,now:number,
+ state:BenedictionReviewStateV2,actionSequence:number,eligibleSupport:boolean,qualifyingHealOrBarrier:boolean){
+ group(g,'effect_benediction');
+ const cap=g.resonance>=2?2:1;
+ if(![now,state.lastAt,state.hasteUntil].every(finite)||now<state.lastAt||
+  !Number.isSafeInteger(actionSequence)||actionSequence<0||
+  !Number.isSafeInteger(state.lastActionSequence)||state.lastActionSequence< -1||
+  state.expiries.length>cap||state.expiries.some(x=>!finite(x)))fail('benediction_input');
+ const expiries=state.expiries.filter(x=>x>now).sort((a,b)=>a-b);
+ const fresh=actionSequence>state.lastActionSequence;
+ const consumed=fresh&&eligibleSupport&&qualifyingHealOrBarrier&&expiries.length>0;
+ if(consumed)expiries.shift();
+ const granted=fresh&&eligibleSupport&&expiries.length<cap;
+ if(granted)expiries.push(now+10000);
+ const hasteUntil=consumed&&g.resonance===3?now+4000:state.hasteUntil;
+ return {state:{expiries,hasteUntil,lastAt:now,lastActionSequence:fresh?actionSequence:state.lastActionSequence},
+  consumed,granted,bonus:consumed?g.totalValue:0,haste:hasteUntil>now?.02:0};
+}
+export interface RenewalReviewApplicationV2{
+ readonly id:string;readonly casterId:string;readonly targetId:string;
+ readonly nextTickAt:number;readonly expiresAt:number;readonly perTick:number;
+}
+function validateRenewalRows(rows:readonly RenewalReviewApplicationV2[]){
+ if(new Set(rows.map(r=>r.id)).size!==rows.length||
+  rows.some(r=>!r.id||!r.casterId||!r.targetId||![r.nextTickAt,r.expiresAt,r.perTick].every(finite)||
+   r.nextTickAt>r.expiresAt||r.perTick<=0))fail('renewal_rows');
+}
+/** Each successful authored direct heal generates its own exact
+ * periodic request. Cap per caster/target; oldest replacement forfeits
+ * remaining ticks, never refreshes or multiplies other caster's HoT. */
+export function reviewRenewalApplyV2(g:EffectTriggerReviewGroupV2,input:{
+ id:string;casterId:string;targetId:string;now:number;actualHeal:number;authoredDirect:boolean;
+ rows:readonly RenewalReviewApplicationV2[];
+}){
+ group(g,'effect_renewal');validateRenewalRows(input.rows);
+ const {id,casterId,targetId,now,actualHeal,rows}=input;
+ if(!id||!casterId||!targetId||![now,actualHeal].every(finite)||
+  rows.some(r=>r.nextTickAt<=now))fail('renewal_input');
+ const duration=g.resonance>=2?6000:4000,cap=g.resonance===3?2:1;
+ if(!input.authoredDirect||actualHeal===0||rows.some(r=>r.id===id))
+  return {rows:[...rows],total:0,granted:false};
+ const total=actualHeal*g.totalValue*(g.resonance>=2?1.2:1);
+ const owned=rows.filter(r=>r.casterId===casterId&&r.targetId===targetId)
+  .sort((a,b)=>a.expiresAt-b.expiresAt||a.id.localeCompare(b.id));
+ const remove=new Set(owned.slice(0,Math.max(0,owned.length-cap+1)).map(r=>r.id));
+ return {rows:[...rows.filter(r=>!remove.has(r.id)),{id,casterId,targetId,nextTickAt:now+2000,
+  expiresAt:now+duration,perTick:total/(duration/2000)}],total,granted:true};
+}
+/** Inclusive final tick; consume due ticks once. Engine applies only
+ * to living recipients and clamps actual healing to missing HP. */
+export function reviewRenewalTicksV2(rows:readonly RenewalReviewApplicationV2[],now:number){
+ validateRenewalRows(rows);if(!finite(now))fail('renewal_tick_input');
+ const next:RenewalReviewApplicationV2[]=[],heals:{id:string;casterId:string;targetId:string;at:number;amount:number;mayTriggerEffects:false}[]=[];
+ for(const r of rows){
+  let at=r.nextTickAt;
+  while(at<=now&&at<=r.expiresAt){
+   heals.push({id:r.id,casterId:r.casterId,targetId:r.targetId,at,amount:r.perTick,mayTriggerEffects:false});
+   at+=2000;
+  }
+  if(at<=r.expiresAt)next.push({...r,nextTickAt:at});
+ }
+ heals.sort((a,b)=>a.at-b.at||a.id.localeCompare(b.id));
+ return {rows:next,heals};
+}
+export interface BattleRhythmReviewStateV2{
+ readonly previous:'offense'|'support'|null;readonly windowUntil:number;readonly readyAt:number;
+ readonly hasteUntil:number;readonly lastActionSequence:number;readonly lastAt:number;
+}
+export const emptyBattleRhythmReviewV2=():BattleRhythmReviewStateV2=>({
+ previous:null,windowUntil:0,readyAt:0,hasteUntil:0,lastActionSequence:-1,lastAt:0,
+});
+/** One bonus per qualifying authored opposite-category action, not per
+ * target/hit. Neutral/basic/proc actions do not arm or consume. Apply
+ * catalogue 6s trigger cooldown to empowered alternations. */
+export function reviewBattleRhythmActionV2(g:EffectTriggerReviewGroupV2,now:number,
+ state:BattleRhythmReviewStateV2,actionSequence:number,category:'offense'|'support'|'neutral',
+ eligible:boolean,successful:boolean){
+ group(g,'effect_battle_rhythm');
+ if(![now,state.lastAt,state.windowUntil,state.readyAt,state.hasteUntil].every(finite)||now<state.lastAt||
+  !Number.isSafeInteger(actionSequence)||actionSequence<0||
+  !Number.isSafeInteger(state.lastActionSequence)||state.lastActionSequence< -1)fail('rhythm_input');
+ const fresh=actionSequence>state.lastActionSequence;
+ const qualifies=fresh&&eligible&&successful&&category!=='neutral';
+ const empowered=qualifies&&state.previous!==null&&state.previous!==category&&
+  now<state.windowUntil&&now>=state.readyAt;
+ const hasteUntil=empowered&&g.resonance===3?now+4000:state.hasteUntil;
+ return {state:{previous:qualifies?category:state.previous,windowUntil:qualifies?now+(g.resonance>=2?12000:8000):state.windowUntil,
+  readyAt:empowered?now+6000:state.readyAt,hasteUntil,lastAt:now,lastActionSequence:fresh?actionSequence:state.lastActionSequence},
+  empowered,bonus:empowered?g.totalValue:0,haste:hasteUntil>now?.02:0};
+}

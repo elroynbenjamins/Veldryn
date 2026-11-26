@@ -1,6 +1,8 @@
 /** Private matched trigger boundary QA using actual reviewed copy groups. */
 import {strict as assert} from 'node:assert';
 import {reviewPredatorHitV2,reviewGuardianBarrierV2,reviewUnyieldingDamageV2,reviewSustenanceKillV2,
+ reviewAegisBarrierV2,reviewMercyBarrierV2,reviewGemBarrierAbsorptionV2,reviewGemBarrierExpiryV2,reviewGemBarrierRemoveV2,
+ reviewOpportunistApplicationV2,reviewOpportunistHitV2,reviewBulwarkTriggerV2,
  type EffectTriggerReviewGroupV2,type UnyieldingReviewStateV2,type GuardianReductionReviewV2} from '../effect-gem-trigger-review';
 import type {CombatantDefinition,CombatantState} from '../../types';
 import {gemOutgoingDamageMultiplierV1,gemOnShieldAppliedV1,gemEffectiveDefenseV1,
@@ -83,6 +85,79 @@ export function runEffectTriggerBoundaryReviewV2(actor:CombatantDefinition,g:Eff
    gemOnKillV1(0,source,target);
    close(source.shield,actor.stats.maxHp*(r===3?.02:.1));
    legacyGap=r===3;assertions=8;break;
+  }
+  case 'effect_aegis':{
+   const input={id:'a',casterId:'caster',recipientId:'ally',now:0,authoredAmount:100,
+    baseCapacity:1000,durationMs:6000,externalShield:0,rows:[],authored:true};
+   const grant=reviewAegisBarrierV2(g,input);
+   close(grant.granted,100*(1+value));close(grant.cap,1000*(r===3?1.05:1));
+   assert.equal(reviewAegisBarrierV2(g,{...input,authored:false}).granted,0);
+   const full=reviewAegisBarrierV2(g,{...input,externalShield:2000});
+   assert.equal(full.granted,0);assert.equal(full.rows.length,0);
+   const other=reviewAegisBarrierV2(g,{...input,id:'b',recipientId:'other',rows:grant.rows});
+   const absorbed=reviewGemBarrierAbsorptionV2(other.rows,'ally',100,20);
+   close(absorbed.absorbed,20);close(absorbed.rows.find(x=>x.id==='b')!.remaining,grant.granted);
+   assert.equal(reviewGemBarrierExpiryV2(absorbed.rows,5999).heals.length,0);
+   const expired=reviewGemBarrierExpiryV2(absorbed.rows,6000);
+   assert.equal(expired.rows.length,0);assert.equal(expired.heals.length,r>=2?2:0);
+   if(r>=2){close(expired.heals.find(h=>h.barrierId==='a')!.amount,(grant.granted-20)*.05);
+    assert.ok(expired.heals.every(h=>!h.mayTriggerEffects));}
+   assert.equal(reviewGemBarrierExpiryV2(expired.rows,7000).heals.length,0);
+   const consumed=reviewGemBarrierAbsorptionV2(grant.rows,'ally',100,1000);
+   assert.equal(reviewGemBarrierExpiryV2(consumed.rows,6000).heals.length,0);
+   assert.equal(reviewGemBarrierRemoveV2(grant.rows,'a').heals.length,0);
+   legacyGap=r>=2;assertions=15;break;
+  }
+  case 'effect_mercy':{
+   const input={id:'m',casterId:'caster',recipientId:'ally',now:0,attempted:1000,actual:500,
+    maxHp:1000,externalShield:0,rows:[],authoredDirect:true};
+   const grant=reviewMercyBarrierV2(g,input);
+   close(grant.granted,Math.min(500*value,r>=2?40:30));
+   assert.equal(grant.expiresAt,r===3?10000:8000);
+   assert.equal(reviewMercyBarrierV2(g,{...input,actual:1000}).granted,0);
+   assert.equal(reviewMercyBarrierV2(g,{...input,authoredDirect:false}).granted,0);
+   assert.equal(reviewMercyBarrierV2(g,{...input,externalShield:100}).granted,0);
+   const second=reviewMercyBarrierV2(g,{...input,id:'m2',now:100,rows:grant.rows});
+   assert.ok(second.granted+grant.granted<=(r>=2?40:30)+1e-8);
+   assert.equal(reviewGemBarrierExpiryV2(second.rows,20000).heals.length,0);
+   assert.equal(reviewGemBarrierExpiryV2(second.rows,20000).rows.length,0);
+   legacyGap=true;assertions=9;break;
+  }
+  case 'effect_opportunist':{
+   const app=(caster:string,targetId:string,effect:string,now:number,fresh:boolean,rows:ReturnType<typeof reviewOpportunistApplicationV2>)=>
+    reviewOpportunistApplicationV2(g,caster,targetId,effect,now,fresh,rows);
+   const first=app('caster','ally','mark',0,true,[]);
+   assert.equal(first[0].cooldownUntil,r>=2?3000:4000);
+   assert.deepEqual(app('caster','ally','mark',100,false,first),first);
+   assert.deepEqual(app('caster','ally','another',100,true,first),first);
+   const other=app('other','ally','mark2',100,true,first);
+   const hit=(rows:typeof other,eligible:boolean,success:boolean,crit:boolean,effect:string|null,expiry:number,now=200)=>
+    reviewOpportunistHitV2(g,'caster','ally',now,eligible,success,crit,effect,expiry,rows);
+   assert.equal(hit(other,false,true,true,'mark',3000).bonus,0);
+   assert.equal(hit(other,true,false,true,'mark',3000).bonus,0);
+   const got=hit(other,true,true,true,'mark',3000);
+   close(got.bonus,value);assert.equal(got.extension,r===3?1000:0);
+   assert.equal(got.effectExpiry,3000+(r===3?1000:0));
+   assert.equal(got.windows.find(w=>w.casterId==='other')!.consumed,false);
+   assert.equal(hit(got.windows,true,true,true,'mark',4000).bonus,0);
+   assert.equal(hit(other,true,true,true,'different',3000).extension,0);
+   assert.equal(hit(other,true,true,true,'mark',200).extension,0);
+   assert.equal(hit(other,true,true,false,'mark',3000).extension,0);
+   assert.equal(hit(other,true,true,true,'mark',5000,4000).bonus,0);
+   legacyGap=r===3;assertions=14;break;
+  }
+  case 'effect_bulwark':{
+   const duration=r>=2?5000:4000;
+   assert.equal(reviewBulwarkTriggerV2(g,0,0,'other').reduction,0);
+   const first=reviewBulwarkTriggerV2(g,0,0,'successful_block');
+   close(first.reduction,value);assert.equal(first.expiresAt,duration);
+   const second=reviewBulwarkTriggerV2(g,100,first.expiresAt,'successful_block');
+   assert.equal(second.expiresAt,duration+(r===3?100:0));
+   const defense=reviewBulwarkTriggerV2(g,200,second.expiresAt,'defensive_ability');
+   assert.equal(defense.expiresAt,200+duration);
+   assert.equal(reviewBulwarkTriggerV2(g,300,defense.expiresAt,'other').expiresAt,defense.expiresAt);
+   assert.equal(reviewBulwarkTriggerV2(g,200+duration,defense.expiresAt,'other').reduction,0);
+   legacyGap=true;assertions=7;break;
   }
   default:return null;
  }

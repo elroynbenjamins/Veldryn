@@ -1,4 +1,7 @@
 import assert from 'node:assert/strict';
+import {supportReceiptReader,supportCommandHash} from '../support-activity-receipts';
+import {buildSupportActivityHandlers} from '../support-activity-admin-handler';
+import type {AdminCommandRow} from '../../../control-center/backend_integration/admin-command-worker-v17_3';
 import {createCharacter,newGame,startGathering} from '../../../apps/mobile/src/core/game';
 import {executeGameCommand} from '../../../apps/mobile/src/core/game-commands';
 import {planSupportActivityRecovery,executeSupportActivityStep,type AuthorizedSupportJob,type SupportRecoveryPorts,type PreparedSupportStep,type SupportCommitReadback,type SupportRecoveryResult} from '../support-activity-recovery';
@@ -75,6 +78,34 @@ async function main(){
  receipt=null;
  await assert.rejects(executeSupportActivityStep(ports,job),/support_stale_scope/);
  assert.equal(dispatches,1);
+ // The actual gameplay receipt uses canonical validated intent, not the
+ // operator's raw request or a guessed current snapshot.
+ const step=prepared!.step;
+ const digest=await supportCommandHash(step.command);
+ assert.equal(digest,await supportCommandHash({args:{id:'CROWNWOOD_TREE',kind:'gathering'},type:'start'}));
+ const payload={requestHash:digest,response:{accountId:'account',version:8,state:expected.state}};
+ let wire:unknown=payload;
+ const reader=supportReceiptReader(async<T>(name:string,args:Record<string,unknown>)=>{
+  assert.equal(name,'read_online_game_receipt_server_v1');assert.equal(args.p_account_id,'account');assert.equal(args.p_request_id,job.requestId);return wire as T;
+ },false);
+ assert.equal((await reader(step))?.activity?.targetId,'CROWNWOOD_TREE');
+ wire={...payload,requestHash:'bad'};
+ await assert.rejects(reader(step),/support_receipt_hash_conflict/);
+ wire={...payload,response:{...payload.response,accountId:'wrong'}};
+ await assert.rejects(reader(step),/support_receipt_scope_conflict/);
+ wire=null;assert.equal(await reader(step),null);
+ const id='12345678-1234-4234-8234-123456789012',accountId='12345678-1234-4234-8234-123456789013',characterId='12345678-1234-4234-8234-123456789014',operatorId='12345678-1234-4234-8234-123456789015';
+ const row:AdminCommandRow={id,command_key:'progression.highest_woodcutting',target_account_id:accountId,target_character_id:characterId,target_ref:null,parameters_json:{expectedVersion:7},reason:'Account inaccessible',risk_tier:'high',status:'processing',idempotency_key:'fixture',attempts:1,reversible:false};
+ const context={commandId:id,auditReason:row.reason,idempotencyKey:'admin-command:fixture'};
+ let approvedRow=row,workerCalls=0;
+ const handlers=buildSupportActivityHandlers({verifyClaimedCommand:async()=>({row:approvedRow,operatorAccountId:operatorId})},{...ports,authorizeAndAudit:async input=>{workerCalls++;assert.equal(input.requestId,'support_'+id.replace(/-/g,''));assert.equal(input.accountId,accountId);assert.equal(input.characterId,characterId);return {replay:result};}});
+ await handlers['progression.highest_woodcutting'](row,context);
+ assert.equal(workerCalls,1);
+ approvedRow={...row,parameters_json:{expectedVersion:7,xp:9000}};
+ await assert.rejects(handlers['progression.highest_woodcutting'](row,context),/invalid_support_parameters/);
+ approvedRow={...row,status:'approved'};
+ await assert.rejects(handlers['progression.highest_woodcutting'](row,context),/invalid_support_authority/);
+ assert.equal(workerCalls,1);
  console.log('PASS support recovery planning, normal reward settlement, inactive safety, scope guards, lost-response receipt recovery and commit readback');
 }
 main().catch(error=>{console.error(error);process.exitCode=1;});

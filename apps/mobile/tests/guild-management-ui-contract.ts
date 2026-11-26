@@ -45,7 +45,7 @@ ok(app.includes('onlineCustomize={<OnlineGuildCustomizationPanel/>}'),'Guild scr
 for(const label of ['Home','PvE','Roster','Activities','Hall','Chat','Manage'])ok(screen.includes("'"+label+"'"),'Consolidated online Guild tabs must include '+label);
 ok(screen.includes("onlineSection==='Roster'?")&&screen.includes('cloneElement(onlineManagement'),'Roster tab must render authoritative Guild management');
 ok(screen.includes("onlineSection==='Hall'?<View")&&screen.includes('cloneElement(onlineHall')&&hall.includes("['Overview','Construction','Bank','Shop','Legacy']")&&hall.includes("section==='Shop'")&&!hall.includes("section==='Skills'?"),'Guild Hall must expose Shop directly without duplicating the Skills screen');
-ok(screen.includes('<OnlineGuildMusterPanel/>')&&screen.includes("onlineSection==='PvE'?(isValidElement")&&screen.includes('cloneElement(onlinePve,{headerHelp:headerGuide})'),"Guild navigation must preserve Muster and a dedicated PvE destination");
+ok(screen.includes('<OnlineGuildMusterPanel/>')&&screen.includes("onlineSection==='PvE'?(isValidElement")&&screen.includes('cloneElement(onlinePve,{headerHelp:headerGuide,raidScope:JSON.stringify('),"Guild navigation must preserve Muster and a dedicated PvE destination");
 ok(screen.includes("onlineSection==='Manage'?<View")&&screen.includes('{onlineCustomize}'),'Manage must preserve member Guild appearance customization');
 ok(!screen.includes('{onlineDirectory}')&&!screen.includes('Directory & Creation'),'Joined members must not be offered guild creation inside Guild management');
 ok(screen.includes('title={st("Guild Appearance")}'),'Manage must keep a clear identity hierarchy');
@@ -117,7 +117,7 @@ ok(pve.includes('<ImageBackground')&&pve.includes("overflow:'hidden'},backdrop:{
 ok(pve.includes("accessibilityLabel={st('Boss health')}")&&pve.includes('now:Math.round(100-view.percent)')&&pve.includes('width:`${100-view.percent}%`'),'Boss HP label, accessible value and remaining-health fill must agree');
 ok(pve.includes('state?.character?.equippedCombatCompanionId')&&pve.includes('classIconArtwork[state.character.classId]')&&pve.includes('companionArtSource(companionId)'),'Raid party must show the actual current class and equipped companion artwork');
 ok(pve.includes('disabled={busy||characterLocked||!view.canContribute||!onAttempt}')&&pve.includes("st('Begin 3-minute attempt')"),'The primary attempt action must respect server-derived eligibility and pending requests');
-ok(pve.includes('row.pendingAttempts?1000:30000')&&pve.includes('return()=>clearInterval(timer)')&&pve.includes("st('Resolving attempt…')"),'Pending attempt countdown must clean up its timer and never invent a resolved reward at zero');
+ok(pve.includes('function RaidCountdown')&&pve.includes('setInterval(tick,1000)')&&pve.includes('clearInterval(timer);sub.remove()')&&pve.includes("st('Resolving attempt…')"),'Pending attempt countdown must clean up its timer and never invent a resolved reward at zero');
 ok(pve.includes('accessibilityState={{expanded:detailsOpen}}')&&pve.indexOf('<GameButton title={actionLabel}')<pve.indexOf('accessibilityState={{expanded:detailsOpen}}'),'Encounter mechanics must stay available below the primary action through an accessible disclosure');
 ok(pve.includes('lastAttemptCharacterDamage')&&pve.includes('lastAttemptCompanionDamage')&&pve.includes('lastAttemptCompanionId'),'Attempt summary must preserve authoritative player and companion damage breakdowns');
 

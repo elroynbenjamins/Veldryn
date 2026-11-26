@@ -7,6 +7,10 @@ import {socialEarlyText} from './social-early-coverage';
 
 // Columns are German, Spanish, Dutch, Italian and French; keys are the English catalog.
 export const socialTranslationRows = {
+  "Minimize battle": ["Kampf minimieren","Minimizar combate","Gevecht minimaliseren","Riduci battaglia","Réduire le combat"],
+  "Materials": ["Materialien","Materiales","Materialen","Materiali","Matériaux"],
+  "Guild XP": ["Gilden-EP","EXP del gremio","Gilde-XP","PE di gilda","XP de guilde"],
+  "Guild Bank": ["Gildenbank","Banco del gremio","Gildebank","Banca di gilda","Banque de guilde"],
   "Title": ["Titel","Título","Titel","Titolo","Titre"],
   "Party language and minimum level follow your Party settings.": ["Sprache und Mindeststufe entsprechen deinen Gruppeneinstellungen.","El idioma y el nivel mínimo siguen los ajustes de tu grupo.","Taal en minimumniveau volgen je groepsinstellingen.","Lingua e livello minimo seguono le impostazioni del gruppo.","La langue et le niveau minimum suivent les paramètres du groupe."],
   "Tell others what you're looking for...": ["Sag anderen, wonach du suchst …","Cuéntales a otros qué buscas…","Vertel anderen wat je zoekt…","Spiega agli altri cosa cerchi…","Dis aux autres ce que tu recherches…"],

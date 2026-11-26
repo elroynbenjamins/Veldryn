@@ -55,7 +55,8 @@ jobs:
             git config user.email 'github-actions[bot]@users.noreply.github.com'
             git commit -m "Regenerate shared Edge bundles for Wave 2 release candidate"
           fi
-          # Core tests create local untracked build outputs. Never stage them.
+          # Core tests and EAS post-install may create disposable outputs. Never stage them.
+          git restore -- apps/mobile/assets/events/frostfall/currency_aurora_chime.png apps/mobile/assets/events/frostfall/currency_frostbell_token.png
           git status --short
           git diff --exit-code
           git diff --cached --exit-code

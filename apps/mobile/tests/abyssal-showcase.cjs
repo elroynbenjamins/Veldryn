@@ -74,3 +74,14 @@ assert(preview.includes('motion&&assets.idleAtlas?'));
 assert(preview.includes('Animated.modulo(Animated.multiply(clock,a.cycles),1)'));
 assert(preview.includes("width:w,height:h,overflow:'hidden'"));
 console.log('PASS: bounded single-clock Abyssal pet atlas and static fallback');
+
+assert(preview.includes('running?<AbyssalFrameLight'));
+assert(preview.indexOf('source={assets.border}')<preview.indexOf('running?<AbyssalFrameLight'));
+assert(!preview.includes('motion.crest'));
+for(const b of [{x:157,y:5,w:26,h:26},{x:158,y:176,w:24,h:24}]){
+ assert(b.x>=0&&b.y>=0&&b.x+b.w<=S.width&&b.y+b.h<=S.height);
+ for(const protectedBox of [B.plate,B.guild,B.leviathan,B.aura]){
+  assert(b.x+b.w<=protectedBox.x||b.x>=protectedBox.x+protectedBox.w||b.y+b.h<=protectedBox.y||b.y>=protectedBox.y+protectedBox.h);
+ }
+}
+console.log('PASS: frame crest and pearl light are bounded and above artwork');

@@ -145,7 +145,32 @@ jobs:
       - name: Execute persisted four-player ten-slot traits and Synchronization rehearsal
         run: node backend/dist/server/combat/v2/__tests__/persisted-party-ten-slot-execution.js
       - name: Run 432 matched persisted-party Synchronization tuning pairs
-        run: node backend/dist/server/combat/v2/__tests__/persisted-party-sync-full-matrix.js
+        id: persisted_sync_matrix
+        run: |
+          mkdir -p /tmp/v2-sync-evidence
+          set -o pipefail
+          node backend/dist/server/combat/v2/__tests__/persisted-party-sync-full-matrix.js 2>&1 | tee /tmp/v2-sync-evidence/persisted-matrix.log
+      - name: Exercise all 18 Synchronization pairs with ten-slot flexible parties
+        id: flexible_sync_pairs
+        if: ${{ success() || steps.persisted_sync_matrix.outcome == 'failure' }}
+        run: |
+          mkdir -p /tmp/v2-sync-evidence
+          set -o pipefail
+          node backend/dist/server/combat/v2/__tests__/party-sync-ten-slot-all-pairs.js 2>&1 | tee /tmp/v2-sync-evidence/flexible-pairs.log
+      - name: Run 432 ten-slot Skills Equipment party Synchronization integration cases
+        if: ${{ success() || steps.persisted_sync_matrix.outcome == 'failure' || steps.flexible_sync_pairs.outcome == 'failure' }}
+        run: |
+          mkdir -p /tmp/v2-sync-evidence
+          set -o pipefail
+          node backend/dist/server/combat/v2/__tests__/party-sync-ten-slot-matrix.js 2>&1 | tee /tmp/v2-sync-evidence/flexible-matrix.log
+      - name: Retain complete private Synchronization evidence even when balance fails
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v2-sync-evidence-${{ github.sha }}
+          path: /tmp/v2-sync-evidence/
+          if-no-files-found: ignore
+          retention-days: 14
 
   mobile_preview:
     name: Hidden Skills 2.0 preview typecheck and UX contract

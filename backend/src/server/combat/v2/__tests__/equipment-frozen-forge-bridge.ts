@@ -386,8 +386,10 @@ function make(classId:ClassIdV2,specIndex:0|1,
 // Approved magnitude direction, independently versioned and digest-bound.
 {
  const grades=[1,2,3,4,5] as const;
- assert.equal(STAT_GEMS_REVIEW_V2.length,12);assert.equal(EFFECT_GEMS_REVIEW_V2.length,20);
- for(const old of STAT_GEMS_V1){
+ assert.equal(STAT_GEMS_REVIEW_V2.length,11);assert.equal(STAT_GEMS_V1.length,12);assert.equal(EFFECT_GEMS_REVIEW_V2.length,20);
+ assert.ok(STAT_GEMS_V1.some(x=>x.familyId==='stat_resolute'));
+ assert.ok(!STAT_GEMS_REVIEW_V2.some(x=>x.familyId==='stat_resolute'||x.stat==='tenacity'));
+ for(const old of STAT_GEMS_V1.filter(x=>x.familyId!=='stat_resolute')){
   const next=STAT_GEMS_REVIEW_V2.find(x=>x.familyId===old.familyId)!;
   const {values:_a,...identity}=old,{values:_b,...nextIdentity}=next;
   assert.deepEqual(nextIdentity,identity);
@@ -430,17 +432,17 @@ function make(classId:ClassIdV2,specIndex:0|1,
  assert.throws(()=>reviewFrozenForgeSocketsV2(qa.actor,qa.build,source,socket('gem:stat_might:g5','stat'),policy),/unreconciled_stat_gem/);
  assert.equal(JSON.stringify(source.items),original);
  console.log('GEM_BALANCE_REVIEW_V2 '+JSON.stringify({policy:GEM_BALANCE_REVIEW_V2,
-  statFamilies:12,statFactor:2,effectFamilies:20,effectFactors:EFFECT_GEM_REVIEW_MULTIPLIERS_V2,
+  statFamilies:11,retiredStatFamilies:['stat_resolute'],statFactor:2,effectFamilies:20,effectFactors:EFFECT_GEM_REVIEW_MULTIPLIERS_V2,
   maxVitalityTenSockets:.03*1.2*10,compatibleSocketComparisons:20,deferredEffectComparisons:100,
   releaseEnabled:false}));
 }
-// Eight newly mapped semantics are a separate private proposal. The
+// Seven newly mapped semantics are a separate private proposal. The
 // stronger magnitudes alone must not enable an implicit unit migration.
 {
  const policy:ForgeSocketReviewPolicyV2={version:'QA_GEM_FULL_MECHANICS',
   gemBalancePolicy:GEM_BALANCE_REVIEW_V2,mechanicsReview:{version:FORGE_SOCKET_MECHANICS_REVIEW_V2,maxFinalAttackPower:1e8},
   maxFinalHp:1e8,maxFinalDefense:1e8};
- const families=['stat_might','stat_ward','stat_savage','stat_piercing','stat_swift','stat_potent','stat_elusive','stat_resolute'];
+ const families=['stat_might','stat_ward','stat_savage','stat_piercing','stat_swift','stat_potent','stat_elusive'];
  const grades=[1,2,3,4,5] as const,rolls=[80,100,120] as const;
  const round5=(n:number)=>Math.round(n*1e5)/1e5;
  const rows:{classId:ClassIdV2;spec:number;family:string;grade:number;roll:number;fraction:number;delta:number}[]=[];
@@ -472,7 +474,6 @@ function make(classId:ClassIdV2,specIndex:0|1,
     case 'stat_piercing':effects.penetrationPp=round5(raw('penetration_pp')+fraction);delta=effects.penetrationPp-baseline.advanced.penetrationPp;break;
     case 'stat_potent':effects.abilityDamagePct=round5(raw('ability_damage_pct')+fraction);delta=effects.abilityDamagePct-(baseline.advanced.abilityDamagePct??0);break;
     case 'stat_elusive':effects.evasionPp=round5(raw('evasion_pp')+fraction);delta=effects.evasionPp-baseline.advanced.evasionPp;break;
-    case 'stat_resolute':effects.tenacityPp=round5(raw('tenacity_pp')+fraction);delta=effects.tenacityPp-(baseline.advanced.tenacityPp??0);break;
     default:throw Error('unknown QA gem');
    }
    assert.deepEqual(out.stats,stats);assert.deepEqual(out.advanced,effects);
@@ -484,7 +485,7 @@ function make(classId:ClassIdV2,specIndex:0|1,
   }
   assert.equal(JSON.stringify(source.items),snapshot);
  }
- assert.equal(rows.length,18*8*5*3);
+ assert.equal(rows.length,18*7*5*3);
  const qa=make('IRONWARDEN',0);
  const source={...qa.source,ledgerRevision:7,verifyPersisted:(digest:string,revision:number)=>revision===7&&/^[0-9a-f]{64}$/.test(digest)};
  const state=socket(qa.mint.id,'gem:stat_might:g5',120);
@@ -492,8 +493,20 @@ function make(classId:ClassIdV2,specIndex:0|1,
  assert.throws(()=>reviewFrozenForgeSocketsV2(qa.actor,qa.build,source,state,strengthOnly),/unreconciled_stat_gem/);
  assert.throws(()=>reviewFrozenForgeSocketsV2(qa.actor,qa.build,source,state,{...policy,gemBalancePolicy:undefined}),/invalid_mechanics_review_policy/);
  assert.throws(()=>reviewFrozenForgeSocketsV2(qa.actor,qa.build,source,state,{...policy,mechanicsReview:{version:FORGE_SOCKET_MECHANICS_REVIEW_V2,maxFinalAttackPower:1}}),/combined_stat_cap/);
- const caps={...source.affixPolicy,maxAdvancedEffects:{...source.affixPolicy.maxAdvancedEffects!,wardPp:0}};
+ // Set cap at the existing Forge ward contribution, not zero: the
+ // preexisting affix must pass, while the additional gem must exceed it.
+ const originalWard=reviewFrozenForgeSocketsV2(qa.actor,qa.build,source,{slots:[],receipts:[]},policy).advanced.wardPp;
+ const caps={...source.affixPolicy,maxAdvancedEffects:{...source.affixPolicy.maxAdvancedEffects!,wardPp:originalWard}};
  assert.throws(()=>reviewFrozenForgeSocketsV2(qa.actor,qa.build,{...source,affixPolicy:caps},socket(qa.mint.id,'gem:stat_ward:g5',120),policy),/combined_stat_cap/);
+ // All retired grades/rolls fail closed in both newer modes. Legacy identity
+ // and installed history remain valid; no socket or inventory is rewritten.
+ for(const grade of grades)for(const roll of rolls){
+  const retired=socket(qa.mint.id,gemItemId('stat_resolute',grade),roll);
+  for(const p of [strengthOnly,policy])
+   assert.throws(()=>reviewFrozenForgeSocketsV2(qa.actor,qa.build,source,retired,p),/retired_stat_gem_requires_migration/);
+  const {gemBalancePolicy:_old,...legacy}=strengthOnly;
+  assert.throws(()=>reviewFrozenForgeSocketsV2(qa.actor,qa.build,source,retired,legacy),/unreconciled_stat_gem/);
+ }
  console.log('FORGE_SOCKET_MECHANICS_CALIBRATION '+JSON.stringify({policy:FORGE_SOCKET_MECHANICS_REVIEW_V2,
   projections:rows.length,families,grades,rolls,requiresMigrationApproval:true,cpApproved:false,releaseEnabled:false,
   byFamily:families.map(family=>{const a=rows.filter(r=>r.family===family);return {family,cases:a.length,zero:a.filter(r=>r.delta===0).length,

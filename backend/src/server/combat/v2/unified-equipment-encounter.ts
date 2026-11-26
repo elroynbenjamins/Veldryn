@@ -7,7 +7,7 @@
  *
  * PRODUCTION OFF: no router imports this module.
  */
-import {simulateCombat} from '../engine';
+import {simulateCombat,simulateCombatWithServerAuthoritiesV2} from '../engine';
 import {compileDraftDungeonRewardCombatV2,type VerifiedDungeonRewardSnapshotV2} from './dungeon-rewards-v2';
 import {issueDungeonRewardEngineAuthorityV2} from './dungeon-reward-engine-v2';
 import {issueEquipmentV2TraitAuthority} from './equipment-trait-engine-authority';
@@ -29,7 +29,7 @@ import {resolveVerifiedEquipmentBaseV2,
 import {applyVerifiedSetBonusesV2,
   type ApprovedSetPolicyV2,type ResolvedSetEffectV2} from './equipment-set-effects';
 import {assertApprovedEquipmentScalingV2,type ApprovedRarityLadderV2} from './equipment-scaling-policy';
-import {evaluatePowerCompositionV2,
+import {reviewPowerAttributionV2,
   type ApprovedPowerCompositionPolicyV2,type PowerCompositionDiagnosticV2} from './power-composition';
 import {compileTrustedEquipmentAffixesV2,
   type TrustedEquipmentItemAffixesV2,type ServerAffixPolicyV2,
@@ -53,21 +53,67 @@ export interface TrustedEquipmentRuntimeV2 {
  /** Optional until canonical CP weights are approved; no invented shares. */
  readonly compositionPolicy?:ApprovedPowerCompositionPolicyV2;
 }
+interface PersonalStatStagesV2{
+ readonly classOnly:CombatStats;
+ readonly afterSkills:CombatStats;
+ readonly afterItemBase:CombatStats;
+ readonly afterSets:CombatStats;
+ readonly afterAffixes:CombatStats;
+}
+interface PersonalStatContributionsV2{
+ readonly classOnly:CombatStats;
+ readonly skills:CombatStats;
+ readonly itemBase:CombatStats;
+ readonly sets:CombatStats;
+ readonly affixes:CombatStats;
+}
+const personalStatKeys:readonly (keyof CombatStats)[]=[
+ 'maxHp','attackPower','healingPower','defense','accuracy','evasion',
+ 'critChance','critMultiplier','haste',
+];
+/** Preserve the existing stage rounding and multiplicative semantics. Both
+ * base and set policies describe FINAL ceilings; neither may be bypassed
+ * by a later stage. This is a rejection boundary, not a new stat cap curve. */
+function finalizePersonalStatsV2(
+ stages:PersonalStatStagesV2,
+ basePolicy:ApprovedEquipmentBasePolicyV2,
+ setsPolicy:ApprovedSetPolicyV2,
+):PersonalStatContributionsV2{
+ for(const key of personalStatKeys){
+  const baseLimit=basePolicy.ceilings[key],setLimit=setsPolicy.ceilings[key];
+  if(!Number.isFinite(baseLimit)||baseLimit<=0||
+     !Number.isFinite(setLimit)||setLimit<=0)
+   throw Error('combat_v2_missing_final_personal_stat_ceiling:'+key);
+  const actual=stages.afterAffixes[key];
+  if(!Number.isFinite(actual)||actual<0||
+    (key==='maxHp'&&actual<=0)||(key==='critMultiplier'&&actual<1))
+   throw Error('combat_v2_invalid_final_personal_stat:'+key);
+  if(actual>Math.min(baseLimit,setLimit))
+   throw Error('combat_v2_final_personal_stat_exceeds_ceiling:'+key);
+ }
+ // Deltas are ordered/marginal, so cross-stage multipliers and historical
+ // rounding are attributed exactly once to the stage that applied them.
+ const delta=(before:CombatStats,after:CombatStats):CombatStats=>
+  Object.fromEntries(personalStatKeys.map(key=>[key,after[key]-before[key]])) as unknown as CombatStats;
+ return {classOnly:{...stages.classOnly},
+  skills:delta(stages.classOnly,stages.afterSkills),
+  itemBase:delta(stages.afterSkills,stages.afterItemBase),
+  sets:delta(stages.afterItemBase,stages.afterSets),
+  affixes:delta(stages.afterSets,stages.afterAffixes)};
+}
 export interface EquipmentEncounterEvidenceV2 {
  readonly actorId:string;
  /** QA-only source trace. Not public CP, player stat UI, or untrusted input. */
  readonly classPolicyVersion:string;
- readonly statStages:Readonly<{
-   classOnly:CombatStats;
-   afterSkills:CombatStats;
-   afterItemBase:CombatStats;
-   afterSets:CombatStats;
-   afterAffixes:CombatStats;
- }>;
+ readonly statStages:Readonly<PersonalStatStagesV2>;
+ /** Marginal deltas at the existing stage order, not independently priced CP.
+  * Encounter effects, advanced affixes and unimplemented sources are separate. */
+ readonly statContributions:Readonly<PersonalStatContributionsV2>;
  readonly baseSources:readonly BaseEquipmentSourceV2[];
  readonly setEffects:readonly ResolvedSetEffectV2[];
  readonly affixSources:readonly AppliedEquipmentAffixV2[];
  readonly composition?:PowerCompositionDiagnosticV2;
+ readonly powerAttribution?:ReturnType<typeof reviewPowerAttributionV2>;
  /** QA-only: verified reward overlay applied after all equipment/skill stats. */
  readonly afterDungeonReward?:CombatStats;
 }
@@ -140,21 +186,61 @@ function compileEquippedActor(
  const set=applyVerifiedSetBonusesV2(base.actor,checked,runtime.setsPolicy,true);
  const affixes=compileTrustedEquipmentAffixesV2(
   set.actor,ids.map(id=>runtime.affixesByInstanceId[id]),runtime.affixPolicy,true);
+ const statStages:PersonalStatStagesV2={
+  classOnly:{...classOnly.stats},afterSkills:{...skills.stats},
+  afterItemBase:{...base.actor.stats},afterSets:{...set.actor.stats},
+  afterAffixes:{...affixes.actor.stats},
+ };
+ const statContributions=finalizePersonalStatsV2(statStages,runtime.basePolicy,runtime.setsPolicy);
+ const powerAttribution=runtime.compositionPolicy?
+  reviewPowerAttributionV2(statStages,base.sources.length,runtime.compositionPolicy):undefined;
  return {
   actor:affixes.actor,
   evidence:{actorId:actor.id,classPolicyVersion:runtime.classBaselinePolicy.version,
-    statStages:{
-     classOnly:{...classOnly.stats},afterSkills:{...skills.stats},
-     afterItemBase:{...base.actor.stats},afterSets:{...set.actor.stats},
-     afterAffixes:{...affixes.actor.stats},
-    },
+    statStages,statContributions,
     baseSources:base.sources,
     setEffects:set.applied,affixSources:affixes.sources,
-    ...(runtime.compositionPolicy?{
-      composition:evaluatePowerCompositionV2(base.classLevelStats,affixes.actor.stats,
-        base.sources.length,runtime.compositionPolicy),
-    }:{}),},
+    ...(powerAttribution?{composition:powerAttribution.composition,powerAttribution}:{}),},
  };
+}
+/** One assembly path for fresh and persisted encounters. Array order of
+ * independent server snapshots is never an identity or custody proof. */
+function compileEquippedEncounterActors(
+ input:CombatInput,builds:readonly VerifiedSkillBuildV2[],
+ runtime:readonly TrustedEquipmentRuntimeV2[],
+){
+ if(builds.length!==input.players.length||runtime.length!==input.players.length)
+  throw Error('combat_v2_complete_build_and_gear_snapshots_required');
+ const byId=new Map<string,VerifiedSkillBuildV2>();
+ const gearById=new Map<string,TrustedEquipmentRuntimeV2>();
+ const characters=new Set<string>(),actors=new Set<string>(),copies=new Set<string>();
+ for(const build of builds){
+  if(byId.has(build.actor.id))throw Error('combat_v2_duplicate_build_actor');
+  byId.set(build.actor.id,build);
+ }
+ for(const gear of runtime){
+  if(gearById.has(gear.actorId))throw Error('combat_v2_duplicate_equipment_actor');
+  if(!gear.characterId||characters.has(gear.characterId))
+   throw Error('combat_v2_duplicate_or_missing_equipment_character');
+  characters.add(gear.characterId);
+  gearById.set(gear.actorId,gear);
+ }
+ const evidence:EquipmentEncounterEvidenceV2[]=[];
+ const players=input.players.map(actor=>{
+  if(actors.has(actor.id))throw Error('combat_v2_duplicate_encounter_actor');
+  actors.add(actor.id);
+  const build=byId.get(actor.id),gear=gearById.get(actor.id);
+  if(!build||!gear)throw Error('combat_v2_missing_equipped_build_actor');
+  const compiled=compileEquippedActor(actor,build,gear);
+  for(const copy of Object.values(build.selected.equipment)){
+   if(typeof copy!=='string')continue;
+   if(copies.has(copy))throw Error('combat_v2_duplicate_encounter_equipment_copy');
+   copies.add(copy);
+  }
+  evidence.push(compiled.evidence);
+  return compiled.actor;
+ });
+ return {byId,gearById,evidence,players};
 }
 export function simulateUnifiedEquipmentCombatV2(
  input:CombatInput,
@@ -190,26 +276,7 @@ export function simulateUnifiedEquipmentCombatV2(
  // verified, versioned state-conversion adapter.
  if(input.initialPlayerState&&Object.keys(input.initialPlayerState).length>0)
    throw Error('combat_v2_persistent_state_adapter_required');
- if(builds.length!==input.players.length||runtime.length!==input.players.length)
-   throw Error('combat_v2_complete_build_and_gear_snapshots_required');
- const byId=new Map<string,VerifiedSkillBuildV2>();
- const gearById=new Map<string,TrustedEquipmentRuntimeV2>();
- for(const build of builds){
-  if(byId.has(build.actor.id))throw Error('combat_v2_duplicate_build_actor');
-  byId.set(build.actor.id,build);
- }
- for(const gear of runtime){
-  if(gearById.has(gear.actorId))throw Error('combat_v2_duplicate_equipment_actor');
-  gearById.set(gear.actorId,gear);
- }
- const evidence:EquipmentEncounterEvidenceV2[]=[];
- const players=input.players.map(actor=>{
-  const build=byId.get(actor.id),gear=gearById.get(actor.id);
-  if(!build||!gear)throw Error('combat_v2_missing_equipped_build_actor');
-  const compiled=compileEquippedActor(actor,build,gear);
-  evidence.push(compiled.evidence);
-  return compiled.actor;
- });
+ const {evidence,players}=compileEquippedEncounterActors(input,builds,runtime);
  if(authoredEnemyKit){
   const snapshot=authoredEnemyKit.snapshot;
   const proof=verifyPersistedEnemyKitsV2(input.enemies,snapshot);
@@ -235,7 +302,9 @@ export function simulateUnifiedEquipmentCombatV2(
     issueDungeonRewardEngineAuthorityV2(finalInput,dungeonRewardPort.snapshot,
       dungeonRewardPort.verifyPersisted):undefined;
   return {
-    combat:simulateCombat(finalInput,authority,traitAuthority,rewardAuthority),
+    combat:simulateCombatWithServerAuthoritiesV2(finalInput,{
+     enemy:authority,equipmentTrait:traitAuthority,dungeonReward:rewardAuthority,
+    }),
     enemyMechanicLabels:proof.preview.flatMap(p=>[
       ...p.abilityNames.map(name=>p.enemyId+': '+name),
       ...p.phaseNames.map(name=>p.enemyId+': '+name),

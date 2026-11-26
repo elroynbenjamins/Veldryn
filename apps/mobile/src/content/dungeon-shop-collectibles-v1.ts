@@ -1,8 +1,6 @@
 import type {CollectibleDefinition,CollectibleTarget} from './collectibles';
 
-/** Dormant content metadata for the three regional Dungeon Marks collections.
- * This is NOT registered in COLLECTIBLES until authored, approved pixel art,
- * atomic grant delivery and the release gate are ready. */
+/** Permanent regional Dungeon Marks collections. Ownership is granted by the authoritative shop; the catalog supplies collection metadata and bonuses. */
 const reward=(id:string,kind:'pet'|'background'|'border',name:string,target:CollectibleTarget,region:string,activeBps:200|300):CollectibleDefinition=>({
  id,kind,name,bonusFamilyId:id,target,ownedBps:50,activeBps,
  rarity:'Epic',collectionGroup:'profile',region,source:'Dungeon Marks Shop · '+region,

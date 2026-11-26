@@ -113,3 +113,16 @@ for(const name of ['PublicProfileScene.tsx','ProfileScenePreview.tsx','profile/P
  assert(!live.includes('ParadoxReviewScene')&&!live.includes('paradox-integration-assets'));
 }
 console.log('PASS: uploaded frame integrity, isolated review grant, native lifecycle, static badge slot and bounded ambient motion');
+
+for(const [name,w,h,bytes,sha] of [
+ ['beyond_the_veil.webp',1020,615,111958,'ad91d1ca0c97daf00e780d69df518905c9a0917232bee5a9f5c7fc457f0dc63d'],
+ ['beyond_the_veil_square.webp',512,512,59352,'bc87bf0371436bf02b559a9cf9e566be9af4340c84baddedc266fa79d9bf7052'],
+]){
+ const buf=fs.readFileSync(path.join(__dirname,'../assets/ascendant/paradox',name));
+ assert.equal(buf.length,bytes);assert.equal(crypto.createHash('sha256').update(buf).digest('hex'),sha);
+ assert.equal(buf.toString('ascii',12,16),'VP8 ');
+ assert.equal(buf.readUInt16LE(26)&16383,w);assert.equal(buf.readUInt16LE(28)&16383,h);
+ assert(registry.includes(name));
+}
+assert(review.includes('background:getParadoxReviewBackgrounds().showcase'));
+console.log('PASS: uploaded wide and square background integrity and fixed review selection');

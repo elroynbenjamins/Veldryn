@@ -47,6 +47,40 @@ const byLinks=new Map<number,Bucket>(),byBoss=new Map<string,Bucket>();
 const pairCounts=new Map<string,number>();
 let cases=0,overall=bucket(),maxLinks=0;
 const roleObservations:RoleCalibrationObservationV2[]=[];
+const balanceViolations:{caseId:string;metric:'damage'|'healing';ratio:number}[]=[];
+const isDamageOutlier=(r:number)=>!Number.isFinite(r)||r<.85||r>=1.50;
+const isHealingOutlier=(r:number)=>!Number.isFinite(r)||r<.80||r>=1.60;
+// Compare action identity/time separately from numeric output. The existing
+// RNG uses an ordered cursor, so a scheduling divergence can change later draws.
+// This trace is evidence, not a conclusion about the cause of an outlier.
+const relevantActions=new Set(['damage','miss','heal','shield','dot_tick','hot_tick','cast_start','cast_complete','interrupt','death','down','phase','resource_gain','resource_spend','equipment_trait_trigger']);
+function trace(r:CombatResult){
+ const events=r.events.filter(e=>relevantActions.has(e.type));
+ return {
+  reason:r.reason,victory:r.victory,durationMs:r.durationMs,
+  totalDamage:partyDamage(r),totalHealing:partyHealing(r),remainingHp:partyHp(r),
+  players:r.players.map(p=>({id:p.definition.id,classId:p.definition.classId,role:p.definition.role,
+   alive:p.alive,hp:p.hp,maxHp:p.definition.stats.maxHp,shield:p.shield,
+   damage:p.damageDone,healing:p.healingDone,damageTaken:p.damageTaken,interrupts:p.interrupts,
+   resourceStacks:p.combatV2?.stacks,
+   actions:Object.entries(events.filter(e=>e.actorId===p.definition.id).reduce<Record<string,{count:number;amount:number}>>((acc,e)=>{
+    const k=e.type+':'+(e.abilityId??'');const row=acc[k]??={count:0,amount:0};
+    row.count++;row.amount+=e.amount??0;return acc;
+   },{})).sort(([a],[b])=>a.localeCompare(b))})),
+  enemies:r.enemies.map(p=>({id:p.definition.id,hp:p.hp,maxHp:p.definition.stats.maxHp,shield:p.shield,alive:p.alive,phases:p.triggeredPhases})),
+  timeline:events.map(e=>({t:e.atMs,type:e.type,actor:e.actorId,target:e.targetId,ability:e.abilityId,amount:e.amount,crit:e.critical,detail:e.detail})),
+ };
+}
+function diagnose(base:CombatResult,sync:CombatResult){
+ const a=trace(base),b=trace(sync);
+ const key=(e:typeof a.timeline[number]|undefined)=>e?JSON.stringify([e.t,e.type,e.actor,e.target,e.ability]):'END';
+ let i=0;while(i<Math.max(a.timeline.length,b.timeline.length)&&key(a.timeline[i])===key(b.timeline[i]))i++;
+ const {timeline:at,...baseSummary}=a,{timeline:bt,...syncSummary}=b;
+ return {base:baseSummary,sync:syncSummary,firstActionDivergence:i<Math.max(at.length,bt.length)?{
+   index:i,base:at.slice(Math.max(0,i-3),i+8),sync:bt.slice(Math.max(0,i-3),i+8),
+  }:null};
+}
+
 
 function add(row:Bucket,base:CombatResult,sync:CombatResult,damageRatio:number,healingRatio:number){
  row.cases++;row.sumDamageRatio+=damageRatio;row.sumHealingRatio+=healingRatio;
@@ -140,11 +174,23 @@ for(const specIndex of [0,1] as const)
 
     const damageRatio=pct(partyDamage(sync.combat),partyDamage(base.combat));
     const healingRatio=pct(partyHealing(sync.combat),partyHealing(base.combat));
-    // Broad integration fences only. Actual tuning must use emitted diagnostics.
-    assert.ok(Number.isFinite(damageRatio)&&damageRatio>=.85&&damageRatio<1.50,
-      'persisted Synchronization damage outlier '+caseId+':'+damageRatio);
-    assert.ok(Number.isFinite(healingRatio)&&healingRatio>=.80&&healingRatio<1.60,
-      'persisted Synchronization healing outlier '+caseId+':'+healingRatio);
+    // Retain identical bounds. Defer only numerical gates until all 432
+    // cases are measured, so the first outlier cannot hide later failures.
+    const badDamage=isDamageOutlier(damageRatio),badHealing=isHealingOutlier(healingRatio);
+    if(badDamage)balanceViolations.push({caseId,metric:'damage',ratio:damageRatio});
+    if(badHealing)balanceViolations.push({caseId,metric:'healing',ratio:healingRatio});
+    if(badDamage||badHealing){
+      const extended={...input,maxDurationMs:30000};
+      const longBase=simulateUnifiedEquipmentPersistedPartyCombatV2(extended,builds,runtime,party,true,false);
+      const longSync=simulateUnifiedEquipmentPersistedPartyCombatV2(extended,builds,runtime,party,true,true);
+      console.log('PERSISTED_SYNC_OUTLIER '+JSON.stringify({caseId,classes:ids,specIndex,boss:boss.id,
+       damageRatio,healingRatio,links:sync.synchronizationReview?.active,
+       originalWindowMs:input.maxDurationMs,extendedWindowMs:extended.maxDurationMs,
+       original:diagnose(base.combat,sync.combat),
+       extended:{damageRatio:pct(partyDamage(longSync.combat),partyDamage(longBase.combat)),
+        healingRatio:pct(partyHealing(longSync.combat),partyHealing(longBase.combat)),
+        ...diagnose(longBase.combat,longSync.combat)}}));
+    }
 
     const linkRow=byLinks.get(links)??bucket();add(linkRow,base.combat,sync.combat,damageRatio,healingRatio);
     byLinks.set(links,linkRow);
@@ -158,8 +204,7 @@ assert.equal(cases,36*6*2);
 assert.equal(overall.cases,432);
 assert.ok([...byBoss.values()].every(x=>x.cases===72));
 assert.ok(maxLinks<=6);
-assert.equal(overall.victoryLosses,0,
- 'Synchronization must not turn a matched baseline victory into a loss in this fixture');
+// Victory-loss fence remains mandatory below, after diagnostic emission.
 const authored=listPartySynchronizationsV2();
 const dungeonEligible=authored.filter(link=>{
  const roles=link.classes.map(c=>CLASS_ROLES_V2[c]);
@@ -200,3 +245,7 @@ assert.equal(roleReport.cpApproved,false);
 assert.deepEqual(roleReport,summarizeRoleCalibrationV2([...roleObservations].reverse()));
 assert.throws(()=>summarizeRoleCalibrationV2([...roleObservations,roleObservations[0]]),/duplicate_or_invalid_observation/);
 console.log('ROLE_POWER_CALIBRATION_NOT_CP '+JSON.stringify(roleReport));
+
+console.log('PERSISTED_SYNC_BALANCE_FENCES '+JSON.stringify({damage:[.85,1.50],healing:[.80,1.60],violations:balanceViolations,victoryLosses:overall.victoryLosses}));
+assert.equal(overall.victoryLosses,0,'Synchronization must not turn a matched baseline victory into a loss in this fixture');
+assert.equal(balanceViolations.length,0,'persisted Synchronization numerical outliers: '+JSON.stringify(balanceViolations));

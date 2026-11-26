@@ -255,7 +255,7 @@ export function reviewEffectStackTransitionV2(g:EffectTriggerReviewGroupV2,
   }else if(family==='effect_flow'&&event.kind==='ability'){
    if(!event.abilityId)fail('flow_ability_id');
    const different=previousAbilityId!==null&&previousAbilityId!==event.abilityId;
-   previousAbilityId=event.abilityId;lastActionSequence=actionSequence;
+   previousAbilityId=event.abilityId!;lastActionSequence=actionSequence;
    if(different){
     if(expiries.length<cap)expiries.push(now+6000);
     expiries=expiries.map((_,i)=>now+6000+(g.resonance===3?i*2000:0));
@@ -271,4 +271,85 @@ export function reviewEffectStackTransitionV2(g:EffectTriggerReviewGroupV2,
   stacks:expiries.length,bonus:expiries.length*g.totalValue,triggered,
   unit:family==='effect_momentum'?'damage_fraction':family==='effect_shared_resolve'?'support_output_fraction':'haste_fraction',
   releaseEnabled:false as const};
+}
+
+/** Execution uses the target's pre-hit HP; exact threshold equality is
+ * excluded. Only eligible authored/basic damage, not secondary procs. */
+export function reviewExecutionDamageV2(g:EffectTriggerReviewGroupV2,
+ hp:number,maxHp:number,eligible:boolean){
+ group(g,'effect_execution');
+ if(![hp,maxHp].every(finite)||maxHp<=0||hp>maxHp)fail('execution_input');
+ const threshold=g.resonance>=2?.35:.30;
+ const ratio=hp/maxHp;
+ return {threshold,bonus:eligible&&hp>0&&ratio<threshold?
+  g.totalValue*(g.resonance===3&&ratio<.15?1.25:1):0};
+}
+export interface OpeningStrikeReviewStateV2{
+ readonly startedAt:number;readonly expiresAt:number;readonly usedPhase:boolean;readonly lastAt:number;
+}
+/** Encounter-local opening window. Only an authoritative flagged boss
+ * phase can refresh once, without stacking two overlapping windows. */
+export function reviewOpeningStrikeV2(g:EffectTriggerReviewGroupV2,
+ now:number,state:OpeningStrikeReviewStateV2|null,flaggedBossPhase:boolean,eligibleDamage:boolean){
+ group(g,'effect_opening_strike');
+ if(!finite(now)||(state&&(![state.startedAt,state.expiresAt,state.lastAt].every(finite)||now<state.lastAt)))
+  fail('opening_input');
+ const duration=g.resonance>=2?10000:8000;
+ const prior=state??{startedAt:now,expiresAt:now+duration,usedPhase:false,lastAt:now};
+ const refresh=g.resonance===3&&flaggedBossPhase&&!prior.usedPhase;
+ const next={...prior,lastAt:now,expiresAt:refresh?Math.max(prior.expiresAt,now+duration):prior.expiresAt,
+  usedPhase:prior.usedPhase||refresh};
+ return {state:next,bonus:eligibleDamage&&now<next.expiresAt?g.totalValue:0,refreshed:refresh};
+}
+export interface RuinEffectReviewV2{
+ readonly sourceId:string;readonly targetId:string;readonly effectId:string;
+ readonly category:string;readonly isMark:boolean;readonly eligible:boolean;
+ readonly appliedAt:number;readonly expiresAt:number;
+}
+/** Distinct qualifying negative-effect categories from the same actor
+ * only. Mark freshness is explicit provenance, not a string substring. */
+export function reviewRuinDamageV2(g:EffectTriggerReviewGroupV2,
+ sourceId:string,targetId:string,now:number,eligibleDamage:boolean,rows:readonly RuinEffectReviewV2[]){
+ group(g,'effect_ruin');
+ if(!sourceId||!targetId||!finite(now))fail('ruin_input');
+ const cap=g.resonance>=2?3:2;
+ const unique=new Map<string,boolean>();
+ for(const e of rows){
+  if(e.sourceId!==sourceId||e.targetId!==targetId||!e.eligible||e.expiresAt<=now)continue;
+  if(!e.effectId||!e.category||!finite(e.appliedAt)||!finite(e.expiresAt)||e.appliedAt>now)fail('ruin_effect');
+  const freshMark=e.isMark&&now-e.appliedAt<4000;
+  unique.set(e.category,(unique.get(e.category)??false)||freshMark);
+ }
+ const count=Math.min(cap,unique.size+(g.resonance===3?[...unique.values()].filter(Boolean).length:0));
+ return {count,cap,bonus:eligibleDamage?g.totalValue*count:0};
+}
+export interface RetaliationReviewStateV2{
+ readonly readyUntil:number;readonly cooldownUntil:number;readonly healCooldownUntil:number;readonly lastAt:number;
+}
+export const emptyRetaliationReviewV2=():RetaliationReviewStateV2=>({
+ readyUntil:0,cooldownUntil:0,healCooldownUntil:0,lastAt:0,
+});
+/** Only actual HP damage from a qualifying hostile hit can arm it.
+ * A miss, basic attack, periodic tick or proc cannot consume it. */
+export function reviewRetaliationTakenV2(g:EffectTriggerReviewGroupV2,now:number,
+ state:RetaliationReviewStateV2,maxHp:number,hpDamage:number,eligibleHostileHit:boolean,alive:boolean){
+ group(g,'effect_retaliation');
+ if(![now,maxHp,hpDamage,state.lastAt,state.readyUntil,state.cooldownUntil,state.healCooldownUntil].every(finite)||
+  now<state.lastAt||maxHp<=0)fail('retaliation_input');
+ const threshold=g.resonance>=2?.10:.12;
+ const armed=eligibleHostileHit&&alive&&hpDamage/maxHp>=threshold&&now>=state.cooldownUntil;
+ return {state:{...state,lastAt:now,readyUntil:armed?now+8000:state.readyUntil,
+  cooldownUntil:armed?now+8000:state.cooldownUntil},armed,threshold};
+}
+export function reviewRetaliationHitV2(g:EffectTriggerReviewGroupV2,now:number,
+ state:RetaliationReviewStateV2,maxHp:number,hp:number,eligibleAuthoredDirect:boolean,successful:boolean,alive:boolean){
+ group(g,'effect_retaliation');
+ if(![now,maxHp,hp,state.lastAt,state.readyUntil,state.cooldownUntil,state.healCooldownUntil].every(finite)||
+  now<state.lastAt||maxHp<=0||hp>maxHp)fail('retaliation_input');
+ const consumed=alive&&eligibleAuthoredDirect&&successful&&state.readyUntil>now;
+ const healReady=consumed&&g.resonance===3&&now>=state.healCooldownUntil;
+ const heal=healReady?Math.min(maxHp-hp,maxHp*.01):0;
+ return {state:{...state,lastAt:now,readyUntil:consumed?0:state.readyUntil,
+  healCooldownUntil:healReady?now+10000:state.healCooldownUntil},
+  consumed,bonus:consumed?g.totalValue:0,heal,mayTriggerEffects:false as const};
 }

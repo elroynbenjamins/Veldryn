@@ -4,6 +4,7 @@ import {reviewPredatorHitV2,reviewGuardianBarrierV2,reviewUnyieldingDamageV2,rev
  reviewAegisBarrierV2,reviewMercyBarrierV2,reviewGemBarrierAbsorptionV2,reviewGemBarrierExpiryV2,reviewGemBarrierRemoveV2,
  reviewOpportunistApplicationV2,reviewOpportunistHitV2,reviewBulwarkTriggerV2,
  emptyEffectStackReviewV2,reviewEffectStackTransitionV2,type EffectStackReviewEventV2,
+ reviewExecutionDamageV2,reviewOpeningStrikeV2,reviewRuinDamageV2,emptyRetaliationReviewV2,reviewRetaliationTakenV2,reviewRetaliationHitV2,
  type EffectTriggerReviewGroupV2,type UnyieldingReviewStateV2,type GuardianReductionReviewV2} from '../effect-gem-trigger-review';
 import type {CombatantDefinition,CombatantState} from '../../types';
 import {gemOutgoingDamageMultiplierV1,gemOnShieldAppliedV1,gemEffectiveDefenseV1,
@@ -224,6 +225,80 @@ export function runEffectTriggerBoundaryReviewV2(actor:CombatantDefinition,g:Eff
    // these are design review flags, not a claim of live regression.
    legacyGap=family==='effect_flow'||family==='effect_shared_resolve'||family==='effect_momentum';
    assertions=16+2*(cap+1)+(family==='effect_flow'?2:family==='effect_critical_surge'?4:family==='effect_shared_resolve'?2:0);break;
+  }
+  case 'effect_execution':{
+   const max=1000,threshold=r>=2?350:300;
+   close(reviewExecutionDamageV2(g,threshold,max,true).bonus,0);
+   close(reviewExecutionDamageV2(g,threshold-1,max,true).bonus,value);
+   close(reviewExecutionDamageV2(g,150,max,true).bonus,value);
+   close(reviewExecutionDamageV2(g,149,max,true).bonus,value*(r===3?1.25:1));
+   close(reviewExecutionDamageV2(g,0,max,true).bonus,0);
+   close(reviewExecutionDamageV2(g,100,max,false).bonus,0);
+   assert.throws(()=>reviewExecutionDamageV2(g,1001,max,true),/execution_input/);
+   assert.throws(()=>reviewExecutionDamageV2(g,0,0,true),/execution_input/);
+   assertions=8;break;
+  }
+  case 'effect_opening_strike':{
+   const duration=r>=2?10000:8000;
+   const first=reviewOpeningStrikeV2(g,0,null,false,true);
+   close(first.bonus,value);assert.equal(first.state.expiresAt,duration);
+   const before=reviewOpeningStrikeV2(g,duration-1,first.state,false,true);
+   close(before.bonus,value);
+   const at=reviewOpeningStrikeV2(g,duration,before.state,false,true);
+   close(at.bonus,0);
+   const phase=reviewOpeningStrikeV2(g,duration+100,at.state,true,true);
+   close(phase.bonus,r===3?value:0);assert.equal(phase.refreshed,r===3);
+   const again=reviewOpeningStrikeV2(g,duration+200,phase.state,true,true);
+   assert.equal(again.state.expiresAt,phase.state.expiresAt);assert.equal(again.refreshed,false);
+   close(reviewOpeningStrikeV2(g,duration+300,again.state,false,false).bonus,0);
+   const overlapping=reviewOpeningStrikeV2(g,100,first.state,true,true);
+   close(overlapping.bonus,value);assert.equal(overlapping.state.expiresAt,duration+(r===3?100:0));
+   assertions=11;break;
+  }
+  case 'effect_ruin':{
+   const base={sourceId:'self',targetId:'enemy',effectId:'mark1',category:'mark',isMark:true,
+    eligible:true,appliedAt:0,expiresAt:10000};
+   const hit=(rows:typeof base[],now=100,eligible=true)=>reviewRuinDamageV2(g,'self','enemy',now,eligible,rows);
+   close(hit([]).bonus,0);
+   close(hit([base]).bonus,value*(r===3?2:1));
+   close(hit([base,{...base,effectId:'duplicate'}]).bonus,value*(r===3?2:1));
+   close(hit([base,{...base,sourceId:'other'}]).bonus,value*(r===3?2:1));
+   close(hit([base,{...base,targetId:'other'}]).bonus,value*(r===3?2:1));
+   close(hit([base,{...base,category:'unqualified',eligible:false}]).bonus,value*(r===3?2:1));
+   close(hit([base],4000).bonus,value);
+   close(hit([base],10000).bonus,0);
+   const full=[base,{...base,effectId:'slow',category:'slow',isMark:false},{...base,effectId:'weak',category:'weak',isMark:false}];
+   close(hit(full).bonus,value*(r>=2?3:2));
+   close(hit(full,100,false).bonus,0);
+   const falseMark={...base,category:'marked_name',isMark:false};
+   close(hit([falseMark]).bonus,value);
+   assertions=11;break;
+  }
+  case 'effect_retaliation':{
+   const empty=emptyRetaliationReviewV2(),max=1000,threshold=r>=2?100:120;
+   const take=(now:number,hpDamage:number,state=empty,eligible=true,alive=true)=>
+    reviewRetaliationTakenV2(g,now,state,max,hpDamage,eligible,alive);
+   const hit=(now:number,state:typeof empty,eligible=true,successful=true,hp=500,alive=true)=>
+    reviewRetaliationHitV2(g,now,state,max,hp,eligible,successful,alive);
+   assert.equal(take(0,threshold-1).armed,false);
+   assert.equal(take(0,threshold,empty,false).armed,false);
+   assert.equal(take(0,threshold,empty,true,false).armed,false);
+   const armed=take(0,threshold);
+   assert.equal(armed.armed,true);assert.equal(armed.state.readyUntil,8000);
+   assert.equal(take(100,threshold,armed.state).armed,false);
+   assert.equal(hit(100,armed.state,false).consumed,false);
+   assert.equal(hit(100,armed.state,true,false).consumed,false);
+   assert.equal(hit(8000,armed.state).consumed,false);
+   const consumed=hit(200,armed.state);
+   close(consumed.bonus,value);close(consumed.heal,r===3?10:0);
+   assert.equal(consumed.mayTriggerEffects,false);
+   close(hit(201,consumed.state).bonus,0);
+   const armedAgain=take(8000,threshold,consumed.state);
+   const second=hit(8100,armedAgain.state);
+   close(second.bonus,value);close(second.heal,0);
+   const third=take(16000,threshold,second.state);
+   close(hit(16001,third.state,true,true,999).heal,r===3?1:0);
+   assertions=16;break;
   }
   default:return null;
  }

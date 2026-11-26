@@ -29,3 +29,17 @@ for(const theme of ['sakura','stormforged']){
 }
 assert.notDeepEqual(m.nextPremiumPetIdleSamples('sakura'),m.nextPremiumPetIdleSamples('stormforged'));
 console.log('Next premium pet atlas contract and '+checks+' interpolated idle bounds passed.');
+
+const src=path.join(__dirname,'../src'),component='NextPremiumPetReviewSprite';
+const renderer=fs.readFileSync(path.join(src,'components/profile',component+'.tsx'),'utf8');
+assert(renderer.includes('if(running&&atlas)return <NextPremiumAtlas'));
+assert(renderer.includes('return <Image accessible={false}'));
+assert(renderer.includes('overflow:\'hidden\''));
+assert(renderer.includes('Animated.modulo(Animated.multiply(clock,A.cycles),1)'));
+assert(!/Animated\.loop\(|setInterval\(|setTimeout\(/.test(renderer));
+function walk(dir){return fs.readdirSync(dir,{withFileTypes:true}).flatMap(e=>e.isDirectory()?walk(path.join(dir,e.name)):[path.join(dir,e.name)]);}
+for(const file of walk(src)){
+ if(!/\.[jt]sx?$/.test(file)||file.endsWith(component+'.tsx'))continue;
+ assert(!fs.readFileSync(file,'utf8').includes(component),'pet review renderer must remain disconnected: '+file);
+}
+console.log('Isolated atlas player, parent-owned clock and static fallback contract passed.');

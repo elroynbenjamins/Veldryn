@@ -23,6 +23,12 @@ for(const s of sets){
  assert.equal(m.nextPremiumQuickSelection(scope,scope,grant,pieces,current,s.id),null);
  assert.equal(m.nextPremiumNameStyle(s.nameStyle,scope,grant,pieces),undefined);
  assert.equal(m.nextPremiumQuickSets(scope,grant,pieces,ready).length,1);
+ assert.deepEqual(m.nextPremiumOwnedBadges(scope,grant,pieces),[]);
+ assert.deepEqual(m.nextPremiumOwnedBadges(scope,grant,pieces,ready),[{id:s.badge,name:s.badgeName}]);
+ assert.deepEqual(m.nextPremiumOwnedBadges(other,grant,pieces,ready),[]);
+ assert.deepEqual(m.nextPremiumOwnedNamePresets(scope,grant,pieces),[]);
+ assert.equal(m.nextPremiumOwnedNamePresets(scope,grant,pieces,ready)[0].id,s.nameStyle);
+ assert.deepEqual(m.nextPremiumOwnedNamePresets(scope,grant,{...pieces,nameStyles:[]},ready),[]);
  assert.equal(m.nextPremiumQuickSets(scope,undefined,pieces,ready).length,0);
  assert.equal(m.nextPremiumQuickSets(scope,grant,undefined,ready).length,0);
  assert.equal(m.nextPremiumQuickSets(other,grant,pieces,ready).length,0);

@@ -45,7 +45,7 @@ ok(app.includes('onlineCustomize={<OnlineGuildCustomizationPanel/>}'),'Guild scr
 for(const label of ['Home','PvE','Roster','Activities','Hall','Chat','Manage'])ok(screen.includes("'"+label+"'"),'Consolidated online Guild tabs must include '+label);
 ok(screen.includes("onlineSection==='Roster'?")&&screen.includes('cloneElement(onlineManagement'),'Roster tab must render authoritative Guild management');
 ok(screen.includes("onlineSection==='Hall'?<View")&&screen.includes('cloneElement(onlineHall')&&hall.includes("['Overview','Construction','Bank','Shop','Legacy']")&&hall.includes("section==='Shop'")&&!hall.includes("section==='Skills'?"),'Guild Hall must expose Shop directly without duplicating the Skills screen');
-ok(screen.includes('<OnlineGuildMusterPanel/>')&&screen.includes("onlineSection==='PvE'?(isValidElement")&&screen.includes('cloneElement(onlinePve,{headerHelp:headerGuide})'),"Guild navigation must preserve Muster and a dedicated PvE destination");
+ok(screen.includes('<OnlineGuildMusterPanel/>')&&screen.includes("onlineSection==='PvE'?(isValidElement")&&screen.includes('cloneElement(onlinePve,{headerHelp:headerGuide,raidScope:JSON.stringify('),"Guild navigation must preserve Muster and a dedicated PvE destination");
 ok(screen.includes("onlineSection==='Manage'?<View")&&screen.includes('{onlineCustomize}'),'Manage must preserve member Guild appearance customization');
 ok(!screen.includes('{onlineDirectory}')&&!screen.includes('Directory & Creation'),'Joined members must not be offered guild creation inside Guild management');
 ok(screen.includes('title={st("Guild Appearance")}'),'Manage must keep a clear identity hierarchy');

@@ -2,7 +2,7 @@ import {PROFILE_COSMETIC_RUNTIME} from '../src/theme/profile-cosmetic-runtime-v1
 import {cosmeticGlowOpacity,MOTION_STEPS,sampleCosmeticTrack,type MotionProfile,type MotionTrack} from '../src/core/profile-cosmetic-motion-v2';
 import {profileSceneFrameSegments} from '../src/core/profile-frame-layout';
 import {WAVE2_SETS,WAVE2_READY_SET_IDS} from '../src/core/profile-cosmetic-wave2';
-import {wardrobeVisualSections,wardrobeVisualTier} from '../src/components/profile/wardrobe-visual-tiers';
+import {wardrobeVisualSections,wardrobeVisualTier,wardrobeCollectionLabel,wardrobeCollectionName} from '../src/components/profile/wardrobe-visual-tiers';
 import {PROFILE_COSMETIC_PORTRAITS} from '../src/core/profile-cosmetic-icons';
 import {PREMIUM_PROFILE_COSMETICS} from '../src/core/profile-premium-cosmetics';
 import type {WardrobeRow} from '../src/core/profile-wardrobe';
@@ -85,3 +85,24 @@ for(const set of PREMIUM_PROFILE_COSMETICS){
  ok(wardrobeVisualTier(tile('frame',set.fallbackBorderId))==='standard','ordinary fallback does not become premium');
 }
 console.log('PASS standard cosmetic parity, exact assets, tier grouping and readiness fences');
+
+for(const set of WAVE2_SETS){
+ for(const [kind,id] of [['frame',set.borderId],['effect',set.effectId],['icon',set.iconIds[0]],['icon',set.iconIds[1]]] as const)ok(wardrobeCollectionName(tile(kind,id))===set.name,'reserved set piece has consistent label without changing visibility');
+}
+for(const row of standard){
+ ok(wardrobeCollectionName(tile('frame',row.borderId))===row.collection,'standard border label');
+ ok(wardrobeCollectionName(tile('effect',row.effectId))===row.collection,'standard effect label');
+}
+const tide=wardrobeCollectionLabel({...tile('frame','cosmetic:tideborne:pearlframe'),name:'Tideborne Pearlframe'});
+ok(tide?.short==='Tideborne'&&tide.item==='Pearlframe'&&tide.fullName==='Tideborne · Pearlframe','avoid repeated collection prefix');
+const clock=wardrobeCollectionLabel({...tile('icon','cosmetic:clockwork:portrait-engineer'),name:'Covenant Engineer'});
+ok(clock?.short==='Clockwork'&&clock.item==='Engineer'&&clock.collection==='Clockwork Covenant','compact label and full accessible collection');
+for(const set of PREMIUM_PROFILE_COSMETICS){
+ ok(wardrobeCollectionName(tile('frame',set.borderId))===set.name,'premium border label');
+ ok(wardrobeCollectionName(tile('effect',set.effectId))===set.name,'premium effect label');
+ ok(wardrobeCollectionName(tile('scene',set.backgroundId))===set.name,'premium scene label');
+ ok(wardrobeCollectionName(tile('pet',set.petId))===set.name,'premium pet label');
+ ok(!wardrobeCollectionName(tile('frame',set.fallbackBorderId)),'no set label on ordinary fallback');
+}
+ok(!wardrobeCollectionName(clear),'no label on clear');
+console.log('PASS consistent set labels without ownership or ID changes');

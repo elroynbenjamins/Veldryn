@@ -32,13 +32,10 @@ assert(Q.petAtlasFps<=12&&Q.maxPetFrames<=48&&Q.maxPetLift<=3);
 console.log('PASS: Abyssal geometry, pet modes, responsive fallback and closed tidal choreography');
 
 const preview=fs.readFileSync(path.join(__dirname,'../src/components/profile/AbyssalMajestyPreview.tsx'),'utf8');
-assert.equal((preview.match(/Animated\.loop\(/g)||[]).length,1);
-assert(preview.includes('useNativeDriver:true,isInteraction:false'));
-assert(preview.includes('active&&supported&&!reduceMotion'));
-assert(preview.includes("AppState.currentState==='active'"));
-assert(preview.includes('AccessibilityInfo.isReduceMotionEnabled()'));
-assert(preview.includes('app.remove();motion.remove();'));
-assert(preview.includes('loop.stop();clock.stopAnimation();'));
+assert(preview.includes('useCosmeticMotionPolicy(active&&supported,reduceMotion)'));
+assert(preview.includes('useLoopProgress(ABYSSAL_CYCLE_MS,running)'));
+assert(!preview.includes('Animated.loop(')&&!preview.includes('AppState.addEventListener')&&!preview.includes('AccessibilityInfo.addEventListener'));
+assert(preview.indexOf('</UltraLuxeIdentityMotionProvider>')<preview.indexOf('{badges?<View'));
 assert(preview.includes("if(!running||mode!=='matching')return null"));
 assert(preview.includes("if(mode==='none')return null"));
 assert(preview.includes('source={alternatePetSource}'));

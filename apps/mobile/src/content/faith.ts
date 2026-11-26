@@ -1,12 +1,12 @@
 export const HOLY_WATER_ID='HOLY_WATER';
-/** Faith practice XP was reduced by 20%; ritual costs, duration and blessings remain unchanged. */
+/** Faith practice XP tapers progressively by tier; costs, duration and blessing unlocks remain unchanged. */
 export const FAITH_TIERS=[
- {id:'FAITH_QUIET',name:'Quiet prayer',level:1,water:1,xp:96,seconds:30},
- {id:'FAITH_CANDLE',name:'Candle vigil',level:10,water:2,xp:208,seconds:30},
- {id:'FAITH_LITANY',name:'Sacred litany',level:25,water:4,xp:448,seconds:30},
- {id:'FAITH_DEVOTION',name:'Devotion',level:40,water:8,xp:960,seconds:30},
- {id:'FAITH_COMMUNION',name:'Communion',level:60,water:16,xp:2048,seconds:30},
- {id:'FAITH_ASCENDANT',name:'Ascendant prayer',level:80,water:32,xp:4352,seconds:30},
+ {id:'FAITH_QUIET',name:'Quiet prayer',level:1,water:1,xp:90,seconds:30},
+ {id:'FAITH_CANDLE',name:'Candle vigil',level:10,water:2,xp:192,seconds:30},
+ {id:'FAITH_LITANY',name:'Sacred litany',level:25,water:4,xp:408,seconds:30},
+ {id:'FAITH_DEVOTION',name:'Devotion',level:40,water:8,xp:864,seconds:30},
+ {id:'FAITH_COMMUNION',name:'Communion',level:60,water:16,xp:1824,seconds:30},
+ {id:'FAITH_ASCENDANT',name:'Ascendant prayer',level:80,water:32,xp:3840,seconds:30},
 ] as const;
 export type FaithFamily='attack'|'defense'|'hp'|'combatSpeed'|'gathering'|'production'|'xp'|'eventCurrency';
 export type FaithBlessingGroup='combat'|'gathering'|'production'|'experience'|'events';
@@ -71,3 +71,5 @@ export const HOLY_WATER_SOURCES=[
  {monsterId:'ASHEN_REVENANT',chance:.50,min:6,max:10},
 ] as const;
 export const faithBlessingDef=(id?:string)=>FAITH_BLESSINGS.find(b=>b.id===id);
+
+export const faithBlessingGroup=(blessing:FaithBlessing)=>FAITH_BLESSING_GROUPS.find(group=>group.families.includes(blessing.family))?.id;

@@ -51,7 +51,7 @@ assert(!sheet.includes("gt('BONUS STATS')")&&!sheet.includes('s.bonusNote}>{gt('
 assert(sheet.includes('disposalActions?<View style={s.footerDisposal}')&&sheet.includes('footerDisposal:{borderTopWidth:StyleSheet.hairlineWidth'),'Keep Sell/Salvage visible below a clear divider');
 assert(!sheet.includes('actionsOpen')&&!sheet.includes('footerActionScroll'),'No equipment action may be hidden behind a More actions disclosure');
 assert(sheet.includes('compactHeader=width<390||fontScale>=1.25')&&controls.includes('button:{width:40,height:44'),'Header must accommodate compact phones and accessible target heights');
-assert(sheet.includes('scrollWholeSheet=height<650||fontScale>=1.25')&&sheet.includes('{scrollWholeSheet?header:null}')&&sheet.includes('{scrollWholeSheet?footer:null}')&&sheet.includes('{!scrollWholeSheet?footer:null}'),'Short or scaled layouts must scroll every control while normal layouts retain the fixed action footer');
+assert(sheet.includes('scrollWholeSheet=width<345||height<650||fontScale>=1.25')&&sheet.includes('{scrollWholeSheet?header:null}')&&sheet.includes('{scrollWholeSheet?footer:null}')&&sheet.includes('{!scrollWholeSheet?footer:null}'),'Narrow, short or scaled layouts must scroll every control while normal layouts retain the fixed action footer');
 assert(sheet.includes('keyboardShouldPersistTaps="handled"'),'Action buttons remain reachable with the quantity keyboard open');
 assert(inventory.includes("inspectQuickButtonStacked:{flex:0,flexShrink:0,width:'100%'}"),'Stacked buttons must use intrinsic heights, not divide the available column space');
 assert((inventory.match(/stackInspectorActions&&s\.inspectQuickButtonStacked/g)||[]).length===4,'Material and gear disposal buttons must all use the non-shrinking stacked style');

@@ -148,3 +148,41 @@ assert(preview.includes('Animated.modulo(Animated.multiply(clock,a.cycles),1)'))
 assert(preview.includes("width:w,height:h,overflow:'hidden'"));
 assert(preview.includes('source={assets.aeon}'));
 console.log('PASS: Aeon native atlas, bounded cells, loop continuity and standalone fallback');
+
+const {PARADOX_REACTION:reactionSpec}=mod.exports;
+const {center,halo,shards,moteRadius}=reactionSpec;
+assert.equal(shards.length,3);
+const aura=B.aura;
+function withinAura(x,y,rx,ry){
+ assert(x-rx>=aura.x&&x+rx<=aura.x+aura.w&&y-ry>=aura.y&&y+ry<=aura.y+aura.h);
+}
+withinAura(center.x,center.y,halo.w*halo.maxScale/2,halo.h*halo.maxScale/2);
+for(const p of shards)for(let j=0;j<=20;j++){
+ const t=j/20;withinAura(center.x+p.x+t*p.dx,center.y+p.y+t*p.dy,moteRadius,moteRadius);
+}
+assert(preview.includes("reactionEnabled=running&&mode==='matching'"));
+assert(preview.includes('useUltraLuxePetReaction(reactionEnabled)'));
+assert(preview.includes('reactionEnabled?<ParadoxPetReaction')&&preview.includes('onPress={trigger}'));
+const artDir=path.join(__dirname,'../assets/ascendant/paradox');
+const pending=JSON.parse(fs.readFileSync(path.join(artDir,'pet-artwork-manifest.json'),'utf8'));
+assert.equal(pending.files.length,8);assert.equal(pending.badgeMotion,false);
+assert.equal(pending.files.reduce((sum,f)=>sum+f.bytes,0),375090);
+let present=0;
+for(const art of pending.files){
+ const file=path.join(artDir,art.name);
+ if(!fs.existsSync(file))continue;
+ present++;
+ const buf=fs.readFileSync(file);
+ assert.equal(buf.length,art.bytes,art.name);
+ assert.equal(crypto.createHash('sha256').update(buf).digest('hex'),art.sha256,art.name);
+ assert.equal(buf.toString('ascii',0,4),'RIFF');
+ assert.equal(buf.toString('ascii',8,12),'WEBP');
+ const chunk=buf.toString('ascii',12,16);
+ if(chunk==='VP8X'){
+  assert(buf[20]&16);assert.equal(1+buf.readUIntLE(24,3),art.width);assert.equal(1+buf.readUIntLE(27,3),art.height);
+ }else if(chunk==='VP8L'){
+  assert.equal(buf[20],47);const bits=buf.readUInt32LE(21);
+  assert(bits&(1<<28));assert.equal(1+(bits&16383),art.width);assert.equal(1+((bits>>>14)&16383),art.height);
+ }else assert.fail('Missing transparency header: '+art.name);
+}
+console.log('PASS: localized Aeon reaction and asset integrity contract; '+present+'/8 final assets present (registration remains gated)');

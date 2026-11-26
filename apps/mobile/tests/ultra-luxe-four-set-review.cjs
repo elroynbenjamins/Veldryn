@@ -50,3 +50,38 @@ assert(review.includes('reviewEnabled=false')&&review.includes('reviewEquippedTi
 assert(!read('components/PlayerBadges.tsx').includes('Animated.'));
 for(const f of ['components/PublicProfileScene.tsx','components/ProfileScenePreview.tsx','components/profile/ProfileStage.tsx','components/profile/ProfileLookPanel.tsx','core/profile-quick-set-equip.ts'])assert(!read(f).includes('ultra-luxe-review-integration')&&!read(f).includes('UltraLuxeFourSetReview'));
 console.log('PASS: four-set isolated projection, scoped quick equip, mixed pieces, revocation, static badges and production isolation');
+
+const wardrobe=load(path.join(root,'core/ultra-luxe-owned-wardrobe.ts'));
+const blank=['icon','scene','frame','effect','pet','title'].map(kind=>({kind,label:kind,owned:0,total:0,rows:[]}));
+for(const row of wardrobe.NEW_ULTRA_LUXE_WARDROBE){
+ const state={character:{id:scope.characterId},account:{unlockedProfileBackgroundIds:[row.ids.background],unlockedProfileBorderIds:[row.ids.border],unlockedCosmeticPetIds:[row.ids.pet],unlockedTitleIds:[row.titleId]}};
+ const grant={accountId:scope.accountId,collectionIds:[row.id]};
+ assert(wardrobe.newUltraLuxeHint(state));
+ assert.deepEqual(wardrobe.appendOwnedUltraLuxeWardrobe(blank,state,scope,undefined),blank);
+ assert.deepEqual(wardrobe.appendOwnedUltraLuxeWardrobe(blank,state,other,grant),blank);
+ const result=wardrobe.appendOwnedUltraLuxeWardrobe(blank,state,scope,grant);
+ assert.equal(result.reduce((n,c)=>n+c.owned,0),4);
+ assert.equal(result.reduce((n,c)=>n+c.total,0),4);
+ assert(result.flatMap(c=>c.rows).every(r=>r.unlocked&&wardrobe.isNewUltraLuxeWardrobePiece(r)));
+ assert.deepEqual(wardrobe.appendOwnedUltraLuxeWardrobe(result,state,scope,grant),result);
+ const next=wardrobe.newUltraLuxeQuickSelection(state,scope,grant,before,row.id,row.id);
+ assert.deepEqual(next,{...before,scene:row.ids.background,frame:row.ids.border,pet:row.ids.pet,title:row.titleName,effect:''});
+ assert.equal(wardrobe.newUltraLuxeQuickSelection(state,scope,undefined,before,row.id,row.id),null);
+ assert.equal(wardrobe.newUltraLuxeQuickSelection(state,otherHero,grant,before,row.id,row.id),null);
+ assert(!wardrobe.newUltraLuxePatchAllowed(state,scope,undefined,{title:' '+row.titleName.toUpperCase()+' '}));
+ assert(!wardrobe.newUltraLuxePatchAllowed(state,scope,{...grant,collectionIds:[]},{frame:row.ids.border}));
+ assert(wardrobe.newUltraLuxePatchAllowed(state,scope,grant,{pet:row.ids.pet}));
+ assert(wardrobe.newUltraLuxePatchAllowed(state,scope,undefined,{pet:'PET_001'}));
+ for(const key of ['unlockedProfileBackgroundIds','unlockedProfileBorderIds','unlockedCosmeticPetIds','unlockedTitleIds']){
+  const partial={...state,account:{...state.account,[key]:[]}};
+  assert.deepEqual(wardrobe.ownedNewUltraLuxeQuickSets(partial,scope,grant),[]);
+ }
+}
+const panel=read('components/profile/ProfileLookPanel.tsx');
+assert(panel.includes('useUltraLuxeCollectionProjection(!!character&&newUltraLuxeHint(state))'));
+assert(panel.includes('appendOwnedUltraLuxeWardrobe(profileWardrobe(state,WARDROBE_ASSETS),state,grantScope,verifiedCollections)'));
+assert(panel.includes('newUltraLuxePatchAllowed(base,{accountId:next.accountId,characterId:next.characterId},verifiedRef.current,next.patch)'));
+assert(panel.includes('newUltraLuxeQuickSelection(stateRef.current'));
+const hook=read('online/useUltraLuxeCollectionProjection.ts');
+assert(hook.includes("rpc('ultra_luxe_collection_self_v1')")&&hook.includes('scopeRef.current!==scope')&&hook.includes('row.accountId!==accountId'));
+console.log('PASS: actual wardrobe candidate rows, independent readback, quick equip and queued grant revalidation');

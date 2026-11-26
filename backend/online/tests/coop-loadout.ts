@@ -1,3 +1,6 @@
+import {withVerifiedUltraLuxeGrants,ultraLuxeGrantProjection} from '../../../apps/mobile/src/core/ultra-luxe-grants';
+import {ULTRA_LUXE_FULL_SET_DEFINITIONS} from '../../../apps/mobile/src/core/ultra-luxe-full-set-command';
+import {collectibleCatalogForState} from '../../../apps/mobile/src/core/collectibles';
 import {legacyCharacterTotalXpAtLevel,rebasedCombatLevelFromLegacyLevel} from '../../../apps/mobile/src/core/progression';
 import {rebaseLegacyCombatLevel} from '../../src/server/coop/config';
 import {strict as assert} from 'node:assert';
@@ -272,3 +275,38 @@ for(const test of [
   'Dungeon must not borrow an affix from an unselected equipment receipt: '+test.stat);
 }
 console.log('PASS: all seven new T1 stat affixes reach solo, story boss and frozen dungeon stats');
+
+
+/** Premium appearance must never change combat readiness, stats or a frozen
+ * dungeon snapshot at the same gameplay revision. Test the actual shared
+ * grant sanitizer and co-op loadout builder, not a second mock catalogue.
+ * Revision is deliberately held constant to isolate cosmetic data. */
+for(const definition of CLASSES){
+ const state=createCharacter(newGame(0),definition.id,'Premium Dungeon Parity');
+ state.character!.level=25;state.character!.xp=legacyCharacterTotalXpAtLevel(25);
+ state.character!.equipment=Object.fromEntries(noviceSetFor(definition.id).slots.map(slot=>[slot,noviceItemId(definition.id,slot)]));
+ const original=JSON.stringify(state),base=withVerifiedUltraLuxeGrants(state,[],true,true);
+ const expected=deriveOnlineCoopLoadout('owner',base,35);
+ for(const [id,scene,frame,pet,title] of ULTRA_LUXE_FULL_SET_DEFINITIONS){
+  const grants=ultraLuxeGrantProjection([id],true,true);
+  const grant=withVerifiedUltraLuxeGrants(base,[id],true,true);
+  assert.equal(grant.character!.profileBackgroundId,base.character!.profileBackgroundId,'grant does not auto-equip');
+  assert.ok(grant.account.unlockedProfileBackgroundIds?.includes(scene));
+  const equipped={...grant,character:{...grant.character!,profileBackgroundId:scene,profileBorderId:frame,selectedCosmeticPetId:pet,profileTitle:title}};
+  const verified=withVerifiedUltraLuxeGrants(equipped,[id],true,true);
+  assert.equal(verified.character!.profileBackgroundId,scene);
+  assert.equal(verified.character!.selectedCosmeticPetId,pet);
+  assert.deepEqual(verified.account.unlockedTitleIds?.filter(v=>v.startsWith('ascendant-')),grants.titles);
+  assert.ok(!collectibleCatalogForState(verified).some(row=>row.id===scene||row.id===frame||row.id===pet),'premium art must not silently add a gameplay bonus');
+  assert.deepEqual(deriveOnlineCoopLoadout('owner',verified,35),expected,id+' cosmetic equip is combat-neutral');
+  const revoked=withVerifiedUltraLuxeGrants(verified,[],true,true);
+  assert.equal(revoked.character!.profileBackgroundId,'asterfall-night');
+  assert.equal(revoked.character!.profileBorderId,undefined);
+  assert.equal(revoked.character!.selectedCosmeticPetId,undefined);
+  assert.equal(revoked.character!.profileTitle,'New Adventurer');
+  assert.deepEqual(deriveOnlineCoopLoadout('owner',revoked,35),expected,id+' revocation is combat-neutral');
+  assert.equal(onlineCoopLoadoutHash(deriveOnlineCoopLoadout('owner',revoked,35)),onlineCoopLoadoutHash(expected));
+ }
+ assert.equal(JSON.stringify(state),original,'cosmetic grants never mutate source state');
+}
+console.log('PASS: all six premium grants, equips and revocations are neutral to nine class dungeon loadouts at equal gameplay revision');

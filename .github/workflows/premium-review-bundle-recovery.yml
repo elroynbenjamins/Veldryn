@@ -1,0 +1,37 @@
+name: Premium review canonical bundle recovery
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  regenerate:
+    if: github.event.pull_request.head.ref == 'integration/premium-six-set-review-20261126'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - run: pnpm --dir backend install --frozen-lockfile
+      - name: Generate exact canonical artifacts without deploying
+        run: |
+          node tools/build-online.mjs
+          git hash-object backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          echo BEGIN_GENERATED_PATCH
+          git diff --no-ext-diff --no-color -- backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          echo END_GENERATED_PATCH
+          node tools/verify-gameplay-edge.mjs
+      - run: pnpm --dir apps/mobile install --frozen-lockfile
+      - name: Test actual HTTP handler
+        run: |
+          pnpm --dir backend exec tsc -p tsconfig.online.json
+          node backend/dist/online/backend/online/tests/gameplay.js

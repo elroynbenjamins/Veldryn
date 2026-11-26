@@ -67,6 +67,9 @@ for(const s of sets){
  assert(m.nextPremiumTitleAllowed('New Adventurer',scope,undefined,undefined,ready));
  const appearance={background:s.background,border:s.border,pet:s.pet,verifiedTitleId:s.title,displayedBadges:[s.badge]};
  assert.equal(m.nextPremiumPublicShowcase(appearance,[s.id]),undefined);
+ assert.deepEqual(m.sanitizeNextPremiumAppearance({...appearance,displayedBadges:[s.badge,'ordinary']},[],true),{background:'asterfall-night',border:undefined,pet:undefined,verifiedTitleId:undefined,effect:undefined,displayedBadges:['ordinary']});
+ assert.deepEqual(m.sanitizeNextPremiumAppearance({...appearance,effect:s.showcase},[s.id],true),{...appearance,effect:s.showcase});
+ assert.equal(m.sanitizeNextPremiumAppearance({...appearance,effect:s.showcase},[s.id]).effect,undefined);
  assert.equal(m.nextPremiumPublicShowcase(appearance,[],true),undefined);
  assert.deepEqual(m.nextPremiumPublicShowcase(appearance,[s.id],true),{id:s.id,fullSet:true});
  for(const partial of [{pet:'other'},{verifiedTitleId:null},{displayedBadges:[]}])assert.deepEqual(m.nextPremiumPublicShowcase({...appearance,...partial},[s.id],true),{id:s.id,fullSet:false});

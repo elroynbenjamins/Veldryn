@@ -131,7 +131,13 @@ export function createGentleGemPartyPressureReviewV2(members:readonly Member[],p
    }
    assert.deepEqual(after.players[index].definition,before.players[index].definition);
   }else assert.equal(triggers.length,0);
-  return {before:a,after:b,triggerCount:triggers.length,stackTriggers:stackTriggers.length,
+  const recoveryEvents=after.events.filter(e=>e.abilityId==='V2_QA_GEM_RETALIATION');
+  const armed=after.events.filter(e=>e.detail==='private_qa_retaliation_armed');
+  assert.ok(recoveryEvents.every(e=>e.actorId===actor.id&&e.targetId===actor.id&&e.type==='heal'&&e.detail==='private_qa_terminal_recovery'&&(e.amount??0)<=actor.stats.maxHp*.01+.011));
+  for(let i=1;i<recoveryEvents.length;i++)assert.ok(recoveryEvents[i].atMs-recoveryEvents[i-1].atMs>=10000);
+  for(let i=1;i<armed.length;i++)assert.ok(armed[i].atMs-armed[i-1].atMs>=8000);
+  if(recoveryEvents.length)assert.equal(p.effectResonanceReview?.families.find(g=>g.familyId==='effect_retaliation')?.resonance,3);
+  return {before:a,after:b,triggerCount:triggers.length,stackTriggers:stackTriggers.length,armed:armed.length,recoveryEvents:recoveryEvents.length,
    hasteUses:triggers.filter(e=>e.detail?.startsWith('private_qa_haste_gem:')).length,
    maxStacks:Math.max(0,...stackTriggers.map(e=>Number(e.detail!.split(':')[3]))),
    maxFraction:Math.max(0,...triggers.map(e=>e.amount??0)),releaseEnabled:false as const};

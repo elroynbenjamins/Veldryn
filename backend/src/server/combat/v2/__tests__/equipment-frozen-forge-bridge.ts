@@ -1780,7 +1780,8 @@ function makeV21Loadout(classId:ClassIdV2,specIndex:0|1,targetTier:1|2|3|4,targe
  const arms=['stat_precision','stat_elusive','stat_potent','mixed-role'];
  const originalEffectFamilies=['effect_execution','effect_opening_strike','effect_predator'];
  const stackEffectFamilies=['effect_momentum','effect_critical_surge','effect_flow'];
- const effectFamilies=[...originalEffectFamilies,...stackEffectFamilies];
+ const conditionalEffectFamilies=['effect_ruin','effect_opportunist','effect_retaliation'];
+ const effectFamilies=[...originalEffectFamilies,...stackEffectFamilies,...conditionalEffectFamilies];
  const profiles=[{id:'BOSS_EXP_SPHINX',name:'The Veiled Sphinx',region:'sunscar' as const,tier:3 as const,level:40},
   {id:'BOSS_EXP_BELLBEAST',name:'The Bellbeast of Shiverlake',region:'frostmarch' as const,tier:4 as const,level:60}];
  const rows:{classId:ClassIdV2;spec:number;arm:string;boss:string;seed:number;result:ReturnType<ReturnType<typeof createGentleGemPartyPressureReviewV2>>}[]=[];
@@ -1820,7 +1821,9 @@ function makeV21Loadout(classId:ClassIdV2,specIndex:0|1,targetTier:1|2|3|4,targe
      }
      return reviewFrozenForgeSocketsV2(qa.actor,build,source,sockets,policy);
     });
-    const effects=CLASS_ROLES_V2[classId]==='damage'?effectFamilies.flatMap(family=>[1,2,3].map(rank=>{
+    const selectedEffectFamilies=CLASS_ROLES_V2[classId]==='damage'?effectFamilies.filter(f=>f!=='effect_retaliation'):
+     CLASS_ROLES_V2[classId]==='tank'?['effect_retaliation']:[];
+    const effects=selectedEffectFamilies.flatMap(family=>[1,2,3].map(rank=>{
      const sockets:V2GemSidecarState={slots:[],receipts:[]};
      for(let i=0;i<rank;i++){
       const instanceId=qa.ids[i],gemId=gemItemId(family,5);
@@ -1829,7 +1832,7 @@ function makeV21Loadout(classId:ClassIdV2,specIndex:0|1,targetTier:1|2|3|4,targe
        socket:'effect',gemId,source:'gem_pouch',rollPercent:120,burnedGemId:null,version:qa.source.ledgerRevision+i+1});
      }
      return {family,rank,projection:reviewFrozenForgeSocketsV2(qa.actor,build,source,sockets,policy)};
-    })):[];
+    }));
     return {classId,accountId:source.accountId,characterId:source.characterId,revision,compiled,baseline,variants,effects};
    });
    for(const seed of [0,1]){
@@ -1843,11 +1846,13 @@ function makeV21Loadout(classId:ClassIdV2,specIndex:0|1,targetTier:1|2|3|4,targe
     const i=1+spec,member=members[i];
     for(const arm of member.effects)effectRows.push({family:arm.family,rank:arm.rank,classId:member.classId,spec,
      boss:profile.id,seed,result:fight(i,arm.projection,seed===0&&arm.rank===3)});
+    for(const arm of members[0].effects)effectRows.push({family:arm.family,rank:arm.rank,classId:members[0].classId,spec,
+     boss:profile.id,seed,result:fight(0,arm.projection,seed===0&&arm.rank===3)});
    }
   }
  }
  assert.equal(baseEncounters,24);assert.equal(rows.length,384);
- assert.equal(effectRows.length,432);
+ assert.equal(effectRows.length,648);
  assert.ok(effectRows.filter(r=>r.family==='effect_opening_strike'||r.family==='effect_predator').every(r=>r.result.triggerCount>0));
  console.log('PRIVATE_DAMAGE_GEM_COMBAT_REVIEW '+JSON.stringify({cases:effectRows.filter(r=>originalEffectFamilies.includes(r.family)).length,baseEncounters,
   scope:'THREE_EFFECT_FAMILY_EXECUTABLE_QA',byFamilyRank:originalEffectFamilies.flatMap(family=>[1,2,3].map(rank=>{
@@ -1864,6 +1869,16 @@ function makeV21Loadout(classId:ClassIdV2,specIndex:0|1,targetTier:1|2|3|4,targe
     stackTriggers:a.reduce((n,r)=>n+r.result.stackTriggers,0),hasteUses:a.reduce((n,r)=>n+r.result.hasteUses,0),
     maxStacks:Math.max(...a.map(r=>r.result.maxStacks)),maxFraction:Math.max(...a.map(r=>r.result.maxFraction)),
     meanDpsDelta:a.reduce((n,r)=>n+r.result.after.dps-r.result.before.dps,0)/a.length,
+    lostVictories:a.filter(r=>r.result.before.victory>r.result.after.victory).length};})),releaseEnabled:false,cpApproved:false}));
+ const conditionalRows=effectRows.filter(r=>conditionalEffectFamilies.includes(r.family));
+ assert.equal(conditionalRows.length,216);
+ console.log('PRIVATE_CONDITIONAL_GEM_COMBAT_REVIEW '+JSON.stringify({cases:conditionalRows.length,baseEncounters,
+  scope:'THREE_CONDITIONAL_FAMILY_EXECUTABLE_QA',byFamilyRank:conditionalEffectFamilies.flatMap(family=>[1,2,3].map(rank=>{
+   const a=conditionalRows.filter(r=>r.family===family&&r.rank===rank);return {family,rank,cases:a.length,
+    activeEncounters:a.filter(r=>r.result.triggerCount>0).length,
+    triggers:a.reduce((n,r)=>n+r.result.triggerCount,0),armed:a.reduce((n,r)=>n+r.result.armed,0),
+    recoveryEvents:a.reduce((n,r)=>n+r.result.recoveryEvents,0),
+    maxFraction:Math.max(...a.map(r=>r.result.maxFraction)),meanDpsDelta:a.reduce((n,r)=>n+r.result.after.dps-r.result.before.dps,0)/a.length,
     lostVictories:a.filter(r=>r.result.before.victory>r.result.after.victory).length};})),releaseEnabled:false,cpApproved:false}));
  const groups=new Map<string,typeof rows>();
  for(const r of rows){const k=CLASS_ROLES_V2[r.classId]+'|'+r.arm;groups.set(k,[...(groups.get(k)??[]),r]);}

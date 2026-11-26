@@ -1,6 +1,6 @@
 /** HIDDEN first executable effect-gem review. Only opaque, digest-bound
  * server QA authority; no public adapter, no reward or persistence path.
- * Six damage/haste families, never use legacy effectGems as input. */
+ * Nine damage/haste families, never use legacy effectGems as input. */
 import type {CombatInput,CombatantState,AbilityEffect} from '../types';
 import type {reviewFrozenForgeSocketsV2} from './frozen-forge-socket-review';
 import type {VerifiedV2EquipmentEffectSource} from './equipment-trait-engine-authority';
@@ -8,6 +8,8 @@ import {enemyV2SnapshotDigest} from './enemy-engine-authority';
 import {reviewEffectGemResonanceV2} from './effect-gem-resonance-review';
 import {reviewExecutionDamageV2,reviewOpeningStrikeV2,reviewPredatorHitV2,
  emptyEffectStackReviewV2,reviewEffectStackTransitionV2,
+ reviewRuinDamageV2,reviewOpportunistApplicationV2,reviewOpportunistHitV2,
+ emptyRetaliationReviewV2,reviewRetaliationTakenV2,reviewRetaliationHitV2,type OpportunistWindowReviewV2,
  type EffectStackReviewStateV2,type EffectTriggerReviewGroupV2,type OpeningStrikeReviewStateV2,type PredatorWindowReviewV2} from './effect-gem-trigger-review';
 const brand:unique symbol=Symbol('private-effect-gem-damage-review');
 export type PrivateDamageGemAuthorityV2=Readonly<{readonly [brand]:true}>;
@@ -15,7 +17,7 @@ export const PRIVATE_DAMAGE_GEM_REVIEW_V2='private-damage-gem-review-v2-20261126
 type Projection=ReturnType<typeof reviewFrozenForgeSocketsV2>;
 type Row={actorId:string;digest:string;worn:readonly string[];groups:readonly EffectTriggerReviewGroupV2[]};
 const tokens=new WeakMap<object,{inputDigest:string;row:Row}>();
-const supported=new Set(['effect_execution','effect_opening_strike','effect_predator','effect_momentum','effect_critical_surge','effect_flow']);
+const supported=new Set(['effect_execution','effect_opening_strike','effect_predator','effect_momentum','effect_critical_surge','effect_flow','effect_ruin','effect_opportunist','effect_retaliation']);
 const fail=(why:string):never=>{throw Error('private_damage_gem_review_'+why);};
 export function issuePrivateDamageGemAuthorityV2(input:CombatInput,p:Projection,
  verifyPersisted:(projection:Projection,inputDigest:string)=>boolean):PrivateDamageGemAuthorityV2{
@@ -58,6 +60,14 @@ export function authorizePrivateDamageGemReviewV2(input:CombatInput,
  const stacks=new Map<StackFamily,EffectStackReviewStateV2>(stackFamilies.map(f=>[f,emptyEffectStackReviewV2()]));
  type StackTrace={familyId:StackFamily;fraction:number;sequence:number;stacks:number};
  let sequence=0;
+ let statusSequence=0;
+ type Modifier=CombatantState['modifiers'][number];
+ const statusIds=new WeakMap<Modifier,string>();
+ let opportunistWindows:readonly OpportunistWindowReviewV2[]=[];
+ let retaliation=emptyRetaliationReviewV2();
+ let recovery=0;
+ const ownStatuses=(target:CombatantState,now:number)=>target.modifiers.filter(r=>r.kind==='debuff'&&
+  r.sourceId===row.actorId&&r.expiresAt>now&&statusIds.has(r));
  let action:{id:string;sequence:number;now:number;momentum:number}|undefined;
  const isWearer=(a:CombatantState)=>a.definition.id===row.actorId&&a.definition.team==='players'&&a.alive;
  const isAuthored=(a:CombatantState,id:string)=>id.includes(':v2:')&&!id.startsWith('V2_')&&!id.startsWith('GEM_')&&
@@ -91,9 +101,30 @@ export function authorizePrivateDamageGemReviewV2(input:CombatInput,
    return (['effect_critical_surge','effect_flow'] as const).map(familyId=>({familyId,fraction:read(familyId,now)}))
     .filter(x=>x.fraction>0);
   },
+  // Bind identity only to exact modifier objects created by the original
+  // authored engine path. Refresh, cleanse or replacement removes identity.
+  onDebuff(now:number,actor:CombatantState,target:CombatantState,abilityId:string,entry:Modifier,fresh:boolean){
+   if(!isWearer(actor)||target.definition.team!=='enemies'||!isAuthored(actor,abilityId)||
+    action?.id!==abilityId||action.now!==now||entry.kind!=='debuff'||
+    entry.sourceId!==row.actorId||!target.modifiers.includes(entry)||entry.expiresAt<=now||
+    entry.value===0||entry.tag==='generic')return;
+   const effectId='QA_STATUS_'+(++statusSequence);
+   statusIds.set(entry,effectId);
+   const g=groups.get('effect_opportunist');
+   if(g)opportunistWindows=reviewOpportunistApplicationV2(g,row.actorId,target.definition.id,effectId,now,fresh,opportunistWindows);
+  },
+  onIncoming(now:number,attacker:CombatantState,recipient:CombatantState,abilityId:string,damage:number){
+   const g=groups.get('effect_retaliation');
+   if(!g||!isWearer(recipient)||recipient.hp<=0||attacker.definition.team!=='enemies'||
+    !(abilityId==='BASIC'||attacker.definition.abilities.some(a=>a.id===abilityId)))return false;
+   const next=reviewRetaliationTakenV2(g,now,retaliation,recipient.definition.stats.maxHp,damage,true,true);
+   retaliation=next.state;return next.armed;
+  },
+  takeRecovery(){const result=recovery;recovery=0;return result;},
   onBossPhase(now:number){if(openingGroup)opening=reviewOpeningStrikeV2(openingGroup,now,opening,true,false).state;},
   onSuccessfulHit(now:number,source:CombatantState,target:CombatantState,effect:AbilityEffect,
-   abilityId:string,eventType:'damage'|'dot_tick'){
+   abilityId:string,eventType:'damage'|'dot_tick',critical:boolean){
+   recovery=0;
    if(source.definition.id!==row.actorId||source.definition.team!=='players'||target.definition.team!=='enemies'||
     !source.alive||!target.alive)return [];
    const direct=eventType==='damage',basic=direct&&abilityId==='BASIC';
@@ -104,6 +135,26 @@ export function authorizePrivateDamageGemReviewV2(input:CombatInput,
    const bonuses:{familyId:string;fraction:number}[]=[];
    const put=(familyId:string,fraction:number)=>{if(fraction>0)bonuses.push({familyId,fraction});};
    if(direct&&action?.id===abilityId&&action.now===now)put('effect_momentum',action.momentum);
+   const ruin=groups.get('effect_ruin');
+   const statuses=ownStatuses(target,now);
+   if(ruin)put(ruin.familyId,reviewRuinDamageV2(ruin,row.actorId,target.definition.id,now,true,
+    statuses.map(s=>({sourceId:s.sourceId,targetId:target.definition.id,effectId:statusIds.get(s)!,
+     category:s.tag,isMark:s.tag==='damage_taken',eligible:true,appliedAt:s.createdAt??now,expiresAt:s.expiresAt}))).bonus);
+   const opportunist=groups.get('effect_opportunist');
+   if(opportunist&&direct&&action?.id===abilityId&&action.now===now){
+    const window=opportunistWindows.find(w=>w.targetId===target.definition.id&&w.casterId===row.actorId);
+    const current=statuses.find(s=>statusIds.get(s)===window?.effectId);
+    const hit=reviewOpportunistHitV2(opportunist,row.actorId,target.definition.id,now,true,true,critical,
+     current?statusIds.get(current)!:null,current?.expiresAt??0,opportunistWindows);
+    opportunistWindows=hit.windows;
+    if(current&&hit.extension)current.expiresAt=hit.effectExpiry;
+    put(opportunist.familyId,hit.bonus);
+   }
+   const retaliate=groups.get('effect_retaliation');
+   if(retaliate&&direct&&!basic&&authored&&action?.id===abilityId&&action.now===now){
+    const hit=reviewRetaliationHitV2(retaliate,now,retaliation,source.definition.stats.maxHp,source.hp,true,true,true);
+    retaliation=hit.state;recovery=hit.heal;put(retaliate.familyId,hit.bonus);
+   }
    const execution=groups.get('effect_execution');
    if(execution)put(execution.familyId,reviewExecutionDamageV2(execution,target.hp,target.definition.stats.maxHp,true).bonus);
    if(openingGroup){

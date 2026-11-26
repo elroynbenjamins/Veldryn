@@ -3,6 +3,7 @@ import {strict as assert} from 'node:assert';
 import {reviewPredatorHitV2,reviewGuardianBarrierV2,reviewUnyieldingDamageV2,reviewSustenanceKillV2,
  reviewAegisBarrierV2,reviewMercyBarrierV2,reviewGemBarrierAbsorptionV2,reviewGemBarrierExpiryV2,reviewGemBarrierRemoveV2,
  reviewOpportunistApplicationV2,reviewOpportunistHitV2,reviewBulwarkTriggerV2,
+ emptyEffectStackReviewV2,reviewEffectStackTransitionV2,type EffectStackReviewEventV2,
  type EffectTriggerReviewGroupV2,type UnyieldingReviewStateV2,type GuardianReductionReviewV2} from '../effect-gem-trigger-review';
 import type {CombatantDefinition,CombatantState} from '../../types';
 import {gemOutgoingDamageMultiplierV1,gemOnShieldAppliedV1,gemEffectiveDefenseV1,
@@ -158,6 +159,71 @@ export function runEffectTriggerBoundaryReviewV2(actor:CombatantDefinition,g:Eff
    assert.equal(reviewBulwarkTriggerV2(g,300,defense.expiresAt,'other').expiresAt,defense.expiresAt);
    assert.equal(reviewBulwarkTriggerV2(g,200+duration,defense.expiresAt,'other').reduction,0);
    legacyGap=true;assertions=7;break;
+  }
+  case 'effect_momentum':case 'effect_critical_surge':case 'effect_flow':case 'effect_shared_resolve':{
+   const family=g.familyId;
+   const cap=family==='effect_momentum'?(r>=2?6:5):family==='effect_shared_resolve'?(r===3?3:2):(r>=2?4:3);
+   const kind:EffectStackReviewEventV2['kind']=family==='effect_flow'?'ability':family==='effect_shared_resolve'?'ally_support':'direct_hit';
+   const event=(now:number,actionSequence:number,overrides:Partial<EffectStackReviewEventV2>={}):EffectStackReviewEventV2=>
+    ({now,actionSequence,kind,eligible:true,successful:true,critical:true,abilityId:'a'+actionSequence,...overrides});
+   const empty=emptyEffectStackReviewV2();
+   const miss=reviewEffectStackTransitionV2(g,empty,event(0,0,{successful:false}));
+   assert.equal(miss.stacks,0);
+   const excluded=reviewEffectStackTransitionV2(g,miss.state,event(0,0,{eligible:false}));
+   assert.equal(excluded.stacks,0);
+   const first=reviewEffectStackTransitionV2(g,excluded.state,event(0,0));
+   assert.equal(first.stacks,family==='effect_flow'?0:1);
+   const duplicate=reviewEffectStackTransitionV2(g,first.state,event(1,0));
+   assert.deepEqual(duplicate.state.expiries,first.state.expiries);
+   assert.equal(duplicate.triggered,false);
+   const sameOrEarly=reviewEffectStackTransitionV2(g,duplicate.state,event(100,1,
+    family==='effect_flow'?{abilityId:'a0'}:family==='effect_shared_resolve'?{eligible:false}:{}));
+   assert.deepEqual(sameOrEarly.state.expiries,first.state.expiries);
+   let state=sameOrEarly.state;
+   for(let i=2;i<=cap+2;i++){
+    const step=reviewEffectStackTransitionV2(g,state,event(i*750,i));
+    state=step.state;assert.ok(step.stacks<=cap);close(step.bonus,step.stacks*value);
+   }
+   assert.equal(state.expiries.length,cap);
+   const snapshot=JSON.stringify(state);
+   const tick=reviewEffectStackTransitionV2(g,state,event(state.lastAt,999,{kind:'tick'}));
+   assert.deepEqual(tick.state,state);
+   assert.equal(JSON.stringify(state),snapshot);
+   const firstExpiry=Math.min(...state.expiries);
+   const decay=reviewEffectStackTransitionV2(g,state,event(firstExpiry,999,{kind:'tick'}));
+   if((family==='effect_momentum'||family==='effect_flow')&&r===3)assert.equal(decay.stacks,cap-1);
+   else if(family==='effect_momentum'||family==='effect_flow')assert.equal(decay.stacks,0);
+   else assert.ok(decay.stacks<cap);
+   const end=reviewEffectStackTransitionV2(g,decay.state,event(Math.max(...state.expiries),999,{kind:'tick'}));
+   assert.equal(end.stacks,0);close(end.bonus,0);
+   assert.throws(()=>reviewEffectStackTransitionV2(g,state,event(state.lastAt-1,999)),/stack_input/);
+   assert.throws(()=>reviewEffectStackTransitionV2(g,{...state,expiries:Array(cap+1).fill(state.lastAt+100)},event(state.lastAt,999)),/stack_cap/);
+   if(family==='effect_flow'){
+    const a=reviewEffectStackTransitionV2(g,empty,event(0,0,{abilityId:'A'}));
+    const b=reviewEffectStackTransitionV2(g,a.state,event(100,1,{abilityId:'B'}));
+    const c=reviewEffectStackTransitionV2(g,b.state,event(200,2,{abilityId:'B'}));
+    assert.equal(b.stacks,1);assert.deepEqual(c.state.expiries,b.state.expiries);
+   }
+   if(family==='effect_critical_surge'){
+    const noCrit=reviewEffectStackTransitionV2(g,empty,event(0,0,{critical:false}));
+    assert.equal(noCrit.stacks,0);
+    const atCap={...empty,expiries:Array.from({length:cap},(_,i)=>2000+i*100)};
+    const refreshed=reviewEffectStackTransitionV2(g,atCap,event(1000,1));
+    assert.equal(refreshed.stacks,cap);
+    assert.equal(refreshed.state.expiries.includes(6000),r===3);
+    assert.equal(refreshed.state.expiries.includes(2000),r!==3);
+   }
+   if(family==='effect_shared_resolve'){
+    const one=reviewEffectStackTransitionV2(g,empty,event(0,0));
+    const repeat=reviewEffectStackTransitionV2(g,one.state,event(0,0));
+    assert.equal(repeat.stacks,1);
+    const second=reviewEffectStackTransitionV2(g,repeat.state,event(0,1));
+    assert.equal(second.stacks,2);
+   }
+   // Flow and multi-target stack identity differ from the old helpers;
+   // these are design review flags, not a claim of live regression.
+   legacyGap=family==='effect_flow'||family==='effect_shared_resolve'||family==='effect_momentum';
+   assertions=16+2*(cap+1)+(family==='effect_flow'?2:family==='effect_critical_surge'?4:family==='effect_shared_resolve'?2:0);break;
   }
   default:return null;
  }

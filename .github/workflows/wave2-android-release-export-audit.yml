@@ -34,7 +34,7 @@ jobs:
         run: |
           git checkout 7c058273d4ed1d9f6a73af06eae91e3291cbe1c4 -- src/core/profile-cosmetic-wave2.ts
           pnpm exec expo export --platform android --output-dir .release-bundle-baseline
-          git restore src/core/profile-cosmetic-wave2.ts
+          git restore --source=HEAD --staged --worktree src/core/profile-cosmetic-wave2.ts
       - name: Compare release bundle delta and report global budgets
         run: |
           node - <<'NODE'

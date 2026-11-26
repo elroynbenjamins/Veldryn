@@ -2,6 +2,9 @@ import type {SocialMessageKey} from './social';
 
 /** Player-facing Russian/Turkish Social, Guild and Dungeon copy. Unknown keys retain English fallback. */
 export const socialEarlyRows={
+  "Minimize battle": ["Свернуть бой","Savaşı küçült"],
+  "Guild XP": ["Опыт гильдии","Lonca XP"],
+  "Guild Bank": ["Банк гильдии","Lonca bankası"],
   "Party language and minimum level follow your Party settings.": ["Язык и минимальный уровень соответствуют настройкам группы.","Dil ve minimum seviye parti ayarlarını takip eder."],
   "Tell others what you're looking for...": ["Расскажи другим, кого ты ищешь…","Diğerlerine ne aradığını anlat…"],
   "Automatically expires after 24 hours": ["Автоматически истекает через 24 часа","24 saat sonra otomatik olarak sona erer"],

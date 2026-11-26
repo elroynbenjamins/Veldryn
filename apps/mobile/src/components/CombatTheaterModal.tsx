@@ -9,8 +9,8 @@ import {LOOP_NATIVE_DRIVER,useMotionEnabled} from './anim/motion';
  * An immersive presentation for authoritative combat replays and raid status.
  * This surface never starts a fight or computes damage/rewards.
  */
-export function CombatTheaterModal({visible,onClose,title,eyebrow,subtitle,compactHeader=false,tone='dungeon',reduceMotion=false,footer,children}:PropsWithChildren<{
- visible:boolean;onClose:()=>void;title:string;eyebrow:string;subtitle?:string;compactHeader?:boolean;tone?:'dungeon'|'event'|'guild'|'companion';reduceMotion?:boolean;footer?:ReactNode;
+export function CombatTheaterModal({visible,onClose,title,eyebrow,subtitle,compactHeader=false,tone='dungeon',reduceMotion=false,closeLabel='Minimize battle',footer,children}:PropsWithChildren<{
+ visible:boolean;onClose:()=>void;title:string;eyebrow:string;subtitle?:string;compactHeader?:boolean;tone?:'dungeon'|'event'|'guild'|'companion';reduceMotion?:boolean;closeLabel?:string;footer?:ReactNode;
 }>){
  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]),insets=useSafeAreaInsets();
  const [pulse]=useState(()=>new Animated.Value(0));
@@ -38,7 +38,7 @@ export function CombatTheaterModal({visible,onClose,title,eyebrow,subtitle,compa
      <Text accessibilityRole="header" numberOfLines={2} style={[s.title,compactHeader&&s.titleCompact]}>{title}</Text>
      {subtitle?<Text style={s.subtitle}>{subtitle}</Text>:null}
     </View>
-    <Pressable accessibilityRole="button" accessibilityLabel="Minimize battle" onPress={onClose} style={({pressed})=>[s.close,compactHeader&&s.closeCompact,pressed&&s.pressed]}>
+    <Pressable accessibilityRole="button" accessibilityLabel={closeLabel} onPress={onClose} style={({pressed})=>[s.close,compactHeader&&s.closeCompact,pressed&&s.pressed]}>
      <Text style={s.closeText}>×</Text>
     </Pressable>
    </View>

@@ -1,0 +1,102 @@
+name: AAB lossless PNG optimization (temporary)
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/aab-size-pass-1-png-lossless.yml'
+permissions:
+  contents: read
+concurrency:
+  group: aab-lossless-png-optimization
+  cancel-in-progress: false
+jobs:
+  optimize:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'chatgpt/aab-size-pass-1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Confirm exact branch revision
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          test "$(git ls-remote origin refs/heads/chatgpt/aab-size-pass-1 | cut -f1)" = "$EXPECTED_HEAD"
+      - name: Install PNG optimizer
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends optipng python3-pil >/dev/null
+          optipng -version
+      - name: Optimize PNGs only if all pixels and non-image chunks are identical
+        run: |
+          /usr/bin/python3 - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+          import os, struct, subprocess, tempfile
+          pets = sorted([*Path('apps/mobile/assets/master_roster/pets/portraits_512').glob('*.png'), *Path('apps/mobile/assets/guild-token-shop/pets/portraits').glob('*.png')])
+          runtime = [Path('apps/mobile/assets/gem-sprite-v2.png'),Path('apps/mobile/assets/unrefined-gem.png'),Path('apps/mobile/assets/regional-resources-v2.png'),Path('apps/mobile/assets/events/frostfall/candy_frostmint.png')]
+          assert len(pets) >= 44 and len(set(pets + runtime)) == len(pets + runtime)
+          def metadata(path):
+              data = path.read_bytes()
+              assert data[:8] == b'\x89PNG\r\n\x1a\n'
+              pos, chunks = 8, []
+              while pos < len(data):
+                  length = struct.unpack_from('>I',data,pos)[0]
+                  end = pos+12+length
+                  assert end <= len(data)
+                  kind = data[pos+4:pos+8]
+                  assert kind not in (b'acTL',b'fcTL',b'fdAT'), 'Animated PNG is excluded'
+                  if kind != b'IDAT': chunks.append(data[pos:end])
+                  pos = end
+              assert pos == len(data) and chunks[-1][4:8] == b'IEND'
+              return chunks
+          changed = []
+          with tempfile.TemporaryDirectory() as tmp:
+              for label, paths in [('PETS',pets),('RUNTIME',runtime)]:
+                  savings = 0
+                  count = 0
+                  for i,p in enumerate(paths):
+                      assert p.is_file() and not p.is_symlink()
+                      original_size = p.stat().st_size
+                      out = Path(tmp)/f'{label}-{i}.png'
+                      subprocess.run(['optipng','-o2','-nx','-quiet','-out',str(out),str(p)],check=True)
+                      if not out.is_file() or out.stat().st_size >= original_size:
+                          print(f'SKIP no saving {p}')
+                          continue
+                      with Image.open(p) as before, Image.open(out) as after:
+                          identical = before.size == after.size and before.mode == after.mode and before.convert('RGBA').tobytes() == after.convert('RGBA').tobytes()
+                      if not identical or metadata(p) != metadata(out):
+                          print(f'SKIP pixel or metadata mismatch {p}')
+                          continue
+                      saved = original_size-out.stat().st_size
+                      p.write_bytes(out.read_bytes())
+                      savings += saved
+                      count += 1
+                      changed.append(str(p))
+                      print(f'OPTIMIZED {p} bytes_saved={saved}')
+                  print(f'{label}_LOSSLESS optimized={count}/{len(paths)} bytes_saved={savings}')
+          actual = subprocess.check_output(['git','diff','--name-only','-z']).decode().strip('\x00').split('\x00')
+          assert sorted(filter(None,actual)) == sorted(changed), 'Unexpected tracked changes'
+          assert not subprocess.check_output(['git','ls-files','--others','--exclude-standard']).strip(), 'Unexpected untracked files'
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as summary:
+              summary.write(f'Exact PNG optimization: {len(changed)} assets changed. All decoded RGBA pixels and all non-IDAT chunks match.\n')
+          PY
+      - name: Commit only verified PNG optimizations to review branch
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          test "$(git ls-remote origin refs/heads/chatgpt/aab-size-pass-1 | cut -f1)" = "$EXPECTED_HEAD"
+          if git diff --quiet; then echo 'No eligible smaller PNGs'; exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -u -- apps/mobile/assets
+          git diff --cached --stat
+          git commit -m "Optimize PNG encoding with exact pixel and metadata parity"
+          git push origin HEAD:refs/heads/chatgpt/aab-size-pass-1

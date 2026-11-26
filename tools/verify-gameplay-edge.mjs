@@ -43,6 +43,9 @@ if(checkedIn!==rebuilt){
    const patch=spawnSync('git',['-c','color.ui=false','diff','--no-index','--no-ext-diff','--unified=3',output,expected],{encoding:'utf8',maxBuffer:4*1024*1024});
    if(patch.status===1&&patch.stdout){
     console.log('BEGIN_CANONICAL_GAMEPLAY_PATCH');console.log(patch.stdout.trimEnd());console.log('END_CANONICAL_GAMEPLAY_PATCH');
+    const gitBlobHash=text=>createHash('sha1').update('blob '+Buffer.byteLength(text)+'\0').update(text).digest('hex');
+    console.log('CANONICAL_GAMEPLAY_BASE_BLOB '+gitBlobHash(checkedIn));
+    console.log('CANONICAL_GAMEPLAY_NEW_BLOB '+gitBlobHash(rebuilt));
     console.log('CANONICAL_GAMEPLAY_SHA256 '+createHash('sha256').update(rebuilt).digest('hex'));
    }
   }finally{rmSync(dir,{recursive:true,force:true});}

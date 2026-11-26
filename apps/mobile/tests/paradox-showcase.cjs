@@ -68,3 +68,48 @@ const native=read('components/profile/ParadoxBorderLight.tsx');
 assert(!native.includes('Animated.loop(')&&!native.includes('setInterval('));
 assert(native.includes('pointerEvents="none"')&&native.includes('running?<ParadoxBorderLight'));
 console.log('PASS: Paradox native frame tracks, six/eight node parity, fade-before-reversal and protected geometry');
+
+const {PARADOX_REVIEW:R,paradoxReviewTier,PARADOX_IDLE_LIFT:lift,PARADOX_AMBIENT_PATHS:ambient}=mod.exports;
+const matching={background:I.background,border:I.border,pet:I.pet,effect:R.effectId,verifiedTitleId:R.titleId,displayedBadges:[I.badge]};
+assert.equal(paradoxReviewTier(false,[R.collectionId],matching),'hidden');
+assert.equal(paradoxReviewTier(true,[],matching),'hidden');
+assert.equal(paradoxReviewTier(true,[R.collectionId],{...matching,border:'wrong'}),'hidden');
+assert.equal(paradoxReviewTier(true,[R.collectionId],{...matching,effect:'other'}),'hidden');
+assert.equal(paradoxReviewTier(true,[R.collectionId],{...matching,pet:null}),'paired');
+assert.equal(paradoxReviewTier(true,[R.collectionId],{...matching,verifiedTitleId:null}),'awakened');
+assert.equal(paradoxReviewTier(true,[R.collectionId],{...matching,displayedBadges:[]}),'awakened');
+assert.equal(paradoxReviewTier(true,[R.collectionId],matching),'ascendant');
+assert.equal(lift[0],lift.at(-1));assert(lift.every(x=>x>=-1.5&&x<=0));
+assert(ambient.length<=Q.ambientNodes);
+for(const points of ambient){
+ assert.deepEqual(points[0],points.at(-1));
+ for(let i=1;i<points.length;i++)for(let j=0;j<=10;j++){
+  const t=j/10,x=points[i-1][0]+t*(points[i][0]-points[i-1][0]),y=points[i-1][1]+t*(points[i][1]-points[i-1][1]),r=4;
+  assert(x-r>=0&&x+r<=S.width&&y-r>=0&&y+r<=S.height);
+  for(const b of [B.plate,B.guild,B.aura])assert(x+r<=b.x||x-r>=b.x+b.w||y+r<=b.y||y-r>=b.y+b.h);
+ }
+}
+const preview=read('components/profile/ParadoxEternalPreview.tsx');
+assert(preview.includes('useLoopProgress(PARADOX_CYCLE_MS,running)'));
+assert(!preview.includes('Animated.loop(')&&!preview.includes('setInterval('));
+assert(preview.includes('running?<ParadoxBorderLight')&&preview.includes('!supported?fallback'));
+assert(preview.indexOf('</UltraLuxeIdentityMotionProvider>')<preview.indexOf('{badges?<View'));
+const review=read('components/profile/ParadoxReviewScene.tsx');
+assert(review.includes('reviewEnabled=false')&&review.includes("tier==='hidden'")&&review.includes("fullSet={tier==='ascendant'}"));
+const registry=read('theme/paradox-integration-assets.ts');
+const crypto=require('node:crypto');
+for(const [name,w,h,bytes,sha] of [
+ ['fractured_eternity.webp',1020,615,156512,'d8dae670e0b6600997a741c342eb0f8cd2ee1954e85f77c3c1e593bf2f911f90'],
+ ['fractured_eternity_standard.webp',1024,576,148942,'bb012ba154a404d018f5c31ad8a5a715c4eca2f1c90f84dc2523d85689bd7d06'],
+]){
+ const buf=fs.readFileSync(path.join(__dirname,'../assets/ascendant/paradox',name));
+ assert.equal(buf.length,bytes);assert.equal(crypto.createHash('sha256').update(buf).digest('hex'),sha);
+ assert.equal(buf.toString('ascii',12,16),'VP8X');assert(buf[20]&16);
+ assert.equal(1+buf.readUIntLE(24,3),w);assert.equal(1+buf.readUIntLE(27,3),h);
+ assert(registry.includes(name));
+}
+for(const name of ['PublicProfileScene.tsx','ProfileScenePreview.tsx','profile/ProfileStage.tsx']){
+ const live=read('components/'+name);
+ assert(!live.includes('ParadoxReviewScene')&&!live.includes('paradox-integration-assets'));
+}
+console.log('PASS: uploaded frame integrity, isolated review grant, native lifecycle, static badge slot and bounded ambient motion');

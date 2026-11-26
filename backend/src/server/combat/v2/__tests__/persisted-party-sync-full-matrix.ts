@@ -1,0 +1,202 @@
+/**
+ * Full persisted-party Synchronization tuning evidence.
+ *
+ * 36 legal dungeon class compositions × 6 authored regional bosses ×
+ * 2 specialization bands = 432 matched pairs. Every pair uses the exact same
+ * compiled Skills/ten-slot Equipment/exact-copy trait/boss/run binding twice;
+ * only Synchronization execution is toggled.
+ *
+ * Still review-only synthetic gear provenance: useful for relative uplift and
+ * stacking diagnostics, NOT final cross-class equal-CP release certification.
+ */
+import {strict as assert} from 'node:assert';
+import type {CombatInput,CombatResult} from '../../types';
+import type {FrozenLoadoutSnapshot} from '../../../coop/loadout-snapshots';
+import type {ReadyCheckRecord,ReadyRosterMember} from '../../../coop/ready-checks';
+import {CLASS_NAMES_V2,SPECIALIZATIONS_V2} from '../skill-catalog';
+import {observeRoleCalibrationV2,summarizeRoleCalibrationV2,type RoleCalibrationObservationV2} from '../role-power-calibration-review';
+import {CLASS_ROLES_V2,type ClassIdV2} from '../build-contract';
+import {listPartySynchronizationsV2} from '../party-synchronization';
+import {
+ simulateUnifiedEquipmentPersistedPartyCombatV2,
+ type TrustedPersistedPartyExecutionV2,
+} from '../unified-equipment-encounter';
+import {
+ preparePartyEnemyKitsV2,type PersistedEnemyKitV2,
+} from '../enemy-kit-composer';
+import {ENEMY_V2_RULESET} from '../../enemy-v2-prototype';
+import {bosses,profiles,setup} from './ten-slot-boss-fixture';
+
+const classes=Object.keys(CLASS_NAMES_V2) as ClassIdV2[];
+const tanks=classes.filter(c=>CLASS_ROLES_V2[c]==='tank');
+const damage=classes.filter(c=>CLASS_ROLES_V2[c]==='damage');
+const supports=classes.filter(c=>CLASS_ROLES_V2[c]==='support');
+const partyDamage=(r:CombatResult)=>r.players.reduce((n,p)=>n+p.damageDone,0);
+const partyHealing=(r:CombatResult)=>r.players.reduce((n,p)=>n+p.healingDone,0);
+const partyHp=(r:CombatResult)=>r.players.reduce((n,p)=>n+p.hp,0);
+const pct=(a:number,b:number)=>b>0?a/b:1;
+
+interface Bucket{
+ cases:number;sumDamageRatio:number;minDamageRatio:number;maxDamageRatio:number;
+ sumHealingRatio:number;damageImproved:number;survivalImproved:number;
+ victoryGains:number;victoryLosses:number;identical:number;
+}
+const bucket=():Bucket=>({cases:0,sumDamageRatio:0,minDamageRatio:Infinity,maxDamageRatio:0,
+ sumHealingRatio:0,damageImproved:0,survivalImproved:0,victoryGains:0,victoryLosses:0,identical:0});
+const byLinks=new Map<number,Bucket>(),byBoss=new Map<string,Bucket>();
+const pairCounts=new Map<string,number>();
+let cases=0,overall=bucket(),maxLinks=0;
+const roleObservations:RoleCalibrationObservationV2[]=[];
+
+function add(row:Bucket,base:CombatResult,sync:CombatResult,damageRatio:number,healingRatio:number){
+ row.cases++;row.sumDamageRatio+=damageRatio;row.sumHealingRatio+=healingRatio;
+ row.minDamageRatio=Math.min(row.minDamageRatio,damageRatio);
+ row.maxDamageRatio=Math.max(row.maxDamageRatio,damageRatio);
+ const bd=partyDamage(base),sd=partyDamage(sync),bh=partyHp(base),sh=partyHp(sync);
+ row.damageImproved+=Number(sd>bd+.01);row.survivalImproved+=Number(sh>bh+.01);
+ row.victoryGains+=Number(!base.victory&&sync.victory);
+ row.victoryLosses+=Number(base.victory&&!sync.victory);
+ row.identical+=Number(JSON.stringify(base.events)===JSON.stringify(sync.events));
+}
+
+for(const specIndex of [0,1] as const)
+ for(const tank of tanks)for(const support of supports)
+  for(let first=0;first<damage.length;first++)for(let second=first+1;second<damage.length;second++)
+   for(const boss of bosses){
+    const ids:[ClassIdV2,ClassIdV2,ClassIdV2,ClassIdV2]=
+      [tank,damage[first],damage[second],support];
+    const fixtures=ids.map(classId=>setup(classId,specIndex,boss,profiles[1]));
+    const players=fixtures.map(x=>x.actor);
+    const builds=fixtures.map(x=>x.build);
+    const runtime=fixtures.map(x=>x.runtime);
+    const traitPorts=fixtures.map(x=>x.signedPort);
+    const caseId='PERSIST_SYNC_'+specIndex+'_'+boss.id+'_'+ids.join('_');
+    const input:CombatInput={seed:caseId,players,enemies:[fixtures[0].input.enemies[0]],
+      maxDurationMs:9000,tickMs:100};
+
+    const roster:ReadyRosterMember[]=ids.map((classId,i)=>({
+      accountId:traitPorts[i].accountId,characterId:runtime[i].characterId,
+      ticketId:'TICKET_'+caseId+'_'+i,role:CLASS_ROLES_V2[classId],
+      originalEnqueuedAtMs:1,loadoutId:'LOADOUT_'+caseId+'_'+i,
+      loadoutRevision:1,loadoutSnapshotHash:
+        (i.toString(16)+cases.toString(16)).padEnd(64,String(i)),
+    }));
+    const readyCheck:ReadyCheckRecord={id:'READY_'+cases,partyId:'PARTY_'+cases,
+      rosterRevision:1,roster,
+      accepts:Object.fromEntries(roster.map(r=>[r.accountId,true])),
+      status:'committed',openedAtMs:1,closesAtMs:1000};
+    const frozenRoster=ids.map((classId,i)=>({
+      accountId:roster[i].accountId,characterId:roster[i].characterId,classId,
+      loadoutId:roster[i].loadoutId,revision:1,
+      snapshotHash:roster[i].loadoutSnapshotHash,
+      readiness:{role:CLASS_ROLES_V2[classId]},
+    } as unknown as FrozenLoadoutSnapshot));
+
+    const candidate=preparePartyEnemyKitsV2(input.enemies,{
+      ruleset:ENEMY_V2_RULESET,serverSeed:input.seed,
+      encounterId:'RUN_'+cases+':NODE_'+boss.id,region:boss.region,equipmentTier:boss.tier,eliteEnemyIds:[],
+    });
+    const snapshot:PersistedEnemyKitV2={...candidate,source:'server-persisted-v2',revision:1};
+    const party:TrustedPersistedPartyExecutionV2={
+      runId:'RUN_'+cases,nodeId:'NODE_'+boss.id,encounterRevision:1,stateRevision:1,
+      contentVersion:'content_v2',balanceVersion:'balance_v2',
+      readyCheck,frozenRoster,traitPorts,
+      enemyKit:{snapshot,verifyPersisted:(_row,digest)=>/^[0-9a-f]{64}$/.test(digest)},
+      verifyPersisted:(binding,sources,digest)=>
+        binding.combatInputDigest===digest&&binding.partyId===readyCheck.partyId&&
+        binding.rosterRevision===readyCheck.rosterRevision&&sources.length===4,
+    };
+
+    const base=simulateUnifiedEquipmentPersistedPartyCombatV2(
+      input,builds,runtime,party,true,false);
+    // Personal calibration uses only the synchronized-OFF baseline. Reuse
+    // actual engine results rather than adding another expensive simulation.
+    for(const [i,classId] of ids.entries()){
+      const spec=SPECIALIZATIONS_V2.filter(s=>s.classId===classId)[specIndex];
+      roleObservations.push(observeRoleCalibrationV2(base.combat,{
+        caseId,bossId:boss.id,classId,specializationId:spec.id,actorId:players[i].id,
+      }));
+    }
+    const sync=simulateUnifiedEquipmentPersistedPartyCombatV2(
+      input,builds,runtime,party,true,true);
+    assert.deepEqual(sync,simulateUnifiedEquipmentPersistedPartyCombatV2(
+      input,builds,runtime,party,true,true),'deterministic synchronized persisted party');
+    assert.deepEqual(base.equipmentEvidence,sync.equipmentEvidence);
+    assert.deepEqual(base.combat.players.map(p=>p.definition.stats),
+      sync.combat.players.map(p=>p.definition.stats));
+    assert.equal(base.partyPersistenceReview?.binding.combatInputDigest,
+      sync.partyPersistenceReview?.binding.combatInputDigest);
+    assert.equal(base.synchronizationReview?.active.length,
+      sync.synchronizationReview?.active.length);
+    assert.ok(sync.enemyMechanicLabels.length>0);
+    assert.ok(sync.combat.events.some(e=>e.type==='equipment_trait_trigger'));
+
+    const links=sync.synchronizationReview?.active.length??0;
+    maxLinks=Math.max(maxLinks,links);
+    for(const link of sync.synchronizationReview?.active??[])
+      pairCounts.set(link.id,(pairCounts.get(link.id)??0)+1);
+    if(links===0)assert.deepEqual(base.combat,sync.combat,
+      'zero-link party must be combat-identical when Synchronization is toggled');
+
+    const damageRatio=pct(partyDamage(sync.combat),partyDamage(base.combat));
+    const healingRatio=pct(partyHealing(sync.combat),partyHealing(base.combat));
+    // Broad integration fences only. Actual tuning must use emitted diagnostics.
+    assert.ok(Number.isFinite(damageRatio)&&damageRatio>=.85&&damageRatio<1.50,
+      'persisted Synchronization damage outlier '+caseId+':'+damageRatio);
+    assert.ok(Number.isFinite(healingRatio)&&healingRatio>=.80&&healingRatio<1.60,
+      'persisted Synchronization healing outlier '+caseId+':'+healingRatio);
+
+    const linkRow=byLinks.get(links)??bucket();add(linkRow,base.combat,sync.combat,damageRatio,healingRatio);
+    byLinks.set(links,linkRow);
+    const bossRow=byBoss.get(boss.id)??bucket();add(bossRow,base.combat,sync.combat,damageRatio,healingRatio);
+    byBoss.set(boss.id,bossRow);
+    add(overall,base.combat,sync.combat,damageRatio,healingRatio);
+    cases++;
+   }
+
+assert.equal(cases,36*6*2);
+assert.equal(overall.cases,432);
+assert.ok([...byBoss.values()].every(x=>x.cases===72));
+assert.ok(maxLinks<=6);
+assert.equal(overall.victoryLosses,0,
+ 'Synchronization must not turn a matched baseline victory into a loss in this fixture');
+const authored=listPartySynchronizationsV2();
+const dungeonEligible=authored.filter(link=>{
+ const roles=link.classes.map(c=>CLASS_ROLES_V2[c]);
+ return roles[0]!==roles[1]||roles[0]==='damage';
+});
+for(const link of dungeonEligible)
+ assert.ok((pairCounts.get(link.id)??0)>0,'dungeon-eligible pair missing: '+link.id);
+const absentPairs=authored.filter(link=>(pairCounts.get(link.id)??0)===0).map(link=>link.id);
+
+const summarize=(x:Bucket)=>({
+ cases:x.cases,
+ avgDamageRatio:Number((x.sumDamageRatio/x.cases).toFixed(4)),
+ minDamageRatio:Number(x.minDamageRatio.toFixed(4)),
+ maxDamageRatio:Number(x.maxDamageRatio.toFixed(4)),
+ avgHealingRatio:Number((x.sumHealingRatio/x.cases).toFixed(4)),
+ damageImproved:x.damageImproved,survivalImproved:x.survivalImproved,
+ victoryGains:x.victoryGains,victoryLosses:x.victoryLosses,identical:x.identical,
+});
+console.log(JSON.stringify({
+ kind:'PERSISTED_PARTY_SYNC_FULL_TUNING_EVIDENCE_NOT_RELEASE_APPROVAL',
+ matchedPairs:cases,standardDungeonCompositions:36,bosses:6,specializationBands:2,
+ maxLinks,overall:summarize(overall),
+ byLinks:Object.fromEntries([...byLinks.entries()].sort(([a],[b])=>a-b)
+  .map(([links,row])=>[String(links),summarize(row)])),
+ byBoss:Object.fromEntries([...byBoss.entries()].sort(([a],[b])=>a.localeCompare(b))
+  .map(([id,row])=>[id,summarize(row)])),
+ pairCounts:Object.fromEntries([...pairCounts.entries()].sort(([a],[b])=>a.localeCompare(b))),
+ absentPairsInStrictDungeonRoleMatrix:absentPairs,
+ caveat:'same-build relative uplift; synthetic review gear budgets are not final equal-CP certification',
+}));
+
+const roleReport=summarizeRoleCalibrationV2(roleObservations);
+assert.equal(roleReport.observations,432*4);
+assert.equal(roleReport.cells.length,18*6);
+assert.ok(roleReport.cells.every(x=>x.peerClassSpecs===(x.role==='tank'?6:x.role==='damage'?8:4)));
+assert.equal(roleReport.cells.reduce((n,x)=>n+x.cases,0),1728);
+assert.equal(roleReport.cpApproved,false);
+assert.deepEqual(roleReport,summarizeRoleCalibrationV2([...roleObservations].reverse()));
+assert.throws(()=>summarizeRoleCalibrationV2([...roleObservations,roleObservations[0]]),/duplicate_or_invalid_observation/);
+console.log('ROLE_POWER_CALIBRATION_NOT_CP '+JSON.stringify(roleReport));

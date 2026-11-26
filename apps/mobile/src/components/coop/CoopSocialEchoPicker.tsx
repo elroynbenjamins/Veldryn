@@ -16,6 +16,11 @@ const PARTY_ROLES:readonly Role[]=['tank','damage','damage','support'];
 function displayClass(classId:string){
  return classId.split('_').map(word=>word.slice(0,1)+word.slice(1).toLowerCase()).join(' ');
 }
+function displayCombatPower(combatPower:number,compact=false){
+ const cp=Math.max(0,Math.round(combatPower));
+ if(compact&&cp>=10000)return (cp/1000).toFixed(1).replace(/\.0$/,'')+'K';
+ return cp.toLocaleString('en-US');
+}
 function reasonFor(candidate:SocialEchoCandidate,selectedIds:readonly string[],
  candidates:readonly SocialEchoCandidate[],hostClassId:string,hostRole:Role){
  try{
@@ -25,24 +30,24 @@ function reasonFor(candidate:SocialEchoCandidate,selectedIds:readonly string[],
   return error instanceof Error?error.message:'invalid_echo_selection';
  }
 }
-function roleSlots(hostRole:Role,candidates:readonly SocialEchoCandidate[],selectedIds:readonly string[]){
+function roleSlots(hostRole:Role,candidates:readonly SocialEchoCandidate[],selectedIds:readonly string[],hostCombatPower:number){
  const chosen=selectedIds.map(id=>candidates.find(row=>row.characterId===id)).filter((v):v is SocialEchoCandidate=>!!v);
  const used=new Set<string>();let hostUsed=false;
  return PARTY_ROLES.map((role,index)=>{
-  if(role===hostRole&&!hostUsed){hostUsed=true;return {key:role+index,role,name:'YOU',kind:'host' as const};}
+  if(role===hostRole&&!hostUsed){hostUsed=true;return {key:role+index,role,name:'YOU',kind:'host' as const,combatPower:hostCombatPower};}
   const person=chosen.find(row=>row.role===role&&!used.has(row.characterId));
-  if(person){used.add(person.characterId);return {key:role+index,role,name:person.name,kind:'chosen' as const};}
-  return {key:role+index,role,name:'AUTO',kind:'auto' as const};
+  if(person){used.add(person.characterId);return {key:role+index,role,name:person.name,kind:'chosen' as const,combatPower:person.combatPower};}
+  return {key:role+index,role,name:'AUTO',kind:'auto' as const,combatPower:null};
  });
 }
 
 /** Compact, optional pre-run party builder. No sharing switch exists.
  * Contacts are server-derived; role legality is checked again at run start. */
 export function CoopSocialEchoPicker({
- language,candidates,selectedIds,onChange,hostRole,hostClassId,loading,error,onRefresh,
+ language,candidates,selectedIds,onChange,hostRole,hostClassId,hostCombatPower,loading,error,onRefresh,
 }:{
  language:Language;candidates:readonly SocialEchoCandidate[];selectedIds:readonly string[];onChange:(ids:string[])=>void;
- hostRole:Role;hostClassId:string;loading:boolean;error?:string;onRefresh:()=>void;
+ hostRole:Role;hostClassId:string;hostCombatPower:number;loading:boolean;error?:string;onRefresh:()=>void;
 }){
  const {styles:s,colors:C}=useCoopStyles(makeStyles);
  const t=(key:Parameters<typeof dungeonEchoPickerText>[1],count?:number)=>dungeonEchoPickerText(language,key,count);
@@ -50,7 +55,7 @@ export function CoopSocialEchoPicker({
  const [filter,setFilter]=useState<Filter>('all');
  const [search,setSearch]=useState('');
  const [selectionError,setSelectionError]=useState('');
- const slots=roleSlots(hostRole,candidates,selectedIds);
+ const slots=roleSlots(hostRole,candidates,selectedIds,hostCombatPower);
  const available=useMemo(()=>candidates.filter(row=>{
   if(filter!=='all'&&row.relationship!==filter&&row.relationship!=='both')return false;
   const q=search.trim().toLowerCase();
@@ -83,10 +88,11 @@ export function CoopSocialEchoPicker({
   </Pressable>
 
   <View style={s.partySlots} accessibilityLabel={t('title')}>
-   {slots.map(slot=><View key={slot.key} accessible accessibilityLabel={t(slot.role)+': '+(slot.kind==='host'?t('you'):slot.kind==='auto'?t('auto'):slot.name)} style={[s.slot,slot.kind==='chosen'&&s.slotChosen,slot.kind==='host'&&s.slotHost]}>
+   {slots.map(slot=><View key={slot.key} accessible accessibilityLabel={t(slot.role)+': '+(slot.kind==='host'?t('you'):slot.kind==='auto'?t('auto'):slot.name)+(slot.combatPower===null?'':', CP '+displayCombatPower(slot.combatPower))} style={[s.slot,slot.kind==='chosen'&&s.slotChosen,slot.kind==='host'&&s.slotHost]}>
     <Text style={[s.slotRole,slot.kind==='auto'&&s.slotDim]}>{t(slot.role)}</Text>
     <Image accessible={false} source={coopUiAssets[slot.role==='damage'?'role_damage':slot.role==='support'?'role_support':'role_tank']} style={[s.slotRoleIcon,slot.kind==='auto'&&s.slotRoleIconDim]} resizeMode="contain"/>
     <Text style={[s.slotName,slot.kind==='auto'&&s.slotDim,slot.kind==='host'&&s.slotYou]} numberOfLines={1}>{slot.kind==='host'?t('you'):slot.kind==='auto'?t('auto'):slot.name}</Text>
+    <Text style={[s.slotPower,slot.kind==='auto'&&s.slotDim]} numberOfLines={1}>{slot.combatPower===null?'CP —':'CP '+displayCombatPower(slot.combatPower,true)}</Text>
     <View style={[s.slotMark,slot.kind==='chosen'&&s.slotMarkChosen,slot.kind==='host'&&s.slotMarkHost]}/>
    </View>)}
   </View>
@@ -125,7 +131,10 @@ export function CoopSocialEchoPicker({
       <View style={s.personInfo}>
        <Text style={s.personName} numberOfLines={1}>{candidate.name}</Text>
        <Text style={s.personSub} numberOfLines={1}>{displayClass(candidate.classId)}  ·  Lv {candidate.level}</Text>
-       <Text style={[s.relationship,disabled&&s.reason]} numberOfLines={2}>{disabled?reasonLabel:candidate.relationship==='both'?t('both'):candidate.relationship==='friend'?t('friend'):t('guildMember')}</Text>
+       <View style={s.personMeta}>
+        <Text style={s.personPower}>CP {displayCombatPower(candidate.combatPower)}</Text>
+        <Text style={[s.relationship,disabled&&s.reason]} numberOfLines={2}>{disabled?reasonLabel:candidate.relationship==='both'?t('both'):candidate.relationship==='friend'?t('friend'):t('guildMember')}</Text>
+       </View>
       </View>
       <View style={s.rolePill}><Image accessible={false} source={coopUiAssets[candidate.role==='damage'?'role_damage':candidate.role==='support'?'role_support':'role_tank']} style={s.roleIcon} resizeMode="contain"/><Text style={s.rolePillText}>{candidate.role==='damage'?'DMG':candidate.role==='support'?'SUP':'TANK'}</Text></View>
       <View style={[s.selectIcon,chosen&&s.selectIconChosen]}>
@@ -155,6 +164,7 @@ const makeStyles=(C:CoopColors)=>StyleSheet.create({
  slotRoleIcon:{width:21,height:21},slotRoleIconDim:{opacity:.48},
  slotName:{fontSize:10,lineHeight:14,fontWeight:'900',color:C.text,textAlign:'center',width:'100%'},
  slotYou:{color:C.gold},slotDim:{color:C.textMuted},
+ slotPower:{fontSize:9,lineHeight:12,fontWeight:'800',color:C.gold,textAlign:'center',width:'100%'},
  slotMark:{height:2,width:'45%',backgroundColor:C.line,borderRadius:2},
  slotMarkChosen:{backgroundColor:C.cyan},slotMarkHost:{backgroundColor:C.gold},
  details:{gap:9,paddingTop:9,borderTopWidth:1,borderTopColor:C.line},
@@ -171,6 +181,8 @@ const makeStyles=(C:CoopColors)=>StyleSheet.create({
  avatarChosen:{borderColor:C.cyan},avatarLetter:{color:C.gold,fontSize:18,fontWeight:'900'},avatarLetterChosen:{color:C.cyan},
  personInfo:{flex:1,minWidth:0,gap:1},
  personName:{fontSize:12,fontWeight:'900',color:C.text},personSub:{fontSize:10,color:C.textSecondary},
+ personMeta:{flexDirection:'row',alignItems:'center',flexWrap:'wrap',columnGap:6,rowGap:1},
+ personPower:{fontSize:10,lineHeight:13,fontWeight:'900',color:C.gold},
  relationship:{fontSize:9,lineHeight:12,color:C.cyan,fontWeight:'800'},
  reason:{color:C.textSecondary,fontWeight:'700'},
  rolePill:{minWidth:48,paddingHorizontal:4,minHeight:28,flexDirection:'row',gap:2,justifyContent:'center',alignItems:'center',borderRadius:5,borderWidth:1,borderColor:C.goldDim,backgroundColor:C.surfaceRaised},

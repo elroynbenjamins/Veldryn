@@ -50,9 +50,9 @@ export interface UltraLuxeFullSetPort{names:VerifiedFullSetNames;apply:(plan:Ful
 const LUXE_LABELS=['Celestial Sovereign','Draconic Dominion','Abyssal Majesty','Paradox Eternal','Sakura Enchantment','Stormforged Sovereign'];
 const LUXE_ACCENTS=['#F3C86F','#FF9460','#55C8C9','#B9A0F9','#F5A6C8','#63CFFF'];
 
-export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreviewStateChange,onDirtyChange,onNotice,fullSetPort,active=true}:{
+export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreviewStateChange,onDirtyChange,onNotice,fullSetPort,fullSetEnabled=false,active=true}:{
  state:GameState;chip:ChipKind;onChange:(next:GameState)=>void|Promise<void>;onNavigateSource?:(destination:ProfileCustomizationDestination)=>void;
- onPreviewStateChange?:(preview:GameState)=>void;onDirtyChange?:(dirty:boolean)=>void;onNotice?:(notice:ProfileEquipNotice|null)=>void;fullSetPort?:UltraLuxeFullSetPort;active?:boolean;
+ onPreviewStateChange?:(preview:GameState)=>void;onDirtyChange?:(dirty:boolean)=>void;onNotice?:(notice:ProfileEquipNotice|null)=>void;fullSetPort?:UltraLuxeFullSetPort;fullSetEnabled?:boolean;active?:boolean;
 }){
  const language=useGameLanguage();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
@@ -126,7 +126,8 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
  const categories=useMemo(()=>profileWardrobe(state,WARDROBE_ASSETS),[state]);
  const quickSets=useMemo(()=>{
   const legacy=quickCosmeticSets(state);
-  if(!fullSetPort||!state.character)return legacy;
+  if(!fullSetEnabled&&!fullSetPort)return legacy;
+  if(!fullSetPort||!state.character)return legacy.filter(set=>!ultraLuxeFullSetNamePreset(set.id));
   const scope={accountId,characterId:state.character.id},current=wardrobeEquipped(state);
   const ordinary=legacy.filter(set=>!ultraLuxeFullSetNamePreset(set.id));
   const canonical=ULTRA_LUXE_FULL_SET_DEFINITIONS.flatMap((def,i)=>{
@@ -136,7 +137,7 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
    return [{id:def[0],name:LUXE_LABELS[i],accent:LUXE_ACCENTS[i],choices:[{id:def[0],name:LUXE_LABELS[i],namePresetId:ultraLuxeFullSetNamePreset(def[0]),patch:{scene,frame,pet,title,effect}}]}];
   });
   return [...ordinary,...canonical];
- },[state,accountId,fullSetPort]);
+ },[state,accountId,fullSetPort,fullSetEnabled]);
  const live=useMemo(()=>({...selection,title:customTitle.trim()||selection.title}),[selection,customTitle]);
  const preview=useMemo(()=>{
   const equipped=tryOn?wardrobeSelection(live,tryOn):live;
@@ -157,6 +158,7 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
  };
  const equipSet=(setId:string,choiceId:string,name:string)=>{
   if(fullSetInFlight.current)return;
+  if(fullSetEnabled&&!fullSetPort&&ultraLuxeFullSetNamePreset(setId))return;
   if(fullSetPort&&ultraLuxeFullSetNamePreset(setId)){
    const owner=accountRef.current,characterId=stateRef.current.character?.id;
    if(!characterId||selectionScopeRef.current!==scope||pendingRef.current||sentRef.current){setFullSetStatus('Finish saving your current look first.');return;}

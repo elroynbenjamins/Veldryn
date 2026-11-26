@@ -4,6 +4,7 @@
  */
 import {strict as assert} from 'node:assert';
 import {reviewFrozenForgeSocketsV2,FORGE_SOCKET_MECHANICS_REVIEW_V2,type ForgeSocketReviewPolicyV2} from '../frozen-forge-socket-review';
+import {inspectSocketStackingCapReviewV2} from '../socket-stacking-cap-review';
 import {STAT_GEMS_V1,EFFECT_GEMS_V1,gemItemId,type GemGrade,GEM_BALANCE_REVIEW_V2,STAT_GEMS_REVIEW_V2,EFFECT_GEMS_REVIEW_V2,EFFECT_GEM_REVIEW_MULTIPLIERS_V2} from '../../../equipment/gems/gem-catalog-v1';
 import type {V2GemSidecarState} from '../../../equipment/equipment-crafting-v2-gem-sidecar-types';
 import {writeFileSync} from 'node:fs';
@@ -1585,6 +1586,73 @@ function makeV21Loadout(classId:ClassIdV2,specIndex:0|1,targetTier:1|2|3|4,targe
   downgraded:pinned.filter(p=>p.exact.tier<targetTier).length};
 }
 
+// Full worn-loadout gem stacking on actual draft Forge source copies.
+// Do not fill missing slots or add an illegal offhand to two-hand weapons.
+{
+ const policy:ForgeSocketReviewPolicyV2={version:'QA_FULL_SOCKET_STACK_V2',gemBalancePolicy:GEM_BALANCE_REVIEW_V2,
+  mechanicsReview:{version:FORGE_SOCKET_MECHANICS_REVIEW_V2,maxFinalAttackPower:1e8},
+  maxFinalHp:1e8,maxFinalDefense:1e8};
+ const families=STAT_GEMS_REVIEW_V2.map(d=>d.familyId);
+ assert.equal(families.length,11);
+ const rows:{classId:ClassIdV2;spec:number;slots:number;arm:string;channels:ReturnType<typeof inspectSocketStackingCapReviewV2>['channels'];hasteDelta:number;attackDelta:number}[]=[];
+ const coverage:{classId:ClassIdV2;spec:number;slots:number;missing:string[];downgraded:number}[]=[];
+ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[])for(const spec of [0,1] as const){
+  const qa=makeV21Loadout(classId,spec,4,55);
+  const n=qa.ids.length;
+  assert.ok(n>0&&n<=10);
+  coverage.push({classId,spec,slots:n,missing:qa.missing,downgraded:qa.downgraded});
+  const revision=qa.source.ledgerRevision+n;
+  const source={...qa.source,ledgerRevision:revision,verifyPersisted:(digest:string,rev:number)=>rev===revision&&/^[a-f0-9]{64}$/.test(digest)};
+  const original=JSON.stringify(source.items);
+  const baseline=reviewFrozenForgeSocketsV2(qa.actor,qa.build,source,{slots:[],receipts:[]},policy);
+  const arms=[...families,'mixed-role','mixed-all'];
+  for(const arm of arms){
+   const role=CLASS_ROLES_V2[classId];
+   const pool=arm==='mixed-role'?(role==='tank'?['stat_vitality','stat_iron','stat_ward','stat_elusive']:
+     role==='damage'?['stat_might','stat_keen','stat_savage','stat_piercing','stat_potent','stat_precision']:
+     ['stat_swift','stat_vitality','stat_ward','stat_iron']):arm==='mixed-all'?families:[arm];
+   const sockets:V2GemSidecarState={slots:[],receipts:[]};
+   for(const [i,instanceId] of qa.ids.entries()){
+    const gemId=gemItemId(pool[i%pool.length],5);
+    sockets.slots.push({instanceId,stat:{gemId,rollPercent:120}});
+    sockets.receipts.push({requestId:'QA_FULL_SOCKET_'+i,fingerprint:'gem:'+instanceId+':'+gemId,instanceId,
+     socket:'stat',gemId,source:'gem_pouch',rollPercent:120,burnedGemId:null,version:qa.source.ledgerRevision+i+1});
+   }
+   const out=reviewFrozenForgeSocketsV2(qa.actor,qa.build,source,sockets,policy);
+   assert.equal(out.gemSources.length,n);
+   assert.deepEqual(out.forgeEvidence,baseline.forgeEvidence);
+   assert.equal(out.advanced.tenacityPp,baseline.advanced.tenacityPp);
+   assert.equal(out.canExecuteCombat,false);assert.equal(out.cpApproved,false);
+   const report=inspectSocketStackingCapReviewV2(out);
+   assert.equal(report.socketCount,n);assert.equal(report.wornSlots,n);
+   for(const c of report.channels){
+    assert.ok(c.effective<=c.raw+1e-9&&c.effective<=c.hard+1e-9);
+    assert.ok(c.incrementalGem>=0&&c.incrementalGem<=c.gem+1e-9);
+    const expected=out.gemSources.filter(g=>g.stat+':'+g.unit===c.key).reduce((a,g)=>a+g.fraction,0);
+    assert.ok(Math.abs(c.gem-expected)<1e-8);
+   }
+   if(families.includes(arm)){
+    const def=STAT_GEMS_REVIEW_V2.find(d=>d.familyId===arm)!;
+    const c=report.channels.find(c=>c.key===def.stat+':'+def.unit)!;
+    assert.ok(Math.abs(c.gem-n*def.values[5]*1.2)<1e-8);
+    assert.equal(report.channels.filter(c=>c.gem>0).length,1);
+   }
+   rows.push({classId,spec,slots:n,arm,channels:report.channels,
+    hasteDelta:out.stats.haste-baseline.stats.haste,attackDelta:out.stats.attackPower-baseline.stats.attackPower});
+  }
+  assert.equal(JSON.stringify(source.items),original);
+ }
+ assert.equal(rows.length,18*13);
+ console.log('FULL_FORGE_SOCKET_STACK_CALIBRATION '+JSON.stringify({scope:'CANDIDATE_SHARED_CAP_DIAGNOSTIC_ONLY',
+  cases:rows.length,coverage,byFamily:families.map(family=>{
+   const a=rows.filter(r=>r.arm===family);
+   const c=a.map(r=>r.channels.find(c=>c.gem>0)!);
+   return {family,cases:a.length,minRaw:Math.min(...c.map(x=>x.gem)),maxRaw:Math.max(...c.map(x=>x.gem)),
+    reduced:c.filter(x=>x.incrementalGem<x.gem-1e-9).length,
+    minIncremental:Math.min(...c.map(x=>x.incrementalGem)),maxIncremental:Math.max(...c.map(x=>x.incrementalGem))};
+  }),swiftDelta:rows.filter(r=>r.arm==='stat_swift').map(r=>({classId:r.classId,spec:r.spec,delta:r.hasteDelta})),
+  cpApproved:false,releaseEnabled:false}));
+}
 const v19SensitivityRows: {bossId:string;classId:string;specIndex:number;strategy:string;channel:string;pct:number;
  baseline:{victory:boolean;reason:string;durationMs:number;damage:number;healing:number;hp:number};
  candidate:{victory:boolean;reason:string;durationMs:number;damage:number;healing:number;hp:number}}[]=[];

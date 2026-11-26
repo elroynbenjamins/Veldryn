@@ -8,8 +8,8 @@ export const FAITH_TIERS=[
  {id:'FAITH_COMMUNION',name:'Communion',level:60,water:16,xp:1824,seconds:30},
  {id:'FAITH_ASCENDANT',name:'Ascendant prayer',level:80,water:32,xp:3840,seconds:30},
 ] as const;
-export type FaithFamily='attack'|'defense'|'hp'|'combatSpeed'|'gathering'|'production'|'xp'|'eventCurrency';
-export type FaithBlessingGroup='combat'|'gathering'|'production'|'experience'|'events';
+export type FaithFamily='attack'|'defense'|'hp'|'combatSpeed'|'gathering'|'production'|'xp';
+export type FaithBlessingGroup='combat'|'gathering'|'production'|'experience';
 export interface FaithBlessing{id:string;name:string;level:number;family:FaithFamily;bonus:number;}
 /** Preserve existing combat blessing IDs for saved selections and favorites. */
 export const FAITH_BLESSINGS:FaithBlessing[]=[
@@ -20,7 +20,6 @@ export const FAITH_BLESSINGS:FaithBlessing[]=[
  {id:'WELLSPRING',name:"Wellspring",level:15,family:'hp',bonus:4/100},
  {id:'QUICKENED_STEP',name:'Quickened Step',level:18,family:'combatSpeed',bonus:3/100},
  {id:'LANTERN_OF_WISDOM',name:"Lantern of Wisdom",level:20,family:'xp',bonus:2/100},
- {id:'FESTIVAL_FAVOR',name:'Festival Favor',level:30,family:'eventCurrency',bonus:10/100},
  {id:'NATURES_COVENANT',name:"Nature's Covenant",level:35,family:'gathering',bonus:4/100},
  {id:'SUNFIRE_VOW',name:"Sunfire Vow",level:40,family:'attack',bonus:4/100},
  {id:'IRON_SANCTUARY',name:"Iron Sanctuary",level:45,family:'defense',bonus:6/100},
@@ -41,7 +40,6 @@ export const FAITH_BLESSING_GROUPS:readonly {id:FaithBlessingGroup;label:string;
  {id:'gathering',label:'Gathering',families:['gathering']},
  {id:'production',label:'Production',families:['production']},
  {id:'experience',label:'Experience',families:['xp']},
- {id:'events',label:'Events',families:['eventCurrency']},
 ];
 export function faithBlessingEffectLabel(blessing:FaithBlessing){
  const percent=Math.round(blessing.bonus*100);
@@ -53,7 +51,6 @@ export function faithBlessingEffectLabel(blessing:FaithBlessing){
   case 'gathering':return `+${percent}% Gathering speed`;
   case 'production':return `+${percent}% Production speed`;
   case 'xp':return `+${percent}% Combat & skill XP`;
-  case 'eventCurrency':return `+${percent}% common event currency from activities`;
  }
 }
 /** Final Holy Water drop rates. Original authored chances already received

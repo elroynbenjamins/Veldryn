@@ -218,7 +218,7 @@ begin
  if projected->'profileIconId' is distinct from hero->'profileIconId' then
   p_profile:=jsonb_set(p_profile,'{character,profileIconId}',coalesce(projected->'profileIconId','null'::jsonb));
  end if;
- p_profile:=p_profile-'ultraLuxeTitleId';
+ p_profile:=(p_profile-'ultraLuxeTitleId'-'ultraLuxeAppearanceVerified')||jsonb_build_object('ultraLuxeAppearanceVerified',true);
  if g ? 'ascendant-celestial-sovereign' and p_profile->>'title'='Sovereign of the Stars' then
   p_profile:=p_profile||jsonb_build_object('ultraLuxeTitleId','ascendant-celestial-title');
  elsif g ? 'ascendant-draconic-dominion' and p_profile->>'title'='Dragon Sovereign' then

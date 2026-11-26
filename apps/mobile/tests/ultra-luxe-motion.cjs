@@ -129,7 +129,8 @@ assert(reaction.includes('tracks.map((p,i)')&&!reaction.includes('Animated.loop(
 const badgeSource=read('components/PlayerBadges.tsx');
 assert(badgeSource.includes('const badgeMotion=useMemo(')&&badgeSource.includes('opacity:halo'));
 assert(badgeSource.includes('width:artSize,height:artSize,alignItems:'));
-assert(fx.includes("theme==='celestial'?RAIL_PATH:[...RAIL_PATH].reverse()"));
+assert(fx.includes("if(theme==='celestial')return <CelestialBorderLight"));
+assert(fx.includes("shiftClosed([...RAIL_PATH].reverse(),offset)"));
 assert(fx.includes('Animated.multiply(pulse(clock,offset),.55),Animated.multiply(energy,.45)'));
 console.log('Identity geometry, distinct pet reactions and synchronized rail energy passed.');
 
@@ -190,3 +191,40 @@ async function sharedMotionLifecycle(){
  console.log('Shared motion policy, subscription cleanup, foreground and preference race checks passed.');
 }
 sharedMotionLifecycle().catch(error=>{console.error(error);process.exitCode=1;});
+
+const layoutMod={exports:{}};
+new Function('exports','module',ts.transpileModule(read('core/profile-frame-layout.ts'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText)(layoutMod.exports,layoutMod);
+const celBorder={exports:{}};
+new Function('exports','module','require',ts.transpileModule(read('core/celestial-border-motion.ts'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText)(celBorder.exports,celBorder,id=>id==='./profile-frame-layout'?layoutMod.exports:id==='./ultra-luxe-motion'?mod.exports:require(id));
+const {celestialBorderTracks,CELESTIAL_BORDER_PHASE:bp,CELESTIAL_BORDER_NODE_BUDGET:budget}=celBorder.exports;
+assert(bp.every((p,i)=>!i||p>bp[i-1]));
+assert(bp.includes(16/24));
+assert.deepEqual(celestialBorderTracks(0,0,false),[]);
+assert.deepEqual(celestialBorderTracks(NaN,205,true),[]);
+for(const showcase of [false,true]){
+ for(const [w,h] of showcase?[[300,300*205/340],[320,320*205/340],[340,205],[390,390*205/340],[480,480*205/340]]:[[44,44],[104,72],[260,174],[340,205],[480,270]]){
+  const tracks=celestialBorderTracks(w,h,showcase);
+  assert.equal(tracks.length,showcase?budget.showcase:budget.standard);
+  assert.equal(new Set(tracks.map(t=>t.key)).size,tracks.length);
+  for(const t of tracks){
+   assert(t.size>0);
+   for(const seq of [t.x,t.y,t.opacity]){assert.equal(seq.length,bp.length);assert.equal(seq[0],seq.at(-1));}
+   assert(t.opacity.some(a=>a>=.5));
+   for(let i=1;i<bp.length;i++)for(let j=0;j<=10;j++){
+    const q=j/10,x=t.x[i-1]+q*(t.x[i]-t.x[i-1]),y=t.y[i-1]+q*(t.y[i]-t.y[i-1]),r=t.size/2;
+    assert(x-r>=-1e-6&&x+r<=w+1e-6&&y-r>=-1e-6&&y+r<=h+1e-6);
+    const safe=showcase?34*w/340:layoutMod.exports.PROFILE_SCENE_SAFE_LAYOUT.horizontalRail*Math.min(1,w/300,h/205);
+    assert(y+r<=safe+1e-6||y-r>=h-safe-1e-6);
+    assert(t.opacity[i]>=0&&t.opacity[i]<=1);
+   }
+  }
+  assert(tracks.find(t=>t.key==='upper-rail').x[0]<tracks.find(t=>t.key==='upper-rail').x[Math.floor(bp.length/2)]);
+ }
+}
+const borderLayer=read('components/profile/CelestialBorderLight.tsx');
+const standardLayer=read('components/profile/CelestialStandardEffects.tsx');
+assert(!borderLayer.includes('Animated.loop(')&&!borderLayer.includes('setInterval('));
+assert(borderLayer.includes('pointerEvents="none"')&&borderLayer.includes('useMemo('));
+assert(standardLayer.includes('running?<CelestialBorderLight'));
+assert(fx.includes('height={205*k} star={particle} showcase'));
+console.log('Celestial border polish: closed staggered motion, responsive perimeter, bounded node budget and existing clock passed.');

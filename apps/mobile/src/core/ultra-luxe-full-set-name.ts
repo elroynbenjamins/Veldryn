@@ -56,3 +56,22 @@ export function undoUltraLuxeFullSet(current:FullSetAppearance,plan:FullSetPlan,
  }
  return {wardrobe,namePresetId};
 }
+
+/** Verify the combined service transaction readback before publishing a success notice.
+ * A receipt replay returns current state; later edits/revocations must not be overwritten. */
+export type FullSetReadbackResult='confirmed'|'superseded'|'unconfirmed'|'scope-changed';
+function object(raw:unknown):Record<string,unknown>|undefined{
+ return raw&&typeof raw==='object'&&!Array.isArray(raw)?raw as Record<string,unknown>:undefined;
+}
+export function confirmUltraLuxeFullSetReadback(plan:FullSetPlan,scope:FullSetScope,raw:unknown):FullSetReadbackResult{
+ if(!sameScope(plan.scope,scope))return 'scope-changed';
+ const row=object(raw),game=object(row?.gameplay),state=object(game?.state),hero=object(state?.character),names=object(row?.nameSelection);
+ if(!row||typeof row.replayed!=='boolean'||!game||!hero||!names||game.accountId!==scope.accountId||names.accountId!==scope.accountId)return 'unconfirmed';
+ const expected=plan.after.wardrobe,preset=ultraLuxeFullSetNamePreset(plan.setId);
+ const matching=!!preset&&plan.after.namePresetId===preset&&hero.id===scope.characterId&&
+  hero.profileBackgroundId===expected.scene&&(hero.profileBorderId??'')===expected.frame&&
+  (hero.selectedCosmeticPetId??'')===expected.pet&&hero.profileTitle===expected.title&&
+  (hero.profileEffectId??'')===expected.effect&&Array.isArray(names.ownedIds)&&
+  names.ownedIds.includes(preset)&&names.selectedId===preset;
+ return matching?'confirmed':row.replayed?'superseded':'unconfirmed';
+}

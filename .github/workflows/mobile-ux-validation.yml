@@ -78,6 +78,8 @@ jobs:
         run: pnpm test:feature-hubs
       - name: Validate ownership-safe profile quick equip
         run: node tests/profile-quick-set-equip.cjs
+      - name: Validate four-set private review and scoped quick equip
+        run: node tests/ultra-luxe-four-set-review.cjs
       - name: Validate isolated Abyssal and Paradox geometry and motion
         run: node tests/abyssal-showcase.cjs && node tests/paradox-showcase.cjs
       - name: Validate Ascendant showcase geometry and closed blessing gate

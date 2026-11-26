@@ -80,3 +80,58 @@ test('illustrated Bastion/Ravager defense checkpoints and invalid inputs',()=>{
   for(const n of [0,101,1.5,NaN,Infinity])assert.throws(()=>compactCoreStats('BASTION',n),RangeError);
   assert.throws(()=>compactCoreStats('unknown',25),RangeError);
 });
+
+/** Separate rating units from compact flat stats. Ratings stay on the
+ * historical engine scale until accuracyScale and affix bridges are audited.
+ * All new healing values are provisional, not approved gameplay. */
+const secondary = Object.freeze({
+  BASTION:       [5,8,680,180,.05,.03],
+  IRONWARDEN:    [6,10,680,180,.05,.03],
+  DREADGUARD:    [8,13,680,180,.05,.03],
+  RAVAGER:       [2,3,700,160,.12,.05],
+  KNIFE_DANCER:  [2,3,800,330,.18,.14],
+  HEXWEAVER:     [3,5,790,250,.13,.09],
+  WAYFINDER:     [2,4,810,270,.15,.10],
+  DAWNKEEPER:    [18,32,720,230,.07,.08],
+  STONECALLER:   [14,25,690,190,.06,.04],
+});
+for(const row of Object.values(secondary))Object.freeze(row);
+export function compactFullStats(classId,level){
+  const core=compactCoreStats(classId,level);
+  const [start,end,accuracy,evasion,critChance,haste]=secondary[classId];
+  const healingPower=level<=25?start+(end-start)*(level-1)/24:
+    end+(end-start)*(level-25)/25;
+  return {...core,healingPower,accuracy,evasion,critChance,critMultiplier:1.5,haste};
+}
+test('complete nine-stat baseline, no implicit percent/rating conversion',()=>{
+  for(const p of compactClassProfiles){
+    let last=0;
+    for(let level=1;level<=100;level++){
+      const s=compactFullStats(p.id,level);
+      assert.equal(Object.keys(s).length,9);
+      assert.ok(Object.values(s).every(n=>Number.isFinite(n)&&n>=0));
+      assert.ok(s.healingPower>last);
+      assert.ok(s.critChance<=1&&s.critMultiplier>=1&&s.haste<=2);
+      assert.deepEqual(s,compactFullStats(p.id,level));
+      assert.deepEqual([s.maxHp,s.attackPower,s.defense],Object.values(compactCoreStats(p.id,level)));
+      last=s.healingPower;
+    }
+  }
+});
+test('support healing advantage and individual class identity hold at all levels',()=>{
+  for(let level=1;level<=100;level++){
+    const rows=compactClassProfiles.map(p=>({...p,...compactFullStats(p.id,level)}));
+    for(const support of rows.filter(r=>r.role==='support'))
+      for(const other of rows.filter(r=>r.role!=='support'))
+        assert.ok(support.healingPower>other.healingPower);
+    const get=id=>rows.find(r=>r.id===id);
+    assert.ok(get('DAWNKEEPER').healingPower>get('STONECALLER').healingPower);
+    assert.ok(get('STONECALLER').defense>get('DAWNKEEPER').defense);
+    assert.ok(get('DREADGUARD').healingPower>get('IRONWARDEN').healingPower);
+    assert.ok(get('WAYFINDER').accuracy>get('KNIFE_DANCER').accuracy);
+    assert.ok(get('KNIFE_DANCER').evasion>get('WAYFINDER').evasion);
+    assert.ok(get('KNIFE_DANCER').critChance>get('WAYFINDER').critChance);
+  }
+  assert.equal(compactFullStats('DAWNKEEPER',25).healingPower,32);
+  assert.equal(compactFullStats('STONECALLER',25).healingPower,25);
+});

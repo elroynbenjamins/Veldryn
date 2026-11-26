@@ -123,6 +123,13 @@ begin
   if paradox is not null and grants ? 'ascendant-paradox-eternal' then clean:=clean||jsonb_build_array(paradox);end if;
   a:=jsonb_set(a,array[field],clean);
  end loop;
+ -- The shared social portrait also needs the same private-ID sanitation.
+ item:=a->>'profileIconId';
+ if left(item,10) in ('ascendant-','ascendant_') and not (coalesce(a->'unlockedProfileIconIds','[]'::jsonb) ? item) then
+  if jsonb_typeof(s->'character')='object' then
+   a:=jsonb_set(a,'{profileIconId}',to_jsonb('class:'||coalesce(s#>>'{character,classId}','IRONWARDEN')));
+  else a:=a-'profileIconId';end if;
+ end if;
  s:=jsonb_set(s,'{account}',a);
  if jsonb_typeof(s->'character')='object' then s:=jsonb_set(s,'{character}',private.ultra_luxe_project_hero_v1(s->'character',grants));end if;
  if jsonb_typeof(s->'otherCharacters')='array' then

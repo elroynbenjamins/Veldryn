@@ -1,7 +1,12 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),ts=require('typescript');
 const root=path.join(__dirname,'../src');
 const code=ts.transpileModule(fs.readFileSync(path.join(root,'core/ultra-luxe-prestige.ts'),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText;
-const mod={exports:{}};new Function('exports','module',code)(mod.exports,mod);
+const gradientCode=ts.transpileModule(fs.readFileSync(path.join(root,'core/ultra-luxe-name-gradients.ts'),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText;
+const gradients={exports:{}};new Function('exports','module',gradientCode)(gradients.exports,gradients);
+const mod={exports:{}};new Function('exports','module','require',code)(mod.exports,mod,id=>{
+ assert.equal(id,'./ultra-luxe-name-gradients');return gradients.exports;
+});
+assert.equal(gradients.exports.ULTRA_LUXE_GRADIENTS.length,6);
 const p=mod.exports;
 assert.deepEqual(p.ownedUltraLuxeIcons({account:{}}),[]);
 assert.deepEqual(p.ownedUltraLuxeNamePresets(undefined),[]);

@@ -27,7 +27,7 @@ import {ProfileIcon} from '../ProfileIcon';
 import {RegionArtwork} from '../RegionArtwork';
 import {ProfileUnlockSheet} from './ProfileUnlockSheet';
 import {PROFILE_ALL_EFFECTS,profileAnimatedBorderDefinition} from '../../core/profile-effects';
-import {cosmeticArtByBorder,cosmeticArtByEffect} from '../../theme/profile-cosmetic-art-v1';
+import {cosmeticArtByBorder,cosmeticArtByEffect} from '../../theme/profile-cosmetic-render-art';
 import {profileCosmeticRuntimeByEffect} from '../../theme/profile-cosmetic-runtime-v1';
 import {ProfileEffectThumbnail} from '../ProfileCosmeticMotion';
 

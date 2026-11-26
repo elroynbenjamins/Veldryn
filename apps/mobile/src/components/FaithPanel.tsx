@@ -4,7 +4,7 @@ import {Pressable,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import type {GameState} from '../core/types';
 import type {GameCommand} from '../core/game-commands';
 import {FAITH_TIERS,FAITH_BLESSINGS,FAITH_BLESSING_GROUPS,faithBlessingEffectLabel} from '../content/faith';
-import {affordableFaithPracticeCount,blessingRows,faithLevel,faithPracticeAvailability,faithPracticeRefund,MAX_FAITH_PRACTICES,holyWaterAvailable,normalizeFaith} from '../core/faith';
+import {affordableFaithPracticeCount,blessingRows,faithLevel,faithPracticeAvailability,faithPracticeRefund,MAX_FAITH_PRACTICES,holyWaterAvailable,activeFaithPreferences} from '../core/faith';
 import {progressWithinLevel} from '../core/progression';
 import {Panel} from './Panel';
 import {GameButton} from './GameButton';
@@ -16,14 +16,14 @@ export function FaithPanel({state,onCommand}:{state:GameState;onCommand:(c:GameC
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions();
  const [busy,setBusy]=useState(false),[error,setError]=useState('');
  const c=state.character;if(!c)return null;
- const faith=normalizeFaith(c.faith),level=faithLevel(state),water=holyWaterAvailable(state),progress=progressWithinLevel(Math.max(faith.xp,state.skills.find(row=>row.skillId==='faith')?.xp??0),level);
+ const faith=activeFaithPreferences(state),level=faithLevel(state),water=holyWaterAvailable(state),progress=progressWithinLevel(Math.max(faith.xp,state.skills.find(row=>row.skillId==='faith')?.xp??0),level);
  const progressRatio=level>=100?1:Math.min(1,progress.current/Math.max(1,progress.need));
  const reservation=state.activity?.kind==='faith'?state.activity.faithPractice:undefined;
  const activeTierId=faith.practice?.tierId??reservation?.tierId,activeRemaining=faith.practice?.remaining??reservation?.remainingPractices??0;
  // Releasing an active session returns its unused Holy Water before validation.
  const switchWater=water+(reservation?faithPracticeRefund(reservation):0);
  const activeTier=FAITH_TIERS.find(row=>row.id===activeTierId),active=!!activeTier&&activeRemaining>0;
- const selected=FAITH_BLESSINGS.find(row=>row.id===faith.selectedBlessingId);
+ const selectedCount=Object.keys(faith.selectedBlessingIds).length;
  const visibleBlessings=blessingRows(state),stackActions=width<370||fontScale>=1.2;
  const run=async(command:GameCommand)=>{if(busy)return;setBusy(true);setError('');try{await onCommand(command);}catch(e){setError(e instanceof Error?e.message:gt("Action failed."));}finally{setBusy(false);}};
  return <>
@@ -41,8 +41,8 @@ export function FaithPanel({state,onCommand}:{state:GameState;onCommand:(c:GameC
    {error?<Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={s.error}>{error}</Text>:null}
   </View>
   <Panel>
-   <View style={s.sectionHeading}><View style={s.flex}><Text style={s.sectionLabel}>{gt("ACTIVE BLESSING")}</Text><Text style={s.selectedBlessing}>{selected?`${selected.name} · ${faithBlessingEffectLabel(selected)}`:gt("No blessing selected")}</Text></View><View style={s.hideButton}><GameButton compact title={faith.hideWeakerBlessings?gt("Show all"):gt("Hide weaker")} tone="secondary" disabled={busy} onPress={()=>run({type:'faith_hide',args:{enabled:!faith.hideWeakerBlessings}})}/></View></View>
-   <Text style={s.body}>{gt("Equip one blessing at a time. Star useful alternatives so they remain visible when weaker blessings are hidden.")}</Text>
+   <View style={s.sectionHeading}><View style={s.flex}><Text style={s.sectionLabel}>{gt("ACTIVE BLESSINGS")}</Text><Text style={s.selectedBlessing}>{`${selectedCount}/${FAITH_BLESSING_GROUPS.length}`}</Text></View><View style={s.hideButton}><GameButton compact title={faith.hideWeakerBlessings?gt("Show all"):gt("Hide weaker")} tone="secondary" disabled={busy} onPress={()=>run({type:'faith_hide',args:{enabled:!faith.hideWeakerBlessings}})}/></View></View>
+   <Text style={s.body}>{gt("Equip one blessing per category. Star useful alternatives to keep them visible.")}</Text>
    {FAITH_BLESSING_GROUPS.map(group=>{
     // The strongest available choice appears first. Locked options follow as goals.
     const blessings=visibleBlessings.filter(row=>group.families.includes(row.family)).sort((a,b)=>
@@ -53,7 +53,7 @@ export function FaithPanel({state,onCommand}:{state:GameState;onCommand:(c:GameC
       <Text style={s.blessingGroupTitle}>{gt(group.id==='combat'?'Combat':group.id==='gathering'?'Gathering':group.id==='production'?'Production':group.id==='events'?'Events':'Experience')}</Text>
       <Text style={s.blessingGroupMeta}>{FAITH_BLESSINGS.filter(row=>group.families.includes(row.family)&&row.level<=level).length} {gt("unlocked")}</Text>
      </View>
-     {blessings.map(blessing=>{const locked=blessing.level>level,favorite=faith.favoriteBlessingIds.includes(blessing.id),equipped=faith.selectedBlessingId===blessing.id;return <View key={blessing.id} style={[s.blessingRow,equipped&&s.blessingEquipped,locked&&s.blessingLocked]}>
+     {blessings.map(blessing=>{const locked=blessing.level>level,favorite=faith.favoriteBlessingIds.includes(blessing.id),equipped=faith.selectedBlessingIds[group.id]===blessing.id;return <View key={blessing.id} style={[s.blessingRow,equipped&&s.blessingEquipped,locked&&s.blessingLocked]}>
       <Pressable accessibilityRole="button" accessibilityLabel={favorite?`Remove ${blessing.name} from favorites`:`Favorite ${blessing.name}`} accessibilityState={{selected:favorite,disabled:busy}} disabled={busy} onPress={()=>void run({type:'faith_favorite',args:{id:blessing.id,enabled:!favorite}})} style={({pressed})=>[s.starButton,pressed&&s.pressed]}><Text style={[s.star,favorite&&s.starActive]}>{favorite?'★':'☆'}</Text></Pressable>
       <View style={s.flex}><View style={s.inline}><Text style={s.blessingName}>{blessing.name}</Text>{equipped?<Text style={s.activeTag}>{gt("Equipped").toLocaleUpperCase(language)}</Text>:locked?<Text style={s.lockTag}>LV {blessing.level}</Text>:null}</View><Text style={s.blessingMeta}>{faithBlessingEffectLabel(blessing)} · {gt("Faith")} {blessing.level}</Text></View>
       <View style={[s.blessingAction,stackActions&&s.blessingActionStack]}><GameButton compact title={equipped?'Active':locked?`Lv ${blessing.level}`:gt("Equip")} selected={equipped} disabled={busy||locked||equipped} tone={equipped?'primary':'secondary'} onPress={()=>run({type:'faith_blessing',args:{id:blessing.id}})}/></View>

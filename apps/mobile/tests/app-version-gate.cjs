@@ -10,6 +10,17 @@ function load(file,mocks,extra={}){
  return module.exports;
 }
 async function main(){
+ // The root shell must retain its time-based invalidation without running
+ // account projections during a blocked startup or on unrelated UI updates.
+ const appSource=fs.readFileSync(path.join(root,'App.tsx'),'utf8');
+ assert.match(appSource,/const shellAttentionReady=versionGateChecked&&!versionGateOwnsScreen&&ready&&\(!serverGameplayEnabled\|\|\(!auth\.loading&&!online\.loading&&!!auth\.session&&!auth\.recovering&&!!online\.snapshot\)\);/);
+ assert.match(appSource,/const shellAttention=useMemo\(\(\)=>\{\s*if\(!shellAttentionReady\|\|!state\?\.character\)return null;/);
+ assert.match(appSource,/\},\[state,now,shellAttentionReady\]\);\s*const renderApp=/,'Quest, supply and forge clocks must continue to invalidate shell attention');
+ assert.match(appSource,/retireGoalPlanner\(migrateRetiredStoryRewards\(snapshot\.state,Date\.now\(\)\)\)[\s\S]*?setState\(next\);setLoadError\(''\);\},\[online\.snapshot\]\);/,'Snapshot migration is driven by snapshot changes only');
+ assert.match(appSource,/useEffect\(\(\)=>\{if\(serverGameplayEnabled\)\{setReady\(!online\.loading\);setLoadError\(''\);\}\},\[online\.loading\]\);/,'Loading state still controls readiness');
+ const onlineCommit=appSource.slice(appSource.indexOf('async function commit('),appSource.indexOf('if(current?.character&&candidate.character&&current.character.selectedCosmeticPetId'));
+ assert.equal((onlineCommit.match(/JSON\.stringify\(candidate\)/g)||[]).length,1,'Serialize the incoming full save once');
+ for(const check of ['serializedCandidate===JSON.stringify(current)','serializedCandidate===JSON.stringify({...current,settings:candidate.settings})','serializedCandidate===JSON.stringify({...current,activity:null})','serializedCandidate===JSON.stringify({...current,character:{...current.character,...patch}})'])assert.ok(onlineCommit.includes(check),'Retain full JSON equality fence: '+check);
  const core=load('src/core/app-release-policy.ts',{});
  const store=new Map();let offline=false,reads=0;
  let row={latest_version:'1.0.0',minimum_version:'1.0.0',force_after:null,maintenance_mode:false};

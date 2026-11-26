@@ -1,0 +1,42 @@
+'use strict';
+// Read-only integration contracts for Party identity. Run from apps/mobile.
+const fs=require('node:fs');
+const assert=require('node:assert/strict');
+const read=path=>fs.readFileSync(path,'utf8');
+const sql=read('../../backend/supabase/migrations/20261123213424_party_short_name_identity_v1.sql');
+const core=read('src/core/party-social.ts');
+const transport=read('src/online/party-social.ts');
+const hub=read('src/components/PartyHubPanel.tsx');
+const create=read('src/components/PartyCreateSheet.tsx');
+const screen=read('src/screens/SocialScreen.tsx');
+
+assert.match(sql,/short_name ~ '\^\[A-Z\]\{3,5\}\$'/,'only 3–5 ASCII letters are accepted');
+assert.match(sql,/create unique index parties_active_short_name_unique_v1/,'the database must own uniqueness');
+assert.match(sql,/status <> 'disbanded'/,'disbanded names may become available');
+assert.match(sql,/v_party\.leader_account_id is distinct from v_uid/,'only party leaders may name');
+assert.match(sql,/interval '6 months'/,'cooldown is six calendar months');
+assert.match(sql,/v_party\.name_changed_at is not null/,'null last-change permits all existing Parties to claim a first name');
+assert.match(sql,/if v_party\.short_name = v_name/,'idempotent retry must not consume a new rename');
+assert.match(sql,/party_name_taken/,'duplicate selection must be a clear error');
+assert.match(sql,/private\.party_name_history_v1/,'ranking identity changes retain an audit trail');
+assert.match(sql,/party_rankings_board_v17/,'rankings preserve party ID plus human-readable name');
+assert.match(sql,/party_social_state_v20/,'new Party snapshot is additive');
+assert.match(sql,/create_party_named_v1/,'new Party creation must atomically claim a valid unique name');
+
+assert.match(core,/shortName\?:string\|null/,'summary supports unnamed legacy Parties');
+assert.match(core,/nameNextChangeAt\?:string\|null/,'summary carries the server cooldown deadline');
+assert.match(transport,/create_party_named_v1/,'new creation uses atomic named creation');
+assert.match(transport,/set_party_name_v1/,'renames use server authority');
+assert.match(transport,/party_social_state_v20/,'mobile reads the new snapshot');
+assert.match(transport,/party_rankings_board_v17/,'mobile reads named rankings');
+assert.match(create,/maxLength=\{5\}/,'creation input limits length');
+assert.match(create,/\^\[A-Z\]\{3,5\}/,'creation validates the 3–5-letter format');
+assert.match(hub,/props\.party\?\.shortName/,'Party Hub shows persisted short names');
+assert.match(hub,/Next name change:/,'Party Hub explains the cooldown');
+assert.match(hub,/That Party name is already taken/,'Party Hub explains duplicate-name errors');
+assert.match(screen,/onRenameParty=/,'rename is wired in the live Party views');
+assert.match(screen,/shortName=\{shortName\}/,'both Party creation surfaces pass the name');
+const scripts=JSON.parse(read('package.json')).scripts;
+assert.match(scripts['test:v16'],/party-preferences-icons-ui\\.cjs/,'preserve existing Party setting icon coverage');
+assert.match(scripts['test:v16'],/party-short-names-ui-contract\\.cjs/,'include naming regressions alongside icon checks');
+console.log('Party short-name contract checks passed.');

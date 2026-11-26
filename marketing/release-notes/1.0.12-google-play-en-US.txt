@@ -1,0 +1,12 @@
+Veldryn 1.0.12 – Smoother Adventures
+
+• Improved dungeon gameplay and Q-Mode scaling.
+• Gathering tool management and new Skill XP bonuses.
+• New Combat XP meal and extended food buffs.
+• Improved equipment inspection and comparisons.
+• Larger chat emotes and more readable text.
+• Unique Party names and social improvements.
+• Seamless regional music.
+• Crafting and economy balancing.
+• Performance optimizations and bug fixes.
+• Frostfall Festival is coming soon!

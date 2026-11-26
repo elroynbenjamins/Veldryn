@@ -80,6 +80,8 @@ function makeHarness({width = 390, reducedMotion = false, motionQuery} = {}) {
     useWindowDimensions: () => size
   };
   const mocks = new Map([
+    // Audio playback has its own tests; this offline UI harness must not load native audio or binary MP3 assets.
+    [path.join(app, 'src/storage/audio'), {playSound: () => {}, useMusicOverride: () => {}, useRarityRevealSound: () => {}, useAudioPreferences: () => [{music:2,effects:2,musicContexts:{}}, () => {}], toggleAudioMute: () => 0, playMusicPreview: () => {}, stopMusicPreview: () => {}}],
     ['react', React], ['react-native', native],
     [path.join(app, 'src/i18n/social'), {useSocialText: () => tr}],
     [path.join(app, 'src/theme/useCoopStyles'), {useCoopStyles: makeStyles => ({colors: theme, styles: makeStyles(theme)})}],

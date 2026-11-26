@@ -67,6 +67,7 @@ GEM_BINDING_COMPOUND_ITEM,
 {id:'ROASTED_ROOTSTREAM_TROUT',name:'Roasted Rootstream Trout',type:'food',heal:34,readiness:4,value:25},
 {id:'SEARED_RIVER_EEL',name:'Seared River Eel',type:'food',heal:44,readiness:5,value:34},
 {id:'IRONWOOD_STEW',name:'Ironwood Hunter Stew',type:'food',heal:77,readiness:7,value:62},
+{id:'SUNSCAR_SPICED_PLATTER',name:'Sunscar Spiced Platter',type:'food',heal:123,readiness:11,value:175,rarity:'uncommon'},
 
 {id:'COPPER_ORE',name:'Copper Ore',type:'material',value:5},
 
@@ -157,7 +158,10 @@ GEM_BINDING_COMPOUND_ITEM,
 {id:'FALLEN_KNIGHT_SIGIL',name:'Fallen Knight Sigil',type:'quest',value:0},
 
 ];
-export const ITEMS:ItemDef[]=[...BASE_ITEMS.map(item=>item.requiredLevel===undefined?item:{...item,requiredLevel:rebaseLevel(item.requiredLevel)}),...GUILD_COMPONENT_ITEMS,...CROSS_PROFESSION_COMPONENT_ITEMS,...EQUIPMENT_ITEMS_V33];
+export const ITEMS:ItemDef[]=[...BASE_ITEMS.map(item=>item.requiredLevel===undefined?item:{...item,requiredLevel:rebaseLevel(item.requiredLevel)}),...GUILD_COMPONENT_ITEMS,...CROSS_PROFESSION_COMPONENT_ITEMS,...EQUIPMENT_ITEMS_V33,
+ // Keep the seasonal item definition available for save/settlement compatibility; presentation and writes are server-window gated.
+ {id:'FROSTFALL_CHRISTMAS_LIGHTS_2026',name:'Christmas Lights',type:'material',value:0,rarity:'rare',passive:'Seasonal lights donated to your guild Winter Hearth Christmas Market.'},
+];
 const itemsById=new Map(ITEMS.map(item=>[item.id,item]));
 if(itemsById.size!==ITEMS.length)throw new Error('Duplicate item IDs in the item catalog');
 export function itemDef(id:string){const x=itemsById.get(id); if(!x) throw new Error(`Unknown item ${id}`); return x;}

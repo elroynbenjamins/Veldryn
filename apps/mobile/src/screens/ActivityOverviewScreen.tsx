@@ -23,28 +23,31 @@ function activityLabel(activity:ActiveActivity|null){
  return activity.kind==='combat'?'Combat':activity.kind==='training'?'Training':activity.kind==='faith'?'Faith practice':activity.kind.charAt(0).toUpperCase()+activity.kind.slice(1);
 }
 
-export function ActivityOverviewScreen({state,now,onSwitch,onCreate,onDelete}:{state:GameState;now:number;onSwitch:(id:string)=>void;onCreate?:()=>void;onDelete?:(id:string,confirmation:string)=>Promise<void>|void}){
+export function ActivityOverviewScreen({state,now,accountId,onSwitch,onCreate,onDelete,gameplayBusy=false}:{state:GameState;now:number;accountId?:string;onSwitch:(id:string)=>Promise<void>|void;onCreate?:()=>void;onDelete?:(id:string,confirmation:string)=>Promise<void>|void;gameplayBusy?:boolean}){
  const language=state.settings.language;
  const a=(text:string,params?:Record<string,string|number>)=>accountText(language,text,params);
  const r=(text:string,params?:Record<string,string|number>)=>characterRosterText(language,text,params);
  const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
  const {width,fontScale}=useWindowDimensions(),stackRows=width<390||fontScale>=1.25||state.settings.textScale>=1.25;
  const rosterIds=[state.character?.id,...(state.otherCharacters??[]).map(row=>row.character.id)].filter((id):id is string=>!!id).sort().join('|');
- const [creationIds,setCreationIds]=useState<string[]>([]);
+ const [creationOrder,setCreationOrder]=useState<{accountId:string;ids:string[]}|null>(null);
+ const creationIds=creationOrder?.accountId===accountId?creationOrder?.ids??[]:[];
  useEffect(()=>{
   const client=supabase;
-  if(!client||!serverGameplayEnabled)return;
+  if(!client||!serverGameplayEnabled||!accountId||!rosterIds)return;
   let cancelled=false;
   const load=async()=>{
-   const {data:{user}}=await client.auth.getUser();
-   if(!user){if(!cancelled)setCreationIds([]);return;}
+   // This display-only projection is already protected by database RLS.
+   // Reuse the SDK session instead of a second remote getUser verification.
+   const {data:{session},error:sessionError}=await client.auth.getSession();
+   if(cancelled||sessionError||session?.user.id!==accountId)return;
    const {data,error}=await client.from('characters').select('id,created_at')
-    .eq('account_id',user.id).order('created_at',{ascending:true}).order('id',{ascending:true});
-   if(!cancelled&&!error&&data)setCreationIds(data.map(row=>row.id));
+    .eq('account_id',accountId).order('created_at',{ascending:true}).order('id',{ascending:true});
+   if(!cancelled&&!error&&data)setCreationOrder({accountId,ids:data.map(row=>row.id)});
   };
   void load().catch(()=>{}); // Fallback remains stable if the roster projection is unavailable.
   return ()=>{cancelled=true;};
- },[rosterIds]);
+ },[accountId,rosterIds]);
  const entries=orderedCharacterRoster(state,creationIds).map(entry=>({
   character:entry.character,
   activity:entry.character.id===state.character?.id?state.activity:
@@ -62,6 +65,9 @@ export function ActivityOverviewScreen({state,now,onSwitch,onCreate,onDelete}:{s
  const roles:AccountCharacterRole[]=['Tank','Damage','Support'];
  const [managingId,setManagingId]=useState<string>(),[confirmation,setConfirmation]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState(''),[showDeleteDetails,setShowDeleteDetails]=useState(false),[showDeleteOptions,setShowDeleteOptions]=useState(false);
  const modalScrollRef=useRef<ScrollViewInstance>(null);
+ const switchLock=useRef<string|null>(null),[switchingId,setSwitchingId]=useState<string|null>(null),[switchError,setSwitchError]=useState('');
+ const switching=!!switchingId;
+ const controlsBusy=gameplayBusy||switching||busy;
  useEffect(()=>{
   if(!managingId)return;
   const listener=Keyboard.addListener(Platform.OS==='ios'?'keyboardWillShow':'keyboardDidShow',()=>{
@@ -76,8 +82,15 @@ export function ActivityOverviewScreen({state,now,onSwitch,onCreate,onDelete}:{s
  const blockReason=target?characterDeleteBlockReason(state,target.character.id):undefined;
  const craftCount=target?equipmentCraftingQueue(state).filter(job=>job.ownerCharacterId===target.character.id).length:0;
  const close=()=>{if(busy)return;setManagingId(undefined);setConfirmation('');setError('');setShowDeleteDetails(false);setShowDeleteOptions(false)};
- const open=(id:string)=>{setManagingId(id);setConfirmation('');setError('');setShowDeleteDetails(false);setShowDeleteOptions(false)};
- const switchTo=(id:string)=>{Keyboard.dismiss();close();onSwitch(id)};
+ const open=(id:string)=>{if(switchLock.current||controlsBusy)return;setManagingId(id);setConfirmation('');setError('');setShowDeleteDetails(false);setShowDeleteOptions(false)};
+ const switchTo=async(id:string)=>{
+  if(switchLock.current||controlsBusy||id===state.character?.id)return;
+  switchLock.current=id;setSwitchingId(id);setSwitchError('');
+  Keyboard.dismiss();close();
+  try{await onSwitch(id);}
+  catch(e){if(!serverGameplayEnabled)setSwitchError(e instanceof Error?e.message:'Character switch was not confirmed.');}
+  finally{switchLock.current=null;setSwitchingId(null);}
+ };
  const remove=async(recreate:boolean)=>{
   if(!target||!onDelete||!confirmed||blockReason||busy)return;
   setBusy(true);setError('');
@@ -105,6 +118,7 @@ export function ActivityOverviewScreen({state,now,onSwitch,onCreate,onDelete}:{s
      </View>:null}
     {slots>=MAX_NEW_ACCOUNT_CHARACTERS?<Text style={s.slotHint}>{legacy?r('Legacy roster preserved'):r('Three role slots unlocked')}</Text>:null}
    </View>
+   {!!switchError&&<Text accessibilityRole="alert" style={s.error}>{accountError(language,switchError)}</Text>}
    <View style={s.list}>
     {entries.map(({character,activity})=>{
      const active=character.id===state.character?.id,classDef=CLASSES.find(row=>row.id===character.classId);
@@ -119,8 +133,8 @@ export function ActivityOverviewScreen({state,now,onSwitch,onCreate,onDelete}:{s
        </View>
        <View style={[s.actions,stackRows&&s.actionsStack]}>
         {active?<View accessible accessibilityRole="text" accessibilityLabel={r('Currently playing')+': '+character.name} style={s.playingStatus}><Text numberOfLines={1} style={s.playingStatusText}>✓ {r('Playing')}</Text></View>
-        :<GameButton compact tone="secondary" style={s.switchButton} title={a('Switch')} accessibilityLabel={a('Switch')+': '+character.name} onPress={()=>switchTo(character.id)}/>}
-        <Pressable accessibilityRole="button" accessibilityLabel={a('Manage')+': '+character.name} onPress={()=>open(character.id)} accessibilityHint={r('Review deletion options')} style={({pressed})=>[s.manageButton,pressed&&s.pressed]}><Text style={s.manageGlyph}>⋯</Text></Pressable>
+        :<GameButton compact tone="secondary" style={s.switchButton} title={a('Switch')} accessibilityLabel={a('Switch')+': '+character.name} loading={switchingId===character.id} disabled={controlsBusy} onPress={()=>switchTo(character.id)}/>}
+        <Pressable accessibilityRole="button" accessibilityLabel={a('Manage')+': '+character.name} onPress={()=>open(character.id)} disabled={controlsBusy} accessibilityState={{disabled:controlsBusy}} accessibilityHint={r('Review deletion options')} style={({pressed})=>[s.manageButton,pressed&&s.pressed,controlsBusy&&s.controlDisabled]}><Text style={s.manageGlyph}>⋯</Text></Pressable>
        </View>
       </View>
       <View style={[s.activityRow,stackRows&&s.activityRowStack]}><View style={[s.dot,activity?s.dotOn:s.dotIdle]}/><Text numberOfLines={2} style={[s.activity,activity?activityTone(activity.kind,s):s.idle]}>{activity?a(activityLabel(activity))+' · '+a(activityTargetLabel(activity)):a('Idle')}</Text>{activity?<Text numberOfLines={1} style={s.duration}>{accountDuration(language,(now-activity.startedAtMs)/1000)}</Text>:null}</View>
@@ -131,7 +145,7 @@ export function ActivityOverviewScreen({state,now,onSwitch,onCreate,onDelete}:{s
     <Text style={s.rolesTitle}>{r('Role slots')}</Text>
     <View style={s.roleRow}>{roles.map(role=><View key={role} style={[s.roleChip,occupiedRoles.has(role)&&s.roleChipFilled]}><Text style={[s.roleChipText,occupiedRoles.has(role)&&s.roleChipTextFilled]}>{occupiedRoles.has(role)?'✓ ':'○ '}{r(role)}</Text></View>)}</View>
    </View>
-   {canCreate?<GameButton title={a('Create another character')} tone="secondary" onPress={()=>onCreate?.()}/>:null}
+   {canCreate?<GameButton title={a('Create another character')} tone="secondary" disabled={controlsBusy} onPress={()=>onCreate?.()}/>:null}
   </ScrollView>
   <GameModalSurface visible={!!target} presentation="dialog" surfaceStyle={s.modalSurface} reduceMotion={state.settings.reduceMotion} onClose={close} backdropLabel={a('Close character management')}>
    <GameModalHeader eyebrow={a('CHARACTER MANAGEMENT')} title={target?.character.name??'Character'} onClose={close} closeDisabled={busy}/>
@@ -142,7 +156,7 @@ export function ActivityOverviewScreen({state,now,onSwitch,onCreate,onDelete}:{s
       <View style={s.flex}><Text numberOfLines={1} style={s.meta}>{a('{className} · Level {level}',{className:targetClass?.name??target.character.classId,level:target.character.level})}{targetClass?' · '+r(targetClass.role):''}</Text></View>
      </View>
      <View style={s.manageActivity}><View style={[s.dot,target.activity?s.dotOn:s.dotIdle]}/><Text numberOfLines={2} style={s.activity}>{target.activity?a(activityLabel(target.activity))+' · '+a(activityTargetLabel(target.activity)):a('Idle')}</Text></View>
-     {target.character.id!==state.character?.id?<GameButton title={a('Switch')} onPress={()=>switchTo(target.character.id)}/>:null}
+     {target.character.id!==state.character?.id?<GameButton title={a('Switch')} disabled={controlsBusy} loading={switchingId===target.character.id} onPress={()=>switchTo(target.character.id)}/>:null}
      {onDelete?<GameButton title={r('Review deletion options')} tone="secondary" onPress={()=>setShowDeleteOptions(true)}/>:null}
     </View>:<>
      <GameButton title={r('Back to character')} compact tone="secondary" onPress={()=>{Keyboard.dismiss();setShowDeleteOptions(false);setConfirmation('');setError('');setShowDeleteDetails(false)}}/>
@@ -217,7 +231,7 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
  roleChipFilled:{borderColor:C.good},
  roleChipText:{fontSize:11,color:C.muted,fontWeight:'800'},
  roleChipTextFilled:{color:C.good},
- pressed:{opacity:.75},
+ pressed:{opacity:.75},controlDisabled:{opacity:.45},
  modalSurface:{maxWidth:420,padding:spacing.md},
  modalScroll:{maxHeight:'78%'},modalBody:{gap:spacing.sm,paddingBottom:spacing.sm},
  manageOverview:{gap:8},manageProfile:{flexDirection:'row',alignItems:'center',gap:9},

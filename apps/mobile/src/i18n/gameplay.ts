@@ -9,6 +9,13 @@ import {useMemo} from 'react';
 // Every row is complete, in en/de/es/nl/it/fr order. English phrases are typed keys.
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
+ "ACTION TIME":["ACTION TIME","AKTIONSZEIT","TIEMPO DE ACCIÓN","ACTIETIJD","TEMPO AZIONE","TEMPS D’ACTION"],
+ "RARE FINDS":["RARE FINDS","SELTENE FUNDE","HALLAZGOS RAROS","ZELDZAME VONDSTEN","RITROVAMENTI RARI","TROUVAILLES RARES"],
+ "Shorter gathering actions":["Shorter gathering actions","Kürzere Sammelaktionen","Recolección más rápida","Kortere verzamelacties","Raccolta più rapida","Actions de récolte plus courtes"],
+ "Slower without tools":["Slower without tools","Langsamer ohne Werkzeuge","Más lento sin herramientas","Langzamer zonder gereedschap","Più lento senza attrezzi","Plus lent sans outils"],
+ "How tool bonuses work":["How tool bonuses work","So wirken Werkzeugboni","Cómo funcionan los bonos","Hoe gereedschapsbonussen werken","Come funzionano i bonus","Comment fonctionnent les bonus"],
+ "Not equipped":["Not equipped","Nicht ausgerüstet","Sin equipar","Niet uitgerust","Non equipaggiato","Non équipé"],
+ "tier time":["tier time","Stufenzeit","tiempo de nivel","rangtijd","tempo del livello","temps du palier"],
  // Isolated release: gathering tool vault, retaining latest main inspection strings.
  "TOOL TIERS · SELECT TO INSPECT":["TOOL TIERS · SELECT TO INSPECT","WERKZEUGSTUFEN · ZUM ANSEHEN WÄHLEN","NIVELES DE HERRAMIENTA · TOCA PARA VER","GEREEDSCHAPSNIVEAUS · KIES OM TE BEKIJKEN","LIVELLI ATTREZZI · SELEZIONA","PALIERS D’OUTILS · SÉLECTIONNER"],
  "saved copies":["saved copies","gespeicherte Exemplare","copias guardadas","opgeslagen exemplaren","copie salvate","copies enregistrées"],
@@ -1310,10 +1317,12 @@ const crafting={
 "Stop & refund unused":["Stop & refund unused","Stoppen und Rest erstatten","Parar y devolver sobrante","Stoppen en restant teruggeven","Ferma e rimborsa il resto","Arrêter et rembourser le reste"],
 "Tap a resource to begin practicing.":["Tap a resource to begin practicing.","Tippe auf eine Ressource, um zu üben.","Toca un recurso para practicar.","Tik op een grondstof om te oefenen.","Tocca una risorsa per esercitarti.","Touchez une ressource pour pratiquer."],
 "Practice in progress":["Practice in progress","Übung läuft","Práctica en curso","Oefening bezig","Pratica in corso","Pratique en cours"],
+"ACTIVE BLESSINGS":["ACTIVE BLESSINGS","AKTIVE SEGEN","BENDICIONES ACTIVAS","ACTIEVE ZEGENINGEN","BENEDIZIONI ATTIVE","BÉNÉDICTIONS ACTIVES"],
 "ACTIVE BLESSING":["ACTIVE BLESSING","AKTIVER SEGEN","BENDICIÓN ACTIVA","ACTIEVE ZEGEN","BENEDIZIONE ATTIVA","BÉNÉDICTION ACTIVE"],
 "No blessing selected":["No blessing selected","Kein Segen gewählt","Sin bendición seleccionada","Geen zegen gekozen","Nessuna benedizione selezionata","Aucune bénédiction sélectionnée"],
 "Show all":["Show all","Alle anzeigen","Mostrar todo","Alles tonen","Mostra tutto","Tout afficher"],
 "Hide weaker":["Hide weaker","Schwächere ausblenden","Ocultar más débiles","Zwakkere verbergen","Nascondi più deboli","Masquer les plus faibles"],
+"Equip one blessing per category. Star useful alternatives to keep them visible.":["Equip one blessing per category. Star useful alternatives to keep them visible.","Rüste einen Segen pro Kategorie aus. Markiere Alternativen, damit sie sichtbar bleiben.","Equipa una bendición por categoría. Marca las alternativas para mantenerlas visibles.","Rust één zegening per categorie uit. Markeer alternatieven om ze zichtbaar te houden.","Equipaggia una benedizione per categoria. Segna le alternative per mantenerle visibili.","Équipez une bénédiction par catégorie. Marquez les alternatives pour les garder visibles."],
 "Equip one blessing at a time. Star useful alternatives so they remain visible when weaker blessings are hidden.":["Equip one blessing at a time. Star useful alternatives so they remain visible when weaker blessings are hidden.","Rüste einen Segen gleichzeitig aus. Markiere Alternativen, damit sie beim Ausblenden schwächerer Segen sichtbar bleiben.","Equipa una bendición a la vez. Marca alternativas para mantenerlas visibles al ocultar las más débiles.","Rust één zegen tegelijk uit. Markeer alternatieven zodat ze zichtbaar blijven wanneer zwakkere verborgen zijn.","Equipaggia una benedizione alla volta. Segna le alternative per mantenerle visibili quando nascondi quelle più deboli.","Équipez une bénédiction à la fois. Marquez les alternatives pour les garder visibles quand les plus faibles sont masquées."],
 "Close Forge result":["Close Forge result","Schmiedeergebnis schließen","Cerrar resultado de forja","Smeedresultaat sluiten","Chiudi risultato forgia","Fermer le résultat de forge"],
 "EXCEPTIONAL FORGE RESULT":["EXCEPTIONAL FORGE RESULT","AUSSERGEWÖHNLICHES SCHMIEDEERGEBNIS","RESULTADO DE FORJA EXCEPCIONAL","UITZONDERLIJK SMEEDRESULTAAT","RISULTATO FORGIA ECCEZIONALE","RÉSULTAT DE FORGE EXCEPTIONNEL"],
@@ -1892,6 +1901,12 @@ for(const [english,pair] of Object.entries(toolDetailsEarlyLocales)){
 }
 export const gameplayTranslate=createTranslator<GameplayKey>(gameplayCatalogs);
 
+const plainKeysByLowercase=new Map<string,GameplayKey>();
+for(const key of Object.keys(rows) as GameplayKey[]){
+ if(key.includes('{'))continue;
+ const lower=key.toLowerCase();
+ if(!plainKeysByLowercase.has(lower))plainKeysByLowercase.set(lower,key);
+}
 const templates=(Object.keys(rows) as GameplayKey[]).filter(key=>key.includes('{')).map(key=>{
   const names:string[]=[];
   const escaped=key.replace(/[.*+?^$()|[\]\\]/g,'\\$&');
@@ -1905,7 +1920,7 @@ export function localizeGameplay(language:Language,value:string|undefined):strin
   const equipmentMetadata=equipmentMaterialMetadataText(language,value);
   if(equipmentMetadata!==undefined)return equipmentMetadata;
   if(Object.prototype.hasOwnProperty.call(rows,value))return gameplayTranslate(language,value as GameplayKey);
-  const key=(Object.keys(rows) as GameplayKey[]).find(entry=>!entry.includes('{')&&entry.toLowerCase()===value.toLowerCase());
+  const key=plainKeysByLowercase.get(value.toLowerCase());
   if(key){const translated=gameplayTranslate(language,key);return value===value.toUpperCase()?translated.toLocaleUpperCase(language):translated;}
   // German source labels take priority over generic interpolated templates.
   if(language==='de'){const translated=germanCoverageText(value);if(translated!==undefined)return translated;}

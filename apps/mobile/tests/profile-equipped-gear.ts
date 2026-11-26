@@ -1,5 +1,6 @@
+import {enhancedGearStatsAtRank} from '../src/core/equipment-enhancement';
 import {createCharacter,newGame} from '../src/core/game';
-import {localProfileGear,normalizeProfileGear,PROFILE_GEAR_SLOTS,profileGearColumnCount} from '../src/core/profile-equipped-gear';
+import {localProfileGear,normalizeProfileGear,PROFILE_GEAR_SLOTS,profileGearColumnCount,profileItemStats,profileItemSockets,profileBonusPercent} from '../src/core/profile-equipped-gear';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 function equal(actual:unknown,expected:unknown,message:string){
@@ -50,6 +51,25 @@ equal(activeGear[0].rarity,'rare','exact crafted copy rarity shown');
 equal(activeGear[0].quality,75,'exact crafted copy quality shown');
 equal(activeGear[0].rank,2,'exact crafted copy upgrade shown');
 equal(activeGear[0].gemIds?.join(','),'EMBER_SHARD','local legacy sockets remain visible');
+const effective=profileItemStats(activeGear[0]);
+ok(effective&&effective.attack>0,'known exact copy gets modified item stats');
+equal(profileItemStats({...activeGear[0],inspectionKnown:false}),undefined,'old or unresolved payload never invents stats');
+equal(profileItemSockets(activeGear[0])[0].id,'EMBER_SHARD','actual socket is shown');
+equal(profileItemSockets({...activeGear[0],inspectionKnown:false})[0].detail,undefined,'old payload cannot invent gem effect');
+equal(effective!.attack,enhancedGearStatsAtRank(state,'basic_sword',2,'copy-active').attack,'public stats equal exact inventory item stats');
+const stale=localProfileGear({...state,character:{...state.character,equipmentInstanceIds:{weapon:'missing-copy'},gearEnhancements:{basic_sword:{rank:4,failures:0,gemIds:['EMBER_SHARD']}}}})[0];
+equal(stale.inspectionKnown,false,'stale copy fails closed');
+equal(stale.rank,undefined,'stale copy never borrows legacy upgrade');
+equal(stale.gemIds?.length,0,'stale copy never borrows legacy sockets');
+const duplicate=localProfileGear({...state,account:{...state.account,craftedGearInstances:[...state.account.craftedGearInstances,...state.account.craftedGearInstances]}})[0];
+equal(duplicate.inspectionKnown,false,'ambiguous exact ID fails closed');
+const malformed=normalizeProfileGear([{slot:'weapon',itemId:'basic_sword',inspectionKnown:true,rarity:'mythic',quality:200}])![0];
+equal(profileItemStats(malformed),undefined,'invalid quality does not become neutral quality');
+equal(profileBonusPercent(1.25),'+1.25%','two decimal precision preserved');
+const old=normalizeProfileGear([{slot:'weapon',itemId:'basic_sword',rarity:'rare',quality:75,rank:2,statGemId:'EMBER_SHARD'}])![0];
+equal(profileItemStats(old)?.attack,effective!.attack,'old RPC can retain exact-copy item-only stats');
+equal(profileItemSockets(old)[0].detail,undefined,'old RPC cannot invent gem effects');
+equal(profileItemStats(normalizeProfileGear([{slot:'weapon',itemId:'basic_sword',rarity:'rare',quality:75,rank:2,inspectionKnown:false}])![0]),undefined,'explicit unresolved status never falls back');
 const otherGear=localProfileGear(state,otherId);
 equal(otherGear.length,1,'selected inactive character gets own loadout');
 equal(otherGear[0].slot,'ring','selected inactive character does not leak active gear');

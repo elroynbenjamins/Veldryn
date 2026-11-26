@@ -1,6 +1,6 @@
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {progressionT,progressionText,progressionEnvironmentText,type ProgressionKey} from '../i18n/progression';
-import {useMemo} from 'react';
+import {memo,useMemo} from 'react';
 import {ScrollView,StyleSheet,Text,View} from 'react-native';
 import type {ActivityKind} from '../core/types';
 import {EnvironmentEffect,environmentEffect,seasonEffect,SEASON_DEFINITIONS,weatherChancesForSeason,weatherEffect,WEATHER_DEFINITIONS,WorldEnvironment} from '../core/world-weather';
@@ -18,7 +18,13 @@ function exactMetrics(effect:EnvironmentEffect){
   return values.filter(value=>Math.abs(value.delta)>.0001).map(value=>({...value,beneficial:value.lowerIsBetter?value.delta<0:value.delta>0,text:`${value.delta>0?'+':''}${Math.round(value.delta*100)}%`}));
 }
 
-export function EnvironmentDetailsModal({visible,environment,nowMs,locked,activityKind,reduceMotion=false,onClose}:{visible:boolean;environment:WorldEnvironment;nowMs:number;locked:boolean;activityKind?:ActivityKind;reduceMotion?:boolean;onClose:()=>void}){
+type EnvironmentDetailsProps={visible:boolean;environment:WorldEnvironment;nowMs:number;locked:boolean;activityKind?:ActivityKind;reduceMotion?:boolean;onClose:()=>void};
+
+// Keep the native Modal mounted for its close transition, but do not rebuild
+// its detailed weather table on every gameplay tick while it is closed.
+// Opening always receives the latest environment, clock and callbacks.
+export const EnvironmentDetailsModal=memo(EnvironmentDetailsContent,(previous,next)=>!previous.visible&&!next.visible);
+function EnvironmentDetailsContent({visible,environment,nowMs,locked,activityKind,reduceMotion=false,onClose}:EnvironmentDetailsProps){
   const contextLanguage=useGameLanguage(),language=contextLanguage;
   const t=(key:ProgressionKey,params?:Record<string,string|number>)=>progressionT(language,key,params);
   const p=(text:string)=>progressionText(language,text);

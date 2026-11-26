@@ -1,2 +1,2 @@
 export interface FaithPracticeReservation { tierId:string; remainingPractices:number; lastClaimAtMs:number; progressFraction:number; }
-export interface CharacterFaithState { xp?:number; practice?:import('./faith').FaithPractice; selectedBlessingId?:string; favoriteBlessingIds:string[]; hideWeakerBlessings:boolean; }
+export interface CharacterFaithState { xp?:number; practice?:import('./faith').FaithPractice; /** Legacy single selection mirror; the category map is authoritative when present. */ selectedBlessingId?:string; selectedBlessingIds?:Partial<Record<import('../content/faith').FaithBlessingGroup,string>>; favoriteBlessingIds:string[]; hideWeakerBlessings:boolean; }

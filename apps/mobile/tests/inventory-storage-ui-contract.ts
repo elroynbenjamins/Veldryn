@@ -126,7 +126,8 @@ ok(inspect.includes("const isBonusRoll=(line:string)=>line.startsWith('Equipment
    &&inspect.includes("source==='bank'?gt('Bank'):gl('Gear')"),
    'Shared Inspect must derive new and legacy bonus stats from exact item-inspection receipts in Gear Storage');
 ok(!inspect.includes("gt('BONUS STATS')")&&inspect.includes("bonusRows.map(roll=>")
-   &&inspect.includes("otherEffectLines=model.effectLines.filter(line=>!isBonusRoll(line))"),
+   &&inspect.includes("otherEffectLines=model.effectLines.filter(line=>!isBonusRoll(line)&&(!traitLine||line!==traitLine)")
+   &&inspect.includes('const traitLine=item.type===\'gear\'?item.passive?.trim():undefined'),
    'Bonus stats must be prominent, compact, and not duplicated under expanded equipment details');
 ok(gearPreview.includes("gl('BONUS STATS')")&&!gearPreview.includes('rollTrack')
    &&!gearPreview.includes('weaponBonusStrength')&&!gearPreview.includes('rollBadge'),

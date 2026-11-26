@@ -71,7 +71,7 @@ export const INGOT_SMELTING_RECIPE_IDS=new Set([
 export const FISH_COOKING_RECIPE_IDS=new Set([
  'COOK_MEADOW_PERCH','COOK_SILVERFIN','COOK_ROOTSTREAM_TROUT','COOK_RIVER_EEL',
  'COOK_OATHSCALE','COOK_CAVE_LOACH','COOK_CROWN_CARP','COOK_IRONWOOD_STEW',
- 'COOK_OASIS_CARP','COOK_GLASSFIN_FEAST','COOK_ICEFISH','COOK_EMBERFIN',
+ 'COOK_OASIS_CARP','COOK_SUNSCAR_SPICED_PLATTER','COOK_GLASSFIN_FEAST','COOK_ICEFISH','COOK_EMBERFIN',
 ]);
 const COOKING_FIREWOOD_ITEM_IDS=new Set([
  'GREENWOOD_LOG','IRONWOOD_LOG','CROWNWOOD_LOG','DUNEWOOD','WHITEPINE_LOG','CINDERWOOD_LOG',
@@ -80,6 +80,11 @@ export const RECIPES:Recipe[]=[
 ...(GUILD_COMPONENT_CRAFTING_RELEASED?GUILD_COMPONENT_RECIPES:[]),
 ...CROSS_PROFESSION_COMPONENT_RECIPES,
 ...ALCHEMY_RECIPES as Recipe[],
+  // Seasonal definitions stay parseable across event closure; recipe browsers hide them until the server runtime is live.
+  {id:'CRAFT_FROSTFALL_CHRISTMAS_LIGHTS_2026',name:'Craft Christmas Lights ×5',skillId:'smithing',level:4,xp:35,gold:30,seconds:40,repeatableTraining:true,
+   inputs:[{itemId:'COPPER_ORE',quantity:8},{itemId:'DEWLEAF',quantity:4},{itemId:'WISP_DUST',quantity:1}],output:{itemId:'FROSTFALL_CHRISTMAS_LIGHTS_2026',quantity:5}} as Recipe,
+  {id:'CRAFT_FROSTFALL_CHRISTMAS_LIGHTS_TAILORING_2026',name:'Craft Christmas Lights ×5',skillId:'tailoring',level:4,xp:35,gold:30,seconds:40,repeatableTraining:true,
+   inputs:[{itemId:'MOSS_FIBER',quantity:8},{itemId:'DEWLEAF',quantity:4},{itemId:'WISP_DUST',quantity:1}],output:{itemId:'FROSTFALL_CHRISTMAS_LIGHTS_2026',quantity:5}} as Recipe,
 ...NOVICE_RECIPES,
 // Keep the full catalog authoritative for crafting, progression, and save
 // compatibility. Presentation layers apply their release gate separately.
@@ -100,17 +105,18 @@ export const RECIPES:Recipe[]=[
 
 {id:'COOK_MEADOW_PERCH',name:'Cook Meadow Perch',skillId:'cooking',level:1,xp:80,gold:35,seconds:34,repeatableTraining:true,inputs:[{itemId:'MEADOW_PERCH',quantity:5},{itemId:'GREENWOOD_LOG',quantity:1}],output:{itemId:'COOKED_MEADOW_PERCH',quantity:5}},
 {id:'COOK_SILVERFIN',name:'Cook Silverfin',skillId:'cooking',level:1,xp:100,gold:50,seconds:36,repeatableTraining:true,inputs:[{itemId:'SILVERFIN',quantity:5},{itemId:'GREENWOOD_LOG',quantity:1}],output:{itemId:'COOKED_SILVERFIN',quantity:5}},
-{id:'COOK_ROOTSTREAM_TROUT',name:'Roast Rootstream Trout',skillId:'cooking',level:7,xp:145,gold:65,seconds:42,repeatableTraining:true,inputs:[{itemId:'ROOTSTREAM_TROUT',quantity:4},{itemId:'IRONWOOD_LOG',quantity:1}],output:{itemId:'ROASTED_ROOTSTREAM_TROUT',quantity:4}},
+{id:'COOK_ROOTSTREAM_TROUT',name:'Roast Rootstream Trout',skillId:'cooking',level:7,xp:150,gold:65,seconds:42,repeatableTraining:true,inputs:[{itemId:'ROOTSTREAM_TROUT',quantity:4},{itemId:'IRONWOOD_LOG',quantity:1}],output:{itemId:'ROASTED_ROOTSTREAM_TROUT',quantity:4}},
 {id:'COOK_RIVER_EEL',name:'Sear River Eel',skillId:'cooking',level:8,xp:180,gold:80,seconds:44,repeatableTraining:true,inputs:[{itemId:'RIVER_EEL',quantity:4},{itemId:'IRONWOOD_LOG',quantity:1}],output:{itemId:'SEARED_RIVER_EEL',quantity:4}},
 {id:'COOK_OATHSCALE',name:'Roast Oathscale',skillId:'cooking',level:16,xp:260,gold:130,seconds:54,repeatableTraining:true,inputs:[{itemId:'OATHSCALE_PIKE',quantity:3},{itemId:'CROWNWOOD_LOG',quantity:1}],output:{itemId:'ROASTED_OATHSCALE',quantity:3}},
-{id:'COOK_CAVE_LOACH',name:'Bake Cave Loach',skillId:'cooking',level:16,xp:245,gold:120,seconds:52,repeatableTraining:true,inputs:[{itemId:'CAVE_LOACH',quantity:3},{itemId:'CROWNWOOD_LOG',quantity:1}],output:{itemId:'BAKED_CAVE_LOACH',quantity:3}},
+{id:'COOK_CAVE_LOACH',name:'Bake Cave Loach',skillId:'cooking',level:16,xp:250,gold:120,seconds:52,repeatableTraining:true,inputs:[{itemId:'CAVE_LOACH',quantity:3},{itemId:'CROWNWOOD_LOG',quantity:1}],output:{itemId:'BAKED_CAVE_LOACH',quantity:3}},
 {id:'COOK_CROWN_CARP',name:'Roast Crown Carp',skillId:'cooking',level:20,xp:330,gold:165,seconds:70,repeatableTraining:true,inputs:[{itemId:'CROWN_CARP',quantity:3},{itemId:'CROWNWOOD_LOG',quantity:1}],output:{itemId:'ROASTED_CROWN_CARP',quantity:3}},
-{id:'COOK_IRONWOOD_STEW',name:'Ironwood Hunter Stew',skillId:'cooking',level:15,xp:105,gold:140,seconds:66,repeatableTraining:true,inputs:[{itemId:'RIVER_EEL',quantity:2},{itemId:'THORN_SAP',quantity:1},{itemId:'IRONWOOD_LOG',quantity:1}],output:{itemId:'IRONWOOD_STEW',quantity:1}},
-{id:'COOK_ASHLANDS_EMBER_STEW',name:'Ashlands Ember Stew',skillId:'cooking',level:72,xp:760,gold:900,seconds:110,repeatableTraining:true,inputs:[{itemId:'ASHEN_MYRRH',quantity:2},{itemId:'CINDER_HEART',quantity:1},{itemId:'CINDERWOOD_LOG',quantity:1}],output:{itemId:'ASHLANDS_EMBER_STEW',quantity:2}},
+{id:'COOK_IRONWOOD_STEW',name:'Ironwood Hunter Stew',skillId:'cooking',level:15,xp:110,gold:140,seconds:66,repeatableTraining:true,inputs:[{itemId:'RIVER_EEL',quantity:6},{itemId:'THORN_SAP',quantity:3},{itemId:'IRONWOOD_LOG',quantity:3}],output:{itemId:'IRONWOOD_STEW',quantity:1}},
+{id:'COOK_ASHLANDS_EMBER_STEW',name:'Ashlands Ember Stew',skillId:'cooking',level:72,xp:760,gold:900,seconds:110,repeatableTraining:true,inputs:[{itemId:'ASHEN_MYRRH',quantity:6},{itemId:'CINDER_HEART',quantity:3},{itemId:'CINDERWOOD_LOG',quantity:3}],output:{itemId:'ASHLANDS_EMBER_STEW',quantity:1}},
 {id:'COOK_OASIS_CARP',name:'Grill Oasis Carp',skillId:'cooking',level:26,xp:420,gold:220,seconds:120,repeatableTraining:true,inputs:[{itemId:'OASIS_CARP',quantity:4},{itemId:'DUNEWOOD',quantity:1}],output:{itemId:'GRILLED_OASIS_CARP',quantity:4}},
-{id:'COOK_GLASSFIN_FEAST',name:'Amberglass Glassfin Feast',skillId:'cooking',level:38,xp:720,gold:520,seconds:210,repeatableTraining:true,inputs:[{itemId:'GLASSFIN',quantity:3},{itemId:'AMBERGLASS',quantity:1},{itemId:'DUNEWOOD',quantity:1}],output:{itemId:'GLASSFIN_FEAST',quantity:2}},
-{id:'COOK_ICEFISH',name:'Frosted Icefin',skillId:'cooking',level:48,xp:1100,gold:900,seconds:300,repeatableTraining:true,inputs:[{itemId:'ICEFIN',quantity:3},{itemId:'WINTERMINT',quantity:1},{itemId:'WHITEPINE_LOG',quantity:1}],output:{itemId:'FROSTED_ICEFIN',quantity:3}},
-{id:'COOK_EMBERFIN',name:'Char Emberfin',skillId:'cooking',level:74,xp:1650,gold:1200,seconds:420,repeatableTraining:true,inputs:[{itemId:'EMBERFIN',quantity:3},{itemId:'ASHEN_MYRRH',quantity:1},{itemId:'CINDERWOOD_LOG',quantity:1}],output:{itemId:'CHARRED_EMBERFIN',quantity:3}},
+{id:'COOK_SUNSCAR_SPICED_PLATTER',name:'Sunscar Spiced Platter',skillId:'cooking',level:30,xp:330,gold:320,seconds:150,repeatableTraining:true,inputs:[{itemId:'OASIS_CARP',quantity:12},{itemId:'SUNSCALE',quantity:4},{itemId:'DUNEWOOD',quantity:3}],output:{itemId:'SUNSCAR_SPICED_PLATTER',quantity:1}},
+{id:'COOK_GLASSFIN_FEAST',name:'Amberglass Glassfin Feast',skillId:'cooking',level:38,xp:720,gold:520,seconds:210,repeatableTraining:true,inputs:[{itemId:'GLASSFIN',quantity:9},{itemId:'AMBERGLASS',quantity:3},{itemId:'DUNEWOOD',quantity:3}],output:{itemId:'GLASSFIN_FEAST',quantity:1}},
+{id:'COOK_ICEFISH',name:'Frosted Icefin',skillId:'cooking',level:48,xp:1100,gold:900,seconds:300,repeatableTraining:true,inputs:[{itemId:'ICEFIN',quantity:9},{itemId:'WINTERMINT',quantity:3},{itemId:'WHITEPINE_LOG',quantity:3}],output:{itemId:'FROSTED_ICEFIN',quantity:1}},
+{id:'COOK_EMBERFIN',name:'Char Emberfin',skillId:'cooking',level:74,xp:1650,gold:1200,seconds:420,repeatableTraining:true,inputs:[{itemId:'EMBERFIN',quantity:9},{itemId:'ASHEN_MYRRH',quantity:3},{itemId:'CINDERWOOD_LOG',quantity:3}],output:{itemId:'CHARRED_EMBERFIN',quantity:1}},
 ] as Recipe[]).map(recipe=>{
  const chargedGold=increasedCraftingGoldCost(recipe.gold);
  if(INGOT_SMELTING_RECIPE_IDS.has(recipe.id))return {...recipe,gold:reducedIngotSmeltingGoldCost(chargedGold)};
@@ -124,7 +130,7 @@ export const RECIPES:Recipe[]=[
  // and 3× XP economy. Do not apply those multipliers to fish dishes.
  if(recipe.id==='COOK_ASHLANDS_EMBER_STEW')return {...recipe,
   xp:recipe.xp*3,
-  inputs:recipe.inputs.map(input=>({...input,quantity:input.quantity*5})),
+  inputs:recipe.inputs.map(input=>({...input,quantity:input.itemId==='ASHEN_MYRRH'?10:input.itemId==='CINDER_HEART'||input.itemId==='CINDERWOOD_LOG'?5:input.quantity})),
   gold:reducedCookingGoldCost(chargedGold),
  };
  return {...recipe,gold:recipe.skillId==='cooking'?reducedCookingGoldCost(chargedGold):chargedGold};

@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {identityFieldExpired,mergeSocialWithCachedIcon,PLAYER_ICON_REFRESH_MS,PLAYER_SOCIAL_REFRESH_MS} from '../core/player-identity-cache-policy';
+import {acceptIdentityIconResponse,identityFieldExpired,mergeSocialWithCachedIcon,PLAYER_ICON_REFRESH_MS,PLAYER_SOCIAL_REFRESH_MS} from '../core/player-identity-cache-policy';
 import type {PlayerBadgeIdentity} from '../core/player-badges';
 import type {PlayerNameStylePreference} from '../core/player-name-style';
 
@@ -18,9 +18,12 @@ type Saved={version:1;entries:[string,Entry][]};
 export const PLAYER_IDENTITY_TTL_MS=PLAYER_ICON_REFRESH_MS;
 export const PLAYER_IDENTITY_DETAILS_TTL_MS=PLAYER_SOCIAL_REFRESH_MS;
 const MAX_ENTRIES=500;
-const STORAGE_PREFIX='veldryn:public-player-identities:v1:';
+const STORAGE_PREFIX='veldryn:public-player-identities:v2:';
 const entries=new Map<string,Entry>();
 const listeners=new Set<(accountId:string)=>void>();
+// A query that started before a confirmed local icon save may not overwrite it.
+let ownIconWriteVersion=0;
+export function playerIdentityIconWriteVersion(){return ownIconWriteVersion;}
 let currentViewer='',ready:Promise<void>=Promise.resolve(),saveTimer:ReturnType<typeof setTimeout>|undefined;
 
 function trimCache(){
@@ -40,7 +43,7 @@ function scheduleSave(){
 export async function ensurePlayerIdentityViewer(viewer:string){
  if(viewer===currentViewer){await ready;return;}
  if(saveTimer){clearTimeout(saveTimer);saveTimer=undefined;}
- currentViewer=viewer;entries.clear();
+ currentViewer=viewer;ownIconWriteVersion++;entries.clear();
  if(!viewer){ready=Promise.resolve();return;}
  ready=AsyncStorage.getItem(storageKey(viewer)).then(raw=>{
   if(viewer!==currentViewer||!raw)return;
@@ -69,11 +72,12 @@ export function playerIdentityDetailsNeedRefresh(id:string,now=Date.now()){
  const entry=entries.get(id);
  return identityFieldExpired(entry?.detailsFetchedAt,PLAYER_IDENTITY_DETAILS_TTL_MS,now);
 }
-export function storePlayerIdentities(rows:ReadonlyMap<string,CachedPlayerIdentity>,now=Date.now(),includesIcon=true){
+export function storePlayerIdentities(rows:ReadonlyMap<string,CachedPlayerIdentity>,now=Date.now(),includesIcon=true,queryIconWriteVersion=ownIconWriteVersion){
  for(const [id,value] of rows){
   const old=entries.get(id);
-  const merged=mergeSocialWithCachedIcon(old?.value,value,includesIcon);
-  entries.delete(id);entries.set(id,{value:merged,iconFetchedAt:includesIcon?now:old?.iconFetchedAt??0,detailsFetchedAt:now});
+  const acceptIcon=acceptIdentityIconResponse(includesIcon,id===currentViewer&&!!old,queryIconWriteVersion,ownIconWriteVersion);
+  const merged=mergeSocialWithCachedIcon(old?.value,value,acceptIcon);
+  entries.delete(id);entries.set(id,{value:merged,iconFetchedAt:acceptIcon?now:old?.iconFetchedAt??0,detailsFetchedAt:now});
  }
  trimCache();scheduleSave();
 }
@@ -83,6 +87,7 @@ export function subscribePlayerIdentityChanges(listener:(accountId:string)=>void
 /** Called after the owner saves a new icon. Avoids waiting for any polling. */
 export function publishOwnProfileIcon(accountId:string,profileIconId:string,classId:string){
  if(!accountId||!currentViewer||currentViewer!==accountId)return;
+ ownIconWriteVersion++;
  const old=entries.get(accountId),previous=old?.value;
  entries.delete(accountId);
  entries.set(accountId,{iconFetchedAt:Date.now(),detailsFetchedAt:old?.detailsFetchedAt??0,value:{

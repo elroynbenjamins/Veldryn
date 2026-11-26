@@ -144,6 +144,26 @@ ok(liveEventDef('EVT_ANNUAL_012_2027')?.name==='Frostfall Festival','Frostfall c
 ok(EQUIPMENT_MAIN_RESOURCE_BUNDLES.length===7,'Both shops use seven reviewed equipment resource inputs');
 ok(eventShopOffers(frost,frostTime).filter(offer=>offer.reward.kind==='crafting_material').length===7,'Frostfall offers all seven selectable main materials');
 ok(eventShopOffers(frost,frostTime).length>=20,'Frostfall has a full holiday catalogue beyond the original five rewards');
+const bellframeId='frame_frostfall_aurora_bellframe',bellframeOffer='frostfall_aurora_bellframe';
+const bellframeStart=Date.UTC(2026,11,3),bellframeEnd=Date.UTC(2026,11,27),bellframeGrace=Date.UTC(2026,11,29);
+const frameState={...frost,account:{...frost.account,liveEvent:{eventId:frostId,enabled:true,startsAtMs:bellframeStart,endsAtMs:bellframeEnd,graceEndsAtMs:bellframeGrace},eventCurrencyBalanceById:{[frostId]:6000}}};
+ok(!profileCosmeticReleased(frameState,'border',bellframeId,bellframeStart-1),'Unowned frame is hidden before Frostfall');
+ok(profileCosmeticReleased(frameState,'border',bellframeId,bellframeStart),'Frame previews during Frostfall');
+ok(!canUseProfileCosmetic(frameState,'border',bellframeId),'Unowned border cannot be equipped');
+const framePurchased=purchaseEventOffer(frameState,bellframeOffer,bellframeEnd);
+ok(framePurchased.account.eventCurrencyBalanceById?.[frostId]===3000,'Frame costs exactly 3000 Frostbell Tokens in claim grace');
+ok(canUseProfileCosmetic(framePurchased,'border',bellframeId),'Frame ownership is stored on the account');
+ok(profileCosmeticReleased(framePurchased,'border',bellframeId,bellframeGrace),'Earned frame persists after the festival');
+ok(!profileCosmeticReleased(frameState,'border',bellframeId,bellframeGrace),'Unowned frame is hidden after the grace period');
+ok(!profileCosmeticReleased(frameState,'background','bg_frostfall',bellframeStart-1),'Unowned Frostfall background hidden before launch');
+ok(profileCosmeticReleased(frameState,'background','bg_frostfall',bellframeStart),'Unowned Frostfall background becomes discoverable at launch');
+ok(!profileCosmeticReleased(frameState,'background','bg_frostfall',bellframeGrace),'Unowned Frostfall background hidden after grace');
+const backgroundOwner={...frameState,account:{...frameState.account,liveEvent:undefined,unlockedProfileBackgroundIds:['bg_frostfall']}};
+ok(profileCosmeticReleased(backgroundOwner,'background','bg_frostfall',bellframeGrace)&&canUseProfileCosmetic(backgroundOwner,'background','bg_frostfall'),'Owned Frostfall background remains available after closure');
+let frameReplayBlocked=false;try{purchaseEventOffer(framePurchased,bellframeOffer,bellframeEnd)}catch{frameReplayBlocked=true}
+ok(frameReplayBlocked,'One-time frame purchase cannot spend currency twice');
+let frameLateBlocked=false;try{purchaseEventOffer(frameState,bellframeOffer,bellframeGrace)}catch{frameLateBlocked=true}
+ok(frameLateBlocked,'Frame purchase closes at the exact claim deadline');
 ok(!equipmentShopTierUnlocked(frost,4),'New characters cannot buy T4 equipment materials');
 const bundleId='frostfall_sunstone_ingot_100';
 let earlyMaterialBlocked=false;
@@ -166,5 +186,23 @@ const fullBank={...frost,bank:{...frost.bank,capacity:1,stacks:[{itemId:'SOME_OT
 const currencyBefore=fullBank.account.eventCurrencyBalanceById?.[frostId];
 let bankFullBlocked=false;try{purchaseEventOffer(fullBank,'frostfall_moss_fiber_100',nextWeek)}catch{bankFullBlocked=true}
 ok(bankFullBlocked&&fullBank.account.eventCurrencyBalanceById?.[frostId]===currencyBefore,'A full Bank cannot consume currency or deliver a partial grant');
+
+// Calendar-accurate Frostfall gifts: Dec 3–26 UTC is 24 playable days.
+// The -25% future-event common currency adjustment applies to each daily gift,
+// but never to the three weekly Day-7 Aurora Chimes.
+const frostGiftStartMs=Date.UTC(2026,11,3);
+const frostGiftEndMs=Date.UTC(2026,11,27);
+let frostGiftJourney=createCharacter(newGame(frostGiftStartMs),'IRONWARDEN','FrostGiftTester');
+frostGiftJourney={...frostGiftJourney,account:{...frostGiftJourney.account,liveEvent:{eventId:frostId,enabled:true,startsAtMs:frostGiftStartMs,endsAtMs:frostGiftEndMs,graceEndsAtMs:Date.UTC(2026,11,29)}}};
+for(let day=0;day<24;day++){
+ const at=frostGiftStartMs+day*86_400_000+12*3_600_000;
+ const gift=eventDailyGift(frostGiftJourney,at);
+ ok(Boolean(gift)&&gift?.giftDay===day%7+1,'Frostfall daily gift must cycle over 24 UTC playable days');
+ frostGiftJourney=claimEventDailyGift(frostGiftJourney,at);
+ ok(eventDailyGift(frostGiftJourney,at)?.claimed===true,'Frostfall daily gifts are one claim per UTC day');
+}
+ok(eventProgress(frostGiftJourney,frostId)===4609,'All 24 Frostfall gifts grant exactly 4,609 Reputation after -25% adjustment');
+ok(eventPrestigeBalance(frostGiftJourney,frostId)===3,'Three Day-7 gifts grant exactly 3 unmodified Aurora Chimes');
+ok(!eventDailyGift(frostGiftJourney,frostGiftEndMs),'No new Frostfall gift may be generated during the claim-only period');
 
 console.log(JSON.stringify({status:'PASS',event:'Veilbreak',progress:eventProgress(state,eventId)},null,2));

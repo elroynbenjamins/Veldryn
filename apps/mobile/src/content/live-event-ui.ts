@@ -72,7 +72,13 @@ export function validateLiveEventCatalog(events:readonly LiveEventDef[]):string[
     const companions=milestones.filter(row=>row.reward.kind==='companion');
     if(milestonePets.length!==1)errors.push(`${event.id} must have exactly one activity-meter pet.`);
     if(shopPets.length!==1)errors.push(`${event.id} must have exactly one shop pet.`);
-    if(companions.length<1||companions.length>2)errors.push(`${event.id} must have one or two milestone companions.`);
+    // Frostfall intentionally grants a full three-role companion team.
+    // All other festivals retain the original 1–2 companion limit.
+    if(event.id==='EVT_ANNUAL_012_2026'){
+      const expected=new Set(['EVT_UNIT_009','EVT_UNIT_012','EVT_UNIT_013']);
+      if(companions.length!==3||companions.some(row=>!expected.has(row.reward.id))||new Set(companions.map(row=>row.reward.id)).size!==3)
+        errors.push(`${event.id} must grant its three unique Frostfall milestone companions.`);
+    }else if(companions.length<1||companions.length>2)errors.push(`${event.id} must have one or two milestone companions.`);
     if(plan&&plan.shopCompanions.length>1)errors.push(`${event.id} cannot have more than one shop companion.`);
     if(plan&&plan.meterPet.points<event.maxProgress*.20||plan&&plan.meterPet.points>event.maxProgress*.55)errors.push(`${event.id} activity-meter pet should land between 20% and 55% of max progress.`);
     if(plan&&plan.finalCompanion.points!==event.maxProgress)errors.push(`${event.id} companion must be the final ${event.maxProgress}-point reward.`);

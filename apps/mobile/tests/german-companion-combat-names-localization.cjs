@@ -78,10 +78,10 @@ for(const [english,german] of descriptions){
 assert.equal(companionCombatDescriptionText('de','Untrusted text $&'),undefined);
 
 const customTechniques=[...backend.matchAll(/suffix:'[^']+',name:(?:"([^"]+)"|'([^']+)')/g)].map(m=>m[1]||m[2]);
-assert.equal(customTechniques.length,76);
+assert.equal(customTechniques.length,80,'All current authored techniques must be discovered');
 const defaults=['Fortified Shell','Reflective Shell','Executioner','Relentless','Deep Restoration','Rapid Aid'];
 const names=[...customTechniques,...defaults];
-assert.equal(new Set(names).size,82,'Technique translations should have unique English sources');
+assert.equal(new Set(names).size,86,'Technique translations should have unique English sources');
 assert.deepEqual(Object.keys(germanCompanionTechniqueNames).sort(),names.sort(),'German technique coverage drifted');
 for(const name of names){
  assert.ok(germanCompanionTechniqueNames[name]&&germanCompanionTechniqueNames[name]!==name,'Missing German technique: '+name);
@@ -116,7 +116,9 @@ const markers={
  ],
  codex:[
   'summary={companionCombatAbilityName(language,model.def.id,model.def.activeAbility.name)}',
-  '{companionCombatAbilityName(language,model.def.id,model.def.activeAbility.name)}</Text>',
+  'title:companionCombatAbilityName(language,model.def.id,model.def.activeAbility.name)',
+  '{title}</Text>',
+  'frostfallCompanionAbilityArt(model.def.id,slot)',
   'companionTrialAbilityName(language,phase.name)',
   'phase.effects.map(effect=>companionContent(language,effect))',
  ],

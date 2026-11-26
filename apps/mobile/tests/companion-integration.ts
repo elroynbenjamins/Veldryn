@@ -1,6 +1,6 @@
 import {createCharacter,newGame,claimActivity,claimQuest,startCombat,previewActivityReward} from '../src/core/game';
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
-import {unlockCombatCompanion,equipCombatCompanion,companionCombatContribution,companionLevelCost,companionRemainingLevelCost,companionAscensionCost,applyCompanionBondXp,claimSanctuaryTraining,claimSanctuaryEssence,companionSanctuaryUpgradeCost} from '../src/core/combat-companions';
+import {combatCompanionUiModel,combatCompanionUiModels,unlockCombatCompanion,equipCombatCompanion,companionCombatContribution,companionLevelCost,companionRemainingLevelCost,companionAscensionCost,applyCompanionBondXp,claimSanctuaryTraining,claimSanctuaryEssence,companionSanctuaryUpgradeCost} from '../src/core/combat-companions';
 import {companionAvailability,refreshCompanions,companionOwned,companionCombatExecutor,recordCompanionActivity,companionView,companionUnlockFacts,recommendedCompanionMissionTeam,recommendedCompanionTrialTeam} from '../src/core/companion-runtime';
 import {companionAttentionSummary,companionAttentionLabels} from '../src/core/companion-attention';
 import {buildNavigationBadges,buildQuickNavigationBadges} from '../src/core/navigation-notifications';
@@ -37,6 +37,15 @@ ok(bondDisplay.current===270&&bondDisplay.required===630&&bondDisplay.remaining=
 ok(companionBondProgress(10,7560).maxed&&companionBondProgress(10,7560).percent===100,'max Bond progress is complete');
 
 function fixture(){let s=createCharacter(newGame(now),'IRONWARDEN','Companion Test');s.quests=s.quests.map(q=>q.questId==='QST_005'?{...q,status:'claimed'}:q);for(const id of ids)s=unlockCombatCompanion(s,id,now);s.account.companionHousingTiers=Object.fromEntries(ids.map(id=>[id,3]));s.character!.gold=100000;s.account.companionEssence=10000;s.account.bondstones=100;s.account.companionMaterials={IRONWOOD_FANG:100,RUNEBOUND_CORE:100,WISP_DUST:100,ASTER_IRON_INGOT:100,ECHO_QUARTZ:100,OATHGLASS_SHARD:100,OATHGLASS_FRAGMENT:100};return refreshCompanions(s,now);}
+// Batch projection must match individual UI reads, including legacy/missing data
+// and the input order; no ownership, progress or material mutation is allowed.
+for(const batchState of [fixture(),createCharacter(newGame(now),'IRONWARDEN','Empty Roster')]){
+ const requested=['UNIT_003','UNKNOWN_COMPANION','UNIT_001','UNIT_001','UNIT_002'];
+ const before=JSON.stringify(batchState);
+ ok(JSON.stringify(combatCompanionUiModels(batchState,requested))===JSON.stringify(requested.map(id=>combatCompanionUiModel(batchState,id))),'batched companion UI models preserve single-model semantics and request order');
+ ok(JSON.stringify(combatCompanionUiModels(batchState,[]))==='[]','empty projection has no models');
+ ok(JSON.stringify(batchState)===before,'companion batch is read-only');
+}
 const command=(s:GameState,type:string,args?:Record<string,unknown>,time=now)=>{
   // Match the current food healing and mission duration instead of hardcoding ration quantities.
  const mission=type==='companion_assignment_start'?companionMission(String(args?.id??'')):undefined;
@@ -95,17 +104,17 @@ let expeditionGuide=fixture();for(const id of ids)expeditionGuide.account.combat
  const permanentCompanions=ALL_COMBAT_COMPANIONS.filter(def=>def.origin.type!=='event'),regionalCompanions=permanentCompanions.filter(def=>def.id.startsWith('UNIT_')),guildCompanions=permanentCompanions.filter(def=>def.id.startsWith('GUILD_UNIT_')),eventCompanions=ALL_COMBAT_COMPANIONS.filter(def=>def.origin.type==='event');
 // Veilbreak now carries two milestone companions plus Lanternwing in the event shop.
 const expectedPermanentIds=Array.from({length:24},(_,index)=>`UNIT_${String(index+1).padStart(3,'0')}`);
-const expectedEventIds=Array.from({length:11},(_,index)=>`EVT_UNIT_${String(index+1).padStart(3,'0')}`);
- ok(ALL_COMBAT_COMPANIONS.length===38,'authored roster contains 27 permanent and 11 event companions');
+const expectedEventIds=Array.from({length:13},(_,index)=>`EVT_UNIT_${String(index+1).padStart(3,'0')}`);
+ ok(ALL_COMBAT_COMPANIONS.length===40,'authored roster contains 27 permanent and 13 event companions');
  ok(permanentCompanions.length===27,'permanent companion count includes three Guild Token Shop companions');
  ok(regionalCompanions.map(def=>def.id).sort().join(',')===expectedPermanentIds.join(','),'regional companion ids remain UNIT_001 through UNIT_024');
  ok(guildCompanions.map(def=>def.id).sort().join(',')==='GUILD_UNIT_001,GUILD_UNIT_002,GUILD_UNIT_003','Guild Token Shop companion IDs remain stable');
-ok(eventCompanions.length===11,'event roster contains the 11 authored companion rewards');
- const expectedActiveEventIds=['EVT_UNIT_007','EVT_UNIT_008','EVT_UNIT_011',...(FROSTFALL_REWARDS_RELEASED?['EVT_UNIT_009']:[])].sort();
+ok(eventCompanions.length===13,'event roster contains the 13 authored companion rewards');
+ const expectedActiveEventIds=['EVT_UNIT_007','EVT_UNIT_008','EVT_UNIT_011',...(FROSTFALL_REWARDS_RELEASED?['EVT_UNIT_009','EVT_UNIT_012','EVT_UNIT_013']:[])].sort();
  ok(COMBAT_COMPANIONS.length===permanentCompanions.length+expectedActiveEventIds.length,'active roster contains permanent and only released event companions');
- ok(COMBAT_COMPANIONS.filter(def=>def.origin.type==='event').map(def=>def.id).sort().join(',')===expectedActiveEventIds.join(','),'Frostfall Herald remains hidden until the release flag is enabled');
+ ok(COMBAT_COMPANIONS.filter(def=>def.origin.type==='event').map(def=>def.id).sort().join(',')===expectedActiveEventIds.join(','),'All three Frostfall companions remain hidden until the release flag is enabled');
 ok(new Set(ALL_COMBAT_COMPANIONS.map(def=>def.id)).size===ALL_COMBAT_COMPANIONS.length,'permanent and event companion ids are unique');
-ok(eventCompanions.map(def=>def.id).sort().join(',')===expectedEventIds.join(','),'event companion ids cover EVT_UNIT_001 through EVT_UNIT_011');
+ok(eventCompanions.map(def=>def.id).sort().join(',')===expectedEventIds.join(','),'event companion ids cover EVT_UNIT_001 through EVT_UNIT_013');
 const mobileIds=new Set(ALL_COMBAT_COMPANIONS.map(def=>def.id));
 ok(COMPANION_SERVER_DEFINITIONS.filter(def=>!mobileIds.has(def.id)).length===0,'backend companion definitions match the authored mobile roster');
 ok(companionRewardLabel('COMPANION_PORTRAIT_UNIT_001').includes('Ironwood Hound'),'companion portrait entitlement has readable Codex copy');ok(companionRewardLabel('PROFILE_BORDER_MASTER_HANDLER').includes('Profile border'),'profile reward entitlement has readable Codex copy');ok(companionView(fixture(),now).codex.milestones[0].reward.companionEssence===120,'Codex projection exposes milestone reward details');

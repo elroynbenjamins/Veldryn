@@ -25,7 +25,7 @@ import {useGameTheme} from '../theme/ThemeContext';
 import {ProfileFrameOverlay} from './ProfileFrameOverlay';
 import {ProfileBorderBackdrop} from './ProfileBorderBackdrop';
 import {AnimatedProfileBorderGlows,ProceduralProfileBorderGlows,ProceduralProfileSceneEffect,ProfileCosmeticExteriorMatte,ProfileSceneEffect} from './ProfileCosmeticMotion';
-import {cosmeticArtByBorder,cosmeticArtByEffect,type CosmeticArt} from '../theme/profile-cosmetic-art-v1';
+import {cosmeticArtByBorder,cosmeticArtByEffect,type CosmeticRenderArt} from '../theme/profile-cosmetic-render-art';
 import {PROFILE_ANIMATED_COSMETICS_RELEASED} from '../core/release-flags';
 import {wave2SetFor,wave2PublicRenderable} from '../core/profile-cosmetic-wave2';
 import {profileCosmeticRuntimeByBorder,profileCosmeticRuntimeByEffect,type ProfileCosmeticRuntime} from '../theme/profile-cosmetic-runtime-v1';
@@ -40,7 +40,7 @@ import {CELESTIAL_IDS,getEnabledCelestialAssets} from '../theme/celestial-integr
 import {CelestialStandardBackgroundEffects,CelestialStandardBorderEffects} from './profile/CelestialStandardEffects';
 
 /** Local-only QA overrides. Never derive effects from a border or grant ownership. */
-export type ProfileCosmeticReviewSelection={borderArt?:CosmeticArt;effectArt?:CosmeticArt;borderRuntime?:ProfileCosmeticRuntime;effectRuntime?:ProfileCosmeticRuntime;active:boolean;surroundColor:string};
+export type ProfileCosmeticReviewSelection={borderArt?:CosmeticRenderArt;effectArt?:CosmeticRenderArt;borderRuntime?:ProfileCosmeticRuntime;effectRuntime?:ProfileCosmeticRuntime;active:boolean;surroundColor:string};
 export function PublicProfileScene({profile,height=205,reduceMotion=false,showGuild=true,reviewCosmetics,allowUnreleasedCosmetics=false,cosmeticsActive=true,active:stageActive}:{profile:PublicPlayerProfileV43;height?:number;reduceMotion?:boolean;showGuild?:boolean;reviewCosmetics?:ProfileCosmeticReviewSelection;allowUnreleasedCosmetics?:boolean;cosmeticsActive?:boolean;active?:boolean}){
  const language=useGameLanguage();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
@@ -88,7 +88,7 @@ export function PublicProfileScene({profile,height=205,reduceMotion=false,showGu
    {active&&celestialBackground?<CelestialStandardBackgroundEffects active={active} reduceMotion={reduceMotion}/>:null}
    {effectArt?<ProfileSceneEffect art={effectArt} active={active} reduceMotion={reduceMotion}/>:effectRuntime?<ProceduralProfileSceneEffect runtime={effectRuntime} active={active} reduceMotion={reduceMotion}/>:null}
    </ProfileBorderBackdrop>
-   {borderArt?<View pointerEvents="none" style={{position:'absolute',top:-8,left:-8,right:-8,bottom:-8}}><ProfileCosmeticExteriorMatte source={borderArt.matte} color={review?.surroundColor??C.bg}/></View>:null}
+   {borderArt?.matte?<View pointerEvents="none" style={{position:'absolute',top:-8,left:-8,right:-8,bottom:-8}}><ProfileCosmeticExteriorMatte source={borderArt.matte} color={review?.surroundColor??C.bg}/></View>:null}
   <View style={[s.identityPlate,s.identityStack]}>
    <GuildTaggedPlayerName accountId={profile.accountId} badges={profile.playerBadges} name={profile.character.name||profile.displayName} nameStyle={profile.nameStyle??undefined} reduceMotion={!active||reduceMotion} style={s.name}/>
    <Text numberOfLines={1} style={[s.title,{color:verifiedUltraLuxeTitleColor(profile.title,profile.ultraLuxeTitleId,C.dark)??(C.dark?C.accentSoft:C.text)}]}>{profile.title}</Text>

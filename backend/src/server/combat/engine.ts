@@ -3,6 +3,9 @@ import { CombatRng } from './deterministic-rng';
 import {applyEnemyV2Periodic,applyEnemyV2Modifier,enemyV2AllowedShieldAmount} from './enemy-v2-status-rules';
 import {authorizeEnemyV2EngineExecution,type EnemyV2EngineAuthority} from './v2/enemy-engine-authority';
 import {authorizeEquipmentV2TraitEngine,type EquipmentV2TraitEngineAuthority} from './v2/equipment-trait-engine-authority';
+import {authorizePartySyncV2,type PartySyncAuthorityV2} from './v2/party-sync-authority';
+import type {SyncStatV2} from './v2/party-synchronization';
+import {CRITICAL_SUPPORT_HP_V2,supportV2,tankV2,damageV2,emergencySupportRankV2,supportTargetsV2,incomingBossPressureV2,predictiveShieldTargetsV2,ordinaryHealSufficientV2,tankProtectionDecisionV2,damageTacticsV2,pureSingleHealV2,coordinatedHealV2,redundantPureShieldV2,sequenceDamageActionV2} from './v2/tactical-ai';
 import {EquipmentTraitRuntimeV2} from './v2/equipment-trait-engine-runtime';
 import {authorizeEq2PrivateHitQaV22,type Eq2PrivateHitAuthorityV22} from './v2/equipment-private-hit-qa-v22';
 import {authorizeDungeonRewardEngineV2,type DungeonRewardEngineAuthorityV2,
@@ -16,7 +19,7 @@ import {
  type ReactiveContextV2,type ReactiveTriggerV2,
 } from './v2/reactive-passive-runtime';
 import type { AbilityDefinition, AbilityEffect, CombatEvent, CombatGemStateSnapshot, CombatInput, CombatResult, CombatantDefinition, CombatantState, PersistentActorState } from './types';
-import {living,hpPct,modifier,chooseEnemy,targetsFor,conditionOk} from './combat-state-query';
+import {living,hpPct,modifier,chooseEnemy,targetsFor,conditionOk,memoizeCombatQuery} from './combat-state-query';
 import {gemConsumeSupportChargeV1,gemEffectiveDefenseV1,gemEffectiveHasteV1,gemHealingMultiplierV1,gemIncomingDamageMultiplierV1,gemOnAbilityUsedV1,gemOnBossPhaseV1,gemOnBuffAppliedV1,gemOnDamageTakenV1,gemOnDebuffAppliedV1,gemOnDirectHealV1,gemOnDirectHitV1,gemOnKillV1,gemOnShieldAppliedV1,gemOutgoingDamageMultiplierV1,gemShieldMultiplierV1} from './gem-effects-v1';
 
 function init(def: CombatantDefinition, carried?:PersistentActorState): CombatantState {
@@ -33,25 +36,30 @@ const VISIBLE_GEM_STATE_TAGS=new Set([
 
 /** Named, server-only handoff for new V2 assembly callers. The old
  * positional API stays intact until all existing call sites are reconciled.
- * Future party Synchronization authorities require their own named field. */
+ * Synchronization has its own named field; no positional ambiguity. */
 export interface ServerCombatAuthoritiesV2 {
  readonly enemy?:EnemyV2EngineAuthority;
  readonly equipmentTrait?:EquipmentV2TraitEngineAuthority;
  readonly dungeonReward?:DungeonRewardEngineAuthorityV2;
  readonly privateHit?:Eq2PrivateHitAuthorityV22;
+ readonly partySync?:PartySyncAuthorityV2;
+ /** Explicit private review policy; omission retains Forge's authored-priority execution. */
+ readonly aiPolicy?:'tactical'|'authored-priority';
 }
 export function simulateCombatWithServerAuthoritiesV2(
  input:CombatInput,authorities:ServerCombatAuthoritiesV2,
 ):CombatResult{
  if(!authorities||typeof authorities!=='object'||Array.isArray(authorities)||
-   Object.keys(authorities).some(key=>!['enemy','equipmentTrait','dungeonReward','privateHit'].includes(key)))
+   Object.keys(authorities).some(key=>!['enemy','equipmentTrait','dungeonReward','privateHit','partySync','aiPolicy'].includes(key)))
   throw Error('combat_v2_unknown_authority_channel');
+ if(authorities.aiPolicy!==undefined&&authorities.aiPolicy!=='tactical'&&authorities.aiPolicy!=='authored-priority')
+  throw Error('combat_v2_unknown_ai_policy');
  return simulateCombat(input,authorities.enemy,authorities.equipmentTrait,
-  authorities.dungeonReward,authorities.privateHit);
+  authorities.dungeonReward,authorities.privateHit,authorities.partySync,authorities.aiPolicy);
 }
 
 /** Optional server-issued second parameter is never parsed from CombatInput JSON. */
-export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2EngineAuthority, equipmentTraitAuthority?:EquipmentV2TraitEngineAuthority, dungeonRewardAuthority?:DungeonRewardEngineAuthorityV2, eq2PrivateHitAuthority?:Eq2PrivateHitAuthorityV22): CombatResult {
+export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2EngineAuthority, equipmentTraitAuthority?:EquipmentV2TraitEngineAuthority, dungeonRewardAuthority?:DungeonRewardEngineAuthorityV2, eq2PrivateHitAuthority?:Eq2PrivateHitAuthorityV22, partySyncAuthority?:PartySyncAuthorityV2, reviewAiPolicy?:'tactical'|'authored-priority'): CombatResult {
   if (!input.players.length || !input.enemies.length) throw new Error('combat_requires_both_teams');
   const enemyV2Effects=authorizeEnemyV2EngineExecution(input,enemyV2Authority);
   // No token -> no equipment trait runtime actions, preserving every legacy
@@ -60,17 +68,42 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
   const equipmentTraitRuntime=equipmentTraitAuthority
     ?new EquipmentTraitRuntimeV2(equipmentSources):undefined;
   const dungeonRewards=authorizeDungeonRewardEngineV2(input,dungeonRewardAuthority);
-  if(eq2PrivateHitAuthority!==undefined&&(equipmentTraitAuthority!==undefined||dungeonRewardAuthority!==undefined))throw Error('eq2_private_hit_v22_mixed_authority');
+  if(eq2PrivateHitAuthority!==undefined&&(equipmentTraitAuthority!==undefined||dungeonRewardAuthority!==undefined||partySyncAuthority!==undefined||reviewAiPolicy==='tactical'))throw Error('eq2_private_hit_v22_mixed_authority');
   const eq2PrivateHit=authorizeEq2PrivateHitQaV22(input,eq2PrivateHitAuthority);
+  if(dungeonRewardAuthority!==undefined&&partySyncAuthority!==undefined)throw Error('combat_v2_dungeon_reward_party_sync_unreconciled');
+  const syncSources=authorizePartySyncV2(input,partySyncAuthority);
+  const sync=(a:CombatantState,k:SyncStatV2)=>(syncSources.get(a.definition.id)?.[k]??0)/10000;
   const maxMs=input.maxDurationMs ?? 180_000; const tick=input.tickMs ?? 100; const mitigationConstant=input.mitigationConstant ?? 1200; const accuracyScale=input.accuracyScale ?? 1400;
   const players=input.players.map(def=>init(def,input.initialPlayerState?.[def.id])), enemies=input.enemies.map(def=>init(def)), all=[...players,...enemies];
   const v2Encounter=players.some(player=>Boolean(player.definition.combatV2));
+  const tacticalAi=v2Encounter&&reviewAiPolicy==='tactical';
+  const sequenceHoldsV2=new Map<string,number>();
   const rng=new CombatRng(input.seed); const events:CombatEvent[]=[{atMs:0,type:'combat_start'}];
   let runCapstone:(actor:CombatantState,kind:CapstoneTriggerV2,now:number,target?:CombatantState,ctx?:CapstoneContextV2)=>void=()=>{};
   let runReactive:(actor:CombatantState,kind:ReactiveTriggerV2,now:number,target?:CombatantState,ctx?:ReactiveContextV2)=>void=()=>{};
   const resource=(actor:CombatantState,kind:Parameters<typeof awardCombatResourceV2>[1],now:number,id:string)=>{
     const event=awardCombatResourceV2(actor,kind,now,id);
-    if(event){events.push(event);runCapstone(actor,'gain',now);runReactive(actor,'gain',now);}
+    if(event){
+      events.push(event);runCapstone(actor,'gain',now);runReactive(actor,'gain',now);
+      // Class resources are discrete stacks, not a mana bar. Synchronization
+      // therefore accumulates deterministic fractional gain credit and grants
+      // an extra stack only when the credit reaches a full 100%.
+      const bonusBps=Math.round(sync(actor,'resource_generation_pct')*10000);
+      if(bonusBps>0&&actor.combatV2){
+        const key='party_sync_resource_credit_bps';
+        const credit=(actor.combatV2.procCounters[key]??0)+bonusBps;
+        // A whole bonus that cannot fit is lost, not banked for a later spend.
+        // Preserve only the fractional remainder. No capstone/reactive recursion.
+        actor.combatV2.procCounters[key]=credit%10000;
+        if(credit>=10000&&actor.combatV2.stacks<actor.combatV2.maxStacks){
+          const before=actor.combatV2.stacks;
+          actor.combatV2.stacks++;
+          events.push({atMs:now,type:'resource_gain',actorId:actor.definition.id,abilityId:id,
+            resource:actor.combatV2.resource,resourceBefore:before,resourceAfter:actor.combatV2.stacks,
+            detail:'party_sync_bonus'});
+        }
+      }
+    }
   };
   const spend=(actor:CombatantState,ability:AbilityDefinition,now:number)=>{
     const queued=consumeQueuedCombatBonusV2(actor,ability);
@@ -156,8 +189,8 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
     const v2Evasion=target.definition.tags?.includes('combat-v2')?modifier(target,'evasion',now):0;
     const sourceGear=v2Encounter?source.definition.combatV2?.equipmentEffects:undefined;
     const targetGear=v2Encounter?target.definition.combatV2?.equipmentEffects:undefined;
-    const hc=clamp(hitChance(source.definition.stats.accuracy,
-      target.definition.stats.evasion+v2Evasion,accuracyScale)+
+    const hc=clamp(hitChance(source.definition.stats.accuracy*(1+sync(source,'accuracy_pct')),
+      target.definition.stats.evasion*(1+sync(target,'evasion_rating_pct'))+v2Evasion,accuracyScale)+
       (sourceGear?.accuracyPp??0)-(targetGear?.evasionPp??0),0,1);
     if(rng.next(`${now}:${source.definition.id}:${abilityId}:hit`)>hc){if(eventType==='damage'){if(source.definition.team==='players'){equipmentTraitRuntime?.miss(source.definition.id,abilityId);eq2PrivateHit?.miss(source.definition.id,abilityId);}events.push({atMs:now,type:'miss',actorId:source.definition.id,targetId:target.definition.id,abilityId});if(source.definition.team==='enemies'){resource(target,'evade',now,abilityId);
       if(!abilityId.startsWith('V2_')){
@@ -170,15 +203,16 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
       (Boolean(dungeonRewards)&&target.definition.team==='enemies'))
       ?Math.max(.7,Math.min(1.30,1+modifier(target,'defense_pct',now))):1;
     const authoredPenetration=v2Encounter&&source.definition.combatV2?
-      clamp((effect.penetrationPct??0)+(sourceGear?.penetrationPp??0),0,1):0;
+      clamp((effect.penetrationPct??0)+(sourceGear?.penetrationPp??0)+sync(source,'penetration_pct')+
+        (effect.damageType==='physical'?sync(source,'armor_penetration_pct'):0),0,1):0;
     const eq2TimedDefense=eq2PrivateHit&&effect.damageType!==undefined&&effect.damageType!=='true'
       ?eq2PrivateHit.timedStat(target.definition.id,now,'defense'):undefined;
-    const effectiveDefense=effect.damageType==='true'?0:gemEffectiveDefenseV1(target,now)*v2Defense*(1-authoredPenetration);
+    const effectiveDefense=effect.damageType==='true'?0:gemEffectiveDefenseV1(target,now)*v2Defense*(1-authoredPenetration)*(1+(effect.damageType==='physical'?sync(target,'armor_pct'):0));
     const mit=effect.damageType==='true'?0:defenseMitigation(effectiveDefense*(1+(eq2TimedDefense?.pct??0)/100),mitigationConstant);
     if(eq2TimedDefense?.pct&&mit>defenseMitigation(effectiveDefense,mitigationConstant))
       events.push({atMs:now,type:'equipment_trait_trigger',actorId:target.definition.id,targetId:source.definition.id,
         abilityId:'V2_QA_TIMED:'+eq2TimedDefense.ids.join('+'),amount:eq2TimedDefense.pct,detail:'private_qa_timed_defense_used'});
-    const crit=rng.next(`${now}:${source.definition.id}:${abilityId}:crit`)<clamp(source.definition.stats.critChance+modifier(source,'crit',now)+modifier(target,'crit_taken',now),0,.75);
+    const crit=rng.next(`${now}:${source.definition.id}:${abilityId}:crit`)<clamp(source.definition.stats.critChance+sync(source,'crit_chance_pp')+modifier(source,'crit',now)+modifier(target,'crit_taken',now),0,.75);
     const qmodeStrike=input.enemyDamageProfile==='qmode-v1'&&source.definition.team==='enemies'&&target.definition.team==='players'&&eventType==='damage';
     // Preserve all legacy RNG draws for Live, ordinary hunts and in-flight runs.
     // New Q-Mode has a wider hit spread around the legacy average and a rare heavy blow
@@ -194,8 +228,16 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
       m.kind==='debuff'&&m.sourceId===source.definition.id&&m.tag==='damage_taken'&&m.expiresAt>now);
     const critBoost=v2Encounter&&Boolean(source.definition.combatV2)?clamp(effect.critMultiplierBonus??0,0,.50)+
       (crit&&isMarked?clamp(effect.criticalDamageBonusVsMarked??0,0,.20):0):0;
-    let raw=damageAfterMitigation(roleAttack,effect.coeff??0,mit,variance,crit,source.definition.stats.critMultiplier+critBoost)+(effect.flat??0);
+    let raw=damageAfterMitigation(roleAttack,effect.coeff??0,mit,variance,crit,source.definition.stats.critMultiplier*(1+sync(source,'crit_damage_pct'))+critBoost)+(effect.flat??0);
     if(heavyHit)raw*=1.10;
+    // Synchronization applies once at resolution, not to stored item stats or
+    // on both DoT application and tick. Conditional bonuses inspect current HP/status.
+    raw*=1+(effect.damageType==='physical'?sync(source,'physical_damage_pct'):0);
+    raw*=1+(eventType==='dot_tick'?sync(source,'dot_strength_pct'):0);
+    raw*=1+(hpPct(target)<.25?sync(source,'execute_damage_pct'):0);
+    raw*=1+(hpPct(source)<.50?sync(source,'low_hp_damage_pct'):0);
+    raw*=1+(target.shield>0?sync(source,'damage_vs_shielded_pct'):0);
+    raw*=1+(target.modifiers.some(m=>m.kind==='debuff'&&m.expiresAt>now)?sync(source,'damage_vs_debuffed_pct'):0);
     raw*=source.definition.alchemyModifiers?.outgoing??1; raw*=target.definition.alchemyModifiers?.incoming??1;
     raw*=gemOutgoingDamageMultiplierV1(source,target,now,abilityId,eventType==='dot_tick'); raw*=Math.max(.1,1+modifier(source,'damage_done',now)); raw*=Math.max(.1,1+modifier(target,'damage_taken',now)); raw*=gemIncomingDamageMultiplierV1(target,now);
     if(hpPct(target)<clamp(effect.executeBelowHpPct??0,0,1))raw*=1+clamp(effect.executeBonus??0,0,1);
@@ -244,8 +286,9 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
     // non-true damage, including DoT ticks. Physical and true bypass it.
     if(v2Encounter&&targetGear&&effect.damageType&&
        effect.damageType!=='physical'&&effect.damageType!=='true'){
-      raw*=1-clamp(targetGear.wardPp,0,1);
+      raw*=1-clamp(targetGear.wardPp*(1+sync(target,'ward_strength_pct')),0,1);
     }
+    raw*=1-sync(target,'damage_reduction_pct');
     // Server-verified Equipment 2.0 action bonuses apply only to original
     // direct player hits. No periodic, gem, capstone, companion or trait
     // secondary damage can enter these hooks.
@@ -348,7 +391,7 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
     if(eventType==='damage'&&source.combatV2&&!abilityId.startsWith('V2_')&&
       (effect.lifestealPct??0)>0&&dealt>0&&source.alive){
       const healed=Math.min(source.definition.stats.maxHp-source.hp,
-        dealt*clamp(effect.lifestealPct??0,0,.20));
+        dealt*clamp((effect.lifestealPct??0)*(1+sync(source,'lifesteal_strength_pct')),0,.20)*(1+sync(source,'healing_received_pct')));
       if(healed>0){source.hp+=healed;source.healingDone+=healed;
         events.push({atMs:now,type:'heal',actorId:source.definition.id,targetId:source.definition.id,
           abilityId:'V2_LIFESTEAL:'+abilityId,amount:Number(healed.toFixed(2))});}
@@ -459,7 +502,10 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
     const hpBeforeHeal=target.hp;
     const amount=Math.max(0,(source.definition.stats.healingPower*(effect.coeff??0)+(effect.flat??0))*sourceMult*receivedMult*(source.definition.alchemyModifiers?.healing??1)*v2HealBonus*
       (direct&&source.combatV2?reactiveHealingMultiplierV2(source,target,now):1)*
-      forgeHealMultiplier); const actual=Math.min(amount,target.definition.stats.maxHp-target.hp); target.hp+=actual; source.healingDone+=actual;
+      forgeHealMultiplier*
+      // Derived Renewal and Restorative Bloom already include original heal multipliers.
+      (eventType==='hot_tick'&&(abilityId==='GEM_RENEWAL'||abilityId==='V2_EQUIPMENT_TRAIT:restorative_bloom')
+        ?1:(1+sync(source,'healing_done_pct'))*(1+sync(target,'healing_received_pct')))); const actual=Math.min(amount,target.definition.stats.maxHp-target.hp); target.hp+=actual; source.healingDone+=actual;
     if(eq2PrivateHit&&direct&&actual>0&&source.definition.team==='players'&&target.definition.team==='players'){
       const earned=eq2PrivateHit.afterEffectiveHeal({now,actorId:source.definition.id,targetId:target.definition.id,abilityId,
         originalClassHeal:authoredClassHeal&&source.definition.abilities.some(a=>a.id===abilityId&&a.effects.some(e=>e.kind==='heal')),actualHeal:actual});
@@ -536,7 +582,8 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
     if(effect.kind==='heal')return applyHeal(now,source,target,effect,abilityId);
     if(effect.kind==='shield'){const requested=Math.max(0,(source.definition.stats.healingPower*(effect.coeff??0)+(effect.flat??0))*gemShieldMultiplierV1(source,now)*(source.definition.alchemyModifiers?.shielding??1)*
       (source.combatV2?reactiveShieldMultiplierV2(source,target,now):1)*
-      (v2Encounter?1+clamp(source.definition.combatV2?.equipmentEffects?.shieldStrengthPct??0,0,1):1));
+      (v2Encounter?1+clamp(source.definition.combatV2?.equipmentEffects?.shieldStrengthPct??0,0,1):1)*
+      (1+sync(source,'shield_strength_pct')));
       const amt=enemyV2Effects&&target.definition.team==='enemies'
         ?enemyV2AllowedShieldAmount(target.definition.stats.maxHp,target.shield,requested):requested;
       target.shield+=amt;if(effect.shieldReflectPct&&amt>0)(target.reflectiveShields??=[]).push({remaining:amt,rate:clamp(effect.shieldReflectPct,0,.5),sourceId:source.definition.id});gemOnShieldAppliedV1(now,source,target);gemConsumeSupportChargeV1(now,source);emitGemState(now);events.push({atMs:now,type:'shield',actorId:source.definition.id,targetId:target.definition.id,abilityId,amount:Number(amt.toFixed(2))});if(amt>0&&source.definition.team==='players'){
@@ -555,8 +602,10 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
       const expiresAt=now+(effect.kind==='dot'?
         forgeStatusDuration(source,target,abilityId,effect.durationMs??3000):
         effect.durationMs??3000);
+      const harmfulResist=effect.kind==='dot'&&source.definition.team==='enemies'&&target.definition.team==='players'
+        ?sync(target,'harmful_effect_resist_pct'):0;
       const periodic:CombatantState['periodic'][number]={sourceId:source.definition.id,effectId:abilityId,kind:effect.kind,
-        coeff:(effect.coeff??0)*(1+hexBonus),flat:(effect.flat??0)*(1+hexBonus),
+        coeff:(effect.coeff??0)*(1+hexBonus)*(1-harmfulResist),flat:(effect.flat??0)*(1+hexBonus)*(1-harmfulResist),
         damageType:effect.damageType,tag:effect.tag??effect.damageType??effect.kind,
         nextTickAt:now+(effect.tickMs??1000),expiresAt,tickMs:effect.tickMs??1000};
       if(enemyV2Effects&&source.definition.team==='enemies')
@@ -573,7 +622,10 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
         runReactive(source,'cleanse',now,target);
       return;
     }
-    if(effect.kind==='interrupt'){ if(target.casting){ const interruptedAbilityId=target.casting.abilityId,def=target.definition.abilities.find(a=>a.id===interruptedAbilityId); if(def?.interruptible){target.casting=undefined;source.interrupts++;events.push({atMs:now,type:'interrupt',actorId:source.definition.id,targetId:target.definition.id,abilityId,interruptedAbilityId});if(source.definition.team==='players'){
+    if(effect.kind==='interrupt'){ if(target.casting){ const interruptedAbilityId=target.casting.abilityId,def=target.definition.abilities.find(a=>a.id===interruptedAbilityId); if(def?.interruptible){target.casting=undefined;
+      const recovery=sync(source,'interrupt_recovery_pct');
+      if(recovery>0)target.cooldownReadyAt[interruptedAbilityId]=Math.max(target.cooldownReadyAt[interruptedAbilityId]??now,now)+Math.round(def.cooldownMs*recovery);
+      source.interrupts++;events.push({atMs:now,type:'interrupt',actorId:source.definition.id,targetId:target.definition.id,abilityId,interruptedAbilityId});if(source.definition.team==='players'){
         resource(source,'interrupt',now,abilityId);
         if(!abilityId.startsWith('V2_')){
           runCapstone(source,'interrupt',now,target);
@@ -589,7 +641,9 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
         forgeStatusDuration(source,target,abilityId,effect.durationMs??5000):
         effect.durationMs??5000);const capstoneId=abilityId.startsWith('V2_CAPSTONE:')||abilityId.startsWith('V2_PASSIVE:')?abilityId:undefined;
       if(capstoneId&&effect.kind==='buff')target.modifiers=target.modifiers.filter(m=>m.v2CapstoneId!==capstoneId||m.tag!==tag);
-      const modifierEntry:CombatantState['modifiers'][number]={sourceId:source.definition.id,tag,value:effect.value??0,expiresAt,createdAt:now,kind:effect.kind,
+      const harmfulResist=effect.kind==='debuff'&&source.definition.team==='enemies'&&target.definition.team==='players'
+        ?sync(target,'harmful_effect_resist_pct'):0;
+      const modifierEntry:CombatantState['modifiers'][number]={sourceId:source.definition.id,tag,value:(effect.value??0)*(1-harmfulResist),expiresAt,createdAt:now,kind:effect.kind,
         ...(capstoneId?{v2CapstoneId:capstoneId}:{})};
       if(enemyV2Effects&&source.definition.team==='enemies')
         target.modifiers=applyEnemyV2Modifier(target.modifiers,modifierEntry).entries;
@@ -703,11 +757,82 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
     }
 
     for(const actor of all){ if(!actor.alive)continue; const allies=actor.definition.team==='players'?players:enemies, foes=actor.definition.team==='players'?enemies:players;
-      if(actor.casting && actor.casting.completesAt<=now){ const ab=actor.definition.abilities.find(a=>a.id===actor.casting!.abilityId); const target=all.find(x=>x.definition.id===actor.casting!.targetId); actor.casting=undefined; if(ab&&target?.alive){events.push({atMs:now,type:'cast_complete',actorId:actor.definition.id,targetId:target.definition.id,abilityId:ab.id});gemOnAbilityUsedV1(now,actor,ab);emitGemState(now); const executed=spend(actor,ab,now);for(const fx of executed.effects){ for(const t of targetsFor(fx.target??ab.target,actor,allies,foes,rng,`${now}:${ab.id}:target`))applyEffect(now,actor,t,fx,ab.id); }} }
+      if(actor.casting && actor.casting.completesAt<=now){ const ab=actor.definition.abilities.find(a=>a.id===actor.casting!.abilityId); const target=all.find(x=>x.definition.id===actor.casting!.targetId); actor.casting=undefined; const emergencyReplacement=tacticalAi&&ab&&!target?.alive&&emergencySupportRankV2(ab,actor,allies,foes)>0
+        ?supportTargetsV2(ab.target,actor,allies,foes,rng,`${now}:${ab.id}:emergency_retarget`,ab)[0]:undefined;
+        const resolvedTarget=target?.alive?target:emergencyReplacement;
+        if(ab&&resolvedTarget?.alive){events.push({atMs:now,type:'cast_complete',actorId:actor.definition.id,targetId:resolvedTarget.definition.id,abilityId:ab.id});gemOnAbilityUsedV1(now,actor,ab);emitGemState(now); const executed=spend(actor,ab,now);for(const fx of executed.effects){ for(const t of (tacticalAi&&pureSingleHealV2(actor,ab)&&resolvedTarget.hp<resolvedTarget.definition.stats.maxHp&&
+          (hpPct(resolvedTarget)<CRITICAL_SUPPORT_HP_V2||!allies.some(a=>a.alive&&hpPct(a)<CRITICAL_SUPPORT_HP_V2))
+          ?[resolvedTarget]:tacticalAi?supportTargetsV2(fx.target??ab.target,actor,allies,foes,rng,`${now}:${ab.id}:target`,ab,fx):targetsFor(fx.target??ab.target,actor,allies,foes,rng,`${now}:${ab.id}:target`)))applyEffect(now,actor,t,fx,ab.id); }} }
       if(actor.casting)continue;
-      const ab=abilitiesByActor.get(actor)?.find(a=>(actor.cooldownReadyAt[a.id]??0)<=now&&conditionOk(a,actor,allies,foes));
-      if(ab){ const ts=targetsFor(ab.target,actor,allies,foes,rng,`${now}:${ab.id}:select`); const t=ts[0]; if(t){ actor.cooldownReadyAt[ab.id]=now+Math.round(ab.cooldownMs/Math.max(.25,1+gemEffectiveHasteV1(actor,now)+eq2Haste(actor,now)+(v2Encounter?Math.max(-.2,Math.min(.2,modifier(actor,'haste',now)+reactiveHasteV2(actor))):0))); if(ab.castTimeMs>0){actor.casting={abilityId:ab.id,completesAt:now+ab.castTimeMs,targetId:t.definition.id};events.push({atMs:now,type:'cast_start',actorId:actor.definition.id,targetId:t.definition.id,abilityId:ab.id});}else{gemOnAbilityUsedV1(now,actor,ab);emitGemState(now);const executed=spend(actor,ab,now);for(const fx of executed.effects){for(const x of (fx.target?targetsFor(fx.target,actor,allies,foes,rng,`${now}:${ab.id}:effect`):ts)){if(x.alive)applyEffect(now,actor,x,fx,ab.id);}}} continue; } }
-      if(actor.nextBasicAt<=now){ const t=chooseEnemy(actor,foes,rng,`${now}:${actor.definition.id}:basic`); if(t){applyDamage(now,actor,t,{kind:'damage',coeff:actor.definition.basicAttackCoeff,damageType:'physical',threatMultiplier:actor.definition.role==='tank'?2.5:1},'BASIC');actor.nextBasicAt=now+Math.round(actor.definition.basicAttackMs/Math.max(.25,1+gemEffectiveHasteV1(actor,now)+eq2Haste(actor,now)+(v2Encounter?Math.max(-.2,Math.min(.2,modifier(actor,'haste',now))):0)));} }
+      // A summoned V2 Thunder Totem must finish its 2/4/6s pulse train.
+      // Otherwise base haste shortens its 6s cooldown to ~5.6s, AI
+      // recasts at ~5.7s and silently erases the third scheduled pulse.
+      // Manual/other source recasts still use the existing refresh-not-stack rule.
+      // Cast completion has already settled. Cache only this actor's read-only
+      // selection; never reuse after an effect or for another actor on the same tick.
+      let pressureMemo:CombatantState[]|undefined;
+      const pressureFor=()=>pressureMemo??=incomingBossPressureV2(now,allies,foes,mitigationConstant);
+      const uncachedHealPlan=(a:AbilityDefinition)=>tacticalAi?coordinatedHealV2(actor,a,allies,foes,now,mitigationConstant,pressureFor):undefined;
+      const healPlanFor=tacticalAi&&supportV2(actor)?memoizeCombatQuery(uncachedHealPlan):uncachedHealPlan;
+      const uncachedAvailable=(a:AbilityDefinition)=>{
+        if((actor.cooldownReadyAt[a.id]??0)>now||!conditionOk(a,actor,allies,foes))return false;
+        const healPlan=healPlanFor(a);
+        return !(tacticalAi&&actor.combatV2&&a.id.includes(':v2:')&&a.target==='interruptible_casting_enemy'&&
+          !foes.some(e=>e.alive&&e.casting&&e.definition.abilities.some(b=>b.id===e.casting!.abilityId&&b.interruptible)))&&
+        !(healPlan&&!healPlan.target)&&
+        (!tacticalAi||!redundantPureShieldV2(actor,a,allies,foes,now,mitigationConstant,pressureFor))&&
+        !(actor.combatV2?.activeTotem&&
+          actor.definition.combatV2?.resource==='resonance'&&
+          a.name==='Thunder Totem'&&a.id.includes(':v2:'));
+      };
+      const available=tacticalAi&&actor.combatV2?memoizeCombatQuery(uncachedAvailable):uncachedAvailable;
+      const ordered=abilitiesByActor.get(actor)??[];
+      let ab=ordered.find(available);
+      let emergencyRank=0;
+      let predictiveTargets:CombatantState[]|undefined;
+      if(tacticalAi&&supportV2(actor)){
+        const critical=allies.filter(a=>a.alive&&hpPct(a)<CRITICAL_SUPPORT_HP_V2);
+        if(critical.length){
+          // Already sorted by authored priority: ties preserve that order.
+          for(const candidate of ordered){
+            if(!available(candidate))continue;
+            const rank=emergencySupportRankV2(candidate,actor,allies,foes);
+            if(rank>emergencyRank){emergencyRank=rank;ab=candidate;}
+            if(emergencyRank===2)break;
+          }
+          if(emergencyRank===2&&ab?.target==='all_allies'&&critical.length===1&&
+            living(allies).filter(a=>hpPct(a)<.50).length===1){
+            const ordinary=ordered.find(a=>available(a)&&a.castTimeMs<=ab!.castTimeMs&&
+              ordinaryHealSufficientV2(a,actor,critical[0],allies,foes,now));
+            if(ordinary)ab=ordinary;
+          }
+        }
+        if(!emergencyRank){
+          const pressure=pressureFor();
+          if(pressure.length){
+            let coverage=0;
+            for(const candidate of ordered){
+              if((actor.cooldownReadyAt[candidate.id]??0)>now||
+                (!available(candidate)&&candidate.aiCondition!=='ally_below_80_or_targeted'))continue;
+              const targets=predictiveShieldTargetsV2(candidate,actor,pressure,allies);
+              const count=targets.filter(t=>pressure.includes(t)).length;
+              if(count>coverage){coverage=count;ab=candidate;predictiveTargets=targets;}
+            }
+          }
+        }
+      }
+      if(tacticalAi&&tankV2(actor)){
+        const decision=tankProtectionDecisionV2(actor,ordered,allies,foes,now,mitigationConstant,pressureFor);
+        if(decision){ab=decision.ability;predictiveTargets=decision.targets;}
+      }
+      if(tacticalAi&&damageV2(actor)){
+        const decision=damageTacticsV2(actor,ordered,allies,foes,now,mitigationConstant);
+        if(decision){ab=decision.ability;predictiveTargets=decision.targets;}
+        else if(ab)ab=sequenceDamageActionV2(actor,ab,ordered,foes,now,available,sequenceHoldsV2);
+      }
+      if(ab){ const coordinated=healPlanFor(ab);
+        const ts=predictiveTargets??(coordinated?.target?[coordinated.target]:tacticalAi?supportTargetsV2(ab.target,actor,allies,foes,rng,`${now}:${ab.id}:select`,ab):targetsFor(ab.target,actor,allies,foes,rng,`${now}:${ab.id}:select`)); const t=ts[0]; if(t){ sequenceHoldsV2.delete(actor.definition.id+':'+ab.id); actor.cooldownReadyAt[ab.id]=now+Math.round(ab.cooldownMs/(Math.max(.25,1+gemEffectiveHasteV1(actor,now)+eq2Haste(actor,now)+(v2Encounter?Math.max(-.2,Math.min(.2,modifier(actor,'haste',now)+reactiveHasteV2(actor))):0))*(1+sync(actor,'haste_pct')))); if(ab.castTimeMs>0){actor.casting={abilityId:ab.id,completesAt:now+ab.castTimeMs,targetId:t.definition.id};events.push({atMs:now,type:'cast_start',actorId:actor.definition.id,targetId:t.definition.id,abilityId:ab.id});}else{gemOnAbilityUsedV1(now,actor,ab);emitGemState(now);const executed=spend(actor,ab,now);for(const fx of executed.effects){for(const x of (fx.target&&!(((tacticalAi&&(tankV2(actor)||damageV2(actor)))&&predictiveTargets||coordinated?.target)&&fx.target===ab.target)?(tacticalAi?supportTargetsV2(fx.target,actor,allies,foes,rng,`${now}:${ab.id}:effect`,ab,fx):targetsFor(fx.target,actor,allies,foes,rng,`${now}:${ab.id}:effect`)):ts)){if(x.alive)applyEffect(now,actor,x,fx,ab.id);}}} continue; } }
+      if(actor.nextBasicAt<=now){ const t=chooseEnemy(actor,foes,rng,`${now}:${actor.definition.id}:basic`); if(t){applyDamage(now,actor,t,{kind:'damage',coeff:actor.definition.basicAttackCoeff,damageType:'physical',threatMultiplier:actor.definition.role==='tank'?2.5:1},'BASIC');actor.nextBasicAt=now+Math.round(actor.definition.basicAttackMs/(Math.max(.25,1+gemEffectiveHasteV1(actor,now)+eq2Haste(actor,now)+(v2Encounter?Math.max(-.2,Math.min(.2,modifier(actor,'haste',now)+reactiveHasteV2(actor))):0))*(1+sync(actor,'haste_pct'))));} }
     }
   }
   events.push({atMs:maxMs,type:'combat_end',detail:'timeout'}); return {victory:false,durationMs:maxMs,reason:'timeout',events,players,enemies};

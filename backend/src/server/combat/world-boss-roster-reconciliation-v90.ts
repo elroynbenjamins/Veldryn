@@ -138,3 +138,73 @@ export function reviewWorldBossRosterV90(
  }
  return finish();
 }
+
+/**
+ * V90B preparation: independently read account entitlement and source ownership
+ * from the same reservation transaction. A successful comparison still never
+ * authorizes combat; this contract is not a storage implementation.
+ * Historical reservations must use their frozen entitlement, not today's slots.
+ */
+export interface WorldBossOwnedRosterSourceV90 {
+ readonly accountId:string;
+ readonly reservationId:string;
+ readonly rosterDigest:string;
+ readonly entitlementRevision:number;
+ readonly unlockedCharacterSlots:number;
+ readonly eligibleCharacters:readonly {
+  readonly accountId:string;
+  readonly characterId:string;
+  readonly snapshotId:string;
+  readonly sourceRevision:number;
+  readonly sourceHash:string;
+  readonly equipmentReceiptDigest:string;
+  readonly equipmentReceiptRevision:number;
+ }[];
+}
+export function reviewWorldBossOwnedRosterV90(
+ reservation:FrozenWorldBossReservationV90,
+ projection:WorldBossCompilerProjectionV90,
+ owned:WorldBossOwnedRosterSourceV90,
+){
+ const review=reviewWorldBossRosterV90(reservation,projection);
+ const blockers=new Set(review.blockers);
+ const finish=()=>Object.freeze({...review,
+  structurallyCompatible:blockers.size===0,
+  blockers:Object.freeze([...blockers].sort()),
+ });
+ if(!reservation||!owned||owned.accountId!==reservation.accountId||
+  owned.reservationId!==reservation.reservationId||owned.rosterDigest!==reservation.rosterDigest||
+  !revision(owned.entitlementRevision)||
+  !Number.isSafeInteger(owned.unlockedCharacterSlots)||
+  owned.unlockedCharacterSlots<1||owned.unlockedCharacterSlots>5||
+  !Array.isArray(owned.eligibleCharacters)||!Array.isArray(reservation.members)){
+  blockers.add('invalid_owned_roster_source');return finish();
+ }
+ if(owned.eligibleCharacters.length>owned.unlockedCharacterSlots||
+    reservation.members.length>owned.unlockedCharacterSlots){
+  blockers.add('unlocked_character_slots_exceeded');
+ }
+ // The current design freezes every eligible owned character. Do not select
+ // only strong characters or insert borrowed NPCs. Ineligible characters
+ // must already have been filtered by the trusted server eligibility reader.
+ if(owned.eligibleCharacters.length!==reservation.members.length)
+  blockers.add('eligible_roster_not_exact');
+ const byCharacter=new Map<string,WorldBossOwnedRosterSourceV90['eligibleCharacters'][number]>();
+ for(const member of owned.eligibleCharacters){
+  if(!member||member.accountId!==reservation.accountId||
+   !validId(member.characterId)||byCharacter.has(member.characterId)){
+   blockers.add('foreign_or_duplicate_owned_character');continue;
+  }
+  byCharacter.set(member.characterId,member);
+ }
+ for(const member of reservation.members){
+  if(!member){blockers.add('missing_owned_character');continue;}
+  const stored=byCharacter.get(member.characterId);
+  if(!stored){blockers.add('missing_owned_character');continue;}
+  if(stored.snapshotId!==member.snapshotId||stored.sourceRevision!==member.sourceRevision||
+   stored.sourceHash!==member.sourceHash||stored.equipmentReceiptDigest!==member.equipmentReceiptDigest||
+   stored.equipmentReceiptRevision!==member.equipmentReceiptRevision)
+   blockers.add('owned_character_snapshot_mismatch');
+ }
+ return finish();
+}

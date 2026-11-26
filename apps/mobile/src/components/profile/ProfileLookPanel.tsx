@@ -1,3 +1,4 @@
+import {quickCosmeticSets,quickSetEquipped,quickSetSelection,undoQuickSet} from '../../core/profile-quick-set-equip';
 import {ownedUltraLuxeTitleColor} from '../../core/ultra-luxe-titles';
 import {AscendantBlessingPicker} from './AscendantBlessingPicker';
 import {profileT,profileText,profileSourceText} from '../../i18n/profile';
@@ -50,14 +51,15 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
  const character=state.character;
  const accountId=useAuthSession().session?.user.id??'';
  const [tryOn,setTryOn]=useState<WardrobeRow|null>(null),[sheet,setSheet]=useState<WardrobeRow|null>(null);
- const [gridWidth,setGridWidth]=useState(0);
+ const [gridWidth,setGridWidth]=useState(0),[quickOpen,setQuickOpen]=useState(false);
  const saved=useMemo(()=>wardrobeEquipped(state),[state]);
  const [selection,setSelection]=useState<WardrobeEquipped>(saved);
  const [customTitle,setCustomTitle]=useState(saved.title);
  const selectionRef=useRef(saved);
- const stateRef=useRef(state),pendingRef=useRef<Partial<WardrobeEquipped>|null>(null),timerRef=useRef<ReturnType<typeof setTimeout>|null>(null);
+ const scope=JSON.stringify([accountId,character?.id??null]),selectionScopeRef=useRef(scope);
+ const accountRef=useRef(accountId),stateRef=useRef(state),pendingRef=useRef<{accountId:string;characterId:string;patch:Partial<WardrobeEquipped>}|null>(null),timerRef=useRef<ReturnType<typeof setTimeout>|null>(null);
  const onChangeRef=useRef(onChange),sentRef=useRef<string|null>(null),chainRef=useRef<Promise<void>>(Promise.resolve());
- stateRef.current=state;onChangeRef.current=onChange;
+ stateRef.current=state;accountRef.current=accountId;onChangeRef.current=onChange;
 
  // A cosmetic tap is committed as one write per burst: tapping through a gallery must not
  // fire one server profile command per tile, while the stage still reacts immediately.
@@ -67,11 +69,10 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
   if(timerRef.current){clearTimeout(timerRef.current);timerRef.current=null}
   const next=pendingRef.current;pendingRef.current=null;
   if(!next)return;
-  const ownerCharacterId=stateRef.current.character?.id;
   chainRef.current=chainRef.current.then(async()=>{
    const base=stateRef.current;
-   if(!base.character||base.character.id!==ownerCharacterId)return;
-   const rebased={...wardrobeEquipped(base),...next};
+   if(accountRef.current!==next.accountId||!base.character||base.character.id!==next.characterId)return;
+   const rebased={...wardrobeEquipped(base),...next.patch};
    sentRef.current=JSON.stringify(rebased);
    await onChangeRef.current(applyWardrobeEquipped(base,rebased));
 
@@ -83,7 +84,10 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
   const changed=wardrobeChanges(selectionRef.current,next);
   selectionRef.current=next;
   if(!Object.keys(changed).length)return;
-  pendingRef.current={...pendingRef.current,...changed};
+  const characterId=stateRef.current.character?.id;
+  if(!characterId)return;
+  const owner=accountRef.current,previous=pendingRef.current;
+  pendingRef.current={accountId:owner,characterId,patch:{...(previous?.accountId===owner&&previous.characterId===characterId?previous.patch:{}),...changed}};
   if(timerRef.current)clearTimeout(timerRef.current);
   timerRef.current=setTimeout(flush,COMMIT_DELAY_MS);
  },[flush]);
@@ -92,15 +96,24 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
  // A state that is still catching up with our own writes is not such a change.
  const savedKey=JSON.stringify(saved);
  useEffect(()=>{
+  if(selectionScopeRef.current!==scope){
+   selectionScopeRef.current=scope;
+   if(timerRef.current){clearTimeout(timerRef.current);timerRef.current=null;}
+   pendingRef.current=null;sentRef.current=null;
+   const next=JSON.parse(savedKey) as WardrobeEquipped;
+   selectionRef.current=next;setSelection(next);setCustomTitle(next.title);setTryOn(null);setSheet(null);setQuickOpen(false);
+   return;
+  }
   if(pendingRef.current)return;
   if(sentRef.current&&sentRef.current!==savedKey)return;
   sentRef.current=null;
   const next=JSON.parse(savedKey) as WardrobeEquipped;
   selectionRef.current=next;setSelection(next);
- },[savedKey]);
+ },[savedKey,scope]);
  useEffect(()=>{setCustomTitle(saved.title)},[saved.title]);
 
  const categories=useMemo(()=>profileWardrobe(state,WARDROBE_ASSETS),[state]);
+ const quickSets=useMemo(()=>quickCosmeticSets(state),[state]);
  const live=useMemo(()=>({...selection,title:customTitle.trim()||selection.title}),[selection,customTitle]);
  const preview=useMemo(()=>{
   const equipped=tryOn?wardrobeSelection(live,tryOn):live;
@@ -117,6 +130,21 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
   if(tryOn)setTryOn(null);
   setSelection(next);queueCommit(next);
   onNotice?.({name:row.name,undo:()=>{setSelection(before);queueCommit(before);onNotice?.(null)}});
+ };
+ const equipSet=(setId:string,choiceId:string,name:string)=>{
+  const owner=accountRef.current,characterId=stateRef.current.character?.id;
+  const before=selectionRef.current,next=quickSetSelection(stateRef.current,before,setId,choiceId);
+  if(selectionScopeRef.current!==scope||!characterId||!next||!Object.keys(wardrobeChanges(before,next)).length)return;
+  setTryOn(null);setSheet(null);setSelection(next);
+  if(next.title!==before.title)setCustomTitle(next.title);
+  queueCommit(next);
+  onNotice?.({name,undo:()=>{
+   if(accountRef.current!==owner||stateRef.current.character?.id!==characterId)return;
+   const current=selectionRef.current,restored=undoQuickSet(current,before,next);
+   setSelection(restored);
+   if(restored.title!==current.title)setCustomTitle(restored.title);
+   queueCommit(restored);onNotice?.(null);
+  }});
  };
  const saveCustomTitle=()=>{
   const value=customTitle.trim();if(!value)return;
@@ -143,6 +171,26 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
 
  return <View style={s.root}>
   {chip==='badge'?<PlayerBadgeSettings/>:category?<>
+   {chip==='frame'&&quickSets.length>0?<View style={s.quickSets}>
+    <Pressable accessibilityRole="button" accessibilityState={{expanded:quickOpen}} onPress={()=>setQuickOpen(v=>!v)} style={s.quickHeader}>
+     <Text style={s.label}>{profileT(language,"Quick set equip")} · {quickSets.length}</Text><Text style={s.useMark}>{quickOpen?'⌃':'⌄'}</Text>
+    </Pressable>
+    {quickOpen?<><Text style={s.rowMeta}>{profileT(language,"Equip owned matching pieces on this character. Badges stay unchanged.")}</Text>
+    {quickSets.map(set=><View key={set.id} style={[s.quickRow,{borderColor:set.accent}]}>
+     <Text style={s.rowName}>{set.name}</Text>
+     <View style={s.quickChoices}>
+      {set.choices.map(choice=>{
+       const equipped=quickSetEquipped(selection,choice);
+       return <Pressable key={choice.id} accessibilityRole="button" accessibilityLabel={set.name+', '+choice.name+', '+profileT(language,equipped?"Equipped":"Equip set")}
+        accessibilityState={{selected:equipped,disabled:equipped}} disabled={equipped} onPress={()=>equipSet(set.id,choice.id,set.name)}
+        style={({pressed})=>[s.quickChoice,equipped&&s.tileOn,pressed&&s.pressed]}>
+        {set.choices.length>1?<Text style={s.quickChoiceName}>{choice.name}</Text>:null}
+        <Text style={equipped?s.equippedMark:s.useMark}>{profileT(language,equipped?"Equipped":"Equip set")}</Text>
+       </Pressable>;
+      })}
+     </View>
+    </View>)}</>:null}
+   </View>:null}
    {chip==='icon'?<Text style={s.label}>{profileText(language,'Account-wide')}</Text>:null}
    {chip==='title'?<View style={s.titleList}>
     <View style={s.customTitle}>
@@ -195,6 +243,12 @@ const WardrobeTile=memo(function WardrobeTile({row,width,equipped,tryingOn,onPre
 },(previous,next)=>previous.row===next.row&&previous.width===next.width&&previous.equipped===next.equipped&&previous.tryingOn===next.tryingOn&&previous.children===next.children);
 
 function makeStyles(C:ThemeColors){return StyleSheet.create({
+ quickSets:{gap:7,padding:9,borderRadius:radii.md,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2},
+ quickHeader:{minHeight:44,flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},
+ quickRow:{gap:6,padding:8,borderRadius:radii.sm,borderWidth:1,backgroundColor:C.panel},
+ quickChoices:{flexDirection:'row',flexWrap:'wrap',gap:6},
+ quickChoice:{flexGrow:1,minWidth:100,minHeight:44,padding:7,borderRadius:radii.sm,borderWidth:1,borderColor:C.line,justifyContent:'center',alignItems:'center',gap:3},
+ quickChoiceName:{fontSize:11,lineHeight:15,color:C.text,fontWeight:'700',textAlign:'center'},
  root:{gap:10},flex:{flex:1,minWidth:0},pressed:{opacity:.74},
  grid:{flexDirection:'row',flexWrap:'wrap',gap:8},
  tile:{padding:5,gap:4,borderRadius:radii.md,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2},

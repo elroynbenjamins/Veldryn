@@ -6,6 +6,7 @@ on:
       - '.github/workflows/production-latency-candidate.yml'
       - 'backend/online/**'
       - 'apps/mobile/src/core/game.ts'
+      - 'apps/mobile/src/core/release-flags.ts'
   workflow_dispatch:
 permissions:
   contents: write

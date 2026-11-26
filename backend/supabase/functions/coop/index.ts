@@ -438,7 +438,7 @@ var GUILD_COMBAT_COMPANIONS = seeds2.map((seed) => {
 // ../apps/mobile/src/core/release-flags.ts
 var EVENTS_RELEASED = true;
 var FROSTFALL_REWARDS_RELEASED = false;
-var DUNGEON_MARKS_SHOP_RELEASED = false;
+var DUNGEON_MARKS_SHOP_RELEASED = true;
 
 // ../apps/mobile/src/content/event-companions-active.ts
 var RELEASED_EVENT_COMPANION_IDS = /* @__PURE__ */ new Set(["EVT_UNIT_007", "EVT_UNIT_008", "EVT_UNIT_011"]);

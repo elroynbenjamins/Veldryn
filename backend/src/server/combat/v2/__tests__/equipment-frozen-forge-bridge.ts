@@ -1604,6 +1604,7 @@ function makeV21Loadout(classId:ClassIdV2,specIndex:0|1,targetTier:1|2|3|4,targe
  const rows:{classId:ClassIdV2;spec:number;slots:number;arm:string;channels:ReturnType<typeof inspectSocketStackingCapReviewV2>['channels'];diminishing:ReturnType<typeof inspectSocketStackingCapReviewV2>['channels'];gentle:ReturnType<typeof inspectSocketStackingCapReviewV2>['channels'];utility:ReturnType<typeof reviewUtilityGemSemanticsV2>;hasteDelta:number;attackDelta:number}[]=[];
  const coverage:{classId:ClassIdV2;spec:number;slots:number;missing:string[];downgraded:number}[]=[];
  const statCombatRows:{classId:ClassIdV2;spec:number;arm:string;result:ReturnType<ReturnType<typeof createGentleStatCombatReviewV2>>}[]=[];
+ const potentCombatRows:typeof statCombatRows=[];
  for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[])for(const spec of [0,1] as const){
   const qa=makeV21Loadout(classId,spec,4,55);
   const n=qa.ids.length;
@@ -1616,6 +1617,7 @@ function makeV21Loadout(classId:ClassIdV2,specIndex:0|1,targetTier:1|2|3|4,targe
   const baselineUtility=reviewUtilityGemSemanticsV2(baseline);
   const compiled=compileRealFrozenForgeActorV2(qa.actor,qa.build,source);
   const fight=createGentleStatCombatReviewV2(compiled,baseline,{...boss,id:'BOSS_EXP_BELLBEAST',name:'The Bellbeast of Shiverlake',level:60},'GENTLE_'+classId+'_'+spec);
+  const potentFight=createGentleStatCombatReviewV2(compiled,baseline,{...boss,id:'BOSS_EXP_BELLBEAST',name:'The Bellbeast of Shiverlake',level:60},'GENTLE_'+classId+'_'+spec,true);
   assert.equal(baselineUtility.haste.incrementalGem,0);
   assert.ok(baselineUtility.potency.every(c=>c.incrementalGem===0));
   const arms=[...families,'mixed-role','mixed-all'];
@@ -1704,6 +1706,7 @@ function makeV21Loadout(classId:ClassIdV2,specIndex:0|1,targetTier:1|2|3|4,targe
     assert.equal(report.channels.filter(c=>c.gem>0).length,1);
    }
    if(families.includes(arm)&&arm!=='stat_potent')statCombatRows.push({classId,spec,arm,result:fight(out)});
+   if(arm==='stat_potent'||arm==='mixed-role'||arm==='mixed-all')potentCombatRows.push({classId,spec,arm,result:potentFight(out)});
    rows.push({classId,spec,slots:n,arm,channels:report.channels,diminishing:continuous.channels,gentle:gentle.channels,utility,
     hasteDelta:out.stats.haste-baseline.stats.haste,attackDelta:out.stats.attackPower-baseline.stats.attackPower});
   }
@@ -1711,6 +1714,18 @@ function makeV21Loadout(classId:ClassIdV2,specIndex:0|1,targetTier:1|2|3|4,targe
  }
  assert.equal(rows.length,18*13);
  assert.equal(statCombatRows.length,18*10);
+ assert.equal(potentCombatRows.length,18*3);
+ assert.ok(potentCombatRows.every(r=>r.result.boundaryCases===6));
+ console.log('POTENT_AUTHORED_COMBAT_REVIEW '+JSON.stringify({cases:potentCombatRows.length,
+  scope:'PRIVATE_AUTHORED_COEFFICIENT_SENSITIVITY_ONLY',boundaryCases:potentCombatRows.reduce((n,r)=>n+r.result.boundaryCases,0),
+  lanes:[...new Set(potentCombatRows.flatMap(r=>r.result.potentRows.map(x=>x.lane)))],
+  arms:['stat_potent','mixed-role','mixed-all'].map(arm=>{const a=potentCombatRows.filter(r=>r.arm===arm);return {arm,cases:a.length,
+   meanDamageDelta:a.reduce((n,r)=>n+r.result.candidate.damage-r.result.baseline.damage,0)/a.length,
+   meanHealingDelta:a.reduce((n,r)=>n+r.result.candidate.healing-r.result.baseline.healing,0)/a.length,
+   outputTotals:Object.fromEntries(['damage','dot_tick','heal','hot_tick','shield'].map(kind=>[kind,{
+    baseline:a.reduce((n,r)=>n+(r.result.authoredOutputs.baseline[kind]??0),0),
+    candidate:a.reduce((n,r)=>n+(r.result.authoredOutputs.candidate[kind]??0),0)}]))};}),
+  releaseEnabled:false,cpApproved:false}));
  console.log('GENTLE_STAT_GEM_COMBAT_REVIEW '+JSON.stringify({cases:statCombatRows.length,scope:'PRIVATE_STATIC_GEM_COMBAT_ONLY',
   boss:'BOSS_EXP_BELLBEAST',durationMs:15000,excluded:['stat_potent','effect_gems'],
   families:families.filter(f=>f!=='stat_potent').map(f=>{const a=statCombatRows.filter(r=>r.arm===f);return {family:f,cases:a.length,

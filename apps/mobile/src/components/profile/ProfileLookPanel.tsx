@@ -16,6 +16,12 @@ import {profileBorderSourceById} from '../../theme/profile-border-assets';
 import {BASE_PROFILE_BACKGROUNDS} from '../../core/profile-cosmetics';
 import {petArtSource} from '../../theme/pet-art';
 import {useAuthSession} from '../../online/AuthSessionProvider';
+import {useUltraLuxeCollectionProjection} from '../../online/useUltraLuxeCollectionProjection';
+import {appendOwnedUltraLuxeWardrobe,ownedNewUltraLuxeQuickSets,newUltraLuxeQuickSelection,newUltraLuxeHint,isNewUltraLuxeWardrobePiece,newUltraLuxePatchAllowed} from '../../core/ultra-luxe-owned-wardrobe';
+import {ABYSSAL_IDS} from '../../core/abyssal-showcase-layout';
+import {PARADOX_IDS} from '../../core/paradox-showcase-layout';
+import {getAbyssalReviewAssets} from '../../theme/abyssal-integration-assets';
+import {getParadoxReviewAssets} from '../../theme/paradox-integration-assets';
 
 import {radii,typography,type ThemeColors} from '../../theme/theme';
 import {useGameTheme} from '../../theme/ThemeContext';
@@ -50,6 +56,9 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const character=state.character;
  const accountId=useAuthSession().session?.user.id??'';
+ const verifiedCollections=useUltraLuxeCollectionProjection(!!character&&newUltraLuxeHint(state));
+ const verifiedRef=useRef(verifiedCollections);verifiedRef.current=verifiedCollections;
+ const grantScope=useMemo(()=>({accountId,characterId:character?.id??''}),[accountId,character?.id]);
  const [tryOn,setTryOn]=useState<WardrobeRow|null>(null),[sheet,setSheet]=useState<WardrobeRow|null>(null);
  const [gridWidth,setGridWidth]=useState(0),[quickOpen,setQuickOpen]=useState(false);
  const saved=useMemo(()=>wardrobeEquipped(state),[state]);
@@ -72,6 +81,7 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
   chainRef.current=chainRef.current.then(async()=>{
    const base=stateRef.current;
    if(accountRef.current!==next.accountId||!base.character||base.character.id!==next.characterId)return;
+   if(!newUltraLuxePatchAllowed(base,{accountId:next.accountId,characterId:next.characterId},verifiedRef.current,next.patch))return;
    const rebased={...wardrobeEquipped(base),...next.patch};
    sentRef.current=JSON.stringify(rebased);
    await onChangeRef.current(applyWardrobeEquipped(base,rebased));
@@ -112,8 +122,8 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
  },[savedKey,scope]);
  useEffect(()=>{setCustomTitle(saved.title)},[saved.title]);
 
- const categories=useMemo(()=>profileWardrobe(state,WARDROBE_ASSETS),[state]);
- const quickSets=useMemo(()=>quickCosmeticSets(state),[state]);
+ const categories=useMemo(()=>appendOwnedUltraLuxeWardrobe(profileWardrobe(state,WARDROBE_ASSETS),state,grantScope,verifiedCollections),[state,grantScope,verifiedCollections]);
+ const quickSets=useMemo(()=>[...quickCosmeticSets(state),...ownedNewUltraLuxeQuickSets(state,grantScope,verifiedCollections)],[state,grantScope,verifiedCollections]);
  const live=useMemo(()=>({...selection,title:customTitle.trim()||selection.title}),[selection,customTitle]);
  const preview=useMemo(()=>{
   const equipped=tryOn?wardrobeSelection(live,tryOn):live;
@@ -127,13 +137,14 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
  const equip=(row:WardrobeRow)=>{
   if(!row.unlocked){setSheet(row);return}
   const before=selection,next=wardrobeSelection(before,row);
+  if(!newUltraLuxePatchAllowed(stateRef.current,{accountId:accountRef.current,characterId:stateRef.current.character?.id??''},verifiedRef.current,wardrobeChanges(before,next)))return;
   if(tryOn)setTryOn(null);
   setSelection(next);queueCommit(next);
   onNotice?.({name:row.name,undo:()=>{setSelection(before);queueCommit(before);onNotice?.(null)}});
  };
  const equipSet=(setId:string,choiceId:string,name:string)=>{
   const owner=accountRef.current,characterId=stateRef.current.character?.id;
-  const before=selectionRef.current,next=quickSetSelection(stateRef.current,before,setId,choiceId);
+  const before=selectionRef.current,next=quickSetSelection(stateRef.current,before,setId,choiceId)??newUltraLuxeQuickSelection(stateRef.current,{accountId:owner,characterId:characterId??''},verifiedRef.current,before,setId,choiceId);
   if(selectionScopeRef.current!==scope||!characterId||!next||!Object.keys(wardrobeChanges(before,next)).length)return;
   setTryOn(null);setSheet(null);setSelection(next);
   if(next.title!==before.title)setCustomTitle(next.title);
@@ -148,22 +159,27 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
  };
  const saveCustomTitle=()=>{
   const value=customTitle.trim();if(!value)return;
-  const next={...selection,title:value};setSelection(next);setCustomTitle(value);queueCommit(next);
+  const next={...selection,title:value};
+  if(!newUltraLuxePatchAllowed(stateRef.current,{accountId:accountRef.current,characterId:stateRef.current.character?.id??''},verifiedRef.current,{title:value}))return;
+  setSelection(next);setCustomTitle(value);queueCommit(next);
   onNotice?.({name:value,undo:()=>{setSelection(selection);setCustomTitle(saved.title);queueCommit(selection);onNotice?.(null)}});
  };
 
  if(!character)return null;
  const category=categories.find(row=>row.kind===chip);
- const sections=wardrobeDisplaySections(category?.rows??[]);
+ const sections=wardrobeDisplaySections((category?.rows??[]).filter(row=>!isNewUltraLuxeWardrobePiece(row)));
+ sections.animated.push(...(category?.rows??[]).filter(row=>row.kind!=='title'&&isNewUltraLuxeWardrobePiece(row)));
  const artwork=(row:WardrobeRow,size:number):ReactNode=>{
   if(row.kind==='icon')return <ProfileIcon id={row.id} classId={character.classId} size={size}/>;
-  if(row.kind==='scene'){const scene=profileBackgroundPreviewById.get(row.id),base=BASE_PROFILE_BACKGROUNDS.find(item=>item.id===row.id);
+  if(row.kind==='scene'){const special=row.id===ABYSSAL_IDS.background?getAbyssalReviewAssets().backgroundSquare:row.id===PARADOX_IDS.background?getParadoxReviewAssets().backgroundSquare:undefined;
+   if(special)return <Image source={special} resizeMode="cover" style={s.fill}/>;
+   const scene=profileBackgroundPreviewById.get(row.id),base=BASE_PROFILE_BACKGROUNDS.find(item=>item.id===row.id);
    return scene?<Image source={scene.source} resizeMode="cover" style={s.fill}/>:base?<View style={s.fill}><RegionArtwork regionId={base.region}/></View>:null}
-  if(row.kind==='frame'){const animated=profileAnimatedBorderDefinition(row.id),source=cosmeticArtByBorder.get(row.id)?.border??profileBorderSourceById.get(row.id)??(animated?profileBorderSourceById.get(animated.fallbackBorderId):undefined);
+  if(row.kind==='frame'){const animated=profileAnimatedBorderDefinition(row.id),source=(row.id===ABYSSAL_IDS.border?getAbyssalReviewAssets().standardBorder:row.id===PARADOX_IDS.border?getParadoxReviewAssets().standardBorder:undefined)??cosmeticArtByBorder.get(row.id)?.border??profileBorderSourceById.get(row.id)??(animated?profileBorderSourceById.get(animated.fallbackBorderId):undefined);
    return source?<View style={s.fill}><RegionArtwork regionId="KINGS_ROAD" muted/><ProfileFrameOverlay source={source}/></View>:<View style={s.blank}><Text style={s.blankMark}>◇</Text></View>}
   if(row.kind==='effect'){const art=cosmeticArtByEffect.get(row.id),runtime=profileCosmeticRuntimeByEffect.get(row.id);
    return art?<Image source={art.staticEffect} resizeMode="stretch" style={s.fill}/>:runtime?<ProfileEffectThumbnail runtime={runtime}/>:<View style={s.blank}><Text style={s.effectMark}>✦</Text></View>}
-  if(row.kind==='pet'){const source=petArtSource(row.id);
+  if(row.kind==='pet'){const source=(row.id===ABYSSAL_IDS.pet?getAbyssalReviewAssets().petRegular:row.id===PARADOX_IDS.pet?getParadoxReviewAssets().petRegular:undefined)??petArtSource(row.id);
    return source?<Image source={source} resizeMode="contain" style={s.petImage}/>:<View style={s.blank}><Text style={s.blankMark}>{row.clear?profileT(language,"Solo"):"—"}</Text></View>}
   return null;
  };

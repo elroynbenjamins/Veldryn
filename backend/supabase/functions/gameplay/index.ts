@@ -106,10 +106,23 @@ var init_progression = __esm({
 function mealBonusDef(itemId) {
   return MEAL_BONUSES.find((row) => row.itemId === itemId);
 }
+function projectedMealDuration(character, itemId) {
+  const def = mealBonusDef(itemId);
+  if (!def) return 0;
+  const current = character?.activeMealBuff;
+  const remaining = current?.itemId === itemId ? Math.max(0, current.remainingSeconds) : 0;
+  return Math.min(MAX_MEAL_BUFF_SECONDS, remaining + def.durationHours * 3600);
+}
+function mealBuffAtCap(character, itemId) {
+  const current = character?.activeMealBuff;
+  return current?.itemId === itemId && current.remainingSeconds >= MAX_MEAL_BUFF_SECONDS;
+}
 function eatMealForBonus(state, itemId) {
   if (!state.character) throw new Error("Create a character first.");
   const def = mealBonusDef(itemId);
   if (!def) throw new Error("This food does not grant a meal bonus.");
+  if (mealBuffAtCap(state.character, itemId)) throw new Error("Meal bonus is already at the 24-hour cap.");
+  const remainingSeconds = projectedMealDuration(state.character, itemId);
   let remaining = 1;
   const stacks = state.inventory.stacks.map((row) => {
     if (row.itemId !== itemId || remaining === 0) return row;
@@ -120,7 +133,7 @@ function eatMealForBonus(state, itemId) {
   if (remaining) throw new Error("Meal not available in Inventory.");
   return { ...state, inventory: { ...state.inventory, stacks }, character: {
     ...state.character,
-    activeMealBuff: { itemId, remainingSeconds: def.durationHours * 3600 }
+    activeMealBuff: { itemId, remainingSeconds }
   } };
 }
 function activeMealBonus(character) {
@@ -151,33 +164,36 @@ function commitMealActivityTime(state, source, reward3) {
   const seconds = Math.max(0, buff.remainingSeconds - qualified);
   return { ...state, character: { ...state.character, activeMealBuff: seconds > 0 ? { ...buff, remainingSeconds: seconds } : void 0 } };
 }
-var MEAL_BONUSES;
+var MAX_MEAL_BUFF_HOURS, MAX_MEAL_BUFF_SECONDS, MEAL_BONUSES;
 var init_meal_buffs = __esm({
   "../apps/mobile/src/core/meal-buffs.ts"() {
     "use strict";
+    MAX_MEAL_BUFF_HOURS = 24;
+    MAX_MEAL_BUFF_SECONDS = MAX_MEAL_BUFF_HOURS * 3600;
     MEAL_BONUSES = [
       { itemId: "IRONWOOD_STEW", kind: "gathering_speed", percent: 4, durationHours: 3, label: "+4% Gathering speed" },
+      { itemId: "SUNSCAR_SPICED_PLATTER", kind: "combat_xp", percent: 6, durationHours: 3, label: "+6% Combat XP" },
       { itemId: "GLASSFIN_FEAST", kind: "gathering_speed", percent: 6, durationHours: 4, label: "+6% Gathering speed" },
       { itemId: "FROSTED_ICEFIN", kind: "crafting_speed", percent: 6, durationHours: 4, label: "+6% Crafting speed" },
       { itemId: "CHARRED_EMBERFIN", kind: "combat_xp", percent: 8, durationHours: 4, label: "+8% Combat XP" },
-      { itemId: "ASHLANDS_EMBER_STEW", kind: "noncombat_speed", percent: 10, durationHours: 4, label: "+10% Non-combat skill speed" }
+      { itemId: "ASHLANDS_EMBER_STEW", kind: "crafting_speed", percent: 8, durationHours: 4, label: "+8% Crafting speed" }
     ];
   }
 });
 
 // ../apps/mobile/src/content/faith.ts
-var HOLY_WATER_ID, FAITH_TIERS, FAITH_BLESSINGS, HOLY_WATER_SOURCES, faithBlessingDef;
+var HOLY_WATER_ID, FAITH_TIERS, FAITH_BLESSINGS, FAITH_BLESSING_GROUPS, HOLY_WATER_SOURCES, faithBlessingDef, faithBlessingGroup;
 var init_faith = __esm({
   "../apps/mobile/src/content/faith.ts"() {
     "use strict";
     HOLY_WATER_ID = "HOLY_WATER";
     FAITH_TIERS = [
-      { id: "FAITH_QUIET", name: "Quiet prayer", level: 1, water: 1, xp: 96, seconds: 30 },
-      { id: "FAITH_CANDLE", name: "Candle vigil", level: 10, water: 2, xp: 208, seconds: 30 },
-      { id: "FAITH_LITANY", name: "Sacred litany", level: 25, water: 4, xp: 448, seconds: 30 },
-      { id: "FAITH_DEVOTION", name: "Devotion", level: 40, water: 8, xp: 960, seconds: 30 },
-      { id: "FAITH_COMMUNION", name: "Communion", level: 60, water: 16, xp: 2048, seconds: 30 },
-      { id: "FAITH_ASCENDANT", name: "Ascendant prayer", level: 80, water: 32, xp: 4352, seconds: 30 }
+      { id: "FAITH_QUIET", name: "Quiet prayer", level: 1, water: 1, xp: 90, seconds: 30 },
+      { id: "FAITH_CANDLE", name: "Candle vigil", level: 10, water: 2, xp: 192, seconds: 30 },
+      { id: "FAITH_LITANY", name: "Sacred litany", level: 25, water: 4, xp: 408, seconds: 30 },
+      { id: "FAITH_DEVOTION", name: "Devotion", level: 40, water: 8, xp: 864, seconds: 30 },
+      { id: "FAITH_COMMUNION", name: "Communion", level: 60, water: 16, xp: 1824, seconds: 30 },
+      { id: "FAITH_ASCENDANT", name: "Ascendant prayer", level: 80, water: 32, xp: 3840, seconds: 30 }
     ];
     FAITH_BLESSINGS = [
       { id: "EMBER_VOW", name: "Ember Vow", level: 1, family: "attack", bonus: 2 / 100 },
@@ -187,7 +203,6 @@ var init_faith = __esm({
       { id: "WELLSPRING", name: "Wellspring", level: 15, family: "hp", bonus: 4 / 100 },
       { id: "QUICKENED_STEP", name: "Quickened Step", level: 18, family: "combatSpeed", bonus: 3 / 100 },
       { id: "LANTERN_OF_WISDOM", name: "Lantern of Wisdom", level: 20, family: "xp", bonus: 2 / 100 },
-      { id: "FESTIVAL_FAVOR", name: "Festival Favor", level: 30, family: "eventCurrency", bonus: 10 / 100 },
       { id: "NATURES_COVENANT", name: "Nature's Covenant", level: 35, family: "gathering", bonus: 4 / 100 },
       { id: "SUNFIRE_VOW", name: "Sunfire Vow", level: 40, family: "attack", bonus: 4 / 100 },
       { id: "IRON_SANCTUARY", name: "Iron Sanctuary", level: 45, family: "defense", bonus: 6 / 100 },
@@ -203,6 +218,12 @@ var init_faith = __esm({
       { id: "UNDYING_LIGHT", name: "Undying Light", level: 90, family: "hp", bonus: 12 / 100 },
       { id: "ETERNAL_ENLIGHTENMENT", name: "Eternal Enlightenment", level: 95, family: "xp", bonus: 6 / 100 }
     ];
+    FAITH_BLESSING_GROUPS = [
+      { id: "combat", label: "Combat", families: ["attack", "defense", "hp", "combatSpeed"] },
+      { id: "gathering", label: "Gathering", families: ["gathering"] },
+      { id: "production", label: "Production", families: ["production"] },
+      { id: "experience", label: "Experience", families: ["xp"] }
+    ];
     HOLY_WATER_SOURCES = [
       { monsterId: "FIELD_WISP", chance: 0.16, min: 1, max: 2 },
       { monsterId: "DROWNED_PILGRIM", chance: 0.32, min: 2, max: 4 },
@@ -212,25 +233,57 @@ var init_faith = __esm({
       { monsterId: "ASHEN_REVENANT", chance: 0.5, min: 6, max: 10 }
     ];
     faithBlessingDef = (id) => FAITH_BLESSINGS.find((b) => b.id === id);
+    faithBlessingGroup = (blessing) => FAITH_BLESSING_GROUPS.find((group) => group.families.includes(blessing.family))?.id;
   }
 });
 
 // ../apps/mobile/src/core/faith.ts
+function validFaithSelections(raw2, level) {
+  const selections = {};
+  if (raw2?.selectedBlessingIds && typeof raw2.selectedBlessingIds === "object") {
+    for (const group of FAITH_BLESSING_GROUPS) {
+      const blessing = faithBlessingDef(raw2.selectedBlessingIds[group.id]);
+      if (blessing && blessing.level <= level && faithBlessingGroup(blessing) === group.id) selections[group.id] = blessing.id;
+    }
+  } else {
+    const blessing = faithBlessingDef(raw2?.selectedBlessingId);
+    if (blessing && blessing.level <= level) {
+      const group = faithBlessingGroup(blessing);
+      if (group) selections[group] = blessing.id;
+    }
+  }
+  return selections;
+}
+function safeFaithXp(xp) {
+  return typeof xp === "number" && Number.isFinite(xp) ? Math.max(0, Math.min(MAX_XP, Math.floor(xp))) : 0;
+}
+function stateFaithXp(state) {
+  return Math.max(safeFaithXp(state.character?.faith?.xp), safeFaithXp(state.skills.find((s) => s.skillId === "faith")?.xp));
+}
 function normalizeFaith(raw2) {
-  const xp = typeof raw2?.xp === "number" && Number.isFinite(raw2.xp) ? Math.max(0, Math.min(MAX_XP, Math.floor(raw2.xp))) : 0;
+  const xp = safeFaithXp(raw2?.xp);
   const selected2 = faithBlessingDef(raw2?.selectedBlessingId), p = raw2?.practice, tier = FAITH_TIERS.find((t) => t.id === p?.tierId);
+  const selectedBlessingIds = validFaithSelections(raw2, levelFromXp(xp));
+  const legacy = selected2 && Object.values(selectedBlessingIds).includes(selected2.id) ? selected2.id : Object.values(selectedBlessingIds)[0];
   const practice = tier && Number.isSafeInteger(p.remaining) && p.remaining > 0 && p.remaining <= MAX_FAITH_PRACTICES && Number.isSafeInteger(p.lastClaimAtMs) && p.lastClaimAtMs >= 0 && Number.isSafeInteger(p.progressMs) && p.progressMs >= 0 && p.progressMs < tier.seconds * 1e3 ? { tierId: tier.id, remaining: p.remaining, lastClaimAtMs: p.lastClaimAtMs, progressMs: p.progressMs } : void 0;
-  return { xp, selectedBlessingId: selected2 && selected2.level <= levelFromXp(xp) ? selected2.id : void 0, favoriteBlessingIds: Array.isArray(raw2?.favoriteBlessingIds) ? [...new Set(raw2.favoriteBlessingIds.filter((id) => typeof id === "string" && faithBlessingDef(id)))] : [], hideWeakerBlessings: raw2?.hideWeakerBlessings !== false, practice };
+  return { xp, selectedBlessingId: legacy, selectedBlessingIds, favoriteBlessingIds: Array.isArray(raw2?.favoriteBlessingIds) ? [...new Set(raw2.favoriteBlessingIds.filter((id) => typeof id === "string" && faithBlessingDef(id)))] : [], hideWeakerBlessings: raw2?.hideWeakerBlessings !== false, practice };
+}
+function activeFaithPreferences(state) {
+  const raw2 = state.character?.faith;
+  return normalizeFaith({ ...raw2, xp: stateFaithXp(state) });
 }
 function updateFaithPreference(state, kind, id, enabled) {
   if (!state.character) throw new Error("Create a character first.");
-  const faith = normalizeFaith(state.character.faith);
+  const faith = activeFaithPreferences(state);
   if (kind === "hide") faith.hideWeakerBlessings = !!enabled;
   else {
     const blessing = faithBlessingDef(id);
     if (!blessing) throw new Error("Unknown blessing.");
     if (kind === "blessing") {
       if (blessing.level > faithLevel(state)) throw new Error("Requires Faith level " + blessing.level);
+      const group = faithBlessingGroup(blessing);
+      if (!group) throw new Error("Unknown blessing category.");
+      faith.selectedBlessingIds[group] = blessing.id;
       faith.selectedBlessingId = blessing.id;
     } else faith.favoriteBlessingIds = enabled ? [.../* @__PURE__ */ new Set([...faith.favoriteBlessingIds, blessing.id])] : faith.favoriteBlessingIds.filter((b) => b !== blessing.id);
   }
@@ -247,7 +300,7 @@ function removeWater(stacks, quantity2) {
 }
 function reserveFaithPractice(state, tierId, count, now) {
   if (!state.character) throw new Error("Create a character first.");
-  const faith = normalizeFaith(state.character.faith), tier = FAITH_TIERS.find((t) => t.id === tierId);
+  const faith = activeFaithPreferences(state), tier = FAITH_TIERS.find((t) => t.id === tierId);
   if (faith.practice) throw new Error("Stop the current practice first.");
   if (!tier || tier.level > faithLevel(state)) throw new Error("Faith tier is locked.");
   if (faith.xp >= MAX_XP) throw new Error("Faith is mastered.");
@@ -259,7 +312,7 @@ function reserveFaithPractice(state, tierId, count, now) {
 }
 function settleFaithPractice(state, now, capSeconds) {
   const empty2 = { xp: 0, gold: 0, kills: 0, items: [], elapsedSeconds: 0, faithActions: 0, faithXp: 0, holyWaterConsumed: 0 };
-  const normalized = normalizeFaith(state.character?.faith), skillXp = state.skills.find((s) => s.skillId === "faith")?.xp ?? 0, faith = { ...normalized, xp: Math.max(normalized.xp, skillXp) }, reservation = state.activity?.faithPractice, reservationTier = FAITH_TIERS.find((t) => t.id === reservation?.tierId);
+  const faith = activeFaithPreferences(state), reservation = state.activity?.faithPractice, reservationTier = FAITH_TIERS.find((t) => t.id === reservation?.tierId);
   const p = faith.practice ?? (reservation && reservationTier ? { tierId: reservation.tierId, remaining: reservation.remainingPractices, lastClaimAtMs: reservation.lastClaimAtMs, progressMs: Math.floor(Math.max(0, Math.min(0.999999, reservation.progressFraction)) * reservationTier.seconds * 1e3) } : void 0), tier = FAITH_TIERS.find((t) => t.id === p?.tierId);
   if (!state.character || !p || !tier || now < p.lastClaimAtMs) return { state, reward: empty2, refund: 0 };
   const elapsed = Math.min(capSeconds * 1e3, now - p.lastClaimAtMs), speed = mealSpeedFactor(state.character, "noncombat"), total = p.progressMs + elapsed * speed;
@@ -271,7 +324,7 @@ function settleFaithPractice(state, now, capSeconds) {
   return { state: { ...state, activity: nextActivity, character: { ...state.character, faith: { ...faith, xp: faith.xp + xp, practice: nextPractice } } }, refund, reward: { ...empty2, xp, elapsedSeconds: Math.floor(elapsed / 1e3), qualifyingActivitySeconds, faithActions: actions, faithXp: xp, holyWaterConsumed: actions * tier.water, faithWaterRefund: refund } };
 }
 function cancelFaithPractice(state) {
-  const faith = normalizeFaith(state.character?.faith), reservation = state.activity?.faithPractice, p = faith.practice ?? (reservation ? { tierId: reservation.tierId, remaining: reservation.remainingPractices, lastClaimAtMs: reservation.lastClaimAtMs, progressMs: 0 } : void 0), tier = FAITH_TIERS.find((t) => t.id === p?.tierId);
+  const faith = activeFaithPreferences(state), reservation = state.activity?.faithPractice, p = faith.practice ?? (reservation ? { tierId: reservation.tierId, remaining: reservation.remainingPractices, lastClaimAtMs: reservation.lastClaimAtMs, progressMs: 0 } : void 0), tier = FAITH_TIERS.find((t) => t.id === p?.tierId);
   if (!state.character || !p || !tier) return { state, refund: 0 };
   return { state: { ...state, character: { ...state.character, faith: { ...faith, practice: void 0 } } }, refund: p.remaining * tier.water };
 }
@@ -280,7 +333,7 @@ function affordableFaithPracticeCount(state, tierId) {
   if (!tier || tier.level > faithLevel(state) || faithLevel(state) >= 100) return 0;
   return Math.min(MAX_FAITH_PRACTICES, Math.floor(holyWaterAvailable(state) / tier.water));
 }
-var MAX_XP, MAX_FAITH_PRACTICES, faithLevel, selectedFaithBlessing, holyWaterAvailable, faithPracticeAvailability;
+var MAX_XP, MAX_FAITH_PRACTICES, faithLevel, selectedFaithBlessing, selectedFaithBlessings, holyWaterAvailable, faithPracticeAvailability;
 var init_faith2 = __esm({
   "../apps/mobile/src/core/faith.ts"() {
     "use strict";
@@ -289,10 +342,19 @@ var init_faith2 = __esm({
     init_progression();
     MAX_XP = totalXpAtLevel(100);
     MAX_FAITH_PRACTICES = 1e3;
-    faithLevel = (state) => levelFromXp(Array.isArray(state) ? state.find((s) => s.skillId === "faith")?.xp ?? 0 : Math.max(normalizeFaith(state.character?.faith).xp, state.skills.find((s) => s.skillId === "faith")?.xp ?? 0));
-    selectedFaithBlessing = (state) => {
-      const raw2 = state.character?.faith, blessing = faithBlessingDef(raw2?.selectedBlessingId);
-      return blessing && blessing.level <= faithLevel(state) ? blessing : void 0;
+    faithLevel = (state) => levelFromXp(Array.isArray(state) ? safeFaithXp(state.find((s) => s.skillId === "faith")?.xp) : stateFaithXp(state));
+    selectedFaithBlessing = (state, group) => {
+      const raw2 = state.character?.faith;
+      if (!raw2) return void 0;
+      const selections = validFaithSelections(raw2, faithLevel(state));
+      const ids2 = Object.values(selections);
+      return faithBlessingDef(group ? selections[group] : raw2.selectedBlessingId && ids2.includes(raw2.selectedBlessingId) ? raw2.selectedBlessingId : ids2[0]);
+    };
+    selectedFaithBlessings = (state) => {
+      const raw2 = state.character?.faith;
+      if (!raw2) return [];
+      const ids2 = Object.values(validFaithSelections(raw2, faithLevel(state)));
+      return ids2.map((id) => faithBlessingDef(id));
     };
     holyWaterAvailable = (state) => [...state.inventory.stacks, ...state.bank.stacks].filter((s) => s.itemId === HOLY_WATER_ID).reduce((n, s) => n + s.quantity, 0);
     faithPracticeAvailability = (state, tierId, count) => {
@@ -304,12 +366,685 @@ var init_faith2 = __esm({
   }
 });
 
+// ../apps/mobile/src/core/ultra-luxe-prestige.ts
+var ULTRA_LUXE_ICONS = [
+  { id: "ascendant-celestial-crown-icon", name: "Crown of the Cosmos" },
+  { id: "ascendant-draconic-ruby-icon", name: "Crest of Eternal Embers" }
+];
+function ownedUltraLuxeIcons(state) {
+  const owned = new Set(state.account.unlockedProfileIconIds ?? []);
+  return ULTRA_LUXE_ICONS.filter((row) => owned.has(row.id));
+}
+
+// ../apps/mobile/src/content/classes.ts
+var CLASSES = [
+  { id: "IRONWARDEN", name: "Ironwarden", role: "Tank", description: "Runic defender built around guard, threat and counterplay.", hp: 155, attack: 15, defense: 19, roleRatings: { tank: 5, damage: 2, support: 1 }, starterEquipment: { weapon: "basic_sword" } },
+  { id: "BASTION", name: "Bastion", role: "Tank", description: "Fortress tank using layered barriers and heavy protection.", hp: 164, attack: 14, defense: 20, roleRatings: { tank: 5, damage: 1, support: 2 }, starterEquipment: { weapon: "basic_tower_shield" } },
+  { id: "DREADGUARD", name: "Dreadguard", role: "Tank", description: "Aggressive control tank using threat, dread and self-sustain.", hp: 150, attack: 17, defense: 17, roleRatings: { tank: 4, damage: 3, support: 1 }, starterEquipment: { weapon: "basic_chained_weapon" } },
+  { id: "WAYFINDER", name: "Wayfinder", role: "Damage", description: "Precise ranged hunter with reliable sustained damage.", hp: 110, attack: 21, defense: 11, roleRatings: { tank: 1, damage: 5, support: 1 }, starterEquipment: { weapon: "basic_bow" } },
+  { id: "RAVAGER", name: "Ravager", role: "Damage", description: "Aggressive heavy melee fighter built around breaking defenses.", hp: 128, attack: 22, defense: 10, roleRatings: { tank: 2, damage: 5, support: 1 }, starterEquipment: { weapon: "basic_two_handed_weapon" } },
+  { id: "HEXWEAVER", name: "Hexweaver", role: "Damage", description: "Arcane damage caster weaving hexes through wand and focus.", hp: 108, attack: 17, defense: 11, roleRatings: { tank: 1, damage: 4, support: 2 }, starterEquipment: { weapon: "basic_wand" } },
+  { id: "KNIFE_DANCER", name: "Knife Dancer", role: "Damage", description: "Fast melee attacker built around precision, crits and execution.", hp: 106, attack: 22, defense: 10, roleRatings: { tank: 1, damage: 5, support: 1 }, starterEquipment: { weapon: "basic_main_hand_blade" } },
+  { id: "DAWNKEEPER", name: "Dawnkeeper", role: "Support", description: "Solar support focused on healing, cleansing and protection.", hp: 118, attack: 14, defense: 13, roleRatings: { tank: 2, damage: 1, support: 5 }, starterEquipment: { weapon: "basic_mace" } },
+  { id: "STONECALLER", name: "Stonecaller", role: "Support", description: "Earth-and-storm support caster using resonance, geomancy and totems.", hp: 120, attack: 20, defense: 12, roleRatings: { tank: 2, damage: 2, support: 5 }, starterEquipment: { weapon: "basic_staff" } }
+];
+
+// ../apps/mobile/src/content/event-companions-v2.ts
+var eventNames = { turning_of_the_age: "Turning of the Age", heartbond_festival: "Heartbond Festival", bloomwake: "Bloomwake", suncrest_games: "Suncrest Games", starfall_nights: "Starfall Nights", harvestwake: "Harvestwake", veilbreak: "The Veilbreak", frostfall_festival: "Frostfall Festival", merchant_guild_festival: "Merchant / Guild Festival" };
+var seeds = [
+  { id: "EVT_UNIT_001", name: "Keeper of First Dawn", rarity: "elite", role: "support", event: "turning_of_the_age", description: "Fast support pulses improve tempo and recovery for pressured allies." },
+  { id: "EVT_UNIT_002", name: "Vowbound Cherub", rarity: "prestige", role: "support", event: "heartbond_festival", description: "Restorative support with extra defensive stability for vulnerable allies." },
+  { id: "EVT_UNIT_003", name: "Bloomwarden", rarity: "elite", role: "tank", event: "bloomwake", description: "A durable seasonal tank built around strong bark-like mitigation." },
+  { id: "EVT_UNIT_004", name: "Suncrest Champion", rarity: "prestige", role: "damage", event: "suncrest_games", description: "A radiant damage specialist with strong finishing pressure." },
+  { id: "EVT_UNIT_005", name: "Astral Wayfarer", rarity: "elite", role: "damage", event: "starfall_nights", description: "A fast astral damage specialist with frequent active pressure." },
+  { id: "EVT_UNIT_006", name: "Harvest Guardian", rarity: "elite", role: "tank", event: "harvestwake", description: "A harvest-themed tank focused on sustained mitigation." },
+  { id: "EVT_UNIT_007", name: "Veil Hound", rarity: "elite", role: "damage", event: "veilbreak", description: "A shadow damage specialist that excels at finishing weakened enemies." },
+  { id: "EVT_UNIT_008", name: "Hollow Knightling", rarity: "elite", role: "tank", event: "veilbreak", description: "A hollow suit of enchanted armor that anchors the front line behind a heavy ward shield." },
+  { id: "EVT_UNIT_011", name: "Lantern Keeper", rarity: "elite", role: "support", event: "veilbreak", description: "A lantern-bearing spirit that stabilizes allies with wardlight and recovery pulses." },
+  { id: "EVT_UNIT_009", name: "Frostbell Herald", rarity: "elite", role: "support", event: "frostfall_festival", description: "A rapid winter healer whose bell pulse softens incoming burst damage." },
+  { id: "EVT_UNIT_012", name: "Rimeshard Wolverine", rarity: "elite", role: "damage", event: "frostfall_festival", description: "A stocky frost-clawed winter hunter that exposes a target to follow-up strikes." },
+  { id: "EVT_UNIT_013", name: "Hearthguard Ram", rarity: "elite", role: "tank", event: "frostfall_festival", description: "A woolly winter guardian with a bell-forged reflecting shield." },
+  { id: "EVT_UNIT_010", name: "Caravan Sentinel", rarity: "elite", role: "support", event: "merchant_guild_festival", description: "A flexible support companion with balanced recovery, defense, and tempo." }
+];
+var EVENT_IDENTITY_COPY = {
+  EVT_UNIT_001: { activeName: "First Dawn", activeDescription: "Grants a stronger support pulse with improved tempo and protection.", activeKind: "utility", activeValue: 0.05, passiveKind: "haste", passiveValue: 0.02, passiveDescription: "New Year Tempo: slightly faster support cadence.", bondName: "Dawn Renewed", bondKind: "utility", bondValue: 0.04, bondDescription: "Bond 10 strengthens the Keeper\u2019s First Dawn support pulse." },
+  EVT_UNIT_002: { activeName: "Vow Link", activeDescription: "Restores the weakest ally while reinforcing the Vowbound Cherub\u2019s protective role.", activeKind: "utility", activeValue: 0.05, passiveKind: "damage_reduction", passiveValue: 0.02, passiveDescription: "Shared Vow: modestly steadier defensive support.", bondName: "Unbroken Promise", bondKind: "utility", bondValue: 0.04, bondDescription: "Bond 10 improves the Cherub\u2019s restorative support." },
+  EVT_UNIT_003: { activeName: "Living Bastion", activeDescription: "Reduces incoming pressure with stronger bark-like mitigation.", activeKind: "damage_reduction", activeValue: 0.067, passiveKind: "damage_reduction", passiveValue: 0.04, passiveDescription: "Living Bark: increased companion durability.", bondName: "Deep Roots", bondKind: "damage_reduction", bondValue: 0.03, bondDescription: "Bond 10 further strengthens Bloomwarden mitigation." },
+  EVT_UNIT_004: { activeName: "Solar Momentum", activeDescription: "A radiant strike with increased damage and finishing pressure.", activeKind: "damage", activeValue: 1.08, passiveKind: "haste", passiveValue: 0.01, passiveDescription: "Champion Tempo: slightly faster combat rhythm.", bondName: "Final Radiance", bondKind: "execute", bondValue: 0.05, bondDescription: "Bond 10 increases damage against wounded enemies." },
+  EVT_UNIT_005: { activeName: "Starfall Mark", activeDescription: "A quick astral strike designed around frequent pressure and finishing bursts.", activeKind: "damage", activeValue: 1.08, passiveKind: "haste", passiveValue: 0.02, passiveDescription: "Astral Tempo: faster natural combat cadence.", bondName: "Falling Star", bondKind: "execute", bondValue: 0.04, bondDescription: "Bond 10 strengthens finishing Starfall pressure." },
+  EVT_UNIT_006: { activeName: "Harvest Bulwark", activeDescription: "Converts incoming pressure into stronger seasonal mitigation.", activeKind: "damage_reduction", activeValue: 0.066, passiveKind: "damage_reduction", passiveValue: 0.04, passiveDescription: "Stored Harvest: increased defensive stability.", bondName: "Autumn Reserve", bondKind: "damage_reduction", bondValue: 0.03, bondDescription: "Bond 10 reinforces the Guardian\u2019s mitigation." },
+  EVT_UNIT_007: { activeName: "Veil Rend", activeDescription: "A shadow strike with strong finishing pressure against weakened enemies.", activeKind: "damage", activeValue: 1.08, passiveKind: "execute", passiveValue: 0.07, passiveDescription: "Veil Hunter: dangerous against low-health targets.", bondName: "Deep Gloom", bondKind: "execute", bondValue: 0.03, bondDescription: "Bond 10 sharpens Veil Hound finishers." },
+  EVT_UNIT_008: { activeName: "Hollow Ward", activeDescription: "Raises a heavy ward that reduces incoming pressure and protects the front line.", activeKind: "damage_reduction", activeValue: 0.07, passiveKind: "damage_reduction", passiveValue: 0.04, passiveDescription: "Hollow Armor: steadier mitigation during prolonged fights.", bondName: "Unbroken Ward", bondKind: "damage_reduction", bondValue: 0.03, bondDescription: "Bond 10 strengthens Hollow Knightling mitigation." },
+  EVT_UNIT_011: { activeName: "Lantern Grace", activeDescription: "Restores the weakest ally and briefly accelerates recovery cadence.", activeKind: "utility", activeValue: 0.05, passiveKind: "haste", passiveValue: 0.025, passiveDescription: "Wardlight: slightly faster support cadence.", bondName: "Last Lantern", bondKind: "utility", bondValue: 0.04, bondDescription: "Bond 10 strengthens Lantern Keeper restorative support." },
+  EVT_UNIT_009: { activeName: "Frostbell Cycle", activeDescription: "Heals the lowest-HP ally below 80% HP and reduces damage taken by 2.5% for 4s.", activeKind: "heal", activeValue: 0.05, passiveKind: "cooldown_reduction", passiveValue: 0.12, passiveDescription: "Winter Cadence: 12% shorter base cooldown; +1% companion haste in standalone combat.", bondName: "Grand Bell", bondKind: "heal", bondValue: 0.04, bondDescription: "Grand Bell: +4% Frostbell Cycle healing." },
+  EVT_UNIT_012: { activeName: "Rimeshard Mark", activeDescription: "Claw strike; the target takes 2.5% more damage for 5s.", activeKind: "damage", activeValue: 1.06, passiveKind: "haste", passiveValue: 0.01, passiveDescription: "Aurora Pursuit: +1% companion haste in standalone combat.", bondName: "Shattering Trail", bondKind: "damage", bondValue: 0.03, bondDescription: "Shattering Trail: +3% Rimeshard Mark damage." },
+  EVT_UNIT_013: { activeName: "Hearthguard Aegis", activeDescription: "Shields the owner (self in standalone combat) and reflects 10% of absorbed damage.", activeKind: "shield", activeValue: 0.052, passiveKind: "damage_reduction", passiveValue: 0.01, passiveDescription: "Woolen Bulwark: +1% companion defense in standalone combat.", bondName: "Hearthbound Vow", bondKind: "shield", bondValue: 0.04, bondDescription: "Hearthbound Vow: +4% shield strength and +5 percentage points of absorbed-damage reflection." },
+  EVT_UNIT_010: { activeName: "Caravan Formation", activeDescription: "A flexible restorative support pulse with modest defensive and tempo advantages.", activeKind: "utility", activeValue: 0.05, passiveKind: "haste", passiveValue: 0.02, passiveDescription: "Roadwise: slightly faster support cadence.", bondName: "Long Road", bondKind: "cooldown_reduction", bondValue: 0.04, bondDescription: "Bond 10 shortens Caravan Sentinel support cycles." }
+};
+var effectFor = (role) => role === "damage" ? "damage" : role === "tank" ? "damage_reduction" : "haste";
+var eventAscensionMaterials = (rarity) => rarity === "prestige" ? [{ tier: 1, itemId: "EVENT_BONDBLOOM", quantity: 4 }, { tier: 2, itemId: "EVENT_BONDBLOOM", quantity: 9 }, { tier: 3, itemId: "TRIAL_SANCTUARY_MATERIAL", quantity: 6 }, { tier: "mastery", itemId: "TRIAL_SANCTUARY_MATERIAL", quantity: 10 }] : rarity === "elite" ? [{ tier: 1, itemId: "EVENT_BONDBLOOM", quantity: 4 }, { tier: 2, itemId: "EVENT_BONDBLOOM", quantity: 9 }, { tier: 3, itemId: "TRIAL_SANCTUARY_MATERIAL", quantity: 5 }] : [{ tier: 1, itemId: "EVENT_BONDBLOOM", quantity: 4 }, { tier: 2, itemId: "EVENT_BONDBLOOM", quantity: 9 }];
+var baseStats = (role, rarity) => ({ hp: rarity === "prestige" ? 225 : 205, power: role === "damage" ? rarity === "prestige" ? 28 : 25 : 18, defense: role === "tank" ? rarity === "prestige" ? 27 : 24 : 15, attackSpeed: 2.2 });
+var EVENT_COMPANIONS = seeds.map((seed) => {
+  const effect2 = effectFor(seed.role), copy = EVENT_IDENTITY_COPY[seed.id], amount = copy?.activeValue ?? (effect2 === "damage" ? 1.08 : effect2 === "damage_reduction" ? 0.06 : 0.05);
+  return { id: seed.id, name: seed.name, description: seed.description, archetype: `Event ${seed.role}`, role: seed.role, rarity: seed.rarity, origin: { id: `EVENT_${seed.event.toUpperCase()}`, name: eventNames[seed.event] ?? seed.event.replaceAll("_", " "), type: "event" }, unlockRequirements: [{ type: "event_challenge", target: seed.event, description: `Earn ${seed.name} from ${eventNames[seed.event] ?? seed.event.replaceAll("_", " ")}.` }], baseStats: baseStats(seed.role, seed.rarity), activeAbility: { id: `${seed.id}_ACTIVE`, name: copy?.activeName ?? `${seed.name} Signature`, description: copy?.activeDescription ?? seed.description, cooldownSeconds: seed.id === "EVT_UNIT_009" ? 21 : seed.id === "EVT_UNIT_013" ? 24 : seed.rarity === "prestige" ? 24 : 20, target: seed.role === "support" ? "Lowest-HP ally" : seed.role === "tank" ? "Owner" : "Priority target", effect: { kind: copy?.activeKind ?? effect2, value: amount, description: copy?.activeDescription ?? seed.description, durationSeconds: 5 }, scaling: { baseValue: amount, perLevel: (copy?.activeKind ?? effect2) === "damage" ? 4e-3 : 1e-3, maxValue: (copy?.activeKind ?? effect2) === "damage" ? 1.35 : void 0 } }, passiveAbility: { kind: copy?.passiveKind ?? effect2, value: copy?.passiveValue ?? (effect2 === "damage" ? 0.035 : 0.025), description: copy?.passiveDescription ?? `${seed.name} reinforces its event identity.` }, bondTrait: { id: `${seed.id}_BOND`, name: copy?.bondName ?? `${seed.name} Bond`, description: copy?.bondDescription ?? `Bond mastery strengthens the ${seed.name} signature interaction.`, effect: { kind: copy?.bondKind ?? effect2, value: copy?.bondValue ?? (effect2 === "damage" ? 0.05 : 0.03), description: copy?.bondDescription ?? `Bond mastery strengthens ${seed.name}.` } }, ascensionMaterialId: "EVENT_BONDBLOOM", ascensionMaterialCosts: eventAscensionMaterials(seed.rarity), availability: { eventSource: eventNames[seed.event] ?? seed.event, originalReleaseYear: 2026, recurringAvailability: "annual", veteranCosmeticEligibility: true }, visual: { portraitId: seed.id, pixelSize: "96x96", accessibilityLabel: seed.name } };
+});
+
+// ../apps/mobile/src/content/veilbreak-event.ts
+function veilbreakCompanionMilestones(_classId) {
+  return ["EVT_UNIT_008", "EVT_UNIT_007"].map((id) => EVENT_COMPANIONS.find((companion) => companion.id === id)).map((companion, index) => ({ points: index === 0 ? 16e3 : 2e4, reward: { kind: "companion", id: companion.id, name: companion.name, rarity: "epic" } }));
+}
+var gifts = [
+  { day: 1, rewardCurrency: 100, rewardPrestige: 0 },
+  { day: 2, rewardCurrency: 150, rewardPrestige: 0 },
+  { day: 3, rewardCurrency: 200, rewardPrestige: 0 },
+  { day: 4, rewardCurrency: 250, rewardPrestige: 0 },
+  { day: 5, rewardCurrency: 300, rewardPrestige: 0 },
+  { day: 6, rewardCurrency: 400, rewardPrestige: 0 },
+  { day: 7, rewardCurrency: 500, rewardPrestige: 1 }
+];
+var VEILBREAK_EVENT = {
+  id: "EVT_ANNUAL_010_2026",
+  name: "The Veilbreak",
+  summary: "The boundary between Asterfall and the Gloam thins. Reinforce lantern wards, hunt escaped shades, and recover what crossed the veil.",
+  currencyId: "VEIL_SHARD",
+  currencyName: "Veil Shards",
+  prestigeCurrencyId: "LANTERN_EMBER",
+  prestigeCurrencyName: "Lantern Embers",
+  accent: "#f47a36",
+  progressionName: "Veil Reputation",
+  maxProgress: 2e4,
+  claimGraceDays: 7,
+  visualKey: "veilbreak",
+  signature: { kind: "ritual", label: "SIGNATURE \xB7 BREACH WATCH", title: "Hold the veil together while hunting what slips through", description: "Veilbreak is the darkest annual event. Normal activities reinforce the ward effort, discoveries represent objects crossing the veil, and Gloam Breach is the season\u2019s persistent expedition.", highlights: ["Ward-focused seasonal projects", "Gloam-touched discovery chase", "Gloam Breach seasonal expedition"] },
+  ui: {
+    prepareTitle: "Prepare the lantern wards",
+    dailyGiftTitle: "Today\u2019s Lantern Gift",
+    cacheName: "Veil Cache",
+    communityName: "Lantern Ward",
+    projectTitle: "Ward preparation",
+    projectNoun: "ward focus",
+    contractsTitle: "WEEKLY VEIL ACTIVITIES",
+    shopTitle: "VEILBREAK SHOP",
+    collectionTitle: "Veilbreak collection",
+    closedTitle: "The veil is sealing",
+    closedBody: "No new Veil Reputation, daily gifts, contracts, or activity drops can be earned. Completed rewards and shop purchases remain claimable during the grace period."
+  },
+  dropRates: { combat: 0.2, gathering: 1, crafting: 28, boss: 260 },
+  milestones: (classId) => [
+    { points: 250, reward: { kind: "candy", id: "EVT_ANNUAL_010_2026:candy:skill", name: "Gloam Candy", rarity: "common", quantity: 2 } },
+    { points: 400, reward: { kind: "title", id: "title_veil_watcher", name: "Veil Watcher", rarity: "rare" } },
+    { points: 750, reward: { kind: "candy", id: "EVT_ANNUAL_010_2026:candy:combat", name: "Gloam Candy \xB7 Battle", rarity: "common", quantity: 2 } },
+    { points: 1e3, reward: { kind: "emote", id: "emote_lantern_watch", name: "Lantern Watch", rarity: "rare" } },
+    { points: 1500, reward: { kind: "candy", id: "EVT_ANNUAL_010_2026:candy:companion", name: "Gloam Candy \xB7 Bond", rarity: "common", quantity: 2 } },
+    { points: 2500, reward: { kind: "guild_name_color", id: "name_halloween_orange", name: "Halloworange", rarity: "epic" } },
+    { points: 4e3, reward: { kind: "pet", id: "EVT_PET_013", name: "Gloomkin", rarity: "rare" } },
+    { points: 5500, reward: { kind: "guild_frame", id: "border_halloween_veil", name: "Veil Masquerade", rarity: "epic" } },
+    { points: 6500, reward: { kind: "title", id: "title_veilbound", name: "Veilbound", rarity: "epic" } },
+    { points: 7e3, reward: { kind: "profile_icon", id: "event:veilbreak-2026-lantern-warden", name: "2026 Lantern Warden", rarity: "epic" } },
+    { points: 7e3, reward: { kind: "guild_banner", id: "halloween_pumpkin_lantern", name: "Pumpkin Lantern Flag", rarity: "rare" } },
+    { points: 8e3, reward: { kind: "profile_icon", id: "event:veilbreak-2026-pumpkin-moon", name: "2026 Pumpkin Moon", rarity: "epic" } },
+    { points: 8500, reward: { kind: "guild_banner", id: "halloween_bat_moon", name: "Bat Moon Flag", rarity: "epic" } },
+    ...veilbreakCompanionMilestones(classId)
+  ].map((milestone) => milestone.reward.kind === "companion" ? milestone : { ...milestone, points: milestone.points * 2 }).sort((a, b) => a.points - b.points),
+  objectives: [
+    { id: "veil_hunt", name: "Veil Hunt", description: "Defeat 350 ordinary enemies while the veil is thin.", source: "combat", required: 350, rewardCurrency: 320, rewardPrestige: 1 },
+    { id: "ward_supplies", name: "Ward Supplies", description: "Spend 180 active minutes gathering ward materials.", source: "gathering", required: 180, rewardCurrency: 250, rewardPrestige: 1 },
+    { id: "lantern_craft", name: "Lantern Craft", description: "Complete 12 crafting recipes for the ward effort.", source: "crafting", required: 12, rewardCurrency: 340, rewardPrestige: 1 },
+    { id: "breach_guardian", name: "Breach Guardian", description: "Defeat an eligible event boss.", source: "boss", required: 1, rewardCurrency: 520, rewardPrestige: 2 }
+  ],
+  weeklyObjectives: [
+    { id: "weekly_veil_hunt", name: "Night Watch", description: "Defeat 1,900 ordinary enemies this week.", source: "combat", required: 1900, rewardCurrency: 1050, rewardPrestige: 2 },
+    { id: "weekly_ward_supply", name: "Ward Quartermaster", description: "Spend 900 active minutes gathering this week.", source: "gathering", required: 900, rewardCurrency: 900, rewardPrestige: 2 },
+    { id: "weekly_lantern_craft", name: "Master Lanternwright", description: "Complete 50 crafting recipes this week.", source: "crafting", required: 50, rewardCurrency: 1100, rewardPrestige: 2 }
+  ],
+  shop: [
+    // One fixed, long-term companion goal keeps the event shop legible. The other
+    // two Veilbreak companions are earned from class-aware reputation milestones.
+    ...EVENT_COMPANIONS.filter((companion) => companion.id === "EVT_UNIT_011").map((companion) => ({ id: `veil_trial_${companion.id.toLowerCase()}`, reward: { kind: "companion", id: companion.id, name: companion.name, rarity: "epic" }, currency: "common", cost: 2e4, limit: 1, alwaysAvailable: true })),
+    { id: "laughing_crow", reward: { kind: "emote", id: "emote_laughing_crow", name: "Laughing Crow", rarity: "rare" }, currency: "common", cost: 900, limit: 1 },
+    // Stable IDs retain existing purchases while the rewards now read as useful chat reactions.
+    { id: "veil_salute", reward: { kind: "emote", id: "emote_veil_salute", name: "Pumpkin Panic", rarity: "rare" }, currency: "common", cost: 1100, limit: 1, minLevel: 8 },
+    { id: "candle_circle", reward: { kind: "emote", id: "emote_candle_circle", name: "Gloam Facepalm", rarity: "rare" }, currency: "common", cost: 1250, limit: 1, minLevel: 12 },
+    { id: "gloamward_frame", reward: { kind: "border", id: "frame_gloamward", name: "Gloamward Frame", rarity: "epic" }, currency: "common", cost: 2200, limit: 1, minLevel: 10 },
+    { id: "veilbreak_background", reward: { kind: "background", id: "bg_veilbreak", name: "Veilbreak Gothic Moonruins", rarity: "epic" }, currency: "common", cost: 1800, limit: 1 },
+    { id: "gloam_candy_skill", reward: { kind: "candy", id: "EVT_ANNUAL_010_2026:candy:skill", name: "Gloam Candy", rarity: "common", quantity: 1 }, currency: "common", cost: 250, limit: 5 },
+    { id: "gloam_candy_battle", reward: { kind: "candy", id: "EVT_ANNUAL_010_2026:candy:combat", name: "Gloam Candy \xB7 Battle", rarity: "common", quantity: 1 }, currency: "common", cost: 300, limit: 5, minLevel: 8 },
+    { id: "gloam_candy_bond", reward: { kind: "candy", id: "EVT_ANNUAL_010_2026:candy:companion", name: "Gloam Candy \xB7 Bond", rarity: "common", quantity: 1 }, currency: "common", cost: 350, limit: 5, minLevel: 12 },
+    { id: "companion_essence_cache", reward: { kind: "companion_essence", id: "companion_essence_100", name: "Companion Essence Cache", rarity: "uncommon", quantity: 100 }, currency: "common", cost: 750, limit: 3, minLevel: 10 },
+    { id: "lantern_coin_purse", reward: { kind: "gold", id: "gold_2500", name: "Lantern Coin Purse", rarity: "common", quantity: 2500 }, currency: "common", cost: 450, limit: 5, minLevel: 5 },
+    { id: "warden_treasury", reward: { kind: "gold", id: "gold_10000", name: "Warden Treasury", rarity: "uncommon", quantity: 1e4 }, currency: "common", cost: 1600, limit: 2, minLevel: 20 },
+    { id: "candlewarden_title", reward: { kind: "title", id: "title_candlewarden", name: "Candlewarden", rarity: "epic" }, currency: "common", cost: 1800, limit: 1 },
+    { id: "night_patrol_title", reward: { kind: "title", id: "title_night_patrol", name: "Night Patrol", rarity: "rare" }, currency: "common", cost: 1200, limit: 1 },
+    { id: "veil_lantern_mimic", reward: { kind: "pet", id: "EVT_PET_014", name: "Lantern Mimic", rarity: "epic" }, currency: "prestige", cost: 10, limit: 1 }
+  ],
+  choices: [
+    { id: "lantern_patrols", name: "Lantern Patrols", description: "Walk the roads and hunt creatures drawn through the veil.", bonusLabel: "+20% Veil Shards from combat", dropMultipliers: { combat: 1.2 } },
+    { id: "ward_gathering", name: "Ward Gathering", description: "Gather resin, herbs, ore, and fuel for the ward lanterns.", bonusLabel: "+20% Veil Shards from gathering", dropMultipliers: { gathering: 1.2 } },
+    { id: "sigil_workshop", name: "Sigil Workshop", description: "Craft replacement wards and binding seals.", bonusLabel: "+20% Veil Shards from crafting", dropMultipliers: { crafting: 1.2 } },
+    { id: "breach_hunters", name: "Breach Hunters", description: "Prioritize the strongest creatures crossing through.", bonusLabel: "+20% boss Veil Shards", dropMultipliers: { boss: 1.2 } }
+  ],
+  dailyGifts: [...gifts],
+  communityEnabled: false,
+  communityGoal: 1e5,
+  communityMilestones: [],
+  discoveries: [
+    { id: "gloam_cinder", name: "Gloam Cinder", description: "A cold ember sometimes left behind after ordinary combat.", source: "combat", chance: 3e-3, required: 5, reward: { kind: "title", id: "title_gloam_touched", name: "Gloam-Touched", rarity: "rare" } },
+    { id: "waxen_sigil", name: "Waxen Sigil", description: "A binding mark occasionally left after crafting.", source: "crafting", chance: 0.06, required: 3, reward: { kind: "emote", id: "emote_sleeping_scarecrow", name: "Sleeping Scarecrow", rarity: "rare" } },
+    { id: "breach_fragment", name: "Breach Fragment", description: "A shard of condensed veil carried by eligible bosses.", source: "boss", chance: 0.25, required: 1, reward: { kind: "title", id: "title_breach_sealer", name: "Breach Sealer", rarity: "epic" } }
+  ]
+};
+var FROSTFALL_EVENT = {
+  id: "EVT_ANNUAL_012_2026",
+  name: "Frostfall Festival",
+  summary: "Winter bells ring across Asterfall. Gather provisions, light the roads, and earn gifts beneath the aurora.",
+  currencyId: "FROSTBELL_TOKEN",
+  currencyName: "Frostbell Tokens",
+  prestigeCurrencyId: "AURORA_CHIME",
+  prestigeCurrencyName: "Aurora Chimes",
+  accent: "#9be7ff",
+  progressionName: "Frostfall Reputation",
+  maxProgress: 1e4,
+  claimGraceDays: 7,
+  visualKey: "frostfall",
+  signature: { kind: "community", label: "SIGNATURE \xB7 WINTER HEARTH", title: "Build the winter celebration together", description: "Frostfall combines a personal gift-and-collection chase with a shared Winter Hearth. Spend Frostbell Tokens on your own collection or contribute them to unlock communal festival milestones.", highlights: ["Shared Winter Hearth milestones", "Gift-and-aurora collectible chase", "Aurora Hollow seasonal expedition"] },
+  ui: {
+    prepareTitle: "Prepare for Frostfall",
+    dailyGiftTitle: "Today\u2019s Frostfall Gift",
+    cacheName: "Frostfall Cache",
+    communityName: "Winter Hearth",
+    projectTitle: "Festival preparation",
+    projectNoun: "festival focus",
+    contractsTitle: "DAILY FROSTFALL CONTRACTS",
+    shopTitle: "FROSTFALL SHOP",
+    collectionTitle: "Frostfall collection",
+    closedTitle: "Frostfall festivities are ending",
+    closedBody: "No new Frostfall Reputation, daily gifts, contracts, or activity drops can be earned. Completed rewards and shop purchases remain claimable during the grace period."
+  },
+  dropRates: { combat: 0.17, gathering: 1.2, crafting: 30, boss: 250 },
+  milestones: () => [
+    { points: 400, reward: { kind: "title", id: "title_frostfall_guest", name: "Frostfall Guest", rarity: "common" } },
+    { points: 1e3, reward: { kind: "emote", id: "emote_snowbell_ring", name: "Snowbell Ring", rarity: "rare" } },
+    { points: 4e3, reward: { kind: "pet", id: "EVT_PET_015", name: "Snowbell Pup", rarity: "common" } },
+    { points: 6500, reward: { kind: "title", id: "title_winter_light", name: "Winter Light", rarity: "epic" } },
+    { points: 1e4, reward: { kind: "companion", id: "EVT_UNIT_009", name: "Frostbell Herald", rarity: "epic" } }
+  ],
+  objectives: [
+    { id: "winter_watch", name: "Winter Watch", description: "Defeat 300 ordinary enemies along the winter roads.", source: "combat", required: 300, rewardCurrency: 300, rewardPrestige: 1 },
+    { id: "winter_provisions", name: "Winter Provisions", description: "Spend 180 active minutes gathering festival supplies.", source: "gathering", required: 180, rewardCurrency: 280, rewardPrestige: 1 },
+    { id: "gift_orders", name: "Gift Orders", description: "Complete 12 crafting recipes for Frostfall.", source: "crafting", required: 12, rewardCurrency: 350, rewardPrestige: 1 },
+    { id: "winter_guardian", name: "Winter Guardian", description: "Defeat an eligible event boss.", source: "boss", required: 1, rewardCurrency: 500, rewardPrestige: 2 }
+  ],
+  weeklyObjectives: [
+    { id: "weekly_winter_watch", name: "Roadkeeper", description: "Defeat 1,800 ordinary enemies this week.", source: "combat", required: 1800, rewardCurrency: 1e3, rewardPrestige: 2 },
+    { id: "weekly_provisions", name: "Festival Supplier", description: "Spend 900 active minutes gathering this week.", source: "gathering", required: 900, rewardCurrency: 950, rewardPrestige: 2 },
+    { id: "weekly_gifts", name: "Master Giftmaker", description: "Complete 50 crafting recipes this week.", source: "crafting", required: 50, rewardCurrency: 1150, rewardPrestige: 2 }
+  ],
+  shop: [
+    { id: "frostfall_wave", reward: { kind: "emote", id: "emote_frostfall_wave", name: "Frostfall Wave", rarity: "rare" }, currency: "common", cost: 900, limit: 1 },
+    { id: "hearth_guest_title", reward: { kind: "title", id: "title_hearth_guest", name: "Hearth Guest", rarity: "rare" }, currency: "common", cost: 1200, limit: 1 },
+    { id: "bellringer_title", reward: { kind: "title", id: "title_bellringer", name: "Bellringer", rarity: "epic" }, currency: "common", cost: 1800, limit: 1 },
+    { id: "aurora_walker_title", reward: { kind: "title", id: "title_aurora_walker", name: "Aurora Walker", rarity: "epic" }, currency: "prestige", cost: 4, limit: 1 },
+    { id: "frostfall_aurora_fox", reward: { kind: "pet", id: "EVT_PET_017", name: "Aurora Fox", rarity: "mythic" }, currency: "prestige", cost: 12, limit: 1 }
+  ],
+  choices: [
+    { id: "snow_patrols", name: "Snow Patrols", description: "Keep roads clear and defend travelers during the festival.", bonusLabel: "+20% Frostbell Tokens from combat", dropMultipliers: { combat: 1.2 } },
+    { id: "hearth_supplies", name: "Hearth Supplies", description: "Gather fuel, fish, herbs, and provisions for winter feasts.", bonusLabel: "+20% Frostbell Tokens from gathering", dropMultipliers: { gathering: 1.2 } },
+    { id: "gift_workshop", name: "Gift Workshop", description: "Craft decorations, gifts, and supplies for the festival.", bonusLabel: "+20% Frostbell Tokens from crafting", dropMultipliers: { crafting: 1.2 } },
+    { id: "winter_champions", name: "Winter Champions", description: "Challenge powerful threats before they reach the celebrations.", bonusLabel: "+20% boss Frostbell Tokens", dropMultipliers: { boss: 1.2 } }
+  ],
+  dailyGifts: [...gifts],
+  communityEnabled: true,
+  communityGoal: 1e5,
+  communityMilestones: [
+    { percent: 25, rewardCurrency: 200, rewardPrestige: 0 },
+    { percent: 50, rewardCurrency: 350, rewardPrestige: 1 },
+    { percent: 75, rewardCurrency: 500, rewardPrestige: 1 },
+    { percent: 100, rewardCurrency: 750, rewardPrestige: 2, reward: { kind: "title", id: "title_hearth_builder", name: "Hearth Builder", rarity: "epic" } }
+  ],
+  discoveries: [
+    { id: "snowbell_fragment", name: "Snowbell Fragment", description: "A tiny frozen bell-clapper found after ordinary combat.", source: "combat", chance: 3e-3, required: 5, reward: { kind: "title", id: "title_snowbell_seeker", name: "Snowbell Seeker", rarity: "rare" } },
+    { id: "gift_ribbon_scrap", name: "Enchanted Ribbon Scrap", description: "A festive ribbon hidden among gathered supplies.", source: "gathering", chance: 0.015, required: 5, reward: { kind: "title", id: "title_ribbon_finder", name: "Ribbon Finder", rarity: "rare" } },
+    { id: "aurora_bell_shard", name: "Aurora Bell Shard", description: "A resonant shard carried by eligible event bosses.", source: "boss", chance: 0.25, required: 1, reward: { kind: "emote", id: "emote_aurora_chime", name: "Aurora Chime", rarity: "epic" } }
+  ]
+};
+
+// ../apps/mobile/src/content/equipment-main-resource-shop.ts
+var EQUIPMENT_MAIN_RESOURCE_BUNDLES = [
+  { itemId: "MOSS_FIBER", name: "Moss Fiber", tier: 1, dungeonMarks: 150, frostfallTokens: 400 },
+  { itemId: "GREENWOOD_LOG", name: "Greenwood Log", tier: 1, dungeonMarks: 150, frostfallTokens: 400 },
+  { itemId: "WOLF_PELT", name: "Wolf Pelt", tier: 2, dungeonMarks: 300, frostfallTokens: 850 },
+  { itemId: "IRONWOOD_LOG", name: "Ironwood Log", tier: 2, dungeonMarks: 300, frostfallTokens: 850 },
+  { itemId: "DUNEWOOD", name: "Dunewood", tier: 3, dungeonMarks: 600, frostfallTokens: 1600 },
+  { itemId: "SUNSCALE", name: "Sunscale", tier: 3, dungeonMarks: 600, frostfallTokens: 1600 },
+  { itemId: "SUNSTONE_INGOT", name: "Sunstone Ingot", tier: 4, dungeonMarks: 1e3, frostfallTokens: 2800 }
+];
+function mainResourceBundle(itemId) {
+  return EQUIPMENT_MAIN_RESOURCE_BUNDLES.find((row) => row.itemId === itemId);
+}
+
+// ../apps/mobile/src/content/annual-events-v2.ts
+var gifts2 = [
+  { day: 1, rewardCurrency: 100, rewardPrestige: 0 },
+  { day: 2, rewardCurrency: 150, rewardPrestige: 0 },
+  { day: 3, rewardCurrency: 200, rewardPrestige: 0 },
+  { day: 4, rewardCurrency: 250, rewardPrestige: 0 },
+  { day: 5, rewardCurrency: 300, rewardPrestige: 0 },
+  { day: 6, rewardCurrency: 400, rewardPrestige: 0 },
+  { day: 7, rewardCurrency: 500, rewardPrestige: 1 }
+];
+var VEILBREAK_EVENT2 = {
+  id: "EVT_ANNUAL_010_2026",
+  name: "The Veilbreak",
+  summary: "The boundary between Asterfall and the Gloam thins. Reinforce lantern wards, hunt escaped shades, and recover what crossed the veil.",
+  currencyId: "VEIL_SHARD",
+  currencyName: "Veil Shards",
+  prestigeCurrencyId: "LANTERN_EMBER",
+  prestigeCurrencyName: "Lantern Embers",
+  accent: "#f47a36",
+  progressionName: "Veil Reputation",
+  maxProgress: 2e4,
+  claimGraceDays: 7,
+  visualKey: "veilbreak",
+  signature: { kind: "ritual", label: "SIGNATURE \xB7 BREACH WATCH", title: "Hold the veil together while hunting what slips through", description: "Veilbreak is the darkest annual event. Normal activities reinforce the ward effort, discoveries represent objects crossing the veil, and Gloam Breach is the season\u2019s persistent expedition.", highlights: ["Ward-focused seasonal projects", "Gloam-touched discovery chase", "Gloam Breach seasonal expedition"] },
+  ui: {
+    prepareTitle: "Prepare the lantern wards",
+    dailyGiftTitle: "Today\u2019s Lantern Gift",
+    cacheName: "Veil Cache",
+    communityName: "Lantern Ward",
+    projectTitle: "Ward preparation",
+    projectNoun: "ward focus",
+    contractsTitle: "DAILY VEIL CONTRACTS",
+    shopTitle: "VEILBREAK SHOP",
+    collectionTitle: "Veilbreak collection",
+    closedTitle: "The veil is sealing",
+    closedBody: "No new Veil Reputation, daily gifts, contracts, or activity drops can be earned. Completed rewards and shop purchases remain claimable during the grace period."
+  },
+  dropRates: { combat: 0.2, gathering: 1, crafting: 28, boss: 260 },
+  milestones: () => [
+    { points: 250, reward: { kind: "candy", id: "EVT_ANNUAL_010_2026:candy:skill", name: "Gloam Candy", rarity: "common", quantity: 2 } },
+    { points: 400, reward: { kind: "title", id: "title_veil_watcher", name: "Veil Watcher", rarity: "rare" } },
+    { points: 750, reward: { kind: "candy", id: "EVT_ANNUAL_010_2026:candy:combat", name: "Gloam Candy \xB7 Battle", rarity: "common", quantity: 2 } },
+    { points: 1e3, reward: { kind: "emote", id: "emote_lantern_watch", name: "Lantern Watch", rarity: "rare" } },
+    { points: 1500, reward: { kind: "candy", id: "EVT_ANNUAL_010_2026:candy:companion", name: "Gloam Candy \xB7 Bond", rarity: "common", quantity: 2 } },
+    { points: 2500, reward: { kind: "guild_name_color", id: "name_halloween_orange", name: "Halloworange", rarity: "epic" } },
+    { points: 4e3, reward: { kind: "pet", id: "EVT_PET_013", name: "Gloomkin", rarity: "rare" } },
+    { points: 5500, reward: { kind: "guild_frame", id: "border_halloween_veil", name: "Veil Masquerade", rarity: "epic" } },
+    { points: 6500, reward: { kind: "title", id: "title_veilbound", name: "Veilbound", rarity: "epic" } },
+    { points: 7e3, reward: { kind: "guild_banner", id: "halloween_pumpkin_lantern", name: "Pumpkin Lantern Flag", rarity: "rare" } },
+    { points: 8500, reward: { kind: "guild_banner", id: "halloween_bat_moon", name: "Bat Moon Flag", rarity: "epic" } },
+    { points: 1e4, reward: { kind: "companion", id: "EVT_UNIT_007", name: "Veil Hound", rarity: "epic" } },
+    { points: 2e4, reward: { kind: "companion", id: "EVT_UNIT_008", name: "Hollow Knightling", rarity: "epic" } }
+  ],
+  objectives: [
+    { id: "veil_hunt", name: "Veil Hunt", description: "Defeat 350 ordinary enemies while the veil is thin.", source: "combat", required: 350, rewardCurrency: 320, rewardPrestige: 1 },
+    { id: "ward_supplies", name: "Ward Supplies", description: "Spend 180 active minutes gathering ward materials.", source: "gathering", required: 180, rewardCurrency: 250, rewardPrestige: 1 },
+    { id: "lantern_craft", name: "Lantern Craft", description: "Complete 12 crafting recipes for the ward effort.", source: "crafting", required: 12, rewardCurrency: 340, rewardPrestige: 1 },
+    { id: "breach_guardian", name: "Breach Guardian", description: "Defeat an eligible event boss.", source: "boss", required: 1, rewardCurrency: 520, rewardPrestige: 2 }
+  ],
+  weeklyObjectives: [
+    { id: "weekly_veil_hunt", name: "Night Watch", description: "Defeat 1,900 ordinary enemies this week.", source: "combat", required: 1900, rewardCurrency: 1050, rewardPrestige: 2 },
+    { id: "weekly_ward_supply", name: "Ward Quartermaster", description: "Spend 900 active minutes gathering this week.", source: "gathering", required: 900, rewardCurrency: 900, rewardPrestige: 2 },
+    { id: "weekly_lantern_craft", name: "Master Lanternwright", description: "Complete 50 crafting recipes this week.", source: "crafting", required: 50, rewardCurrency: 1100, rewardPrestige: 2 }
+  ],
+  shop: [
+    { id: "veil_salute", reward: { kind: "emote", id: "emote_veil_salute", name: "Pumpkin Panic", rarity: "rare" }, currency: "common", cost: 900, limit: 1 },
+    { id: "candlewarden_title", reward: { kind: "title", id: "title_candlewarden", name: "Candlewarden", rarity: "epic" }, currency: "common", cost: 1800, limit: 1 },
+    { id: "night_patrol_title", reward: { kind: "title", id: "title_night_patrol", name: "Night Patrol", rarity: "rare" }, currency: "common", cost: 1200, limit: 1 },
+    { id: "veil_lantern_mimic", reward: { kind: "pet", id: "EVT_PET_014", name: "Lantern Mimic", rarity: "epic" }, currency: "prestige", cost: 10, limit: 1 },
+    { id: "lanternwing_companion", reward: { kind: "companion", id: "EVT_UNIT_011", name: "Lantern Keeper", rarity: "epic" }, currency: "prestige", cost: 14, limit: 1 }
+  ],
+  choices: [
+    { id: "lantern_patrols", name: "Lantern Patrols", description: "Walk the roads and hunt creatures drawn through the veil.", bonusLabel: "+20% Veil Shards from combat", dropMultipliers: { combat: 1.2 } },
+    { id: "ward_gathering", name: "Ward Gathering", description: "Gather resin, herbs, ore, and fuel for the ward lanterns.", bonusLabel: "+20% Veil Shards from gathering", dropMultipliers: { gathering: 1.2 } },
+    { id: "sigil_workshop", name: "Sigil Workshop", description: "Craft replacement wards and binding seals.", bonusLabel: "+20% Veil Shards from crafting", dropMultipliers: { crafting: 1.2 } },
+    { id: "breach_hunters", name: "Breach Hunters", description: "Prioritize the strongest creatures crossing through.", bonusLabel: "+20% boss Veil Shards", dropMultipliers: { boss: 1.2 } }
+  ],
+  dailyGifts: [...gifts2],
+  communityEnabled: false,
+  communityGoal: 1e5,
+  communityMilestones: [],
+  discoveries: [
+    { id: "gloam_cinder", name: "Gloam Cinder", description: "A cold ember sometimes left behind after ordinary combat.", source: "combat", chance: 3e-3, required: 5, reward: { kind: "title", id: "title_gloam_touched", name: "Gloam-Touched", rarity: "rare" } },
+    { id: "waxen_sigil", name: "Waxen Sigil", description: "A binding mark occasionally left after crafting.", source: "crafting", chance: 0.06, required: 3, reward: { kind: "emote", id: "emote_candle_circle", name: "Gloam Facepalm", rarity: "rare" } },
+    { id: "breach_fragment", name: "Breach Fragment", description: "A shard of condensed veil carried by eligible bosses.", source: "boss", chance: 0.25, required: 1, reward: { kind: "title", id: "title_breach_sealer", name: "Breach Sealer", rarity: "epic" } }
+  ]
+};
+var FROSTFALL_EVENT2 = {
+  id: "EVT_ANNUAL_012_2026",
+  name: "Frostfall Festival",
+  summary: "Winter bells ring across Asterfall. Gather provisions, light the roads, and earn gifts beneath the aurora.",
+  currencyId: "FROSTBELL_TOKEN",
+  currencyName: "Frostbell Tokens",
+  prestigeCurrencyId: "AURORA_CHIME",
+  prestigeCurrencyName: "Aurora Chimes",
+  accent: "#9be7ff",
+  progressionName: "Frostfall Reputation",
+  maxProgress: 1e4,
+  // Dec 27–28, 2026 is claim-only; the published server grace timestamp remains authoritative.
+  claimGraceDays: 2,
+  visualKey: "frostfall",
+  signature: { kind: "community", label: "SIGNATURE \xB7 WINTER HEARTH", title: "Build your Guild Christmas Market", description: "Work together in your Guild to donate 25,000 logs and 2,500 Christmas Lights, unlock temporary winter bonuses, and earn permanent Frostfall 2026 Guild cosmetics. Personal festival rewards and Aurora Hollow remain separate.", highlights: ["Guild Christmas Market construction", "Two winter supply tracks and Guild milestones", "Aurora Hollow seasonal expedition"] },
+  ui: {
+    prepareTitle: "Prepare for Frostfall",
+    dailyGiftTitle: "Today\u2019s Frostfall Gift",
+    cacheName: "Frostfall Cache",
+    communityName: "Winter Hearth \xB7 Guild Christmas Market",
+    projectTitle: "Festival preparation",
+    projectNoun: "festival focus",
+    contractsTitle: "DAILY FROSTFALL CONTRACTS",
+    shopTitle: "FROSTFALL SHOP",
+    collectionTitle: "Frostfall collection",
+    closedTitle: "Frostfall festivities are ending",
+    closedBody: "No new Frostfall Reputation, daily gifts, contracts, or activity drops can be earned. Completed rewards and shop purchases remain claimable during the grace period."
+  },
+  dropRates: { combat: 0.17, gathering: 1.2, crafting: 30, boss: 250 },
+  milestones: () => [
+    { points: 400, reward: { kind: "title", id: "title_frostfall_guest", name: "Frostfall Guest", rarity: "common" } },
+    { points: 1e3, reward: { kind: "emote", id: "emote_snowbell_ring", name: "Frostbell Cheer", rarity: "rare" } },
+    { points: 4e3, reward: { kind: "pet", id: "EVT_PET_015", name: "Snowbell Pup", rarity: "common" } },
+    // Three distinct Elite roles. Account-wide and permanent after the event.
+    // Keep the existing final 10k Frostbell milestone ID stable.
+    { points: 6e3, reward: { kind: "companion", id: "EVT_UNIT_012", name: "Rimeshard Wolverine", rarity: "epic" } },
+    { points: 6500, reward: { kind: "title", id: "title_winter_light", name: "Winter Light", rarity: "epic" } },
+    { points: 8500, reward: { kind: "companion", id: "EVT_UNIT_013", name: "Hearthguard Ram", rarity: "epic" } },
+    { points: 1e4, reward: { kind: "companion", id: "EVT_UNIT_009", name: "Frostbell Herald", rarity: "epic" } }
+  ],
+  objectives: [
+    { id: "winter_watch", name: "Winter Watch", description: "Defeat 300 ordinary enemies along the winter roads.", source: "combat", required: 300, rewardCurrency: 300, rewardPrestige: 1 },
+    { id: "winter_provisions", name: "Winter Provisions", description: "Spend 180 active minutes gathering festival supplies.", source: "gathering", required: 180, rewardCurrency: 280, rewardPrestige: 1 },
+    { id: "gift_orders", name: "Gift Orders", description: "Complete 12 crafting recipes for Frostfall.", source: "crafting", required: 12, rewardCurrency: 350, rewardPrestige: 1 },
+    { id: "winter_guardian", name: "Winter Guardian", description: "Defeat an eligible event boss.", source: "boss", required: 1, rewardCurrency: 500, rewardPrestige: 2 }
+  ],
+  weeklyObjectives: [
+    { id: "weekly_winter_watch", name: "Roadkeeper", description: "Defeat 1,800 ordinary enemies this week.", source: "combat", required: 1800, rewardCurrency: 1e3, rewardPrestige: 2 },
+    { id: "weekly_provisions", name: "Festival Supplier", description: "Spend 900 active minutes gathering this week.", source: "gathering", required: 900, rewardCurrency: 950, rewardPrestige: 2 },
+    { id: "weekly_gifts", name: "Master Giftmaker", description: "Complete 50 crafting recipes this week.", source: "crafting", required: 50, rewardCurrency: 1150, rewardPrestige: 2 }
+  ],
+  shop: [
+    // Existing IDs and permanent rewards are preserved.
+    { id: "frostfall_wave", reward: { kind: "emote", id: "emote_frostfall_wave", name: "Frozen Shock", rarity: "rare" }, currency: "common", cost: 900, limit: 1 },
+    { id: "frostfall_frostbell_cheer", reward: { kind: "emote", id: "emote_snowbell_ring", name: "Frostbell Cheer", rarity: "rare" }, currency: "common", cost: 900, limit: 1 },
+    { id: "frostfall_aurora_hug", reward: { kind: "emote", id: "emote_aurora_chime", name: "Aurora Hug", rarity: "epic" }, currency: "common", cost: 1250, limit: 1 },
+    { id: "frostfall_cozy_hearth", reward: { kind: "emote", id: "emote_cozy_hearth", name: "Cozy Hearth", rarity: "rare" }, currency: "common", cost: 1100, limit: 1 },
+    { id: "frostfall_snowball_attack", reward: { kind: "emote", id: "emote_snowball_attack", name: "Snowball Attack", rarity: "rare" }, currency: "common", cost: 1100, limit: 1 },
+    { id: "hearth_guest_title", reward: { kind: "title", id: "title_hearth_guest", name: "Hearth Guest", rarity: "rare" }, currency: "common", cost: 1200, limit: 1 },
+    { id: "bellringer_title", reward: { kind: "title", id: "title_bellringer", name: "Bellringer", rarity: "epic" }, currency: "common", cost: 1800, limit: 1 },
+    { id: "aurora_walker_title", reward: { kind: "title", id: "title_aurora_walker", name: "Aurora Walker", rarity: "epic" }, currency: "prestige", cost: 4, limit: 1 },
+    { id: "frostfall_aurora_fox", reward: { kind: "pet", id: "EVT_PET_017", name: "Aurora Fox", rarity: "mythic" }, currency: "prestige", cost: 10, limit: 1 },
+    { id: "frostfall_aurora_bellframe", reward: { kind: "border", id: "frame_frostfall_aurora_bellframe", name: "Aurora Bellframe", rarity: "epic" }, currency: "common", cost: 3e3, limit: 1 },
+    { id: "frostfall_background", reward: { kind: "background", id: "bg_frostfall", name: "Aurora Winter Sky", rarity: "epic" }, currency: "common", cost: 2200, limit: 1 },
+    { id: "frostfall_snowbell_icon", reward: { kind: "profile_icon", id: "event:frostfall-2026-snowbell", name: "Frostfall Snowman", rarity: "epic" }, currency: "common", cost: 1400, limit: 1 },
+    { id: "frostfall_maiden_icon", reward: { kind: "profile_icon", id: "event:frostfall-2026-maiden", name: "Frostfall Maiden", rarity: "epic" }, currency: "common", cost: 1400, limit: 1 },
+    { id: "frostfall_adventurer_icon", reward: { kind: "profile_icon", id: "event:frostfall-2026-adventurer", name: "Frostfall Adventurer", rarity: "epic" }, currency: "common", cost: 1400, limit: 1 },
+    { id: "frostmint_skill", reward: { kind: "candy", id: "EVT_ANNUAL_012_2026:candy:skill", name: "Frostmint", rarity: "common", quantity: 1 }, currency: "common", cost: 250, limit: 5 },
+    { id: "frostmint_battle", reward: { kind: "candy", id: "EVT_ANNUAL_012_2026:candy:combat", name: "Frostmint \xB7 Battle", rarity: "common", quantity: 1 }, currency: "common", cost: 300, limit: 5 },
+    { id: "frostmint_bond", reward: { kind: "candy", id: "EVT_ANNUAL_012_2026:candy:companion", name: "Frostmint \xB7 Bond", rarity: "common", quantity: 1 }, currency: "common", cost: 350, limit: 5 },
+    { id: "frostfall_companion_essence", reward: { kind: "companion_essence", id: "frostfall_essence_100", name: "Companion Essence \xB7 100", rarity: "uncommon", quantity: 100 }, currency: "common", cost: 750, limit: 3 },
+    { id: "frostfall_gold_pouch", reward: { kind: "gold", id: "frostfall_gold_2500", name: "Winter Coin Purse", rarity: "common", quantity: 2500 }, currency: "common", cost: 450, limit: 5 },
+    { id: "frostfall_gold_chest", reward: { kind: "gold", id: "frostfall_gold_10000", name: "Festival Treasury", rarity: "uncommon", quantity: 1e4 }, currency: "common", cost: 1600, limit: 2 },
+    // Select any main resource, 100 at a time; same item/tier gating as Dungeon Marks.
+    // Each material has its own once-per-UTC-week cap, resetting Monday.
+    ...EQUIPMENT_MAIN_RESOURCE_BUNDLES.map((bundle) => ({
+      id: "frostfall_" + bundle.itemId.toLowerCase() + "_100",
+      reward: { kind: "crafting_material", id: bundle.itemId, name: bundle.name + " \xD7100", rarity: "uncommon", quantity: 100, tier: bundle.tier },
+      currency: "common",
+      cost: bundle.frostfallTokens,
+      limit: 1,
+      perUtcWeek: 1
+    }))
+  ],
+  choices: [
+    { id: "snow_patrols", name: "Snow Patrols", description: "Keep roads clear and defend travelers during the festival.", bonusLabel: "+20% Frostbell Tokens from combat", dropMultipliers: { combat: 1.2 } },
+    { id: "hearth_supplies", name: "Hearth Supplies", description: "Gather fuel, fish, herbs, and provisions for winter feasts.", bonusLabel: "+20% Frostbell Tokens from gathering", dropMultipliers: { gathering: 1.2 } },
+    { id: "gift_workshop", name: "Gift Workshop", description: "Craft decorations, gifts, and supplies for the festival.", bonusLabel: "+20% Frostbell Tokens from crafting", dropMultipliers: { crafting: 1.2 } },
+    { id: "winter_champions", name: "Winter Champions", description: "Challenge powerful threats before they reach the celebrations.", bonusLabel: "+20% boss Frostbell Tokens", dropMultipliers: { boss: 1.2 } }
+  ],
+  dailyGifts: [...gifts2],
+  communityEnabled: false,
+  // Superseded by the guild-only Winter Hearth market; shared event track stays disabled.
+  communityGoal: 1e5,
+  communityMilestones: [
+    { percent: 25, rewardCurrency: 200, rewardPrestige: 0 },
+    { percent: 50, rewardCurrency: 350, rewardPrestige: 1 },
+    { percent: 75, rewardCurrency: 500, rewardPrestige: 1 },
+    { percent: 100, rewardCurrency: 750, rewardPrestige: 2, reward: { kind: "title", id: "title_hearth_builder", name: "Hearth Builder", rarity: "epic" } }
+  ],
+  discoveries: [
+    { id: "snowbell_fragment", name: "Snowbell Fragment", description: "A tiny frozen bell-clapper found after ordinary combat.", source: "combat", chance: 3e-3, required: 5, reward: { kind: "title", id: "title_snowbell_seeker", name: "Snowbell Seeker", rarity: "rare" } },
+    { id: "gift_ribbon_scrap", name: "Enchanted Ribbon Scrap", description: "A festive ribbon hidden among gathered supplies.", source: "gathering", chance: 0.015, required: 5, reward: { kind: "title", id: "title_ribbon_finder", name: "Ribbon Finder", rarity: "rare" } },
+    { id: "aurora_bell_shard", name: "Aurora Bell Shard", description: "A resonant shard carried by eligible event bosses.", source: "boss", chance: 0.25, required: 1, reward: { kind: "emote", id: "emote_aurora_chime", name: "Aurora Hug", rarity: "epic" } }
+  ]
+};
+
+// ../apps/mobile/src/content/live-events.ts
+function eventCandies(definition) {
+  const names = { harvestwake: "Harvest Taffy", veilbreak: "Gloam Candy", frostfall: "Frostmint", turning_of_the_age: "Chronicle Chew", heartbond: "Heartberry Drop", bloomwake: "Bloom Sugar", suncrest: "Sunflare Toffee", starfall: "Starshine Candy", merchant_guild: "Guild Caramel" };
+  const base = names[definition.visualKey] ?? `${definition.name} Candy`;
+  return [
+    { kind: "skill", id: `${definition.id}:candy:skill`, name: base, description: "Grants +10% gathering speed and +10% non-combat skill XP.", visualKey: definition.visualKey, bonusBps: 1e3, secondsPerUse: 2 * 60 * 60, maxSeconds: 10 * 60 * 60 },
+    { kind: "combat", id: `${definition.id}:candy:combat`, name: `${base} \xB7 Battle`, description: "Grants +10% combat XP and +10% damage against ordinary regional PvE enemies only. No PvP, guild, dungeon, or expedition effect.", visualKey: definition.visualKey, bonusBps: 1e3, secondsPerUse: 2 * 60 * 60, maxSeconds: 10 * 60 * 60 },
+    { kind: "companion", id: `${definition.id}:candy:companion`, name: `${base} \xB7 Bond`, description: "Awards 75 Companion XP to your selected owned combat companion, equipped or not. It does not increase combat power directly.", visualKey: definition.visualKey, bonusBps: 0, secondsPerUse: 1, maxSeconds: 1 },
+    { kind: "pet", id: `${definition.id}:candy:pet`, name: `${base} \xB7 Pet Luck`, description: "Doubles the base chance of eligible regional pet drops from combat, gathering and exploration for 2 hours. For example, 0.10% becomes 0.20%.", visualKey: definition.visualKey, bonusBps: 1e4, secondsPerUse: 2 * 60 * 60, maxSeconds: 10 * 60 * 60 }
+  ];
+}
+function eventPrestigeSupplyOffers(definition) {
+  const skill2 = eventCandies(definition).find((candy) => candy.kind === "skill");
+  const combat = eventCandies(definition).find((candy) => candy.kind === "combat");
+  const pet2 = eventCandies(definition).find((candy) => candy.kind === "pet");
+  return [
+    { id: "prestige_bondstone", reward: { kind: "bondstones", id: "prestige_bondstone", name: "Bondstone", rarity: "rare", quantity: 1 }, currency: "prestige", cost: 2, limit: 3 },
+    { id: "prestige_companion_essence", reward: { kind: "companion_essence", id: "prestige_essence_125", name: "Companion Essence \xB7 125", rarity: "uncommon", quantity: 125 }, currency: "prestige", cost: 1, limit: 4 },
+    ...skill2 ? [{ id: "prestige_candy_skill", reward: { kind: "candy", id: skill2.id, name: skill2.name, rarity: "common", quantity: 1 }, currency: "prestige", cost: 1, limit: 5 }] : [],
+    ...combat ? [{ id: "prestige_candy_combat", reward: { kind: "candy", id: combat.id, name: combat.name, rarity: "common", quantity: 1 }, currency: "prestige", cost: 1, limit: 5 }] : [],
+    ...pet2 ? [{ id: "prestige_candy_pet", reward: { kind: "candy", id: pet2.id, name: pet2.name, rarity: "rare", quantity: 1 }, currency: "prestige", cost: 2, limit: 5 }] : []
+  ];
+}
+function eventDailyFestivalBlessing(definition, eventDay) {
+  const sources = ["gathering", "combat", "crafting", "boss"];
+  const source = sources[Math.max(0, eventDay - 1) % sources.length];
+  const labels2 = { gathering: "Skilling", combat: "Combat", crafting: "Crafting", boss: "Bosses" };
+  return { day: Math.max(1, eventDay), source, name: `${labels2[source]} Festival Blessing`, description: `+10% ${definition.name} currency from ${labels2[source].toLowerCase()}.`, bonusBps: 1e3 };
+}
+var LIVE_EVENT_CATALOG = [VEILBREAK_EVENT, FROSTFALL_EVENT2];
+function annualEventSeriesId(id) {
+  const match = id.match(/^(EVT_ANNUAL_\d{3})_(\d{4})$/);
+  return match?.[1];
+}
+function liveEventDef(id) {
+  const exact = LIVE_EVENT_CATALOG.find((event) => event.id === id);
+  if (exact) return exact;
+  const series = annualEventSeriesId(id);
+  if (!series) return void 0;
+  const template = LIVE_EVENT_CATALOG.find((event) => annualEventSeriesId(event.id) === series);
+  return template ? { ...template, id } : void 0;
+}
+
+// ../apps/mobile/src/content/dungeon-shop-collectibles-v1.ts
+var reward = (id, kind, name, target2, region, activeBps) => ({
+  id,
+  kind,
+  name,
+  bonusFamilyId: id,
+  target: target2,
+  ownedBps: 50,
+  activeBps,
+  rarity: "Epic",
+  collectionGroup: "profile",
+  region,
+  source: "Dungeon Marks Shop \xB7 " + region,
+  nativeSize: kind === "pet" ? 64 : void 0,
+  description: "A permanent " + region + " Dungeon Marks collectible."
+});
+var DUNGEON_SHOP_COLLECTIBLES_V1 = [
+  reward("dungeon:asterfall:briarbound-frame", "border", "Briarbound Frame", "gatheringYield", "Asterfall", 200),
+  reward("dungeon:asterfall:rootbound-sanctuary", "background", "Rootbound Sanctuary", "hp", "Asterfall", 200),
+  reward("DUNGEON_PET_ASTERFALL_001", "pet", "Oathroot Seedling", "healingEffectiveness", "Asterfall", 300),
+  reward("dungeon:sunscar:amberglass-loop", "border", "Amberglass Loop", "craftingSpeed", "Sunscar", 200),
+  reward("dungeon:sunscar:buried-observatory", "background", "Buried Observatory", "skillXp", "Sunscar", 200),
+  reward("DUNGEON_PET_SUNSCAR_001", "pet", "Vaultscarab", "dropChance", "Sunscar", 300),
+  reward("dungeon:frostmarch:frostbound-chime", "border", "Frostbound Chime", "fishingSpeed", "Frostmarch", 200),
+  reward("dungeon:frostmarch:shiverlake-reflections", "background", "Shiverlake Reflections", "defense", "Frostmarch", 200),
+  reward("DUNGEON_PET_FROSTMARCH_001", "pet", "Choirbell Sprite", "actionSpeed", "Frostmarch", 300)
+];
+var DUNGEON_SHOP_PROFILE_ICONS_V1 = [
+  { id: "dungeon:asterfall:wardens-lantern", name: "Warden's Lantern", rarity: "Rare", group: "Dungeon", region: "Asterfall" },
+  { id: "dungeon:sunscar:solar-vault-key", name: "Solar Vault Key", rarity: "Rare", group: "Dungeon", region: "Sunscar" },
+  { id: "dungeon:frostmarch:resonant-bell", name: "Resonant Bell", rarity: "Rare", group: "Dungeon", region: "Frostmarch" }
+];
+
 // ../apps/mobile/src/core/release-flags.ts
 var EVENTS_RELEASED = true;
 var FROSTFALL_REWARDS_RELEASED = false;
+var WINTER_HEARTH_GUILD_RELEASED = true;
 var EVENT_COMMUNITY_ENABLED = false;
-var DUNGEON_MARKS_SHOP_RELEASED = false;
+var DUNGEON_MARKS_SHOP_RELEASED = true;
 var EQUIPMENT_RESALE_UPLIFT_RELEASED = false;
+var PROFILE_ANIMATED_COSMETICS_RELEASED = false;
+var PROFILE_COSMETICS_STORE_RELEASED = false;
+
+// ../apps/mobile/src/core/profile-cosmetic-wave2.ts
+var WAVE2_SETS = [
+  { id: "tideborne", name: "Tideborne", borderId: "cosmetic:tideborne:pearlframe", borderName: "Tideborne Pearlframe", effectId: "effect_tideborne_tidal_reverie", effectName: "Tidal Reverie", iconIds: ["cosmetic:tideborne:portrait-siren", "cosmetic:tideborne:portrait-corsair"], iconNames: ["Tideborne Siren", "Tideborne Corsair"] },
+  { id: "clockwork", name: "Clockwork Covenant", borderId: "cosmetic:clockwork:mechanism", borderName: "Clockwork Mechanism", effectId: "effect_clockwork_aetherwork_pulse", effectName: "Aetherwork Pulse", iconIds: ["cosmetic:clockwork:portrait-artificer", "cosmetic:clockwork:portrait-engineer"], iconNames: ["Covenant Artificer", "Covenant Engineer"] },
+  { id: "stormforged", name: "Stormforged", borderId: "cosmetic:stormforged:thunderframe", borderName: "Stormforged Thunderframe", effectId: "effect_stormforged_static_surge", effectName: "Static Surge", iconIds: ["cosmetic:stormforged:portrait-tempest", "cosmetic:stormforged:portrait-sentinel"], iconNames: ["Stormforged Tempest", "Stormforged Sentinel"] },
+  { id: "crimson-oath", name: "Crimson Oath", borderId: "cosmetic:crimson-oath:oathguard", borderName: "Crimson Oathguard", effectId: "effect_crimson_oath_scarlet_reverence", effectName: "Scarlet Reverence", iconIds: ["cosmetic:crimson-oath:portrait-justicar", "cosmetic:crimson-oath:portrait-knight"], iconNames: ["Crimson Justicar", "Crimson Knight"] }
+];
+var WAVE2_READY_SET_IDS = ["tideborne", "clockwork", "stormforged", "crimson-oath"];
+function wave2SetFor(kind, id) {
+  return WAVE2_SETS.find((row) => kind === "border" ? row.borderId === id : kind === "effect" ? row.effectId === id : row.iconIds.some((icon) => icon === id));
+}
+function wave2Ready(kind, id, ready = WAVE2_READY_SET_IDS) {
+  const row = wave2SetFor(kind, id);
+  return !!row && ready.includes(row.id);
+}
+function wave2Owned(account, kind, id, ready = WAVE2_READY_SET_IDS) {
+  if (!wave2Ready(kind, id, ready)) return false;
+  const ids2 = kind === "border" ? account.unlockedProfileBorderIds : kind === "effect" ? account.unlockedProfileEffectIds : account.unlockedProfileIconIds;
+  return ids2?.includes(id) ?? false;
+}
+
+// ../apps/mobile/src/core/profile-cosmetic-icons.ts
+var PROFILE_COSMETIC_PORTRAITS = [
+  { id: "cosmetic:gloamward:portrait-seer", name: "Gloamward Seer", collectionId: "gloamward", presentation: "female", artworkReady: true },
+  { id: "cosmetic:gloamward:portrait-magus", name: "Gloamward Magus", collectionId: "gloamward", presentation: "male", artworkReady: true },
+  { id: "cosmetic:frostbound:portrait-oracle", name: "Frostbound Oracle", collectionId: "frostbound", presentation: "female", artworkReady: true },
+  { id: "cosmetic:frostbound:portrait-warden", name: "Frostbound Warden", collectionId: "frostbound", presentation: "male", artworkReady: true },
+  { id: "cosmetic:amberglass:portrait-duelist", name: "Amberglass Duelist", collectionId: "amberglass", presentation: "female", artworkReady: true },
+  { id: "cosmetic:amberglass:portrait-vanguard", name: "Amberglass Vanguard", collectionId: "amberglass", presentation: "male", artworkReady: true },
+  { id: "cosmetic:briarbound:portrait-ranger", name: "Briarbound Ranger", collectionId: "briarbound", presentation: "female", artworkReady: true },
+  { id: "cosmetic:briarbound:portrait-warden", name: "Briarbound Warden", collectionId: "briarbound", presentation: "male", artworkReady: true },
+  ...WAVE2_SETS.filter((row) => WAVE2_READY_SET_IDS.includes(row.id)).flatMap((row) => row.iconIds.map((id, i) => ({ id, name: row.iconNames[i], collectionId: row.id, presentation: i === 0 ? "female" : "male", artworkReady: true })))
+];
+
+// ../apps/mobile/src/core/profile-cosmetic-access.ts
+var PROFILE_COSMETICS_TESTER_ENTITLEMENT = "profile_cosmetics_tester_v1";
+function profileCosmeticsTester(state) {
+  return state.account.entitlements?.[PROFILE_COSMETICS_TESTER_ENTITLEMENT] === true;
+}
+function profileAnimatedCosmeticsEnabled(state) {
+  return PROFILE_ANIMATED_COSMETICS_RELEASED || profileCosmeticsTester(state);
+}
+function profileAnimatedPieceEnabled(state, kind, id) {
+  return wave2SetFor(kind, id) ? wave2Owned(state.account, kind, id) : profileAnimatedCosmeticsEnabled(state);
+}
+
+// ../apps/mobile/src/core/frostfall-reward-visibility.ts
+var FROSTFALL_2026_EVENT_ID = "EVT_ANNUAL_012_2026";
+function frostfallRewardsDiscoverable(account, nowMs) {
+  const event = account.liveEvent;
+  if (!event?.enabled || event.eventId !== FROSTFALL_2026_EVENT_ID || !Number.isFinite(nowMs)) return false;
+  const { startsAtMs, endsAtMs } = event, grace = event.graceEndsAtMs ?? endsAtMs + 2 * 864e5;
+  return Number.isFinite(startsAtMs) && Number.isFinite(endsAtMs) && Number.isFinite(grace) && startsAtMs < endsAtMs && endsAtMs <= grace && nowMs >= startsAtMs && nowMs < grace;
+}
+function frostfallRewardVisible(account, id, kind, nowMs) {
+  const owned = kind === "companion" ? account.unlockedCombatCompanionIds : account.unlockedCosmeticPetIds;
+  return !!owned?.includes(id) || frostfallRewardsDiscoverable(account, nowMs);
+}
+
+// ../apps/mobile/src/core/profile-icons.ts
+var EVENT_PROFILE_ICON_ARTWORK_IDS = /* @__PURE__ */ new Set([
+  "event:veilbreak-2026-lantern-warden",
+  "event:veilbreak-2026-pumpkin-moon",
+  "event:frostfall-2026-snowbell",
+  "event:frostfall-2026-maiden",
+  "event:frostfall-2026-adventurer"
+]);
+var PROFILE_ICON_CATALOG = [
+  { id: "starter:hooded-ranger", name: "Hooded Ranger", group: "Starter", source: "Available from the start." },
+  { id: "starter:armored-sentinel", name: "Armored Sentinel", group: "Starter", source: "Available from the start." },
+  { id: "starter:masked-spellcaster", name: "Masked Spellcaster", group: "Starter", source: "Available from the start." },
+  { id: "starter:traveling-alchemist", name: "Traveling Alchemist", group: "Starter", source: "Available from the start." },
+  { id: "starter:dawn-priestess", name: "Dawn Priestess", group: "Starter", source: "Available from the start." },
+  { id: "starter:stonebound-explorer", name: "Stonebound Explorer", group: "Starter", source: "Available from the start." },
+  { id: "starter:gilded-duelist", name: "Gilded Duelist", group: "Starter", source: "Available from the start." },
+  { id: "starter:runic-scholar", name: "Runic Scholar", group: "Starter", source: "Available from the start." },
+  { id: "starter:dune-warden", name: "Dune Warden", group: "Starter", source: "Available from the start." },
+  { id: "creature:FALLEN_KNIGHT", name: "Fallen Knight", group: "Combat", source: "Defeat the Fallen Knight.", bossId: "FALLEN_KNIGHT" },
+  { id: "guild:stormwatch-crest", name: "Stormwatch Crest", group: "Guild", source: "Guild Token Shop \xB7 Guild Level 4" },
+  ...PROFILE_COSMETIC_PORTRAITS.map((row) => ({ id: row.id, name: row.name, group: "Cosmetics", source: wave2SetFor("icon", row.id) ? "Cosmetics set \xB7 Account ownership" : "Cosmetics set \xB7 Tester access", artworkReady: row.artworkReady })),
+  ...DUNGEON_SHOP_PROFILE_ICONS_V1.map((row) => ({ id: row.id, name: row.name, group: "Dungeon", source: "Dungeon Marks Shop \xB7 " + row.region }))
+];
+function initialIconCharacter(state) {
+  const roster = [state.character, ...(state.otherCharacters ?? []).map((row) => row.character)].filter((row) => !!row);
+  if (roster.length <= 1) return roster[0];
+  const sequence = (id) => /^LOCAL_CHAR_(\d+)$/.exec(id);
+  if (!roster.every((row) => sequence(row.id))) return void 0;
+  return [...roster].sort((a, b) => Number(sequence(a.id)[1]) - Number(sequence(b.id)[1]))[0];
+}
+function accountProfileIconId(state) {
+  const first = initialIconCharacter(state);
+  return state.account.profileIconId ?? first?.profileIconId ?? (first ? "class:" + first.classId : state.character?.profileIconId ?? "class:" + (state.character?.classId ?? "IRONWARDEN"));
+}
+function mirrorProfileIcon(state, id) {
+  const active2 = state.character, others = state.otherCharacters;
+  if (state.account.profileIconId === id && (!active2 || active2.profileIconId === id) && !others?.some((row) => row.character.profileIconId !== id)) return state;
+  return {
+    ...state,
+    account: { ...state.account, profileIconId: id },
+    character: active2 ? { ...active2, profileIconId: id } : null,
+    ...others ? { otherCharacters: others.map((row) => row.character.profileIconId === id ? row : { ...row, character: { ...row.character, profileIconId: id } }) } : {}
+  };
+}
+function profileIconCollection(state, nowMs = Date.now()) {
+  const selected2 = accountProfileIconId(state);
+  const rosterClasses = /* @__PURE__ */ new Set([state.character?.classId ?? "IRONWARDEN", ...(state.otherCharacters ?? []).map((row) => row.character.classId)]);
+  const base = CLASSES.filter((row) => rosterClasses.has(row.id) || selected2 === `class:${row.id}`).map((row) => ({ id: `class:${row.id}`, name: row.name, group: "Class", source: "Your account character class.", unlocked: true, artworkReady: true, selected: selected2 === `class:${row.id}` }));
+  const owned = new Set(state.account.unlockedProfileIconIds ?? []);
+  const characters = [state.character, ...(state.otherCharacters ?? []).map((row) => row.character)];
+  const tester = profileCosmeticsTester(state);
+  const portraits = PROFILE_ICON_CATALOG.filter((row) => !wave2SetFor("icon", row.id) || wave2Owned(state.account, "icon", row.id)).filter((row) => (row.group !== "Dungeon" || DUNGEON_MARKS_SHOP_RELEASED || owned.has(row.id)) && (row.group !== "Cosmetics" || PROFILE_COSMETICS_STORE_RELEASED || tester || owned.has(row.id))).map((row) => {
+    const artworkReady = row.group === "Cosmetics" && tester && !wave2SetFor("icon", row.id) ? true : row.artworkReady ?? true;
+    return { ...row, artworkReady, selected: selected2 === row.id, unlocked: row.group === "Starter" || artworkReady && owned.has(row.id) || row.monsterId !== void 0 && characters.some((c) => (c?.monsterMasteryPoints?.[row.monsterId] ?? 0) >= 10) || row.bossId !== void 0 && state.defeatedBossIds.includes(row.bossId) };
+  });
+  const known2 = new Set(portraits.map((row) => row.id));
+  const rewards = LIVE_EVENT_CATALOG.flatMap((event) => [...CLASSES.flatMap((c) => event.milestones(c.id).map((row) => row.reward)), ...event.shop.map((row) => row.reward), ...event.communityMilestones.flatMap((row) => row.reward ? [row.reward] : []), ...event.discoveries.map((row) => row.reward)]);
+  const frostfallIds = new Set(LIVE_EVENT_CATALOG.filter((event) => event.id === FROSTFALL_2026_EVENT_ID).flatMap((event) => [...CLASSES.flatMap((c) => event.milestones(c.id).map((row) => row.reward)), ...event.shop.map((row) => row.reward), ...event.communityMilestones.flatMap((row) => row.reward ? [row.reward] : []), ...event.discoveries.map((row) => row.reward)]).filter((row) => row.kind === "profile_icon").map((row) => row.id));
+  const revealFrostfall = frostfallRewardsDiscoverable(state.account, nowMs);
+  const events = [...new Map(rewards.filter((row) => row.kind === "profile_icon" && !known2.has(row.id) && (!frostfallIds.has(row.id) || owned.has(row.id) || revealFrostfall)).map((row) => [row.id, row])).values()];
+  const privateIcons = ownedUltraLuxeIcons(state).map((row) => ({ ...row, group: "Ascendant", source: "Private account grant.", unlocked: true, artworkReady: true, selected: selected2 === row.id }));
+  return [...base, ...privateIcons, ...portraits, ...events.map((row) => ({ id: row.id, name: row.name, group: "Event", source: "Earned festival reward.", unlocked: owned.has(row.id), artworkReady: EVENT_PROFILE_ICON_ARTWORK_IDS.has(row.id), selected: selected2 === row.id }))];
+}
+function canUseProfileIcon(state, id) {
+  return PROFILE_ICON_CATALOG.some((row) => row.id === id && row.group === "Starter") || profileIconCollection(state).some((row) => row.id === id && row.unlocked);
+}
+function selectProfileIcon(state, id) {
+  if (!state.character) throw new Error("Create a character before choosing a profile icon.");
+  if (!canUseProfileIcon(state, id)) throw new Error("This profile icon is not unlocked.");
+  return mirrorProfileIcon(state, id);
+}
+function normalizeProfileIcon(state) {
+  if (!state.character) return state;
+  const first = initialIconCharacter(state);
+  if (!state.account.profileIconId && !first) return state;
+  const id = accountProfileIconId(state);
+  return mirrorProfileIcon(state, canUseProfileIcon(state, id) ? id : `class:${first?.classId ?? state.character.classId}`);
+}
+function reconcileAccountProfileIcon(state) {
+  if (!state.character) return state;
+  const id = state.account.profileIconId;
+  if (id?.startsWith("ascendant-") && !ownedUltraLuxeIcons(state).some((row) => row.id === id)) return normalizeProfileIcon(state);
+  return id ? mirrorProfileIcon(state, id) : normalizeProfileIcon(state);
+}
 
 // ../apps/mobile/src/content/crafting-gold-cost.ts
 function increasedCraftingGoldCost(baseGold) {
@@ -42224,19 +42959,6 @@ function claimMonthlyQuestMilestone(state, key, threshold, characterId, skillId,
   } : entry2) };
 }
 
-// ../apps/mobile/src/content/classes.ts
-var CLASSES = [
-  { id: "IRONWARDEN", name: "Ironwarden", role: "Tank", description: "Runic defender built around guard, threat and counterplay.", hp: 155, attack: 15, defense: 19, roleRatings: { tank: 5, damage: 2, support: 1 }, starterEquipment: { weapon: "basic_sword" } },
-  { id: "BASTION", name: "Bastion", role: "Tank", description: "Fortress tank using layered barriers and heavy protection.", hp: 164, attack: 14, defense: 20, roleRatings: { tank: 5, damage: 1, support: 2 }, starterEquipment: { weapon: "basic_tower_shield" } },
-  { id: "DREADGUARD", name: "Dreadguard", role: "Tank", description: "Aggressive control tank using threat, dread and self-sustain.", hp: 150, attack: 17, defense: 17, roleRatings: { tank: 4, damage: 3, support: 1 }, starterEquipment: { weapon: "basic_chained_weapon" } },
-  { id: "WAYFINDER", name: "Wayfinder", role: "Damage", description: "Precise ranged hunter with reliable sustained damage.", hp: 110, attack: 21, defense: 11, roleRatings: { tank: 1, damage: 5, support: 1 }, starterEquipment: { weapon: "basic_bow" } },
-  { id: "RAVAGER", name: "Ravager", role: "Damage", description: "Aggressive heavy melee fighter built around breaking defenses.", hp: 128, attack: 22, defense: 10, roleRatings: { tank: 2, damage: 5, support: 1 }, starterEquipment: { weapon: "basic_two_handed_weapon" } },
-  { id: "HEXWEAVER", name: "Hexweaver", role: "Damage", description: "Arcane damage caster weaving hexes through wand and focus.", hp: 108, attack: 17, defense: 11, roleRatings: { tank: 1, damage: 4, support: 2 }, starterEquipment: { weapon: "basic_wand" } },
-  { id: "KNIFE_DANCER", name: "Knife Dancer", role: "Damage", description: "Fast melee attacker built around precision, crits and execution.", hp: 106, attack: 22, defense: 10, roleRatings: { tank: 1, damage: 5, support: 1 }, starterEquipment: { weapon: "basic_main_hand_blade" } },
-  { id: "DAWNKEEPER", name: "Dawnkeeper", role: "Support", description: "Solar support focused on healing, cleansing and protection.", hp: 118, attack: 14, defense: 13, roleRatings: { tank: 2, damage: 1, support: 5 }, starterEquipment: { weapon: "basic_mace" } },
-  { id: "STONECALLER", name: "Stonecaller", role: "Support", description: "Earth-and-storm support caster using resonance, geomancy and totems.", hp: 120, attack: 20, defense: 12, roleRatings: { tank: 2, damage: 2, support: 5 }, starterEquipment: { weapon: "basic_staff" } }
-];
-
 // ../apps/mobile/src/core/rng.ts
 function hash32(input) {
   let h = 2166136261;
@@ -42594,6 +43316,31 @@ var RECIPES = [
   ...GUILD_COMPONENT_CRAFTING_RELEASED ? GUILD_COMPONENT_RECIPES : [],
   ...CROSS_PROFESSION_COMPONENT_RECIPES,
   ...ALCHEMY_RECIPES,
+  // Seasonal definitions stay parseable across event closure; recipe browsers hide them until the server runtime is live.
+  {
+    id: "CRAFT_FROSTFALL_CHRISTMAS_LIGHTS_2026",
+    name: "Craft Christmas Lights \xD75",
+    skillId: "smithing",
+    level: 4,
+    xp: 35,
+    gold: 30,
+    seconds: 40,
+    repeatableTraining: true,
+    inputs: [{ itemId: "COPPER_ORE", quantity: 8 }, { itemId: "DEWLEAF", quantity: 4 }, { itemId: "WISP_DUST", quantity: 1 }],
+    output: { itemId: "FROSTFALL_CHRISTMAS_LIGHTS_2026", quantity: 5 }
+  },
+  {
+    id: "CRAFT_FROSTFALL_CHRISTMAS_LIGHTS_TAILORING_2026",
+    name: "Craft Christmas Lights \xD75",
+    skillId: "tailoring",
+    level: 4,
+    xp: 35,
+    gold: 30,
+    seconds: 40,
+    repeatableTraining: true,
+    inputs: [{ itemId: "MOSS_FIBER", quantity: 8 }, { itemId: "DEWLEAF", quantity: 4 }, { itemId: "WISP_DUST", quantity: 1 }],
+    output: { itemId: "FROSTFALL_CHRISTMAS_LIGHTS_2026", quantity: 5 }
+  },
   ...NOVICE_RECIPES,
   // Keep the full catalog authoritative for crafting, progression, and save
   // compatibility. Presentation layers apply their release gate separately.
@@ -42611,17 +43358,18 @@ var RECIPES = [
     { id: "ENCHANT_RADIANT_CATALYST", name: "Synthesize Radiant Catalyst", skillId: "enchanting", level: 90, xp: 5600, gold: 5e4, seconds: 5400, repeatableTraining: true, inputs: [{ itemId: "REGIONAL_CATALYST", quantity: 3 }, { itemId: "GEM_DUST", quantity: 80 }, { itemId: "ASHLANDS_BOTANICAL_ESSENCE", quantity: 2 }], output: { itemId: "RADIANT_CATALYST", quantity: 1 } },
     { id: "COOK_MEADOW_PERCH", name: "Cook Meadow Perch", skillId: "cooking", level: 1, xp: 80, gold: 35, seconds: 34, repeatableTraining: true, inputs: [{ itemId: "MEADOW_PERCH", quantity: 5 }, { itemId: "GREENWOOD_LOG", quantity: 1 }], output: { itemId: "COOKED_MEADOW_PERCH", quantity: 5 } },
     { id: "COOK_SILVERFIN", name: "Cook Silverfin", skillId: "cooking", level: 1, xp: 100, gold: 50, seconds: 36, repeatableTraining: true, inputs: [{ itemId: "SILVERFIN", quantity: 5 }, { itemId: "GREENWOOD_LOG", quantity: 1 }], output: { itemId: "COOKED_SILVERFIN", quantity: 5 } },
-    { id: "COOK_ROOTSTREAM_TROUT", name: "Roast Rootstream Trout", skillId: "cooking", level: 7, xp: 145, gold: 65, seconds: 42, repeatableTraining: true, inputs: [{ itemId: "ROOTSTREAM_TROUT", quantity: 4 }, { itemId: "IRONWOOD_LOG", quantity: 1 }], output: { itemId: "ROASTED_ROOTSTREAM_TROUT", quantity: 4 } },
+    { id: "COOK_ROOTSTREAM_TROUT", name: "Roast Rootstream Trout", skillId: "cooking", level: 7, xp: 150, gold: 65, seconds: 42, repeatableTraining: true, inputs: [{ itemId: "ROOTSTREAM_TROUT", quantity: 4 }, { itemId: "IRONWOOD_LOG", quantity: 1 }], output: { itemId: "ROASTED_ROOTSTREAM_TROUT", quantity: 4 } },
     { id: "COOK_RIVER_EEL", name: "Sear River Eel", skillId: "cooking", level: 8, xp: 180, gold: 80, seconds: 44, repeatableTraining: true, inputs: [{ itemId: "RIVER_EEL", quantity: 4 }, { itemId: "IRONWOOD_LOG", quantity: 1 }], output: { itemId: "SEARED_RIVER_EEL", quantity: 4 } },
     { id: "COOK_OATHSCALE", name: "Roast Oathscale", skillId: "cooking", level: 16, xp: 260, gold: 130, seconds: 54, repeatableTraining: true, inputs: [{ itemId: "OATHSCALE_PIKE", quantity: 3 }, { itemId: "CROWNWOOD_LOG", quantity: 1 }], output: { itemId: "ROASTED_OATHSCALE", quantity: 3 } },
-    { id: "COOK_CAVE_LOACH", name: "Bake Cave Loach", skillId: "cooking", level: 16, xp: 245, gold: 120, seconds: 52, repeatableTraining: true, inputs: [{ itemId: "CAVE_LOACH", quantity: 3 }, { itemId: "CROWNWOOD_LOG", quantity: 1 }], output: { itemId: "BAKED_CAVE_LOACH", quantity: 3 } },
+    { id: "COOK_CAVE_LOACH", name: "Bake Cave Loach", skillId: "cooking", level: 16, xp: 250, gold: 120, seconds: 52, repeatableTraining: true, inputs: [{ itemId: "CAVE_LOACH", quantity: 3 }, { itemId: "CROWNWOOD_LOG", quantity: 1 }], output: { itemId: "BAKED_CAVE_LOACH", quantity: 3 } },
     { id: "COOK_CROWN_CARP", name: "Roast Crown Carp", skillId: "cooking", level: 20, xp: 330, gold: 165, seconds: 70, repeatableTraining: true, inputs: [{ itemId: "CROWN_CARP", quantity: 3 }, { itemId: "CROWNWOOD_LOG", quantity: 1 }], output: { itemId: "ROASTED_CROWN_CARP", quantity: 3 } },
-    { id: "COOK_IRONWOOD_STEW", name: "Ironwood Hunter Stew", skillId: "cooking", level: 15, xp: 105, gold: 140, seconds: 66, repeatableTraining: true, inputs: [{ itemId: "RIVER_EEL", quantity: 2 }, { itemId: "THORN_SAP", quantity: 1 }, { itemId: "IRONWOOD_LOG", quantity: 1 }], output: { itemId: "IRONWOOD_STEW", quantity: 1 } },
-    { id: "COOK_ASHLANDS_EMBER_STEW", name: "Ashlands Ember Stew", skillId: "cooking", level: 72, xp: 760, gold: 900, seconds: 110, repeatableTraining: true, inputs: [{ itemId: "ASHEN_MYRRH", quantity: 2 }, { itemId: "CINDER_HEART", quantity: 1 }, { itemId: "CINDERWOOD_LOG", quantity: 1 }], output: { itemId: "ASHLANDS_EMBER_STEW", quantity: 2 } },
+    { id: "COOK_IRONWOOD_STEW", name: "Ironwood Hunter Stew", skillId: "cooking", level: 15, xp: 110, gold: 140, seconds: 66, repeatableTraining: true, inputs: [{ itemId: "RIVER_EEL", quantity: 6 }, { itemId: "THORN_SAP", quantity: 3 }, { itemId: "IRONWOOD_LOG", quantity: 3 }], output: { itemId: "IRONWOOD_STEW", quantity: 1 } },
+    { id: "COOK_ASHLANDS_EMBER_STEW", name: "Ashlands Ember Stew", skillId: "cooking", level: 72, xp: 760, gold: 900, seconds: 110, repeatableTraining: true, inputs: [{ itemId: "ASHEN_MYRRH", quantity: 6 }, { itemId: "CINDER_HEART", quantity: 3 }, { itemId: "CINDERWOOD_LOG", quantity: 3 }], output: { itemId: "ASHLANDS_EMBER_STEW", quantity: 1 } },
     { id: "COOK_OASIS_CARP", name: "Grill Oasis Carp", skillId: "cooking", level: 26, xp: 420, gold: 220, seconds: 120, repeatableTraining: true, inputs: [{ itemId: "OASIS_CARP", quantity: 4 }, { itemId: "DUNEWOOD", quantity: 1 }], output: { itemId: "GRILLED_OASIS_CARP", quantity: 4 } },
-    { id: "COOK_GLASSFIN_FEAST", name: "Amberglass Glassfin Feast", skillId: "cooking", level: 38, xp: 720, gold: 520, seconds: 210, repeatableTraining: true, inputs: [{ itemId: "GLASSFIN", quantity: 3 }, { itemId: "AMBERGLASS", quantity: 1 }, { itemId: "DUNEWOOD", quantity: 1 }], output: { itemId: "GLASSFIN_FEAST", quantity: 2 } },
-    { id: "COOK_ICEFISH", name: "Frosted Icefin", skillId: "cooking", level: 48, xp: 1100, gold: 900, seconds: 300, repeatableTraining: true, inputs: [{ itemId: "ICEFIN", quantity: 3 }, { itemId: "WINTERMINT", quantity: 1 }, { itemId: "WHITEPINE_LOG", quantity: 1 }], output: { itemId: "FROSTED_ICEFIN", quantity: 3 } },
-    { id: "COOK_EMBERFIN", name: "Char Emberfin", skillId: "cooking", level: 74, xp: 1650, gold: 1200, seconds: 420, repeatableTraining: true, inputs: [{ itemId: "EMBERFIN", quantity: 3 }, { itemId: "ASHEN_MYRRH", quantity: 1 }, { itemId: "CINDERWOOD_LOG", quantity: 1 }], output: { itemId: "CHARRED_EMBERFIN", quantity: 3 } }
+    { id: "COOK_SUNSCAR_SPICED_PLATTER", name: "Sunscar Spiced Platter", skillId: "cooking", level: 30, xp: 330, gold: 320, seconds: 150, repeatableTraining: true, inputs: [{ itemId: "OASIS_CARP", quantity: 12 }, { itemId: "SUNSCALE", quantity: 4 }, { itemId: "DUNEWOOD", quantity: 3 }], output: { itemId: "SUNSCAR_SPICED_PLATTER", quantity: 1 } },
+    { id: "COOK_GLASSFIN_FEAST", name: "Amberglass Glassfin Feast", skillId: "cooking", level: 38, xp: 720, gold: 520, seconds: 210, repeatableTraining: true, inputs: [{ itemId: "GLASSFIN", quantity: 9 }, { itemId: "AMBERGLASS", quantity: 3 }, { itemId: "DUNEWOOD", quantity: 3 }], output: { itemId: "GLASSFIN_FEAST", quantity: 1 } },
+    { id: "COOK_ICEFISH", name: "Frosted Icefin", skillId: "cooking", level: 48, xp: 1100, gold: 900, seconds: 300, repeatableTraining: true, inputs: [{ itemId: "ICEFIN", quantity: 9 }, { itemId: "WINTERMINT", quantity: 3 }, { itemId: "WHITEPINE_LOG", quantity: 3 }], output: { itemId: "FROSTED_ICEFIN", quantity: 1 } },
+    { id: "COOK_EMBERFIN", name: "Char Emberfin", skillId: "cooking", level: 74, xp: 1650, gold: 1200, seconds: 420, repeatableTraining: true, inputs: [{ itemId: "EMBERFIN", quantity: 9 }, { itemId: "ASHEN_MYRRH", quantity: 3 }, { itemId: "CINDERWOOD_LOG", quantity: 3 }], output: { itemId: "CHARRED_EMBERFIN", quantity: 1 } }
   ].map((recipe2) => ({ ...recipe2, gold: increasedCraftingGoldCost(recipe2.gold) }))
 ].map((recipe2) => recipe2.characterLevel === void 0 || REBASED_CHARACTER_LEVEL_RECIPES.has(recipe2.id) ? recipe2 : { ...recipe2, characterLevel: rebasedCombatLevelFromLegacyLevel(recipe2.characterLevel) });
 var recipesById = new Map(RECIPES.map((recipe2) => [recipe2.id, recipe2]));
@@ -43244,468 +43992,6 @@ function characterCombatXpScale(enemyLevel, boss2 = false) {
   return 1;
 }
 
-// ../apps/mobile/src/content/event-companions-v2.ts
-var eventNames = { turning_of_the_age: "Turning of the Age", heartbond_festival: "Heartbond Festival", bloomwake: "Bloomwake", suncrest_games: "Suncrest Games", starfall_nights: "Starfall Nights", harvestwake: "Harvestwake", veilbreak: "The Veilbreak", frostfall_festival: "Frostfall Festival", merchant_guild_festival: "Merchant / Guild Festival" };
-var seeds = [
-  { id: "EVT_UNIT_001", name: "Keeper of First Dawn", rarity: "elite", role: "support", event: "turning_of_the_age", description: "Fast support pulses improve tempo and recovery for pressured allies." },
-  { id: "EVT_UNIT_002", name: "Vowbound Cherub", rarity: "prestige", role: "support", event: "heartbond_festival", description: "Restorative support with extra defensive stability for vulnerable allies." },
-  { id: "EVT_UNIT_003", name: "Bloomwarden", rarity: "elite", role: "tank", event: "bloomwake", description: "A durable seasonal tank built around strong bark-like mitigation." },
-  { id: "EVT_UNIT_004", name: "Suncrest Champion", rarity: "prestige", role: "damage", event: "suncrest_games", description: "A radiant damage specialist with strong finishing pressure." },
-  { id: "EVT_UNIT_005", name: "Astral Wayfarer", rarity: "elite", role: "damage", event: "starfall_nights", description: "A fast astral damage specialist with frequent active pressure." },
-  { id: "EVT_UNIT_006", name: "Harvest Guardian", rarity: "elite", role: "tank", event: "harvestwake", description: "A harvest-themed tank focused on sustained mitigation." },
-  { id: "EVT_UNIT_007", name: "Veil Hound", rarity: "elite", role: "damage", event: "veilbreak", description: "A shadow damage specialist that excels at finishing weakened enemies." },
-  { id: "EVT_UNIT_008", name: "Hollow Knightling", rarity: "elite", role: "tank", event: "veilbreak", description: "A hollow suit of enchanted armor that anchors the front line behind a heavy ward shield." },
-  { id: "EVT_UNIT_011", name: "Lantern Keeper", rarity: "elite", role: "support", event: "veilbreak", description: "A lantern-bearing spirit that stabilizes allies with wardlight and recovery pulses." },
-  { id: "EVT_UNIT_009", name: "Frostbell Herald", rarity: "elite", role: "support", event: "frostfall_festival", description: "A rapid winter healer whose bell pulse softens incoming burst damage." },
-  { id: "EVT_UNIT_012", name: "Rimeshard Wolverine", rarity: "elite", role: "damage", event: "frostfall_festival", description: "A stocky frost-clawed winter hunter that exposes a target to follow-up strikes." },
-  { id: "EVT_UNIT_013", name: "Hearthguard Ram", rarity: "elite", role: "tank", event: "frostfall_festival", description: "A woolly winter guardian with a bell-forged reflecting shield." },
-  { id: "EVT_UNIT_010", name: "Caravan Sentinel", rarity: "elite", role: "support", event: "merchant_guild_festival", description: "A flexible support companion with balanced recovery, defense, and tempo." }
-];
-var EVENT_IDENTITY_COPY = {
-  EVT_UNIT_001: { activeName: "First Dawn", activeDescription: "Grants a stronger support pulse with improved tempo and protection.", activeKind: "utility", activeValue: 0.05, passiveKind: "haste", passiveValue: 0.02, passiveDescription: "New Year Tempo: slightly faster support cadence.", bondName: "Dawn Renewed", bondKind: "utility", bondValue: 0.04, bondDescription: "Bond 10 strengthens the Keeper\u2019s First Dawn support pulse." },
-  EVT_UNIT_002: { activeName: "Vow Link", activeDescription: "Restores the weakest ally while reinforcing the Vowbound Cherub\u2019s protective role.", activeKind: "utility", activeValue: 0.05, passiveKind: "damage_reduction", passiveValue: 0.02, passiveDescription: "Shared Vow: modestly steadier defensive support.", bondName: "Unbroken Promise", bondKind: "utility", bondValue: 0.04, bondDescription: "Bond 10 improves the Cherub\u2019s restorative support." },
-  EVT_UNIT_003: { activeName: "Living Bastion", activeDescription: "Reduces incoming pressure with stronger bark-like mitigation.", activeKind: "damage_reduction", activeValue: 0.067, passiveKind: "damage_reduction", passiveValue: 0.04, passiveDescription: "Living Bark: increased companion durability.", bondName: "Deep Roots", bondKind: "damage_reduction", bondValue: 0.03, bondDescription: "Bond 10 further strengthens Bloomwarden mitigation." },
-  EVT_UNIT_004: { activeName: "Solar Momentum", activeDescription: "A radiant strike with increased damage and finishing pressure.", activeKind: "damage", activeValue: 1.08, passiveKind: "haste", passiveValue: 0.01, passiveDescription: "Champion Tempo: slightly faster combat rhythm.", bondName: "Final Radiance", bondKind: "execute", bondValue: 0.05, bondDescription: "Bond 10 increases damage against wounded enemies." },
-  EVT_UNIT_005: { activeName: "Starfall Mark", activeDescription: "A quick astral strike designed around frequent pressure and finishing bursts.", activeKind: "damage", activeValue: 1.08, passiveKind: "haste", passiveValue: 0.02, passiveDescription: "Astral Tempo: faster natural combat cadence.", bondName: "Falling Star", bondKind: "execute", bondValue: 0.04, bondDescription: "Bond 10 strengthens finishing Starfall pressure." },
-  EVT_UNIT_006: { activeName: "Harvest Bulwark", activeDescription: "Converts incoming pressure into stronger seasonal mitigation.", activeKind: "damage_reduction", activeValue: 0.066, passiveKind: "damage_reduction", passiveValue: 0.04, passiveDescription: "Stored Harvest: increased defensive stability.", bondName: "Autumn Reserve", bondKind: "damage_reduction", bondValue: 0.03, bondDescription: "Bond 10 reinforces the Guardian\u2019s mitigation." },
-  EVT_UNIT_007: { activeName: "Veil Rend", activeDescription: "A shadow strike with strong finishing pressure against weakened enemies.", activeKind: "damage", activeValue: 1.08, passiveKind: "execute", passiveValue: 0.07, passiveDescription: "Veil Hunter: dangerous against low-health targets.", bondName: "Deep Gloom", bondKind: "execute", bondValue: 0.03, bondDescription: "Bond 10 sharpens Veil Hound finishers." },
-  EVT_UNIT_008: { activeName: "Hollow Ward", activeDescription: "Raises a heavy ward that reduces incoming pressure and protects the front line.", activeKind: "damage_reduction", activeValue: 0.07, passiveKind: "damage_reduction", passiveValue: 0.04, passiveDescription: "Hollow Armor: steadier mitigation during prolonged fights.", bondName: "Unbroken Ward", bondKind: "damage_reduction", bondValue: 0.03, bondDescription: "Bond 10 strengthens Hollow Knightling mitigation." },
-  EVT_UNIT_011: { activeName: "Lantern Grace", activeDescription: "Restores the weakest ally and briefly accelerates recovery cadence.", activeKind: "utility", activeValue: 0.05, passiveKind: "haste", passiveValue: 0.025, passiveDescription: "Wardlight: slightly faster support cadence.", bondName: "Last Lantern", bondKind: "utility", bondValue: 0.04, bondDescription: "Bond 10 strengthens Lantern Keeper restorative support." },
-  EVT_UNIT_009: { activeName: "Frostbell Cycle", activeDescription: "Heals the most injured ally and briefly reduces damage taken; rapid bells counter incoming bursts.", activeKind: "heal", activeValue: 0.05, passiveKind: "cooldown_reduction", passiveValue: 0.1, passiveDescription: "Winter Cadence: faster healing cycles.", bondName: "Grand Bell", bondKind: "heal", bondValue: 0.04, bondDescription: "Bond 10 strengthens Frostbell Cycle healing." },
-  EVT_UNIT_012: { activeName: "Rimeshard Mark", activeDescription: "A focused claw strike briefly exposes its target to allied attacks.", activeKind: "damage", activeValue: 1.06, passiveKind: "haste", passiveValue: 0.015, passiveDescription: "Aurora Pursuit: a small increase to combat tempo.", bondName: "Shattering Trail", bondKind: "damage", bondValue: 0.035, bondDescription: "Bond 10 improves Rimeshard Mark damage without guaranteeing a debuff." },
-  EVT_UNIT_013: { activeName: "Hearthguard Aegis", activeDescription: "Shields the owner and reflects a measured share of absorbed hits.", activeKind: "shield", activeValue: 0.052, passiveKind: "damage_reduction", passiveValue: 0.02, passiveDescription: "Woolen Bulwark: improves damage resistance.", bondName: "Hearthbound Vow", bondKind: "shield", bondValue: 0.04, bondDescription: "Bond 10 improves Hearthguard Aegis shield strength." },
-  EVT_UNIT_010: { activeName: "Caravan Formation", activeDescription: "A flexible restorative support pulse with modest defensive and tempo advantages.", activeKind: "utility", activeValue: 0.05, passiveKind: "haste", passiveValue: 0.02, passiveDescription: "Roadwise: slightly faster support cadence.", bondName: "Long Road", bondKind: "cooldown_reduction", bondValue: 0.04, bondDescription: "Bond 10 shortens Caravan Sentinel support cycles." }
-};
-var effectFor = (role) => role === "damage" ? "damage" : role === "tank" ? "damage_reduction" : "haste";
-var eventAscensionMaterials = (rarity) => rarity === "prestige" ? [{ tier: 1, itemId: "EVENT_BONDBLOOM", quantity: 4 }, { tier: 2, itemId: "EVENT_BONDBLOOM", quantity: 9 }, { tier: 3, itemId: "TRIAL_SANCTUARY_MATERIAL", quantity: 6 }, { tier: "mastery", itemId: "TRIAL_SANCTUARY_MATERIAL", quantity: 10 }] : rarity === "elite" ? [{ tier: 1, itemId: "EVENT_BONDBLOOM", quantity: 4 }, { tier: 2, itemId: "EVENT_BONDBLOOM", quantity: 9 }, { tier: 3, itemId: "TRIAL_SANCTUARY_MATERIAL", quantity: 5 }] : [{ tier: 1, itemId: "EVENT_BONDBLOOM", quantity: 4 }, { tier: 2, itemId: "EVENT_BONDBLOOM", quantity: 9 }];
-var baseStats = (role, rarity) => ({ hp: rarity === "prestige" ? 225 : 205, power: role === "damage" ? rarity === "prestige" ? 28 : 25 : 18, defense: role === "tank" ? rarity === "prestige" ? 27 : 24 : 15, attackSpeed: 2.2 });
-var EVENT_COMPANIONS = seeds.map((seed) => {
-  const effect2 = effectFor(seed.role), copy = EVENT_IDENTITY_COPY[seed.id], amount = copy?.activeValue ?? (effect2 === "damage" ? 1.08 : effect2 === "damage_reduction" ? 0.06 : 0.05);
-  return { id: seed.id, name: seed.name, description: seed.description, archetype: `Event ${seed.role}`, role: seed.role, rarity: seed.rarity, origin: { id: `EVENT_${seed.event.toUpperCase()}`, name: eventNames[seed.event] ?? seed.event.replaceAll("_", " "), type: "event" }, unlockRequirements: [{ type: "event_challenge", target: seed.event, description: `Earn ${seed.name} from ${eventNames[seed.event] ?? seed.event.replaceAll("_", " ")}.` }], baseStats: baseStats(seed.role, seed.rarity), activeAbility: { id: `${seed.id}_ACTIVE`, name: copy?.activeName ?? `${seed.name} Signature`, description: copy?.activeDescription ?? seed.description, cooldownSeconds: seed.id === "EVT_UNIT_009" ? 21 : seed.id === "EVT_UNIT_013" ? 24 : seed.rarity === "prestige" ? 24 : 20, target: seed.role === "support" ? "Lowest-HP ally" : seed.role === "tank" ? "Owner" : "Priority target", effect: { kind: copy?.activeKind ?? effect2, value: amount, description: copy?.activeDescription ?? seed.description, durationSeconds: 5 }, scaling: { baseValue: amount, perLevel: (copy?.activeKind ?? effect2) === "damage" ? 4e-3 : 1e-3, maxValue: (copy?.activeKind ?? effect2) === "damage" ? 1.35 : void 0 } }, passiveAbility: { kind: copy?.passiveKind ?? effect2, value: copy?.passiveValue ?? (effect2 === "damage" ? 0.035 : 0.025), description: copy?.passiveDescription ?? `${seed.name} reinforces its event identity.` }, bondTrait: { id: `${seed.id}_BOND`, name: copy?.bondName ?? `${seed.name} Bond`, description: copy?.bondDescription ?? `Bond mastery strengthens the ${seed.name} signature interaction.`, effect: { kind: copy?.bondKind ?? effect2, value: copy?.bondValue ?? (effect2 === "damage" ? 0.05 : 0.03), description: copy?.bondDescription ?? `Bond mastery strengthens ${seed.name}.` } }, ascensionMaterialId: "EVENT_BONDBLOOM", ascensionMaterialCosts: eventAscensionMaterials(seed.rarity), availability: { eventSource: eventNames[seed.event] ?? seed.event, originalReleaseYear: 2026, recurringAvailability: "annual", veteranCosmeticEligibility: true }, visual: { portraitId: seed.id, pixelSize: "96x96", accessibilityLabel: seed.name } };
-});
-
-// ../apps/mobile/src/content/veilbreak-event.ts
-function veilbreakCompanionMilestones(_classId) {
-  return ["EVT_UNIT_008", "EVT_UNIT_007"].map((id) => EVENT_COMPANIONS.find((companion) => companion.id === id)).map((companion, index) => ({ points: index === 0 ? 16e3 : 2e4, reward: { kind: "companion", id: companion.id, name: companion.name, rarity: "epic" } }));
-}
-var gifts = [
-  { day: 1, rewardCurrency: 100, rewardPrestige: 0 },
-  { day: 2, rewardCurrency: 150, rewardPrestige: 0 },
-  { day: 3, rewardCurrency: 200, rewardPrestige: 0 },
-  { day: 4, rewardCurrency: 250, rewardPrestige: 0 },
-  { day: 5, rewardCurrency: 300, rewardPrestige: 0 },
-  { day: 6, rewardCurrency: 400, rewardPrestige: 0 },
-  { day: 7, rewardCurrency: 500, rewardPrestige: 1 }
-];
-var VEILBREAK_EVENT = {
-  id: "EVT_ANNUAL_010_2026",
-  name: "The Veilbreak",
-  summary: "The boundary between Asterfall and the Gloam thins. Reinforce lantern wards, hunt escaped shades, and recover what crossed the veil.",
-  currencyId: "VEIL_SHARD",
-  currencyName: "Veil Shards",
-  prestigeCurrencyId: "LANTERN_EMBER",
-  prestigeCurrencyName: "Lantern Embers",
-  accent: "#f47a36",
-  progressionName: "Veil Reputation",
-  maxProgress: 2e4,
-  claimGraceDays: 7,
-  visualKey: "veilbreak",
-  signature: { kind: "ritual", label: "SIGNATURE \xB7 BREACH WATCH", title: "Hold the veil together while hunting what slips through", description: "Veilbreak is the darkest annual event. Normal activities reinforce the ward effort, discoveries represent objects crossing the veil, and Gloam Breach is the season\u2019s persistent expedition.", highlights: ["Ward-focused seasonal projects", "Gloam-touched discovery chase", "Gloam Breach seasonal expedition"] },
-  ui: {
-    prepareTitle: "Prepare the lantern wards",
-    dailyGiftTitle: "Today\u2019s Lantern Gift",
-    cacheName: "Veil Cache",
-    communityName: "Lantern Ward",
-    projectTitle: "Ward preparation",
-    projectNoun: "ward focus",
-    contractsTitle: "WEEKLY VEIL ACTIVITIES",
-    shopTitle: "VEILBREAK SHOP",
-    collectionTitle: "Veilbreak collection",
-    closedTitle: "The veil is sealing",
-    closedBody: "No new Veil Reputation, daily gifts, contracts, or activity drops can be earned. Completed rewards and shop purchases remain claimable during the grace period."
-  },
-  dropRates: { combat: 0.2, gathering: 1, crafting: 28, boss: 260 },
-  milestones: (classId) => [
-    { points: 250, reward: { kind: "candy", id: "EVT_ANNUAL_010_2026:candy:skill", name: "Gloam Candy", rarity: "common", quantity: 2 } },
-    { points: 400, reward: { kind: "title", id: "title_veil_watcher", name: "Veil Watcher", rarity: "rare" } },
-    { points: 750, reward: { kind: "candy", id: "EVT_ANNUAL_010_2026:candy:combat", name: "Gloam Candy \xB7 Battle", rarity: "common", quantity: 2 } },
-    { points: 1e3, reward: { kind: "emote", id: "emote_lantern_watch", name: "Lantern Watch", rarity: "rare" } },
-    { points: 1500, reward: { kind: "candy", id: "EVT_ANNUAL_010_2026:candy:companion", name: "Gloam Candy \xB7 Bond", rarity: "common", quantity: 2 } },
-    { points: 2500, reward: { kind: "guild_name_color", id: "name_halloween_orange", name: "Halloworange", rarity: "epic" } },
-    { points: 4e3, reward: { kind: "pet", id: "EVT_PET_013", name: "Gloomkin", rarity: "rare" } },
-    { points: 5500, reward: { kind: "guild_frame", id: "border_halloween_veil", name: "Veil Masquerade", rarity: "epic" } },
-    { points: 6500, reward: { kind: "title", id: "title_veilbound", name: "Veilbound", rarity: "epic" } },
-    { points: 7e3, reward: { kind: "profile_icon", id: "event:veilbreak-2026-lantern-warden", name: "2026 Lantern Warden", rarity: "epic" } },
-    { points: 7e3, reward: { kind: "guild_banner", id: "halloween_pumpkin_lantern", name: "Pumpkin Lantern Flag", rarity: "rare" } },
-    { points: 8e3, reward: { kind: "profile_icon", id: "event:veilbreak-2026-pumpkin-moon", name: "2026 Pumpkin Moon", rarity: "epic" } },
-    { points: 8500, reward: { kind: "guild_banner", id: "halloween_bat_moon", name: "Bat Moon Flag", rarity: "epic" } },
-    ...veilbreakCompanionMilestones(classId)
-  ].map((milestone) => milestone.reward.kind === "companion" ? milestone : { ...milestone, points: milestone.points * 2 }).sort((a, b) => a.points - b.points),
-  objectives: [
-    { id: "veil_hunt", name: "Veil Hunt", description: "Defeat 350 ordinary enemies while the veil is thin.", source: "combat", required: 350, rewardCurrency: 320, rewardPrestige: 1 },
-    { id: "ward_supplies", name: "Ward Supplies", description: "Spend 180 active minutes gathering ward materials.", source: "gathering", required: 180, rewardCurrency: 250, rewardPrestige: 1 },
-    { id: "lantern_craft", name: "Lantern Craft", description: "Complete 12 crafting recipes for the ward effort.", source: "crafting", required: 12, rewardCurrency: 340, rewardPrestige: 1 },
-    { id: "breach_guardian", name: "Breach Guardian", description: "Defeat an eligible event boss.", source: "boss", required: 1, rewardCurrency: 520, rewardPrestige: 2 }
-  ],
-  weeklyObjectives: [
-    { id: "weekly_veil_hunt", name: "Night Watch", description: "Defeat 1,900 ordinary enemies this week.", source: "combat", required: 1900, rewardCurrency: 1050, rewardPrestige: 2 },
-    { id: "weekly_ward_supply", name: "Ward Quartermaster", description: "Spend 900 active minutes gathering this week.", source: "gathering", required: 900, rewardCurrency: 900, rewardPrestige: 2 },
-    { id: "weekly_lantern_craft", name: "Master Lanternwright", description: "Complete 50 crafting recipes this week.", source: "crafting", required: 50, rewardCurrency: 1100, rewardPrestige: 2 }
-  ],
-  shop: [
-    // One fixed, long-term companion goal keeps the event shop legible. The other
-    // two Veilbreak companions are earned from class-aware reputation milestones.
-    ...EVENT_COMPANIONS.filter((companion) => companion.id === "EVT_UNIT_011").map((companion) => ({ id: `veil_trial_${companion.id.toLowerCase()}`, reward: { kind: "companion", id: companion.id, name: companion.name, rarity: "epic" }, currency: "common", cost: 2e4, limit: 1, alwaysAvailable: true })),
-    { id: "laughing_crow", reward: { kind: "emote", id: "emote_laughing_crow", name: "Laughing Crow", rarity: "rare" }, currency: "common", cost: 900, limit: 1 },
-    // Stable IDs retain existing purchases while the rewards now read as useful chat reactions.
-    { id: "veil_salute", reward: { kind: "emote", id: "emote_veil_salute", name: "Pumpkin Panic", rarity: "rare" }, currency: "common", cost: 1100, limit: 1, minLevel: 8 },
-    { id: "candle_circle", reward: { kind: "emote", id: "emote_candle_circle", name: "Gloam Facepalm", rarity: "rare" }, currency: "common", cost: 1250, limit: 1, minLevel: 12 },
-    { id: "gloamward_frame", reward: { kind: "border", id: "frame_gloamward", name: "Gloamward Frame", rarity: "epic" }, currency: "common", cost: 2200, limit: 1, minLevel: 10 },
-    { id: "veilbreak_background", reward: { kind: "background", id: "bg_veilbreak", name: "Veilbreak Gothic Moonruins", rarity: "epic" }, currency: "common", cost: 1800, limit: 1 },
-    { id: "gloam_candy_skill", reward: { kind: "candy", id: "EVT_ANNUAL_010_2026:candy:skill", name: "Gloam Candy", rarity: "common", quantity: 1 }, currency: "common", cost: 250, limit: 5 },
-    { id: "gloam_candy_battle", reward: { kind: "candy", id: "EVT_ANNUAL_010_2026:candy:combat", name: "Gloam Candy \xB7 Battle", rarity: "common", quantity: 1 }, currency: "common", cost: 300, limit: 5, minLevel: 8 },
-    { id: "gloam_candy_bond", reward: { kind: "candy", id: "EVT_ANNUAL_010_2026:candy:companion", name: "Gloam Candy \xB7 Bond", rarity: "common", quantity: 1 }, currency: "common", cost: 350, limit: 5, minLevel: 12 },
-    { id: "companion_essence_cache", reward: { kind: "companion_essence", id: "companion_essence_100", name: "Companion Essence Cache", rarity: "uncommon", quantity: 100 }, currency: "common", cost: 750, limit: 3, minLevel: 10 },
-    { id: "lantern_coin_purse", reward: { kind: "gold", id: "gold_2500", name: "Lantern Coin Purse", rarity: "common", quantity: 2500 }, currency: "common", cost: 450, limit: 5, minLevel: 5 },
-    { id: "warden_treasury", reward: { kind: "gold", id: "gold_10000", name: "Warden Treasury", rarity: "uncommon", quantity: 1e4 }, currency: "common", cost: 1600, limit: 2, minLevel: 20 },
-    { id: "candlewarden_title", reward: { kind: "title", id: "title_candlewarden", name: "Candlewarden", rarity: "epic" }, currency: "common", cost: 1800, limit: 1 },
-    { id: "night_patrol_title", reward: { kind: "title", id: "title_night_patrol", name: "Night Patrol", rarity: "rare" }, currency: "common", cost: 1200, limit: 1 },
-    { id: "veil_lantern_mimic", reward: { kind: "pet", id: "EVT_PET_014", name: "Lantern Mimic", rarity: "epic" }, currency: "prestige", cost: 10, limit: 1 }
-  ],
-  choices: [
-    { id: "lantern_patrols", name: "Lantern Patrols", description: "Walk the roads and hunt creatures drawn through the veil.", bonusLabel: "+20% Veil Shards from combat", dropMultipliers: { combat: 1.2 } },
-    { id: "ward_gathering", name: "Ward Gathering", description: "Gather resin, herbs, ore, and fuel for the ward lanterns.", bonusLabel: "+20% Veil Shards from gathering", dropMultipliers: { gathering: 1.2 } },
-    { id: "sigil_workshop", name: "Sigil Workshop", description: "Craft replacement wards and binding seals.", bonusLabel: "+20% Veil Shards from crafting", dropMultipliers: { crafting: 1.2 } },
-    { id: "breach_hunters", name: "Breach Hunters", description: "Prioritize the strongest creatures crossing through.", bonusLabel: "+20% boss Veil Shards", dropMultipliers: { boss: 1.2 } }
-  ],
-  dailyGifts: [...gifts],
-  communityEnabled: false,
-  communityGoal: 1e5,
-  communityMilestones: [],
-  discoveries: [
-    { id: "gloam_cinder", name: "Gloam Cinder", description: "A cold ember sometimes left behind after ordinary combat.", source: "combat", chance: 3e-3, required: 5, reward: { kind: "title", id: "title_gloam_touched", name: "Gloam-Touched", rarity: "rare" } },
-    { id: "waxen_sigil", name: "Waxen Sigil", description: "A binding mark occasionally left after crafting.", source: "crafting", chance: 0.06, required: 3, reward: { kind: "emote", id: "emote_sleeping_scarecrow", name: "Sleeping Scarecrow", rarity: "rare" } },
-    { id: "breach_fragment", name: "Breach Fragment", description: "A shard of condensed veil carried by eligible bosses.", source: "boss", chance: 0.25, required: 1, reward: { kind: "title", id: "title_breach_sealer", name: "Breach Sealer", rarity: "epic" } }
-  ]
-};
-var FROSTFALL_EVENT = {
-  id: "EVT_ANNUAL_012_2026",
-  name: "Frostfall Festival",
-  summary: "Winter bells ring across Asterfall. Gather provisions, light the roads, and earn gifts beneath the aurora.",
-  currencyId: "FROSTBELL_TOKEN",
-  currencyName: "Frostbell Tokens",
-  prestigeCurrencyId: "AURORA_CHIME",
-  prestigeCurrencyName: "Aurora Chimes",
-  accent: "#9be7ff",
-  progressionName: "Frostfall Reputation",
-  maxProgress: 1e4,
-  claimGraceDays: 7,
-  visualKey: "frostfall",
-  signature: { kind: "community", label: "SIGNATURE \xB7 WINTER HEARTH", title: "Build the winter celebration together", description: "Frostfall combines a personal gift-and-collection chase with a shared Winter Hearth. Spend Frostbell Tokens on your own collection or contribute them to unlock communal festival milestones.", highlights: ["Shared Winter Hearth milestones", "Gift-and-aurora collectible chase", "Aurora Hollow seasonal expedition"] },
-  ui: {
-    prepareTitle: "Prepare for Frostfall",
-    dailyGiftTitle: "Today\u2019s Frostfall Gift",
-    cacheName: "Frostfall Cache",
-    communityName: "Winter Hearth",
-    projectTitle: "Festival preparation",
-    projectNoun: "festival focus",
-    contractsTitle: "DAILY FROSTFALL CONTRACTS",
-    shopTitle: "FROSTFALL SHOP",
-    collectionTitle: "Frostfall collection",
-    closedTitle: "Frostfall festivities are ending",
-    closedBody: "No new Frostfall Reputation, daily gifts, contracts, or activity drops can be earned. Completed rewards and shop purchases remain claimable during the grace period."
-  },
-  dropRates: { combat: 0.17, gathering: 1.2, crafting: 30, boss: 250 },
-  milestones: () => [
-    { points: 400, reward: { kind: "title", id: "title_frostfall_guest", name: "Frostfall Guest", rarity: "common" } },
-    { points: 1e3, reward: { kind: "emote", id: "emote_snowbell_ring", name: "Snowbell Ring", rarity: "rare" } },
-    { points: 4e3, reward: { kind: "pet", id: "EVT_PET_015", name: "Snowbell Pup", rarity: "common" } },
-    { points: 6500, reward: { kind: "title", id: "title_winter_light", name: "Winter Light", rarity: "epic" } },
-    { points: 1e4, reward: { kind: "companion", id: "EVT_UNIT_009", name: "Frostbell Herald", rarity: "epic" } }
-  ],
-  objectives: [
-    { id: "winter_watch", name: "Winter Watch", description: "Defeat 300 ordinary enemies along the winter roads.", source: "combat", required: 300, rewardCurrency: 300, rewardPrestige: 1 },
-    { id: "winter_provisions", name: "Winter Provisions", description: "Spend 180 active minutes gathering festival supplies.", source: "gathering", required: 180, rewardCurrency: 280, rewardPrestige: 1 },
-    { id: "gift_orders", name: "Gift Orders", description: "Complete 12 crafting recipes for Frostfall.", source: "crafting", required: 12, rewardCurrency: 350, rewardPrestige: 1 },
-    { id: "winter_guardian", name: "Winter Guardian", description: "Defeat an eligible event boss.", source: "boss", required: 1, rewardCurrency: 500, rewardPrestige: 2 }
-  ],
-  weeklyObjectives: [
-    { id: "weekly_winter_watch", name: "Roadkeeper", description: "Defeat 1,800 ordinary enemies this week.", source: "combat", required: 1800, rewardCurrency: 1e3, rewardPrestige: 2 },
-    { id: "weekly_provisions", name: "Festival Supplier", description: "Spend 900 active minutes gathering this week.", source: "gathering", required: 900, rewardCurrency: 950, rewardPrestige: 2 },
-    { id: "weekly_gifts", name: "Master Giftmaker", description: "Complete 50 crafting recipes this week.", source: "crafting", required: 50, rewardCurrency: 1150, rewardPrestige: 2 }
-  ],
-  shop: [
-    { id: "frostfall_wave", reward: { kind: "emote", id: "emote_frostfall_wave", name: "Frostfall Wave", rarity: "rare" }, currency: "common", cost: 900, limit: 1 },
-    { id: "hearth_guest_title", reward: { kind: "title", id: "title_hearth_guest", name: "Hearth Guest", rarity: "rare" }, currency: "common", cost: 1200, limit: 1 },
-    { id: "bellringer_title", reward: { kind: "title", id: "title_bellringer", name: "Bellringer", rarity: "epic" }, currency: "common", cost: 1800, limit: 1 },
-    { id: "aurora_walker_title", reward: { kind: "title", id: "title_aurora_walker", name: "Aurora Walker", rarity: "epic" }, currency: "prestige", cost: 4, limit: 1 },
-    { id: "frostfall_aurora_fox", reward: { kind: "pet", id: "EVT_PET_017", name: "Aurora Fox", rarity: "mythic" }, currency: "prestige", cost: 12, limit: 1 }
-  ],
-  choices: [
-    { id: "snow_patrols", name: "Snow Patrols", description: "Keep roads clear and defend travelers during the festival.", bonusLabel: "+20% Frostbell Tokens from combat", dropMultipliers: { combat: 1.2 } },
-    { id: "hearth_supplies", name: "Hearth Supplies", description: "Gather fuel, fish, herbs, and provisions for winter feasts.", bonusLabel: "+20% Frostbell Tokens from gathering", dropMultipliers: { gathering: 1.2 } },
-    { id: "gift_workshop", name: "Gift Workshop", description: "Craft decorations, gifts, and supplies for the festival.", bonusLabel: "+20% Frostbell Tokens from crafting", dropMultipliers: { crafting: 1.2 } },
-    { id: "winter_champions", name: "Winter Champions", description: "Challenge powerful threats before they reach the celebrations.", bonusLabel: "+20% boss Frostbell Tokens", dropMultipliers: { boss: 1.2 } }
-  ],
-  dailyGifts: [...gifts],
-  communityEnabled: true,
-  communityGoal: 1e5,
-  communityMilestones: [
-    { percent: 25, rewardCurrency: 200, rewardPrestige: 0 },
-    { percent: 50, rewardCurrency: 350, rewardPrestige: 1 },
-    { percent: 75, rewardCurrency: 500, rewardPrestige: 1 },
-    { percent: 100, rewardCurrency: 750, rewardPrestige: 2, reward: { kind: "title", id: "title_hearth_builder", name: "Hearth Builder", rarity: "epic" } }
-  ],
-  discoveries: [
-    { id: "snowbell_fragment", name: "Snowbell Fragment", description: "A tiny frozen bell-clapper found after ordinary combat.", source: "combat", chance: 3e-3, required: 5, reward: { kind: "title", id: "title_snowbell_seeker", name: "Snowbell Seeker", rarity: "rare" } },
-    { id: "gift_ribbon_scrap", name: "Enchanted Ribbon Scrap", description: "A festive ribbon hidden among gathered supplies.", source: "gathering", chance: 0.015, required: 5, reward: { kind: "title", id: "title_ribbon_finder", name: "Ribbon Finder", rarity: "rare" } },
-    { id: "aurora_bell_shard", name: "Aurora Bell Shard", description: "A resonant shard carried by eligible event bosses.", source: "boss", chance: 0.25, required: 1, reward: { kind: "emote", id: "emote_aurora_chime", name: "Aurora Chime", rarity: "epic" } }
-  ]
-};
-
-// ../apps/mobile/src/content/equipment-main-resource-shop.ts
-var EQUIPMENT_MAIN_RESOURCE_BUNDLES = [
-  { itemId: "MOSS_FIBER", name: "Moss Fiber", tier: 1, dungeonMarks: 150, frostfallTokens: 400 },
-  { itemId: "GREENWOOD_LOG", name: "Greenwood Log", tier: 1, dungeonMarks: 150, frostfallTokens: 400 },
-  { itemId: "WOLF_PELT", name: "Wolf Pelt", tier: 2, dungeonMarks: 300, frostfallTokens: 850 },
-  { itemId: "IRONWOOD_LOG", name: "Ironwood Log", tier: 2, dungeonMarks: 300, frostfallTokens: 850 },
-  { itemId: "DUNEWOOD", name: "Dunewood", tier: 3, dungeonMarks: 600, frostfallTokens: 1600 },
-  { itemId: "SUNSCALE", name: "Sunscale", tier: 3, dungeonMarks: 600, frostfallTokens: 1600 },
-  { itemId: "SUNSTONE_INGOT", name: "Sunstone Ingot", tier: 4, dungeonMarks: 1e3, frostfallTokens: 2800 }
-];
-function mainResourceBundle(itemId) {
-  return EQUIPMENT_MAIN_RESOURCE_BUNDLES.find((row) => row.itemId === itemId);
-}
-
-// ../apps/mobile/src/content/annual-events-v2.ts
-var gifts2 = [
-  { day: 1, rewardCurrency: 100, rewardPrestige: 0 },
-  { day: 2, rewardCurrency: 150, rewardPrestige: 0 },
-  { day: 3, rewardCurrency: 200, rewardPrestige: 0 },
-  { day: 4, rewardCurrency: 250, rewardPrestige: 0 },
-  { day: 5, rewardCurrency: 300, rewardPrestige: 0 },
-  { day: 6, rewardCurrency: 400, rewardPrestige: 0 },
-  { day: 7, rewardCurrency: 500, rewardPrestige: 1 }
-];
-var VEILBREAK_EVENT2 = {
-  id: "EVT_ANNUAL_010_2026",
-  name: "The Veilbreak",
-  summary: "The boundary between Asterfall and the Gloam thins. Reinforce lantern wards, hunt escaped shades, and recover what crossed the veil.",
-  currencyId: "VEIL_SHARD",
-  currencyName: "Veil Shards",
-  prestigeCurrencyId: "LANTERN_EMBER",
-  prestigeCurrencyName: "Lantern Embers",
-  accent: "#f47a36",
-  progressionName: "Veil Reputation",
-  maxProgress: 2e4,
-  claimGraceDays: 7,
-  visualKey: "veilbreak",
-  signature: { kind: "ritual", label: "SIGNATURE \xB7 BREACH WATCH", title: "Hold the veil together while hunting what slips through", description: "Veilbreak is the darkest annual event. Normal activities reinforce the ward effort, discoveries represent objects crossing the veil, and Gloam Breach is the season\u2019s persistent expedition.", highlights: ["Ward-focused seasonal projects", "Gloam-touched discovery chase", "Gloam Breach seasonal expedition"] },
-  ui: {
-    prepareTitle: "Prepare the lantern wards",
-    dailyGiftTitle: "Today\u2019s Lantern Gift",
-    cacheName: "Veil Cache",
-    communityName: "Lantern Ward",
-    projectTitle: "Ward preparation",
-    projectNoun: "ward focus",
-    contractsTitle: "DAILY VEIL CONTRACTS",
-    shopTitle: "VEILBREAK SHOP",
-    collectionTitle: "Veilbreak collection",
-    closedTitle: "The veil is sealing",
-    closedBody: "No new Veil Reputation, daily gifts, contracts, or activity drops can be earned. Completed rewards and shop purchases remain claimable during the grace period."
-  },
-  dropRates: { combat: 0.2, gathering: 1, crafting: 28, boss: 260 },
-  milestones: () => [
-    { points: 250, reward: { kind: "candy", id: "EVT_ANNUAL_010_2026:candy:skill", name: "Gloam Candy", rarity: "common", quantity: 2 } },
-    { points: 400, reward: { kind: "title", id: "title_veil_watcher", name: "Veil Watcher", rarity: "rare" } },
-    { points: 750, reward: { kind: "candy", id: "EVT_ANNUAL_010_2026:candy:combat", name: "Gloam Candy \xB7 Battle", rarity: "common", quantity: 2 } },
-    { points: 1e3, reward: { kind: "emote", id: "emote_lantern_watch", name: "Lantern Watch", rarity: "rare" } },
-    { points: 1500, reward: { kind: "candy", id: "EVT_ANNUAL_010_2026:candy:companion", name: "Gloam Candy \xB7 Bond", rarity: "common", quantity: 2 } },
-    { points: 2500, reward: { kind: "guild_name_color", id: "name_halloween_orange", name: "Halloworange", rarity: "epic" } },
-    { points: 4e3, reward: { kind: "pet", id: "EVT_PET_013", name: "Gloomkin", rarity: "rare" } },
-    { points: 5500, reward: { kind: "guild_frame", id: "border_halloween_veil", name: "Veil Masquerade", rarity: "epic" } },
-    { points: 6500, reward: { kind: "title", id: "title_veilbound", name: "Veilbound", rarity: "epic" } },
-    { points: 7e3, reward: { kind: "guild_banner", id: "halloween_pumpkin_lantern", name: "Pumpkin Lantern Flag", rarity: "rare" } },
-    { points: 8500, reward: { kind: "guild_banner", id: "halloween_bat_moon", name: "Bat Moon Flag", rarity: "epic" } },
-    { points: 1e4, reward: { kind: "companion", id: "EVT_UNIT_007", name: "Veil Hound", rarity: "epic" } },
-    { points: 2e4, reward: { kind: "companion", id: "EVT_UNIT_008", name: "Hollow Knightling", rarity: "epic" } }
-  ],
-  objectives: [
-    { id: "veil_hunt", name: "Veil Hunt", description: "Defeat 350 ordinary enemies while the veil is thin.", source: "combat", required: 350, rewardCurrency: 320, rewardPrestige: 1 },
-    { id: "ward_supplies", name: "Ward Supplies", description: "Spend 180 active minutes gathering ward materials.", source: "gathering", required: 180, rewardCurrency: 250, rewardPrestige: 1 },
-    { id: "lantern_craft", name: "Lantern Craft", description: "Complete 12 crafting recipes for the ward effort.", source: "crafting", required: 12, rewardCurrency: 340, rewardPrestige: 1 },
-    { id: "breach_guardian", name: "Breach Guardian", description: "Defeat an eligible event boss.", source: "boss", required: 1, rewardCurrency: 520, rewardPrestige: 2 }
-  ],
-  weeklyObjectives: [
-    { id: "weekly_veil_hunt", name: "Night Watch", description: "Defeat 1,900 ordinary enemies this week.", source: "combat", required: 1900, rewardCurrency: 1050, rewardPrestige: 2 },
-    { id: "weekly_ward_supply", name: "Ward Quartermaster", description: "Spend 900 active minutes gathering this week.", source: "gathering", required: 900, rewardCurrency: 900, rewardPrestige: 2 },
-    { id: "weekly_lantern_craft", name: "Master Lanternwright", description: "Complete 50 crafting recipes this week.", source: "crafting", required: 50, rewardCurrency: 1100, rewardPrestige: 2 }
-  ],
-  shop: [
-    { id: "veil_salute", reward: { kind: "emote", id: "emote_veil_salute", name: "Pumpkin Panic", rarity: "rare" }, currency: "common", cost: 900, limit: 1 },
-    { id: "candlewarden_title", reward: { kind: "title", id: "title_candlewarden", name: "Candlewarden", rarity: "epic" }, currency: "common", cost: 1800, limit: 1 },
-    { id: "night_patrol_title", reward: { kind: "title", id: "title_night_patrol", name: "Night Patrol", rarity: "rare" }, currency: "common", cost: 1200, limit: 1 },
-    { id: "veil_lantern_mimic", reward: { kind: "pet", id: "EVT_PET_014", name: "Lantern Mimic", rarity: "epic" }, currency: "prestige", cost: 10, limit: 1 },
-    { id: "lanternwing_companion", reward: { kind: "companion", id: "EVT_UNIT_011", name: "Lantern Keeper", rarity: "epic" }, currency: "prestige", cost: 14, limit: 1 }
-  ],
-  choices: [
-    { id: "lantern_patrols", name: "Lantern Patrols", description: "Walk the roads and hunt creatures drawn through the veil.", bonusLabel: "+20% Veil Shards from combat", dropMultipliers: { combat: 1.2 } },
-    { id: "ward_gathering", name: "Ward Gathering", description: "Gather resin, herbs, ore, and fuel for the ward lanterns.", bonusLabel: "+20% Veil Shards from gathering", dropMultipliers: { gathering: 1.2 } },
-    { id: "sigil_workshop", name: "Sigil Workshop", description: "Craft replacement wards and binding seals.", bonusLabel: "+20% Veil Shards from crafting", dropMultipliers: { crafting: 1.2 } },
-    { id: "breach_hunters", name: "Breach Hunters", description: "Prioritize the strongest creatures crossing through.", bonusLabel: "+20% boss Veil Shards", dropMultipliers: { boss: 1.2 } }
-  ],
-  dailyGifts: [...gifts2],
-  communityEnabled: false,
-  communityGoal: 1e5,
-  communityMilestones: [],
-  discoveries: [
-    { id: "gloam_cinder", name: "Gloam Cinder", description: "A cold ember sometimes left behind after ordinary combat.", source: "combat", chance: 3e-3, required: 5, reward: { kind: "title", id: "title_gloam_touched", name: "Gloam-Touched", rarity: "rare" } },
-    { id: "waxen_sigil", name: "Waxen Sigil", description: "A binding mark occasionally left after crafting.", source: "crafting", chance: 0.06, required: 3, reward: { kind: "emote", id: "emote_candle_circle", name: "Gloam Facepalm", rarity: "rare" } },
-    { id: "breach_fragment", name: "Breach Fragment", description: "A shard of condensed veil carried by eligible bosses.", source: "boss", chance: 0.25, required: 1, reward: { kind: "title", id: "title_breach_sealer", name: "Breach Sealer", rarity: "epic" } }
-  ]
-};
-var FROSTFALL_EVENT2 = {
-  id: "EVT_ANNUAL_012_2026",
-  name: "Frostfall Festival",
-  summary: "Winter bells ring across Asterfall. Gather provisions, light the roads, and earn gifts beneath the aurora.",
-  currencyId: "FROSTBELL_TOKEN",
-  currencyName: "Frostbell Tokens",
-  prestigeCurrencyId: "AURORA_CHIME",
-  prestigeCurrencyName: "Aurora Chimes",
-  accent: "#9be7ff",
-  progressionName: "Frostfall Reputation",
-  maxProgress: 1e4,
-  // Dec 27–28, 2026 is claim-only; the published server grace timestamp remains authoritative.
-  claimGraceDays: 2,
-  visualKey: "frostfall",
-  signature: { kind: "community", label: "SIGNATURE \xB7 WINTER HEARTH", title: "Prepare a winter celebration across Asterfall", description: "Frostfall combines a personal gift-and-collection chase with winter-themed activities. Earn Frostbell Tokens for your own collection and explore the Aurora Hollow expedition.", highlights: ["Personal winter festival milestones", "Gift-and-aurora collectible chase", "Aurora Hollow seasonal expedition"] },
-  ui: {
-    prepareTitle: "Prepare for Frostfall",
-    dailyGiftTitle: "Today\u2019s Frostfall Gift",
-    cacheName: "Frostfall Cache",
-    communityName: "Winter Hearth",
-    projectTitle: "Festival preparation",
-    projectNoun: "festival focus",
-    contractsTitle: "DAILY FROSTFALL CONTRACTS",
-    shopTitle: "FROSTFALL SHOP",
-    collectionTitle: "Frostfall collection",
-    closedTitle: "Frostfall festivities are ending",
-    closedBody: "No new Frostfall Reputation, daily gifts, contracts, or activity drops can be earned. Completed rewards and shop purchases remain claimable during the grace period."
-  },
-  dropRates: { combat: 0.17, gathering: 1.2, crafting: 30, boss: 250 },
-  milestones: () => [
-    { points: 400, reward: { kind: "title", id: "title_frostfall_guest", name: "Frostfall Guest", rarity: "common" } },
-    { points: 1e3, reward: { kind: "emote", id: "emote_snowbell_ring", name: "Snowbell Ring", rarity: "rare" } },
-    { points: 4e3, reward: { kind: "pet", id: "EVT_PET_015", name: "Snowbell Pup", rarity: "common" } },
-    // Three distinct Elite roles. Account-wide and permanent after the event.
-    // Keep the existing final 10k Frostbell milestone ID stable.
-    { points: 6e3, reward: { kind: "companion", id: "EVT_UNIT_012", name: "Rimeshard Wolverine", rarity: "epic" } },
-    { points: 6500, reward: { kind: "title", id: "title_winter_light", name: "Winter Light", rarity: "epic" } },
-    { points: 8500, reward: { kind: "companion", id: "EVT_UNIT_013", name: "Hearthguard Ram", rarity: "epic" } },
-    { points: 1e4, reward: { kind: "companion", id: "EVT_UNIT_009", name: "Frostbell Herald", rarity: "epic" } }
-  ],
-  objectives: [
-    { id: "winter_watch", name: "Winter Watch", description: "Defeat 300 ordinary enemies along the winter roads.", source: "combat", required: 300, rewardCurrency: 300, rewardPrestige: 1 },
-    { id: "winter_provisions", name: "Winter Provisions", description: "Spend 180 active minutes gathering festival supplies.", source: "gathering", required: 180, rewardCurrency: 280, rewardPrestige: 1 },
-    { id: "gift_orders", name: "Gift Orders", description: "Complete 12 crafting recipes for Frostfall.", source: "crafting", required: 12, rewardCurrency: 350, rewardPrestige: 1 },
-    { id: "winter_guardian", name: "Winter Guardian", description: "Defeat an eligible event boss.", source: "boss", required: 1, rewardCurrency: 500, rewardPrestige: 2 }
-  ],
-  weeklyObjectives: [
-    { id: "weekly_winter_watch", name: "Roadkeeper", description: "Defeat 1,800 ordinary enemies this week.", source: "combat", required: 1800, rewardCurrency: 1e3, rewardPrestige: 2 },
-    { id: "weekly_provisions", name: "Festival Supplier", description: "Spend 900 active minutes gathering this week.", source: "gathering", required: 900, rewardCurrency: 950, rewardPrestige: 2 },
-    { id: "weekly_gifts", name: "Master Giftmaker", description: "Complete 50 crafting recipes this week.", source: "crafting", required: 50, rewardCurrency: 1150, rewardPrestige: 2 }
-  ],
-  shop: [
-    // Existing IDs and permanent rewards are preserved.
-    { id: "frostfall_wave", reward: { kind: "emote", id: "emote_frostfall_wave", name: "Frostfall Wave", rarity: "rare" }, currency: "common", cost: 900, limit: 1 },
-    { id: "hearth_guest_title", reward: { kind: "title", id: "title_hearth_guest", name: "Hearth Guest", rarity: "rare" }, currency: "common", cost: 1200, limit: 1 },
-    { id: "bellringer_title", reward: { kind: "title", id: "title_bellringer", name: "Bellringer", rarity: "epic" }, currency: "common", cost: 1800, limit: 1 },
-    { id: "aurora_walker_title", reward: { kind: "title", id: "title_aurora_walker", name: "Aurora Walker", rarity: "epic" }, currency: "prestige", cost: 4, limit: 1 },
-    { id: "frostfall_aurora_fox", reward: { kind: "pet", id: "EVT_PET_017", name: "Aurora Fox", rarity: "mythic" }, currency: "prestige", cost: 10, limit: 1 },
-    { id: "frostfall_background", reward: { kind: "background", id: "bg_frostfall", name: "Aurora Winter Sky", rarity: "epic" }, currency: "common", cost: 2200, limit: 1 },
-    { id: "frostfall_snowbell_icon", reward: { kind: "profile_icon", id: "event:frostfall-2026-snowbell", name: "2026 Snowbell Crest", rarity: "epic" }, currency: "common", cost: 1400, limit: 1 },
-    { id: "frostmint_skill", reward: { kind: "candy", id: "EVT_ANNUAL_012_2026:candy:skill", name: "Frostmint", rarity: "common", quantity: 1 }, currency: "common", cost: 250, limit: 5 },
-    { id: "frostmint_battle", reward: { kind: "candy", id: "EVT_ANNUAL_012_2026:candy:combat", name: "Frostmint \xB7 Battle", rarity: "common", quantity: 1 }, currency: "common", cost: 300, limit: 5 },
-    { id: "frostmint_bond", reward: { kind: "candy", id: "EVT_ANNUAL_012_2026:candy:companion", name: "Frostmint \xB7 Bond", rarity: "common", quantity: 1 }, currency: "common", cost: 350, limit: 5 },
-    { id: "frostfall_companion_essence", reward: { kind: "companion_essence", id: "frostfall_essence_100", name: "Companion Essence \xB7 100", rarity: "uncommon", quantity: 100 }, currency: "common", cost: 750, limit: 3 },
-    { id: "frostfall_gold_pouch", reward: { kind: "gold", id: "frostfall_gold_2500", name: "Winter Coin Purse", rarity: "common", quantity: 2500 }, currency: "common", cost: 450, limit: 5 },
-    { id: "frostfall_gold_chest", reward: { kind: "gold", id: "frostfall_gold_10000", name: "Festival Treasury", rarity: "uncommon", quantity: 1e4 }, currency: "common", cost: 1600, limit: 2 },
-    // Select any main resource, 100 at a time; same item/tier gating as Dungeon Marks.
-    // Each material has its own once-per-UTC-week cap, resetting Monday.
-    ...EQUIPMENT_MAIN_RESOURCE_BUNDLES.map((bundle) => ({
-      id: "frostfall_" + bundle.itemId.toLowerCase() + "_100",
-      reward: { kind: "crafting_material", id: bundle.itemId, name: bundle.name + " \xD7100", rarity: "uncommon", quantity: 100, tier: bundle.tier },
-      currency: "common",
-      cost: bundle.frostfallTokens,
-      limit: 1,
-      perUtcWeek: 1
-    }))
-  ],
-  choices: [
-    { id: "snow_patrols", name: "Snow Patrols", description: "Keep roads clear and defend travelers during the festival.", bonusLabel: "+20% Frostbell Tokens from combat", dropMultipliers: { combat: 1.2 } },
-    { id: "hearth_supplies", name: "Hearth Supplies", description: "Gather fuel, fish, herbs, and provisions for winter feasts.", bonusLabel: "+20% Frostbell Tokens from gathering", dropMultipliers: { gathering: 1.2 } },
-    { id: "gift_workshop", name: "Gift Workshop", description: "Craft decorations, gifts, and supplies for the festival.", bonusLabel: "+20% Frostbell Tokens from crafting", dropMultipliers: { crafting: 1.2 } },
-    { id: "winter_champions", name: "Winter Champions", description: "Challenge powerful threats before they reach the celebrations.", bonusLabel: "+20% boss Frostbell Tokens", dropMultipliers: { boss: 1.2 } }
-  ],
-  dailyGifts: [...gifts2],
-  communityEnabled: true,
-  communityGoal: 1e5,
-  communityMilestones: [
-    { percent: 25, rewardCurrency: 200, rewardPrestige: 0 },
-    { percent: 50, rewardCurrency: 350, rewardPrestige: 1 },
-    { percent: 75, rewardCurrency: 500, rewardPrestige: 1 },
-    { percent: 100, rewardCurrency: 750, rewardPrestige: 2, reward: { kind: "title", id: "title_hearth_builder", name: "Hearth Builder", rarity: "epic" } }
-  ],
-  discoveries: [
-    { id: "snowbell_fragment", name: "Snowbell Fragment", description: "A tiny frozen bell-clapper found after ordinary combat.", source: "combat", chance: 3e-3, required: 5, reward: { kind: "title", id: "title_snowbell_seeker", name: "Snowbell Seeker", rarity: "rare" } },
-    { id: "gift_ribbon_scrap", name: "Enchanted Ribbon Scrap", description: "A festive ribbon hidden among gathered supplies.", source: "gathering", chance: 0.015, required: 5, reward: { kind: "title", id: "title_ribbon_finder", name: "Ribbon Finder", rarity: "rare" } },
-    { id: "aurora_bell_shard", name: "Aurora Bell Shard", description: "A resonant shard carried by eligible event bosses.", source: "boss", chance: 0.25, required: 1, reward: { kind: "emote", id: "emote_aurora_chime", name: "Aurora Chime", rarity: "epic" } }
-  ]
-};
-
-// ../apps/mobile/src/content/live-events.ts
-function eventCandies(definition) {
-  const names = { harvestwake: "Harvest Taffy", veilbreak: "Gloam Candy", frostfall: "Frostmint", turning_of_the_age: "Chronicle Chew", heartbond: "Heartberry Drop", bloomwake: "Bloom Sugar", suncrest: "Sunflare Toffee", starfall: "Starshine Candy", merchant_guild: "Guild Caramel" };
-  const base = names[definition.visualKey] ?? `${definition.name} Candy`;
-  return [
-    { kind: "skill", id: `${definition.id}:candy:skill`, name: base, description: "Grants +10% gathering speed and +10% non-combat skill XP.", visualKey: definition.visualKey, bonusBps: 1e3, secondsPerUse: 2 * 60 * 60, maxSeconds: 10 * 60 * 60 },
-    { kind: "combat", id: `${definition.id}:candy:combat`, name: `${base} \xB7 Battle`, description: "Grants +10% combat XP and +10% damage against ordinary regional PvE enemies only. No PvP, guild, dungeon, or expedition effect.", visualKey: definition.visualKey, bonusBps: 1e3, secondsPerUse: 2 * 60 * 60, maxSeconds: 10 * 60 * 60 },
-    { kind: "companion", id: `${definition.id}:candy:companion`, name: `${base} \xB7 Bond`, description: "Awards 75 Companion XP to your selected owned combat companion, equipped or not. It does not increase combat power directly.", visualKey: definition.visualKey, bonusBps: 0, secondsPerUse: 1, maxSeconds: 1 },
-    { kind: "pet", id: `${definition.id}:candy:pet`, name: `${base} \xB7 Pet Luck`, description: "Doubles the base chance of eligible regional pet drops from combat, gathering and exploration for 2 hours. For example, 0.10% becomes 0.20%.", visualKey: definition.visualKey, bonusBps: 1e4, secondsPerUse: 2 * 60 * 60, maxSeconds: 10 * 60 * 60 }
-  ];
-}
-function eventPrestigeSupplyOffers(definition) {
-  const skill2 = eventCandies(definition).find((candy) => candy.kind === "skill");
-  const combat = eventCandies(definition).find((candy) => candy.kind === "combat");
-  const pet2 = eventCandies(definition).find((candy) => candy.kind === "pet");
-  return [
-    { id: "prestige_bondstone", reward: { kind: "bondstones", id: "prestige_bondstone", name: "Bondstone", rarity: "rare", quantity: 1 }, currency: "prestige", cost: 2, limit: 3 },
-    { id: "prestige_companion_essence", reward: { kind: "companion_essence", id: "prestige_essence_125", name: "Companion Essence \xB7 125", rarity: "uncommon", quantity: 125 }, currency: "prestige", cost: 1, limit: 4 },
-    ...skill2 ? [{ id: "prestige_candy_skill", reward: { kind: "candy", id: skill2.id, name: skill2.name, rarity: "common", quantity: 1 }, currency: "prestige", cost: 1, limit: 5 }] : [],
-    ...combat ? [{ id: "prestige_candy_combat", reward: { kind: "candy", id: combat.id, name: combat.name, rarity: "common", quantity: 1 }, currency: "prestige", cost: 1, limit: 5 }] : [],
-    ...pet2 ? [{ id: "prestige_candy_pet", reward: { kind: "candy", id: pet2.id, name: pet2.name, rarity: "rare", quantity: 1 }, currency: "prestige", cost: 2, limit: 5 }] : []
-  ];
-}
-function eventDailyFestivalBlessing(definition, eventDay) {
-  const sources = ["gathering", "combat", "crafting", "boss"];
-  const source = sources[Math.max(0, eventDay - 1) % sources.length];
-  const labels2 = { gathering: "Skilling", combat: "Combat", crafting: "Crafting", boss: "Bosses" };
-  return { day: Math.max(1, eventDay), source, name: `${labels2[source]} Festival Blessing`, description: `+10% ${definition.name} currency from ${labels2[source].toLowerCase()}.`, bonusBps: 1e3 };
-}
-var LIVE_EVENT_CATALOG = [VEILBREAK_EVENT, FROSTFALL_EVENT2];
-function annualEventSeriesId(id) {
-  const match = id.match(/^(EVT_ANNUAL_\d{3})_(\d{4})$/);
-  return match?.[1];
-}
-function liveEventDef(id) {
-  const exact = LIVE_EVENT_CATALOG.find((event) => event.id === id);
-  if (exact) return exact;
-  const series = annualEventSeriesId(id);
-  if (!series) return void 0;
-  const template = LIVE_EVENT_CATALOG.find((event) => annualEventSeriesId(event.id) === series);
-  return template ? { ...template, id } : void 0;
-}
-
 // ../apps/mobile/src/content/guild-companions-v1.ts
 var seeds2 = [
   {
@@ -43871,7 +44157,7 @@ var ASTERFALL_COMPANIONS = [
   { id: "UNIT_004", name: "Briarhorn Cub", description: "Durable-target pressure through mild defense shred.", archetype: "Bruiser", role: "damage", rarity: "rare", origin: ASTER, unlockRequirements: [req("monster_mastery", "Reach Forest Troll Mastery 20", "FOREST_TROLL", 20)], baseStats: { hp: 230, power: 25, defense: 18, attackSpeed: 2.4 }, activeAbility: ability("UABL_004", "Briar Charge", "Strikes and briefly exposes the enemy to additional incoming damage.", 20, "Priority target", "damage", 1.2, 6e-3, { secondaryValue: 0.035, durationSeconds: 5 }), passiveAbility: passive("defense_shred", 0.035, "Barkbreaker: Briar Charge makes a struck enemy more vulnerable for 5 seconds."), bondTrait: trait("BOND_004", "Rootbreaker", "damage", 0.04, "Bond 10 further increases Briar Charge damage."), ascensionMaterialId: "THORN_SAP" },
   { id: "UNIT_005", name: "Lantern Wisp", description: "Interrupt-focused co-op helper.", archetype: "Disruptor", role: "support", rarity: "rare", origin: ASTER, unlockRequirements: [req("monster_mastery", "Reach Lantern Wretch Mastery 20", "LANTERN_WRETCH", 20)], baseStats: { hp: 145, power: 18, defense: 11, attackSpeed: 2 }, activeAbility: ability("UABL_005", "Lantern Snuff", "Interrupts an interruptible enemy cast; deals damage in companion-only combat.", 24, "Casting enemy", "interrupt", 0.55, 4e-3), passiveAbility: passive("haste", 0.015, "Flicker Sense: a small owner Haste bonus remains useful even when enemies cannot be interrupted."), bondTrait: trait("BOND_005", "Afterglow", "cooldown_reduction", 0.06, "Bond 10 shortens the Lantern Snuff cooldown."), ascensionMaterialId: "LANTERNSTEEL_SHARD" },
   { id: "UNIT_006", name: "Oathbound Page", description: "Boss-progression defensive companion.", archetype: "Guardian", role: "tank", rarity: "rare", origin: ASTER, unlockRequirements: [req("boss_kills", "Defeat The Fallen Knight once", "FALLEN_KNIGHT", 1)], baseStats: { hp: 290, power: 16, defense: 25, attackSpeed: 2.8 }, activeAbility: ability("UABL_006", "Page's Vow", "Creates a protective barrier and briefly reduces incoming damage.", 24, "Owner", "shield", 0.05, 1e-3), passiveAbility: passive("damage_reduction", 0.03, "Oathkeeper: the active vow briefly reinforces the owner after shielding."), bondTrait: trait("BOND_006", "Renewed Vow", "shield", 0.05, "Bond 10 improves the strength of every Vow shield."), ascensionMaterialId: "OATHGLASS_SHARD" },
-  { id: "UNIT_007", name: "Gloamknife Shade", description: "Fast rare-target cleanup and execute pressure.", archetype: "Assassin", role: "damage", rarity: "elite", origin: ASTER, unlockRequirements: [req("achievement", "Reach Knife Dancer class skill total 80", "KNIFE_DANCER_SKILL_TOTAL", 80)], baseStats: { hp: 155, power: 29, defense: 10, attackSpeed: 1.7 }, activeAbility: ability("UABL_007", "Gloamstep", "A decisive strike with bonus damage below 30% enemy HP.", 20, "Priority target", "damage", 1.45, 5e-3, { secondaryValue: 0.1 }), passiveAbility: passive("execute", 0.1, "Veiled Edge: Gloamstep is particularly effective against wounded targets.", "target_hp_below_30"), bondTrait: trait("BOND_007", "Final Shadow", "execute", 0.05, "Bond 10 adds another finishing bonus to Gloamstep."), ascensionMaterialId: "GLOAM_DUST" },
+  { id: "UNIT_007", name: "Gloamknife Shade", description: "Fast rare-target cleanup and execute pressure.", archetype: "Assassin", role: "damage", rarity: "elite", origin: ASTER, unlockRequirements: [req("monster_mastery", "Reach Gloam Mite Mastery 20", "GLOAM_MITE", 20)], baseStats: { hp: 155, power: 29, defense: 10, attackSpeed: 1.7 }, activeAbility: ability("UABL_007", "Gloamstep", "A decisive strike with bonus damage below 30% enemy HP.", 20, "Priority target", "damage", 1.45, 5e-3, { secondaryValue: 0.1 }), passiveAbility: passive("execute", 0.1, "Veiled Edge: Gloamstep is particularly effective against wounded targets.", "target_hp_below_30"), bondTrait: trait("BOND_007", "Final Shadow", "execute", 0.05, "Bond 10 adds another finishing bonus to Gloamstep."), ascensionMaterialId: "GLOAM_DUST" },
   { id: "UNIT_008", name: "Dawnwing", description: "Long-form group sustain.", archetype: "Support", role: "support", rarity: "elite", origin: ASTER, unlockRequirements: [req("skill_level", "Reach Faith 30", "faith", 30)], baseStats: { hp: 180, power: 14, defense: 14, attackSpeed: 2.3 }, activeAbility: ability("UABL_008", "Dawn Pinion", "Protects a low-HP ally and removes damaging periodic effects.", 24, "Lowest-HP ally", "shield", 0.04, 1e-3), passiveAbility: passive("cleanse", 1, "Warm Light: Dawn Pinion can remove damage-over-time effects from its protected ally."), bondTrait: trait("BOND_008", "Second Dawn", "shield", 0.06, "Bond 10 strengthens Dawn Pinion shielding."), ascensionMaterialId: "OATHGLASS_FRAGMENT" },
   { id: "UNIT_009", name: "Echo Stalker", description: "Coordinated damage companion that rewards debuffs.", archetype: "Hunter", role: "damage", rarity: "elite", origin: ASTER, unlockRequirements: [req("monster_mastery", "Reach Echo Bat Mastery 20", "ECHO_BAT", 20)], baseStats: { hp: 175, power: 27, defense: 13, attackSpeed: 1.9 }, activeAbility: ability("UABL_009", "Echo Rend", "Hits a priority enemy and deals extra damage if it is already debuffed; briefly exposes the target.", 20, "Priority target", "damage", 1.25, 6e-3, { secondaryValue: 0.03, durationSeconds: 5 }), passiveAbility: passive("damage", 0.03, "Echo Hunter: Echo Rend exposes its target to a short burst window."), bondTrait: trait("BOND_009", "Resonant Hunt", "damage", 0.035, "Bond 10 further strengthens Echo Rend."), ascensionMaterialId: "ECHO_QUARTZ" },
   { id: "UNIT_010", name: "Forge Automaton", description: "Slow armor-pressure artillery companion.", archetype: "Artillery", role: "damage", rarity: "rare", origin: ASTER, unlockRequirements: [req("achievement", "Craft 500 equipment pieces", "EQUIPMENT_CRAFTS", 500), req("skill_level", "Reach Smithing 30", "smithing", 30)], baseStats: { hp: 205, power: 26, defense: 20, attackSpeed: 2.9 }, activeAbility: ability("UABL_010", "Siege Bolt", "A powerful, deliberate hit that exposes its target for 7 seconds.", 20, "Priority target", "damage", 1.35, 5e-3, { secondaryValue: 0.035, durationSeconds: 7 }), passiveAbility: passive("damage", 0.035, "Calibrated Shot: Siege Bolt creates a longer enemy vulnerability window."), bondTrait: trait("BOND_010", "Perfect Calibration", "damage", 0.05, "Bond 10 increases Siege Bolt damage."), ascensionMaterialId: "FALLEN_RIVET" },
@@ -43943,121 +44229,6 @@ var REGIONAL_COMPANIONS = [
 var ALL_COMBAT_COMPANIONS = [...ASTERFALL_COMPANIONS, ...REGIONAL_COMPANIONS, ...GUILD_COMBAT_COMPANIONS, ...EVENT_COMPANIONS];
 var COMBAT_COMPANIONS = EVENTS_RELEASED ? [...ASTERFALL_COMPANIONS, ...REGIONAL_COMPANIONS, ...GUILD_COMBAT_COMPANIONS, ...RELEASED_EVENT_COMPANIONS] : [...ASTERFALL_COMPANIONS, ...REGIONAL_COMPANIONS, ...GUILD_COMBAT_COMPANIONS];
 var combatCompanionDef = (id) => ALL_COMBAT_COMPANIONS.find((entry2) => entry2.id === id);
-
-// ../apps/mobile/src/content/class-skills.ts
-var skill = (id, name, theme) => ({ id, name, theme });
-var guard = skill("guardcraft", "Guardcraft", "Physical protection");
-var ward = skill("warding", "Warding", "Damage warding");
-var CLASS_SKILLS = {
-  IRONWARDEN: [guard, ward],
-  BASTION: [guard, ward],
-  DREADGUARD: [skill("might", "Might", "Weapon power"), ward],
-  DAWNKEEPER: [skill("restoration", "Restoration", "Healing and recovery"), skill("sanctity", "Sanctity", "Sanctified protection")],
-  WAYFINDER: [skill("marksmanship", "Marksmanship", "Ranged power"), skill("tracking", "Tracking", "Hunting precision")],
-  RAVAGER: [skill("might", "Might", "Weapon power"), skill("breaking", "Breaking", "Armor pressure")],
-  HEXWEAVER: [skill("spellcraft", "Spellcraft", "Magical power"), skill("hexcraft", "Hexcraft", "Hex potency")],
-  KNIFE_DANCER: [skill("blade_rhythm", "Blade Rhythm", "Attack rhythm"), skill("precision", "Precision", "Accuracy and evasion")],
-  STONECALLER: [skill("resonance", "Resonance", "Support and recovery"), skill("geomancy", "Geomancy", "Protection and resilience")]
-};
-var classSkillsFor = (id) => CLASS_SKILLS[id];
-
-// ../apps/mobile/src/core/class-skills.ts
-init_meal_buffs();
-init_progression();
-var MAX_CLASS_SKILL_XP = classCombatSkillTotalXpAtLevel(100);
-var CLASS_DRILL_BASE_XP = 24;
-var normalizeTrainingFocus = (v) => v === "primary" || v === "secondary" ? v : "balanced";
-function normalizeClassSkills(id, raw2) {
-  const rows2 = Array.isArray(raw2) ? raw2 : [];
-  return classSkillsFor(id).map((d) => {
-    const entry2 = rows2.find((r) => r?.skillId === d.id);
-    const xp = typeof entry2?.xp === "number" && Number.isFinite(entry2.xp) ? Math.max(0, Math.min(MAX_CLASS_SKILL_XP, Math.floor(entry2.xp))) : 0;
-    return { skillId: d.id, xp, level: classCombatSkillLevelFromXp(xp) };
-  });
-}
-var characterClassSkills = (c) => normalizeClassSkills(c.classId, c.classSkills);
-function awardCombatClassXp(c, kills, perKill, firstFocus) {
-  kills = Number.isFinite(kills) ? Math.floor(kills) : 0;
-  if (kills <= 0 || !Number.isFinite(perKill) || perKill <= 0) return { character: c, awards: characterClassSkills(c).map((s) => ({ skillId: s.skillId, xp: 0 })) };
-  const first = awardClassSkillXp(c, perKill, firstFocus ?? normalizeTrainingFocus(c.trainingFocus));
-  const rest = awardClassSkillXp(first.character, Math.max(0, kills - 1) * perKill);
-  return { character: rest.character, awards: rest.awards.map((a, i) => ({ ...a, xp: a.xp + first.awards[i].xp })) };
-}
-function normalizeClassDrills(raw2) {
-  if (!raw2 || !Number.isSafeInteger(raw2.lastClaimAtMs) || raw2.lastClaimAtMs < 0) return void 0;
-  return { lastClaimAtMs: raw2.lastClaimAtMs, progressMs: Math.min(59999, Math.max(0, Math.floor(Number(raw2.progressMs) || 0))), focus: normalizeTrainingFocus(raw2.focus), xpPerDrill: Math.max(CLASS_DRILL_BASE_XP, Math.min(120, Number(raw2.xpPerDrill) || CLASS_DRILL_BASE_XP)) };
-}
-function trainingFocusShares(focus) {
-  return focus === "primary" ? [0.75, 0.25] : focus === "secondary" ? [0.25, 0.75] : [0.5, 0.5];
-}
-function awardClassSkillXp(c, pool, focus = normalizeTrainingFocus(c.trainingFocus)) {
-  const shares = trainingFocusShares(focus), remainders = { ...c.classSkillRemainders ?? {} };
-  if (!Number.isFinite(pool)) pool = 0;
-  const awards = [];
-  const classSkills = characterClassSkills(c).map((s, i) => {
-    const prior = Number.isFinite(remainders[s.skillId]) ? Math.max(0, Math.min(0.999999, remainders[s.skillId])) : 0;
-    const amount = Math.max(0, pool) * shares[i] + prior;
-    const whole = Math.floor(amount + 1e-9), gain = Math.min(MAX_CLASS_SKILL_XP - s.xp, whole);
-    remainders[s.skillId] = s.xp + gain >= MAX_CLASS_SKILL_XP ? 0 : Math.max(0, amount - whole);
-    awards.push({ skillId: s.skillId, xp: gain });
-    return { ...s, xp: s.xp + gain, level: classCombatSkillLevelFromXp(s.xp + gain) };
-  });
-  return { character: { ...c, classSkills, classSkillRemainders: remainders }, awards };
-}
-function characterClassEffects(c) {
-  const [a, b] = characterClassSkills(c).map((s) => (s.level - 1) / 99);
-  const base = { attack: 1, hp: 1, defense: 1, accuracy: 0, evasion: 0, haste: 0, ward: 0, penetration: 0, potency: 0, classHealing: 1 };
-  switch (c.classId) {
-    case "IRONWARDEN":
-      return { ...base, defense: 1 + 0.08 * a, ward: 0.05 * b };
-    case "BASTION":
-      return { ...base, defense: 1 + 0.1 * a, ward: 0.06 * b };
-    case "DREADGUARD":
-      return { ...base, attack: 1 + 0.07 * a, ward: 0.05 * b };
-    case "DAWNKEEPER":
-      return { ...base, attack: 1 + 0.04 * a, classHealing: 1 + 0.1 * a, hp: 1 + 0.06 * b, ward: 0.04 * b };
-    case "WAYFINDER":
-      return { ...base, attack: 1 + 0.07 * a, accuracy: 0.04 * b, haste: 0.02 * b };
-    case "RAVAGER":
-      return { ...base, attack: 1 + 0.07 * a + 0.02 * b, penetration: 0.05 * b };
-    case "HEXWEAVER":
-      return { ...base, attack: 1 + 0.07 * a + 0.02 * b, potency: 0.05 * b };
-    case "KNIFE_DANCER":
-      return { ...base, attack: 1 + 0.03 * a, haste: 0.04 * a, accuracy: 0.03 * b, evasion: 0.06 * b };
-    case "STONECALLER":
-      return { ...base, attack: 1 + 0.04 * a, classHealing: 1 + 0.08 * a, defense: 1 + 0.08 * b, ward: 0.03 * b };
-  }
-  return base;
-}
-function settleClassDrills(state, now, capSeconds) {
-  const c = state.character, drill = normalizeClassDrills(c?.classTraining);
-  const empty2 = { xp: 0, gold: 0, kills: 0, items: [], elapsedSeconds: 0 };
-  if (!c || !drill || !Number.isFinite(now) || now <= drill.lastClaimAtMs) return { state, reward: empty2 };
-  const rawSpeed = mealSpeedFactor(c, "noncombat");
-  const speed = Number.isFinite(rawSpeed) && rawSpeed > 0 ? rawSpeed : 1;
-  const elapsed = Math.min(Math.max(0, Number.isFinite(capSeconds) ? capSeconds : 0) * 1e3, now - drill.lastClaimAtMs);
-  const total = elapsed * speed + drill.progressMs, actions = Math.floor(total / 6e4);
-  let character = c;
-  const awards = {};
-  const apply = (count, focus2) => {
-    if (!count) return;
-    const earned = awardClassSkillXp(character, drill.xpPerDrill * count, focus2);
-    character = earned.character;
-    for (const a of earned.awards) awards[a.skillId] = (awards[a.skillId] ?? 0) + a.xp;
-  };
-  const focus = normalizeTrainingFocus(c.trainingFocus);
-  let completed = characterClassSkills(c).every((s) => s.level === 100) ? 0 : Math.min(1, actions);
-  apply(completed, drill.focus);
-  const shares = trainingFocusShares(focus);
-  const remainingToCap = Math.max(...characterClassSkills(character).map((s, i) => Math.max(0, Math.ceil((MAX_CLASS_SKILL_XP - s.xp - (character.classSkillRemainders?.[s.skillId] ?? 0)) / (drill.xpPerDrill * shares[i])))));
-  const rest = Math.min(Math.max(0, actions - completed), remainingToCap);
-  apply(rest, focus);
-  completed += rest;
-  const capped = characterClassSkills(character).every((s) => s.level === 100);
-  character = { ...character, classTraining: capped ? void 0 : { ...drill, lastClaimAtMs: now, progressMs: Math.floor(total % 6e4), focus: actions ? normalizeTrainingFocus(c.trainingFocus) : drill.focus } };
-  const qualified = capped ? Math.max(0, Math.min(elapsed, (completed * 6e4 - drill.progressMs) / speed)) : elapsed;
-  return { state: { ...state, character }, reward: { ...empty2, elapsedSeconds: Math.floor(elapsed / 1e3), qualifyingActivitySeconds: Math.floor(qualified / 1e3), trainingActions: completed, classSkillXp: Object.entries(awards).map(([skillId, xp]) => ({ skillId, xp })) } };
-}
 
 // ../apps/mobile/src/core/companion-mastery.ts
 var COMPANION_MASTERY_MAX_STAT_BONUS = 0.05;
@@ -44395,6 +44566,7 @@ var BASE_ITEMS = [
   { id: "ROASTED_ROOTSTREAM_TROUT", name: "Roasted Rootstream Trout", type: "food", heal: 34, readiness: 4, value: 25 },
   { id: "SEARED_RIVER_EEL", name: "Seared River Eel", type: "food", heal: 44, readiness: 5, value: 34 },
   { id: "IRONWOOD_STEW", name: "Ironwood Hunter Stew", type: "food", heal: 77, readiness: 7, value: 62 },
+  { id: "SUNSCAR_SPICED_PLATTER", name: "Sunscar Spiced Platter", type: "food", heal: 123, readiness: 11, value: 175, rarity: "uncommon" },
   { id: "COPPER_ORE", name: "Copper Ore", type: "material", value: 5 },
   { id: "OATHSTONE_ORE", name: "Oathstone Ore", type: "material", value: 32 },
   { id: "CROWNWOOD_LOG", name: "Crownwood Log", type: "material", value: 30 },
@@ -44478,7 +44650,14 @@ var BASE_ITEMS = [
   // Retired quest item: preserve only to read historical saved inventories safely; never drop or grant.
   { id: "FALLEN_KNIGHT_SIGIL", name: "Fallen Knight Sigil", type: "quest", value: 0 }
 ];
-var ITEMS = [...BASE_ITEMS.map((item) => item.requiredLevel === void 0 ? item : { ...item, requiredLevel: rebasedCombatLevelFromLegacyLevel(item.requiredLevel) }), ...GUILD_COMPONENT_ITEMS, ...CROSS_PROFESSION_COMPONENT_ITEMS, ...EQUIPMENT_ITEMS_V33];
+var ITEMS = [
+  ...BASE_ITEMS.map((item) => item.requiredLevel === void 0 ? item : { ...item, requiredLevel: rebasedCombatLevelFromLegacyLevel(item.requiredLevel) }),
+  ...GUILD_COMPONENT_ITEMS,
+  ...CROSS_PROFESSION_COMPONENT_ITEMS,
+  ...EQUIPMENT_ITEMS_V33,
+  // Keep the seasonal item definition available for save/settlement compatibility; presentation and writes are server-window gated.
+  { id: "FROSTFALL_CHRISTMAS_LIGHTS_2026", name: "Christmas Lights", type: "material", value: 0, rarity: "rare", passive: "Seasonal lights donated to your guild Winter Hearth Christmas Market." }
+];
 var itemsById = new Map(ITEMS.map((item) => [item.id, item]));
 if (itemsById.size !== ITEMS.length) throw new Error("Duplicate item IDs in the item catalog");
 function itemDef(id) {
@@ -45135,7 +45314,6 @@ function isCombatCompanionMastered(def, progress) {
 function companionUnlockRequirementMet(state, requirement) {
   const target2 = requirement.target ?? requirement.description, amount = Math.max(1, requirement.amount ?? 1);
   const characters = [state.character, ...(state.otherCharacters ?? []).map((row) => row.character)].filter((row) => !!row);
-  if (target2 === "KNIFE_DANCER_SKILL_TOTAL") return characters.some((character) => character.classId === "KNIFE_DANCER" && normalizeClassSkills("KNIFE_DANCER", character.classSkills).reduce((sum, s) => sum + s.level, 0) >= amount);
   if (requirement.type === "monster_mastery") return characters.some((character) => monsterMasteryRankFromKills(normalizeMonsterMastery(character.monsterMasteryPoints)[target2] ?? 0) >= amount) || (state.account.companionUnlockProgress?.[target2] ?? 0) >= amount;
   if (target2 === "ASTERFALL_MASTERY_20_ALL") return characters.some((character) => Object.values(normalizeMonsterMastery(character.monsterMasteryPoints)).filter((n) => monsterMasteryRankFromKills(n) >= 20).length >= amount) || (state.account.companionUnlockProgress?.[target2] ?? 0) >= amount;
   if (requirement.type === "meta" && target2.startsWith("COMPANION_BOND:")) {
@@ -48229,7 +48407,7 @@ function applyEconomy(state, economy) {
   }
   return { ...state, inventory: { ...state.inventory, stacks: inventory.filter((x) => x.quantity > 0) }, bank: { ...state.bank, stacks: bank.filter((x) => x.quantity > 0) }, character: state.character ? { ...state.character, gold: economy.gold } : null, account: { ...state.account, companionEssence: economy.companionEssence, bondstones: economy.bondstones, companionMaterials: materials } };
 }
-function reward(state, r) {
+function reward2(state, r) {
   const e = companionEconomy(state);
   e.gold += r.gold ?? 0;
   e.companionEssence += r.companionEssence ?? 0;
@@ -48379,7 +48557,7 @@ function executeCompanionActivity(input, type, a, now) {
     }
     case "companion_monthly": {
       const r = claimMonthlyCompanionChallenge(state.account.companionTrialProgress, stringArg(a, "id"), now);
-      state = reward(state, r.reward);
+      state = reward2(state, r.reward);
       state.account.companionTrialProgress = r.progress;
       break;
     }
@@ -48401,7 +48579,7 @@ function executeCompanionActivity(input, type, a, now) {
       if (progress.bondLevel < requested) throw new Error(`Reach Bond ${requested} first.`);
       const key = `${id}:${requested}`;
       if (claims.includes(key)) throw new Error("Bond reward already claimed.");
-      state = reward(state, { companionEssence: rewards[requested] });
+      state = reward2(state, { companionEssence: rewards[requested] });
       state.account.companionBondRewardClaims = [...claims, key];
       break;
     }
@@ -48423,7 +48601,7 @@ function executeCompanionActivity(input, type, a, now) {
       if (!run || a.floor !== run.currentFloor) throw new Error("Trial floor changed. Refresh before continuing.");
       const floor = run.currentFloor, r = resolveCompanionTrialFloor(trialInput, stringArg(a, "id"), companionCombatExecutor), power = companionTeamPower(run.teamCompanionIds, owned);
       state.account.companionTrialProgress = r.progress;
-      state = reward(state, r.reward);
+      state = reward2(state, r.reward);
       state = companionMetricMany(state, { [`companions.trial.floor.${floor}.attempts`]: 1, [`companions.trial.floor.${floor}.${r.result.victory ? "wins" : "losses"}`]: 1, [`companions.trial.floor.${floor}.duration_ms_total`]: r.result.durationMs, [`companions.trial.floor.${floor}.team_power_total`]: power, "companions.trial.attempts": 1, [r.result.victory ? "companions.trial.wins" : "companions.trial.losses"]: 1 });
       if (floor % 5 === 0) state = companionMetric(state, `companions.trial.boss.${floor}.${r.result.victory ? "wins" : "losses"}`);
       if (r.result.victory) {
@@ -48452,7 +48630,7 @@ function executeCompanionActivity(input, type, a, now) {
       if (!assignment) throw new Error("Assignment not found.");
       const week = companionTrialWeekKey(now), used = state.account.companionAssignmentBondstoneWeek === week ? state.account.companionAssignmentBondstones ?? 0 : 0;
       const r = claimCompanionAssignment({ assignment, owned, serverNowMs: now, bondstonesClaimedThisWeek: used });
-      state = reward(state, r.reward);
+      state = reward2(state, r.reward);
       for (const id of assignment.companionIds) state = awardUse(state, [id], r.reward.companionXpById?.[id] ?? 0, r.reward.bondXpById?.[id] ?? 0, now);
       const missionDef = companionMission(assignment.missionId), unlockProgress = { ...state.account.companionUnlockProgress ?? {} };
       if (missionDef?.originId) {
@@ -48492,8 +48670,8 @@ function executeCompanionActivity(input, type, a, now) {
     }
     case "companion_weekly": {
       const r = claimCompanionProvingGroundChallenge({ state: state.account.companionProvingGround, serverNowMs: now, challengeId: stringArg(a, "id") });
-      state = reward(state, r.reward);
-      if (Object.keys(owned).some((id) => companionServerDefinition(id)?.originId.startsWith("EVENT_"))) state = reward(state, { materials: { EVENT_BONDBLOOM: 1 } });
+      state = reward2(state, r.reward);
+      if (Object.keys(owned).some((id) => companionServerDefinition(id)?.originId.startsWith("EVENT_"))) state = reward2(state, { materials: { EVENT_BONDBLOOM: 1 } });
       state.account.companionProvingGround = r.state;
       state.account.companionPhase2Profile = { ...profile, codexRewardIds: [.../* @__PURE__ */ new Set([...profile.codexRewardIds ?? [], ...r.reward.rewardIds ?? []])] };
       break;
@@ -48575,16 +48753,31 @@ var VEILBREAK_CURRENCY_PROMOTION = {
 var FUTURE_EVENT_CURRENCY_ADJUSTMENT_BPS = -2500;
 var FUTURE_2026_EVENT_IDS = /* @__PURE__ */ new Set(["EVT_ANNUAL_011_2026", "EVT_ANNUAL_012_2026"]);
 var FUTURE_ANNUAL_EVENT_ID = /^EVT_ANNUAL_\d{3}_(\d{4})$/;
-function eventCurrencyPromotionBps(eventId, earnedAtMs) {
+var FROSTFALL_HOLIDAY_PROMOTION = {
+  eventId: "EVT_ANNUAL_012_2026",
+  catchupStartsAtMs: Date.parse("2026-12-20T00:00:00Z"),
+  christmasStartsAtMs: Date.parse("2026-12-24T00:00:00Z"),
+  endsAtMs: Date.parse("2026-12-27T00:00:00Z"),
+  catchupEnabled: false
+};
+function frostfallHolidayMultiplierBps(eventId, earnedAtMs, catchupEnabled = FROSTFALL_HOLIDAY_PROMOTION.catchupEnabled) {
+  const p = FROSTFALL_HOLIDAY_PROMOTION;
+  if (eventId !== p.eventId || !Number.isFinite(earnedAtMs) || earnedAtMs >= p.endsAtMs) return 1e4;
+  if (earnedAtMs >= p.christmasStartsAtMs) return 2e4;
+  if (catchupEnabled && earnedAtMs >= p.catchupStartsAtMs) return 12500;
+  return 1e4;
+}
+function eventCurrencyBaseBps(eventId, earnedAtMs) {
   const promotion = VEILBREAK_CURRENCY_PROMOTION;
   if (eventId === promotion.eventId && earnedAtMs >= promotion.startsAtMs && earnedAtMs < promotion.endsAtMs) return promotion.bonusBps;
   if (FUTURE_2026_EVENT_IDS.has(eventId)) return FUTURE_EVENT_CURRENCY_ADJUSTMENT_BPS;
   const year = FUTURE_ANNUAL_EVENT_ID.exec(eventId)?.[1];
   return year && Number(year) >= 2027 ? FUTURE_EVENT_CURRENCY_ADJUSTMENT_BPS : 0;
 }
-
-// ../apps/mobile/src/core/live-events.ts
-init_faith2();
+function eventCurrencyPromotionBps(eventId, earnedAtMs) {
+  const base = eventCurrencyBaseBps(eventId, earnedAtMs);
+  return Math.round((1e4 + base) * frostfallHolidayMultiplierBps(eventId, earnedAtMs) / 1e4) - 1e4;
+}
 
 // ../apps/mobile/src/core/equipment-shop-tier-unlock.ts
 function equipmentShopTierUnlocked(state, tier) {
@@ -48648,7 +48841,9 @@ function eventCurrencyBonusBps(state, eventId, earnedAtMs = Date.now()) {
   return runtime?.enabled && runtime.eventId === eventId && earnedAtMs >= runtime.startsAtMs && earnedAtMs < runtime.endsAtMs ? eventCurrencyPromotionBps(eventId, earnedAtMs) : 0;
 }
 function promotedCommonReward(state, eventId, quantity2, earnedAtMs) {
-  return Math.floor(quantity2 * (1e4 + eventCurrencyBonusBps(state, eventId, earnedAtMs)) / 1e4);
+  const runtime = state.account.liveEvent;
+  const bps = runtime?.enabled && runtime.eventId === eventId && earnedAtMs >= runtime.startsAtMs && earnedAtMs < runtime.endsAtMs ? eventCurrencyBaseBps(eventId, earnedAtMs) : 0;
+  return Math.floor(quantity2 * (1e4 + bps) / 1e4);
 }
 var EVENT_COMMUNITY_MIN_CONTRIBUTION = 100;
 function eventPrestigeReward(source, reward3) {
@@ -48754,9 +48949,7 @@ function eventEffectiveDropRate(state, eventId, source, nowMs = Date.now()) {
   const event = liveEventDef(eventId);
   if (!event) return 0;
   const blessing = eventDailyFestivalBlessing2(state, nowMs), blessingMultiplier = blessing?.source === source ? 1 + blessing.bonusBps / 1e4 : 1;
-  const active2 = activeLiveEvent(state, nowMs), faith = active2?.definition.id === eventId ? selectedFaithBlessing(state) : void 0;
-  const faithMultiplier = faith?.family === "eventCurrency" ? 1 + faith.bonus : 1;
-  return event.dropRates[source] * (eventProjectChoice(state, eventId)?.dropMultipliers?.[source] ?? 1) * blessingMultiplier * (1 + eventCurrencyBonusBps(state, eventId, nowMs) / 1e4) * faithMultiplier;
+  return event.dropRates[source] * (eventProjectChoice(state, eventId)?.dropMultipliers?.[source] ?? 1) * blessingMultiplier * (1 + eventCurrencyBonusBps(state, eventId, nowMs) / 1e4);
 }
 function eventContributionValue(state, eventId, spent) {
   const multiplier = eventProjectChoice(state, eventId)?.contributionMultiplier ?? 1;
@@ -48894,17 +49087,23 @@ function addReward(state, reward3, nowMs = Date.now()) {
 function grantEventCurrencies(state, eventId, common, prestige) {
   return { ...state, account: { ...state.account, eventProgressById: { ...state.account.eventProgressById ?? {}, [eventId]: eventProgress(state, eventId) + common }, eventCurrencyBalanceById: { ...state.account.eventCurrencyBalanceById ?? {}, [eventId]: eventCurrencyBalance(state, eventId) + common }, eventPrestigeBalanceById: { ...state.account.eventPrestigeBalanceById ?? {}, [eventId]: eventPrestigeBalance(state, eventId) + prestige } } };
 }
-function eventInboxRewards(state) {
+function eventRewardOwned(state, reward3) {
+  if (reward3.kind === "candy" || reward3.kind === "gold" || reward3.kind === "companion_essence" || reward3.kind === "bondstones" || reward3.kind === "crafting_material") return false;
+  const ids2 = reward3.kind === "companion" ? state.account.unlockedCombatCompanionIds : reward3.kind === "profile_icon" ? state.account.unlockedProfileIconIds : reward3.kind === "pet" ? state.account.unlockedCosmeticPetIds : reward3.kind === "background" ? state.account.unlockedProfileBackgroundIds : reward3.kind === "border" ? state.account.unlockedProfileBorderIds : reward3.kind === "emote" ? state.account.unlockedEmoteIds : reward3.kind === "guild_name_color" || reward3.kind === "guild_frame" || reward3.kind === "guild_banner" ? state.account.unlockedGuildCosmeticIds : state.account.unlockedTitleIds;
+  return ids2?.includes(reward3.id) ?? false;
+}
+function eventInboxRewards(state, nowMs = Date.now()) {
   if (!state.character) return [];
   const classId = state.character.classId;
   return Object.keys(state.account.eventProgressById ?? {}).flatMap((eventId) => {
+    if (eventId === FROSTFALL_2026_EVENT_ID && !frostfallRewardsDiscoverable(state.account, nowMs)) return [];
     const definition = liveEventDef(eventId);
     if (!definition) return [];
     return definition.milestones(classId).filter((m) => m.points <= eventProgress(state, eventId)).map((m) => ({ eventId, eventName: definition.name, reward: m.reward, claimed: eventRewardClaimed(state, eventId, m.reward.id) }));
   });
 }
 function claimEventReward(state, rewardId, nowMs = Date.now()) {
-  const earned = eventInboxRewards(state).find((row) => row.reward.id === rewardId);
+  const earned = eventInboxRewards(state, nowMs).find((row) => row.reward.id === rewardId);
   if (!earned) throw new Error("This milestone is not complete.");
   if (earned.claimed) throw new Error("This reward was already claimed.");
   const rewarded = addReward(state, earned.reward, nowMs), claimId = `${earned.eventId}:${rewardId}`;
@@ -49000,6 +49199,7 @@ function eventOfferOwnPurchaseCount(state, eventId, offerId) {
 function eventOfferPurchaseCount(state, eventId, offerId, nowMs = Date.now()) {
   const definition = liveEventDef(eventId), offers = definition ? [...definition.shop, ...eventPrestigeSupplyOffers(definition)] : [];
   const offer = offers.find((row) => row.id === offerId);
+  if (offer?.reward.kind === "emote" && definition?.visualKey === "frostfall" && eventRewardOwned(state, offer.reward)) return offer.limit;
   if (offer?.perUtcWeek) return Math.max(0, Math.floor(state.account.eventShopPurchaseCounts?.[`${eventId}:${offerId}:week:${utcWeekKey(nowMs)}`] ?? 0));
   if (offer?.reward.kind === "candy") return offers.filter((row) => row.currency === offer.currency && row.reward.kind === "candy" && row.reward.id === offer.reward.id).reduce((total, row) => total + eventOfferOwnPurchaseCount(state, eventId, row.id), 0);
   return eventOfferOwnPurchaseCount(state, eventId, offerId);
@@ -49066,6 +49266,124 @@ function claimEventCommunityMilestone(state, percent, nowMs = Date.now()) {
   let rewarded = grantEventCurrencies(state, event.definition.id, status.milestone.rewardCurrency, status.milestone.rewardPrestige);
   if (status.milestone.reward) rewarded = addReward(rewarded, status.milestone.reward, nowMs);
   return { ...rewarded, account: { ...rewarded.account, eventCommunityClaimIds: [...rewarded.account.eventCommunityClaimIds ?? [], `${event.definition.id}:${percent}`].slice(-80) } };
+}
+
+// ../apps/mobile/src/core/winter-hearth-2026.ts
+var WINTER_HEARTH_2026_ID = "EVT_ANNUAL_012_2026";
+var WINTER_HEARTH_2026_START_MS = Date.parse("2026-12-03T00:00:00.000Z");
+var WINTER_HEARTH_2026_END_MS = Date.parse("2026-12-27T00:00:00.000Z");
+var WINTER_HEARTH_LIGHT_RECIPE_IDS = ["CRAFT_FROSTFALL_CHRISTMAS_LIGHTS_2026", "CRAFT_FROSTFALL_CHRISTMAS_LIGHTS_TAILORING_2026"];
+function isWinterHearthLightRecipe(id) {
+  return WINTER_HEARTH_LIGHT_RECIPE_IDS.some((recipe2) => recipe2 === id);
+}
+function winterHearthContentVisible(state) {
+  const event = state.account.liveEvent;
+  return WINTER_HEARTH_GUILD_RELEASED && event?.enabled === true && event.eventId === WINTER_HEARTH_2026_ID;
+}
+function winterHearthLightRecipeAvailable(state, nowMs) {
+  const event = state.account.liveEvent;
+  if (!event || !winterHearthContentVisible(state)) return false;
+  return Number.isFinite(nowMs) && nowMs >= Math.max(event.startsAtMs, WINTER_HEARTH_2026_START_MS) && nowMs < Math.min(event.endsAtMs, WINTER_HEARTH_2026_END_MS);
+}
+function winterHearthCraftSettlementWindow(input) {
+  const { lastClaimAtMs, nowMs, offlineCapSeconds: offlineCapSeconds2, savedEndMs, runtimeEndMs, released } = input;
+  const endsAtMs = Math.min(WINTER_HEARTH_2026_END_MS, Number.isFinite(savedEndMs) ? savedEndMs : Infinity, Number.isFinite(runtimeEndMs) ? runtimeEndMs : Infinity);
+  const expired = !released || nowMs >= endsAtMs;
+  const settledAtMs = !released ? lastClaimAtMs : Math.max(lastClaimAtMs, Math.min(nowMs, endsAtMs - 1));
+  return { expired, elapsedSeconds: Math.max(0, Math.min(offlineCapSeconds2, (settledAtMs - lastClaimAtMs) / 1e3)) };
+}
+
+// ../apps/mobile/src/core/winter-hearth-bonus-windows.ts
+var ZERO = Object.freeze({
+  gatheringSpeedBps: 0,
+  skillXpBps: 0,
+  combatXpBps: 0
+});
+var EXACT = {
+  25: { gatheringSpeedBps: 400, skillXpBps: 0, combatXpBps: 0 },
+  50: { gatheringSpeedBps: 400, skillXpBps: 600, combatXpBps: 0 },
+  75: { gatheringSpeedBps: 400, skillXpBps: 600, combatXpBps: 600 },
+  100: { gatheringSpeedBps: 1e3, skillXpBps: 1e3, combatXpBps: 1e3 }
+};
+function validateWinterHearthBonusWindows(value) {
+  if (!Array.isArray(value) || value.length > 4) throw new Error("Invalid Winter Hearth bonus projection.");
+  const seen = /* @__PURE__ */ new Set(), out = [];
+  for (const item of value) {
+    if (!item || typeof item !== "object") throw new Error("Invalid Winter Hearth bonus window.");
+    const row = item;
+    const percent = Number(row.percent), expected = EXACT[percent];
+    if (!expected || seen.has(percent) || typeof row.startsAt !== "string" || typeof row.endsAt !== "string" || !Number.isFinite(Date.parse(row.startsAt)) || !Number.isFinite(Date.parse(row.endsAt)) || Date.parse(row.startsAt) < Date.parse("2026-12-03T00:00:00Z") || Date.parse(row.endsAt) > Date.parse("2026-12-27T00:00:00Z") || Date.parse(row.startsAt) >= Date.parse(row.endsAt) || row.gatheringSpeedBps !== expected.gatheringSpeedBps || row.skillXpBps !== expected.skillXpBps || row.combatXpBps !== expected.combatXpBps)
+      throw new Error("Untrusted Winter Hearth milestone effect.");
+    seen.add(percent);
+    out.push({
+      percent,
+      startsAt: row.startsAt,
+      endsAt: row.endsAt,
+      ...expected
+    });
+  }
+  return out.sort((a, b) => a.percent - b.percent);
+}
+function winterHearthBonusesAt(windows, atMs) {
+  if (!Number.isFinite(atMs)) return ZERO;
+  let result = ZERO, stage = 0;
+  for (const window of windows) {
+    if (atMs >= Date.parse(window.startsAt) && atMs < Date.parse(window.endsAt) && window.percent > stage) {
+      stage = window.percent;
+      result = EXACT[stage] ?? ZERO;
+    }
+  }
+  return result;
+}
+function winterHearthXpFactorForActionTimes(windows, times, kind) {
+  if (times.length === 0) return 1;
+  let sum = 0;
+  for (const at of times) {
+    const bonus = winterHearthBonusesAt(windows, at);
+    sum += kind === "skill" ? bonus.skillXpBps : bonus.combatXpBps;
+  }
+  return 1 + sum / (times.length * 1e4);
+}
+function winterHearthGatheringTimeline(input, windows) {
+  if (!windows.length) return combatTimeline({
+    ...input,
+    preparationEncounters: 0,
+    preparedCycleSeconds: input.cycleSeconds
+  });
+  const end = input.startsAtMs + Math.max(0, input.elapsedSeconds) * 1e3;
+  const points = [input.startsAtMs, end];
+  const add = (point) => {
+    if (Number.isFinite(point) && point > input.startsAtMs && point < end) points.push(point);
+  };
+  for (const win of windows) {
+    add(Date.parse(win.startsAt));
+    add(Date.parse(win.endsAt));
+  }
+  if (input.candy) {
+    add(input.candy.startsAtMs);
+    add(input.candy.endsAtMs);
+  }
+  const boundaries = [...new Set(points)].sort((a, b) => a - b);
+  let progress = Math.max(0, Math.min(0.999999999, input.progressFraction));
+  const encounters = [];
+  for (let i = 0; i < boundaries.length - 1; i++) {
+    const start = boundaries[i], stop = boundaries[i + 1];
+    if (stop <= start) continue;
+    const bps = winterHearthBonusesAt(windows, start).gatheringSpeedBps;
+    const candy = !!input.candy && start >= input.candy.startsAtMs && start < input.candy.endsAtMs;
+    const effectiveCycle = input.cycleSeconds / (1 + bps / 1e4) / (candy ? 1.1 : 1);
+    const part = combatTimeline({
+      startsAtMs: start,
+      elapsedSeconds: (stop - start) / 1e3,
+      progressFraction: progress,
+      preparationEncounters: 0,
+      cycleSeconds: effectiveCycle,
+      preparedCycleSeconds: effectiveCycle
+    });
+    encounters.push(...part.encounters.map((row) => ({ ...row, candy })));
+    progress = part.nextProgressFraction;
+  }
+  return { encounters, nextProgressFraction: progress, segments: [] };
 }
 
 // ../apps/mobile/src/content/event-collectible-content-active.ts
@@ -49190,39 +49508,6 @@ var GUILD_PET_COLLECTIBLES = [
     rarity: "Epic",
     description: "A tiny guardian hatched under an ancient guild oath."
   }
-];
-
-// ../apps/mobile/src/content/dungeon-shop-collectibles-v1.ts
-var reward2 = (id, kind, name, target2, region, activeBps) => ({
-  id,
-  kind,
-  name,
-  bonusFamilyId: id,
-  target: target2,
-  ownedBps: 50,
-  activeBps,
-  rarity: "Epic",
-  collectionGroup: "profile",
-  region,
-  source: "Dungeon Marks Shop \xB7 " + region,
-  nativeSize: kind === "pet" ? 64 : void 0,
-  description: "A permanent " + region + " Dungeon Marks collectible."
-});
-var DUNGEON_SHOP_COLLECTIBLES_V1 = [
-  reward2("dungeon:asterfall:briarbound-frame", "border", "Briarbound Frame", "gatheringYield", "Asterfall", 200),
-  reward2("dungeon:asterfall:rootbound-sanctuary", "background", "Rootbound Sanctuary", "hp", "Asterfall", 200),
-  reward2("DUNGEON_PET_ASTERFALL_001", "pet", "Oathroot Seedling", "healingEffectiveness", "Asterfall", 300),
-  reward2("dungeon:sunscar:amberglass-loop", "border", "Amberglass Loop", "craftingSpeed", "Sunscar", 200),
-  reward2("dungeon:sunscar:buried-observatory", "background", "Buried Observatory", "skillXp", "Sunscar", 200),
-  reward2("DUNGEON_PET_SUNSCAR_001", "pet", "Vaultscarab", "dropChance", "Sunscar", 300),
-  reward2("dungeon:frostmarch:frostbound-chime", "border", "Frostbound Chime", "fishingSpeed", "Frostmarch", 200),
-  reward2("dungeon:frostmarch:shiverlake-reflections", "background", "Shiverlake Reflections", "defense", "Frostmarch", 200),
-  reward2("DUNGEON_PET_FROSTMARCH_001", "pet", "Choirbell Sprite", "actionSpeed", "Frostmarch", 300)
-];
-var DUNGEON_SHOP_PROFILE_ICONS_V1 = [
-  { id: "dungeon:asterfall:wardens-lantern", name: "Warden's Lantern", rarity: "Rare", group: "Dungeon", region: "Asterfall" },
-  { id: "dungeon:sunscar:solar-vault-key", name: "Solar Vault Key", rarity: "Rare", group: "Dungeon", region: "Sunscar" },
-  { id: "dungeon:frostmarch:resonant-bell", name: "Resonant Bell", rarity: "Rare", group: "Dungeon", region: "Frostmarch" }
 ];
 
 // ../apps/mobile/src/content/collectibles.ts
@@ -49398,16 +49683,20 @@ function entitlementStorageCapacity(state, location) {
 }
 
 // ../apps/mobile/src/core/collectibles.ts
+function collectibleCatalogForState(state, nowMs = Date.now()) {
+  const frostfallIds = new Set(FROSTFALL_PETS.map((row) => row.id));
+  return [...COLLECTIBLES.filter((row) => !frostfallIds.has(row.id)), ...FROSTFALL_PETS.filter((row) => frostfallRewardVisible(state.account, row.id, "pet", nowMs))];
+}
 var ids = (state, kind) => kind === "pet" ? state.account.unlockedCosmeticPetIds ?? [] : kind === "background" ? state.account.unlockedProfileBackgroundIds ?? [] : state.account.unlockedProfileBorderIds ?? [];
 var selected = (state, kind) => kind === "pet" ? state.character?.selectedCosmeticPetId : kind === "background" ? state.character?.profileBackgroundId : state.character?.profileBorderId;
 function unlockCollectible(state, id) {
-  const row = COLLECTIBLES.find((item) => item.id === id);
+  const row = collectibleCatalogForState(state).find((item) => item.id === id);
   if (!row) throw new Error("Unknown collectible.");
   const key = row.kind === "pet" ? "unlockedCosmeticPetIds" : row.kind === "background" ? "unlockedProfileBackgroundIds" : "unlockedProfileBorderIds";
   const owned = state.account[key] ?? [];
   return owned.includes(id) ? state : { ...state, account: { ...state.account, [key]: [...owned, id] } };
 }
-function collectionBonusBreakdown(state, catalog2 = COLLECTIBLES) {
+function collectionBonusBreakdown(state, catalog2 = collectibleCatalogForState(state)) {
   const rows2 = /* @__PURE__ */ new Map();
   for (const row of catalog2) {
     const owned = ids(state, row.kind).includes(row.id), active2 = selected(state, row.kind) === row.id;
@@ -49717,8 +50006,7 @@ function characterPermanentMultipliers(state) {
   if (!c) return result;
   const explorationLevel = state.skills.find((skill2) => skill2.skillId === "exploration")?.level ?? 1;
   result = merge(result, { ...BASE, gatheringSpeedMultiplier: 1 + explorationGatheringSpeedBonus(explorationLevel) });
-  const blessing = selectedFaithBlessing(state);
-  if (blessing) {
+  for (const blessing of selectedFaithBlessings(state)) {
     if (blessing.family === "attack") result = merge(result, { ...BASE, attackMultiplier: 1 + blessing.bonus, combatPowerMultiplier: 1 + blessing.bonus });
     if (blessing.family === "combatSpeed") result = merge(result, { ...BASE, combatSpeedMultiplier: 1 + blessing.bonus });
     if (blessing.family === "defense") result = merge(result, { ...BASE, incomingDamageMultiplier: 1 - blessing.bonus });
@@ -49873,14 +50161,32 @@ function professionActionPace(state, recipe2, mode) {
   const permanent = characterPermanentMultipliers(state);
   const mastery = professionMasteryMultipliers(recipe2.id, state.account.professionMasteryByAction?.[recipe2.id]);
   const affinity = skillAffinityModifiers(state.character?.classId, recipe2.skillId);
-  const faith = selectedFaithBlessing(state);
+  const faith = selectedFaithBlessing(state, "experience");
   const forgeXp = faith?.family === "xp" ? 1 + faith.bonus : 1;
-  const xpPerAction = recipe2.xp * mastery.xp * (mode === "forge" ? forgeXp : permanent.skillXpMultiplier) * affinity.xpMultiplier;
+  const rawXpPerAction = recipe2.xp * mastery.xp * (mode === "forge" ? forgeXp : permanent.skillXpMultiplier) * affinity.xpMultiplier;
+  const xpPerAction = recipe2.skillId === "cooking" && mode === "batch" ? Math.round(rawXpPerAction / 10) * 10 : rawXpPerAction;
   const speed = mastery.speed * (mode === "instant" ? 1 : permanent.craftingSpeedMultiplier) * affinity.speedMultiplier * (mode === "forge" ? 1 + forgeSpeedBonus(forgeLevel(state)) : 1);
   const rawSeconds = recipe2.seconds / Math.max(0.1, speed);
   const cycleSeconds = mode === "instant" ? 0 : mode === "forge" ? Math.max(1, Math.ceil(rawSeconds)) : Math.max(1, rawSeconds);
   return { cycleSeconds, xpPerAction, affinity, mastery, speed };
 }
+
+// ../apps/mobile/src/content/class-skills.ts
+var skill = (id, name, theme) => ({ id, name, theme });
+var guard = skill("guardcraft", "Guardcraft", "Physical protection");
+var ward = skill("warding", "Warding", "Damage warding");
+var CLASS_SKILLS = {
+  IRONWARDEN: [guard, ward],
+  BASTION: [guard, ward],
+  DREADGUARD: [skill("might", "Might", "Weapon power"), ward],
+  DAWNKEEPER: [skill("restoration", "Restoration", "Healing and recovery"), skill("sanctity", "Sanctity", "Sanctified protection")],
+  WAYFINDER: [skill("marksmanship", "Marksmanship", "Ranged power"), skill("tracking", "Tracking", "Hunting precision")],
+  RAVAGER: [skill("might", "Might", "Weapon power"), skill("breaking", "Breaking", "Armor pressure")],
+  HEXWEAVER: [skill("spellcraft", "Spellcraft", "Magical power"), skill("hexcraft", "Hexcraft", "Hex potency")],
+  KNIFE_DANCER: [skill("blade_rhythm", "Blade Rhythm", "Attack rhythm"), skill("precision", "Precision", "Accuracy and evasion")],
+  STONECALLER: [skill("resonance", "Resonance", "Support and recovery"), skill("geomancy", "Geomancy", "Protection and resilience")]
+};
+var classSkillsFor = (id) => CLASS_SKILLS[id];
 
 // ../apps/mobile/src/core/regional-class-counter.ts
 var MATCHUPS = {
@@ -50276,6 +50582,7 @@ function encounterLockRequirement(state, monster) {
 
 // ../apps/mobile/src/core/processing.ts
 init_progression();
+init_meal_buffs();
 var MAX_PROCESSING_BATCHES = 1e4;
 function storedQuantity2(stacks, itemId) {
   return stacks.filter((stack) => stack.itemId === itemId).reduce((total, stack) => total + stack.quantity, 0);
@@ -50311,6 +50618,7 @@ function processingAvailability(state, recipeId, batches = 1, allowActivityRepla
 }
 function startProcessingBatch(state, recipeId, batches, nowMs) {
   if (!Number.isFinite(nowMs) || nowMs < 0) throw new Error("Invalid processing time.");
+  if (isWinterHearthLightRecipe(recipeId) && !winterHearthLightRecipeAvailable(state, nowMs)) throw new Error("Winter Hearth crafting is closed.");
   const status = processingAvailability(state, recipeId, batches);
   if (!status.ready) throw new Error(status.reason);
   const recipe2 = status.recipe;
@@ -50330,8 +50638,10 @@ function startProcessingBatch(state, recipeId, batches, nowMs) {
     inputsPerBatch: recipe2.inputs.map((input) => ({ ...input })),
     goldPerBatch: recipe2.gold,
     outputPerBatch: { ...recipe2.output },
+    ...recipe2.skillId === "cooking" && mealBonusDef(recipe2.output.itemId) ? { fixedMealOutput: true } : {},
     cycleSeconds: pace.cycleSeconds,
-    xpPerBatch: pace.xpPerAction
+    xpPerBatch: pace.xpPerAction,
+    ...isWinterHearthLightRecipe(recipe2.id) ? { seasonEndsAtMs: Math.min(WINTER_HEARTH_2026_END_MS, state.account.liveEvent.endsAtMs) } : {}
   };
   return {
     ...state,
@@ -50361,8 +50671,8 @@ function previewProcessingReward(state, elapsed) {
   const xpKey = activity.skillAffinity ? affinityXpRemainderKey(state.character.id, processing.skillId) : `xp:processing:${processing.skillId}`, rawXp = actions * processing.xpPerBatch + (remainders[xpKey] ?? 0), wholeXp = Math.floor(rawXp + 1e-10), skill2 = state.skills.find((row) => row.skillId === processing.skillId);
   const xp = Math.max(0, Math.min(wholeXp, totalXpAtLevel(100) - (skill2?.xp ?? 0)));
   remainders[xpKey] = xp < wholeXp ? 0 : Math.max(0, rawXp - wholeXp);
-  const mastery = professionMasteryMultipliers(processing.recipeId, state.account.professionMasteryByAction?.[processing.recipeId]), yieldKey = `mastery:processing:${processing.recipeId}:yield`, yieldRaw = actions * processing.outputPerBatch.quantity * mastery.yield + (remainders[yieldKey] ?? 0), yieldQuantity = Math.floor(yieldRaw + 1e-10);
-  remainders[yieldKey] = Math.max(0, yieldRaw - yieldQuantity);
+  const mastery = professionMasteryMultipliers(processing.recipeId, state.account.professionMasteryByAction?.[processing.recipeId]), yieldKey = `mastery:processing:${processing.recipeId}:yield`, yieldRaw = actions * processing.outputPerBatch.quantity * mastery.yield + (remainders[yieldKey] ?? 0), yieldQuantity = processing.fixedMealOutput ? actions : Math.floor(yieldRaw + 1e-10);
+  if (!processing.fixedMealOutput) remainders[yieldKey] = Math.max(0, yieldRaw - yieldQuantity);
   const first = Math.max(0, (1 - (activity.progressFraction ?? 0)) * processing.cycleSeconds), times = Array.from({ length: actions }, (_, index) => Math.round(activity.lastClaimAtMs + (first + index * processing.cycleSeconds) * 1e3));
   const qualifyingActivitySeconds = remaining ? elapsed : actions ? Math.max(0, Math.min(elapsed, (times[times.length - 1] - activity.lastClaimAtMs) / 1e3)) : 0;
   return {
@@ -52741,50 +53051,107 @@ function equipmentSetCombatModifiers(state, baseCritChance = 0.05, baseAccuracy 
   };
 }
 
+// ../apps/mobile/src/core/class-skills.ts
+init_meal_buffs();
+init_progression();
+var MAX_CLASS_SKILL_XP = classCombatSkillTotalXpAtLevel(100);
+var CLASS_DRILL_BASE_XP = 24;
+var normalizeTrainingFocus = (v) => v === "primary" || v === "secondary" ? v : "balanced";
+function normalizeClassSkills(id, raw2) {
+  const rows2 = Array.isArray(raw2) ? raw2 : [];
+  return classSkillsFor(id).map((d) => {
+    const entry2 = rows2.find((r) => r?.skillId === d.id);
+    const xp = typeof entry2?.xp === "number" && Number.isFinite(entry2.xp) ? Math.max(0, Math.min(MAX_CLASS_SKILL_XP, Math.floor(entry2.xp))) : 0;
+    return { skillId: d.id, xp, level: classCombatSkillLevelFromXp(xp) };
+  });
+}
+var characterClassSkills = (c) => normalizeClassSkills(c.classId, c.classSkills);
+function awardCombatClassXp(c, kills, perKill, firstFocus) {
+  kills = Number.isFinite(kills) ? Math.floor(kills) : 0;
+  if (kills <= 0 || !Number.isFinite(perKill) || perKill <= 0) return { character: c, awards: characterClassSkills(c).map((s) => ({ skillId: s.skillId, xp: 0 })) };
+  const first = awardClassSkillXp(c, perKill, firstFocus ?? normalizeTrainingFocus(c.trainingFocus));
+  const rest = awardClassSkillXp(first.character, Math.max(0, kills - 1) * perKill);
+  return { character: rest.character, awards: rest.awards.map((a, i) => ({ ...a, xp: a.xp + first.awards[i].xp })) };
+}
+function normalizeClassDrills(raw2) {
+  if (!raw2 || !Number.isSafeInteger(raw2.lastClaimAtMs) || raw2.lastClaimAtMs < 0) return void 0;
+  return { lastClaimAtMs: raw2.lastClaimAtMs, progressMs: Math.min(59999, Math.max(0, Math.floor(Number(raw2.progressMs) || 0))), focus: normalizeTrainingFocus(raw2.focus), xpPerDrill: Math.max(CLASS_DRILL_BASE_XP, Math.min(120, Number(raw2.xpPerDrill) || CLASS_DRILL_BASE_XP)) };
+}
+function trainingFocusShares(focus) {
+  return focus === "primary" ? [0.75, 0.25] : focus === "secondary" ? [0.25, 0.75] : [0.5, 0.5];
+}
+function awardClassSkillXp(c, pool, focus = normalizeTrainingFocus(c.trainingFocus)) {
+  const shares = trainingFocusShares(focus), remainders = { ...c.classSkillRemainders ?? {} };
+  if (!Number.isFinite(pool)) pool = 0;
+  const awards = [];
+  const classSkills = characterClassSkills(c).map((s, i) => {
+    const prior = Number.isFinite(remainders[s.skillId]) ? Math.max(0, Math.min(0.999999, remainders[s.skillId])) : 0;
+    const amount = Math.max(0, pool) * shares[i] + prior;
+    const whole = Math.floor(amount + 1e-9), gain = Math.min(MAX_CLASS_SKILL_XP - s.xp, whole);
+    remainders[s.skillId] = s.xp + gain >= MAX_CLASS_SKILL_XP ? 0 : Math.max(0, amount - whole);
+    awards.push({ skillId: s.skillId, xp: gain });
+    return { ...s, xp: s.xp + gain, level: classCombatSkillLevelFromXp(s.xp + gain) };
+  });
+  return { character: { ...c, classSkills, classSkillRemainders: remainders }, awards };
+}
+function characterClassEffects(c) {
+  const [a, b] = characterClassSkills(c).map((s) => (s.level - 1) / 99);
+  const base = { attack: 1, hp: 1, defense: 1, accuracy: 0, evasion: 0, haste: 0, ward: 0, penetration: 0, potency: 0, classHealing: 1 };
+  switch (c.classId) {
+    case "IRONWARDEN":
+      return { ...base, defense: 1 + 0.08 * a, ward: 0.05 * b };
+    case "BASTION":
+      return { ...base, defense: 1 + 0.1 * a, ward: 0.06 * b };
+    case "DREADGUARD":
+      return { ...base, attack: 1 + 0.07 * a, ward: 0.05 * b };
+    case "DAWNKEEPER":
+      return { ...base, attack: 1 + 0.04 * a, classHealing: 1 + 0.1 * a, hp: 1 + 0.06 * b, ward: 0.04 * b };
+    case "WAYFINDER":
+      return { ...base, attack: 1 + 0.07 * a, accuracy: 0.04 * b, haste: 0.02 * b };
+    case "RAVAGER":
+      return { ...base, attack: 1 + 0.07 * a + 0.02 * b, penetration: 0.05 * b };
+    case "HEXWEAVER":
+      return { ...base, attack: 1 + 0.07 * a + 0.02 * b, potency: 0.05 * b };
+    case "KNIFE_DANCER":
+      return { ...base, attack: 1 + 0.03 * a, haste: 0.04 * a, accuracy: 0.03 * b, evasion: 0.06 * b };
+    case "STONECALLER":
+      return { ...base, attack: 1 + 0.04 * a, classHealing: 1 + 0.08 * a, defense: 1 + 0.08 * b, ward: 0.03 * b };
+  }
+  return base;
+}
+function settleClassDrills(state, now, capSeconds) {
+  const c = state.character, drill = normalizeClassDrills(c?.classTraining);
+  const empty2 = { xp: 0, gold: 0, kills: 0, items: [], elapsedSeconds: 0 };
+  if (!c || !drill || !Number.isFinite(now) || now <= drill.lastClaimAtMs) return { state, reward: empty2 };
+  const rawSpeed = mealSpeedFactor(c, "noncombat");
+  const speed = Number.isFinite(rawSpeed) && rawSpeed > 0 ? rawSpeed : 1;
+  const elapsed = Math.min(Math.max(0, Number.isFinite(capSeconds) ? capSeconds : 0) * 1e3, now - drill.lastClaimAtMs);
+  const total = elapsed * speed + drill.progressMs, actions = Math.floor(total / 6e4);
+  let character = c;
+  const awards = {};
+  const apply = (count, focus2) => {
+    if (!count) return;
+    const earned = awardClassSkillXp(character, drill.xpPerDrill * count, focus2);
+    character = earned.character;
+    for (const a of earned.awards) awards[a.skillId] = (awards[a.skillId] ?? 0) + a.xp;
+  };
+  const focus = normalizeTrainingFocus(c.trainingFocus);
+  let completed = characterClassSkills(c).every((s) => s.level === 100) ? 0 : Math.min(1, actions);
+  apply(completed, drill.focus);
+  const shares = trainingFocusShares(focus);
+  const remainingToCap = Math.max(...characterClassSkills(character).map((s, i) => Math.max(0, Math.ceil((MAX_CLASS_SKILL_XP - s.xp - (character.classSkillRemainders?.[s.skillId] ?? 0)) / (drill.xpPerDrill * shares[i])))));
+  const rest = Math.min(Math.max(0, actions - completed), remainingToCap);
+  apply(rest, focus);
+  completed += rest;
+  const capped = characterClassSkills(character).every((s) => s.level === 100);
+  character = { ...character, classTraining: capped ? void 0 : { ...drill, lastClaimAtMs: now, progressMs: Math.floor(total % 6e4), focus: actions ? normalizeTrainingFocus(c.trainingFocus) : drill.focus } };
+  const qualified = capped ? Math.max(0, Math.min(elapsed, (completed * 6e4 - drill.progressMs) / speed)) : elapsed;
+  return { state: { ...state, character }, reward: { ...empty2, elapsedSeconds: Math.floor(elapsed / 1e3), qualifyingActivitySeconds: Math.floor(qualified / 1e3), trainingActions: completed, classSkillXp: Object.entries(awards).map(([skillId, xp]) => ({ skillId, xp })) } };
+}
+
 // ../apps/mobile/src/core/game.ts
 init_faith2();
 init_faith();
-
-// ../apps/mobile/src/core/profile-icons.ts
-var EVENT_PROFILE_ICON_ARTWORK_IDS = /* @__PURE__ */ new Set([
-  "event:veilbreak-2026-lantern-warden",
-  "event:veilbreak-2026-pumpkin-moon",
-  "event:frostfall-2026-snowbell"
-]);
-var PROFILE_ICON_CATALOG = [
-  { id: "starter:hooded-ranger", name: "Hooded Ranger", group: "Starter", source: "Available from the start." },
-  { id: "starter:armored-sentinel", name: "Armored Sentinel", group: "Starter", source: "Available from the start." },
-  { id: "starter:masked-spellcaster", name: "Masked Spellcaster", group: "Starter", source: "Available from the start." },
-  { id: "starter:traveling-alchemist", name: "Traveling Alchemist", group: "Starter", source: "Available from the start." },
-  { id: "starter:dawn-priestess", name: "Dawn Priestess", group: "Starter", source: "Available from the start." },
-  { id: "starter:stonebound-explorer", name: "Stonebound Explorer", group: "Starter", source: "Available from the start." },
-  { id: "starter:gilded-duelist", name: "Gilded Duelist", group: "Starter", source: "Available from the start." },
-  { id: "starter:runic-scholar", name: "Runic Scholar", group: "Starter", source: "Available from the start." },
-  { id: "starter:dune-warden", name: "Dune Warden", group: "Starter", source: "Available from the start." },
-  { id: "creature:FALLEN_KNIGHT", name: "Fallen Knight", group: "Combat", source: "Defeat the Fallen Knight.", bossId: "FALLEN_KNIGHT" },
-  { id: "guild:stormwatch-crest", name: "Stormwatch Crest", group: "Guild", source: "Guild Token Shop \xB7 Guild Level 4" },
-  ...DUNGEON_SHOP_PROFILE_ICONS_V1.map((row) => ({ id: row.id, name: row.name, group: "Dungeon", source: "Dungeon Marks Shop \xB7 " + row.region }))
-];
-function profileIconCollection(state) {
-  const selected2 = state.character?.profileIconId ?? `class:${state.character?.classId ?? "IRONWARDEN"}`;
-  const activeClass = state.character?.classId ?? "IRONWARDEN";
-  const base = CLASSES.filter((row) => row.id === activeClass).map((row) => ({ id: `class:${row.id}`, name: row.name, group: "Class", source: "Your active character class.", unlocked: true, artworkReady: true, selected: selected2 === `class:${row.id}` }));
-  const owned = new Set(state.account.unlockedProfileIconIds ?? []);
-  const characters = [state.character, ...(state.otherCharacters ?? []).map((row) => row.character)];
-  const portraits = PROFILE_ICON_CATALOG.filter((row) => row.group !== "Dungeon" || DUNGEON_MARKS_SHOP_RELEASED || owned.has(row.id)).map((row) => ({ ...row, artworkReady: true, selected: selected2 === row.id, unlocked: row.group === "Starter" || owned.has(row.id) || row.monsterId !== void 0 && characters.some((c) => (c?.monsterMasteryPoints?.[row.monsterId] ?? 0) >= 10) || row.bossId !== void 0 && state.defeatedBossIds.includes(row.bossId) }));
-  const known2 = new Set(portraits.map((row) => row.id));
-  const rewards = LIVE_EVENT_CATALOG.flatMap((event) => [...CLASSES.flatMap((c) => event.milestones(c.id).map((row) => row.reward)), ...event.shop.map((row) => row.reward), ...event.communityMilestones.flatMap((row) => row.reward ? [row.reward] : []), ...event.discoveries.map((row) => row.reward)]);
-  const events = [...new Map(rewards.filter((row) => row.kind === "profile_icon" && !known2.has(row.id)).map((row) => [row.id, row])).values()];
-  return [...base, ...portraits, ...events.map((row) => ({ id: row.id, name: row.name, group: "Event", source: "Earned festival reward.", unlocked: owned.has(row.id), artworkReady: EVENT_PROFILE_ICON_ARTWORK_IDS.has(row.id), selected: selected2 === row.id }))];
-}
-function canUseProfileIcon(state, id) {
-  return PROFILE_ICON_CATALOG.some((row) => row.id === id && row.group === "Starter") || profileIconCollection(state).some((row) => row.id === id && row.unlocked);
-}
-function selectProfileIcon(state, id) {
-  if (!state.character) throw new Error("Create a character before choosing a profile icon.");
-  if (!canUseProfileIcon(state, id)) throw new Error("This profile icon is not unlocked.");
-  return { ...state, character: { ...state.character, profileIconId: id } };
-}
 
 // ../apps/mobile/src/core/weekly-orders-v41.ts
 var DAY_MS = 864e5;
@@ -54449,6 +54816,7 @@ function beginAlchemyBatch(state, recipeId, nowMs, batches) {
 }
 function beginProcessingBatch(state, recipeId, nowMs, batches) {
   const ready = finishClassDrills(state, nowMs);
+  if (isWinterHearthLightRecipe(recipeId) && !winterHearthLightRecipeAvailable(ready, nowMs)) throw new Error("Winter Hearth crafting is closed.");
   if (batches === void 0) return startProcessingUntilLimited(ready, recipeId, nowMs, offlineCapSeconds(ready));
   const capacity = processingRunCapacity(ready, recipeId, offlineCapSeconds(ready));
   if (!Number.isSafeInteger(batches) || batches < 1 || batches > capacity.availableBatches) throw new Error("Selected processing count exceeds available materials, Gold or AFK time.");
@@ -54588,7 +54956,7 @@ function effectiveStats(state) {
   defense *= mastery.defense;
   const permanent = characterPermanentMultipliers(state);
   attack *= permanent.combatPowerMultiplier;
-  const faithBlessing = selectedFaithBlessing(state);
+  const faithBlessing = selectedFaithBlessing(state, "combat");
   if (faithBlessing?.family === "hp") hp = Math.ceil(hp * (1 + faithBlessing.bonus));
   const prep = c.preparation ? preparationEffects(c.preparation) : void 0;
   if (prep) attack *= prep.attack;
@@ -54639,7 +55007,7 @@ function startCombat(state, monsterId, nowMs, combatTacticId = "balanced", huntG
   if (!cumulativeMonsterUnlockIds(state).includes(monsterId) && !(m.regionalAreaAutoUnlock && state.character.level >= areaUnlockLevel)) throw new Error("Monster not unlocked");
   if (m.boss) throw new Error("Bosses use challengeFallenKnight");
   if (zoneIdForTarget(monsterId) !== currentRegionId(state)) throw new Error(`Travel to ${m.zone} before fighting ${m.name}`);
-  return { ...state, outOfCombatSinceMs: void 0, character: { ...state.character, activityQueuePausedReason: void 0 }, activity: { kind: "combat", targetId: monsterId, combatTacticId: normalizeCombatTactic(combatTacticId), ...huntGoalSnapshot(normalizeHuntGoalId(huntGoalId)) ? { huntGoal: huntGoalSnapshot(normalizeHuntGoalId(huntGoalId)) } : {}, sessionKills: 0, sessionChampions: 0, startedAtMs: nowMs, lastClaimAtMs: nowMs, classFocus: normalizeTrainingFocus(state.character.trainingFocus), classTrainingSnapshot: { faithBlessingId: selectedFaithBlessing(state)?.id }, environment: captureActivityEnvironment(monsterId, nowMs) } };
+  return { ...state, outOfCombatSinceMs: void 0, character: { ...state.character, activityQueuePausedReason: void 0 }, activity: { kind: "combat", targetId: monsterId, combatTacticId: normalizeCombatTactic(combatTacticId), ...huntGoalSnapshot(normalizeHuntGoalId(huntGoalId)) ? { huntGoal: huntGoalSnapshot(normalizeHuntGoalId(huntGoalId)) } : {}, sessionKills: 0, sessionChampions: 0, startedAtMs: nowMs, lastClaimAtMs: nowMs, classFocus: normalizeTrainingFocus(state.character.trainingFocus), classTrainingSnapshot: { faithBlessingId: selectedFaithBlessing(state, "combat")?.id }, environment: captureActivityEnvironment(monsterId, nowMs) } };
 }
 function regionalEquippedTierGap(state, expectedTier) {
   if (!state.character || expectedTier <= 0) return 0;
@@ -55098,11 +55466,14 @@ function previewStandardActivityRewardRaw(state, effectiveNowMs) {
       const actions2 = Math.floor(totalSeconds / routeSeconds);
       const nextProgressFraction = actions2 > 0 ? totalSeconds % routeSeconds / routeSeconds : totalSeconds / routeSeconds;
       let boostedActions = 0;
+      const actionTimes = [];
       for (let i = 1; i <= actions2; i++) {
         const at = state.activity.lastClaimAtMs + (i * routeSeconds - bankedSeconds) * 1e3;
+        actionTimes.push(at);
         if (candy && at > candy.startsAtMs && at <= candy.endsAtMs) boostedActions++;
       }
-      return { xp: Math.floor((actions2 + 0.1 * boostedActions) * route.xp * characterPermanentMultipliers(state).skillXpMultiplier), gold: 0, items: [], kills: actions2, elapsedSeconds: elapsed, nextProgressFraction, explorationDiscoveries: actions2 && route.unlockMonsterId ? [route.unlockMonsterId] : [] };
+      const winterXp = WINTER_HEARTH_GUILD_RELEASED ? winterHearthXpFactorForActionTimes(state.winterHearthBonusWindows ?? [], actionTimes, "skill") : 1;
+      return { xp: Math.floor((actions2 + 0.1 * boostedActions) * route.xp * characterPermanentMultipliers(state).skillXpMultiplier * winterXp), gold: 0, items: [], kills: actions2, elapsedSeconds: elapsed, nextProgressFraction, explorationDiscoveries: actions2 && route.unlockMonsterId ? [route.unlockMonsterId] : [] };
     }
     const g = [...GATHERING, ...HERB_NODES].find((x) => x.id === state.activity.targetId);
     if (!g) return { xp: 0, gold: 0, items: [], kills: 0, elapsedSeconds: elapsed };
@@ -55112,7 +55483,21 @@ function previewStandardActivityRewardRaw(state, effectiveNowMs) {
     const specialtySpeed = g.skillId === "fishing" ? multipliers.fishingSpeedMultiplier : g.skillId === "herbalism" ? multipliers.herbalismSpeedMultiplier : 1;
     const effectiveActionSeconds = g.seconds * GATHER_TIME_SCALE * pacing.timeMultiplier * effect3.actionTimeMultiplier * (method?.actionTimeMultiplier ?? 1) / (multipliers.gatheringSpeedMultiplier * specialtySpeed * mastery2.speed * affinity.speedMultiplier * dailySupplySpeedMultiplier(state, "gathering_speed", elapsed));
     const elapsedMs = Math.min(offlineCapSeconds(state) * 1e3, Math.max(0, effectiveNowMs - state.activity.lastClaimAtMs));
-    const timeline = combatTimeline({ startsAtMs: state.activity.lastClaimAtMs, elapsedSeconds: elapsedMs / 1e3, progressFraction: state.activity.progressFraction ?? 0, preparationEncounters: 0, cycleSeconds: effectiveActionSeconds, preparedCycleSeconds: effectiveActionSeconds, candy: eventCandyWindow(state, "skill") });
+    const timeline = WINTER_HEARTH_GUILD_RELEASED && state.winterHearthBonusWindows?.length ? winterHearthGatheringTimeline({
+      startsAtMs: state.activity.lastClaimAtMs,
+      elapsedSeconds: elapsedMs / 1e3,
+      progressFraction: state.activity.progressFraction ?? 0,
+      cycleSeconds: effectiveActionSeconds,
+      candy: eventCandyWindow(state, "skill")
+    }, state.winterHearthBonusWindows) : combatTimeline({
+      startsAtMs: state.activity.lastClaimAtMs,
+      elapsedSeconds: elapsedMs / 1e3,
+      progressFraction: state.activity.progressFraction ?? 0,
+      preparationEncounters: 0,
+      cycleSeconds: effectiveActionSeconds,
+      preparedCycleSeconds: effectiveActionSeconds,
+      candy: eventCandyWindow(state, "skill")
+    });
     const actions = timeline.encounters.length, candyActions = timeline.encounters.filter((row) => row.candy).length;
     const candyXpMultiplier = actions ? 1 + 0.1 * candyActions / actions : 1;
     const seed = `${state.character.id}:${state.activity.lastClaimAtMs}:${g.id}:yield`;
@@ -55122,7 +55507,7 @@ function previewStandardActivityRewardRaw(state, effectiveNowMs) {
     const quantity2 = Math.floor(quantityFloat);
     const skill2 = state.skills.find((x) => x.skillId === g.skillId);
     const xpKey = affinityXpRemainderKey(state.character.id, g.skillId);
-    const gain = settleAffinitySkillXp(actions * g.xp * effect3.xpMultiplier * (method?.xpMultiplier ?? 1) * multipliers.skillXpMultiplier * mastery2.xp * affinity.xpMultiplier * candyXpMultiplier * gatheringToolSkillXpMultiplier(state, g.skillId), state.rewardRemainders?.[xpKey], totalXpAtLevel(100) - (skill2?.xp ?? 0));
+    const gain = settleAffinitySkillXp(actions * g.xp * effect3.xpMultiplier * (method?.xpMultiplier ?? 1) * multipliers.skillXpMultiplier * mastery2.xp * affinity.xpMultiplier * candyXpMultiplier * gatheringToolSkillXpMultiplier(state, g.skillId) * (WINTER_HEARTH_GUILD_RELEASED ? winterHearthXpFactorForActionTimes(state.winterHearthBonusWindows ?? [], timeline.encounters.map((row) => row.atMs), "skill") : 1), state.rewardRemainders?.[xpKey], totalXpAtLevel(100) - (skill2?.xp ?? 0));
     const xp = gain.xp;
     const items2 = quantity2 ? [{ itemId: g.itemId, quantity: quantity2 }] : [];
     if (g.skillId === "mining") {
@@ -55181,7 +55566,8 @@ function previewStandardActivityRewardRaw(state, effectiveNowMs) {
   }
   const combatXpScale = characterCombatXpScale(m.level, m.boss);
   const rewardItems = items, champion = championBonus(Math.floor(m.xp * combatXpScale * effect2.xpMultiplier * multipliers.characterXpMultiplier), Math.floor(m.gold * effect2.goldMultiplier * multipliers.goldMultiplier), sim.championKills);
-  const baseXpPerKill = m.xp * combatXpScale * effect2.xpMultiplier * multipliers.characterXpMultiplier * combatCandy, baseGoldPerKill = m.gold * effect2.goldMultiplier * multipliers.goldMultiplier, sessionKills = state.activity.sessionKills ?? 0;
+  const winterCombatXp = WINTER_HEARTH_GUILD_RELEASED ? winterHearthXpFactorForActionTimes(state.winterHearthBonusWindows ?? [], sim.completed.map((row) => row.atMs), "combat") : 1;
+  const baseXpPerKill = m.xp * combatXpScale * effect2.xpMultiplier * multipliers.characterXpMultiplier * combatCandy * winterCombatXp, baseGoldPerKill = m.gold * effect2.goldMultiplier * multipliers.goldMultiplier, sessionKills = state.activity.sessionKills ?? 0;
   const xpFractionKey = "combat:base-xp-fraction", goldFractionKey = "combat:base-gold-fraction";
   const storedFraction = (key) => {
     const value = state.rewardRemainders?.[key];
@@ -55268,34 +55654,52 @@ function projectedIdleContext(state, reward3, settleAtMs) {
 }
 function idleRuleSettlementWindow(state, nowMs) {
   const rule = activeIdleRuleForState(state), activity = state.activity;
-  if (!activity || !state.character) return { settleAtMs: nowMs, shouldStop: false, safety: false, combatRecovery: false };
+  if (!activity || !state.character) return { supply: previewStandardActivityRewardWithSupplies(state, nowMs), settleAtMs: nowMs, shouldStop: false, safety: false, combatRecovery: false };
   const node = [...GATHERING, ...HERB_NODES].find((row) => row.id === activity.targetId), queueGoal = activity.queueGoal;
   const condition = queueGoal ? { id: "queue-goal", kind: queueGoal.kind, targetId: queueGoal.kind === "item_quantity" ? node?.itemId : queueGoal.kind === "skill_level" ? node?.skillId : void 0, value: queueGoal.value, enabled: true } : activity.kind === "combat" && activity.huntGoal ? { id: "hunt-goal-condition", kind: activity.huntGoal.kind, targetId: activity.targetId, value: activity.huntGoal.value, enabled: true } : void 0;
   const goalRule = condition && activity.queueGoalCompletedAtMs === void 0 ? { id: "activity-goal", characterId: state.character.id, name: "Activity goal", conditions: [condition], stopIfOutOfFood: false, stopIfRewardsWouldOverflow: false, finishCurrentCycle: true } : void 0;
-  if (!rule && !goalRule && !activity.queueManaged && !state.character.activityQueue?.length) return { settleAtMs: nowMs, shouldStop: false, safety: false, combatRecovery: false };
+  if (!rule && !goalRule && !activity.queueManaged && !state.character.activityQueue?.length) return { supply: previewStandardActivityRewardWithSupplies(state, nowMs), settleAtMs: nowMs, shouldStop: false, safety: false, combatRecovery: false };
   const capAtMs = activity.lastClaimAtMs + offlineCapSeconds(state) * 1e3, upper = Math.max(activity.lastClaimAtMs, Math.min(nowMs, capAtMs));
   const evaluateAt = (time) => {
-    const reward3 = previewStandardActivityRewardWithSupplies(state, time).reward, ctx = projectedIdleContext(state, reward3, time), saved = rule ? evaluateIdleRuleSet(rule, ctx) : { shouldStop: false, safety: false }, goal = goalRule ? evaluateIdleRuleSet(goalRule, ctx) : { shouldStop: false, safety: false };
+    const supply2 = previewStandardActivityRewardWithSupplies(state, time);
+    const reward3 = supply2.reward, ctx = projectedIdleContext(state, reward3, time), saved = rule ? evaluateIdleRuleSet(rule, ctx) : { shouldStop: false, safety: false }, goal = goalRule ? evaluateIdleRuleSet(goalRule, ctx) : { shouldStop: false, safety: false };
     const evaluation = reward3.stoppedReason ? { shouldStop: true, safety: true, reason: reward3.stoppedReason } : saved.safety ? saved : goal.shouldStop ? { ...goal, reason: queueGoal ? "Queue goal reached." : `Hunt goal reached: ${activity.huntGoal?.label ?? "target"}.` } : saved;
     const combatRecovery = activity.kind === "combat" && (!!reward3.stoppedReason?.toLowerCase().includes("injured") || saved.safety && (saved.reason === "Food reserve is empty." || rule?.conditions.some((row) => row.id === saved.conditionId && row.kind === "food_below") === true));
-    return { reward: reward3, evaluation, combatRecovery };
+    return { supply: supply2, evaluation, combatRecovery };
   };
   const upperResult = evaluateAt(upper);
-  if (!upperResult.evaluation.shouldStop) return { settleAtMs: upper, shouldStop: false, safety: false, combatRecovery: false };
-  const atStart = evaluateAt(activity.lastClaimAtMs);
-  if (atStart.evaluation.shouldStop) return { settleAtMs: activity.lastClaimAtMs, shouldStop: true, safety: atStart.evaluation.safety, combatRecovery: atStart.combatRecovery, reason: atStart.evaluation.reason ?? "Idle Rule target already reached." };
+  if (!upperResult.evaluation.shouldStop) return { supply: upperResult.supply, settleAtMs: upper, shouldStop: false, safety: false, combatRecovery: false };
+  const atStart = upper === activity.lastClaimAtMs ? upperResult : evaluateAt(activity.lastClaimAtMs);
+  if (atStart.evaluation.shouldStop) return { supply: atStart.supply, settleAtMs: activity.lastClaimAtMs, shouldStop: true, safety: atStart.evaluation.safety, combatRecovery: atStart.combatRecovery, reason: atStart.evaluation.reason ?? "Idle Rule target already reached." };
   let low = activity.lastClaimAtMs, high = upper;
+  let final = upperResult, below = atStart;
   while (high - low > 1) {
-    const mid = low + Math.floor((high - low) / 2);
-    if (evaluateAt(mid).evaluation.shouldStop) high = mid;
-    else low = mid;
+    const mid = low + Math.floor((high - low) / 2), candidate = evaluateAt(mid);
+    if (candidate.evaluation.shouldStop) {
+      high = mid;
+      final = candidate;
+    } else {
+      low = mid;
+      below = candidate;
+    }
   }
-  let settleAtMs = high;
-  let final = evaluateAt(settleAtMs);
+  let settleAtMs = high, supply = final.supply;
   if (final.evaluation.safety && final.evaluation.reason === "Storage cannot safely accept the next reward." && settleAtMs > activity.lastClaimAtMs) {
     settleAtMs = Math.max(activity.lastClaimAtMs, settleAtMs - 1);
+    supply = settleAtMs === low ? below.supply : previewStandardActivityRewardWithSupplies(state, settleAtMs);
   }
-  return { settleAtMs, shouldStop: true, safety: final.evaluation.safety, combatRecovery: final.combatRecovery, reason: final.evaluation.reason ?? "Configured Idle Rule target reached." };
+  return { supply, settleAtMs, shouldStop: true, safety: final.evaluation.safety, combatRecovery: final.combatRecovery, reason: final.evaluation.reason ?? "Configured Idle Rule target reached." };
+}
+function processingSettlementWindow(state, nowMs) {
+  const activity = state.activity, processing = activity.processing;
+  if (!isWinterHearthLightRecipe(processing.recipeId)) return { expired: false, elapsedSeconds: Math.min(offlineCapSeconds(state), Math.max(0, (nowMs - activity.lastClaimAtMs) / 1e3)) };
+  const runtime = state.account.liveEvent;
+  return winterHearthCraftSettlementWindow({ lastClaimAtMs: activity.lastClaimAtMs, nowMs, offlineCapSeconds: offlineCapSeconds(state), savedEndMs: processing.seasonEndsAtMs, runtimeEndMs: runtime?.eventId === WINTER_HEARTH_2026_ID ? runtime.endsAtMs : void 0, released: WINTER_HEARTH_GUILD_RELEASED });
+}
+function processingTimedPreview(state, nowMs) {
+  const window = processingSettlementWindow(state, nowMs), elapsed = window.elapsedSeconds;
+  const raw2 = dailySupplyAdjustTimedCraftReward(state, previewProcessingReward(state, dailySupplyCraftWorkSeconds(state, elapsed)), elapsed);
+  return { window, raw: { ...raw2, xp: Math.floor((raw2.xp ?? 0) * (WINTER_HEARTH_GUILD_RELEASED ? winterHearthXpFactorForActionTimes(state.winterHearthBonusWindows ?? [], raw2.craftingCompletedAtMs ?? [], "skill") : 1)), ...timedEventRewards(state, "crafting", raw2.craftingCompletedAtMs ?? []) } };
 }
 function previewActivityReward(state, nowMs) {
   if (state.character?.classTraining) return settleClassDrills(state, nowMs, offlineCapSeconds(state)).reward;
@@ -55308,12 +55712,12 @@ function previewActivityReward(state, nowMs) {
     return previewDailySupplyTimedReward(state, base, "crafting").reward;
   }
   if (state.activity?.kind === "processing") {
-    const source = state.activity;
-    const elapsed = Math.min(offlineCapSeconds(state), Math.max(0, (nowMs - state.activity.lastClaimAtMs) / 1e3)), raw2 = dailySupplyAdjustTimedCraftReward(state, previewProcessingReward(state, dailySupplyCraftWorkSeconds(state, elapsed)), elapsed), base = { ...raw2, ...timedEventRewards(state, "crafting", raw2.craftingCompletedAtMs ?? []) };
-    return previewDailySupplyTimedReward(state, base, "crafting").reward;
+    const { window, raw: raw2 } = processingTimedPreview(state, nowMs);
+    const reward4 = previewDailySupplyTimedReward(state, raw2, "crafting").reward;
+    return window.expired ? { ...reward4, stoppedReason: "Winter Hearth crafting ended. Unfinished reservations are refunded." } : reward4;
   }
   if (!state.activity || !state.character) return { xp: 0, gold: 0, items: [], kills: 0, elapsedSeconds: 0 };
-  const idleWindow = idleRuleSettlementWindow(state, nowMs), reward3 = previewStandardActivityRewardWithSupplies(state, idleWindow.settleAtMs).reward;
+  const idleWindow = idleRuleSettlementWindow(state, nowMs), reward3 = idleWindow.supply.reward;
   return idleWindow.shouldStop && !reward3.stoppedReason ? { ...reward3, stoppedReason: idleWindow.reason } : reward3;
 }
 function refreshQuests(state, lastCombatTarget, lastKills = 0) {
@@ -55477,7 +55881,7 @@ function claimActivitySegmentRaw(state, nowMs) {
   if (state.activity?.kind === "alchemy") {
     const source = state.activity;
     if (nowMs <= state.activity.lastClaimAtMs) return { state, reward: previewActivityReward(state, state.activity.lastClaimAtMs) };
-    const elapsed = Math.min(offlineCapSeconds(state), Math.max(0, (nowMs - state.activity.lastClaimAtMs) / 1e3)), raw2 = dailySupplyAdjustTimedCraftReward(state, previewAlchemyReward(state, dailySupplyCraftWorkSeconds(state, elapsed)), elapsed), baseReward = { ...raw2, ...timedEventRewards(state, "crafting", raw2.craftingCompletedAtMs ?? []) }, boost = previewDailySupplyTimedReward(state, baseReward, "crafting"), reward4 = boost.reward, brew = state.activity.brew;
+    const elapsed = Math.min(offlineCapSeconds(state), Math.max(0, (nowMs - state.activity.lastClaimAtMs) / 1e3)), raw2 = dailySupplyAdjustTimedCraftReward(state, previewAlchemyReward(state, dailySupplyCraftWorkSeconds(state, elapsed)), elapsed), baseReward = { ...raw2, xp: Math.floor((raw2.xp ?? 0) * (WINTER_HEARTH_GUILD_RELEASED ? winterHearthXpFactorForActionTimes(state.winterHearthBonusWindows ?? [], raw2.craftingCompletedAtMs ?? [], "skill") : 1)), ...timedEventRewards(state, "crafting", raw2.craftingCompletedAtMs ?? []) }, boost = previewDailySupplyTimedReward(state, baseReward, "crafting"), reward4 = boost.reward, brew = state.activity.brew;
     const routed2 = routeRewards(state, reward4.items, nowMs);
     const skills2 = state.skills.map((x) => x.skillId === "alchemy" ? { ...x, xp: Math.min(totalXpAtLevel(100), x.xp + (reward4.xp ?? 0)), level: levelFromXp(Math.min(totalXpAtLevel(100), x.xp + (reward4.xp ?? 0))) } : x);
     const nextBase2 = { ...state, ...routed2, skills: skills2, rewardRemainders: reward4.nextRewardRemainders, activity: reward4.nextBrewRemaining ? { ...state.activity, lastClaimAtMs: nowMs, progressFraction: reward4.nextProgressFraction, brew: { ...brew, remainingBatches: reward4.nextBrewRemaining } } : null };
@@ -55490,23 +55894,24 @@ function claimActivitySegmentRaw(state, nowMs) {
   if (state.activity?.kind === "processing") {
     const source = state.activity;
     if (nowMs <= state.activity.lastClaimAtMs) return { state, reward: previewActivityReward(state, state.activity.lastClaimAtMs) };
-    const elapsed = Math.min(offlineCapSeconds(state), Math.max(0, (nowMs - state.activity.lastClaimAtMs) / 1e3)), raw2 = dailySupplyAdjustTimedCraftReward(state, previewProcessingReward(state, dailySupplyCraftWorkSeconds(state, elapsed)), elapsed), baseReward = { ...raw2, ...timedEventRewards(state, "crafting", raw2.craftingCompletedAtMs ?? []) }, boost = previewDailySupplyTimedReward(state, baseReward, "crafting"), reward4 = boost.reward, processing = state.activity.processing;
-    const routed2 = routeRewards(state, reward4.items, nowMs), nextXp = (state.skills.find((x) => x.skillId === processing.skillId)?.xp ?? 0) + (reward4.xp ?? 0);
+    const { window, raw: raw2 } = processingTimedPreview(state, nowMs), boost = previewDailySupplyTimedReward(state, raw2, "crafting"), reward4 = window.expired ? { ...boost.reward, stoppedReason: "Winter Hearth crafting ended. Unfinished reservations are refunded." } : boost.reward, processing = state.activity.processing;
+    const unfinished = reward4.nextProcessingRemaining ?? 0, refund = window.expired && unfinished > 0 ? processingRefund({ ...processing, remainingBatches: unfinished }) : null;
+    const routed2 = routeRewards(state, [...reward4.items, ...refund?.items ?? []], nowMs), nextXp = (state.skills.find((x) => x.skillId === processing.skillId)?.xp ?? 0) + (reward4.xp ?? 0);
     const skills2 = state.skills.map((x) => x.skillId === processing.skillId ? { ...x, xp: Math.min(totalXpAtLevel(100), nextXp), level: levelFromXp(Math.min(totalXpAtLevel(100), nextXp)) } : x);
-    const nextBase2 = { ...state, ...routed2, skills: skills2, rewardRemainders: reward4.nextRewardRemainders, activity: reward4.nextProcessingRemaining ? { ...state.activity, lastClaimAtMs: nowMs, progressFraction: reward4.nextProgressFraction, processing: { ...processing, remainingBatches: reward4.nextProcessingRemaining } } : null };
+    const nextBase2 = { ...state, ...routed2, skills: skills2, ...refund && state.character ? { character: { ...state.character, gold: state.character.gold + refund.gold } } : {}, rewardRemainders: reward4.nextRewardRemainders, activity: !window.expired && reward4.nextProcessingRemaining ? { ...state.activity, lastClaimAtMs: nowMs, progressFraction: reward4.nextProgressFraction, processing: { ...processing, remainingBatches: reward4.nextProcessingRemaining } } : null };
     const next2 = commitDailySupplyTimedBoost(nextBase2, boost), actions = reward4.craftingActions ?? 0;
     let progressed2 = actions > 0 ? applyTrustedLongTermProgression(next2, [{ kind: "crafting", contentId: processing.recipeId, units: actions, skillId: processing.skillId, startedAtMs: state.activity.lastClaimAtMs }], reward4, nowMs, { accountId: longTermAccountScope(state), eventId: `processing:${state.character?.id ?? "unknown"}:${processing.recipeId}:${state.activity.lastClaimAtMs}:${nowMs}` }).state : next2;
     progressed2 = applyEventDiscoveries(applyEventDrops(progressed2, reward4.eventDrops ?? []), reward4.eventDiscoveries ?? []);
     progressed2 = refreshQuests(progressed2);
     const finalState2 = reconcileCombatCompanionUnlocks(progressed2, nowMs);
-    const queuedState2 = !reward4.nextProcessingRemaining && (source.queueManaged || state.character?.activityQueue?.length) ? startFinishedQueuedActivity(finalState2, nowMs) : finalState2;
+    const queuedState2 = (!reward4.nextProcessingRemaining || window.expired) && (source.queueManaged || state.character?.activityQueue?.length) ? startFinishedQueuedActivity(finalState2, nowMs) : finalState2;
     return { state: queuedState2, reward: withCompanionUnlocks(reward4, state, queuedState2) };
   }
   if (!state.character || !state.activity) {
     const recovered2 = settleOutOfCombatRecovery(state, nowMs);
     return { state: recovered2, reward: previewActivityReward(state, nowMs) };
   }
-  const idleWindow = idleRuleSettlementWindow(state, nowMs), settledAtMs = idleWindow.settleAtMs, idleStopReason = idleWindow.shouldStop ? idleWindow.reason : void 0, supply = previewStandardActivityRewardWithSupplies(state, settledAtMs), boosted = supply.reward;
+  const idleWindow = idleRuleSettlementWindow(state, nowMs), settledAtMs = idleWindow.settleAtMs, idleStopReason = idleWindow.shouldStop ? idleWindow.reason : void 0, supply = idleWindow.supply, boosted = supply.reward;
   const reward3 = idleWindow.shouldStop && !boosted.stoppedReason ? { ...boosted, stoppedReason: idleStopReason, goalReached: !idleWindow.safety } : boosted;
   if (state.activity.kind !== "combat") {
     const skills2 = state.skills.map((x) => x.skillId === state.activity.kind ? { ...x, xp: x.xp + reward3.xp, level: levelFromXp(x.xp + reward3.xp) } : x);
@@ -56008,34 +56413,35 @@ function activateGatheringToolReserve(state, skillId, tier, nowMs = Date.now()) 
   const settled = state.activity?.kind === skillId ? claimActivity(state, nowMs).state : state;
   return setGatheringToolSlots(settled, skillId, tier, reserve, current);
 }
-function withdrawGatheringToolReserve(state, skillId, tier) {
+function withdrawGatheringToolReserve(state, skillId, tier, to = "inventory") {
   if (!state.character) throw new Error("Character required");
   const reserve = reserveGatheringToolSlot(state, skillId, tier);
   if (!reserve) throw new Error("No saved reserve in this tier");
-  const added = addBounded(state.inventory.stacks, entitlementStorageCapacity(state, "inventory"), [{ itemId: reserve.itemId, quantity: 1, ...reserve.instanceId ? { instanceId: reserve.instanceId } : {} }]);
-  if (added.overflow.length) throw new Error("Inventory is full");
-  return setGatheringToolSlots({ ...state, inventory: { ...state.inventory, stacks: added.stacks } }, skillId, tier, activeGatheringToolSlot(state, skillId, tier), void 0);
+  const added = addBounded(state[to].stacks, entitlementStorageCapacity(state, to), [{ itemId: reserve.itemId, quantity: 1, ...reserve.instanceId ? { instanceId: reserve.instanceId } : {} }]);
+  if (added.overflow.length) throw new Error(to === "bank" ? "Bank is full" : "Inventory is full");
+  return setGatheringToolSlots({ ...state, [to]: { ...state[to], stacks: added.stacks } }, skillId, tier, activeGatheringToolSlot(state, skillId, tier), void 0);
 }
-function unequipGatheringTool(state, skillId, nowMs = Date.now(), itemId) {
+function unequipGatheringTool(state, skillId, nowMs = Date.now(), itemId, to = "inventory") {
   if (!state.character) return state;
   const equipped = equippedGatheringTools(state, skillId);
   const selected2 = itemId ? equipped.find((row) => row.id === itemId) : equipped[equipped.length - 1];
   if (!selected2) return state;
   const tier = selected2.tier;
   if (reserveGatheringToolSlot(state, skillId, tier))
-    return withdrawGatheringToolReserve(activateGatheringToolReserve(state, skillId, tier, nowMs), skillId, tier);
+    return withdrawGatheringToolReserve(activateGatheringToolReserve(state, skillId, tier, nowMs), skillId, tier, to);
   const current = activeGatheringToolSlot(state, skillId, tier);
   if (!current) return state;
   const settled = state.activity?.kind === skillId ? claimActivity(state, nowMs).state : state;
-  const added = addBounded(settled.inventory.stacks, entitlementStorageCapacity(settled, "inventory"), [{ itemId: current.itemId, quantity: 1, ...current.instanceId ? { instanceId: current.instanceId } : {} }]);
-  if (added.overflow.length) throw new Error("Free one Inventory slot before unequipping this tool");
-  return setGatheringToolSlots({ ...settled, inventory: { ...settled.inventory, stacks: added.stacks } }, skillId, tier, void 0, void 0);
+  const added = addBounded(settled[to].stacks, entitlementStorageCapacity(settled, to), [{ itemId: current.itemId, quantity: 1, ...current.instanceId ? { instanceId: current.instanceId } : {} }]);
+  if (added.overflow.length) throw new Error(to === "bank" ? "Bank is full" : "Free one Inventory slot before unequipping this tool");
+  return setGatheringToolSlots({ ...settled, [to]: { ...settled[to], stacks: added.stacks } }, skillId, tier, void 0, void 0);
 }
 function craftRecipe(state, recipeId, nowMs = Date.now(), sequence = 0) {
   if (!state.character) throw new Error("No character");
   if (recipeId.startsWith("BREW_")) throw new Error("Timed alchemy recipes must be started as a batch.");
   const r = recipeDef(recipeId);
   if (!r) throw new Error("Unknown recipe");
+  if (isWinterHearthLightRecipe(recipeId) && !winterHearthLightRecipeAvailable(state, nowMs)) throw new Error("Winter Hearth crafting is closed.");
   if (r.classId && r.classId !== state.character.classId && !r.v33SetId) throw new Error("This recipe belongs to another class");
   if (state.character.level < (r.characterLevel ?? 1)) throw new Error(`Requires character level ${r.characterLevel}`);
   if (r.requiresCraftedItemId && !state.character.craftedNoviceItemIds?.includes(r.requiresCraftedItemId)) throw new Error(`Craft ${itemDef(r.requiresCraftedItemId).name} first`);
@@ -56302,6 +56708,83 @@ function migrateRetiredStoryRewards(input, nowMs) {
     account.journalState = { ...journal, unlockedTitles: { ...journal.unlockedTitles, oathbreaker: nowMs } };
   }
   return { ...cleaned, ...routed, account };
+}
+
+// ../apps/mobile/src/core/ultra-luxe-grants.ts
+var ULTRA_LUXE_GRANT_COLLECTIONS = [
+  { id: "ascendant-celestial-sovereign", background: "ascendant-celestial-astral-sanctum", border: "ascendant-celestial-crown-of-the-cosmos", pet: "ascendant-celestial-aetherion", icon: "ascendant-celestial-crown-icon", title: "ascendant-celestial-title", titleName: "Sovereign of the Stars", badge: "ascendant_sovereign_of_stars", nameStyle: "ascendant-celestial-name" },
+  { id: "ascendant-draconic-dominion", background: "ascendant-draconic-dominion-of-ash", border: "ascendant-draconic-throne-of-embers", pet: "ascendant-draconic-vharaxis", icon: "ascendant-draconic-ruby-icon", title: "ascendant-draconic-title", titleName: "Dragon Sovereign", badge: "ascendant_dragon_sovereign", nameStyle: "ascendant-draconic-name" }
+];
+function ultraLuxeGrantProjection(raw2) {
+  const ids2 = new Set(Array.isArray(raw2) ? raw2.filter((id) => typeof id === "string") : []);
+  const rows2 = ULTRA_LUXE_GRANT_COLLECTIONS.filter((row) => ids2.has(row.id));
+  return { collectionIds: rows2.map((row) => row.id), backgrounds: rows2.map((row) => row.background), borders: rows2.map((row) => row.border), pets: rows2.map((row) => row.pet), icons: rows2.map((row) => row.icon), titles: rows2.map((row) => row.title), badges: rows2.map((row) => row.badge), nameStyles: rows2.map((row) => row.nameStyle) };
+}
+var privateId = (id) => id.startsWith("ascendant-") || id.startsWith("ascendant_");
+function replacePrivate(existing, verified) {
+  return [.../* @__PURE__ */ new Set([...(existing ?? []).filter((id) => !privateId(id)), ...verified])];
+}
+function allowed2(id, owned) {
+  return !id || !privateId(id) || owned.includes(id);
+}
+function withVerifiedUltraLuxeGrants(state, raw2) {
+  const grants = ultraLuxeGrantProjection(raw2);
+  const sanitize = (c) => {
+    const title2 = ULTRA_LUXE_GRANT_COLLECTIONS.find((row) => row.titleName.toLowerCase() === c.profileTitle?.trim().toLowerCase());
+    return {
+      ...c,
+      profileBackgroundId: allowed2(c.profileBackgroundId, grants.backgrounds) ? c.profileBackgroundId : "asterfall-night",
+      profileBorderId: allowed2(c.profileBorderId, grants.borders) ? c.profileBorderId : void 0,
+      selectedCosmeticPetId: allowed2(c.selectedCosmeticPetId, grants.pets) ? c.selectedCosmeticPetId : void 0,
+      profileIconId: allowed2(c.profileIconId, grants.icons) ? c.profileIconId : "class:" + c.classId,
+      profileTitle: title2 && !grants.titles.includes(title2.title) ? "New Adventurer" : c.profileTitle
+    };
+  };
+  return {
+    ...state,
+    account: {
+      ...state.account,
+      profileIconId: allowed2(state.account.profileIconId, grants.icons) ? state.account.profileIconId : state.character ? "class:" + state.character.classId : void 0,
+      unlockedProfileBackgroundIds: replacePrivate(state.account.unlockedProfileBackgroundIds, grants.backgrounds),
+      unlockedProfileBorderIds: replacePrivate(state.account.unlockedProfileBorderIds, grants.borders),
+      unlockedCosmeticPetIds: replacePrivate(state.account.unlockedCosmeticPetIds, grants.pets),
+      unlockedProfileIconIds: replacePrivate(state.account.unlockedProfileIconIds, grants.icons),
+      unlockedTitleIds: replacePrivate(state.account.unlockedTitleIds, grants.titles)
+    },
+    character: state.character ? sanitize(state.character) : state.character,
+    ...state.otherCharacters ? { otherCharacters: state.otherCharacters.map((row) => ({ ...row, character: sanitize(row.character) })) } : {}
+  };
+}
+function canUsePrivateTitleText(state, title2) {
+  const reserved = ULTRA_LUXE_GRANT_COLLECTIONS.find((row) => row.titleName.toLowerCase() === title2?.trim().toLowerCase());
+  return !reserved || (state.account.unlockedTitleIds?.includes(reserved.title) ?? false);
+}
+
+// ../apps/mobile/src/core/profile-premium-cosmetics.ts
+var PREMIUM_PROFILE_COSMETICS = [
+  { id: "celestial-sovereign", name: "Celestial Sovereign", tier: "ascendant", borderId: "premium:celestial-sovereign:crown-of-cosmos", borderName: "Crown of the Cosmos", fallbackBorderId: "guild-border-royal", effectId: "premium:celestial-sovereign:celestial-alignment", effectName: "Celestial Alignment", backgroundId: "premium:celestial-sovereign:astral-sanctum", backgroundName: "Astral Sanctum", fallbackBackgroundId: "bg_frostfall", petId: "premium:celestial-sovereign:aetherion-starborn", petName: "Aetherion, the Starborn", fallbackPetId: "EVT_PET_009", badgeId: "ascendant_sovereign_of_stars", badgeName: "Sovereign of the Stars", accent: "#F5D982", softAccent: "#7181C8" },
+  { id: "draconic-dominion", name: "Draconic Dominion", tier: "ascendant", borderId: "premium:draconic-dominion:throne-of-embers", borderName: "Throne of Embers", fallbackBorderId: "dungeon:sunscar:amberglass-loop", effectId: "premium:draconic-dominion:awakening-of-the-dragon", effectName: "Awakening of the Dragon", backgroundId: "premium:draconic-dominion:dominion-of-ash", backgroundName: "Dominion of Ash", fallbackBackgroundId: "dungeon:sunscar:buried-observatory", petId: "premium:draconic-dominion:vharaxis-eternal-flame", petName: "Vharaxis, the Eternal Flame", fallbackPetId: "PET_036", badgeId: "ascendant_dragon_sovereign", badgeName: "Dragon Sovereign", accent: "#FF8A45", softAccent: "#9E332D" },
+  { id: "abyssal-majesty", name: "Abyssal Majesty", tier: "ascendant", borderId: "premium:abyssal-majesty:crown-of-the-depths", borderName: "Crown of the Depths", fallbackBorderId: "frame_gloamward", effectId: "premium:abyssal-majesty:call-of-the-deep", effectName: "Call of the Deep", backgroundId: "premium:abyssal-majesty:forgotten-abyss", backgroundName: "The Forgotten Abyss", fallbackBackgroundId: "bg_veilbreak", petId: "premium:abyssal-majesty:nhalzuun-abyssborn", petName: "Nhal'Zuun, the Abyssborn", fallbackPetId: "PET_039", badgeId: "ascendant_monarch_of_deep", badgeName: "Monarch of the Deep", accent: "#6CF2EB", softAccent: "#176F83" },
+  { id: "paradox-eternal", name: "Paradox Eternal", tier: "ascendant", borderId: "premium:paradox-eternal:fractured-eternity", borderName: "Fractured Eternity", fallbackBorderId: "guild-border-silver", effectId: "premium:paradox-eternal:reality-rewritten", effectName: "Reality Rewritten", backgroundId: "premium:paradox-eternal:beyond-the-veil", backgroundName: "Beyond the Veil", fallbackBackgroundId: "dungeon:frostmarch:shiverlake-reflections", petId: "premium:paradox-eternal:aeon-timeless", petName: "Aeon, the Timeless", fallbackPetId: "PET_016", badgeId: "ascendant_beyond_existence", badgeName: "Beyond Existence", accent: "#EDEBFF", softAccent: "#8E71C9" }
+];
+var premiumProfileByBorder = new Map(PREMIUM_PROFILE_COSMETICS.map((row) => [row.borderId, row]));
+var premiumProfileByEffect = new Map(PREMIUM_PROFILE_COSMETICS.map((row) => [row.effectId, row]));
+var premiumProfileByPet = new Map(PREMIUM_PROFILE_COSMETICS.map((row) => [row.petId, row]));
+var PREMIUM_PROFILE_BADGE_IDS = PREMIUM_PROFILE_COSMETICS.map((row) => row.badgeId);
+
+// ../apps/mobile/src/core/profile-effects.ts
+var PROFILE_EFFECTS = [
+  { id: "effect_gloamward_wisps", name: "Arcane Wisps", collection: "Gloamward", borderId: "cosmetic:gloamward:arcane-frame", borderName: "Gloamward Arcane Frame", fallbackBorderId: "frame_gloamward" },
+  { id: "effect_frostbound_winter_veil", name: "Winter Veil", collection: "Frostbound Chime", borderId: "cosmetic:frostbound:chime-frame", borderName: "Frostbound Chime Frame", fallbackBorderId: "dungeon:frostmarch:frostbound-chime" },
+  { id: "effect_amberglass_ember_motes", name: "Ember Motes", collection: "Amberglass Loop", borderId: "cosmetic:amberglass:loop-frame", borderName: "Amberglass Loop Frame", fallbackBorderId: "dungeon:sunscar:amberglass-loop" },
+  { id: "effect_briarbound_verdant_whispers", name: "Verdant Whispers", collection: "Briarbound", borderId: "cosmetic:briarbound:verdant-frame", borderName: "Briarbound Verdant Frame", fallbackBorderId: "dungeon:asterfall:briarbound-frame" },
+  ...WAVE2_SETS.filter((row) => WAVE2_READY_SET_IDS.includes(row.id)).map((row) => ({ id: row.effectId, name: row.effectName, collection: row.name, borderId: row.borderId, borderName: row.borderName, fallbackBorderId: "" }))
+];
+var PROFILE_ALL_EFFECTS = [...PROFILE_EFFECTS, ...PREMIUM_PROFILE_COSMETICS.map((row) => ({ id: row.effectId, name: row.effectName, collection: row.name, borderId: row.borderId, borderName: row.borderName, fallbackBorderId: row.fallbackBorderId }))];
+function canUseProfileEffect(state, id) {
+  if (!id) return true;
+  if (wave2SetFor("effect", id)) return wave2Owned(state.account, "effect", id);
+  return state.account.unlockedProfileEffectIds?.includes(id) ?? false;
 }
 
 // ../apps/mobile/src/core/equipment-crafting-queue.ts
@@ -57882,8 +58365,8 @@ function snapshot(state) {
   return { character: structuredClone(state.character), inventory: structuredClone(state.inventory), overflow: structuredClone(state.overflow), activity: structuredClone(state.activity), skills: structuredClone(state.skills), quests: structuredClone(state.quests), currentRegionId: state.currentRegionId, ...snapshotCharacterWorldProgress(state) };
 }
 function createAccountCharacter(state, classId, name, body, now) {
-  state = ensurePersonalSeasonalState(reconcileAccountCollections(state));
-  if (!state.character) return createCharacter(state, classId, name, body);
+  state = normalizeProfileIcon(ensurePersonalSeasonalState(reconcileAccountCollections(state)));
+  if (!state.character) return normalizeProfileIcon(createCharacter(state, classId, name, body));
   if (accountCharacters(state).length >= MAX_NEW_ACCOUNT_CHARACTERS) throw new Error("Maximum 3 characters: one Tank, one Damage and one Support.");
   if (accountCharacters(state).length >= unlockedCharacterSlots(state)) throw new Error("Character slot is locked.");
   const candidate = CLASSES.find((def) => def.id === classId);
@@ -57895,10 +58378,10 @@ function createAccountCharacter(state, classId, name, body, now) {
   const id = `LOCAL_CHAR_${sequence}`;
   next.character.id = id;
   const account = { ...state.account, createdCharacterCount: sequence, unlockedCharacterSlots: Math.max(state.account.unlockedCharacterSlots ?? 1, unlockedCharacterSlots(state)) };
-  return { ...next, version: state.version, createdAtMs: state.createdAtMs, settings: state.settings, bank: state.bank, account: personalSeasonalAccountView(account, next.character), otherCharacters: [...state.otherCharacters ?? [], active2] };
+  return normalizeProfileIcon({ ...next, version: state.version, createdAtMs: state.createdAtMs, settings: state.settings, bank: state.bank, account: personalSeasonalAccountView(account, next.character), otherCharacters: [...state.otherCharacters ?? [], active2] });
 }
 function switchAccountCharacter(state, id, now) {
-  state = ensurePersonalSeasonalState(reconcileAccountCollections(state));
+  state = normalizeProfileIcon(ensurePersonalSeasonalState(reconcileAccountCollections(state)));
   if (!state.character) return state;
   if (state.character.id === id) return state;
   const target2 = state.otherCharacters?.find((x) => x.character.id === id);
@@ -58030,7 +58513,7 @@ function characterDeleteBlockReason(state, id) {
   return void 0;
 }
 function deleteAccountCharacter(state, id, confirmation, now) {
-  state = recordAccountProgress(ensurePersonalSeasonalState(reconcileAccountCollections(state)));
+  state = normalizeProfileIcon(recordAccountProgress(ensurePersonalSeasonalState(reconcileAccountCollections(state))));
   if (!state.character) throw new Error("Create a character first.");
   const active2 = state.character.id === id;
   const stored = active2 ? snapshot(state) : (state.otherCharacters ?? []).find((entry2) => entry2.character.id === id);
@@ -59310,6 +59793,41 @@ var emotes_default = [
     category: "pets",
     file: "../../../assets/events/veilbreak/emote_gloam_facepalm_runtime.webp",
     defaultAvailable: false
+  },
+  {
+    id: "emote_snowbell_ring",
+    label: "Frostbell Cheer",
+    category: "pets",
+    file: "../../../assets/events/frostfall/frostfall_emotes_runtime/emote_frostbell_cheer_runtime.webp",
+    defaultAvailable: false
+  },
+  {
+    id: "emote_frostfall_wave",
+    label: "Frozen Shock",
+    category: "male",
+    file: "../../../assets/events/frostfall/frostfall_emotes_runtime/emote_frozen_shock_runtime.webp",
+    defaultAvailable: false
+  },
+  {
+    id: "emote_aurora_chime",
+    label: "Aurora Hug",
+    category: "pets",
+    file: "../../../assets/events/frostfall/frostfall_emotes_runtime/emote_aurora_hug_runtime.webp",
+    defaultAvailable: false
+  },
+  {
+    id: "emote_cozy_hearth",
+    label: "Cozy Hearth",
+    category: "female",
+    file: "../../../assets/events/frostfall/frostfall_emotes_runtime/emote_cozy_hearth_runtime.webp",
+    defaultAvailable: false
+  },
+  {
+    id: "emote_snowball_attack",
+    label: "Snowball Attack",
+    category: "male",
+    file: "../../../assets/events/frostfall/frostfall_emotes_runtime/emote_snowball_attack_runtime.webp",
+    defaultAvailable: false
   }
 ];
 
@@ -59640,6 +60158,8 @@ function reconcileWorkingTowardGeneratedRules(state) {
 
 // ../apps/mobile/src/core/game-commands.ts
 init_meal_buffs();
+var TOOL_INSTANCE_ID_MAX = 200;
+var INVENTORY_SELECTION_ID_MAX = TOOL_INSTANCE_ID_MAX + "copy:".length;
 var fields = {
   class_training: [],
   class_focus: ["focus"],
@@ -59740,10 +60260,10 @@ var fields = {
   gem_pouch_bulk_dismantle: ["ids"],
   overflow: [],
   equip_tool: ["id", "instanceId"],
-  unequip_tool: ["id"],
+  unequip_tool: ["id", "to"],
   tool_vault_save: ["id", "instanceId"],
   tool_vault_activate: ["skillId", "tier"],
-  tool_vault_withdraw: ["skillId", "tier"],
+  tool_vault_withdraw: ["skillId", "tier", "to"],
   tool_move: ["instanceId", "to"],
   tool_sell: ["instanceId"],
   equip_set: [],
@@ -59772,7 +60292,7 @@ var fields = {
   inventory_preference: ["id", "kind", "enabled"],
   inventory_preference_bulk: ["ids", "kind", "enabled"],
   inventory_seen_all: [],
-  profile: ["profileIconId", "profileTitle", "profileBackgroundId", "profileBorderId", "selectedCosmeticPetId"],
+  profile: ["profileIconId", "profileTitle", "profileBackgroundId", "profileBorderId", "profileEffectId", "selectedCosmeticPetId"],
   event_daily: [],
   event_cache: [],
   event_milestones: [],
@@ -59827,18 +60347,18 @@ function validateGameCommand(value) {
   if (row.type === "bulk_transfer") {
     const bulk = args;
     oneOf(bulk.location, ["inventory", "bank"]);
-    stringArray(bulk, "ids");
+    stringArray(bulk, "ids", 100, INVENTORY_SELECTION_ID_MAX);
   }
   if (row.type === "inventory_preference_bulk") {
     const bulk = args;
-    stringArray(bulk, "ids", 100, 190);
+    stringArray(bulk, "ids", 100, INVENTORY_SELECTION_ID_MAX);
     oneOf(bulk.kind, ["lock", "favorite"]);
     if (typeof bulk.enabled !== "boolean") throw new Error("invalid_inventory_preference");
   }
   if (row.type === "gem_pouch_bulk_sell" || row.type === "gem_pouch_bulk_dismantle") stringArray(args, "ids", 100, 120);
   if (row.type === "bulk_sell" || row.type === "bulk_salvage") {
     const bulk = args;
-    stringArray(bulk, "ids", 100, 180);
+    stringArray(bulk, "ids", 100, INVENTORY_SELECTION_ID_MAX);
     if (bulk.location !== void 0) oneOf(bulk.location, ["inventory", "bank"]);
   }
   return { type: row.type, args };
@@ -59904,7 +60424,7 @@ function executeGameCommand(previous, value, now, options = {}) {
   let state = ensurePersonalSeasonalState(snapshotEarnedLegacySeasonalClaims(structuredClone(previous), now)), reward3, message, won, storyBossBattle, upgrade, forgeResults;
   if (!Number.isSafeInteger(now) || now < previous.createdAtMs) throw new Error("invalid_server_clock");
   if (options.accountId) state.account.longTermAccountScopeId = options.accountId;
-  state = migrateRetiredStoryRewards(state, now);
+  state = reconcileAccountProfileIcon(migrateRetiredStoryRewards(state, now));
   if (state.account.equipmentCraftingQueue?.length) state = advanceForgeSupply(state, now);
   const credit = (source, earned) => {
     if (!source || earned.kills <= 0) return;
@@ -60352,15 +60872,15 @@ function executeGameCommand(previous, value, now, options = {}) {
     case "deposit_materials":
       state = depositAllMaterials(state);
       break;
-    // A copy:<instanceId> selector may be 185 characters (180-char validated instance ID + prefix).
+    // Exact copy selections use the same receipt ID and prefix limit as validation.
     case "bulk_transfer":
-      state = bulkTransferSelected(state, stringArray(a, "ids", 100, 185), oneOf(a.location, ["inventory", "bank"]));
+      state = bulkTransferSelected(state, stringArray(a, "ids", 100, INVENTORY_SELECTION_ID_MAX), oneOf(a.location, ["inventory", "bank"]));
       break;
     case "bulk_sell":
-      state = bulkSellSelected(state, stringArray(a, "ids", 100, 180), oneOf(a.location ?? "inventory", ["inventory", "bank"]));
+      state = bulkSellSelected(state, stringArray(a, "ids", 100, INVENTORY_SELECTION_ID_MAX), oneOf(a.location ?? "inventory", ["inventory", "bank"]));
       break;
     case "bulk_salvage":
-      state = bulkSalvageSelected(state, stringArray(a, "ids", 100, 180), oneOf(a.location ?? "inventory", ["inventory", "bank"]));
+      state = bulkSalvageSelected(state, stringArray(a, "ids", 100, INVENTORY_SELECTION_ID_MAX), oneOf(a.location ?? "inventory", ["inventory", "bank"]));
       break;
     case "storage":
       state = upgradeStorage(state, oneOf(a.location, ["inventory", "bank"]));
@@ -60387,30 +60907,32 @@ function executeGameCommand(previous, value, now, options = {}) {
       state = claimOverflowToBank(state);
       break;
     case "equip_tool":
-      state = equipGatheringTool(state, text(a, "id"), now, a.instanceId === void 0 ? void 0 : text(a, "instanceId", 200));
+      state = equipGatheringTool(state, text(a, "id"), now, a.instanceId === void 0 ? void 0 : text(a, "instanceId", TOOL_INSTANCE_ID_MAX));
       break;
     case "tool_vault_save":
-      state = saveGatheringToolReserve(state, text(a, "id"), a.instanceId === void 0 ? void 0 : text(a, "instanceId", 200), now);
+      state = saveGatheringToolReserve(state, text(a, "id"), a.instanceId === void 0 ? void 0 : text(a, "instanceId", TOOL_INSTANCE_ID_MAX), now);
       message = "Tool saved to its reserve slot";
       break;
     case "tool_vault_activate":
       state = activateGatheringToolReserve(state, oneOf(a.skillId, ["mining", "woodcutting", "fishing"]), integer(a, "tier", 1, 4), now);
       message = "Saved tool activated";
       break;
-    case "tool_vault_withdraw":
-      state = withdrawGatheringToolReserve(state, oneOf(a.skillId, ["mining", "woodcutting", "fishing"]), integer(a, "tier", 1, 4));
-      message = "Saved tool moved to Inventory";
+    case "tool_vault_withdraw": {
+      const to = oneOf(a.to ?? "inventory", ["inventory", "bank"]);
+      state = withdrawGatheringToolReserve(state, oneOf(a.skillId, ["mining", "woodcutting", "fishing"]), integer(a, "tier", 1, 4), to);
+      message = to === "bank" ? "Saved tool moved to Bank" : "Saved tool moved to Inventory";
       break;
+    }
     case "tool_move":
-      state = moveGatheringToolCopy(state, text(a, "instanceId", 200), oneOf(a.to, ["inventory", "bank"]));
+      state = moveGatheringToolCopy(state, text(a, "instanceId", TOOL_INSTANCE_ID_MAX), oneOf(a.to, ["inventory", "bank"]));
       break;
     case "tool_sell":
-      state = sellGatheringToolCopy(state, text(a, "instanceId", 200));
+      state = sellGatheringToolCopy(state, text(a, "instanceId", TOOL_INSTANCE_ID_MAX));
       break;
     case "unequip_tool": {
       const toolId = text(a, "id"), tool2 = gatheringToolDef(toolId);
       if (!tool2) throw new Error("Not a gathering tool");
-      state = unequipGatheringTool(state, tool2.skillId, now, toolId);
+      state = unequipGatheringTool(state, tool2.skillId, now, toolId, oneOf(a.to ?? "inventory", ["inventory", "bank"]));
       break;
     }
     case "equip_set":
@@ -60529,7 +61051,7 @@ function executeGameCommand(previous, value, now, options = {}) {
       break;
     }
     case "inventory_preference_bulk": {
-      const ids2 = stringArray(a, "ids", 100, 190), kind = oneOf(a.kind, ["lock", "favorite"]);
+      const ids2 = stringArray(a, "ids", 100, INVENTORY_SELECTION_ID_MAX), kind = oneOf(a.kind, ["lock", "favorite"]);
       if (typeof a.enabled !== "boolean") throw new Error("invalid_inventory_preference");
       state = applyBulkInventoryProtection(state, ids2, kind, a.enabled);
       message = `${ids2.length} item stacks ${a.enabled ? "protected" : "unprotected"}`;
@@ -60549,11 +61071,17 @@ function executeGameCommand(previous, value, now, options = {}) {
         patch[key] = input === null ? void 0 : input;
       }
       if (patch.profileTitle !== void 0 && patch.profileTitle.length > 32) throw new Error("invalid_profile_title");
+      if (!canUsePrivateTitleText(state, patch.profileTitle)) throw new Error("cosmetic_not_owned");
       if (patch.profileIconId && !canUseProfileIcon(state, patch.profileIconId)) throw new Error("cosmetic_not_owned");
       if (patch.profileBackgroundId && !["asterfall-night", "ironwood-dawn", "silverbrook-mist", "oathglass-hall", ...state.account.unlockedProfileBackgroundIds ?? []].includes(patch.profileBackgroundId)) throw new Error("cosmetic_not_owned");
-      if (patch.profileBorderId && !state.account.unlockedProfileBorderIds?.includes(patch.profileBorderId)) throw new Error("cosmetic_not_owned");
+      if (patch.profileBorderId && (wave2SetFor("border", patch.profileBorderId) ? !wave2Owned(state.account, "border", patch.profileBorderId) : !state.account.unlockedProfileBorderIds?.includes(patch.profileBorderId))) throw new Error("cosmetic_not_owned");
+      if (patch.profileEffectId && !profileAnimatedPieceEnabled(state, "effect", patch.profileEffectId) && patch.profileEffectId !== state.character.profileEffectId) throw new Error("feature_not_released");
+      if (patch.profileEffectId && !canUseProfileEffect(state, patch.profileEffectId)) throw new Error("cosmetic_not_owned");
       if (patch.selectedCosmeticPetId && !state.account.unlockedCosmeticPetIds?.includes(patch.selectedCosmeticPetId)) throw new Error("cosmetic_not_owned");
+      const icon = patch.profileIconId;
+      delete patch.profileIconId;
       state = { ...state, character: { ...state.character, ...patch } };
+      if (icon) state = selectProfileIcon(state, icon);
       break;
     }
     case "event_daily":
@@ -60599,7 +61127,7 @@ function executeGameCommand(previous, value, now, options = {}) {
       throw new Error("invalid_command");
   }
   if (companionMetricBefore) state = recordCompanionCommandMetrics(state, command.type, companionMetricBefore);
-  state = recordAccountProgress(reconcileAccountCollections(refreshCompanions(migrateGemPouch(state), now)));
+  state = reconcileAccountProfileIcon(recordAccountProgress(reconcileAccountCollections(refreshCompanions(migrateGemPouch(state), now))));
   if (state.character && (!Number.isSafeInteger(state.character.gold) || state.character.gold < 0)) throw new Error("invalid_wallet");
   return { state, reward: reward3, activity, message, won, storyBossBattle, upgrade, forgeResults, contributions };
 }
@@ -60621,7 +61149,13 @@ function canonical(value) {
   if (Array.isArray(value)) return "[" + value.map(canonical).join(",") + "]";
   return "{" + Object.keys(value).sort().map((key) => JSON.stringify(key) + ":" + canonical(value[key])).join(",") + "}";
 }
-function gameplayHandler(services2) {
+function gameplayHandler(services2, authenticatePlayer2 = async (token) => {
+  const accountId = await services2.authenticate(token);
+  return accountId ? { accountId, adminQa: false } : null;
+}) {
+  const privateGrants = services2.ultraLuxeGrantAuthority === true;
+  const receiptRpc = privateGrants ? "read_online_game_receipt_ultra_luxe_v1" : "read_online_game_receipt_server_v1";
+  const loadRpc = privateGrants ? "load_online_game_ultra_luxe_v1" : "load_online_game_server_v1";
   return async (request) => {
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers });
     if (!["GET", "POST"].includes(request.method)) return json({ error: "method_not_allowed" }, 405);
@@ -60635,15 +61169,10 @@ function gameplayHandler(services2) {
     try {
       const bearer = request.headers.get("authorization")?.match(/^Bearer (\S+)$/i)?.[1];
       if (!bearer) return json({ error: "auth_required" }, 401);
-      const accountId = await services2.authenticate(bearer);
-      if (!accountId) return json({ error: "invalid_session" }, 401);
-      const adminQa = await services2.adminQa?.(bearer) ?? false;
-      if (request.method === "GET") {
-        try {
-          await services2.rpc("record_player_activity_server_v1", { p_account_id: accountId, p_kind: "foreground" });
-        } catch {
-        }
-      }
+      const player = await authenticatePlayer2(bearer);
+      if (!player) return json({ error: "invalid_session" }, 401);
+      const { accountId, adminQa } = player;
+      const recordActivity = (kind) => services2.rpc("record_player_activity_server_v1", { p_account_id: accountId, p_kind: kind }).catch(() => void 0);
       let body, command, requestHash;
       if (request.method === "POST") {
         const raw2 = await request.text();
@@ -60663,11 +61192,10 @@ function gameplayHandler(services2) {
         }
         if (command.type.startsWith("qa_") && !adminQa) throw new GameplayError("admin_qa_required", 403);
         requestHash = await hash2(canonical(command));
-        try {
-          await services2.rpc("record_player_activity_server_v1", { p_account_id: accountId, p_kind: command.type.startsWith("event_") ? "event_action" : "gameplay_action" });
-        } catch {
-        }
-        const prior = await services2.rpc("read_online_game_receipt_server_v1", { p_account_id: accountId, p_request_id: body.requestId });
+        const [prior] = await Promise.all([
+          services2.rpc(receiptRpc, { p_account_id: accountId, p_request_id: body.requestId }),
+          recordActivity(command.type.startsWith("event_") ? "event_action" : "gameplay_action")
+        ]);
         if (prior) {
           if (prior.requestHash !== requestHash) {
             await recordOutcome("conflict");
@@ -60677,10 +61205,14 @@ function gameplayHandler(services2) {
           return json(prior.response);
         }
       }
-      const loaded = await services2.rpc("load_online_game_server_v1", { p_account_id: accountId });
-      const storedState = rebaseCombatGameState(loaded.state ?? newGame(loaded.serverNow));
+      const [loaded] = await Promise.all([
+        services2.rpc(loadRpc, { p_account_id: accountId }),
+        request.method === "GET" ? recordActivity("foreground") : Promise.resolve()
+      ]);
+      if (privateGrants && !Array.isArray(loaded.ultraLuxeCollectionIds)) throw new Error("ultra_luxe_grant_projection_missing");
+      const storedState = rebaseCombatGameState(privateGrants ? withVerifiedUltraLuxeGrants(loaded.state ?? newGame(loaded.serverNow), loaded.ultraLuxeCollectionIds) : loaded.state ?? newGame(loaded.serverNow));
       const trustedState = request.method === "POST" ? snapshotEarnedLegacySeasonalClaims(storedState, loaded.serverNow) : storedState;
-      const state = restoreCumulativeMonsterUnlocks(ensurePersonalSeasonalState(trustedState));
+      const state = reconcileAccountProfileIcon(restoreCumulativeMonsterUnlocks(ensurePersonalSeasonalState(trustedState)));
       state.account.longTermAccountScopeId = accountId;
       state.account.guildMember = loaded.guildMember;
       const previousEvent = state.account.liveEvent;
@@ -60688,15 +61220,29 @@ function gameplayHandler(services2) {
       state.account.eventCommunityProgressById = loaded.communityProgress;
       if (state.character && loaded.walletGold !== null) state.character.gold = loaded.walletGold;
       state.guildSkillEffects = void 0;
+      state.winterHearthBonusWindows = void 0;
       if (state.account.guildMember) {
-        try {
-          state.guildSkillEffects = await services2.rpc("guild_skill_effects_server_v1", { p_account_id: accountId });
-        } catch {
-        }
+        await Promise.all([
+          (async () => {
+            try {
+              state.guildSkillEffects = await services2.rpc("guild_skill_effects_server_v1", { p_account_id: accountId });
+            } catch {
+            }
+          })(),
+          (async () => {
+            if (WINTER_HEARTH_GUILD_RELEASED) {
+              try {
+                const windows = await services2.rpc("winter_hearth_2026_bonus_windows_server_v1", { p_account_id: accountId });
+                state.winterHearthBonusWindows = validateWinterHearthBonusWindows(windows);
+              } catch {
+              }
+            }
+          })()
+        ]);
       }
       if (!body || !command) return json({ state, version: loaded.version, serverNow: loaded.serverNow, accountId });
       if (body.expectedVersion !== loaded.version) {
-        const committed2 = await services2.rpc("read_online_game_receipt_server_v1", { p_account_id: accountId, p_request_id: body.requestId });
+        const committed2 = await services2.rpc(receiptRpc, { p_account_id: accountId, p_request_id: body.requestId });
         if (committed2) {
           if (committed2.requestHash === requestHash) {
             await recordOutcome("replayed");
@@ -60747,9 +61293,9 @@ function gameplayHandler(services2) {
         ...projectSegments.some(({ activity }) => activity.kind === "alchemy" || activity.kind === "processing") ? [] : contributions.filter((event) => event.kind === "crafting" && event.units > 0).map((event) => ({ kind: "crafting", units: Math.min(100, event.units) }))
       ];
       const response = { guildProjectEffort, guildPveEffort, state: restoreCumulativeMonsterUnlocks(result.state), version: loaded.version + 1, serverNow: loaded.serverNow, accountId, reward: result.reward, activity: result.activity, message: result.message, won: result.won, storyBossBattle: result.storyBossBattle, upgrade: result.upgrade, forgeResults: result.forgeResults };
-      const commitRpc = "commit_online_game_guild_pve_v1";
-      const committed = await services2.rpc(commitRpc, { p_account_id: accountId, p_expected_version: loaded.version, p_expected_gold: loaded.walletGold, p_request_id: body.requestId, p_request_hash: requestHash, p_response: response, p_contributions: contributions, ...command.type === "roster_delete" ? { p_deleted_character_id: command.args.id } : {} });
-      try {
+      const commitRpc = privateGrants ? "commit_online_game_ultra_luxe_v1" : "commit_online_game_guild_pve_v1";
+      const committed = await services2.rpc(commitRpc, { p_account_id: accountId, p_expected_version: loaded.version, p_expected_gold: loaded.walletGold, p_request_id: body.requestId, p_request_hash: requestHash, p_response: response, p_contributions: contributions, ...privateGrants ? { p_expected_grants: [...ultraLuxeGrantProjection(loaded.ultraLuxeCollectionIds).collectionIds].sort() } : {}, ...command.type === "roster_delete" ? { p_deleted_character_id: command.args.id } : {} });
+      if (contributions.length > 0) try {
         await services2.rpc("guild_quest_record_contributions_v1", { p_account_id: accountId, p_contributions: contributions.map((e) => ({ ...e, units: e.questUnits ?? e.units })) });
       } catch {
       }
@@ -62096,20 +62642,16 @@ var url = Deno.env.get("SUPABASE_URL");
 var serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 var anonKey = Deno.env.get("SUPABASE_ANON_KEY");
 if (!url || !serviceKey || !anonKey) throw new Error("server_configuration_missing");
+async function authenticatePlayer(token) {
+  const response = await fetch(`${url}/auth/v1/user`, { headers: { apikey: anonKey, Authorization: `Bearer ${token}` } });
+  if (!response.ok) return null;
+  const user = await response.json();
+  if (typeof user?.id !== "string" || !user.id) return null;
+  const meta = user.app_metadata;
+  return { accountId: user.id, adminQa: meta?.admin_qa === true || Array.isArray(meta?.roles) && meta.roles.includes("admin_qa") };
+}
 var services = {
-  authenticate: async (token) => {
-    const response = await fetch(`${url}/auth/v1/user`, { headers: { apikey: anonKey, Authorization: `Bearer ${token}` } });
-    if (!response.ok) return null;
-    const user = await response.json();
-    return typeof user.id === "string" ? user.id : null;
-  },
-  adminQa: async (token) => {
-    const response = await fetch(`${url}/auth/v1/user`, { headers: { apikey: anonKey, Authorization: `Bearer ${token}` } });
-    if (!response.ok) return false;
-    const user = await response.json();
-    const meta = user?.app_metadata ?? {};
-    return meta.admin_qa === true || Array.isArray(meta.roles) && meta.roles.includes("admin_qa");
-  },
+  authenticate: async (token) => (await authenticatePlayer(token))?.accountId ?? null,
   rpc: async (name, args) => {
     const response = await fetch(`${url}/rest/v1/rpc/${name}`, { method: "POST", headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json" }, body: JSON.stringify(args) });
     const body = await response.json();
@@ -62123,7 +62665,7 @@ var services = {
   randomId: () => crypto.randomUUID(),
   randomRoll: () => crypto.getRandomValues(new Uint32Array(1))[0] / 4294967296
 };
-var gameplay = gameplayHandler(services);
+var gameplay = gameplayHandler(services, authenticatePlayer);
 var regionalCombat = regionalCombatHandlerV1(services);
 var guildShopServices = {
   authenticate: services.authenticate,

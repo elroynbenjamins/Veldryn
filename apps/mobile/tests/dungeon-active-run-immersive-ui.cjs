@@ -30,7 +30,7 @@ assert((app.match(/onRunActiveChange={setDungeonFlowActive}/g)||[]).length===1,'
 // above the Q-Mode/Live status banner.
 assert(app.includes("dungeonFlowActive&&tab==='Coop'"),'Only the standalone dungeon route becomes immersive');
 assert(app.includes('{!immersiveDungeonFlow&&<GameTopBar'),'Active runs hide the global character and activity HUD');
-assert(app.includes("showActivityBar={tab!=='ProfileCustomize'&&tab!=='Coop'&&!featureHubShell.hideActivityBar}"),'The activity bar is hidden on the entire Dungeon tab, including browser, loadout, shops and event details');
+assert(app.includes("showActivityBar={tab!=='ProfileCustomize'&&tab!=='Coop'&&tab!=='Events'&&!(tab==='Guild'&&(guildEventPageOpen||guildInitialPve||guildRaidScope===((auth.session?.user.id??state.character.id)+':'+guildMembershipRevision)))&&!featureHubShell.hideActivityBar}"),'The activity bar is hidden on the entire Dungeon tab, including browser, loadout, shops and event details');
 assert(app.includes("hideDock={tab==='ProfileCustomize'||tab==='Coop'||featureHubShell.hideGlobalChatDock}"),'Dungeon tab hides the global World chat dock so it cannot duplicate Live party chat');
 assert(run.includes("run.mode==='live'&&onChatSend&&!terminal?<CoopLiveChatBar"),'Only active Live runs show the dedicated party chat dock');
 assert(run.indexOf('<CoopLiveChatBar')>run.indexOf('</ExpeditionScreenShell>'),'Party chat stays docked below the dungeon scroll content');

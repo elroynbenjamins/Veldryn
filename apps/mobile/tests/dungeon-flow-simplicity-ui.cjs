@@ -23,7 +23,7 @@ assert(!browser.includes('echoTools')&&!screen.includes('showEchoSharing'),'Manu
 assert(browser.includes('NPC or Echo allies fill the missing roles'),'Solo ally description must account for NPC fallback');
 const topBar=read('components/GameTopBar.tsx'),activityBar=read('components/ActiveActivityBar.tsx');
 const app=fs.readFileSync(path.join(root,'App.tsx'),'utf8');
-assert(app.includes("showActivityBar={tab!=='ProfileCustomize'&&tab!=='Coop'&&!featureHubShell.hideActivityBar}")&&app.includes('!immersiveDungeonFlow&&<GameTopBar')&&topBar.includes('compact={compactActivityBar}')&&activityBar.includes('if(compact)return <Pressable'),'Dungeon screens hide the non-dungeon activity bar while immersive runs hide the whole top bar');
+assert(app.includes("showActivityBar={tab!=='ProfileCustomize'&&tab!=='Coop'&&tab!=='Events'&&!(tab==='Guild'&&(guildEventPageOpen||guildInitialPve||guildRaidScope===((auth.session?.user.id??state.character.id)+':'+guildMembershipRevision)))&&!featureHubShell.hideActivityBar}")&&app.includes('!immersiveDungeonFlow&&<GameTopBar')&&topBar.includes('compact={compactActivityBar}')&&activityBar.includes('if(compact)return <Pressable'),'Dungeon and seasonal event screens hide the activity bar; immersive dungeon runs hide the whole top bar');
 assert(app.includes("hideDock={tab==='ProfileCustomize'||tab==='Coop'||featureHubShell.hideGlobalChatDock}")&&app.includes('onOpenChat={()=>{setChatInitialChannel')&&browser.includes('accessibilityLabel={st("World Chat")}'),'Dungeon chat dock becomes a header shortcut without losing chat access');
 assert(screen.includes('onShop={()=>setShowShop(true)}')&&browser.includes('s.shopShortcut'),'Shop shortcut uses the existing live Expedition Shop handler');
 

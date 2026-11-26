@@ -1,0 +1,65 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const read=name=>fs.readFileSync(path.join(__dirname,'../src/online',name),'utf8');
+const party=read('PartySocialProvider.tsx'),game=read('useOnlineGame.ts'),events=read('party-social.ts');
+assert.match(party,/if\(!accountId\|\|!supabase\)return/);
+assert.match(party,/await refresh\(force\)/);
+assert.match(party,/timer=setTimeout\(\(\)=>void poll\(\),partyRef.current\?PARTY_REFRESH_MS:IDLE_SOCIAL_REFRESH_MS\)/);
+assert.match(party,/PARTY_REFRESH_MS=30_000,IDLE_SOCIAL_REFRESH_MS=120_000/);
+assert.match(party,/if\(next!=='active'\)\{cycle\+\+;clearTimer\(\);\}/);
+assert.match(party,/if\(changed\)rearmPoll.current\?\.\(\)/);
+assert.match(party,/current===generation.current&&activeAccount.current===accountId/);
+assert.match(party,/if\(force\)inFlight.current.refreshAgain=true/);
+const schedule=game.slice(game.indexOf('// Poll the lightweight public event window'),game.indexOf(' const execute='));
+assert.ok(schedule.includes("refreshInFlight.current?.repo===repo"));
+assert.ok(schedule.includes('if(age>=0&&age<30_000)return'));
+assert.ok(schedule.includes("if(next==='active')start();else stop();"));
+assert.ok(!schedule.includes('  void poll();'),'no duplicate event read on startup');
+assert.ok(schedule.includes('120_000'));
+assert.ok(game.includes('if(returned)void refresh()'),'authoritative foreground refresh retained');
+const event=events.slice(events.indexOf('export async function activePartyEvent'));
+assert.ok(event.indexOf('if(!instance)return null')<event.indexOf('await partySocialSnapshot()'));
+console.log('PASS activity request efficiency: foreground polling, party cadence, event fetch ordering, authoritative refresh and forced actions');
+
+const hall=fs.readFileSync(path.join(__dirname,'../src/components/OnlineGuildHallPanel.tsx'),'utf8');
+assert.ok(hall.includes("const needsSupplies=section==='Overview'||section==='Construction'||section==='Bank'"));
+assert.ok(hall.includes('if(previewMode||!needsSupplies)return Promise.resolve()'));
+assert.ok(hall.includes('if(shopFlight.current)return shopFlight.current'));
+assert.ok(hall.includes('if(needsSupplies&&!previewMode)void refreshShop()'));
+assert.ok(hall.includes('onRefresh();if(needsSupplies)void refreshShop()'));
+assert.ok(hall.includes("section==='Shop'?(previewMode?shopFallback():<OnlineGuildTokenShopPanel"));
+
+const guildChat=fs.readFileSync(path.join(__dirname,'../src/components/GuildChat.tsx'),'utf8');
+assert.ok(guildChat.includes('const wantsMention=chatMentionQueryAtEnd(body)!==null'));
+assert.ok(guildChat.includes('if(!guildId||!accountId||!active||!wantsMention)return'));
+assert.ok(guildChat.includes('Date.now()-cached.loadedAt<60_000'));
+assert.ok(guildChat.includes('currentScope.current===scope&&mentionFlight.current===request'));
+assert.ok(guildChat.includes('mentionRoster?.scope===scope?mentionRoster.names:[]'));
+assert.ok(!guildChat.includes('setInterval(loadRoster'));
+
+const dungeon=fs.readFileSync(path.join(__dirname,'../src/screens/CoopExpeditionScreen.tsx'),'utf8');
+assert.ok(dungeon.includes('const browseVisible=!showLive&&!showLoadouts&&!selected&&!selectedEvent&&!run&&!eventRun&&!showShop'));
+assert.ok(dungeon.includes('const showRecruitment=foreground&&browseVisible'));
+assert.ok(dungeon.includes('if(!showRecruitment)return'));
+assert.ok(dungeon.includes('if(!foreground||!browseVisible||entrySource.kind'));
+assert.ok(dungeon.includes('if(!weeklyQuest||!foreground||!browseVisible'));
+assert.ok(dungeon.includes("const liveChatVisible=run?.mode==='live'&&run.phase!=='completed'&&run.phase!=='failed'&&!eventRun"));
+assert.ok(dungeon.includes('if(!foreground||!id||!liveChatVisible'));
+assert.ok(dungeon.includes("enabled:foreground&&entrySource.kind==='real'"),'run watchdog remains authoritative');
+assert.ok(dungeon.includes('const items=await coopClient.rewards(terminalRunId)'), 'terminal rewards retained');
+assert.ok(dungeon.includes('weeklyQuestRequest.current===request'),'obsolete quest reads cannot publish');
+
+const chatOverlay=fs.readFileSync(path.join(__dirname,'../src/components/ChatOverlay.tsx'),'utf8');
+assert.ok(chatOverlay.includes('if(!visible||!chatEnabled||partyOnly)return'),'party-only or disabled chat must not request guild membership');
+assert.ok(chatOverlay.includes('if(active&&mounted.current)'),'retired guild membership reads cannot publish');
+
+const inventoryCraft=fs.readFileSync(path.join(__dirname,'../src/components/InventoryCraftingPanel.tsx'),'utf8');
+assert.ok(inventoryCraft.includes('const candidates=useMemo(()=>RECIPES.filter'));
+assert.ok(inventoryCraft.includes('craftableOnly?candidates.map(recipe=>({recipe,status:recipeAvailability'));
+assert.ok(inventoryCraft.includes('candidates.slice(0,limit).map(recipe=>({recipe,status:recipeAvailability'));
+assert.ok(inventoryCraft.includes('const count=craftable?.length??candidates.length'));
+const recipeBrowser=fs.readFileSync(path.join(__dirname,'../src/components/CraftingRecipeBrowser.tsx'),'utf8');
+assert.ok(recipeBrowser.includes("state.character?.classId+':'+Number(winterHearthVisible)"),'event visibility is part of cache identity');
+assert.ok(recipeBrowser.includes('},[skillId,state.character?.classId,winterHearthVisible])'));
+assert.ok(recipeBrowser.includes('for(const group of matching)'));

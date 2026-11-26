@@ -24,12 +24,12 @@ export class OnlineGameRepository implements GameRepository{
  async save(_state:GameState):Promise<void>{throw new Error('Online saves require a gameplay command.');}
  async reset():Promise<void>{throw new Error('Online characters cannot be reset from a local save action.');}
  async hasPending(){return Boolean(await this.pending.read());}
- async execute(command?:GameCommand):Promise<ExecutedOnlineCommand>{
-  const next=this.queue.then(()=>this.executeQueued(command));
+ async execute(command?:GameCommand,returnClaim=false):Promise<ExecutedOnlineCommand>{
+  const next=this.queue.then(()=>this.executeQueued(command,returnClaim));
   this.queue=next.then(()=>undefined,()=>undefined);
   return next;
  }
- private async executeQueued(command?:GameCommand):Promise<ExecutedOnlineCommand>{
+ private async executeQueued(command?:GameCommand,returnClaim=false):Promise<ExecutedOnlineCommand>{
   // A timed-out response is not proof that the gameplay command failed.
   // Replay the durable request ID first, so server receipts stay idempotent.
   const previous=await this.pending.read();
@@ -44,9 +44,29 @@ export class OnlineGameRepository implements GameRepository{
   }
   if(!command)throw new Error('No pending action.');
   if(!this.snapshot)await this.refresh();
-  const request={requestId:this.key(),expectedVersion:this.snapshot!.version,command};
+  const original=this.snapshot!;
+  const request={requestId:this.key(),expectedVersion:original.version,command};
   await this.pending.write(request);
-  const completed=await this.sendPending(request);
+  let completed:ExecutedOnlineCommand;
+  try{completed=await this.sendPending(request);}
+  catch(error){
+   // Only a definitive stale rejection may create a new receipt. Never
+   // retry a different activity/training session or an ambiguous write.
+   const latest=this.snapshot,prior=original.state,next=latest?.state;
+   if(!returnClaim||previous||command.type!=='claim'||!(error instanceof OnlineCommandError)||
+      !error.definitive||error.message!=='stale_state'||!latest||!next||
+      latest.accountId!==original.accountId||latest.version<=original.version||
+      !prior.character?.id||next.character?.id!==prior.character.id||
+      (!prior.activity&&!prior.character.classTraining)||
+      JSON.stringify(prior.activity)!==JSON.stringify(next.activity)||
+      JSON.stringify(prior.character.classTraining)!==JSON.stringify(next.character.classTraining)||
+      await this.pending.read())throw error;
+   // A concurrent refresh can change the snapshot while storage is read.
+   if(this.snapshot!==latest)throw error;
+   const retry={requestId:this.key(),expectedVersion:latest.version,command};
+   await this.pending.write(retry);
+   completed=await this.sendPending(retry);
+  }
   return recovered?{...completed,recovered}:completed;
  }
 

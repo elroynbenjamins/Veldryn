@@ -11,7 +11,7 @@ import {recruitQModeAllies} from '../../src/server/coop/echo-recruitment';
 import {createQModeNpcAllies} from '../../src/server/coop/qmode-npc-allies';
 import {EXPEDITIONS} from '../../src/server/expeditions/content/launch-content';
 import {regularDungeonTierRequiredLevel,regularDungeonTierRequiredPower} from '../../src/server/coop/dungeon-entry-policy';
-import {REGIONAL_DUNGEON_BALANCE_VERSION} from '../../src/server/coop/regional-power-balance';
+import {REGIONAL_DUNGEON_BALANCE_VERSION,regionalPowerMultipliers} from '../../src/server/coop/regional-power-balance';
 
 /** Deterministic build-calibration probe. This models equal-CP parties using
  * the game's real character ratings, gear->co-op conversion, role readiness,
@@ -69,6 +69,7 @@ function runOne(id:'EXP_001'|'EXP_003',tier:1|2|3,seed:number,roster:ReturnType<
    publishedAtMs:0,contentVersion:'online-coop-loadout-v1',blockedAccountIds:[],snapshot,
   })),
  });
+ assert.equal(run.rootboundT3CalibrationVersion,id==='EXP_001'&&tier===3?1:undefined,'Only new Asterfall T3 Q-Mode runs pin the calibration');
  const priority=['camp','shrine','event','treasure','merchant','echo','battle','risk','elite','boss'];
  // Endurance replaces the old seven-step forced boss with a choice after
  // seven cleared rooms (boss option is at depth 8). Take the FIRST eligible
@@ -89,6 +90,13 @@ function runOne(id:'EXP_001'|'EXP_003',tier:1|2|3,seed:number,roster:ReturnType<
  return {clear:run.phase==='completed',boss:run.graph.nodes.find(node=>node.kind==='boss')?.contentId,
   terminalDepth:terminal?.depth??-1,terminalKind:terminal?.kind??'unknown'};
 }
+// The persisted run marker is required; pre-existing runs and Live use the prior coefficient.
+const oldRoot=regionalPowerMultipliers('EXP_001',3,true,'BOSS_EXP_ROOT')!;
+const newRoot=regionalPowerMultipliers('EXP_001',3,true,'BOSS_EXP_ROOT',1)!;
+for(const stat of ['attack','hp','defense'] as const)assert.ok(Math.abs(newRoot[stat]/oldRoot[stat]-.975/.95)<1e-9);
+for(const [id,tier,encounter] of [['EXP_001',2,'BOSS_EXP_ROOT'],['EXP_001',3,'BOSS_EXP_BELL'],['EXP_001',3,'ROOT_TEST'],['EXP_003',3,'BOSS_EXP_SOLAR']] as const)
+ assert.deepEqual(regionalPowerMultipliers(id,tier,true,encounter,1),regionalPowerMultipliers(id,tier,true,encounter));
+assert.equal(regionalPowerMultipliers('EXP_001',3,false,'BOSS_EXP_ROOT',1),undefined);
 const releaseBalanceFailures:string[]=[];
 for(const id of ['EXP_001','EXP_003'] as const)for(const tier of [1,2,3] as const){try{
  const roster=calibratedRoster(id,tier),count=40;

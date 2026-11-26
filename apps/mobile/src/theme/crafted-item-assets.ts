@@ -8,6 +8,7 @@ export const craftedItemIcons={
  SEARED_RIVER_EEL:require('../../assets/food-v2/seared_river_eel.webp'),
  ROASTED_OATHSCALE:require('../../assets/food-v2/roasted_oathscale-v2.webp'),
  IRONWOOD_STEW:require('../../assets/food-v2/ironwood_stew.webp'),
+ SUNSCAR_SPICED_PLATTER:require('../../assets/food-v2/sunscar_spiced_platter-v2.webp'),
  COOKED_MEADOW_PERCH:require('../../assets/food-v2/cooked_meadow_perch-v2.webp'),
  ROASTED_ROOTSTREAM_TROUT:require('../../assets/food-v2/roasted_rootstream_trout.webp'),
  BAKED_CAVE_LOACH:require('../../assets/food-v2/baked_cave_loach-v2.webp'),

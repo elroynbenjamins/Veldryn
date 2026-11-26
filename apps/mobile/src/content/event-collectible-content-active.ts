@@ -2,7 +2,7 @@ import type {CollectibleDefinition} from './collectibles';
 import {FROSTFALL_REWARDS_RELEASED} from '../core/release-flags';
 
 /** Frostfall definitions are staged but hidden from the runtime catalog until launch approval. */
-const FROSTFALL_PETS:readonly CollectibleDefinition[]=[
+export const FROSTFALL_PETS:readonly CollectibleDefinition[]=[
  {id:'EVT_PET_015',kind:'pet',name:'Snowbell Pup',bonusFamilyId:'EVT_PET_015',target:'fishingSpeed',ownedBps:50,activeBps:200,collectionGroup:'event',source:'Frostfall Festival · December',event:'frostfall_festival',rarity:'Common',buff:'+2% Fishing Speed',description:'A fluffy winter pup with a bell collar and scarf.'},
  {id:'EVT_PET_017',kind:'pet',name:'Aurora Fox',bonusFamilyId:'EVT_PET_017',target:'skillXp',ownedBps:50,activeBps:500,collectionGroup:'event',source:'Frostfall Festival · December',event:'frostfall_festival',rarity:'Mythic',buff:'+5% Offline Skill XP',description:'A luminous frost fox wrapped in aurora ribbons and ice crystal ornaments.'}
 ];

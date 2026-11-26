@@ -9,6 +9,11 @@ export type PublicEventSchedule={eventId:string;name:string;startsAtMs?:number;e
 /** Reads only the server's public active-event window; reward settlement remains server-authoritative online. */
 export async function fetchActiveEventRuntime(nowMs=Date.now()):Promise<LiveEventRuntime|undefined>{
   if(!supabase)return undefined;
+  // visible_live_events is authenticated-only. Startup may run this before a
+  // guest or restored account session exists; do not send an anonymous RPC.
+  const {data:auth,error:authError}=await supabase.auth.getSession();
+  if(authError)throw authError;
+  if(!auth.session)return undefined;
   const {data,error}=await supabase.rpc('visible_live_events');
   if(error)throw error;
   const row=(data as ActiveEventRow[]|null)?.[0];

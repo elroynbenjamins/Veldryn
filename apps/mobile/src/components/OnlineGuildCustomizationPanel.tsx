@@ -11,7 +11,7 @@ import {GuildBannerArtwork,GuildFrameSwatch} from './GuildHeraldry';
 import {guildBannerSourceByKey,guildBorderSourceByKey} from '../theme/guild-customization-assets';
 import {GuildBackgroundPicker} from './GuildBackgroundPicker';
 import {Panel} from './Panel';
-import {normalizeGuildBackgroundId,type GuildBackgroundId,GUILD_BANNERS,GUILD_FRAMES,visibleGuildNameColors,guildCosmeticUnlockLabel,isGuildCosmeticUnlocked,normalizeGuildBannerId,normalizeGuildFrameId,normalizeGuildMotto,normalizeGuildNameColorId,normalizeGuildNameplateId,type GuildAppearanceEntitlements,type GuildBannerId,type GuildFrameId,type GuildNameColorId,type GuildNameplateId} from '../core/guild-customization';
+import {guildCosmeticVisible,isFrostfallGuildCosmetic,normalizeGuildBackgroundId,type GuildBackgroundId,GUILD_BANNERS,GUILD_FRAMES,visibleGuildNameColors,guildCosmeticUnlockLabel,isGuildCosmeticUnlocked,normalizeGuildBannerId,normalizeGuildFrameId,normalizeGuildMotto,normalizeGuildNameColorId,normalizeGuildNameplateId,type GuildAppearanceEntitlements,type GuildBannerId,type GuildFrameId,type GuildNameColorId,type GuildNameplateId} from '../core/guild-customization';
 import {GUILD_TAG_COLORS,normalizeGuildTag,type GuildTagColorId} from '../core/guild-tags';
 import {guildAppearanceEntitlements,guildDetails,myGuild,updateGuildAppearance,updateOnlineGuildTag,type OnlineGuild} from '../online/social';
 import {loadOnlineGuildTokenShop} from '../online/guild-token-shop';
@@ -53,7 +53,7 @@ export function OnlineGuildCustomizationPanel(){
  {!colorEditingAllowed?<Text style={s.help}>Complete Guild Hall I to change colors. Your existing color stays selected.</Text>:null}
  <View style={s.row}>{GUILD_TAG_COLORS.map(entry=>{const unlocked=entry.minimumGuildLevel?entitlements.guildLevel>=entry.minimumGuildLevel:entry.achievementId?entitlements.pveAchievementIds.includes(entry.achievementId):true;return <Pressable key={entry.id} disabled={!editable||busy||!unlocked||!colorEditingAllowed} onPress={()=>setTagColorId(entry.id)} style={[s.option,entry.id===tagColorId&&s.selected,!unlocked&&s.locked]}><View style={[s.colorDot,{backgroundColor:entry.color}]}/><Text style={s.optionText}>{entry.name}</Text><Text style={s.meta}>{unlocked?st("Available"):entry.minimumGuildLevel?`Guild Level ${entry.minimumGuildLevel}`:st("Guild achievement required")}</Text></Pressable>})}</View>
 
-  <Text style={s.section}>{st("Banner / emblem")}</Text><View style={s.grid}>{GUILD_BANNERS.map(entry=>{
+  <Text style={s.section}>{st("Banner / emblem")}</Text><View style={s.grid}>{GUILD_BANNERS.filter(entry=>guildCosmeticVisible(entry.id,entitlements)).map(entry=>{
    const unlocked=isGuildCosmeticUnlocked(entry.unlock,entitlements);
    const artworkReady=entry.unlock.type!=='construction'||guildBannerSourceByKey.has(entry.assetKey);
    const selectable=unlocked&&artworkReady;
@@ -63,11 +63,11 @@ export function OnlineGuildCustomizationPanel(){
     style={[s.bannerCard,entry.id===bannerId&&s.selected,!selectable&&s.locked]}>
     <View style={{alignItems:'center'}}><GuildBannerArtwork height={88} bannerId={entry.id}/></View>
     <Text style={s.cardName}>{entry.name}</Text>
-    {entry.unlock.type==='construction'?<Text style={s.meta}>{!artworkReady?'Artwork pending':unlocked?'Built by your Guild':guildCosmeticUnlockLabel(entry.unlock)}</Text>:null}
+    {isFrostfallGuildCosmetic(entry.id)?<Text style={s.meta}>{guildCosmeticUnlockLabel(entry.unlock)} · {unlocked?st('Available'):st('Locked')}</Text>:entry.unlock.type==='construction'?<Text style={s.meta}>{!artworkReady?'Artwork pending':unlocked?'Built by your Guild':guildCosmeticUnlockLabel(entry.unlock)}</Text>:null}
    </Pressable>;
   })}</View>
   <Text style={s.section}>{st("Card background")}</Text><GuildBackgroundPicker selected={backgroundId} onSelect={setBackgroundId} entitlements={entitlements} disabled={!editable||busy||guild.background_id===undefined}/>{guild.background_id===undefined?<Text style={s.help}>{st('Backgrounds will be available after the server update.')}</Text>:null}
-  <Text style={s.section}>{st("Profile border")}</Text><View style={s.row}>{GUILD_FRAMES.map(entry=>{
+  <Text style={s.section}>{st("Profile border")}</Text><View style={s.row}>{GUILD_FRAMES.filter(entry=>guildCosmeticVisible(entry.id,entitlements)).map(entry=>{
    const unlocked=isGuildCosmeticUnlocked(entry.unlock,entitlements);
    const artworkReady=entry.unlock.type!=='construction'||guildBorderSourceByKey.has(entry.assetKey);
    const selectable=unlocked&&artworkReady;
@@ -76,7 +76,7 @@ export function OnlineGuildCustomizationPanel(){
     onPress={()=>setFrameId(entry.id)}
     style={[s.option,entry.id===frameId&&{borderColor:entry.accent,backgroundColor:C.selection},!selectable&&s.locked]}>
     <GuildFrameSwatch frameId={entry.id}/><Text style={s.optionText}>{entry.name}</Text>
-    <Text style={s.meta}>{!artworkReady?'Artwork pending':unlocked?st("Available"):guildCosmeticUnlockLabel(entry.unlock)}</Text>
+    <Text style={s.meta}>{!artworkReady?'Artwork pending':unlocked?st("Available")+(isFrostfallGuildCosmetic(entry.id)?' · Frostfall 2026':''):guildCosmeticUnlockLabel(entry.unlock)}</Text>
    </Pressable>;
   })}</View>
   <Text style={s.section}>{st("Guild name color")}</Text><Text style={s.help}>Only colors already unlocked by your Guild are selectable. Construction never awards a color.</Text><View style={s.row}>{visibleGuildNameColors(entitlements).map(entry=>{const unlocked=isGuildCosmeticUnlocked(entry.unlock,entitlements);return <Pressable key={entry.id} disabled={!editable||busy||!unlocked||!colorEditingAllowed} onPress={()=>setNameColorId(entry.id)} style={[s.option,entry.id===nameColorId&&s.selected,!unlocked&&s.locked]}><View style={[s.colorDot,{backgroundColor:entry.color}]}/><Text style={s.optionText}>{entry.name}</Text><Text style={s.meta}>{unlocked?st("Available"):guildCosmeticUnlockLabel(entry.unlock)}</Text></Pressable>})}</View>

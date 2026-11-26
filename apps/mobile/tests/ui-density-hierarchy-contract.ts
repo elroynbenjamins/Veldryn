@@ -51,8 +51,8 @@ const craftingProfessionBrowser=read('src/components/CraftingRecipeBrowser.tsx')
 const skills=read('src/screens/SkillsScreen.tsx');
 ok(!skills.includes('this workshop has no trainable recipes available yet'),'Tailoring and Enchanting must not regress to placeholder-only skill screens');
 
-ok(skills.includes('navigatorRow:{minHeight:72'),'Skills navigator rows must be compact and touch friendly');
-ok(skills.includes('navigatorTop:')&&skills.includes('navigatorProgress:'),'Skills navigator must keep icon, identity, level and progress visible together');
+ok(skills.includes("navigatorRow:{width:'48%',minWidth:138,minHeight:122")&&skills.includes("cardGrid:{flexDirection:'row',flexWrap:'wrap'"),'Skills hub must restore compact responsive two-column cards');
+ok(skills.includes('navigatorTop:')&&skills.includes('navigatorLevelRow:')&&skills.includes('navigatorProgress:'),'Skills cards must keep icon, identity, level and progress visible together');
 ok(!skills.includes('Tap to open'),'Skills cards must not waste a line on redundant tap instructions');
 ok(!skills.includes('TRAINING FOCUS · RECOMMENDED')&&!skills.includes('skillTrainingFocus(state)'),'Skills navigator must not force a training recommendation');
 ok(skills.includes("gt('NEXT LV {level} · {title}',{level:milestone.nextLevel,title:gl(milestone.next[0].title)})")&&skills.includes('skillMilestoneOverview(state,skillRow.skillId)'),"Skill cards must preview their next meaningful authored unlock instead of showing XP progress alone");
@@ -87,7 +87,7 @@ ok(masteryCore.includes("{rank:10,kind:'xp'")&&masteryCore.includes("{rank:20,ki
 const gatheringSkills=read('src/components/GatheringActivityList.tsx');
 ok(gatheringSkills.includes('Ready resources appear first. Travel to other unlocked regions for more.')&&gatheringSkills.includes('if(readyHere){onGather(activity.id);return;}'),'Gathering should describe location readiness and immediately start a tapped available resource');
 ok(gatheringSkills.includes('accessibilityRole="button"')&&gatheringSkills.includes('onPress={start}'),'Each gathering resource must begin directly from its row');
-ok(gatheringSkills.includes("gt('Have: {count} {resource} · {seconds}s'")&&gatheringSkills.includes('formatGameNumber(available')&&gatheringSkills.includes('Math.ceil(view.cycleSeconds)'),'Gathering rows must show stored resource count and an easy-to-scan rounded action duration');
+ok(gatheringSkills.includes("gt('Have: {count} {resource} · {seconds}s'")&&gatheringSkills.includes('count:formatGameNumber(stock(activity.itemId),state.settings.numberMode,language)')&&gatheringSkills.includes('seconds:cycleSeconds')&&gatheringSkills.includes('cycleSeconds:entry.readyHere&&!entry.active?Math.ceil(gatheringBalanceProjection(state,entry.activity,0).cycleSeconds):0')&&gatheringSkills.includes('[state,skillId,skillLevel,currentRegionOnly,region.id,areaId,preferredActionId]'),'Gathering rows must show stored resource count and an easy-to-scan rounded action duration');
 ok(gatheringSkills.includes('gatheringProgressionAction'),'Locked gathering rows must still route to the useful training destination');
 ok(gatheringSkills.includes('gatheringBalanceProjection'),'Gathering duration must continue using the shared rate projection');
 const balanceProjection=read('src/core/balance-projection.ts');
@@ -204,8 +204,8 @@ for(const path of [
 }
 
 const activeActivityBar=read('src/components/ActiveActivityBar.tsx');
-ok(activeActivityBar.includes('activityProgressFeedback')&&activeActivityBar.includes("gl(phase).replace('…','').toLocaleUpperCase(language)")&&activeActivityBar.includes('cycleRemaining'),"Collapsed active-activity strip must show the same real cycle phase and next-action countdown as Home");
-ok(activeActivityBar.includes("activity.kind==='exploration'?explorationRoute(activity.targetId)")&&activeActivityBar.includes('route?.seconds??faithTier?.seconds')&&activityTargetNames.includes('EXPLORATION_ROUTES.find'),'Active Exploration must render its authored route name and cycle duration instead of a frozen one-second fallback');
+ok(activeActivityBar.includes('activityProgressFeedback')&&activeActivityBar.includes("gl(phase).replace('…','').toLocaleUpperCase(language)")&&activeActivityBar.includes('cycleRemaining'),"Collapsed timed-activity strip must show the real cycle phase and next-action countdown");
+ok(activeActivityBar.includes("activity?.kind==='exploration'?explorationRoute(activity.targetId)")&&activeActivityBar.includes('route?.seconds??faithTier?.seconds')&&activityTargetNames.includes('EXPLORATION_ROUTES.find'),'Active Exploration must render its authored route name and cycle duration instead of a frozen one-second fallback');
 
 const encounterLockCards=read('src/components/RegionEncounterList.tsx');
 ok(encounterLockCards.includes('encounterLockRequirement(state,monster)')&&encounterLockCards.includes("lock?.kind==='exploration'?t(\"SCOUT\")+' '+lock.routeName"),'Locked encounter cards must show their actual scouting requirement after the level requirement is met');

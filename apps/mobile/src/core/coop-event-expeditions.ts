@@ -115,6 +115,7 @@ export function presentEventExpeditionRun(projection:CoopEventRunServerProjectio
   const marks=projection.settlement.rewardMarks??0;
   const run:CoopRunView={
     runId:projection.runId,
+    expeditionId:projection.eventExpeditionId,
     mode:'qmode',
     modeLabel:projection.dungeonName,
     phase:projection.phase,

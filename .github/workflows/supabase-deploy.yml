@@ -63,7 +63,9 @@ jobs:
 
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          # v3 changes database targeting and hosted-mutation confirmation.
+          # Pin so a new CLI major cannot silently change deployment semantics.
+          version: 3.3.0
 
       - name: Verify committed gameplay Edge bundle matches the shared engine
         run: node tools/verify-gameplay-edge.mjs
@@ -75,13 +77,13 @@ jobs:
 
       - name: Apply migrations
         if: ${{ github.event.inputs.functions_only != 'true' }}
-        run: supabase db push
+        run: supabase db push --remote --yes
         working-directory: backend/supabase
 
       - name: Deploy gameplay function
-        run: supabase functions deploy gameplay --project-ref "$PROJECT_REF"
+        run: supabase functions deploy gameplay --project-ref "$PROJECT_REF" --yes
         working-directory: backend/supabase
 
       - name: Deploy coop function
-        run: supabase functions deploy coop --project-ref "$PROJECT_REF"
+        run: supabase functions deploy coop --project-ref "$PROJECT_REF" --yes
         working-directory: backend/supabase

@@ -21,6 +21,8 @@ assert.ok(auth.includes('!googleLinked&&googleAccountLinkingEnabled&&<GoogleBran
 assert.ok(auth.includes('googleAccountLinkingEnabled&&<><GoogleBrandButton'),'Signed-out Google login also waits for verified nonce-bound Android builds');
 const googleSignIn=read('src/online/google-signin.ts');
 assert.ok(googleSignIn.includes("process.env.EXPO_PUBLIC_GOOGLE_ACCOUNT_LINKING_ENABLED==='true'"),'Linking requires a deliberate release flag and stays disabled by default');
+assert.ok(!app.includes('signInAsGuest(')&&!app.includes('guestBootstrapRef'),'App startup never creates guest accounts without explicit input');
+assert.ok(app.includes("await perform({type:'roster_switch',args:{id}},true,false,false,true)"),'Character switching awaits the authenticated gameplay command and propagates its failure, rather than performing an auth action');
 assert.ok(auth.includes('signInAsGuest()')&&auth.includes('upgradeGuestAccount(email,username,accountId)'),'Guest entry and guest-owner linking are preserved');
 assert.ok(auth.includes('accountLinkStep(auth.session.user)')&&auth.includes("linkStep==='set_password'"),'Verified account setup uses the authoritative state machine');
 assert.ok(auth.includes('finishGuestAccount(password,accountId)')&&auth.includes('resendGuestAccountConfirmation(accountId)')&&auth.includes('auth.refreshAccount()'),'Resend, verification refresh and password setup stay connected to real auth');
@@ -100,8 +102,23 @@ for(const key of ['This name is already used by another player.','You can change
  }
 }
 const socialEditor=read('src/components/SocialNameEditor.tsx');
-assert.ok(socialEditor.includes('socialIdentityT(language,socialNameError(e))'),'Editor localizes the parsed PostgREST error rather than showing raw SQL');
+assert.ok(socialEditor.includes('const reason=socialNameError(e)')&&socialEditor.includes('socialIdentityT(language,reason)')&&socialEditor.includes("reason==='This name is already used by another player.'"),'Editor localizes parsed errors and handles name collisions as taken');
 assert.ok(socialEditor.includes('proposed.toLowerCase()!==data.socialName.toLowerCase()'),'Case-only re-entry does not offer a pointless 30-day rename action');
+
+assert.ok(socialNameSource.includes("rpc('account_social_name_availability_v1'"),'Client queries the protected Social Name availability RPC');
+assert.ok(socialNameSource.includes("typeof data!=='boolean'"),'Malformed availability responses fail closed');
+assert.ok(socialEditor.includes("checkAccountSocialNameAvailability(candidate)")&&socialEditor.includes('clearTimeout(timer)'),'Editor debounces each availability request and cancels older checks');
+assert.ok(socialEditor.includes('activeAccountRef.current===owner')&&socialEditor.includes('availability?.accountId===accountId'),'A late check cannot bleed into a different account');
+assert.ok(socialEditor.includes("canSave=canCheck&&availabilityStatus==='available'&&!busy"),'Save is disabled unless availability was confirmed for the current name');
+assert.ok(socialEditor.includes("status:'taken'")&&socialEditor.includes('setAvailabilityRetry(value=>value+1)'),'Duplicate name races are surfaced and failed checks can be retried');
+for(const key of ['Checking name availability…','Name available.','Name already taken.','Unable to check availability. Tap to retry.']){
+ for(const language of ['en','de','es','nl','it','fr','ru','tr']){
+  const translated=socialT(language,key);
+  assert.ok(typeof translated==='string'&&translated.length>3&&!translated.includes('undefined'),'Availability UI locale: '+key+' / '+language);
+  if(language!=='en')assert.notEqual(translated,key,'No English fallback for availability UI: '+key+' / '+language);
+ }
+}
+
 
 
 assert.ok(auth.includes('Google Play Games is separate from your VELDRYN account'),'Play Games remains separate from VELDRYN recovery');

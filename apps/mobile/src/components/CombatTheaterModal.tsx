@@ -1,33 +1,36 @@
-import {type PropsWithChildren,type ReactNode,useEffect,useMemo,useRef} from 'react';
+import {type PropsWithChildren,type ReactNode,useEffect,useMemo,useState} from 'react';
 import {Animated,Easing,Modal,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useGameTheme} from '../theme/ThemeContext';
 import {type ThemeColors} from '../theme/theme';
+import {LOOP_NATIVE_DRIVER,useMotionEnabled} from './anim/motion';
 
 /**
  * An immersive presentation for authoritative combat replays and raid status.
  * This surface never starts a fight or computes damage/rewards.
  */
-export function CombatTheaterModal({visible,onClose,title,eyebrow,subtitle,compactHeader=false,tone='dungeon',reduceMotion=false,footer,children}:PropsWithChildren<{
- visible:boolean;onClose:()=>void;title:string;eyebrow:string;subtitle?:string;compactHeader?:boolean;tone?:'dungeon'|'event'|'guild'|'companion';reduceMotion?:boolean;footer?:ReactNode;
+export function CombatTheaterModal({visible,onClose,title,eyebrow,subtitle,compactHeader=false,tone='dungeon',reduceMotion=false,closeLabel='Minimize battle',footer,children}:PropsWithChildren<{
+ visible:boolean;onClose:()=>void;title:string;eyebrow:string;subtitle?:string;compactHeader?:boolean;tone?:'dungeon'|'event'|'guild'|'companion';reduceMotion?:boolean;closeLabel?:string;footer?:ReactNode;
 }>){
  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]),insets=useSafeAreaInsets();
- const pulse=useRef(new Animated.Value(0)).current;
+ const [pulse]=useState(()=>new Animated.Value(0));
+ const animate=useMotionEnabled(reduceMotion,visible);
+ const haloMotion=useMemo(()=>({opacity:pulse.interpolate({inputRange:[0,1],outputRange:[.14,.35]}),transform:[{scale:pulse.interpolate({inputRange:[0,1],outputRange:[.9,1.2]})}]}),[pulse]);
  const accent=tone==='event'?C.special:tone==='guild'?C.warning:tone==='companion'?C.info:C.accent;
  useEffect(()=>{
   pulse.stopAnimation();pulse.setValue(0);
-  if(!visible||reduceMotion)return;
+  if(!animate)return;
   const loop=Animated.loop(Animated.sequence([
-   Animated.timing(pulse,{toValue:1,duration:1800,easing:Easing.inOut(Easing.quad),useNativeDriver:true}),
-   Animated.timing(pulse,{toValue:0,duration:1800,easing:Easing.inOut(Easing.quad),useNativeDriver:true}),
+   Animated.timing(pulse,{toValue:1,duration:1800,easing:Easing.inOut(Easing.quad),useNativeDriver:LOOP_NATIVE_DRIVER,isInteraction:false}),
+   Animated.timing(pulse,{toValue:0,duration:1800,easing:Easing.inOut(Easing.quad),useNativeDriver:LOOP_NATIVE_DRIVER,isInteraction:false}),
   ]));
   loop.start();
   return()=>{loop.stop();pulse.stopAnimation();};
- },[visible,reduceMotion,pulse]);
+ },[animate,pulse]);
  return <Modal visible={visible} animationType={reduceMotion?'none':'fade'} onRequestClose={onClose} statusBarTranslucent hardwareAccelerated>
   <View style={s.root}>
    <View pointerEvents="none" style={s.ambient}>
-    <Animated.View style={[s.halo,{borderColor:accent,opacity:pulse.interpolate({inputRange:[0,1],outputRange:[.14,.35]}),transform:[{scale:pulse.interpolate({inputRange:[0,1],outputRange:[.9,1.2]})}]}]}/>
+    <Animated.View style={[s.halo,{borderColor:accent},haloMotion]}/>
    </View>
    <View style={[s.header,compactHeader&&s.headerCompact,{paddingTop:Math.max(insets.top,12)}]}>
     <View style={[s.heading,compactHeader&&s.headingCompact]}>
@@ -35,7 +38,7 @@ export function CombatTheaterModal({visible,onClose,title,eyebrow,subtitle,compa
      <Text accessibilityRole="header" numberOfLines={2} style={[s.title,compactHeader&&s.titleCompact]}>{title}</Text>
      {subtitle?<Text style={s.subtitle}>{subtitle}</Text>:null}
     </View>
-    <Pressable accessibilityRole="button" accessibilityLabel="Minimize battle" onPress={onClose} style={({pressed})=>[s.close,compactHeader&&s.closeCompact,pressed&&s.pressed]}>
+    <Pressable accessibilityRole="button" accessibilityLabel={closeLabel} onPress={onClose} style={({pressed})=>[s.close,compactHeader&&s.closeCompact,pressed&&s.pressed]}>
      <Text style={s.closeText}>×</Text>
     </Pressable>
    </View>

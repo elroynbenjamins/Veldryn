@@ -98,7 +98,7 @@ ok(guildFuture.includes("'Guild vs Guild'")&&guildFuture.includes("'Guild Raids'
 ok(guildFuture.includes("onlineSection==='Future'?<GuildFutureContent/>"),'Guild future content must have a dedicated destination');
 ok(guildFuture.includes('<GuildNavigation value={onlineSection}')&&guildNavigation.includes("GuildPrimarySection='Home'|'PvE'|'Activities'|'Hall'|'Progress'"),'Online Guild navigation must prioritize five primary destinations');
 ok(guildFuture.includes("onlineSection==='Home'?<GuildOnlineHome"),'Online Guild must expose a dedicated overview home');
-ok(guildFuture.includes('<OnlineGuildMusterPanel/>')&&guildFuture.includes('projects={onlineProjects}')&&guildFuture.includes("onlineSection==='Progress'?<GuildProgressPanel")&&guildFuture.includes("onlineSection==='PvE'?(isValidElement")&&guildFuture.includes('cloneElement(onlinePve,{headerHelp:headerGuide})'),"Guild navigation must separate Muster, Progress Projects and PvE");
+ok(guildFuture.includes('<OnlineGuildMusterPanel/>')&&guildFuture.includes('projects={onlineProjects}')&&guildFuture.includes("onlineSection==='Progress'?<GuildProgressPanel")&&guildFuture.includes("onlineSection==='PvE'?(isValidElement")&&guildFuture.includes('cloneElement(onlinePve,{headerHelp:headerGuide,raidScope:JSON.stringify('),"Guild navigation must separate Muster, Progress Projects and PvE");
 ok(guildFuture.includes("onlineSection==='Manage'?<View style={s.sectionStack}")&&guildFuture.includes('{onlineCustomize}')&&!guildFuture.includes('{onlineDirectory}'),'Member-only management must keep customization without displaying guild creation');
 ok(guildFuture.includes('<GuildDiscoveryFlow onJoined=')&&guildFuture.includes('setGuildTourJustJoined(true)'),'Nonmembers must only see Guild discovery and creation');
 ok(guildFuture.includes("homeGrid:{flexDirection:'row',flexWrap:'wrap'"),'Guild Home destination cards must wrap on narrow layouts');
@@ -107,7 +107,7 @@ ok(guildHall.includes('Future Guild Legacy will preserve major trophies and seas
 
 const skills=read('src/screens/SkillsScreen.tsx');
 ok(skills.includes('useWindowDimensions')&&skills.includes('narrowNavigator=width<380||fontScale>=1.3||state.settings.textScale>=1.3'),'Skills filter must adapt on narrow phones or large text');
-ok(skills.includes('narrowNavigator&&searchExpanded?<SearchField')&&skills.includes('navigatorRow:{minHeight:72'),'Skills must preserve readable full-width skill rows and accessible search at larger text sizes');
+ok(skills.includes('narrowNavigator&&searchExpanded?<SearchField')&&skills.includes("stackCards=width<350||fontScale>=1.25||state.settings.textScale>=1.25")&&skills.includes('stackCards&&hubStyles.skillCardWide'),'Skills must stack cards for narrow phones and large text while preserving accessible search');
 ok(skills.includes('accessibilityHint'),'Skill cards must expose an action hint');
 ok(skills.includes('modeChip:{minHeight:44'),'Skill mode controls must retain a 44px touch target');
 ok(skills.includes('keyboardDismissMode="on-drag"'),'Skills search/crafting flow must dismiss the keyboard on drag');

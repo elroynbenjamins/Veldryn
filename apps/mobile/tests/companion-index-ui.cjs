@@ -26,8 +26,8 @@ for(const needle of [
  "tab==='unlock'&&(owned||group!=='available')",
  "tab==='event'&&group!=='event'",
  "group==='comingSoon'",
- "companionIndexGroup(def)!=='comingSoon'",
- "const publicTotal=COMPANION_INDEX_COUNTS.available+COMPANION_INDEX_COUNTS.event",
+ "groupFor(def)!=='comingSoon'",
+ "const publicTotal=inIndex.length",
  "accessibilityRole=\"tab\"",
  "accessibilityState={{selected:tab===item.id}}",
  "setRoleMenuOpen(open=>!open)",
@@ -75,3 +75,6 @@ assert(index.includes("tab==='owned'&&unlocked===0"),'Empty owned roster must su
 assert(index.includes("tab==='unlock'&&unlockCount===0"),'Fully collected roster must offer owned companions');
 assert(index.includes("tab==='owned'&&unlocked>0"),'Training shortcut belongs to owned tab');
 console.log('PASS: Companion Index intent tabs, full unlock requirements, spoiler privacy and detail/training paths');
+
+assert(index.includes('visibleCombatCompanions(state.account,now)'), 'Seasonal roster visibility must be account and time scoped');
+assert(panel.includes('<CompanionIndex state={state} now={now}'), 'Roster must receive the current presentation clock');

@@ -51,17 +51,20 @@ export function GameTopBar({state,nowMs,reward,labelForDestination,onNavigate,on
   // Expensive offline-combat sim runs on bucketed time to keep per-second ticks cheap.
   const combatPreviewMs=bucketedMs(nowMs,5_000);
   const combatReward=useMemo(()=>reward??(state.activity?.kind==='combat'?previewActivityReward(state,combatPreviewMs):undefined),[reward,state,combatPreviewMs]);
-  const healthState=useMemo(()=>liveHealthState(state,nowMs,combatReward),[state,nowMs,combatReward]);
+  // In combat a supplied reward already carries the projected HP and food.
+  // The wall clock is only required for passive recovery outside combat.
+  const healthClock=state.activity?.kind==='combat'&&combatReward?0:nowMs;
+  const healthState=useMemo(()=>liveHealthState(state,healthClock,combatReward),[state,healthClock,combatReward]);
   function openFood(){if(state.activity)setRecoveryHunt(state.activity.kind==='combat'?state.activity:null);setFoodOpen(true);}
   const tr=(text:string,params?:Record<string,string|number>)=>navigationText(state.settings.language,text,params);
   const C=useGameTheme(),equipmentColors=equipmentTheme(C),styles=useMemo(()=>makeStyles(C),[C]);
-  const active=normalizeQuickNavDestinations(state.settings.quickNavDestinations);
+  const active=useMemo(()=>normalizeQuickNavDestinations(state.settings.quickNavDestinations),[state.settings.quickNavDestinations]);
   const [open,setOpen]=useState(false);
   const [environmentOpen,setEnvironmentOpen]=useState(false);
   const [customizing,setCustomizing]=useState(false);
   const [saving,setSaving]=useState(false);
   const [draft,setDraft]=useState<QuickNavDestination[]>(active);
-  useEffect(()=>{if(!open)setDraft(active)},[open,state.settings.quickNavDestinations]);
+  useEffect(()=>{if(!open)setDraft(active)},[open,active]);
   const maxHp=useMemo(()=>Math.max(1,effectiveStats(state).hp),[state]);
   const currentHp=Math.max(0,Math.min(maxHp,healthState.character?.currentHp??0)),hpRatio=currentHp/maxHp,hpPercent=`${Math.round(hpRatio*100)}%` as `${number}%`,hpColor=hpRatio<=.25?C.bad:hpRatio<=.5?C.warning:C.good;
   const activity=state.activity;

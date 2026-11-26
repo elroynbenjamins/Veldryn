@@ -1,5 +1,5 @@
 import {ULTRA_LUXE_FULL_SET_DEFINITIONS,verifiedUltraLuxeFullSetPlan} from '../../core/ultra-luxe-full-set-command';
-import {ultraLuxeFullSetEquipped,ultraLuxeFullSetNamePreset,type FullSetPlan,type VerifiedFullSetNames} from '../../core/ultra-luxe-full-set-name';
+import {confirmUltraLuxeFullSetReadback,ultraLuxeFullSetEquipped,ultraLuxeFullSetNamePreset,type FullSetPlan,type VerifiedFullSetNames} from '../../core/ultra-luxe-full-set-name';
 import type {OnlineSnapshot} from '../../core/online-game-repository';
 import {quickCosmeticSets,quickSetEquipped,quickSetSelection,undoQuickSet} from '../../core/profile-quick-set-equip';
 import {ownedUltraLuxeTitleColor} from '../../core/ultra-luxe-titles';
@@ -112,7 +112,7 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
    if(timerRef.current){clearTimeout(timerRef.current);timerRef.current=null;}
    pendingRef.current=null;sentRef.current=null;
    const next=JSON.parse(savedKey) as WardrobeEquipped;
-   selectionRef.current=next;setSelection(next);setCustomTitle(next.title);setTryOn(null);setSheet(null);setQuickOpen(false);
+   selectionRef.current=next;setSelection(next);setCustomTitle(next.title);setTryOn(null);setSheet(null);setQuickOpen(false);setFullSetStatus('');
    return;
   }
   if(pendingRef.current)return;
@@ -165,6 +165,7 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
    fullSetInFlight.current=true;setFullSetBusy(true);setFullSetStatus('');setTryOn(null);setSheet(null);onNotice?.(null);
    void fullSetPort.apply(plan).then(next=>{
     if(!mounted.current||accountRef.current!==owner||stateRef.current.character?.id!==characterId)return;
+    if(confirmUltraLuxeFullSetReadback(plan,{accountId:owner,characterId},{replayed:next.ultraLuxeFullSetReplayed,gameplay:next,nameSelection:next.ultraLuxeNameSelection})!=='confirmed')throw Error('unconfirmed_full_set');
     const confirmed=wardrobeEquipped(next.state);
     selectionRef.current=confirmed;setSelection(confirmed);setCustomTitle(confirmed.title);
     setFullSetStatus('Full set equipped, including animated name.');

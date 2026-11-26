@@ -1,0 +1,52 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),ts=require('typescript');
+const root=path.join(__dirname,'../src'),cache=new Map();
+function load(file){
+ file=path.resolve(file);if(cache.has(file))return cache.get(file).exports;
+ const mod={exports:{}};cache.set(file,mod);
+ const js=ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText;
+ new Function('exports','module','require',js)(mod.exports,mod,id=>{if(!id.startsWith('.'))throw Error('Unexpected '+id);return load(path.resolve(path.dirname(file),id+'.ts'));});return mod.exports;
+}
+const {ULTRA_LUXE_REVIEW_COLLECTIONS:rows,eligibleReviewCollections,reviewQuickSetChoices,reviewQuickSetSelection,reviewEquippedTier}=load(path.join(root,'core/ultra-luxe-review-integration.ts'));
+const {ultraLuxeGrantProjection,ULTRA_LUXE_GRANT_COLLECTIONS}=load(path.join(root,'core/ultra-luxe-grants.ts'));
+assert.equal(rows.length,4);assert.equal(ULTRA_LUXE_GRANT_COLLECTIONS.length,2);
+assert.equal(new Set(rows.map(c=>c.id)).size,4);
+for(const key of ['background','border','pet','title','badge','effect'])assert.equal(new Set(rows.map(c=>c[key])).size,4,key);
+const scope={accountId:'a',characterId:'hero1'},other={accountId:'b',characterId:'hero1'},otherHero={...scope,characterId:'hero2'};
+const before={icon:'existing-icon',scene:'old-scene',frame:'old-frame',pet:'old-pet',title:'old-title',effect:'old-effect'};
+const full={accountId:'a',collectionIds:rows.map(c=>c.id)};
+assert.deepEqual(eligibleReviewCollections(false,scope,full),[]);
+assert.deepEqual(eligibleReviewCollections(true,scope,undefined),[]);
+assert.deepEqual(eligibleReviewCollections(true,other,full),[]);
+assert.deepEqual(eligibleReviewCollections(true,{accountId:'a',characterId:''},full),[]);
+assert.deepEqual(reviewQuickSetChoices(true,scope,{accountId:'a',collectionIds:['bogus']}),[]);
+assert.equal(reviewQuickSetChoices(true,scope,full).length,4);
+assert.equal(ultraLuxeGrantProjection(full.collectionIds).collectionIds.length,2,'candidate grants remain closed in production projection');
+for(const row of rows){
+ const grant={accountId:'a',collectionIds:[row.id]};
+ const choice=reviewQuickSetChoices(true,scope,grant)[0];
+ assert.equal(choice.id,row.id);
+ assert(!('icon' in choice.patch));assert(!('badge' in choice.patch));assert(!('nameStyle' in choice.patch));
+ const after=reviewQuickSetSelection(true,scope,scope,grant,before,row.id);
+ assert.deepEqual(after,{...before,scene:row.background,frame:row.border,pet:row.pet,title:row.titleName,effect:''});
+ assert.equal(reviewQuickSetSelection(false,scope,scope,grant,before,row.id),null);
+ assert.equal(reviewQuickSetSelection(true,scope,other,grant,before,row.id),null);
+ assert.equal(reviewQuickSetSelection(true,scope,otherHero,grant,before,row.id),null);
+ assert.equal(reviewQuickSetSelection(true,scope,scope,{accountId:'a',collectionIds:[]},before,row.id),null);
+ assert.equal(reviewQuickSetSelection(true,scope,scope,grant,before,'missing'),null);
+ const actual={background:row.background,border:row.border,pet:row.pet,effect:'',verifiedTitleId:row.title,displayedBadges:[row.badge]};
+ assert.deepEqual(reviewEquippedTier(true,scope,grant,actual),{id:row.id,tier:'ascendant'});
+ assert.equal(reviewEquippedTier(true,scope,grant,{...actual,pet:null}).tier,'paired');
+ assert.equal(reviewEquippedTier(true,scope,grant,{...actual,verifiedTitleId:null}).tier,'awakened');
+ assert.equal(reviewEquippedTier(true,scope,grant,{...actual,displayedBadges:[]}).tier,'awakened');
+ assert.equal(reviewEquippedTier(true,scope,grant,{...actual,effect:'unrelated-effect'}),null);
+ assert.equal(reviewEquippedTier(true,scope,grant,{...actual,border:rows.find(c=>c.id!==row.id).border}),null);
+ assert.equal(reviewEquippedTier(true,other,grant,actual),null);
+ assert.equal(reviewEquippedTier(false,scope,grant,actual),null);
+}
+const read=p=>fs.readFileSync(path.join(root,p),'utf8');
+const review=read('components/profile/UltraLuxeFourSetReview.tsx');
+for(const name of ['CelestialSovereignPreview','DraconicDominionPreview','AbyssalReviewScene','ParadoxReviewScene'])assert(review.includes('<'+name));
+assert(review.includes('reviewEnabled=false')&&review.includes('reviewEquippedTier('));
+assert(!read('components/PlayerBadges.tsx').includes('Animated.'));
+for(const f of ['components/PublicProfileScene.tsx','components/ProfileScenePreview.tsx','components/profile/ProfileStage.tsx','components/profile/ProfileLookPanel.tsx','core/profile-quick-set-equip.ts'])assert(!read(f).includes('ultra-luxe-review-integration')&&!read(f).includes('UltraLuxeFourSetReview'));
+console.log('PASS: four-set isolated projection, scoped quick equip, mixed pieces, revocation, static badges and production isolation');

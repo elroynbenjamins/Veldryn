@@ -106,3 +106,32 @@ export function selectReviewSkillLoadoutV2(
   hasMatchingCounter:chosen.some(c=>c.score>=10),
  };
 }
+
+/** Role-preserving review recommendation. Unlike the historical route-only
+ * chooser, reserve one slot for an authored role action and use the second
+ * for an independent counter or complementary action. Not a live auto-equip
+ * policy; player choices and all historical routes remain available. */
+export function selectBalancedRoleReviewLoadoutV2(
+ classId:ClassIdV2,specializationId:string,actor:CombatantDefinition,bossId:string,
+):BuildSelectionV2['activeSkills']{
+ if(!bossRoutes[bossId])invalid('unknown_boss');
+ if(!SPECIALIZATIONS_V2.some(s=>s.classId===classId&&s.id===specializationId)||
+   actor.team!=='players'||!Number.isSafeInteger(actor.level)||actor.level<20)
+  invalid('invalid_actor_or_specialization');
+ const specs:Partial<Record<ClassIdV2,readonly [readonly string[],readonly string[]]>>={
+  HEXWEAVER:[specializationId.endsWith(':voidcaller')?['Hex Detonation','Arcane Needle']:['Black Thread'],['Null Script']],
+  BASTION:[['Layered Fortress'],['Fortress Rebuff']],
+  DREADGUARD:[['Grim Resolve'],['Binding Chain']],
+  IRONWARDEN:[['Oathwall'],['Rune Bash']],
+ };
+ const names=specs[classId];
+ if(!names) return selectReviewSkillLoadoutV2(classId,specializationId,actor,bossId,'targeted').activeSkills;
+ const selected=names.map(options=>{
+  const skill=options.map(name=>SKILL_IDENTITIES_V2.find(x=>x.classId===classId&&x.name===name))
+   .find(x=>x&&SKILLS_V2.some(row=>row.id===x.id&&row.unlockLevel<=actor.level));
+  if(!skill)throw Error('combat_v2_counterplay_strategy_role_skill_locked');
+  return {skillId:skill.id,variantId:skill.variants[0].id};
+ });
+ if(new Set(selected.map(x=>x.skillId)).size!==2)invalid('selection_incomplete');
+ return selected;
+}

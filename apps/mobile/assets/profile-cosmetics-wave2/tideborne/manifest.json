@@ -1,0 +1,345 @@
+{
+  "status": "review-only; refined rails, not production-approved",
+  "sourceFrame": [
+    768,
+    432
+  ],
+  "portraitSize": [
+    256,
+    256
+  ],
+  "effectPeriodMs": 13200,
+  "glowClockMs": 12000,
+  "glows": [
+    {
+      "name": "top-pearl",
+      "x": 0.50065,
+      "y": 0.09049,
+      "sizeDp": 9,
+      "periodMs": 3200,
+      "phaseMs": 0,
+      "peakOpacity": 0.86
+    },
+    {
+      "name": "upper-right",
+      "x": 0.95828,
+      "y": 0.06032,
+      "sizeDp": 8,
+      "periodMs": 3300,
+      "phaseMs": 550,
+      "peakOpacity": 0.86
+    },
+    {
+      "name": "right-pearl",
+      "x": 0.97262,
+      "y": 0.529,
+      "sizeDp": 9,
+      "periodMs": 3100,
+      "phaseMs": 1100,
+      "peakOpacity": 0.86
+    },
+    {
+      "name": "lower-right",
+      "x": 0.95567,
+      "y": 0.93968,
+      "sizeDp": 8,
+      "periodMs": 3500,
+      "phaseMs": 1700,
+      "peakOpacity": 0.86
+    },
+    {
+      "name": "bottom-pearl",
+      "x": 0.50065,
+      "y": 0.96984,
+      "sizeDp": 9,
+      "periodMs": 3200,
+      "phaseMs": 2300,
+      "peakOpacity": 0.86
+    },
+    {
+      "name": "lower-left",
+      "x": 0.04433,
+      "y": 0.93968,
+      "sizeDp": 8,
+      "periodMs": 3500,
+      "phaseMs": 2900,
+      "peakOpacity": 0.86
+    },
+    {
+      "name": "left-pearl",
+      "x": 0.02347,
+      "y": 0.529,
+      "sizeDp": 9,
+      "periodMs": 3100,
+      "phaseMs": 3500,
+      "peakOpacity": 0.86
+    },
+    {
+      "name": "upper-left",
+      "x": 0.04433,
+      "y": 0.06032,
+      "sizeDp": 8,
+      "periodMs": 3300,
+      "phaseMs": 4100,
+      "peakOpacity": 0.86
+    }
+  ],
+  "tracks": [
+    {
+      "sprite": "bubble",
+      "points": [
+        [
+          0.08,
+          0.98
+        ],
+        [
+          0.12,
+          0.75
+        ],
+        [
+          0.09,
+          0.44
+        ],
+        [
+          0.17,
+          0.17
+        ]
+      ],
+      "phase": 8,
+      "width": 0.039,
+      "maxDp": 17,
+      "opacity": 0.7,
+      "rotation": 0,
+      "cycles": 1
+    },
+    {
+      "sprite": "bubble",
+      "points": [
+        [
+          0.86,
+          0.96
+        ],
+        [
+          0.92,
+          0.75
+        ],
+        [
+          0.85,
+          0.48
+        ],
+        [
+          0.92,
+          0.12
+        ]
+      ],
+      "phase": 31,
+      "width": 0.032,
+      "maxDp": 14,
+      "opacity": 0.58,
+      "rotation": 0,
+      "cycles": 0.9
+    },
+    {
+      "sprite": "bubble",
+      "points": [
+        [
+          0.22,
+          0.86
+        ],
+        [
+          0.18,
+          0.62
+        ],
+        [
+          0.23,
+          0.36
+        ],
+        [
+          0.19,
+          0.12
+        ]
+      ],
+      "phase": 54,
+      "width": 0.025,
+      "maxDp": 11,
+      "opacity": 0.48,
+      "rotation": 0,
+      "cycles": 1.1
+    },
+    {
+      "sprite": "seafoam",
+      "points": [
+        [
+          0.07,
+          0.84
+        ],
+        [
+          0.15,
+          0.77
+        ],
+        [
+          0.25,
+          0.8
+        ],
+        [
+          0.35,
+          0.72
+        ]
+      ],
+      "phase": 76,
+      "width": 0.035,
+      "maxDp": 16,
+      "opacity": 0.55,
+      "rotation": 15,
+      "cycles": 0.85
+    },
+    {
+      "sprite": "pearl-glint",
+      "points": [
+        [
+          0.79,
+          0.68
+        ],
+        [
+          0.86,
+          0.47
+        ],
+        [
+          0.81,
+          0.27
+        ],
+        [
+          0.89,
+          0.15
+        ]
+      ],
+      "phase": 95,
+      "width": 0.023,
+      "maxDp": 10,
+      "opacity": 0.5,
+      "rotation": 0,
+      "cycles": 1
+    }
+  ],
+  "files": {
+    "bubble.png": {
+      "size": [
+        64,
+        64
+      ],
+      "mode": "RGBA",
+      "sha256": "bc804bb36952b7b4fb36600c82fc9cc8b7ca66324387282329a4af8e66750045",
+      "bytes": 441
+    },
+    "corsair.png": {
+      "size": [
+        256,
+        256
+      ],
+      "mode": "RGBA",
+      "sha256": "4a256705d8217c6cf405f8ee2d9cfd0adbc0de129f866c93eb29392b906c835b",
+      "bytes": 140180
+    },
+    "pearl-glint.png": {
+      "size": [
+        64,
+        64
+      ],
+      "mode": "RGBA",
+      "sha256": "3bd3899c5344616b29eb691026527be3bda5364cf86b4deaac33ae2811a8977b",
+      "bytes": 309
+    },
+    "pearlframe.png": {
+      "size": [
+        768,
+        432
+      ],
+      "mode": "RGBA",
+      "sha256": "3081cea90fc8f32376accf937786fc9f67fe119bc04f510bcf399c8490a4705f",
+      "bytes": 74721
+    },
+    "seafoam.png": {
+      "size": [
+        64,
+        64
+      ],
+      "mode": "RGBA",
+      "sha256": "71933470baa03976194ec798ba0ef1c5972839c6629483a662caec434c5b7e42",
+      "bytes": 363
+    },
+    "siren.png": {
+      "size": [
+        256,
+        256
+      ],
+      "mode": "RGBA",
+      "sha256": "1682ceff2051d3dc58bcec37bb328afc034bba329e2b5e988a89045798c048bd",
+      "bytes": 144781
+    },
+    "static-effect.png": {
+      "size": [
+        768,
+        432
+      ],
+      "mode": "RGBA",
+      "sha256": "fb099f52bbabacd789740d922c4dca8a5e3d1290261ad582602ab170c1862b7c",
+      "bytes": 2411
+    }
+  },
+  "reviewMetrics": [
+    {
+      "size": [
+        260,
+        150
+      ],
+      "v1": {
+        "opaque_pixels": 5290,
+        "pre_stencil_clipped_pixels": 29,
+        "top_rail_midspan_px": 6,
+        "side_rail_midspan_px": 8
+      },
+      "v2": {
+        "opaque_pixels": 6049,
+        "pre_stencil_clipped_pixels": 36,
+        "top_rail_midspan_px": 8,
+        "side_rail_midspan_px": 9
+      }
+    },
+    {
+      "size": [
+        340,
+        190
+      ],
+      "v1": {
+        "opaque_pixels": 8681,
+        "pre_stencil_clipped_pixels": 40,
+        "top_rail_midspan_px": 9,
+        "side_rail_midspan_px": 12
+      },
+      "v2": {
+        "opaque_pixels": 9948,
+        "pre_stencil_clipped_pixels": 38,
+        "top_rail_midspan_px": 11,
+        "side_rail_midspan_px": 10
+      }
+    },
+    {
+      "size": [
+        480,
+        270
+      ],
+      "v1": {
+        "opaque_pixels": 17065,
+        "pre_stencil_clipped_pixels": 539,
+        "top_rail_midspan_px": 12,
+        "side_rail_midspan_px": 13
+      },
+      "v2": {
+        "opaque_pixels": 21099,
+        "pre_stencil_clipped_pixels": 27,
+        "top_rail_midspan_px": 16,
+        "side_rail_midspan_px": 16
+      }
+    }
+  ]
+}

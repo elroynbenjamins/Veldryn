@@ -1,4 +1,5 @@
 import type {GameState} from '../core/types';
+import {WAVE2_SETS,WAVE2_READY_SET_IDS,wave2SetFor,type Wave2Id} from '../core/profile-cosmetic-wave2';
 import {PROFILE_EFFECTS} from '../core/profile-effects';
 import {profileCosmeticPortraits,type ProfileCosmeticPortraitDefinition} from '../core/profile-cosmetic-icons';
 
@@ -27,7 +28,7 @@ const KEY_BY_COLLECTION:Record<string,ProfileCosmeticCollectionId>={
  Gloamward:'gloamward','Frostbound Chime':'frostbound','Amberglass Loop':'amberglass',Briarbound:'briarbound',
 };
 
-export const PROFILE_COSMETIC_STORE_COLLECTIONS:readonly ProfileCosmeticStoreCollection[]=PROFILE_EFFECTS.map(base=>{
+export const PROFILE_COSMETIC_STORE_COLLECTIONS:readonly ProfileCosmeticStoreCollection[]=PROFILE_EFFECTS.filter(base=>!wave2SetFor('border',base.borderId)).map(base=>{
  const id=KEY_BY_COLLECTION[base.collection],meta=META[id];
  if(!id||!meta)throw new Error('profile_cosmetic_store_catalog_mismatch');
  const portraits=profileCosmeticPortraits(id);
@@ -43,12 +44,32 @@ export const PROFILE_COSMETIC_STORE_COLLECTIONS:readonly ProfileCosmeticStoreCol
  };
 });
 
+/** Owner-granted Wave 2 sets are normal wardrobe entries, not store previews.
+ * Store checkout remains unchanged and new SKUs are not commerce products. */
+const WAVE2_META:Record<Wave2Id,{tagline:string;description:string;accent:string}>={
+ tideborne:{tagline:'Coastal sea magic',description:'Pearl glints, sea-glass rails and drifting bubbles.',accent:'#94E4DD'},
+ clockwork:{tagline:'Ancient machinery',description:'Brass mechanisms and mint-aether sparks.',accent:'#86C3AD'},
+ stormforged:{tagline:'Stormsteel',description:'Restrained lightning sparks and steel glints.',accent:'#91BEFF'},
+ 'crimson-oath':{tagline:'Royal crimson',description:'Silver ornaments, ruby pulses and falling petals.',accent:'#D76381'},
+};
+export type ProfileCosmeticWardrobeCollection=Omit<ProfileCosmeticStoreCollection,'id'>&{id:ProfileCosmeticCollectionId|Wave2Id};
+export const PROFILE_COSMETIC_WARDROBE_COLLECTIONS:readonly ProfileCosmeticWardrobeCollection[]=[
+ ...PROFILE_COSMETIC_STORE_COLLECTIONS,
+ ...WAVE2_SETS.filter(row=>WAVE2_READY_SET_IDS.includes(row.id)).map(row=>{
+  const portraits=profileCosmeticPortraits(row.id);
+  if(portraits.length!==2)throw new Error('wave2_portrait_catalog_mismatch');
+  const pair=portraits as unknown as readonly [ProfileCosmeticPortraitDefinition,ProfileCosmeticPortraitDefinition];
+  return {id:row.id,name:row.name,...WAVE2_META[row.id],fallbackBorderId:'',checkoutEnabled:false as const,billing:'one_time' as const,tier:'standard' as const,
+   border:{kind:'border' as const,itemId:row.borderId,name:row.borderName},effect:{kind:'effect' as const,itemId:row.effectId,name:row.effectName},portraits:pair,
+   set:{sku:'profile_cosmetic_'+row.id.replace(/-/g,'_')+'_set_v1',kind:'set' as const,name:row.name+' Set',borderId:row.borderId,effectId:row.effectId,iconIds:[pair[0].id,pair[1].id] as const}};
+ }),
+];
 /** These standard collections are sold only as complete four-piece sets. */
 export const PROFILE_COSMETIC_STORE_PRODUCTS=PROFILE_COSMETIC_STORE_COLLECTIONS.map(collection=>({
  ...collection.set,collectionId:collection.id,checkoutEnabled:false as const,billing:'one_time' as const,tier:'standard' as const,
 }));
 
-export function profileCosmeticCollectionOwnership(state:GameState,collection:ProfileCosmeticStoreCollection){
+export function profileCosmeticCollectionOwnership(state:GameState,collection:ProfileCosmeticWardrobeCollection){
  const borderOwned=state.account.unlockedProfileBorderIds?.includes(collection.border.itemId)??false;
  const effectOwned=state.account.unlockedProfileEffectIds?.includes(collection.effect.itemId)??false;
  const portraitsOwned=collection.portraits.map(row=>state.account.unlockedProfileIconIds?.includes(row.id)??false) as [boolean,boolean];

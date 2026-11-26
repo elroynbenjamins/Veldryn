@@ -8,7 +8,7 @@ import {Image,Pressable,StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../../core/types';
 import type {ProfileCustomizationDestination} from '../../core/profile-customization';
 import {
- applyWardrobeEquipped,profileWardrobe,wardrobeEquipped,wardrobeSelection,wardrobeChanges,wardrobeDisplaySections,
+ applyWardrobeEquipped,profileWardrobe,wardrobeEquipped,wardrobeSelection,wardrobeChanges,
  type WardrobeAssets,type WardrobeEquipped,type WardrobeKind,type WardrobeRow,
 } from '../../core/profile-wardrobe';
 import {PROFILE_BACKGROUND_PREVIEWS,profileBackgroundPreviewById} from '../../theme/profile-background-assets';
@@ -27,8 +27,9 @@ import {ProfileIcon} from '../ProfileIcon';
 import {RegionArtwork} from '../RegionArtwork';
 import {ProfileUnlockSheet} from './ProfileUnlockSheet';
 import {PROFILE_ALL_EFFECTS,profileAnimatedBorderDefinition} from '../../core/profile-effects';
-import {cosmeticArtByBorder,cosmeticArtByEffect} from '../../theme/profile-cosmetic-art-v1';
+import {cosmeticArtByBorder,cosmeticArtByEffect} from '../../theme/profile-cosmetic-render-art';
 import {profileCosmeticRuntimeByEffect} from '../../theme/profile-cosmetic-runtime-v1';
+import {wardrobeVisualSections,wardrobeCollectionLabel} from './wardrobe-visual-tiers';
 import {ProfileEffectThumbnail} from '../ProfileCosmeticMotion';
 
 /** Image ids/names only; the wardrobe model itself stays free of asset requires. */
@@ -154,7 +155,7 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
 
  if(!character)return null;
  const category=categories.find(row=>row.kind===chip);
- const sections=wardrobeDisplaySections(category?.rows??[]);
+ const sections=wardrobeVisualSections(category?.rows??[]);
  const artwork=(row:WardrobeRow,size:number):ReactNode=>{
   if(row.kind==='icon')return <ProfileIcon id={row.id} classId={character.classId} size={size}/>;
   if(row.kind==='scene'){const scene=profileBackgroundPreviewById.get(row.id),base=BASE_PROFILE_BACKGROUNDS.find(item=>item.id===row.id);
@@ -211,11 +212,13 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
       :<Text style={s.sourceMark}>{row.lockTag} ›</Text>}
     </Pressable>)}
    </View>:<View style={s.wardrobeSections} onLayout={({nativeEvent:{layout}})=>setGridWidth(previous=>previous===layout.width?previous:layout.width)}>
-    {sections.standard.length>0?<View style={s.grid}>
+    {sections.standard.length>0?<>
+     {sections.animated.length+sections.premium.length>0?<View style={s.sectionDivider} accessibilityRole="header"><Text style={s.sectionLabel}>{profileT(language,"Static cosmetics")}</Text><View style={s.sectionLine}/></View>:null}
+     <View style={s.grid}>
      {sections.standard.map(row=><WardrobeTile key={row.kind+':'+row.id} row={row} width={tileWidth}
       equipped={selectedId===row.id} tryingOn={tryOn?.kind===row.kind&&tryOn?.id===row.id}
       onPress={()=>equip(row)}>{artwork(row,Math.round(tileWidth*.72))}</WardrobeTile>)}
-    </View>:null}
+    </View></>:null}
     {sections.animated.length>0?<>
      <View style={s.sectionDivider} accessibilityRole="header">
       <Text style={s.sectionLabel}>✦ {profileT(language,"Animated sets")}</Text>
@@ -223,6 +226,17 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
      </View>
      <View style={s.grid}>
       {sections.animated.map(row=><WardrobeTile key={row.kind+':'+row.id} row={row} width={tileWidth}
+       equipped={selectedId===row.id} tryingOn={tryOn?.kind===row.kind&&tryOn?.id===row.id}
+       onPress={()=>equip(row)}>{artwork(row,Math.round(tileWidth*.72))}</WardrobeTile>)}
+     </View>
+    </>:null}
+    {sections.premium.length>0?<>
+     <View style={s.sectionDivider} accessibilityRole="header">
+      <Text style={s.sectionLabel}>✦ {profileT(language,"Premium animated sets")}</Text>
+      <View style={s.sectionLine}/>
+     </View>
+     <View style={s.grid}>
+      {sections.premium.map(row=><WardrobeTile key={row.kind+':'+row.id} row={row} width={tileWidth}
        equipped={selectedId===row.id} tryingOn={tryOn?.kind===row.kind&&tryOn?.id===row.id}
        onPress={()=>equip(row)}>{artwork(row,Math.round(tileWidth*.72))}</WardrobeTile>)}
      </View>
@@ -243,15 +257,19 @@ const WardrobeTile=memo(function WardrobeTile({row,width,equipped,tryingOn,onPre
 }){
  const language=useGameLanguage();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
+ const collection=wardrobeCollectionLabel(row);
  const status=equipped?profileT(language,"Equipped"):tryingOn?profileT(language,"Trying on"):row.unlocked?profileText(language,row.group):profileT(language,"Locked");
- return <Pressable accessibilityRole="button" accessibilityLabel={row.name+', '+status} accessibilityState={{selected:equipped}} onPress={onPress}
+ return <Pressable accessibilityRole="button" accessibilityLabel={(collection?.fullName??row.name)+', '+status} accessibilityState={{selected:equipped}} onPress={onPress}
    style={({pressed})=>[s.tile,{width},equipped&&s.tileOn,tryingOn&&s.tileTry,pressed&&s.pressed]}>
   <View style={s.tileArt}>
    <View style={[s.artLayer,!row.unlocked&&s.dim]}>{children}</View>
    {equipped?<View style={s.tick}><Text style={s.tickMark}>✓</Text></View>:null}
    {!row.unlocked&&row.lockTag?<View style={s.source}><Text numberOfLines={1} style={s.sourceText}>{row.lockTag}</Text></View>:null}
   </View>
-  <Text numberOfLines={2} style={[s.tileName,!row.unlocked&&s.lockedText]}>{row.name}</Text>
+  {collection?<View style={s.tileName}>
+   <Text numberOfLines={1} style={s.tileCollection}>{collection.short}</Text>
+   <Text numberOfLines={1} style={[s.tilePiece,!row.unlocked&&s.lockedText]}>{collection.item}</Text>
+  </View>:<Text numberOfLines={2} style={[s.tileName,!row.unlocked&&s.lockedText]}>{row.name}</Text>}
   <Text numberOfLines={1} style={s.tileMeta}>{status}</Text>
  </Pressable>;
 },(previous,next)=>previous.row===next.row&&previous.width===next.width&&previous.equipped===next.equipped&&previous.tryingOn===next.tryingOn&&previous.children===next.children);
@@ -283,6 +301,8 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  source:{position:'absolute',left:3,right:3,bottom:3,paddingVertical:2,borderRadius:4,borderWidth:1,borderColor:C.warning,backgroundColor:C.warningSurface},
  sourceText:{fontSize:7.5,lineHeight:10,color:C.warning,fontWeight:'900',textAlign:'center',letterSpacing:.3},
  tileName:{height:28,fontSize:10.5,lineHeight:14,color:C.text,fontWeight:'700'},
+ tileCollection:{fontSize:9,lineHeight:12,fontWeight:'800',color:C.accent},
+ tilePiece:{fontSize:10.5,lineHeight:14,color:C.text,fontWeight:'700'},
  tileMeta:{fontSize:8.5,lineHeight:11,color:C.disabled,fontWeight:'700'},
  lockedText:{color:C.muted},
  titleList:{gap:7},

@@ -34,3 +34,22 @@ for(const set of c.NEXT_PREMIUM_SETS){
 }
 assert.notDeepEqual(m.nextPremiumOrnamentTracks('petal-waltz',true,true),m.nextPremiumOrnamentTracks('thunder-pulse',true,true));
 console.log('Next premium review: '+checks+' interpolated bounds and opacity/scale assertions passed.');
+
+let calibratedChecks=0;
+for(const mode of ['standard','showcase'])for(const full of [false,true]){
+ const tracks=m.sakuraV2OrnamentTracks(mode,full),a=m.SAKURA_V2_ANCHORS[mode];
+ assert.equal(tracks.length,mode==='showcase'?8:6);
+ for(const [idx,{frames,radius}] of tracks.entries()){
+  assert.deepEqual(frames[0],frames.at(-1));
+  if(idx>=2){const [x,y]=a.fixed[idx-2];assert.equal(frames[0].x,x*340/a.width);assert.equal(frames[0].y,y*205/a.height);}
+  for(let i=1;i<frames.length;i++)for(let j=0;j<=10;j++){
+   const a=frames[i-1],b=frames[i],t=j/10;
+   const f=Object.fromEntries(Object.keys(a).map(k=>[k,a[k]+(b[k]-a[k])*t]));
+   assert(m.nextPremiumOrnamentFits(f,radius));
+   assert(f.opacity>=0&&f.opacity<=1&&f.scale>=1&&f.scale<=1.12+1e-9);
+   calibratedChecks+=2;
+  }
+ }
+}
+assert.notDeepEqual(m.sakuraV2OrnamentTracks('standard',false)[2].frames,m.sakuraV2OrnamentTracks('showcase',false)[2].frames);
+console.log('Sakura V2 calibration: '+calibratedChecks+' interpolated bounds and opacity/scale assertions passed.');

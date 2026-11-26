@@ -1,9 +1,10 @@
 import {memo,useMemo,useState,type ReactNode} from 'react';
-import {Animated,Image,StyleSheet,View,useWindowDimensions,type ImageSourcePropType} from 'react-native';
+import {Animated,Image,Pressable,StyleSheet,View,useWindowDimensions,type ImageSourcePropType} from 'react-native';
 import {useCosmeticMotionPolicy,useLoopProgress} from '../anim/motion';
+import {useUltraLuxePetReaction} from './UltraLuxePetReaction';
 import {ParadoxBorderLight} from './ParadoxBorderLight';
 import {UltraLuxeIdentityMotionProvider} from './UltraLuxeIdentityMotion';
-import {PARADOX_BOXES as B,PARADOX_STAGE as S,PARADOX_CYCLE_MS,PARADOX_IDLE_PHASE,PARADOX_IDLE_LIFT,PARADOX_AMBIENT_PATHS,PARADOX_POSE_ATLAS,paradoxPoseTimeline,paradoxPoseCell,paradoxAwakeningCurve,paradoxStageSupported,paradoxPetMode} from '../../core/paradox-showcase-layout';
+import {PARADOX_BOXES as B,PARADOX_STAGE as S,PARADOX_CYCLE_MS,PARADOX_IDLE_PHASE,PARADOX_IDLE_LIFT,PARADOX_AMBIENT_PATHS,PARADOX_POSE_ATLAS,PARADOX_REACTION,paradoxPoseTimeline,paradoxPoseCell,paradoxAwakeningCurve,paradoxStageSupported,paradoxPetMode} from '../../core/paradox-showcase-layout';
 
 export type ParadoxSceneAssets={background:ImageSourcePropType;border:ImageSourcePropType;aeon:ImageSourcePropType;idleAtlas?:ImageSourcePropType;glint:ImageSourcePropType;aura:ImageSourcePropType};
 type Props={assets:ParadoxSceneAssets;equippedPetId?:string|null;alternatePetSource?:ImageSourcePropType;petAccessibilityLabel?:string;portrait:ReactNode;identity:ReactNode;badges?:ReactNode;guild?:ReactNode;fallback:ReactNode;fullSet?:boolean;active?:boolean;reduceMotion?:boolean};
@@ -33,6 +34,18 @@ const ParadoxPoseSprite=memo(function ParadoxPoseSprite({source,clock,width,heig
   </View>
  </View>;
 });
+const ParadoxPetReaction=memo(function ParadoxPetReaction({reaction,k,assets}:{reaction:Animated.Value;k:number;assets:ParadoxSceneAssets}){
+ const {center,halo,shards,moteRadius:r}=PARADOX_REACTION;
+ const effects=useMemo(()=>({
+  scale:reaction.interpolate({inputRange:[0,1],outputRange:[.74,halo.maxScale]}),
+  opacity:Animated.multiply(reaction,.72),
+  shards:shards.map(p=>({...p,xMotion:Animated.multiply(reaction,p.dx*k),yMotion:Animated.multiply(reaction,p.dy*k)})),
+ }),[reaction,k,halo,shards]);
+ return <Decorative>
+  <Animated.Image source={assets.aura} fadeDuration={0} resizeMode="contain" style={[pos(k,center.x-halo.w/2,center.y-halo.h/2,halo.w,halo.h),{opacity:effects.opacity,transform:[{scale:effects.scale}]}]}/>
+  {effects.shards.map((p,i)=><Animated.Image key={i} source={assets.glint} fadeDuration={0} resizeMode="contain" style={[pos(k,center.x+p.x-r,center.y+p.y-r,2*r,2*r),{opacity:reaction,transform:[{translateX:p.xMotion},{translateY:p.yMotion}]}]}/>)}
+ </Decorative>;
+});
 const ParadoxPet=memo(function ParadoxPet({clock,k,assets,mode,running,alternate}:{clock:Animated.Value;k:number;assets:ParadoxSceneAssets;mode:'matching'|'alternate'|'none';running:boolean;alternate?:ImageSourcePropType}){
  const motion=useMemo(()=>{
   if(!running||mode!=='matching')return null;
@@ -55,14 +68,17 @@ export const ParadoxEternalPreview=memo(function ParadoxEternalPreview({assets,e
  const supported=paradoxStageSupported(width,fontScale),{running}=useCosmeticMotionPolicy(active&&supported,reduceMotion);
  const clock=useLoopProgress(PARADOX_CYCLE_MS,running);
  const k=width/S.width,mode=paradoxPetMode(equippedPetId,!!alternatePetSource),verifiedFullSet=fullSet&&mode==='matching';
+ const reactionEnabled=running&&mode==='matching';
+ const {reaction,trigger}=useUltraLuxePetReaction(reactionEnabled);
  return <View style={s.outer} onLayout={e=>{const w=e.nativeEvent.layout.width;setWidth(old=>Math.abs(old-w)<.5?old:w);}}>
   {!supported?fallback:<View style={[s.card,{height:S.height*k}]}>
    <Decorative>
     <Image source={assets.background} fadeDuration={0} resizeMode="cover" style={s.fill}/>
     {running?<ParadoxAmbient clock={clock} k={k} source={assets.glint}/>:null}
     <ParadoxPet clock={clock} k={k} assets={assets} mode={mode} running={running} alternate={alternatePetSource}/>
+    {reactionEnabled?<ParadoxPetReaction reaction={reaction} k={k} assets={assets}/>:null}
    </Decorative>
-   {mode!=='none'&&petAccessibilityLabel?<View accessible accessibilityLabel={petAccessibilityLabel} pointerEvents="none" style={box(k,mode==='matching'?B.aeon:B.alternate)}/>:null}
+   {reactionEnabled?<Pressable accessibilityRole="button" accessibilityLabel={petAccessibilityLabel??'Aeon, the Timeless'} onPress={trigger} style={box(k,B.aeon)}/>:mode!=='none'&&petAccessibilityLabel?<View accessible accessibilityLabel={petAccessibilityLabel} pointerEvents="none" style={box(k,mode==='matching'?B.aeon:B.alternate)}/>:null}
    <View style={[box(k,B.plate),s.plate]}/>
    <View style={[box(k,B.portrait),s.portrait]}>{portrait}</View>
    <UltraLuxeIdentityMotionProvider clock={clock} fullSet={verifiedFullSet} active={running}>

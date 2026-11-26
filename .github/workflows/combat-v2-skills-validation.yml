@@ -98,7 +98,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if grep -R -E 'issueEnemyV2EngineAuthority|prepareSoloEnemyKitsV2|verifyPersistedEnemyKitsV2|SoloEncounterPersistenceServiceV2|serviceRoleSoloSnapshotStorageV2|SoloRewardSettlementServiceV2|transactionalSoloRewardStoreV2|disposableQaSoloRewardWritersV2|analyzeSyntheticBalanceV2|issuePartySyncAuthorityV2|issuePersistedPartyEquipmentV2TraitAuthority|issuePersistedPartyEnemyV2EngineAuthority|reviewPartyV2RunBinding|preparePartyEnemyKitsV2|preparePartyRecoverySnapshotV2|reserveStagedPartyEncounterV2|simulateUnifiedEquipmentPersistedPartyCombatV2' backend/online backend/supabase/functions apps/mobile/src --include='*.ts' --include='*.tsx'; then
+          if grep -R -E 'issueEnemyV2EngineAuthority|prepareSoloEnemyKitsV2|verifyPersistedEnemyKitsV2|SoloEncounterPersistenceServiceV2|serviceRoleSoloSnapshotStorageV2|SoloRewardSettlementServiceV2|transactionalSoloRewardStoreV2|disposableQaSoloRewardWritersV2|analyzeSyntheticBalanceV2|issuePartySyncAuthorityV2|issuePersistedPartyEquipmentV2TraitAuthority|issuePersistedPartyEnemyV2EngineAuthority|reviewPartyV2RunBinding|preparePartyEnemyKitsV2|preparePartyRecoverySnapshotV2|reserveStagedPartyEncounterV2|simulateUnifiedEquipmentPersistedPartyCombatV2|compileWorldBossRosterReviewV2|simulateWorldBossSharedEngineReviewV2' backend/online backend/supabase/functions apps/mobile/src --include='*.ts' --include='*.tsx'; then
             echo 'Unreleased Enemy 2.0 authority is referenced by a public runtime'
             exit 1
           fi
@@ -144,6 +144,8 @@ jobs:
         run: node backend/dist/server/combat/v2/__tests__/party-dungeon-persistence-review.js
       - name: Execute persisted four-player ten-slot traits and Synchronization rehearsal
         run: node backend/dist/server/combat/v2/__tests__/persisted-party-ten-slot-execution.js
+      - name: Execute hidden World Boss shared compiler and millisecond engine rehearsal
+        run: node backend/dist/server/combat/v2/__tests__/world-boss-shared-engine-review.js
       - name: Run 432 matched persisted-party Synchronization tuning pairs
         run: node backend/dist/server/combat/v2/__tests__/persisted-party-sync-full-matrix.js
 

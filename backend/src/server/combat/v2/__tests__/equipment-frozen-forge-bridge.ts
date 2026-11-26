@@ -4,7 +4,7 @@
  */
 import {strict as assert} from 'node:assert';
 import {reviewFrozenForgeSocketsV2,FORGE_SOCKET_MECHANICS_REVIEW_V2,type ForgeSocketReviewPolicyV2} from '../frozen-forge-socket-review';
-import {inspectSocketStackingCapReviewV2} from '../socket-stacking-cap-review';
+import {inspectSocketStackingCapReviewV2,SOCKET_CAP_DIMINISHING_V2,diminishingSocketContributionV2,type SocketStackLaneV2} from '../socket-stacking-cap-review';
 import {STAT_GEMS_V1,EFFECT_GEMS_V1,gemItemId,type GemGrade,GEM_BALANCE_REVIEW_V2,STAT_GEMS_REVIEW_V2,EFFECT_GEMS_REVIEW_V2,EFFECT_GEM_REVIEW_MULTIPLIERS_V2} from '../../../equipment/gems/gem-catalog-v1';
 import type {V2GemSidecarState} from '../../../equipment/equipment-crafting-v2-gem-sidecar-types';
 import {writeFileSync} from 'node:fs';
@@ -1594,7 +1594,7 @@ function makeV21Loadout(classId:ClassIdV2,specIndex:0|1,targetTier:1|2|3|4,targe
   maxFinalHp:1e8,maxFinalDefense:1e8};
  const families=STAT_GEMS_REVIEW_V2.map(d=>d.familyId);
  assert.equal(families.length,11);
- const rows:{classId:ClassIdV2;spec:number;slots:number;arm:string;channels:ReturnType<typeof inspectSocketStackingCapReviewV2>['channels'];hasteDelta:number;attackDelta:number}[]=[];
+ const rows:{classId:ClassIdV2;spec:number;slots:number;arm:string;channels:ReturnType<typeof inspectSocketStackingCapReviewV2>['channels'];diminishing:ReturnType<typeof inspectSocketStackingCapReviewV2>['channels'];hasteDelta:number;attackDelta:number}[]=[];
  const coverage:{classId:ClassIdV2;spec:number;slots:number;missing:string[];downgraded:number}[]=[];
  for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[])for(const spec of [0,1] as const){
   const qa=makeV21Loadout(classId,spec,4,55);
@@ -1624,9 +1624,29 @@ function makeV21Loadout(classId:ClassIdV2,specIndex:0|1,targetTier:1|2|3|4,targe
    assert.equal(out.advanced.tenacityPp,baseline.advanced.tenacityPp);
    assert.equal(out.canExecuteCombat,false);assert.equal(out.cpApproved,false);
    const report=inspectSocketStackingCapReviewV2(out);
+   const continuous=inspectSocketStackingCapReviewV2(out,SOCKET_CAP_DIMINISHING_V2);
+   assert.equal(continuous.socketCount,n);
+   for(const [i,c] of continuous.channels.entries()){
+    const prior=report.channels[i];
+    assert.equal(c.raw,prior.raw);assert.equal(c.affix,prior.affix);assert.equal(c.gem,prior.gem);
+    assert.equal(c.hard,null);
+    assert.ok(c.effective<=c.raw+1e-9&&c.incrementalGem>=0&&c.incrementalGem<=c.gem+1e-9);
+    if(c.gem>0)assert.ok(c.incrementalGem>0,'every additional gem must retain value');
+    const key=c.key as SocketStackLaneV2;
+    assert.equal(diminishingSocketContributionV2(key,c.knee),c.knee);
+    // Strict monotonicity, decreasing marginal gains, no finite plateau
+    // including well beyond the previous hard-cap thresholds.
+    let last=diminishingSocketContributionV2(key,0),lastGain=Infinity;
+    for(let step=1;step<=400;step++){
+     const next=diminishingSocketContributionV2(key,step*.025),gain=next-last;
+     assert.ok(gain>0&&gain<=lastGain+1e-12);
+     if(key==='ward:percent'||key.endsWith(':percentage_point'))assert.ok(next<1);
+     last=next;lastGain=gain;
+    }
+   }
    assert.equal(report.socketCount,n);assert.equal(report.wornSlots,n);
    for(const c of report.channels){
-    assert.ok(c.effective<=c.raw+1e-9&&c.effective<=c.hard+1e-9);
+    assert.ok(c.hard!==null&&c.effective<=c.raw+1e-9&&c.effective<=c.hard+1e-9);
     assert.ok(c.incrementalGem>=0&&c.incrementalGem<=c.gem+1e-9);
     const expected=out.gemSources.filter(g=>g.stat+':'+g.unit===c.key).reduce((a,g)=>a+g.fraction,0);
     assert.ok(Math.abs(c.gem-expected)<1e-8);
@@ -1637,7 +1657,7 @@ function makeV21Loadout(classId:ClassIdV2,specIndex:0|1,targetTier:1|2|3|4,targe
     assert.ok(Math.abs(c.gem-n*def.values[5]*1.2)<1e-8);
     assert.equal(report.channels.filter(c=>c.gem>0).length,1);
    }
-   rows.push({classId,spec,slots:n,arm,channels:report.channels,
+   rows.push({classId,spec,slots:n,arm,channels:report.channels,diminishing:continuous.channels,
     hasteDelta:out.stats.haste-baseline.stats.haste,attackDelta:out.stats.attackPower-baseline.stats.attackPower});
   }
   assert.equal(JSON.stringify(source.items),original);
@@ -1650,6 +1670,14 @@ function makeV21Loadout(classId:ClassIdV2,specIndex:0|1,targetTier:1|2|3|4,targe
    return {family,cases:a.length,minRaw:Math.min(...c.map(x=>x.gem)),maxRaw:Math.max(...c.map(x=>x.gem)),
     reduced:c.filter(x=>x.incrementalGem<x.gem-1e-9).length,
     minIncremental:Math.min(...c.map(x=>x.incrementalGem)),maxIncremental:Math.max(...c.map(x=>x.incrementalGem))};
+  }),continuousPolicy:SOCKET_CAP_DIMINISHING_V2,continuousByFamily:families.map(family=>{
+   const a=rows.filter(r=>r.arm===family);
+   const c=a.map(r=>r.diminishing.find(c=>c.gem>0)!);
+   const old=a.map(r=>r.channels.find(c=>c.gem>0)!);
+   return {family,cases:a.length,minIncremental:Math.min(...c.map(x=>x.incrementalGem)),
+    maxIncremental:Math.max(...c.map(x=>x.incrementalGem)),
+    meanRetained:c.reduce((n,x)=>n+x.incrementalGem/x.gem,0)/c.length,
+    previousMeanRetained:old.reduce((n,x)=>n+x.incrementalGem/x.gem,0)/old.length};
   }),swiftDelta:rows.filter(r=>r.arm==='stat_swift').map(r=>({classId:r.classId,spec:r.spec,delta:r.hasteDelta})),
   cpApproved:false,releaseEnabled:false}));
 }

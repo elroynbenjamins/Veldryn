@@ -496,8 +496,17 @@ export function isCompanionAvailable(def:CompanionDefinition,context:{activeEven
 /** Previously obtained event companions remain owned/equippable even when the event is not currently active. */
 export function canUseOwnedCompanion(state:CombatCompanionStateHost,id:string){return (state.account.unlockedCombatCompanionIds??[]).includes(id)&&!!combatCompanionDef(id);}
 
+/** Batch UI reads share one normalized account snapshot, without persisting it. */
+export function combatCompanionUiModels(state:CombatCompanionStateHost,ids:readonly string[]){
+  if(!ids.length)return [];
+  const clean=sanitizeCombatCompanionState(state);
+  return ids.map(id=>combatCompanionUiModelFromClean(clean,id));
+}
 export function combatCompanionUiModel(state:CombatCompanionStateHost,id:string){
-  const clean=sanitizeCombatCompanionState(state),def=combatCompanionDef(id);if(!def)return undefined;const owned=(clean.account.unlockedCombatCompanionIds??[]).includes(id),p=owned?clean.account.combatCompanionProgress?.[id]:undefined;
+  return combatCompanionUiModelFromClean(sanitizeCombatCompanionState(state),id);
+}
+function combatCompanionUiModelFromClean(clean:CombatCompanionStateHost,id:string){
+  const def=combatCompanionDef(id);if(!def)return undefined;const owned=(clean.account.unlockedCombatCompanionIds??[]).includes(id),p=owned?clean.account.combatCompanionProgress?.[id]:undefined;
   const compatible=!!clean.character,cap=p?companionCurrentLevelCap(def,p):10,max=companionMaxLevel(def),cost=p&&p.level<cap?companionHousingAdjustedLevelCost(def,p,companionHousingTier(id,clean.account.companionHousingTiers)):undefined,tier=p?nextCompanionAscension(def,p):undefined;
   return {def,owned,progress:p,compatible,equipped:clean.character?.equippedCombatCompanionId===id,usableRoles:usableCompanionRoles(def.role),levelCap:cap,maxLevel:max,nextLevelCost:cost,nextAscensionTier:tier,nextAscensionCost:tier?companionAscensionCost(def,tier):undefined,abilityValue:p?companionAbilityValue(def,p):def.activeAbility.scaling.baseValue};
 }

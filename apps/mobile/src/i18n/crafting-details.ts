@@ -3,6 +3,9 @@ import type {Language} from './languages';
 import type {MealBonusDefinition} from '../core/meal-buffs';
 
 export const craftingDetailRows={
+ 'Same meal extends duration up to {hours}h.':["Dieselbe Mahlzeit verlängert die Dauer auf bis zu {hours} Std.","La misma comida prolonga la duración hasta {hours} h.","Dezelfde maaltijd verlengt de duur tot {hours}u.","Lo stesso pasto estende la durata fino a {hours} ore.","Le même repas prolonge la durée jusqu’à {hours} h."],
+ 'After eating: {minutes} min':["Nach dem Essen: {minutes} Min.","Tras comer: {minutes} min","Na het eten: {minutes} min","Dopo il pasto: {minutes} min","Après le repas : {minutes} min"],
+ 'Meal duration full':["Mahlzeitdauer voll","Duración de comida al máximo","Maaltijdduur maximaal","Durata pasto al massimo","Durée du repas maximale"],
  'Next equipment tier':['Nächste Ausrüstungsstufe','Siguiente nivel de equipo','Volgende uitrustingsniveau','Prossimo livello di equipaggiamento','Prochain palier d’équipement'],
  'No active mastery bonus yet':['Noch kein aktiver Meisterschaftsbonus','Aún no hay bonos de maestría activos','Nog geen actieve meesterschapsbonus','Nessun bonus maestria attivo','Aucun bonus de maîtrise actif'],
  '+{value}% skill XP':['+{value}% Fertigkeits-EP','+{value}% EXP de habilidad','+{value}% vaardigheids-XP','+{value}% ESP abilità','+{value} % EXP de compétence'],

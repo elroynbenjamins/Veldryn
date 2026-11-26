@@ -6,7 +6,8 @@ import {totalXpAtLevel} from './progression';
 /**
  * Cooking UI preview. Continuous batches snapshot their XP when reserved; do
  * not replace that rate with later meal/gear/skill changes. XP is earned upon
- * completion, with accumulated fractions and the level-100 cap handled by the
+ * completion. New Cooking batch rates are rounded to tens by professionActionPace;
+ * legacy reservations keep their previous rate, with fractions and the level-100 cap handled by the
  * authoritative processing reward settlement.
  */
 export function cookingRecipeXpPreview(state:GameState,recipe:Recipe){

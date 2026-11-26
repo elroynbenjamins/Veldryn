@@ -10,8 +10,8 @@ import {GameButton} from '../components/GameButton';
 import {unlockInboxDisplayName,type UnlockInboxEntry} from '../core/unlock-inbox';
 import {unlockInboxArtwork} from '../theme/unlock-inbox-art';
 
-const icons={title:'character',background:'world',border:'account',profile_icon:'character',pet:'companions',emote:'chat',guild_cosmetic:'guild'} as const;
-const labels={title:'TITLE',background:'PROFILE BACKGROUND',border:'PROFILE BORDER',profile_icon:'PROFILE ICON',emote:'EMOTE',guild_cosmetic:'GUILD COSMETIC'} as const;
+const icons={title:'character',background:'world',border:'account',effect:'account',profile_icon:'character',pet:'companions',emote:'chat',guild_cosmetic:'guild'} as const;
+const labels={title:'TITLE',background:'PROFILE BACKGROUND',border:'PROFILE BORDER',effect:'SHOWCASE EFFECT',profile_icon:'PROFILE ICON',emote:'EMOTE',guild_cosmetic:'GUILD COSMETIC'} as const;
 export function NewUnlocksScreen({language,entries,onCustomize}:{language:Language;entries:readonly UnlockInboxEntry[];onBack:()=>void;onCustomize:()=>void}){
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const [showAll,setShowAll]=useState(false),[filter,setFilter]=useState<'all'|'title'|'pet'|'other'>('all'),[expanded,setExpanded]=useState<string|null>(null);
@@ -32,13 +32,20 @@ export function NewUnlocksScreen({language,entries,onCustomize}:{language:Langua
        {([['all',t('All unlocks')],['title',t('Titles')],['pet',t('Pets')],['other',t('Other cosmetics')]] as const).map(([value,label])=><Pressable key={value} accessibilityRole="tab" accessibilityState={{selected:filter===value}} style={[s.filter,filter===value&&s.filterSelected]} onPress={()=>{setFilter(value);setShowAll(false);setExpanded(null)}}><Text style={[s.filterText,filter===value&&s.filterTextSelected]}>{label}</Text></Pressable>)}
      </View>
      <Text style={s.section}>{t('Recently unlocked')} · {filtered.length}</Text>
-     <View style={s.list}>{shown.map(row=>{const art=unlockInboxArtwork(row);return <Pressable key={row.key} accessibilityRole="button" accessibilityState={{expanded:expanded===row.key}} onPress={()=>setExpanded(current=>current===row.key?null:row.key)} style={({pressed})=>[s.entry,pressed&&s.pressed]}>
-       <View style={s.mark}>{art?<Image accessible={false} source={art} fadeDuration={0} resizeMode={row.kind==='background'?'cover':'contain'} style={[s.art,row.kind==='background'&&s.backgroundArt]}/>:<UiIcon name={icons[row.kind]} size={27}/>}</View>
-       <View style={s.flex}>{row.kind!=='pet'?<Text style={s.kind}>{row.kind==='emote'||row.kind==='guild_cosmetic'?t(labels[row.kind]):profileText(language,labels[row.kind])}</Text>:null}
-         <Text style={s.name} numberOfLines={expanded===row.key?undefined:2}>{unlockInboxDisplayName(row)}</Text>
-         {row.detail&&expanded===row.key?<Text style={s.detail}>{profileSourceText(language,row.detail)}</Text>:null}
-       </View><View style={s.end}><Text style={s.date}>{new Date(row.unlockedAtMs).toLocaleDateString(language)}</Text><Text style={s.chevron}>{expanded===row.key?'⌃':'⌄'}</Text></View>
-     </Pressable>})}</View>
+     <View style={s.list}>{shown.map(row=>{
+       const art=unlockInboxArtwork(row);
+       const detail=row.detail?.trim()?profileSourceText(language,row.detail).trim():'';
+       const canExpand=detail.length>0;
+       const isExpanded=canExpand&&expanded===row.key;
+       const content=<>
+         <View style={s.mark}>{art?<Image accessible={false} source={art} fadeDuration={0} resizeMode={row.kind==='background'?'cover':'contain'} style={[s.art,row.kind==='background'&&s.backgroundArt]}/>:<UiIcon name={icons[row.kind]} size={27}/>}</View>
+         <View style={s.flex}>{row.kind!=='pet'?<Text style={s.kind}>{row.kind==='emote'||row.kind==='guild_cosmetic'?t(labels[row.kind]):profileText(language,labels[row.kind])}</Text>:null}
+           <Text style={s.name} numberOfLines={canExpand&&!isExpanded?2:undefined}>{unlockInboxDisplayName(row)}</Text>
+           {isExpanded?<Text style={s.detail}>{detail}</Text>:null}
+         </View><View style={s.end}><Text style={s.date}>{new Date(row.unlockedAtMs).toLocaleDateString(language)}</Text>{canExpand?<Text style={s.chevron}>{isExpanded?'⌃':'⌄'}</Text>:null}</View>
+       </>;
+       return canExpand?<Pressable key={row.key} accessibilityRole="button" accessibilityState={{expanded:isExpanded}} onPress={()=>setExpanded(current=>current===row.key?null:row.key)} style={({pressed})=>[s.entry,pressed&&s.pressed]}>{content}</Pressable>:<View key={row.key} style={s.entry}>{content}</View>;
+     })}</View>
      {!filtered.length?<View style={s.empty}><Text style={s.emptyTitle}>{t('No unlocks in this category')}</Text></View>:null}
      {filtered.length>20?<GameButton compact title={showAll?t('Show fewer unlocks'):t('Show older unlocks')} tone="secondary" onPress={()=>setShowAll(value=>!value)}/>:null}
    </>:<View style={s.empty}><UiIcon name="rewards" size={40}/><Text style={s.emptyTitle}>{t('No new unlocks yet')}</Text><Text style={s.caption}>{t('New cosmetic rewards will appear here automatically as you earn them.')}</Text></View>}

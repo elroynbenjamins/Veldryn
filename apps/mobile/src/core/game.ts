@@ -10,6 +10,9 @@ import {huntClassSurvivalEvents} from './hunt-class-identity';
 import {regionalHuntPlan,usesDamageDrivenHunts} from './ordinary-hunt';
 import {characterCombatXpScale} from './combat-progression-pacing';
 import {eventCandyWindow} from './live-events';
+import {WINTER_HEARTH_GUILD_RELEASED} from './release-flags';
+import {winterHearthLightRecipeAvailable,isWinterHearthLightRecipe,winterHearthCraftSettlementWindow,WINTER_HEARTH_2026_ID} from './winter-hearth-2026';
+import {winterHearthGatheringTimeline,winterHearthXpFactorForActionTimes} from './winter-hearth-bonus-windows';
 import {professionActionPace} from './profession-action-pace';
 import {captureSkillAffinity,activeSkillAffinity,affinityXpRemainderKey,settleAffinitySkillXp} from './class-skill-affinities';
 import {CLASSES} from '../content/classes';
@@ -90,6 +93,7 @@ export function beginAlchemyBatch(state:GameState,recipeId:string,nowMs:number,b
 }
 export function beginProcessingBatch(state:GameState,recipeId:string,nowMs:number,batches?:number){
  const ready=finishClassDrills(state,nowMs);
+ if(isWinterHearthLightRecipe(recipeId)&&!winterHearthLightRecipeAvailable(ready,nowMs))throw new Error('Winter Hearth crafting is closed.');
  if(batches===undefined)return startProcessingUntilLimited(ready,recipeId,nowMs,offlineCapSeconds(ready));
  const capacity=processingRunCapacity(ready,recipeId,offlineCapSeconds(ready));
  if(!Number.isSafeInteger(batches)||batches<1||batches>capacity.availableBatches)throw new Error('Selected processing count exceeds available materials, Gold or AFK time.');
@@ -907,8 +911,9 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number)
       const totalSeconds=bankedSeconds+elapsed;
       const actions=Math.floor(totalSeconds/routeSeconds);
       const nextProgressFraction=actions>0?(totalSeconds%routeSeconds)/routeSeconds:(totalSeconds/routeSeconds);
-      let boostedActions=0;for(let i=1;i<=actions;i++){const at=state.activity.lastClaimAtMs+(i*routeSeconds-bankedSeconds)*1000;if(candy&&at>candy.startsAtMs&&at<=candy.endsAtMs)boostedActions++;}
-      return {xp:Math.floor((actions+.1*boostedActions)*route.xp*characterPermanentMultipliers(state).skillXpMultiplier),gold:0,items:[],kills:actions,elapsedSeconds:elapsed,nextProgressFraction,explorationDiscoveries:actions&&route.unlockMonsterId?[route.unlockMonsterId]:[]};
+      let boostedActions=0;const actionTimes:number[]=[];for(let i=1;i<=actions;i++){const at=state.activity.lastClaimAtMs+(i*routeSeconds-bankedSeconds)*1000;actionTimes.push(at);if(candy&&at>candy.startsAtMs&&at<=candy.endsAtMs)boostedActions++;}
+      const winterXp=WINTER_HEARTH_GUILD_RELEASED?winterHearthXpFactorForActionTimes(state.winterHearthBonusWindows??[],actionTimes,'skill'):1;
+      return {xp:Math.floor((actions+.1*boostedActions)*route.xp*characterPermanentMultipliers(state).skillXpMultiplier*winterXp),gold:0,items:[],kills:actions,elapsedSeconds:elapsed,nextProgressFraction,explorationDiscoveries:actions&&route.unlockMonsterId?[route.unlockMonsterId]:[]};
     }
     const g=[...GATHERING,...HERB_NODES].find(x=>x.id===state.activity!.targetId);if(!g)return {xp:0,gold:0,items:[],kills:0,elapsedSeconds:elapsed};
     const effect=environmentEffectForActivity(state.activity).effect;
@@ -917,7 +922,14 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number)
     const specialtySpeed=g.skillId==='fishing'?multipliers.fishingSpeedMultiplier:g.skillId==='herbalism'?multipliers.herbalismSpeedMultiplier:1;
     const effectiveActionSeconds=g.seconds*GATHER_TIME_SCALE*pacing.timeMultiplier*effect.actionTimeMultiplier*(method?.actionTimeMultiplier??1)/(multipliers.gatheringSpeedMultiplier*specialtySpeed*mastery.speed*affinity.speedMultiplier*dailySupplySpeedMultiplier(state,'gathering_speed',elapsed));
     const elapsedMs=Math.min(offlineCapSeconds(state)*1000,Math.max(0,effectiveNowMs-state.activity.lastClaimAtMs));
-    const timeline=combatTimeline({startsAtMs:state.activity.lastClaimAtMs,elapsedSeconds:elapsedMs/1000,progressFraction:state.activity.progressFraction??0,preparationEncounters:0,cycleSeconds:effectiveActionSeconds,preparedCycleSeconds:effectiveActionSeconds,candy:eventCandyWindow(state,'skill')});
+    const timeline=WINTER_HEARTH_GUILD_RELEASED&&state.winterHearthBonusWindows?.length
+      ?winterHearthGatheringTimeline({startsAtMs:state.activity.lastClaimAtMs,elapsedSeconds:elapsedMs/1000,
+        progressFraction:state.activity.progressFraction??0,cycleSeconds:effectiveActionSeconds,
+        candy:eventCandyWindow(state,'skill')},state.winterHearthBonusWindows)
+      :combatTimeline({startsAtMs:state.activity.lastClaimAtMs,elapsedSeconds:elapsedMs/1000,
+        progressFraction:state.activity.progressFraction??0,preparationEncounters:0,
+        cycleSeconds:effectiveActionSeconds,preparedCycleSeconds:effectiveActionSeconds,
+        candy:eventCandyWindow(state,'skill')});
     const actions=timeline.encounters.length,candyActions=timeline.encounters.filter(row=>row.candy).length;
     const candyXpMultiplier=actions?1+.1*candyActions/actions:1;
     const seed=`${state.character.id}:${state.activity.lastClaimAtMs}:${g.id}:yield`;
@@ -927,7 +939,7 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number)
     const quantity=Math.floor(quantityFloat);
     const skill=state.skills.find(x=>x.skillId===g.skillId);
     const xpKey=affinityXpRemainderKey(state.character.id,g.skillId);
-    const gain=settleAffinitySkillXp(actions*g.xp*effect.xpMultiplier*(method?.xpMultiplier??1)*multipliers.skillXpMultiplier*mastery.xp*affinity.xpMultiplier*candyXpMultiplier*gatheringToolSkillXpMultiplier(state,g.skillId),state.rewardRemainders?.[xpKey],totalXpAtLevel(100)-(skill?.xp??0));
+    const gain=settleAffinitySkillXp(actions*g.xp*effect.xpMultiplier*(method?.xpMultiplier??1)*multipliers.skillXpMultiplier*mastery.xp*affinity.xpMultiplier*candyXpMultiplier*gatheringToolSkillXpMultiplier(state,g.skillId)*(WINTER_HEARTH_GUILD_RELEASED?winterHearthXpFactorForActionTimes(state.winterHearthBonusWindows??[],timeline.encounters.map(row=>row.atMs),'skill'):1),state.rewardRemainders?.[xpKey],totalXpAtLevel(100)-(skill?.xp??0));
     const xp=gain.xp;
     const items:ItemStack[]=quantity?[{itemId:g.itemId,quantity}]:[];
     if(g.skillId==='mining'){
@@ -963,7 +975,8 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number)
   if(mastery.materialBonus)for(const item of items){if(itemDef(item.itemId).type!=='material')continue;const extra=item.quantity*mastery.materialBonus+(materialRemainders[item.itemId]??0),whole=Math.floor(extra+1e-9);item.quantity+=whole;materialRemainders[item.itemId]=Math.max(0,extra-whole);}
   const combatXpScale=characterCombatXpScale(m.level,m.boss);
   const rewardItems=items,champion=championBonus(Math.floor(m.xp*combatXpScale*effect.xpMultiplier*multipliers.characterXpMultiplier),Math.floor(m.gold*effect.goldMultiplier*multipliers.goldMultiplier),sim.championKills);
-  const baseXpPerKill=m.xp*combatXpScale*effect.xpMultiplier*multipliers.characterXpMultiplier*combatCandy,baseGoldPerKill=m.gold*effect.goldMultiplier*multipliers.goldMultiplier,sessionKills=state.activity.sessionKills??0;
+  const winterCombatXp=WINTER_HEARTH_GUILD_RELEASED?winterHearthXpFactorForActionTimes(state.winterHearthBonusWindows??[],sim.completed.map(row=>row.atMs),'combat'):1;
+  const baseXpPerKill=m.xp*combatXpScale*effect.xpMultiplier*multipliers.characterXpMultiplier*combatCandy*winterCombatXp,baseGoldPerKill=m.gold*effect.goldMultiplier*multipliers.goldMultiplier,sessionKills=state.activity.sessionKills??0;
   // Carry fractional per-kill rewards across claims of the same hunt clock.
   // Without this, two offline claims can floor the same earned XP/Gold twice.
   const xpFractionKey='combat:base-xp-fraction',goldFractionKey='combat:base-gold-fraction';
@@ -1036,31 +1049,49 @@ function projectedIdleContext(state:GameState,reward:RewardBundle,settleAtMs:num
 }
 function idleRuleSettlementWindow(state:GameState,nowMs:number){
   const rule=activeIdleRuleForState(state),activity=state.activity;
-  if(!activity||!state.character)return {settleAtMs:nowMs,shouldStop:false as const,safety:false,combatRecovery:false};
+  if(!activity||!state.character)return {supply:previewStandardActivityRewardWithSupplies(state,nowMs),settleAtMs:nowMs,shouldStop:false as const,safety:false,combatRecovery:false};
   const node=[...GATHERING,...HERB_NODES].find(row=>row.id===activity.targetId),queueGoal=activity.queueGoal;
   const condition=queueGoal?{id:'queue-goal',kind:queueGoal.kind,targetId:queueGoal.kind==='item_quantity'?node?.itemId:queueGoal.kind==='skill_level'?node?.skillId:undefined,value:queueGoal.value,enabled:true}:activity.kind==='combat'&&activity.huntGoal?{id:'hunt-goal-condition',kind:activity.huntGoal.kind,targetId:activity.targetId,value:activity.huntGoal.value,enabled:true}:undefined;
   const goalRule=condition&&activity.queueGoalCompletedAtMs===undefined?{id:'activity-goal',characterId:state.character.id,name:'Activity goal',conditions:[condition],stopIfOutOfFood:false,stopIfRewardsWouldOverflow:false,finishCurrentCycle:true} as IdleRuleSet:undefined;
-  if(!rule&&!goalRule&&!activity.queueManaged&&!state.character.activityQueue?.length)return {settleAtMs:nowMs,shouldStop:false as const,safety:false,combatRecovery:false};
+  if(!rule&&!goalRule&&!activity.queueManaged&&!state.character.activityQueue?.length)return {supply:previewStandardActivityRewardWithSupplies(state,nowMs),settleAtMs:nowMs,shouldStop:false as const,safety:false,combatRecovery:false};
   const capAtMs=activity.lastClaimAtMs+offlineCapSeconds(state)*1000,upper=Math.max(activity.lastClaimAtMs,Math.min(nowMs,capAtMs));
   const evaluateAt=(time:number)=>{
-    const reward=previewStandardActivityRewardWithSupplies(state,time).reward,ctx=projectedIdleContext(state,reward,time),saved=rule?evaluateIdleRuleSet(rule,ctx):{shouldStop:false,safety:false},goal=goalRule?evaluateIdleRuleSet(goalRule,ctx):{shouldStop:false,safety:false};
+    const supply=previewStandardActivityRewardWithSupplies(state,time);
+    const reward=supply.reward,ctx=projectedIdleContext(state,reward,time),saved=rule?evaluateIdleRuleSet(rule,ctx):{shouldStop:false,safety:false},goal=goalRule?evaluateIdleRuleSet(goalRule,ctx):{shouldStop:false,safety:false};
     const evaluation=reward.stoppedReason?{shouldStop:true,safety:true,reason:reward.stoppedReason}:saved.safety?saved:goal.shouldStop?{...goal,reason:queueGoal?'Queue goal reached.':`Hunt goal reached: ${activity.huntGoal?.label??'target'}.`}:saved;
     const combatRecovery=activity.kind==='combat'&&(!!reward.stoppedReason?.toLowerCase().includes('injured')||saved.safety&&(saved.reason==='Food reserve is empty.'||rule?.conditions.some(row=>row.id===saved.conditionId&&row.kind==='food_below')===true));
-    return {reward,evaluation,combatRecovery};
+    return {supply,evaluation,combatRecovery};
   };
   const upperResult=evaluateAt(upper);
-  if(!upperResult.evaluation.shouldStop)return {settleAtMs:upper,shouldStop:false as const,safety:false,combatRecovery:false};
-  const atStart=evaluateAt(activity.lastClaimAtMs);
-  if(atStart.evaluation.shouldStop)return {settleAtMs:activity.lastClaimAtMs,shouldStop:true as const,safety:atStart.evaluation.safety,combatRecovery:atStart.combatRecovery,reason:atStart.evaluation.reason??'Idle Rule target already reached.'};
+  if(!upperResult.evaluation.shouldStop)return {supply:upperResult.supply,settleAtMs:upper,shouldStop:false as const,safety:false,combatRecovery:false};
+  const atStart=upper===activity.lastClaimAtMs?upperResult:evaluateAt(activity.lastClaimAtMs);
+  if(atStart.evaluation.shouldStop)return {supply:atStart.supply,settleAtMs:activity.lastClaimAtMs,shouldStop:true as const,safety:atStart.evaluation.safety,combatRecovery:atStart.combatRecovery,reason:atStart.evaluation.reason??'Idle Rule target already reached.'};
   let low=activity.lastClaimAtMs,high=upper;
-  while(high-low>1){const mid=low+Math.floor((high-low)/2);if(evaluateAt(mid).evaluation.shouldStop)high=mid;else low=mid;}
-  let settleAtMs=high;let final=evaluateAt(settleAtMs);
+  let final=upperResult,below=atStart;
+  while(high-low>1){
+    const mid=low+Math.floor((high-low)/2),candidate=evaluateAt(mid);
+    if(candidate.evaluation.shouldStop){high=mid;final=candidate;}
+    else{low=mid;below=candidate;}
+  }
+  let settleAtMs=high,supply=final.supply;
   if(final.evaluation.safety&&final.evaluation.reason==='Storage cannot safely accept the next reward.'&&settleAtMs>activity.lastClaimAtMs){
     settleAtMs=Math.max(activity.lastClaimAtMs,settleAtMs-1);
+    supply=settleAtMs===low?below.supply:previewStandardActivityRewardWithSupplies(state,settleAtMs);
   }
-  return {settleAtMs,shouldStop:true as const,safety:final.evaluation.safety,combatRecovery:final.combatRecovery,reason:final.evaluation.reason??'Configured Idle Rule target reached.'};
+  return {supply,settleAtMs,shouldStop:true as const,safety:final.evaluation.safety,combatRecovery:final.combatRecovery,reason:final.evaluation.reason??'Configured Idle Rule target reached.'};
 }
 
+function processingSettlementWindow(state:GameState,nowMs:number){
+ const activity=state.activity!,processing=activity.processing!;
+ if(!isWinterHearthLightRecipe(processing.recipeId))return {expired:false,elapsedSeconds:Math.min(offlineCapSeconds(state),Math.max(0,(nowMs-activity.lastClaimAtMs)/1000))};
+ const runtime=state.account.liveEvent;
+ return winterHearthCraftSettlementWindow({lastClaimAtMs:activity.lastClaimAtMs,nowMs,offlineCapSeconds:offlineCapSeconds(state),savedEndMs:processing.seasonEndsAtMs,runtimeEndMs:runtime?.eventId===WINTER_HEARTH_2026_ID?runtime.endsAtMs:undefined,released:WINTER_HEARTH_GUILD_RELEASED});
+}
+function processingTimedPreview(state:GameState,nowMs:number){
+ const window=processingSettlementWindow(state,nowMs),elapsed=window.elapsedSeconds;
+ const raw=dailySupplyAdjustTimedCraftReward(state,previewProcessingReward(state,dailySupplyCraftWorkSeconds(state,elapsed)),elapsed);
+ return {window,raw:{...raw,xp:Math.floor((raw.xp??0)*(WINTER_HEARTH_GUILD_RELEASED?winterHearthXpFactorForActionTimes(state.winterHearthBonusWindows??[],raw.craftingCompletedAtMs??[],'skill'):1)),...timedEventRewards(state,'crafting',raw.craftingCompletedAtMs??[])}};
+}
 export function previewActivityReward(state:GameState,nowMs:number):RewardBundle{
   if(state.character?.classTraining)return settleClassDrills(state,nowMs,offlineCapSeconds(state)).reward;
   if(state.activity?.kind==='faith'){
@@ -1072,12 +1103,12 @@ export function previewActivityReward(state:GameState,nowMs:number):RewardBundle
     return previewDailySupplyTimedReward(state,base,'crafting').reward;
   }
   if(state.activity?.kind==='processing'){
-    const source=state.activity;
-    const elapsed=Math.min(offlineCapSeconds(state),Math.max(0,(nowMs-state.activity.lastClaimAtMs)/1000)),raw=dailySupplyAdjustTimedCraftReward(state,previewProcessingReward(state,dailySupplyCraftWorkSeconds(state,elapsed)),elapsed),base={...raw,...timedEventRewards(state,'crafting',raw.craftingCompletedAtMs??[])};
-    return previewDailySupplyTimedReward(state,base,'crafting').reward;
+    const {window,raw}=processingTimedPreview(state,nowMs);
+    const reward=previewDailySupplyTimedReward(state,raw,'crafting').reward;
+    return window.expired?{...reward,stoppedReason:'Winter Hearth crafting ended. Unfinished reservations are refunded.'}:reward;
   }
   if(!state.activity||!state.character)return {xp:0,gold:0,items:[],kills:0,elapsedSeconds:0};
-  const idleWindow=idleRuleSettlementWindow(state,nowMs),reward=previewStandardActivityRewardWithSupplies(state,idleWindow.settleAtMs).reward;
+  const idleWindow=idleRuleSettlementWindow(state,nowMs),reward=idleWindow.supply.reward;
   return idleWindow.shouldStop&&!reward.stoppedReason?{...reward,stoppedReason:idleWindow.reason}:reward;
 }
 
@@ -1257,7 +1288,7 @@ function claimActivitySegmentRaw(state:GameState,nowMs:number){
   if(state.activity?.kind==='alchemy'){
     const source=state.activity;
     if(nowMs<=state.activity.lastClaimAtMs)return {state,reward:previewActivityReward(state,state.activity.lastClaimAtMs)};
-    const elapsed=Math.min(offlineCapSeconds(state),Math.max(0,(nowMs-state.activity.lastClaimAtMs)/1000)),raw=dailySupplyAdjustTimedCraftReward(state,previewAlchemyReward(state,dailySupplyCraftWorkSeconds(state,elapsed)),elapsed),baseReward={...raw,...timedEventRewards(state,'crafting',raw.craftingCompletedAtMs??[])},boost=previewDailySupplyTimedReward(state,baseReward,'crafting'),reward=boost.reward,brew=state.activity.brew!;
+    const elapsed=Math.min(offlineCapSeconds(state),Math.max(0,(nowMs-state.activity.lastClaimAtMs)/1000)),raw=dailySupplyAdjustTimedCraftReward(state,previewAlchemyReward(state,dailySupplyCraftWorkSeconds(state,elapsed)),elapsed),baseReward={...raw,xp:Math.floor((raw.xp??0)*(WINTER_HEARTH_GUILD_RELEASED?winterHearthXpFactorForActionTimes(state.winterHearthBonusWindows??[],raw.craftingCompletedAtMs??[],'skill'):1)),...timedEventRewards(state,'crafting',raw.craftingCompletedAtMs??[])},boost=previewDailySupplyTimedReward(state,baseReward,'crafting'),reward=boost.reward,brew=state.activity.brew!;
     const routed=routeRewards(state,reward.items,nowMs);
     const skills=state.skills.map(x=>x.skillId==='alchemy'?{...x,xp:Math.min(totalXpAtLevel(100),x.xp+(reward.xp??0)),level:levelFromXp(Math.min(totalXpAtLevel(100),x.xp+(reward.xp??0)))}:x);
     const nextBase={...state,...routed,skills,rewardRemainders:reward.nextRewardRemainders,activity:reward.nextBrewRemaining?{...state.activity,lastClaimAtMs:nowMs,progressFraction:reward.nextProgressFraction,brew:{...brew,remainingBatches:reward.nextBrewRemaining}}:null} as GameState;
@@ -1270,20 +1301,21 @@ function claimActivitySegmentRaw(state:GameState,nowMs:number){
   if(state.activity?.kind==='processing'){
     const source=state.activity;
     if(nowMs<=state.activity.lastClaimAtMs)return {state,reward:previewActivityReward(state,state.activity.lastClaimAtMs)};
-    const elapsed=Math.min(offlineCapSeconds(state),Math.max(0,(nowMs-state.activity.lastClaimAtMs)/1000)),raw=dailySupplyAdjustTimedCraftReward(state,previewProcessingReward(state,dailySupplyCraftWorkSeconds(state,elapsed)),elapsed),baseReward={...raw,...timedEventRewards(state,'crafting',raw.craftingCompletedAtMs??[])},boost=previewDailySupplyTimedReward(state,baseReward,'crafting'),reward=boost.reward,processing=state.activity.processing!;
-    const routed=routeRewards(state,reward.items,nowMs),nextXp=(state.skills.find(x=>x.skillId===processing.skillId)?.xp??0)+(reward.xp??0);
+    const {window,raw}=processingTimedPreview(state,nowMs),boost=previewDailySupplyTimedReward(state,raw,'crafting'),reward=window.expired?{...boost.reward,stoppedReason:'Winter Hearth crafting ended. Unfinished reservations are refunded.'}:boost.reward,processing=state.activity.processing!;
+    const unfinished=reward.nextProcessingRemaining??0,refund=window.expired&&unfinished>0?processingRefund({...processing,remainingBatches:unfinished}):null;
+    const routed=routeRewards(state,[...reward.items,...(refund?.items??[])],nowMs),nextXp=(state.skills.find(x=>x.skillId===processing.skillId)?.xp??0)+(reward.xp??0);
     const skills=state.skills.map(x=>x.skillId===processing.skillId?{...x,xp:Math.min(totalXpAtLevel(100),nextXp),level:levelFromXp(Math.min(totalXpAtLevel(100),nextXp))}:x);
-    const nextBase={...state,...routed,skills,rewardRemainders:reward.nextRewardRemainders,activity:reward.nextProcessingRemaining?{...state.activity,lastClaimAtMs:nowMs,progressFraction:reward.nextProgressFraction,processing:{...processing,remainingBatches:reward.nextProcessingRemaining}}:null} as GameState;
+    const nextBase={...state,...routed,skills,...(refund&&state.character?{character:{...state.character,gold:state.character.gold+refund.gold}}:{}),rewardRemainders:reward.nextRewardRemainders,activity:!window.expired&&reward.nextProcessingRemaining?{...state.activity,lastClaimAtMs:nowMs,progressFraction:reward.nextProgressFraction,processing:{...processing,remainingBatches:reward.nextProcessingRemaining}}:null} as GameState;
     const next=commitDailySupplyTimedBoost(nextBase,boost),actions=reward.craftingActions??0;
     let progressed=actions>0?applyTrustedLongTermProgression(next,[{kind:'crafting',contentId:processing.recipeId,units:actions,skillId:processing.skillId,startedAtMs:state.activity.lastClaimAtMs}],reward,nowMs,{accountId:longTermAccountScope(state),eventId:`processing:${state.character?.id??'unknown'}:${processing.recipeId}:${state.activity.lastClaimAtMs}:${nowMs}`}).state:next;
     progressed=applyEventDiscoveries(applyEventDrops(progressed,reward.eventDrops??[]),reward.eventDiscoveries??[]);
     progressed=refreshQuests(progressed);
     const finalState=reconcileCombatCompanionUnlocks(progressed,nowMs);
-    const queuedState=!reward.nextProcessingRemaining&&(source.queueManaged||state.character?.activityQueue?.length)?startFinishedQueuedActivity(finalState,nowMs):finalState;
+    const queuedState=(!reward.nextProcessingRemaining||window.expired)&&(source.queueManaged||state.character?.activityQueue?.length)?startFinishedQueuedActivity(finalState,nowMs):finalState;
     return {state:queuedState,reward:withCompanionUnlocks(reward,state,queuedState)};
   }
   if(!state.character||!state.activity){const recovered=settleOutOfCombatRecovery(state,nowMs);return {state:recovered,reward:previewActivityReward(state,nowMs)};}
-  const idleWindow=idleRuleSettlementWindow(state,nowMs),settledAtMs=idleWindow.settleAtMs,idleStopReason=idleWindow.shouldStop?idleWindow.reason:undefined,supply=previewStandardActivityRewardWithSupplies(state,settledAtMs),boosted=supply.reward;
+  const idleWindow=idleRuleSettlementWindow(state,nowMs),settledAtMs=idleWindow.settleAtMs,idleStopReason=idleWindow.shouldStop?idleWindow.reason:undefined,supply=idleWindow.supply,boosted=supply.reward;
   const reward:RewardBundle=idleWindow.shouldStop&&!boosted.stoppedReason?{...boosted,stoppedReason:idleStopReason,goalReached:!idleWindow.safety}:boosted;
   if(state.activity.kind!=='combat'){
     const skills=state.skills.map(x=>x.skillId===state.activity!.kind?{...x,xp:x.xp+reward.xp,level:levelFromXp(x.xp+reward.xp)}:x);
@@ -1723,37 +1755,37 @@ export function activateGatheringToolReserve(state:GameState,skillId:GatheringSk
  const settled=state.activity?.kind===skillId?claimActivity(state,nowMs).state:state;
  return setGatheringToolSlots(settled,skillId,tier,reserve,current);
 }
-/** Explicitly release only the reserve copy to Inventory. The active tool and
- * effects remain untouched. Full Inventory safely rejects without mutation. */
-export function withdrawGatheringToolReserve(state:GameState,skillId:GatheringSkillId,tier:1|2|3|4):GameState{
+/** Release only the reserve copy to the chosen storage; active effects stay untouched. */
+export function withdrawGatheringToolReserve(state:GameState,skillId:GatheringSkillId,tier:1|2|3|4,to:'inventory'|'bank'='inventory'):GameState{
  if(!state.character)throw new Error('Character required');
  const reserve=reserveGatheringToolSlot(state,skillId,tier);
  if(!reserve)throw new Error('No saved reserve in this tier');
- const added=addBounded(state.inventory.stacks,entitlementStorageCapacity(state,'inventory'),[{itemId:reserve.itemId,quantity:1,...(reserve.instanceId?{instanceId:reserve.instanceId}:{})}]);
- if(added.overflow.length)throw new Error('Inventory is full');
- return setGatheringToolSlots({...state,inventory:{...state.inventory,stacks:added.stacks}},skillId,tier,activeGatheringToolSlot(state,skillId,tier),undefined);
+ const added=addBounded(state[to].stacks,entitlementStorageCapacity(state,to),[{itemId:reserve.itemId,quantity:1,...(reserve.instanceId?{instanceId:reserve.instanceId}:{})}]);
+ if(added.overflow.length)throw new Error(to==='bank'?'Bank is full':'Inventory is full');
+ return setGatheringToolSlots({...state,[to]:{...state[to],stacks:added.stacks}},skillId,tier,activeGatheringToolSlot(state,skillId,tier),undefined);
 }
 /** Removing an active copy promotes the reserve, if one exists, then returns
- * only the removed physical copy to Inventory. */
-export function unequipGatheringTool(state:GameState,skillId:GatheringSkillId,nowMs=Date.now(),itemId?:string):GameState{
+ * only the removed physical copy to the chosen storage. */
+export function unequipGatheringTool(state:GameState,skillId:GatheringSkillId,nowMs=Date.now(),itemId?:string,to:'inventory'|'bank'='inventory'):GameState{
  if(!state.character)return state;
  const equipped=equippedGatheringTools(state,skillId);
  const selected=itemId?equipped.find(row=>row.id===itemId):equipped[equipped.length-1];
  if(!selected)return state;
  const tier=selected.tier;
  if(reserveGatheringToolSlot(state,skillId,tier))
-  return withdrawGatheringToolReserve(activateGatheringToolReserve(state,skillId,tier,nowMs),skillId,tier);
+  return withdrawGatheringToolReserve(activateGatheringToolReserve(state,skillId,tier,nowMs),skillId,tier,to);
  const current=activeGatheringToolSlot(state,skillId,tier);
  if(!current)return state;
  const settled=state.activity?.kind===skillId?claimActivity(state,nowMs).state:state;
- const added=addBounded(settled.inventory.stacks,entitlementStorageCapacity(settled,'inventory'),[{itemId:current.itemId,quantity:1,...(current.instanceId?{instanceId:current.instanceId}:{})}]);
- if(added.overflow.length)throw new Error('Free one Inventory slot before unequipping this tool');
- return setGatheringToolSlots({...settled,inventory:{...settled.inventory,stacks:added.stacks}},skillId,tier,undefined,undefined);
+ const added=addBounded(settled[to].stacks,entitlementStorageCapacity(settled,to),[{itemId:current.itemId,quantity:1,...(current.instanceId?{instanceId:current.instanceId}:{})}]);
+ if(added.overflow.length)throw new Error(to==='bank'?'Bank is full':'Free one Inventory slot before unequipping this tool');
+ return setGatheringToolSlots({...settled,[to]:{...settled[to],stacks:added.stacks}},skillId,tier,undefined,undefined);
 }
 export function craftRecipe(state:GameState,recipeId:string,nowMs=Date.now(),sequence=0):GameState{
   if(!state.character)throw new Error('No character');
   if(recipeId.startsWith('BREW_'))throw new Error('Timed alchemy recipes must be started as a batch.');
   const r=recipeDef(recipeId);if(!r)throw new Error('Unknown recipe');
+  if(isWinterHearthLightRecipe(recipeId)&&!winterHearthLightRecipeAvailable(state,nowMs))throw new Error('Winter Hearth crafting is closed.');
   if(r.classId&&r.classId!==state.character.classId&&!r.v33SetId)throw new Error('This recipe belongs to another class');
   if(state.character.level<(r.characterLevel??1))throw new Error(`Requires character level ${r.characterLevel}`);
   if(r.requiresCraftedItemId&&!state.character.craftedNoviceItemIds?.includes(r.requiresCraftedItemId))throw new Error(`Craft ${itemDef(r.requiresCraftedItemId).name} first`);

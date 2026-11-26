@@ -1,81 +1,55 @@
-import {useSocialText} from '../i18n/social';
 import {useMemo,useState} from 'react';
-import {Pressable,Text,View,StyleSheet} from 'react-native';
+import {StyleSheet,Text,View} from 'react-native';
+import {useSocialText} from '../i18n/social';
 import {GameTextInput as TextInput} from './GameTextInput';
 import {GameButton} from './GameButton';
-import {Panel} from './Panel';
-import {radii,spacing,touchTargetMin,typography,type ThemeColors} from '../theme/theme';
+import {RecruitmentQuickPostChoices} from './RecruitmentQuickPostChoices';
+import {radii,spacing,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
-import {recruitmentPostTypePresentation} from '../core/party-social';
-import {recruitmentTags} from './RecruitmentFiltersPanel';
+import {recruitmentMainInterest,recruitmentPostTypePresentation,recruitmentStoredInterest,type RecruitmentActivityLevel,type RecruitmentMainInterest} from '../core/party-social';
 import type {PublishRecruitmentInput} from '../online/party-social';
 
-const tagFieldLabel={activityTags:'Activities',playstyleTags:'Playstyle',availabilityTags:'Availability',guildInterestTags:'Guild interests'} as const;
-
+/** Guild quick post: only title, description, main interest and expected activity. */
 export function RecruitmentComposer({initial,busy,onPublish,onCancel}:{initial:PublishRecruitmentInput;busy:boolean;onPublish:(input:PublishRecruitmentInput)=>void;onCancel:()=>void}){
- const st=useSocialText();
- const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
- const [draft,setDraft]=useState(initial),presentation=recruitmentPostTypePresentation(initial.postType);
- const [showAdvanced,setShowAdvanced]=useState(false);
- const patch=(value:Partial<PublishRecruitmentInput>)=>setDraft(previous=>({...previous,...value}));
- const guild=draft.postType==='looking_for_guild'||draft.postType==='guild_recruiting';
- return <Panel>
-  <View style={s.head}><View style={s.flex}><Text style={s.eyebrow}>{st("NEW RECRUITMENT POST")}</Text><Text style={s.title}>{presentation.label}</Text></View><View style={s.typePill}><Text style={s.typeText}>{presentation.shortLabel}</Text></View></View>
-  <Text style={s.text}>{st("Keep it concise. One active advert per type; refresh or replacement is available every 6 hours.")}</Text>
-  <View style={s.section}><Text style={s.groupLabel}>{st("MESSAGE")}</Text>
-   <TextInput accessibilityLabel={st("Advert title")} placeholder={st("Short title")} placeholderTextColor={C.muted} style={s.input} value={draft.title} maxLength={80} onChangeText={title=>patch({title})}/>
-   <TextInput accessibilityLabel={st("Advert description")} placeholder={st("Activities, availability and what you enjoy")} placeholderTextColor={C.muted} style={[s.input,s.bodyInput]} multiline value={draft.body} maxLength={600} onChangeText={body=>patch({body})}/>
+ const st=useSocialText(),C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
+ const [draft,setDraft]=useState(initial);
+ const [interest,setInterest]=useState<RecruitmentMainInterest>(recruitmentMainInterest({focus:initial.focus??'mixed',playstyleTags:initial.playstyleTags??[]}));
+ const [activityLevel,setActivityLevel]=useState<RecruitmentActivityLevel>(initial.activityLevel??'active');
+ const presentation=recruitmentPostTypePresentation(initial.postType);
+ const update=(value:Partial<PublishRecruitmentInput>)=>setDraft(previous=>({...previous,...value}));
+ const publish=()=>{
+  if(busy||draft.title.trim().length<3)return;
+  onPublish({...draft,title:draft.title.trim(),durationDays:3,
+   ...recruitmentStoredInterest(interest,draft.playstyleTags),activityLevel,
+   roles:[],requiredRoleCounts:{},flexibleRoles:true,
+   activityKind:undefined,goal:undefined,startMode:undefined,sessionMinutes:undefined,
+   voiceMode:undefined,experience:undefined,scheduledAt:undefined});
+ };
+ return <View style={s.root}>
+  <View style={s.head}>
+   <Text style={s.eyebrow}>{st('NEW RECRUITMENT POST')}</Text>
+   <Text style={s.postType}>{presentation.shortLabel}</Text>
   </View>
-  <View style={s.section}><Text style={s.groupLabel}>{st("FOCUS")}</Text><View style={s.row}>{(['combat','skilling','mixed'] as const).map(focus=><ChoiceChip key={focus} label={focus} selected={draft.focus===focus} onPress={()=>patch({focus})}/>)}</View></View>
-  <View style={s.section}><Text style={s.groupLabel}>ACTIVITY</Text><View style={s.row}>{(['dungeon','boss','quest','skilling','exploration','pvp','party_event','other'] as const).map(activityKind=><ChoiceChip key={activityKind} label={activityKind.replace('_',' ')} selected={draft.activityKind===activityKind} onPress={()=>patch({activityKind})}/>)}</View>
-   <TextInput accessibilityLabel="Specific activity" placeholder="Specific activity or encounter · optional" placeholderTextColor={C.muted} style={s.input} maxLength={80} onChangeText={text=>patch({currentObjective:text||undefined})}/>
+  <View style={s.section}>
+   <Text style={s.label}>{st('Advert title')}</Text>
+   <TextInput accessibilityLabel={st('Advert title')} placeholder={st('Looking for active adventurers')} placeholderTextColor={C.muted} value={draft.title} maxLength={80} onChangeText={title=>update({title})} style={s.input}/>
   </View>
-  <View style={s.section}><Text style={s.groupLabel}>GOAL</Text><View style={s.row}>{(['learn','clear','farm','speedrun','achievement','casual'] as const).map(goal=><ChoiceChip key={goal} label={goal} selected={draft.goal===goal} onPress={()=>patch({goal})}/>)}</View></View>
-  <View style={s.section}><Text style={s.groupLabel}>{st("ROLE")}</Text><View style={s.row}>
-   {(['tank','damage','support'] as const).map(role => <ChoiceChip key={role} label={role} selected={draft.roles?.includes(role) ?? false} onPress={() => patch({roles: draft.roles?.includes(role) ? draft.roles.filter(item => item !== role) : [...(draft.roles ?? []), role]})}/>)}
-   <ChoiceChip label="Flexible roles" selected={draft.flexibleRoles ?? false} onPress={() => patch({flexibleRoles: !draft.flexibleRoles})}/>
-   {(['tank','damage','support'] as const).filter(role => draft.roles?.includes(role)).map(role => <View key={`need-${role}`} style={s.roleNeed}><Text style={s.roleNeedLabel}>{role} needed</Text>{([1,2,3] as const).map(count => <ChoiceChip key={count} label={`${count}`} selected={(draft.requiredRoleCounts?.[role] ?? 1)===count} onPress={() => patch({requiredRoleCounts:{...(draft.requiredRoleCounts??{}),[role]:count}})}/>)}</View>)}
-  </View></View>
-  <View style={s.section}><Text style={s.groupLabel}>{st("PACE")}</Text><View style={s.row}>{(['casual','regular','active','hardcore'] as const).map(activityLevel=><ChoiceChip key={activityLevel} label={activityLevel} selected={draft.activityLevel===activityLevel} onPress={()=>patch({activityLevel})}/>)}</View></View>
-  <View style={s.section}><Text style={s.groupLabel}>WHEN</Text><View style={s.row}>{(['now','next_hour','scheduled','recurring'] as const).map(startMode=><ChoiceChip key={startMode} label={startMode.replace('_',' ')} selected={draft.startMode===startMode} onPress={()=>patch({startMode})}/>)}</View><View style={s.row}>{([30,60,90,120,180] as const).map(sessionMinutes=><ChoiceChip key={sessionMinutes} label={`${sessionMinutes}m`} selected={draft.sessionMinutes===sessionMinutes} onPress={()=>patch({sessionMinutes})}/>)}</View></View>
-  <Pressable accessibilityRole="button" accessibilityState={{expanded:showAdvanced}} onPress={()=>setShowAdvanced(v=>!v)} style={({pressed})=>[s.advancedToggle,pressed&&s.pressed]}><Text style={s.advancedLabel}>{showAdvanced?'Hide advanced details':'Advanced details · tags, schedule, voice, levels'}</Text><Text style={s.chevron}>{showAdvanced?'−':'+'}</Text></Pressable>
-  {showAdvanced?<>
-   <View style={s.section}><Text style={s.groupLabel}>{st("DISCOVERY TAGS")}</Text>
-    {(['activityTags','playstyleTags','availabilityTags','guildInterestTags'] as const).map(key=><TextInput key={key} accessibilityLabel={tagFieldLabel[key]} placeholder={tagFieldLabel[key]+' · comma separated'} placeholderTextColor={C.muted} style={s.input} onChangeText={text=>patch({[key]:recruitmentTags(text)})}/>)}
-   </View>
-   {draft.startMode==='scheduled'?<TextInput accessibilityLabel="Scheduled start time" placeholder="Start time · ISO or UTC, e.g. 2026-10-01T20:00Z" placeholderTextColor={C.muted} style={s.input} value={draft.scheduledAt??''} onChangeText={scheduledAt=>patch({scheduledAt:scheduledAt||undefined})}/>:null}
-   <View style={s.section}><Text style={s.groupLabel}>EXPECTATIONS</Text><View style={s.row}>{(['none','preferred','required'] as const).map(voiceMode=><ChoiceChip key={voiceMode} label={`Voice: ${voiceMode}`} selected={draft.voiceMode===voiceMode} onPress={()=>patch({voiceMode})}/>)}</View><View style={s.row}>{(['any','new_players','welcome','experienced','expert'] as const).map(experience=><ChoiceChip key={experience} label={experience.replace('_',' ')} selected={draft.experience===experience} onPress={()=>patch({experience})}/>)}</View></View>
-   <View style={s.row}>{(['language','region'] as const).map(key=><TextInput key={key} accessibilityLabel={key} placeholder={key==='language'?st("Language · optional"):st("Region · optional")} placeholderTextColor={C.muted} style={[s.input,s.grow]} maxLength={40} onChangeText={text=>patch({[key]:text||undefined})}/>)}</View>
-   <TextInput accessibilityLabel="currentObjective" placeholder={st("Current objective · optional")} placeholderTextColor={C.muted} style={s.input} maxLength={120} onChangeText={text=>patch({currentObjective:text||undefined})}/>
-   <View style={s.row}>{(['minCombatLevel','minTotalLevel'] as const).map(key=><TextInput key={key} accessibilityLabel={key} placeholder={key==='minCombatLevel'?st("Minimum Combat"):st("Minimum Total")} placeholderTextColor={C.muted} style={[s.input,s.grow]} keyboardType="number-pad" onChangeText={text=>patch({[key]:text?Math.max(0,parseInt(text,10)||0):undefined})}/>)}</View>
-  </>:null}
-  <View style={s.expiryCard}><View style={s.flex}><Text style={s.expiryLabel}>{st("AUTO-EXPIRES")}</Text><Text style={s.expiryText}>{draft.durationDays??(guild?3:1)} day{(draft.durationDays??(guild?3:1))===1?'':'s'} · stale posts disappear automatically</Text></View>{guild?<View style={s.durationRow}>{([1,3] as const).map(durationDays=><ChoiceChip key={durationDays} label={durationDays+'d'} selected={draft.durationDays===durationDays} onPress={()=>patch({durationDays})}/>)}</View>:null}</View>
-  <View style={s.actions}><View style={s.flex}><GameButton title={busy?st("Publishing…"):st("Publish advert")} disabled={busy||draft.title.trim().length<3} onPress={()=>onPublish(draft)}/></View><View style={s.cancel}><GameButton title={st("Cancel")} tone="secondary" onPress={onCancel}/></View></View>
- </Panel>;
+  <View style={s.section}>
+   <Text style={s.label}>{st('Description')}</Text>
+   <TextInput accessibilityLabel={st('Advert description')} placeholder={st("Tell others what you're looking for...")} placeholderTextColor={C.muted} multiline value={draft.body} maxLength={600} onChangeText={body=>update({body})} style={[s.input,s.body]}/>
+  </View>
+  <RecruitmentQuickPostChoices interest={interest} activityLevel={activityLevel} onInterestChange={setInterest} onActivityChange={setActivityLevel}/>
+  <Text style={s.expiry}>{st('AUTO-EXPIRES')} · {st('Automatically expires after 3 days')}</Text>
+  <GameButton title={busy?st('Publishing…'):st('Publish advert')} disabled={busy||draft.title.trim().length<3} loading={busy} onPress={publish}/>
+  <GameButton title={st('Cancel')} compact tone="secondary" disabled={busy} onPress={onCancel}/>
+ </View>;
 }
-function ChoiceChip({label,selected,onPress}:{label:string;selected:boolean;onPress:()=>void}){const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);return <Pressable accessibilityRole="button" accessibilityState={{selected}} onPress={onPress} style={({pressed})=>[s.chip,selected&&s.chipSelected,pressed&&s.pressed]}><Text style={[s.chipText,selected&&s.chipTextSelected]}>{selected?'✓ ':''}{label}</Text></Pressable>}
-
-function makeStyles(C:ThemeColors){return StyleSheet.create({
- head:{flexDirection:'row',alignItems:'center',gap:8},flex:{flex:1,minWidth:0},roleNeed:{flexDirection:'row',alignItems:'center',gap:4},roleNeedLabel:{fontSize:11,color:C.muted,fontWeight:'800'},
- eyebrow:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.8},
- title:{...typography.title,color:C.text},
- typePill:{paddingHorizontal:9,paddingVertical:5,borderWidth:1,borderColor:C.info,borderRadius:99,backgroundColor:C.infoSurface},
- typeText:{fontSize:10,color:C.info,fontWeight:'900',letterSpacing:.6},
- text:{...typography.caption,color:C.muted,lineHeight:17},
- section:{gap:6},
- groupLabel:{fontSize:10,color:C.accentSoft,fontWeight:'900',letterSpacing:1},
- input:{minHeight:touchTargetMin,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,paddingHorizontal:spacing.sm,color:C.text,backgroundColor:C.inputBg},
- bodyInput:{minHeight:76,textAlignVertical:'top',paddingTop:10},
- row:{flexDirection:'row',flexWrap:'wrap',gap:5},
- chip:{minHeight:36,paddingHorizontal:10,justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.panel2},
- chipSelected:{borderColor:C.selectionLine,backgroundColor:C.selection},
- chipText:{fontSize:12,color:C.muted,fontWeight:'800',textTransform:'capitalize'},chipTextSelected:{color:C.text},
- pressed:{opacity:.72},grow:{flex:1,minWidth:120},
- expiryCard:{minHeight:52,flexDirection:'row',alignItems:'center',gap:8,padding:10,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2},
- expiryLabel:{fontSize:10,color:C.accent,fontWeight:'900',letterSpacing:.8},expiryText:{fontSize:12,lineHeight:17,color:C.muted,marginTop:2},
- durationRow:{flexDirection:'row',gap:4},
- actions:{flexDirection:'row',gap:6},cancel:{width:96},
- advancedToggle:{minHeight:40,paddingHorizontal:12,flexDirection:'row',alignItems:'center',gap:8,borderWidth:1,borderColor:C.line,borderRadius:8,backgroundColor:C.panel2},
- advancedLabel:{flex:1,fontSize:11,lineHeight:15,color:C.muted,fontWeight:'800'},
- chevron:{fontSize:16,color:C.muted,fontWeight:'900'},
+function styles(C:ThemeColors){return StyleSheet.create({
+ root:{gap:spacing.md},head:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},
+ eyebrow:{fontSize:10,fontWeight:'900',letterSpacing:0.8,color:C.accent},
+ postType:{fontSize:10,color:C.info,fontWeight:'900',borderWidth:1,borderColor:C.lineStrong,borderRadius:99,paddingHorizontal:9,paddingVertical:5},
+ section:{gap:7},label:{fontSize:12,fontWeight:'800',color:C.text},
+ input:{minHeight:44,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,paddingHorizontal:spacing.sm,backgroundColor:C.inputBg,color:C.text},
+ body:{minHeight:90,paddingTop:10,textAlignVertical:'top'},
+ expiry:{fontSize:11,color:C.muted,textAlign:'center',paddingVertical:5},
 });}

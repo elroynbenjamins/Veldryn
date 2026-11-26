@@ -1,15 +1,34 @@
+import {DRACONIC_IDS} from '../core/draconic-showcase-layout';
+import {getDraconicAssets} from './draconic-integration-assets';
+const draconic=getDraconicAssets();
 import type {ImageSourcePropType} from 'react-native';
+import {CELESTIAL_IDS,getEnabledCelestialAssets} from './celestial-integration-assets';
+const celestial=getEnabledCelestialAssets();
 import {EVENT_DECORATIONS} from './event-decoration-assets-active';
 
 export const profileBorderSourceById=new Map<string,ImageSourcePropType>([
   ['frame_amber_vine',require('../../assets/profile-borders/frame_amber_vine.webp')],
   ['frame_wheat_crown',require('../../assets/profile-borders/frame_wheat_crown.webp')],
+  ['cosmetic:frostbound:chime-frame',require('../../assets/profile-borders/animated-frostbound-chime-v2.webp')],
+  ['cosmetic:amberglass:loop-frame',require('../../assets/profile-borders/animated-amberglass-loop-v2.webp')],
+  ['cosmetic:briarbound:verdant-frame',require('../../assets/profile-borders/animated-briarbound-v2.webp')],
   ['frame_gloamward',require('../../assets/profile-borders/frame_gloamward.png')],
+  ['frame_frostfall_aurora_bellframe',require('../../assets/profile-borders/frame_frostfall_aurora_bellframe.webp')],
   ['guild-border-silver',require('../../assets/profile-borders/guild-border-silver.png')],
   ['guild-border-emerald',require('../../assets/profile-borders/guild-border-emerald.png')],
   ['guild-border-royal',require('../../assets/profile-borders/guild-border-royal.png')],
   ['dungeon:asterfall:briarbound-frame',require('../../assets/profile-borders/dungeon-asterfall-briarbound-frame.webp')],
   ['dungeon:sunscar:amberglass-loop',require('../../assets/profile-borders/dungeon-sunscar-amberglass-loop.webp')],
   ['dungeon:frostmarch:frostbound-chime',require('../../assets/profile-borders/dungeon-frostmarch-frostbound-chime.webp')],
+  ...(celestial?[[CELESTIAL_IDS.border,require('../../assets/ascendant/celestial/celestial_border_standard.webp') as ImageSourcePropType] as [string,ImageSourcePropType]]:[]),
+  ...(draconic?[[DRACONIC_IDS.border,draconic.standardBorder] as [string,ImageSourcePropType]]:[]),
+  ...(celestial?[[ 'premium:celestial-sovereign:crown-of-cosmos',require('../../assets/ascendant/celestial/celestial_border_standard.webp') as ImageSourcePropType] as [string,ImageSourcePropType]]:[]),
+  ...(draconic?[[ 'premium:draconic-dominion:throne-of-embers',draconic.standardBorder] as [string,ImageSourcePropType]]:[]),
   ...EVENT_DECORATIONS.map(({borderId,border}):[string,ImageSourcePropType]=>[borderId,border]),
 ]);
+
+/** The three approved-for-review dedicated art IDs take precedence over reward fallbacks. */
+const dedicatedStandardFrameIds=new Set(['cosmetic:frostbound:chime-frame','cosmetic:amberglass:loop-frame','cosmetic:briarbound:verdant-frame']);
+export function resolveProfileBorderArtworkId(id:string|undefined,fallbackId?:string){
+ return id&&dedicatedStandardFrameIds.has(id)&&profileBorderSourceById.has(id)?id:(fallbackId??id??'');
+}

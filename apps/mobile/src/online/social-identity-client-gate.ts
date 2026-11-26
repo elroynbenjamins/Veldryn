@@ -5,6 +5,8 @@
  * backend is installed for 1.0.11, and only the explicitly enabled production
  * EAS profile may activate the UI. Preview/dev cannot activate it.
  */
+// Keep direct Expo environment access while supporting isolated core/onboarding TypeScript builds.
+declare const process: {readonly env: Readonly<Record<string,string|undefined>>};
 const STAGING_SOCIAL_IDENTITY_PREVIEW=(
  process.env.EXPO_PUBLIC_RELEASE_CHANNEL==='staging'&&
  process.env.EXPO_PUBLIC_SUPABASE_URL==='https://iqfmmpvwanvvmxcftfxw.supabase.co'&&

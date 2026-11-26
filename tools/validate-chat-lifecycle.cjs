@@ -38,6 +38,8 @@ function makeHarness(initialState = 'active') {
     removeChannel(channel) {removed.push(channel); return Promise.resolve('ok');}
   };
   const mocks = new Map([
+    // Audio playback has its own tests; this offline UI harness must not load native audio or binary MP3 assets.
+    [path.join(app, 'src/storage/audio'), {playSound: () => {}, useMusicOverride: () => {}, useRarityRevealSound: () => {}, useAudioPreferences: () => [{music:2,effects:2,musicContexts:{}}, () => {}], toggleAudioMute: () => 0, playMusicPreview: () => {}, stopMusicPreview: () => {}}],
     ['react', React],
     ['react-native', {AppState}],
     [path.join(app, 'src/online/AuthSessionProvider'), {useAuthSession: () => auth}],
@@ -897,8 +899,14 @@ async function partyLifecycle(){
     let identityReads=0,snapshotReads=0,concurrent=0,maxConcurrent=0,view;
     const pending=[];
     h.mocks.set(path.join(app,'src/online/party-social'),{
-      partySocialIdentity:async()=>{identityReads++;return h.auth.session?{accountId:h.auth.session.user.id,characterId:'character:'+h.auth.session.user.id}:null;},
-      partySocialSnapshot:()=>{snapshotReads++;concurrent++;maxConcurrent=Math.max(maxConcurrent,concurrent);const d=deferred();pending.push(d);return d.promise.finally(()=>{concurrent--;});}
+      partySocialProjection:async(accountId)=>{
+       identityReads++;assert.equal(accountId,h.auth.session?.user.id);
+       const identity={accountId,characterId:'character:'+accountId};
+       snapshotReads++;concurrent++;maxConcurrent=Math.max(maxConcurrent,concurrent);
+       const d=deferred();pending.push(d);
+       const snapshot=await d.promise.finally(()=>{concurrent--;});
+       return {identity,snapshot};
+      }
     });
     const {PartySocialProvider,usePartySocial}=h.load(path.join(app,'src/online/PartySocialProvider'));
     function Probe(){view=usePartySocial();return null;}
@@ -959,7 +967,7 @@ async function notificationLifecycle() {
     let view,friendReads=0,attentionReads=0,holdGuild=false,failFriends=false;
     const unread={alpha:3,bravo:9},pending=[];
     h.mocks.set(path.join(app,'src/online/social'),{
-      friendRequests:async()=>{friendReads++;if(failFriends)throw new Error('Temporary connection failure');return[{direction:'incoming'}];},
+      incomingFriendRequestCount:async()=>{friendReads++;if(failFriends)throw new Error('Temporary connection failure');return 1;},
       socialInvitations:async()=>({guild:[],party:[]}),
       socialChatAttention:async()=>{attentionReads++;return{guild:{unread:unread[h.auth.session.user.id],mentions:0},party:{unread:0,mentions:0}};},
       myGuild:()=>{if(!holdGuild)return Promise.resolve(null);const request=deferred();pending.push(request);return request.promise;},
@@ -969,7 +977,7 @@ async function notificationLifecycle() {
     function Probe(){view=useSocialNotificationCounts();return null;}
     const render=()=>React.createElement(Probe);
     await act(async()=>{tree=create(render());});
-    assert.equal(view.counts.guildChatUnread,3);assert.equal(friendReads,1);
+    assert.equal(view.counts.guildChatUnread,3);assert.equal(view.counts.friendRequests,1);assert.equal(friendReads,1);
     const originalCounts=view.counts,refreshAlpha=view.refresh;
     await act(async()=>{h.auth.session={user:{id:'alpha'},access_token:'renewed-token'};tree.update(render());});
     assert.strictEqual(view.counts,originalCounts,'same-account token renewal preserves notification counts');
@@ -980,8 +988,13 @@ async function notificationLifecycle() {
     assert.equal(friendReads,2);assert.equal(pending.length,1);
     await h.tick(30000);
     assert.equal(friendReads,2,'scheduled poll cannot overlap an existing notification request');
+    assert.equal(h.timers.size,0,'no polling timer is scheduled while the read is pending');
     holdGuild=false;await act(async()=>{pending.shift().resolve(null);});
     assert.equal(friendReads,2,'scheduled polls do not queue redundant forced rereads');
+    assert.equal(h.timers.size,1,'completion schedules exactly one next poll');
+    const nextPoll=[...h.timers.values()][0];
+    assert.equal(nextPoll.interval,false,'notification polling uses a one-shot timer');
+    assert.equal(nextPoll.due,Date.now()+30000,'next poll is measured from completed read');
 
     holdGuild=true;let first,second,third;
     await act(async()=>{first=view.refresh();});
@@ -1034,6 +1047,96 @@ async function notificationLifecycle() {
 }
 
 
+
+async function badgePollingLifecycle(){
+  const h=makeHarness();let tree;
+  try{
+    let view,selfReads=0,identityReads=0;
+    const reads=[];
+    const prefs={showSupporter:true,supporterAvailable:false,vipAvailable:false,vipPlusAvailable:false,supporterTierMonths:0,supporterTotalDays:0,equippedBadgeId:null};
+    h.mocks.set(path.join(app,'src/online/player-badges'),{
+      loadPlayerBadgePreferences:()=>{selfReads++;const d=deferred();reads.push(d);return d.promise;},
+      updatePlayerBadgePreferences:async()=>prefs,updateProfileBadges:async()=>prefs,updatePlayerEquippedBadge:async()=>prefs
+    });
+    h.mocks.set(path.join(app,'src/online/social'),{guildIdentities:async(ids)=>{identityReads++;return new Map(ids.map(id=>[id,{account_id:id}]));}});
+    h.mocks.set(path.join(app,'src/online/player-identity-cache'),{invalidatePlayerIdentity:()=>{},peekPlayerIdentity:()=>undefined,playerIdentityDetailsNeedRefresh:()=>false,playerIdentityNeedsRefresh:()=>false,subscribePlayerIdentityChanges:()=>()=>{}});
+    const {PlayerBadgeProvider,usePlayerBadges,useIdentityIcon}=h.load(path.join(app,'src/online/PlayerBadgeProvider'));
+    function Watcher(){useIdentityIcon('sender');return null;}
+    function Probe({count}){view=usePlayerBadges();return React.createElement(React.Fragment,null,...Array.from({length:count},(_,i)=>React.createElement(Watcher,{key:i})))}
+    const render=count=>React.createElement(PlayerBadgeProvider,null,React.createElement(Probe,{count}));
+    await act(async()=>{tree=create(render(1));});
+    assert.equal(selfReads,1);
+    await h.tick(60000);
+    assert.equal(selfReads,1,'Periodic badge poll cannot overlap its in-flight read');
+    assert.equal(identityReads,1);
+    const initialRead=reads.shift();
+    let manual;
+    await act(async()=>{manual=view.refresh();});
+    assert.equal(selfReads,2,'Explicit refresh must start a fresh read after a possible external entitlement write');
+    await act(async()=>{initialRead.resolve({...prefs,vipAvailable:true});});
+    assert.equal(view.vipAvailable,false,'Superseded read cannot publish entitlements');
+    await act(async()=>{reads.shift().resolve(prefs);await manual;});
+    await act(async()=>{tree.update(render(3));});await h.tick(50);
+    assert.equal(identityReads,1,'Adding more chat rows with the same sender does not restart the identity batch');
+    await act(async()=>{tree.update(render(1));});await h.tick(50);
+    assert.equal(identityReads,1,'Removing duplicate watchers keeps the unique sender subscription stable');
+    const oldRefresh=view.refresh;
+    await act(async()=>{void oldRefresh();});
+    const oldRead=reads.shift();
+    await act(async()=>{h.auth.session={user:{id:'bravo'}};tree.update(render(1));});
+    assert.equal(view.accountId,'bravo');
+    assert.equal(view.loading,true);
+    const afterSwitch=selfReads;
+    await act(async()=>{void oldRefresh();oldRead.resolve({...prefs,vipAvailable:true});});
+    assert.equal(selfReads,afterSwitch,'A stale callback cannot request badges for a new account');
+    assert.equal(view.vipAvailable,false,'Old account results cannot publish entitlements');
+    await act(async()=>{reads.shift().resolve(prefs);});
+    assert.equal(view.loading,false);
+    await act(async()=>{tree.unmount();});tree=null;
+    assert.equal(h.timers.size,0);assert.equal(h.appListeners.size,0);
+    console.log('PASS badge polling: own-read coalescing, unique sender watches and account isolation');
+  }finally{if(tree)await act(async()=>tree.unmount());h.restore();}
+}
+
+
+async function partyProjectionParallel(){
+ const h=makeHarness();
+ try{
+  let sessionId='alpha',profiles=[],snapshots=[],sessionReads=0;
+  h.mocks.set(path.join(app,'src/online/supabase'),{supabase:{
+   auth:{getSession:async()=>{sessionReads++;return {data:{session:sessionId?{user:{id:sessionId}}:null},error:null};}},
+   from:table=>{assert.equal(table,'player_profiles');return {select:()=>({eq:(field,owner)=>{assert.equal(field,'account_id');assert.equal(owner,sessionId);return {maybeSingle:()=>{const d=deferred();profiles.push(d);return d.promise;}};}})};},
+   rpc:name=>{assert.equal(name,'party_social_state_v20');const d=deferred();snapshots.push(d);return d.promise;}
+  }});
+  h.mocks.set(path.join(app,'src/core/party-social'),{recruitmentStructuredTags:()=>({})});
+  h.mocks.set(path.join(app,'src/online/chat-history'),{CHAT_RECENT_MESSAGE_LIMIT:50});
+  h.mocks.set(path.join(app,'src/online/social'),{guildIdentities:async()=>new Map(),withChatIdentities:async rows=>rows});
+  const {partySocialProjection}=h.load(path.join(app,'src/online/party-social'));
+  const emptySnapshot={party:null,contracts:[],serverTime:'now'};
+  const tick=()=>new Promise(resolve=>setImmediate(resolve));
+  const load=partySocialProjection('alpha');await tick();
+  assert.equal(profiles.length,1);assert.equal(snapshots.length,1,'Party RPC starts before active-character read resolves');
+  profiles.shift().resolve({data:{active_character_id:'hero'},error:null});
+  snapshots.shift().resolve({data:emptySnapshot,error:null});
+  const result=await load;assert.deepEqual(result,{identity:{accountId:'alpha',characterId:'hero'},snapshot:emptySnapshot});
+  assert.equal(sessionReads,2,'Verify account before and after independent reads');
+  await assert.rejects(partySocialProjection('bravo'),/Account session changed/);
+  assert.equal(profiles.length,0);assert.equal(snapshots.length,0,'Wrong expected account launches no data reads');
+  let finished=false;
+  const failed=partySocialProjection('alpha').then(()=>{finished=true;throw Error('unexpected success');},error=>{finished=true;return error;});
+  await tick();profiles.shift().reject(Error('profile unavailable'));await tick();
+  assert.equal(finished,false,'A failed projection waits for its paired read to settle before retry');
+  snapshots.shift().resolve({data:emptySnapshot,error:null});
+  assert.match((await failed).message,/profile unavailable/);
+  const stale=partySocialProjection('alpha').catch(error=>error);await tick();
+  sessionId='bravo';
+  profiles.shift().resolve({data:{active_character_id:'hero'},error:null});
+  snapshots.shift().resolve({data:emptySnapshot,error:null});
+  assert.match((await stale).message,/Account session changed/,'A session change cannot publish a mismatched projection');
+  console.log('PASS Party projection: independent read overlap, session fencing and settled failure handling');
+ }finally{h.restore();}
+}
+
 async function main() {
   await feedLifecycle();
   await initialNullState();
@@ -1052,6 +1155,8 @@ async function main() {
   await sharedComposerLifecycle();
   await privateChannelVisibility();
   await partyLifecycle();
+  await partyProjectionParallel();
   await notificationLifecycle();
+  await badgePollingLifecycle();
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

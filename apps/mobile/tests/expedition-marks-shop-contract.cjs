@@ -93,7 +93,7 @@ assert(petRegistry.includes('??dungeonShopPetPortraitArtSource(id)'),'Pet Collec
 assert(shopView.includes('dungeonShopPetOfferArt(item.id)'),'shop offer rows must use unique medium-sized pet art');
 assert(shopView.includes('dungeonShopPetOfferPortraitArt(item.id)'),'expanded Dungeon Shop previews must prefer 512px portrait art');
 assert(shopView.includes('s.petPortraitPreviewImage'),'pet portraits must not render at the tiny shop icon size');
-assert(read('apps/mobile/src/core/release-flags.ts').includes('DUNGEON_MARKS_SHOP_RELEASED=false'),'new pet art must not bypass collectible release gate');
+assert(read('apps/mobile/src/core/release-flags.ts').includes('DUNGEON_MARKS_SHOP_RELEASED=true'),'released dungeon pets must be registered in Collections');
 
 // Dungeon Shop cosmetics use stable reward IDs throughout the server, gallery
 // and shop; validate their exact runtime dimensions, unlike source art dimensions.
@@ -195,7 +195,7 @@ assert(profileIconsCatalog.includes('DUNGEON_SHOP_PROFILE_ICONS_V1'),'profile ic
 assert(profileIconsCatalog.includes('DUNGEON_MARKS_SHOP_RELEASED||owned.has(row.id)'),'unreleased icons must stay hidden unless owned');
 assert(profileWardrobe.includes("row.group==='Dungeon'?'DUNGEON'"),'Dungeon rewards need distinct wardrobe tagging');
 assert(profileSources.includes('DUNGEON_SHOP_COLLECTIBLES_V1.find'),'Dungeon reward names must be preserved');
-assert(read('apps/mobile/src/core/release-flags.ts').includes('DUNGEON_MARKS_SHOP_RELEASED=false'),'art must not enable purchases or passives');
+assert(read('apps/mobile/src/core/release-flags.ts').includes('DUNGEON_MARKS_SHOP_RELEASED=true'),'released dungeon collectibles must remain registered');
 
 // V3 extends the baseline 17 SKUs with seven one-per-week, x100 crafting inputs.
 // Preserve the baseline resource artwork improvements from main.

@@ -18,7 +18,7 @@ begin
   if gr is distinct from jsonb_build_array(c.id) then raise exception 'FIXTURE_GRANT_SCOPE';end if;
   st:=l->'state';st:=jsonb_set(st,'{character,profileBackgroundId}',to_jsonb(c.background_id));st:=jsonb_set(st,'{character,profileBorderId}',to_jsonb(c.border_id));st:=jsonb_set(st,'{character,selectedCosmeticPetId}',to_jsonb(c.pet_id));st:=jsonb_set(st,'{character,profileTitle}',to_jsonb(c.title_name));st:=jsonb_set(st,'{character,gold}',to_jsonb(gold));st:=st#-'{character,profileEffectId}';
   resp:=jsonb_build_object('state',st,'version',ver+1,'serverNow',l->'serverNow','accountId',uid);
-  req:='luxe_full_set:'||replace(gen_random_uuid()::text,'-','');
+  req:='luxe_full_set_'||replace(gen_random_uuid()::text,'-','');
   begin
    perform public.commit_ultra_luxe_full_set_server_v1(uid,cid,c.id,ver,gold,gr,'wrong-name',req,h,resp);
    raise exception 'STALE_NAME_NOT_REJECTED';

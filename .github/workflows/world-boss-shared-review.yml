@@ -1,0 +1,34 @@
+name: Hidden World Boss shared-engine review
+on:
+  pull_request:
+    paths:
+      - 'backend/src/server/combat/v2/world-boss-*-review.ts'
+      - 'backend/src/server/combat/v2/__tests__/world-boss-shared-engine-review.ts'
+      - 'backend/src/server/combat/v2/unified-equipment-encounter.ts'
+      - '.github/workflows/world-boss-shared-review.yml'
+  workflow_dispatch:
+jobs:
+  nonpaying-preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - run: pnpm --dir backend install --frozen-lockfile
+      - run: pnpm --dir backend build
+      - name: Run local boss profiles, replay and contribution review
+        run: node backend/dist/server/combat/v2/__tests__/world-boss-shared-engine-review.js
+      - name: Confirm no public route imports hidden preview and contribution tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -R -E 'compileWorldBossRosterReviewV2|simulateWorldBossSharedEngineReviewV2|buildWorldBossAuthoredReviewV2|reviewWorldBossContributionV2|reviewWorldBossFixedLedgerWeightV2' backend/online backend/supabase/functions apps/mobile/src --include='*.ts' --include='*.tsx'; then
+            echo 'Unreleased World Boss review referenced by public runtime'
+            exit 1
+          fi

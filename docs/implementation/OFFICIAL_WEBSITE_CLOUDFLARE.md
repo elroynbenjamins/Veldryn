@@ -2,7 +2,13 @@
 
 First release: static marketing website for playveldryn.com. No game API, authentication, trackers, cookies set by site code, database connection, or separate server. The site uses the real Android app icon from the existing mobile repository and actual game artwork, including the original Veldryn logo, kingdom hero and three regional scenes (not gameplay screenshots). The app version, future 2.0 content, live counts and availability are intentionally not advertised.
 
-## Cloudflare Pages setup
+## Cloudflare Workers setup (existing veldryn project; preferred if already created)
+
+The root wrangler.jsonc config serves only ./website as static assets with custom 404 handling. No Worker runtime script, secrets, or Supabase bindings. The website/.assetsignore excludes the build script. Existing _headers are applied to static responses.
+
+In the existing Worker, Settings > Builds: production branch main after merge, root /, build command `bash website/build-assets.sh`, deploy command `npx wrangler deploy`. For non-production builds use `npx wrangler versions upload` if enabled, or disable preview builds. No environment variables needed. Retry a new main deployment only once the PR is merged and the files are present. Verify the workers.dev URL before adding playveldryn.com in Domains & Routes. Preserve all Resend DNS records; do not replace authentication settings.
+
+## Cloudflare Pages setup (alternative)
 
 In Workers & Pages select Create application, Pages, Connect to Git, and choose elroynbenjamins/Veldryn. Configure:
 - Production branch: main (after this PR is merged)

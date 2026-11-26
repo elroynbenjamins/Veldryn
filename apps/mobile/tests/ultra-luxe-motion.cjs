@@ -83,8 +83,8 @@ for(const [curve,min,max] of [[to,.96,1],[bo,.92,1],[bs,1,1.09],[ps,1,1.04]]){
 }
 for(const layer of ['UltraLuxeEnvironment','UltraLuxeRail','UltraLuxePetAura','UltraLuxeAscendantFlourish'])assert(fx.includes('export const '+layer+'=memo('));
 assert(read('components/profile/UltraLuxeIdentityMotion.tsx').includes('outputRange:SIGNATURE_TITLE_OPACITY'));
-assert(read('components/PlayerBadges.tsx').includes('outputRange:SIGNATURE_BADGE_OPACITY'));
-console.log('Eased native signature, synchronized readable title/badge and memoized layers passed.');
+assert(!read('components/PlayerBadges.tsx').includes('SIGNATURE_BADGE_'));
+console.log('Eased native signature, synchronized readable title and static badges and memoized layers passed.');
 
 const {AWAKENING_PHASE,AWAKENING_ENERGY,AWAKENING_CURVES,AWAKENING_PET_LIFT}=mod.exports;
 assert.equal(AWAKENING_PHASE[0],0);assert.equal(AWAKENING_PHASE.at(-1),1);
@@ -127,10 +127,11 @@ assert.notDeepEqual(PET_REACTION_TRAJECTORIES.celestial,PET_REACTION_TRAJECTORIE
 assert(reaction.includes('PET_REACTION_TRAJECTORIES[theme]')&&reaction.includes('memo(UltraLuxePetReactionLayer)'));
 assert(reaction.includes('tracks.map((p,i)')&&!reaction.includes('Animated.loop('));
 const badgeSource=read('components/PlayerBadges.tsx');
-assert(badgeSource.includes('const badgeMotion=useMemo(')&&badgeSource.includes('opacity:halo'));
-assert(badgeSource.includes('width:artSize,height:artSize,alignItems:'));
-assert(fx.includes("theme==='celestial'?RAIL_PATH:[...RAIL_PATH].reverse()"));
-assert(fx.includes('Animated.multiply(pulse(clock,offset),.55),Animated.multiply(energy,.45)'));
+assert(!badgeSource.includes('badgeMotion')&&!badgeSource.includes('Animated.')&&!badgeSource.includes('useUltraLuxeIdentityMotion'));
+assert(badgeSource.includes('source={source} fadeDuration={0} resizeMode="contain" style={{width:artSize,height:artSize}}'));
+assert(fx.includes("if(theme==='celestial')return <CelestialBorderLight"));
+assert(fx.includes("return <DraconicBorderLight"));
+assert(fx.includes('height={205*k} ember={particle} showcase'));
 console.log('Identity geometry, distinct pet reactions and synchronized rail energy passed.');
 
 const {CELESTIAL_ATLAS_LIFT,RAIL_GLOW_RADIUS,railGlowPoint,FRAME_ORNAMENTS}=mod.exports;
@@ -151,7 +152,7 @@ const celScene=read('components/profile/CelestialSovereignPreview.tsx'),dragonSc
 assert(celScene.includes('CELESTIAL_ATLAS_LIFT.map')&&celScene.includes('translateY:bodyLift'));
 assert(dragonScene.indexOf('style={[box(B.ring),{opacity:ringGlow}]}')<dragonScene.indexOf('translateY:bodyLift'),'ground ring remains independent of moving dragon');
 assert(celScene.includes('hitSlop={{top:10*scale')&&dragonScene.includes('hitSlop={{top:5*k'));
-assert(fx.includes('path.map(railGlowPoint)')&&fx.includes('FRAME_ORNAMENTS[theme]'));
+assert(fx.includes('CelestialBorderLight')&&fx.includes('DraconicBorderLight'));
 assert(read('components/profile/UltraLuxePetPoseSprite.tsx').includes('memo(UltraLuxePetPoseSpriteLayer)'));
 console.log('Smooth atlas lift, grounded ring, frame glow bounds and stable sprite rendering passed.');
 
@@ -190,3 +191,72 @@ async function sharedMotionLifecycle(){
  console.log('Shared motion policy, subscription cleanup, foreground and preference race checks passed.');
 }
 sharedMotionLifecycle().catch(error=>{console.error(error);process.exitCode=1;});
+
+const layoutMod={exports:{}};
+new Function('exports','module',ts.transpileModule(read('core/profile-frame-layout.ts'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText)(layoutMod.exports,layoutMod);
+const celBorder={exports:{}};
+new Function('exports','module','require',ts.transpileModule(read('core/celestial-border-motion.ts'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText)(celBorder.exports,celBorder,id=>id==='./profile-frame-layout'?layoutMod.exports:id==='./ultra-luxe-motion'?mod.exports:require(id));
+const {celestialBorderTracks,CELESTIAL_BORDER_PHASE:bp,CELESTIAL_BORDER_NODE_BUDGET:budget}=celBorder.exports;
+assert(bp.every((p,i)=>!i||p>bp[i-1]));
+assert(bp.includes(16/24));
+assert.deepEqual(celestialBorderTracks(0,0,false),[]);
+assert.deepEqual(celestialBorderTracks(NaN,205,true),[]);
+for(const showcase of [false,true]){
+ for(const [w,h] of showcase?[[300,300*205/340],[320,320*205/340],[340,205],[390,390*205/340],[480,480*205/340]]:[[44,44],[104,72],[260,174],[340,205],[480,270]]){
+  const tracks=celestialBorderTracks(w,h,showcase);
+  assert.equal(tracks.length,showcase?budget.showcase:budget.standard);
+  assert.equal(new Set(tracks.map(t=>t.key)).size,tracks.length);
+  for(const t of tracks){
+   assert(t.size>0);
+   for(const seq of [t.x,t.y,t.opacity]){assert.equal(seq.length,bp.length);assert.equal(seq[0],seq.at(-1));}
+   assert(t.opacity.some(a=>a>=.5));
+   for(let i=1;i<bp.length;i++)for(let j=0;j<=10;j++){
+    const q=j/10,x=t.x[i-1]+q*(t.x[i]-t.x[i-1]),y=t.y[i-1]+q*(t.y[i]-t.y[i-1]),r=t.size/2;
+    assert(x-r>=-1e-6&&x+r<=w+1e-6&&y-r>=-1e-6&&y+r<=h+1e-6);
+    const safe=showcase?34*w/340:layoutMod.exports.PROFILE_SCENE_SAFE_LAYOUT.horizontalRail*Math.min(1,w/300,h/205);
+    assert(y+r<=safe+1e-6||y-r>=h-safe-1e-6);
+    assert(t.opacity[i]>=0&&t.opacity[i]<=1);
+   }
+  }
+  assert(tracks.find(t=>t.key==='upper-rail').x[0]<tracks.find(t=>t.key==='upper-rail').x[Math.floor(bp.length/2)]);
+ }
+}
+const borderLayer=read('components/profile/CelestialBorderLight.tsx');
+const standardLayer=read('components/profile/CelestialStandardEffects.tsx');
+assert(!borderLayer.includes('Animated.loop(')&&!borderLayer.includes('setInterval('));
+assert(borderLayer.includes('pointerEvents="none"')&&borderLayer.includes('useMemo('));
+assert(standardLayer.includes('running?<CelestialBorderLight'));
+assert(fx.includes('height={205*k} star={particle} showcase'));
+console.log('Celestial border polish: closed staggered motion, responsive perimeter, bounded node budget and existing clock passed.');
+
+const drBorder={exports:{}};
+new Function('exports','module','require',ts.transpileModule(read('core/draconic-border-motion.ts'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText)(drBorder.exports,drBorder,id=>id==='./profile-frame-layout'?layoutMod.exports:id==='./ultra-luxe-motion'?mod.exports:require(id));
+const {draconicBorderTracks,DRACONIC_BORDER_PHASE:dp,DRACONIC_BORDER_NODE_BUDGET:db}=drBorder.exports;
+assert.deepEqual(db,budget);
+assert.deepEqual(draconicBorderTracks(0,0,false),[]);
+assert.deepEqual(draconicBorderTracks(NaN,205,true),[]);
+for(const showcase of [false,true]){
+ for(const [w,h] of showcase?[[320,320*205/340],[340,205],[390,390*205/340],[480,480*205/340]]:[[44,44],[104,72],[260,174],[340,205],[480,270]]){
+  const tracks=draconicBorderTracks(w,h,showcase),k=Math.min(1,w/300,h/205),side=showcase?28*w/340:18*k,rail=showcase?32*w/340:24*k;
+  assert.equal(tracks.length,showcase?db.showcase:db.standard);
+  for(const t of tracks){
+   assert(t.size>0&&t.opacity.some(a=>a>=.5));
+   for(const seq of [t.x,t.y,t.opacity]){assert.equal(seq.length,dp.length);assert.equal(seq[0],seq.at(-1));}
+   for(let i=1;i<dp.length;i++)for(let j=0;j<=10;j++){
+    const q=j/10,x=t.x[i-1]+q*(t.x[i]-t.x[i-1]),y=t.y[i-1]+q*(t.y[i]-t.y[i-1]),r=t.size/2;
+    assert(x-r>=-1e-6&&x+r<=w+1e-6&&y-r>=-1e-6&&y+r<=h+1e-6);
+    assert(x+r<=side+1e-6||x-r>=w-side-1e-6||y+r<=rail+1e-6||y-r>=h-rail-1e-6);
+    assert(t.opacity[i]>=0&&t.opacity[i]<=.98);
+   }
+  }
+  const left=tracks.find(t=>t.key==='left-ember');
+  assert(Math.max(...left.y)-Math.min(...left.y)>.4*h);
+  assert(left.opacity[4]>left.opacity[12],'visible rise, dim return');
+  assert.notDeepEqual(left.opacity,tracks.find(t=>t.key==='right-ember').opacity);
+ }
+}
+const drLayer=read('components/profile/DraconicBorderLight.tsx');
+assert(!drLayer.includes('Animated.loop(')&&!drLayer.includes('setInterval('));
+assert(drLayer.includes('pointerEvents="none"')&&drLayer.includes('useMemo('));
+assert(dragonScene.includes('running?<DraconicBorderLight'));
+console.log('Draconic parity: rising embers, staggered molten ornament pulses, safe perimeter and equal native node budget passed.');

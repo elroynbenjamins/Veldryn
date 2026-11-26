@@ -13,7 +13,7 @@ assert.equal(ultraLuxeVisualTier(set,{...matching,background:'other'}),'individu
 const root=path.join(__dirname,'../src/components');
 const read=f=>fs.readFileSync(path.join(root,f),'utf8');
 assert(read('profile/UltraLuxeIdentityMotion.tsx').includes('if(!verified||!motion)'));
-assert(read('PlayerBadges.tsx').includes('animate&&motion&&isUltraLuxeBadge(id)'));
+assert(!read('PlayerBadges.tsx').includes('Animated.')&&read('PlayerBadges.tsx').includes('art(size)'));
 for(const name of ['CelestialSovereignPreview','DraconicDominionPreview'])assert(read('profile/'+name+'.tsx').includes('<UltraLuxeIdentityMotionProvider'));
 for(const name of ['PublicProfileScene','ProfileScenePreview'])assert((read(name+'.tsx').match(/<UltraLuxeTitleText/g)||[]).length===2);
 console.log('Full-set visual tier, mixed pieces and verified identity gating passed.');
@@ -84,5 +84,6 @@ for(const name of ['ProfileScenePreview','PublicProfileScene']){
 }
 assert(stage.includes('reduceMotion numberOfLines={1} style={s.stripName}'));
 const ambient=read('profile/CelestialStandardEffects.tsx');
-assert(ambient.includes('outputRange:[0,Math.max(0,width-42),0]'),'ordinary celestial rail must return without a jump');
+assert(ambient.includes('running?<CelestialBorderLight'),'ordinary celestial rail uses the responsive closed-track renderer');
+assert(read('profile/CelestialBorderLight.tsx').includes('celestialBorderTracks(width,height,showcase)'),'ordinary rail and showcase share numerically tested closed trajectories');
 console.log('Direct artwork, inactive scene cleanup and closed ordinary border motion passed.');

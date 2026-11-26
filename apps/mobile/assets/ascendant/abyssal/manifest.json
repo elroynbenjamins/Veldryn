@@ -1,0 +1,339 @@
+{
+  "status": "review-only artwork candidates; not production assets",
+  "source": "generated underwater background and transparent frame; frame fit via perimeter resampling",
+  "files": {
+    "abyssal_aura.webp": {
+      "size_bytes": 2124,
+      "dimensions": [
+        128,
+        128
+      ],
+      "mode": "RGBA",
+      "sha256": "0309228fc8dd1ff8b27329a99f44efc47ad5a536ad3636efe863fd3a76353b50",
+      "alpha_range": [
+        0,
+        168
+      ]
+    },
+    "abyssal_mote.webp": {
+      "size_bytes": 888,
+      "dimensions": [
+        48,
+        48
+      ],
+      "mode": "RGBA",
+      "sha256": "e150c8ddcde91582afc29c12aac722dad4f06940ddc2fa678ec127bf4d049c82",
+      "alpha_range": [
+        0,
+        220
+      ]
+    },
+    "abyssal_tide.webp": {
+      "size_bytes": 8892,
+      "dimensions": [
+        128,
+        256
+      ],
+      "mode": "RGBA",
+      "sha256": "8c168f3bf78fab0de79eb0deeeb6335333cbd9d16938de37b22ec0ef4793ec3d",
+      "alpha_range": [
+        0,
+        168
+      ]
+    },
+    "crown_of_the_depths.webp": {
+      "size_bytes": 137782,
+      "dimensions": [
+        1020,
+        615
+      ],
+      "mode": "RGBA",
+      "sha256": "e2207e39ea33b1785e52eccd4d2db383348d96cf5f46e2bd2769999104c97948",
+      "alpha_range": [
+        0,
+        255
+      ]
+    },
+    "crown_of_the_depths_standard.webp": {
+      "size_bytes": 134568,
+      "dimensions": [
+        1024,
+        576
+      ],
+      "mode": "RGBA",
+      "sha256": "c1018a8bcf1e29c40ef7a3e8e9532615ec85ac97a92d8e51ff9cea4a6445d5d2",
+      "alpha_range": [
+        0,
+        255
+      ]
+    },
+    "forgotten_abyss.webp": {
+      "size_bytes": 140918,
+      "dimensions": [
+        1020,
+        615
+      ],
+      "mode": "RGB",
+      "sha256": "087aad9d1be40a00cc756d34041e38a964f771d7c0e4eb40c6b2583246251faa"
+    },
+    "forgotten_abyss_square.webp": {
+      "size_bytes": 52988,
+      "dimensions": [
+        512,
+        512
+      ],
+      "mode": "RGB",
+      "sha256": "eb979d2a312a80756fbb2cf58267cb4fbb09a09cab77168f1ac0b92f73fda858"
+    },
+    "monarch_of_the_deep_256.webp": {
+      "size_bytes": 65308,
+      "dimensions": [
+        256,
+        256
+      ],
+      "mode": "RGBA",
+      "sha256": "421a8511b77d57f6a01443ee6d0c3ad5ad8ce449cadcd69fdcf392933f749b11",
+      "alpha_range": [
+        0,
+        255
+      ]
+    },
+    "monarch_of_the_deep_64.webp": {
+      "size_bytes": 6410,
+      "dimensions": [
+        64,
+        64
+      ],
+      "mode": "RGBA",
+      "sha256": "3e2eadb9efb2dd5277389b004706f6215d298b0dbd2fa5019656f2306877390f",
+      "alpha_range": [
+        0,
+        255
+      ]
+    },
+    "nhalzuun_512.webp": {
+      "size_bytes": 94766,
+      "dimensions": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "sha256": "3c5884fb24e7aba7e9ef3b90b5de0d2eecbfce0d60a424a56b9b0145972e3fe7",
+      "alpha_range": [
+        0,
+        255
+      ]
+    },
+    "nhalzuun_96.webp": {
+      "size_bytes": 7808,
+      "dimensions": [
+        96,
+        96
+      ],
+      "mode": "RGBA",
+      "sha256": "b54f1b1ed154f4d25e56a1e17f8024b315e3739d5882eda5b4c790d8d46fc55a",
+      "alpha_range": [
+        0,
+        255
+      ]
+    },
+    "nhalzuun_idle_atlas.webp": {
+      "size_bytes": 224176,
+      "dimensions": [
+        672,
+        768
+      ],
+      "mode": "RGBA",
+      "sha256": "378230b42cec7d4482978ead5970582b14fb5576af2928736cf17dc1e997d5cc",
+      "alpha_range": [
+        0,
+        255
+      ]
+    },
+    "nhalzuun_showcase.webp": {
+      "size_bytes": 32676,
+      "dimensions": [
+        224,
+        256
+      ],
+      "mode": "RGBA",
+      "sha256": "2b05d061bcdffda48ddcc7dbcfda07dd45921321f0c464f261f4e3ef52f147b2",
+      "alpha_range": [
+        0,
+        255
+      ]
+    }
+  },
+  "aperture_review": {
+    "320": {
+      "height": 193,
+      "protected_boxes": {
+        "plate": {
+          "max_alpha": 0,
+          "pixels_alpha_over_32": 0
+        },
+        "portrait": {
+          "max_alpha": 0,
+          "pixels_alpha_over_32": 0
+        },
+        "identity": {
+          "max_alpha": 0,
+          "pixels_alpha_over_32": 0
+        },
+        "badges": {
+          "max_alpha": 0,
+          "pixels_alpha_over_32": 0
+        },
+        "guild": {
+          "max_alpha": 1,
+          "pixels_alpha_over_32": 0
+        },
+        "leviathan": {
+          "max_alpha": 0,
+          "pixels_alpha_over_32": 0
+        },
+        "aura": {
+          "max_alpha": 4,
+          "pixels_alpha_over_32": 0
+        },
+        "alternate": {
+          "max_alpha": 0,
+          "pixels_alpha_over_32": 0
+        }
+      }
+    },
+    "340": {
+      "height": 205,
+      "protected_boxes": {
+        "plate": {
+          "max_alpha": 0,
+          "pixels_alpha_over_32": 0
+        },
+        "portrait": {
+          "max_alpha": 0,
+          "pixels_alpha_over_32": 0
+        },
+        "identity": {
+          "max_alpha": 0,
+          "pixels_alpha_over_32": 0
+        },
+        "badges": {
+          "max_alpha": 0,
+          "pixels_alpha_over_32": 0
+        },
+        "guild": {
+          "max_alpha": 0,
+          "pixels_alpha_over_32": 0
+        },
+        "leviathan": {
+          "max_alpha": 0,
+          "pixels_alpha_over_32": 0
+        },
+        "aura": {
+          "max_alpha": 4,
+          "pixels_alpha_over_32": 0
+        },
+        "alternate": {
+          "max_alpha": 0,
+          "pixels_alpha_over_32": 0
+        }
+      }
+    },
+    "390": {
+      "height": 235,
+      "protected_boxes": {
+        "plate": {
+          "max_alpha": 1,
+          "pixels_alpha_over_32": 0
+        },
+        "portrait": {
+          "max_alpha": 0,
+          "pixels_alpha_over_32": 0
+        },
+        "identity": {
+          "max_alpha": 1,
+          "pixels_alpha_over_32": 0
+        },
+        "badges": {
+          "max_alpha": 0,
+          "pixels_alpha_over_32": 0
+        },
+        "guild": {
+          "max_alpha": 1,
+          "pixels_alpha_over_32": 0
+        },
+        "leviathan": {
+          "max_alpha": 0,
+          "pixels_alpha_over_32": 0
+        },
+        "aura": {
+          "max_alpha": 4,
+          "pixels_alpha_over_32": 0
+        },
+        "alternate": {
+          "max_alpha": 0,
+          "pixels_alpha_over_32": 0
+        }
+      }
+    },
+    "480": {
+      "height": 289,
+      "protected_boxes": {
+        "plate": {
+          "max_alpha": 1,
+          "pixels_alpha_over_32": 0
+        },
+        "portrait": {
+          "max_alpha": 0,
+          "pixels_alpha_over_32": 0
+        },
+        "identity": {
+          "max_alpha": 1,
+          "pixels_alpha_over_32": 0
+        },
+        "badges": {
+          "max_alpha": 0,
+          "pixels_alpha_over_32": 0
+        },
+        "guild": {
+          "max_alpha": 1,
+          "pixels_alpha_over_32": 0
+        },
+        "leviathan": {
+          "max_alpha": 0,
+          "pixels_alpha_over_32": 0
+        },
+        "aura": {
+          "max_alpha": 4,
+          "pixels_alpha_over_32": 0
+        },
+        "alternate": {
+          "max_alpha": 0,
+          "pixels_alpha_over_32": 0
+        }
+      }
+    }
+  },
+  "threshold": "no protected pixels with alpha >32 at sampled widths",
+  "pending": [
+    "upload and review repository assets",
+    "private grant and live renderer integration",
+    "native performance and accessibility QA",
+    "device review of deformed idle atlas and FX"
+  ],
+  "pet_atlas": {
+    "frame_width": 112,
+    "frame_height": 128,
+    "columns": 6,
+    "rows": 6,
+    "frames": 36,
+    "fps": 12,
+    "seconds": 3,
+    "cycles_per_24s": 8,
+    "method": "subtle localized fin/tail deformation of one generated pose; not independently drawn swimming poses",
+    "decoded_rgba_bytes": 2064384,
+    "decoded_alpha_bounds_verified": true
+  },
+  "fx_method": "procedurally authored soft alpha textures; no baked UI",
+  "badge_method": "standalone generated emblem; cropped on alpha and padded for 64/256px"
+}

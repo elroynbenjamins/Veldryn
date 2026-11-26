@@ -1,6 +1,7 @@
 import type {WardrobeCategory,WardrobeEquipped,WardrobeRow} from './profile-wardrobe';
 import type {QuickCosmeticSet} from './profile-quick-set-equip';
 import type {PlayerNameStylePreference} from './player-name-style';
+import {ultraLuxeGradient} from './ultra-luxe-name-gradients';
 import {NEXT_PREMIUM_SETS} from './next-premium-set-review';
 
 /** Review-only adapter for the existing Ultra Luxe service-owned collection projection.
@@ -75,7 +76,8 @@ export function appendNextPremiumWardrobe(categories:WardrobeCategory[],equipped
 export function nextPremiumNameStyle(selected:unknown,scope:NextPremiumScope,grant:NextPremiumGrantSnapshot|undefined,pieces:NextPremiumOwnedPieces|undefined,ready:NextPremiumReadiness=NEXT_PREMIUM_REVIEW_READINESS):PlayerNameStylePreference|undefined{
  if(!ready.namePresets)return undefined;
  const row=nextPremiumOwnedSets(scope,grant,pieces,ready).find(s=>s.nameStyle===selected&&has(pieces?.nameStyles,s.nameStyle));
- return row?{mode:'gradient',gradientColors:[...row.colors],animation:'flow'}:undefined;
+ const preset=ultraLuxeGradient(row?.nameStyle);
+ return preset?{mode:'gradient',gradientColors:[...preset.colors],animation:'flow'}:undefined;
 }
 /** Public rendering is independent of viewer ownership. allowed IDs must be the
  * viewed account's server-sanitized appearance marker, not its raw save or viewer grants. */
@@ -102,7 +104,7 @@ export function nextPremiumOwnedBadges(scope:NextPremiumScope,grant:NextPremiumG
 export function nextPremiumOwnedNamePresets(scope:NextPremiumScope,grant:NextPremiumGrantSnapshot|undefined,pieces:NextPremiumOwnedPieces|undefined,ready:NextPremiumReadiness=NEXT_PREMIUM_REVIEW_READINESS){
  if(!ready.namePresets)return [];
  return nextPremiumOwnedSets(scope,grant,pieces,ready).filter(s=>has(pieces?.nameStyles,s.nameStyle)).map(s=>({
-  id:s.nameStyle,name:NEXT_PREMIUM_PRESTIGE.find(p=>p.id===s.id)!.namePreset,colors:[...s.colors],
+  id:s.nameStyle,name:ultraLuxeGradient(s.nameStyle)!.name,colors:[...ultraLuxeGradient(s.nameStyle)!.colors],
  }));
 }
 

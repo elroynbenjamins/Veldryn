@@ -1,3 +1,4 @@
+import {CRIMSON_GLOWS,CRIMSON_TRACKS,CRIMSON_EFFECT_PERIOD_MS,CRIMSON_GLOW_PERIOD_MS} from '../src/dev/crimson-oath-motion-review';
 import {STORMFORGED_GLOWS,STORMFORGED_TRACKS,STORMFORGED_EFFECT_PERIOD_MS,STORMFORGED_GLOW_PERIOD_MS} from '../src/dev/stormforged-motion-review';
 import {PROFILE_COSMETIC_RUNTIME} from '../src/theme/profile-cosmetic-runtime-v1';
 import {cosmeticGlowOpacity,MOTION_STEPS,sampleCosmeticTrack,type MotionProfile,type MotionTrack} from '../src/core/profile-cosmetic-motion-v2';
@@ -163,3 +164,27 @@ for(const g of storm.glows){
  ok(samples.slice(1).every((v,i)=>Math.abs(v-samples[i])<.18),'Stormforged gradual glow, not abrupt strobe');
 }
 console.log('PASS Stormforged authoring motion parity; artwork still required');
+
+const crimson:Motion={collection:'Crimson Oath',motionProfile:'crimson-oath',effectPeriodMs:CRIMSON_EFFECT_PERIOD_MS,glows:CRIMSON_GLOWS,tracks:CRIMSON_TRACKS};
+ok(crimson.glows.length===8&&crimson.tracks.length===5,'Crimson matches standard node budget');
+ok(CRIMSON_GLOW_PERIOD_MS===12000&&crimson.effectPeriodMs===13200,'Crimson shared clock and cadence');
+for(const [w,h] of [[104,72],[260,174],[340,205],[480,270]]){
+ const refs=standard.map(s=>metrics(s,w,h)),m=metrics(crimson,w,h);
+ for(const key of ['area','opacity','glow'] as const)ok(m[key]>=Math.min(...refs.map(v=>v[key]))*.85&&m[key]<=Math.max(...refs.map(v=>v[key]))*1.15,'Crimson '+key+' standard parity');
+ for(const t of crimson.tracks){
+  ok(t.maxDp<=18&&t.opacity>=.35&&t.opacity<=.78,'Crimson bounded sprite');
+  ok(JSON.stringify(sampleCosmeticTrack(t,0,w,h))===JSON.stringify(sampleCosmeticTrack(t,1,w,h)),'Crimson closed path clock');
+  for(const f of MOTION_STEPS){
+   const p=sampleCosmeticTrack(t,f,w,h);
+   ok(p.x>=-1e-6&&p.y>=-1e-6&&p.x+p.width<=w+1e-6&&p.y+p.height<=h+1e-6,'Crimson track stays within card');
+  }
+ }
+}
+for(const g of crimson.glows){
+ const samples=MOTION_STEPS.map(f=>cosmeticGlowOpacity('crimson-oath',f,g.periodMs,g.phaseMs,g.peakOpacity));
+ ok(samples.every(v=>v>=0&&v<=.86),'Crimson bounded glow');
+ ok(samples[0]===samples[samples.length-1],'Crimson closed glow clock');
+}
+const profileIcon=readFileSync('src/components/ProfileIcon.tsx','utf8');
+ok(!profileIcon.includes('ProfileFrameOverlay')&&!profileIcon.includes('profileBorderSourceById')&&!profileIcon.includes('profileBorderId'),'portrait renderer stays independent of equipped scene frames');
+console.log('PASS Crimson authoring motion parity and independent icon renderer; artwork still requires review');

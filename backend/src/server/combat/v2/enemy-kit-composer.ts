@@ -29,7 +29,7 @@ type EnemyKitPreviewV2=Readonly<{
 interface EnemyKitCoreV2 {
  readonly kitVersion:typeof ENEMY_V2_KIT_VERSION;
  readonly ruleset:typeof ENEMY_V2_RULESET;
- readonly mode:'solo';
+ readonly mode:'solo'|'party';
  readonly encounterId:string;
  /** Private, never expose through player-facing previews. */
  readonly seed:string;
@@ -94,9 +94,10 @@ const clonePreview=(x:EnemyKitPreviewV2):EnemyKitPreviewV2=>({
 /** This produces a CANDIDATE only. A trusted transaction must persist it
  * exactly once, then return an authenticated PersistedEnemyKitV2 receipt.
  * It must not be called on retry/replay: load the frozen kit from storage. */
-export function prepareSoloEnemyKitsV2(
+function prepareEnemyKitsForModeV2(
  enemies:readonly CombatantDefinition[],
  options:EnemyV2ServerOptions,
+ mode:'solo'|'party',
 ):EnemyKitCandidateV2{
  assert(options&&options.ruleset===ENEMY_V2_RULESET,'missing_server_ruleset');
  assert(validId(options.encounterId)&&typeof options.serverSeed==='string'&&
@@ -169,7 +170,7 @@ export function prepareSoloEnemyKitsV2(
  const enemyIds=enemies.map(e=>e.id);
  return {
   source:'unpersisted-candidate-v2',
-  kitVersion:ENEMY_V2_KIT_VERSION,ruleset:ENEMY_V2_RULESET,mode:'solo',
+  kitVersion:ENEMY_V2_KIT_VERSION,ruleset:ENEMY_V2_RULESET,mode,
   encounterId:options.encounterId,seed:options.serverSeed,
   region:options.region,equipmentTier:options.equipmentTier,
   eliteEnemyIds:sortedUnique(eliteIds),enemyIds,bossIds,
@@ -179,16 +180,24 @@ export function prepareSoloEnemyKitsV2(
  };
 }
 
+export function prepareSoloEnemyKitsV2(
+ enemies:readonly CombatantDefinition[],options:EnemyV2ServerOptions,
+):EnemyKitCandidateV2{return prepareEnemyKitsForModeV2(enemies,options,'solo');}
+export function preparePartyEnemyKitsV2(
+ enemies:readonly CombatantDefinition[],options:EnemyV2ServerOptions,
+):EnemyKitCandidateV2{return prepareEnemyKitsForModeV2(enemies,options,'party');}
+
 /** Structural proof only; the caller MUST additionally check authoritative
  * persisted ownership, kit digest, receipt revision and combat digest through
  * its authenticated persistence callback before executing combat. */
-export function verifyPersistedEnemyKitsV2(
+function verifyPersistedEnemyKitsForModeV2(
  baseEnemies:readonly CombatantDefinition[],
  snapshot:PersistedEnemyKitV2,
+ mode:'solo'|'party',
 ):{readonly enemies:readonly CombatantDefinition[];readonly preview:readonly EnemyKitPreviewV2[]}{
  assert(snapshot&&snapshot.source==='server-persisted-v2'&&
    snapshot.kitVersion===ENEMY_V2_KIT_VERSION&&snapshot.ruleset===ENEMY_V2_RULESET&&
-   snapshot.mode==='solo'&&validId(snapshot.encounterId)&&
+   snapshot.mode===mode&&validId(snapshot.encounterId)&&
    typeof snapshot.seed==='string'&&snapshot.seed.length>=8&&snapshot.seed.length<=256&&
    Number.isSafeInteger(snapshot.revision)&&snapshot.revision>=1,'invalid_stored_kit');
  assert((['asterfall','sunscar','frostmarch'] as string[]).includes(snapshot.region)&&
@@ -293,3 +302,11 @@ export function verifyPersistedEnemyKitsV2(
   preview:snapshot.preview.map(clonePreview),
  };
 }
+
+
+export function verifyPersistedEnemyKitsV2(
+ baseEnemies:readonly CombatantDefinition[],snapshot:PersistedEnemyKitV2,
+){return verifyPersistedEnemyKitsForModeV2(baseEnemies,snapshot,'solo');}
+export function verifyPersistedPartyEnemyKitsV2(
+ baseEnemies:readonly CombatantDefinition[],snapshot:PersistedEnemyKitV2,
+){return verifyPersistedEnemyKitsForModeV2(baseEnemies,snapshot,'party');}

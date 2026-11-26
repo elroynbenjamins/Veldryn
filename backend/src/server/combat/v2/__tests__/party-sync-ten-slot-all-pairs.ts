@@ -131,9 +131,50 @@ assert.ok(huntBase.combat.enemies[0].shield>0&&huntSync.combat.enemies[0].shield
  'shield must remain active in both arms');
 assert.ok(huntSync.combat.enemies[0].shield<huntBase.combat.enemies[0].shield,
  'Sanctified Hunt must increase actual shield depletion');
+// Twilight Accord needs an injured source or a non-overhealing heal.
+const twilightClasses=['DREADGUARD','DAWNKEEPER'] as const;
+const twilightFixtures=twilightClasses.map(c=>setup(c,0,bosses[0],profiles[1]));
+const twilightBuilds=twilightFixtures.map(f=>f.build);
+const twilightRuntime=twilightFixtures.map(f=>f.runtime);
+const twilightPlayers=twilightFixtures.map(f=>f.actor);
+const twilightEnemy=twilightFixtures[0].input.enemies[0];
+const twilightSeed='QA_TWILIGHT_CRITICAL_PRESSURE';
+// Measure the actual compiled tank HP instead of guessing a raw class budget.
+const twilightProbe=simulateUnifiedEquipmentCombatV2({
+ seed:twilightSeed,players:twilightPlayers,enemies:[twilightEnemy],maxDurationMs:100,tickMs:100,
+},twilightBuilds,twilightRuntime,true);
+const tankHp=twilightProbe.combat.players[0].definition.stats.maxHp;
+const twilightInput:CombatInput={seed:twilightSeed,players:twilightPlayers,
+ enemies:[{...twilightEnemy,stats:{...twilightEnemy.stats,accuracy:100000,critChance:0},
+  abilities:[{id:'QA_TWILIGHT_PRESSURE',name:'QA Critical Pressure',cooldownMs:99999,
+   castTimeMs:0,target:'current_target',priority:100,effects:[
+    {kind:'damage',damageType:'true',flat:tankHp*.70,coeff:0},
+   ],
+  }]}],maxDurationMs:9000,tickMs:100};
+const twilightScope:TrustedPartySyncRehearsalV2['scope']={
+ ruleset:PARTY_SYNCHRONIZATION_RULESET_V2,encounterId:'QA_TWILIGHT_PRESSURE_ENC',
+ partyId:'QA_TWILIGHT_PARTY',revision:1,seed:twilightInput.seed,mode:'party_event',
+ members:twilightClasses.map((classId,i)=>({classId,actorId:twilightPlayers[i].id,
+  characterId:twilightRuntime[i].characterId})),
+};
+const twilightBase=simulateUnifiedEquipmentCombatV2(twilightInput,twilightBuilds,twilightRuntime,true);
+const runTwilight=()=>simulateUnifiedEquipmentCombatV2(twilightInput,twilightBuilds,twilightRuntime,true,
+ undefined,undefined,'party_event',{scope:twilightScope,verifyPersisted:()=>true});
+const twilightSync=runTwilight();
+assert.deepEqual(twilightSync,runTwilight());
+assert.deepEqual(twilightSync.equipmentEvidence,twilightBase.equipmentEvidence);
+assert.equal(twilightSync.synchronizationReview?.active[0].id,'twilight_accord');
+assert.ok(twilightBase.combat.events.some(e=>e.type==='damage'&&e.abilityId==='QA_TWILIGHT_PRESSURE'&&
+ e.targetId===twilightPlayers[0].id&&(e.amount??0)>tankHp*.5),'fixture must injure the tank below half health');
+assert.ok(twilightBase.combat.players[0].alive&&twilightSync.combat.players[0].alive,
+ 'both arms must survive the pressure window');
+assert.ok(twilightSync.combat.players[0].damageDone>twilightBase.combat.players[0].damageDone||
+ twilightSync.combat.players.reduce((n,p)=>n+p.healingDone,0)>
+ twilightBase.combat.players.reduce((n,p)=>n+p.healingDone,0),
+ 'Twilight Accord must improve actual low-HP damage or effective healing');
 // Emit the original observations before the gate, so future conditional
 // gaps can be audited together, not discovered one at a time.
-const uncovered=links.filter(link=>!['mystic_harmony','sanctified_hunt'].includes(link.id)&&
+const uncovered=links.filter(link=>!['mystic_harmony','sanctified_hunt','twilight_accord'].includes(link.id)&&
  (changedByPair.get(link.id)??0)===0).map(link=>link.id);
 
 
@@ -142,6 +183,7 @@ console.log(JSON.stringify({
  cases,pairs:18,bosses:6,specializationBands:2,
  supplementalMysticPressureCases:1,mysticHarmfulPotencyVerified:true,
  supplementalSanctifiedPressureCases:1,sanctifiedShieldDepletionVerified:true,
+ supplementalTwilightPressureCases:1,twilightCriticalPressureVerified:true,
  uncovered,
  pairsWithObservedCombatEffect:[...changedByPair.values()].filter(n=>n>0).length,
  byPair:Object.fromEntries(links.map(link=>{
@@ -153,6 +195,6 @@ console.log(JSON.stringify({
    maxDamageRatio:Number(Math.max(...ratios).toFixed(4)),
   }];
  })),
- caveat:'flexible party_event review fixture; changedCases covers original low-pressure matrix only; Mystic Harmony and Sanctified Hunt have separate synthetic pressure cases; persisted party traits covered separately',
+ caveat:'flexible party_event review fixture; changedCases covers original low-pressure matrix only; Mystic Harmony, Sanctified Hunt and Twilight Accord have separate synthetic pressure cases; persisted party traits covered separately',
 }));
 assert.deepEqual(uncovered,[],'remaining links lack observed ten-slot combat effects');

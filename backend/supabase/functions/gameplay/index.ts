@@ -61098,12 +61098,7 @@ function gameplayHandler(services2, authenticatePlayer2 = async (token) => {
       const player = await authenticatePlayer2(bearer);
       if (!player) return json({ error: "invalid_session" }, 401);
       const { accountId, adminQa } = player;
-      if (request.method === "GET") {
-        try {
-          await services2.rpc("record_player_activity_server_v1", { p_account_id: accountId, p_kind: "foreground" });
-        } catch {
-        }
-      }
+      const recordActivity = (kind) => services2.rpc("record_player_activity_server_v1", { p_account_id: accountId, p_kind: kind }).catch(() => void 0);
       let body, command, requestHash;
       if (request.method === "POST") {
         const raw2 = await request.text();
@@ -61123,11 +61118,10 @@ function gameplayHandler(services2, authenticatePlayer2 = async (token) => {
         }
         if (command.type.startsWith("qa_") && !adminQa) throw new GameplayError("admin_qa_required", 403);
         requestHash = await hash2(canonical(command));
-        try {
-          await services2.rpc("record_player_activity_server_v1", { p_account_id: accountId, p_kind: command.type.startsWith("event_") ? "event_action" : "gameplay_action" });
-        } catch {
-        }
-        const prior = await services2.rpc(receiptRpc, { p_account_id: accountId, p_request_id: body.requestId });
+        const [prior] = await Promise.all([
+          services2.rpc(receiptRpc, { p_account_id: accountId, p_request_id: body.requestId }),
+          recordActivity(command.type.startsWith("event_") ? "event_action" : "gameplay_action")
+        ]);
         if (prior) {
           if (prior.requestHash !== requestHash) {
             await recordOutcome("conflict");
@@ -61137,7 +61131,10 @@ function gameplayHandler(services2, authenticatePlayer2 = async (token) => {
           return json(prior.response);
         }
       }
-      const loaded = await services2.rpc(loadRpc, { p_account_id: accountId });
+      const [loaded] = await Promise.all([
+        services2.rpc(loadRpc, { p_account_id: accountId }),
+        request.method === "GET" ? recordActivity("foreground") : Promise.resolve()
+      ]);
       if (privateGrants && !Array.isArray(loaded.ultraLuxeCollectionIds)) throw new Error("ultra_luxe_grant_projection_missing");
       const storedState = rebaseCombatGameState(privateGrants ? withVerifiedUltraLuxeGrants(loaded.state ?? newGame(loaded.serverNow), loaded.ultraLuxeCollectionIds) : loaded.state ?? newGame(loaded.serverNow));
       const trustedState = request.method === "POST" ? snapshotEarnedLegacySeasonalClaims(storedState, loaded.serverNow) : storedState;
@@ -61149,19 +61146,25 @@ function gameplayHandler(services2, authenticatePlayer2 = async (token) => {
       state.account.eventCommunityProgressById = loaded.communityProgress;
       if (state.character && loaded.walletGold !== null) state.character.gold = loaded.walletGold;
       state.guildSkillEffects = void 0;
-      if (state.account.guildMember) {
-        try {
-          state.guildSkillEffects = await services2.rpc("guild_skill_effects_server_v1", { p_account_id: accountId });
-        } catch {
-        }
-      }
       state.winterHearthBonusWindows = void 0;
-      if (WINTER_HEARTH_GUILD_RELEASED && state.account.guildMember) {
-        try {
-          const windows = await services2.rpc("winter_hearth_2026_bonus_windows_server_v1", { p_account_id: accountId });
-          state.winterHearthBonusWindows = validateWinterHearthBonusWindows(windows);
-        } catch {
-        }
+      if (state.account.guildMember) {
+        await Promise.all([
+          (async () => {
+            try {
+              state.guildSkillEffects = await services2.rpc("guild_skill_effects_server_v1", { p_account_id: accountId });
+            } catch {
+            }
+          })(),
+          (async () => {
+            if (WINTER_HEARTH_GUILD_RELEASED) {
+              try {
+                const windows = await services2.rpc("winter_hearth_2026_bonus_windows_server_v1", { p_account_id: accountId });
+                state.winterHearthBonusWindows = validateWinterHearthBonusWindows(windows);
+              } catch {
+              }
+            }
+          })()
+        ]);
       }
       if (!body || !command) return json({ state, version: loaded.version, serverNow: loaded.serverNow, accountId });
       if (body.expectedVersion !== loaded.version) {

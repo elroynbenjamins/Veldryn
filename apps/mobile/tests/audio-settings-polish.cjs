@@ -65,3 +65,51 @@ test('stored mute memory is race-safe, while context volume edits are serialized
  assert.match(storage,/resolveTrack\(\)/);
  assert.match(storage,/export function toggleAudioMute\(/);
 });
+
+test('native audio resource lifecycle: shared startup read, saved remap, idle trim, mute and background cleanup',async()=>{
+ const vm=require('node:vm'),preferences=pureAudio(),players=[],listeners=new Set(),reads=[],timers=new Map();
+ let clock=10000,sequence=0,failSource;
+ const effectIds=Array.from({length:15},(_,i)=>'effect_'+i);
+ const appState={currentState:'active',addEventListener:(_event,fn)=>{listeners.add(fn);return {remove:()=>listeners.delete(fn)};}};
+ function changeApp(state){appState.currentState=state;for(const fn of [...listeners])fn(state);}
+ const storage={getItem:key=>new Promise(resolve=>reads.push({key,resolve})),multiSet:async()=>{}};
+ const native={setAudioModeAsync:async()=>{},createAudioPlayer:source=>{
+  const player={source,playing:false,removed:0,volume:0,loop:false,play(){if(source===failSource)throw Error('native play failed');this.playing=true;},pause(){this.playing=false;},remove(){this.removed++;},seekTo:async()=>{}};
+  players.push(player);return player;
+ }};
+ const assets={
+  SOUND_EFFECT_ASSETS:Object.fromEntries(effectIds.map(id=>[id,{source:id,volume:1}])),
+  MUSIC_TRACK_ASSETS:Object.fromEntries(preferences.MUSIC_TRACKS.map(id=>[id,{source:id}])),
+ };
+ const deps={'@react-native-async-storage/async-storage':storage,'react-native':{AppState:appState},'react':{},'expo-audio':native,'../theme/audio-assets':assets,'../core/audio-preferences':preferences,'../core/rarity-reveal-sound':{}};
+ const sandbox={exports:{},require:name=>deps[name]??{},Date:{now:()=>clock},Promise,console,
+  setInterval:fn=>{const id=++sequence;timers.set(id,fn);return id;},clearInterval:id=>timers.delete(id),
+  setTimeout:fn=>{const id=++sequence;timers.set(id,fn);return id;},clearTimeout:id=>timers.delete(id)};
+ vm.runInNewContext(ts.transpileModule(read('src/storage/audio.ts'),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS,esModuleInterop:true}}).outputText,sandbox);
+ const audio=sandbox.exports;
+ const first=audio.loadAudioPreferences(),second=audio.loadAudioPreferences();assert.equal(first,second);
+ audio.setBaseMusic('asterfall');audio.playSound(effectIds[0]);assert.equal(players.length,0,'Nothing plays before saved preferences arrive');
+ await Promise.resolve();assert.equal(reads.length,2,'One read pair even with concurrent consumers');
+ const saved={music:2,effects:2,musicContexts:{asterfall:{enabled:true,track:'boss_B'}}};
+ reads.forEach(row=>row.resolve(row.key.includes('last-audible')?null:JSON.stringify(saved)));
+ await first;
+ assert.deepEqual(players.map(p=>p.source),['boss_B'],'First native player uses saved context instead of default track');
+ const original=players[0];
+ failSource='sunscar';audio.setBaseMusic('sunscar');
+ const failed=players.at(-1);assert.equal(failed.source,'sunscar');assert.equal(failed.removed,1);assert.equal(original.removed,0,'A failed replacement retains the existing track');
+ failSource=undefined;audio.setBaseMusic('sunscar');assert.equal(original.removed,1);
+ for(const id of effectIds)audio.playSound(id);
+ const cached=()=>players.filter(p=>p.source.startsWith('effect_')&&!p.removed);
+ assert.equal(cached().length,15,'Never cut a recent burst merely to reach the idle target');
+ const protect=cached()[0];for(const p of cached().slice(1))p.playing=false;
+ clock+=5000;audio.playSound(effectIds[14]);
+ assert.equal(cached().length,12,'Next playback reclaims idle excess');
+ assert.equal(protect.removed,0,'Still-playing decoder is never evicted by age alone');
+ changeApp('background');assert.equal(cached().length,0,'Background releases all sound effect players');
+ changeApp('active');audio.playSound(effectIds[1]);assert.equal(cached().length,1);
+ await audio.setAudioPreferences({...saved,effects:0});assert.equal(cached().length,0,'Muting immediately releases sound resources');
+ audio.playSound(effectIds[2]);assert.equal(cached().length,0);
+ await audio.setAudioPreferences({...saved,effects:2});
+ failSource=effectIds[2];audio.playSound(effectIds[2]);assert.equal(cached().length,0,'Failed sound decoder is disposed');
+ await audio.setAudioPreferences({...saved,music:0,effects:0});assert.equal(timers.size,0,'Master mute clears the music fade');
+});

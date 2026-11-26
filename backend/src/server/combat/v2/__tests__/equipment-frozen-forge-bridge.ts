@@ -1778,9 +1778,11 @@ function makeV21Loadout(classId:ClassIdV2,specIndex:0|1,targetTier:1|2|3|4,targe
  const parties:ClassIdV2[][]=[['IRONWARDEN','WAYFINDER','HEXWEAVER','STONECALLER'],
   ['BASTION','RAVAGER','KNIFE_DANCER','DAWNKEEPER'],['DREADGUARD','HEXWEAVER','RAVAGER','STONECALLER']];
  const arms=['stat_precision','stat_elusive','stat_potent','mixed-role'];
+ const effectFamilies=['effect_execution','effect_opening_strike','effect_predator'];
  const profiles=[{id:'BOSS_EXP_SPHINX',name:'The Veiled Sphinx',region:'sunscar' as const,tier:3 as const,level:40},
   {id:'BOSS_EXP_BELLBEAST',name:'The Bellbeast of Shiverlake',region:'frostmarch' as const,tier:4 as const,level:60}];
  const rows:{classId:ClassIdV2;spec:number;arm:string;boss:string;seed:number;result:ReturnType<ReturnType<typeof createGentleGemPartyPressureReviewV2>>}[]=[];
+ const effectRows:{family:string;rank:number;classId:ClassIdV2;spec:number;boss:string;seed:number;result:ReturnType<ReturnType<typeof createGentleGemPartyPressureReviewV2>>}[]=[];
  let baseEncounters=0;
  for(const profile of profiles){
   const level=profile.level;
@@ -1816,7 +1818,17 @@ function makeV21Loadout(classId:ClassIdV2,specIndex:0|1,targetTier:1|2|3|4,targe
      }
      return reviewFrozenForgeSocketsV2(qa.actor,build,source,sockets,policy);
     });
-    return {classId,accountId:source.accountId,characterId:source.characterId,revision,compiled,baseline,variants};
+    const effects=CLASS_ROLES_V2[classId]==='damage'?effectFamilies.flatMap(family=>[1,2,3].map(rank=>{
+     const sockets:V2GemSidecarState={slots:[],receipts:[]};
+     for(let i=0;i<rank;i++){
+      const instanceId=qa.ids[i],gemId=gemItemId(family,5);
+      sockets.slots.push({instanceId,effect:{gemId,rollPercent:120}});
+      sockets.receipts.push({requestId:'QA_PARTY_EFFECT_'+i,fingerprint:'gem:'+instanceId+':'+gemId,instanceId,
+       socket:'effect',gemId,source:'gem_pouch',rollPercent:120,burnedGemId:null,version:qa.source.ledgerRevision+i+1});
+     }
+     return {family,rank,projection:reviewFrozenForgeSocketsV2(qa.actor,build,source,sockets,policy)};
+    })):[];
+    return {classId,accountId:source.accountId,characterId:source.characterId,revision,compiled,baseline,variants,effects};
    });
    for(const seed of [0,1]){
     const fight=createGentleGemPartyPressureReviewV2(members,{region:profile.region,tier:profile.tier,enemy},
@@ -1824,10 +1836,23 @@ function makeV21Loadout(classId:ClassIdV2,specIndex:0|1,targetTier:1|2|3|4,targe
     baseEncounters++;
     for(const [i,member] of members.entries())for(const [j,arm] of arms.entries())
      rows.push({classId:member.classId,spec,arm,boss:profile.id,seed,result:fight(i,member.variants[j],seed===0&&j===0)});
+    // One varied damage wearer per baseline, alternating the two damage
+    // slots by specialization. No static gem or trait overlays.
+    const i=1+spec,member=members[i];
+    for(const arm of member.effects)effectRows.push({family:arm.family,rank:arm.rank,classId:member.classId,spec,
+     boss:profile.id,seed,result:fight(i,arm.projection,seed===0&&arm.rank===3)});
    }
   }
  }
  assert.equal(baseEncounters,24);assert.equal(rows.length,384);
+ assert.equal(effectRows.length,216);
+ assert.ok(effectRows.filter(r=>r.family==='effect_opening_strike'||r.family==='effect_predator').every(r=>r.result.triggerCount>0));
+ console.log('PRIVATE_DAMAGE_GEM_COMBAT_REVIEW '+JSON.stringify({cases:effectRows.length,baseEncounters,
+  scope:'THREE_EFFECT_FAMILY_EXECUTABLE_QA',byFamilyRank:effectFamilies.flatMap(family=>[1,2,3].map(rank=>{
+   const a=effectRows.filter(r=>r.family===family&&r.rank===rank);return {family,rank,cases:a.length,
+    activeEncounters:a.filter(r=>r.result.triggerCount>0).length,triggers:a.reduce((n,r)=>n+r.result.triggerCount,0),
+    maxFraction:Math.max(...a.map(r=>r.result.maxFraction)),meanDpsDelta:a.reduce((n,r)=>n+r.result.after.dps-r.result.before.dps,0)/a.length,
+    lostVictories:a.filter(r=>r.result.before.victory>r.result.after.victory).length};})),releaseEnabled:false,cpApproved:false}));
  const groups=new Map<string,typeof rows>();
  for(const r of rows){const k=CLASS_ROLES_V2[r.classId]+'|'+r.arm;groups.set(k,[...(groups.get(k)??[]),r]);}
  console.log('GENTLE_GEM_PARTY_PRESSURE_REVIEW '+JSON.stringify({cases:rows.length,baseEncounters,seedCount:2,

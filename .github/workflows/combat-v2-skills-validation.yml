@@ -159,15 +159,27 @@ jobs:
           mkdir -p /tmp/v2-sync-evidence
           set -o pipefail
           node backend/dist/server/combat/v2/__tests__/persisted-party-sync-full-matrix.js --action-stream-review 2>&1 | tee /tmp/v2-sync-evidence/action-stream-matrix.log
+      - name: Compare three additional deterministic seed batches for both RNG policies
+        id: multiseed_rng_matrix
+        if: ${{ success() || steps.persisted_sync_matrix.outcome == 'failure' || steps.action_stream_matrix.outcome == 'failure' }}
+        run: |
+          mkdir -p /tmp/v2-sync-evidence
+          set -o pipefail
+          status=0
+          for batch in 1 2 3; do
+            node backend/dist/server/combat/v2/__tests__/persisted-party-sync-full-matrix.js --seed-batch="$batch" 2>&1 | tee "/tmp/v2-sync-evidence/legacy-seed-$batch.log" || status=1
+            node backend/dist/server/combat/v2/__tests__/persisted-party-sync-full-matrix.js --action-stream-review --seed-batch="$batch" 2>&1 | tee "/tmp/v2-sync-evidence/action-stream-seed-$batch.log" || status=1
+          done
+          exit "$status"
       - name: Exercise all 18 Synchronization pairs with ten-slot flexible parties
         id: flexible_sync_pairs
-        if: ${{ success() || steps.persisted_sync_matrix.outcome == 'failure' || steps.action_stream_matrix.outcome == 'failure' }}
+        if: ${{ success() || steps.persisted_sync_matrix.outcome == 'failure' || steps.action_stream_matrix.outcome == 'failure' || steps.multiseed_rng_matrix.outcome == 'failure' }}
         run: |
           mkdir -p /tmp/v2-sync-evidence
           set -o pipefail
           node backend/dist/server/combat/v2/__tests__/party-sync-ten-slot-all-pairs.js 2>&1 | tee /tmp/v2-sync-evidence/flexible-pairs.log
       - name: Run 432 ten-slot Skills Equipment party Synchronization integration cases
-        if: ${{ success() || steps.persisted_sync_matrix.outcome == 'failure' || steps.flexible_sync_pairs.outcome == 'failure' || steps.action_stream_matrix.outcome == 'failure' }}
+        if: ${{ success() || steps.persisted_sync_matrix.outcome == 'failure' || steps.flexible_sync_pairs.outcome == 'failure' || steps.action_stream_matrix.outcome == 'failure' || steps.multiseed_rng_matrix.outcome == 'failure' }}
         run: |
           mkdir -p /tmp/v2-sync-evidence
           set -o pipefail

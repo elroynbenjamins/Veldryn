@@ -29,8 +29,11 @@ import {bosses,profiles,setup} from './ten-slot-boss-fixture';
 
 import {ACTION_STREAM_RNG_QA_V1} from '../../deterministic-rng';
 const args=process.argv.slice(2);
-assert.ok(args.length===0||(args.length===1&&args[0]==='--action-stream-review'),'unknown matrix argument');
-const rngReviewPolicy=args.length?ACTION_STREAM_RNG_QA_V1:undefined;
+const seedArgs=args.filter(a=>a.startsWith('--seed-batch='));
+assert.ok(args.every(a=>a==='--action-stream-review'||/^--seed-batch=[123]$/.test(a))&&
+ new Set(args).size===args.length&&seedArgs.length<=1,'unknown or duplicate matrix argument');
+const seedBatch=seedArgs.length?Number(seedArgs[0].slice('--seed-batch='.length)):0;
+const rngReviewPolicy=args.includes('--action-stream-review')?ACTION_STREAM_RNG_QA_V1:undefined;
 const rngEvidencePolicy=rngReviewPolicy??'legacy-cursor';
 const classes=Object.keys(CLASS_NAMES_V2) as ClassIdV2[];
 const tanks=classes.filter(c=>CLASS_ROLES_V2[c]==='tank');
@@ -110,7 +113,8 @@ for(const specIndex of [0,1] as const)
     const runtime=fixtures.map(x=>x.runtime);
     const traitPorts=fixtures.map(x=>x.signedPort);
     const caseId='PERSIST_SYNC_'+specIndex+'_'+boss.id+'_'+ids.join('_');
-    const input:CombatInput={seed:caseId,players,enemies:[fixtures[0].input.enemies[0]],
+    const seed=seedBatch===0?caseId:caseId+'_SEED_'+seedBatch;
+    const input:CombatInput={seed,players,enemies:[fixtures[0].input.enemies[0]],
       maxDurationMs:9000,tickMs:100};
 
     const roster:ReadyRosterMember[]=ids.map((classId,i)=>({
@@ -188,7 +192,7 @@ for(const specIndex of [0,1] as const)
       const extended={...input,maxDurationMs:30000};
       const longBase=simulateUnifiedEquipmentPersistedPartyCombatV2(extended,builds,runtime,party,true,false,'tactical',rngReviewPolicy);
       const longSync=simulateUnifiedEquipmentPersistedPartyCombatV2(extended,builds,runtime,party,true,true,'tactical',rngReviewPolicy);
-      console.log('PERSISTED_SYNC_OUTLIER '+JSON.stringify({rngEvidencePolicy,caseId,classes:ids,specIndex,boss:boss.id,
+      console.log('PERSISTED_SYNC_OUTLIER '+JSON.stringify({rngEvidencePolicy,seedBatch,seed:input.seed,caseId,classes:ids,specIndex,boss:boss.id,
        damageRatio,healingRatio,links:sync.synchronizationReview?.active,
        originalWindowMs:input.maxDurationMs,extendedWindowMs:extended.maxDurationMs,
        original:diagnose(base.combat,sync.combat),
@@ -230,7 +234,7 @@ const summarize=(x:Bucket)=>({
 });
 console.log(JSON.stringify({
  kind:'PERSISTED_PARTY_SYNC_FULL_TUNING_EVIDENCE_NOT_RELEASE_APPROVAL',
- rngEvidencePolicy,matchedPairs:cases,standardDungeonCompositions:36,bosses:6,specializationBands:2,
+ rngEvidencePolicy,seedBatch,matchedPairs:cases,standardDungeonCompositions:36,bosses:6,specializationBands:2,
  maxLinks,overall:summarize(overall),
  byLinks:Object.fromEntries([...byLinks.entries()].sort(([a],[b])=>a-b)
   .map(([links,row])=>[String(links),summarize(row)])),
@@ -251,6 +255,6 @@ assert.deepEqual(roleReport,summarizeRoleCalibrationV2([...roleObservations].rev
 assert.throws(()=>summarizeRoleCalibrationV2([...roleObservations,roleObservations[0]]),/duplicate_or_invalid_observation/);
 console.log('ROLE_POWER_CALIBRATION_NOT_CP '+JSON.stringify(roleReport));
 
-console.log('PERSISTED_SYNC_BALANCE_FENCES '+JSON.stringify({rngEvidencePolicy,damage:[.85,1.50],healing:[.80,1.60],violations:balanceViolations,victoryLosses:overall.victoryLosses}));
+console.log('PERSISTED_SYNC_BALANCE_FENCES '+JSON.stringify({rngEvidencePolicy,seedBatch,damage:[.85,1.50],healing:[.80,1.60],violations:balanceViolations,victoryLosses:overall.victoryLosses}));
 assert.equal(overall.victoryLosses,0,'Synchronization must not turn a matched baseline victory into a loss in this fixture');
 assert.equal(balanceViolations.length,0,'persisted Synchronization numerical outliers: '+JSON.stringify(balanceViolations));

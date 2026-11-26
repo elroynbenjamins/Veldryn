@@ -10,11 +10,11 @@ sample(b,'OTHER','B','BASIC');sample(b,'A','B','OTHER');sample(b,'A','C','BASIC'
 sample(b,'A','B','BASIC','dot_tick');
 assert.deepEqual(sample(b,'A','B','BASIC'),first);
 const second=sample(a,'A','B','BASIC');
-const extra=b.begin('OTHER','B','BASIC');extra('hit');extra('crit');
+const extra=b.begin('OTHER','B','BASIC','damage');extra('hit');extra('crit');
 assert.deepEqual(sample(b,'A','B','BASIC'),second);
 assert.notDeepEqual(first,second);
 const missed=new ActionStreamRngReview('paired-seed');
-missed.begin('A','B','BASIC')('hit');
+missed.begin('A','B','BASIC','damage')('hit');
 assert.deepEqual(sample(missed,'A','B','BASIC'),second,'miss still advances ordinal');
 const changed=new ActionStreamRngReview('other-seed');
 assert.notDeepEqual(sample(changed,'A','B','BASIC'),first);

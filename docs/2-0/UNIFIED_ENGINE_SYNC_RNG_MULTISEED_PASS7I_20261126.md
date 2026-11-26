@@ -1,0 +1,7 @@
+# Pass 7I — recover RNG experiment CI and broaden seed coverage
+
+Pinned #1856 766b46542a82cbac966649e7f1cb5b38276ceb79. Skills jobs 139910878042, 139910878488, 139910878520 fail strict backend compilation: action-stream-rng-review.ts lines 13 and 17 omitted required event-kind argument. Two test calls now explicitly use damage. No evidence of candidate efficacy exists yet; previous pass's 432 legacy results remain the verified baseline. Other compile-dependent workflows also failed; do not infer runtime regressions from those statuses.
+
+Add three predeclared seed batches (1, 2, 3) in addition to exact unchanged default seed batch 0, for both legacy cursor and action-stream candidate. Original 432 matched cases per batch preserved, same fixture gear, encounter identities, roster, thresholds and replay gates. Only input seed changes in additional batches. Each policy gets 1,728 matched comparisons, both policies 3,456 matched comparisons / 6,912 primary simulations, plus replay and outlier extensions. Every batch uses identical original fences, every failure stays red, and additional batches still execute even after a numerical failure. Evidence logs contain policy, seed batch and exact outlier seed. No selecting favorable seeds or changing probabilities.
+
+Candidate remains opt-in QA only. No balance coefficients, runtime engine behavior, production routes, migration, default RNG policy, deployment or main merge changed in this pass. CI pending.

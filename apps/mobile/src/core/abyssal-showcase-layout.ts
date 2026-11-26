@@ -95,6 +95,6 @@ export function abyssalReviewTier(enabled:boolean,verifiedCollectionIds:readonly
 export const ABYSSAL_RAIL_PHASE=[0,8/24,12/24,16/24,19/24,1] as const;
 export const ABYSSAL_RAIL_PATHS=[
  [[20,105],[20,105],[20,57],[49,25],[84,20],[84,20]],
- [[320,105],[320,105],[320,150],[291,182],[256,190],[256,190]],
+ [[320,105],[320,105],[320,160],[291,182],[256,190],[256,190]],
 ] as const;
 export const ABYSSAL_RAIL_OPACITY=[0,0,.42,.8,.25,0] as const;

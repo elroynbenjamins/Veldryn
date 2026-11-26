@@ -1,0 +1,81 @@
+name: Wave 2 branch reconciliation (temporary)
+
+on:
+  push:
+    branches:
+      - chatgpt/standard-animated-wave2-design
+    paths:
+      - '.github/workflows/wave2-branch-reconcile.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: wave2-branch-reconciliation
+  cancel-in-progress: false
+
+jobs:
+  reconcile:
+    if: github.ref == 'refs/heads/chatgpt/standard-animated-wave2-design' && github.repository == 'elroynbenjamins/Veldryn'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: chatgpt/standard-animated-wave2-design
+      - name: Merge current main, preserve both core test lists
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git branch --show-current)" = 'chatgpt/standard-animated-wave2-design'
+          git config user.name 'Veldryn branch reconciliation'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git fetch origin main
+          if ! git merge --no-ff --no-commit origin/main; then
+            conflicts="$(git diff --name-only --diff-filter=U)"
+            test "$conflicts" = 'tools/mobile-core-tests.json' || { echo "Unexpected conflicts; refusing to continue"; exit 1; }
+            python - <<'PY'
+          import json, subprocess
+          from pathlib import Path
+          file = 'tools/mobile-core-tests.json'
+          ours = json.loads(subprocess.check_output(['git','show',':2:'+file]))
+          theirs = json.loads(subprocess.check_output(['git','show',':3:'+file]))
+          result = list(theirs)
+          expected = ['.core-build/apps/mobile/tests/profile-cosmetic-wave2.js','.core-build/apps/mobile/tests/tideborne-motion-review.js']
+          assert set(ours)-set(theirs) <= set(expected), 'Unexpected branch-only test entries'
+          for item in expected:
+              if item in ours and item not in result:
+                  result.insert(result.index('.core-build/apps/mobile/tests/profile-cosmetic-runtime.js')+1, item)
+          assert set(ours).issubset(result) and set(theirs).issubset(result)
+          Path(file).write_text(json.dumps(result,indent=2)+'\n')
+          PY
+            git add tools/mobile-core-tests.json
+          fi
+          test -z "$(git diff --name-only --diff-filter=U)"
+          if git rev-parse -q --verify MERGE_HEAD >/dev/null; then
+            git commit -m "Merge current main into wave 2 development branch"
+          fi
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: pnpm --dir apps/mobile install --frozen-lockfile
+      - run: pnpm --dir backend install --frozen-lockfile
+      - name: Regenerate canonical shared Edge artifacts
+        run: |
+          pnpm --dir backend build:online
+          node tools/verify-gameplay-edge.mjs
+      - name: Verify focused core tests and commit only generated artifacts
+        run: |
+          set -euo pipefail
+          pnpm --dir apps/mobile typecheck:core
+          git diff --check
+          git status --short
+          git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          if ! git diff --cached --quiet; then
+            git commit -m "Regenerate canonical gameplay and co-op Edge bundles for wave 2"
+          fi
+          test -z "$(git status --porcelain)"
+          git push origin HEAD:refs/heads/chatgpt/standard-animated-wave2-design

@@ -100,14 +100,49 @@ for(let i=0;i<mysticPlayers.length;i++){
  assert.equal(prior?.value,-.20);
  assert.ok(next&&Math.abs(next.value-(-.19))<1e-9,'Mystic Harmony must reduce actual harmful potency');
 }
-for(const link of links)
- if(link.id!=='mystic_harmony')assert.ok((changedByPair.get(link.id)??0)>0,
-  'real ten-slot pair never affected any authored boss encounter: '+link.id);
+// Sanctified Hunt needs an actual shielded target, rather than a generic
+// bruiser with no shield and already high hit chance. Preserve original rows.
+const huntClasses=['BASTION','WAYFINDER'] as const;
+const huntFixtures=huntClasses.map(c=>setup(c,0,bosses[0],profiles[1]));
+const huntBuilds=huntFixtures.map(f=>f.build);
+const huntRuntime=huntFixtures.map(f=>f.runtime);
+const huntPlayers=huntFixtures.map(f=>f.actor);
+const huntEnemy=huntFixtures[0].input.enemies[0];
+const huntInput:CombatInput={seed:'QA_SANCTIFIED_SHIELD_PRESSURE',players:huntPlayers,
+ enemies:[{...huntEnemy,abilities:[{
+  id:'QA_SANCTIFIED_SHIELD',name:'QA Shield Pressure',cooldownMs:99999,
+  castTimeMs:0,target:'self',priority:100,effects:[{kind:'shield',flat:1000000}],
+ }]}],maxDurationMs:9000,tickMs:100};
+const huntScope:TrustedPartySyncRehearsalV2['scope']={
+ ruleset:PARTY_SYNCHRONIZATION_RULESET_V2,encounterId:'QA_SANCTIFIED_PRESSURE_ENC',
+ partyId:'QA_SANCTIFIED_PARTY',revision:1,seed:huntInput.seed,mode:'party_event',
+ members:huntClasses.map((classId,i)=>({classId,actorId:huntPlayers[i].id,
+  characterId:huntRuntime[i].characterId})),
+};
+const huntBase=simulateUnifiedEquipmentCombatV2(huntInput,huntBuilds,huntRuntime,true);
+const runHunt=()=>simulateUnifiedEquipmentCombatV2(huntInput,huntBuilds,huntRuntime,true,
+ undefined,undefined,'party_event',{scope:huntScope,verifyPersisted:()=>true});
+const huntSync=runHunt();
+assert.deepEqual(huntSync,runHunt());
+assert.deepEqual(huntSync.equipmentEvidence,huntBase.equipmentEvidence);
+assert.equal(huntSync.synchronizationReview?.active[0].id,'sanctified_hunt');
+assert.ok(huntBase.combat.events.some(e=>e.type==='shield'&&e.abilityId==='QA_SANCTIFIED_SHIELD'));
+assert.ok(huntBase.combat.enemies[0].shield>0&&huntSync.combat.enemies[0].shield>0,
+ 'shield must remain active in both arms');
+assert.ok(huntSync.combat.enemies[0].shield<huntBase.combat.enemies[0].shield,
+ 'Sanctified Hunt must increase actual shield depletion');
+// Emit the original observations before the gate, so future conditional
+// gaps can be audited together, not discovered one at a time.
+const uncovered=links.filter(link=>!['mystic_harmony','sanctified_hunt'].includes(link.id)&&
+ (changedByPair.get(link.id)??0)===0).map(link=>link.id);
+
 
 console.log(JSON.stringify({
  kind:'PARTY_SYNC_ALL_18_REAL_BUILD_PAIR_COVERAGE',
  cases,pairs:18,bosses:6,specializationBands:2,
  supplementalMysticPressureCases:1,mysticHarmfulPotencyVerified:true,
+ supplementalSanctifiedPressureCases:1,sanctifiedShieldDepletionVerified:true,
+ uncovered,
  pairsWithObservedCombatEffect:[...changedByPair.values()].filter(n=>n>0).length,
  byPair:Object.fromEntries(links.map(link=>{
   const ratios=ratiosByPair.get(link.id)??[1];
@@ -118,5 +153,6 @@ console.log(JSON.stringify({
    maxDamageRatio:Number(Math.max(...ratios).toFixed(4)),
   }];
  })),
- caveat:'flexible party_event review fixture; changedCases covers original low-pressure matrix only; Mystic Harmony has a separate synthetic harmful-pressure case; persisted party traits covered separately',
+ caveat:'flexible party_event review fixture; changedCases covers original low-pressure matrix only; Mystic Harmony and Sanctified Hunt have separate synthetic pressure cases; persisted party traits covered separately',
 }));
+assert.deepEqual(uncovered,[],'remaining links lack observed ten-slot combat effects');

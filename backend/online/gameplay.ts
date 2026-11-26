@@ -1,3 +1,5 @@
+import {executeUltraLuxeUndoCommand} from './ultra-luxe-full-set-undo-command';
+import {ULTRA_LUXE_UNDO_COMMAND,ULTRA_LUXE_UNDO_PREFIX} from '../../apps/mobile/src/core/ultra-luxe-full-set-undo-command';
 import {executeUltraLuxeFullSetCommand,FullSetCommandError} from './ultra-luxe-full-set-command';
 import {ULTRA_LUXE_FULL_SET_COMMAND,ULTRA_LUXE_REQUEST_PREFIX,canonicalUltraLuxeCollection} from '../../apps/mobile/src/core/ultra-luxe-full-set-command';
 import {reconcileAccountProfileIcon} from '../../apps/mobile/src/core/profile-icons';
@@ -21,6 +23,7 @@ export interface GameplayServices{
  /** Only enable after the verified grant-aware RPC migration is installed. Server configuration, not client input. */
  ultraLuxeGrantAuthority?:boolean;
  ultraLuxeFullSetAuthority?:boolean;
+ ultraLuxeUndoAuthority?:boolean;
  rpc<T>(name:string,args:Record<string,unknown>):Promise<T>;
  randomId():string;randomRoll():number;
 }
@@ -38,6 +41,7 @@ export function gameplayHandler(services:GameplayServices,authenticatePlayer:Aut
 }){
  const privateGrants=services.ultraLuxeGrantAuthority===true;
  const fullSetAuthority=privateGrants&&services.ultraLuxeFullSetAuthority===true;
+ const undoAuthority=fullSetAuthority&&services.ultraLuxeUndoAuthority===true;
  const receiptRpc=privateGrants?'read_online_game_receipt_ultra_luxe_v1':'read_online_game_receipt_server_v1';
  const loadRpc=privateGrants?'load_online_game_ultra_luxe_v1':'load_online_game_server_v1';
  return async(request:Request):Promise<Response>=>{
@@ -68,7 +72,14 @@ export function gameplayHandler(services:GameplayServices,authenticatePlayer:Aut
     await recordOutcome(result.replayed?'replayed':'committed');
     return json(result);
    }
+   if((body.command as {type?:unknown}|undefined)?.type===ULTRA_LUXE_UNDO_COMMAND){
+    telemetryCommandType=ULTRA_LUXE_UNDO_COMMAND;
+    const result=await executeUltraLuxeUndoCommand({enabled:undoAuthority,rpc:services.rpc,hash},accountId,body);
+    await recordOutcome(result.replayed?'replayed':'committed');
+    return json(result);
+   }
    if(body.requestId.startsWith(ULTRA_LUXE_REQUEST_PREFIX))throw new GameplayError('invalid_request');
+   if(body.requestId.startsWith(ULTRA_LUXE_UNDO_PREFIX))throw new GameplayError('invalid_request');
    try{command=validateGameCommand(body.command);telemetryCommandType=command.type;}catch(e){throw new GameplayError(e instanceof Error?e.message:'invalid_command');}
    if(command.type.startsWith('qa_')&&!adminQa)throw new GameplayError('admin_qa_required',403);
    requestHash=await hash(canonical(command));

@@ -15,7 +15,7 @@ begin
  p:=jsonb_build_object('title',c.title_name,'ultraLuxeTitleId','spoof','backgroundId',c.bg,'borderId',c.frame,'petId',c.pet,'character',jsonb_build_object('classId','BASTION','profileIconId','class:BASTION'),'bio','keep','collectionShowcase',jsonb_build_array(jsonb_build_object('kind','pet','id',c.pet),jsonb_build_object('kind','pet','id','PET_001')));
  st:=jsonb_build_object('account',jsonb_build_object('unlockedProfileBackgroundIds',jsonb_build_array('event:bg',c.bg),'unlockedProfileIconIds',jsonb_build_array('ascendant-unknown'),'profileIconId','ascendant-unknown'),'character',jsonb_build_object('classId','BASTION','profileBackgroundId',c.bg,'profileBorderId',c.frame,'selectedCosmeticPetId',c.pet,'profileTitle',c.title_name,'gold',123));
  r:=private.ultra_luxe_project_public_v1(uid,p);
- if r->>'title' is distinct from 'New Adventurer' or r ? 'ultraLuxeTitleId' or r->>'backgroundId' is distinct from 'asterfall-night' or r->>'borderId' is not null or r->>'petId' is not null or jsonb_array_length(r->'collectionShowcase')<>1 then raise exception 'PUBLIC_SPOOF_%',c.id;end if;
+ if r->>'ultraLuxeAppearanceVerified' is distinct from 'true' or r ? 'ultraLuxeCollectionIds' or r->>'title' is distinct from 'New Adventurer' or r ? 'ultraLuxeTitleId' or r->>'backgroundId' is distinct from 'asterfall-night' or r->>'borderId' is not null or r->>'petId' is not null or jsonb_array_length(r->'collectionShowcase')<>1 then raise exception 'PUBLIC_SPOOF_%',c.id;end if;
  ack:=public.set_ultra_luxe_grant_server_v1(uid,c.id,true,'four set rollback fixture');
  if ack->>'changed' is distinct from 'true' then raise exception 'GRANT_FAILED_%',c.id;end if;
  ack:=public.set_ultra_luxe_grant_server_v1(uid,c.id,true,'duplicate fixture');

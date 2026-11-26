@@ -34,7 +34,14 @@ assert(!panel.includes("t('Not ready')"),'Unavailable Sanctuary rewards use comp
 // Claims should not appear claimable before the underlying reward timer is due.
 assert(panel.includes('now-trainingLast>=86400000'),'Daily rewards must respect the daily timer');
 assert(panel.includes('now-essenceLast>=604800000'),'Weekly rewards must respect the weekly timer');
-assert(panel.includes('disabled={busy||!trainingDue}')&&panel.includes('disabled={busy||!essenceDue}'),'Unavailable rewards must be disabled');
+// Non-due rewards are a countdown, not a disabled button. The actionable
+// button is mounted only while the authoritative ready flag is true.
+assert(panel.includes('!trainingBuilt?<Text')&&panel.includes('trainingDue\n         ?<GameButton compact')&&panel.includes('claimWait(trainingLast,86400000)'),
+ 'Daily rewards must show a countdown instead of a premature claim action');
+assert(panel.includes('!essenceBuilt?<Text')&&panel.includes('essenceDue\n         ?<GameButton compact')&&panel.includes('claimWait(essenceLast,604800000)'),
+ 'Weekly rewards must show a countdown instead of a premature claim action');
+assert(panel.includes('disabled={busy} onPress={()=>act(\'companion_training\')}')&&panel.includes('disabled={busy} onPress={()=>act(\'companion_essence\')}'),
+ 'Only eligible claims should offer a real action and busy state must block duplicates');
 
 // Existing progression and mission validation must survive layout simplification.
 assert(training.includes('costBreakdown(model.nextLevelCost)'),'Training must show resource cost before upgrading');

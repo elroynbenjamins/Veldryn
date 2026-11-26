@@ -1,5 +1,5 @@
 import type {GameState} from './types';
-import {combatCompanionUiModel} from './combat-companions';
+import {combatCompanionUiModels} from './combat-companions';
 import {companionEconomy,companionView} from './companion-runtime';
 
 export interface CompanionAttentionSummary{
@@ -14,8 +14,7 @@ export interface CompanionAttentionSummary{
  recentUnlocks:number;
 }
 
-function affordable(state:GameState,cost:{gold:number;companionEssence:number;bondstones?:number;materialId?:string;materialQuantity?:number}){
- const economy=companionEconomy(state);
+function affordable(economy:ReturnType<typeof companionEconomy>,cost:{gold:number;companionEssence:number;bondstones?:number;materialId?:string;materialQuantity?:number}){
  return economy.gold>=cost.gold
   &&economy.companionEssence>=cost.companionEssence
   &&economy.bondstones>=(cost.bondstones??0)
@@ -27,11 +26,13 @@ export function companionAttentionSummary(state:GameState,now:number):CompanionA
  const view=companionView(state,now),claims=new Set(state.account.companionBondRewardClaims??[]);
  const expeditionClaims=view.assignments.filter(row=>row.status==='completed').length;
  let bondRewards=0,ascensions=0,recentUnlocks=0;
- for(const id of state.account.unlockedCombatCompanionIds??[]){
-  const progress=state.account.combatCompanionProgress?.[id],model=combatCompanionUiModel(state,id);
+ const ids=state.account.unlockedCombatCompanionIds??[],models=combatCompanionUiModels(state,ids);
+ let economy:ReturnType<typeof companionEconomy>|undefined;
+ for(const [index,id] of ids.entries()){
+  const progress=state.account.combatCompanionProgress?.[id],model=models[index];
   if(!progress||!model)continue;
   for(const level of [2,4,6,8] as const)if(progress.bondLevel>=level&&!claims.has(id+':'+level))bondRewards++;
-  if(model.nextAscensionCost&&affordable(state,model.nextAscensionCost))ascensions++;
+  if(model.nextAscensionCost&&affordable(economy??(economy=companionEconomy(state)),model.nextAscensionCost))ascensions++;
   if(progress.obtainedAtMs!==undefined&&now-progress.obtainedAtMs>=0&&now-progress.obtainedAtMs<5*60_000)recentUnlocks++;
  }
  const sanctuary=state.account.companionSanctuary;

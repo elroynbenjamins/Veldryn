@@ -60,8 +60,9 @@ ok(storyBoss.includes('TELEGRAPH')&&!storyBoss.includes('Skip fight')&&storyBoss
 ok(storyBoss.includes('slashA')&&storyBoss.includes('spark'),'Story boss playback must retain satisfying slash and particle impact feedback');
 const app=read('App.tsx');
 ok(app.includes('StoryBossBattleModal')&&app.includes('result.storyBossBattle'),'Fallen Knight action must open the returned battle playback instead of reverting to alert-only resolution');
-ok(app.includes('onlineForegroundSettlementRef')&&app.includes("perform({type:'claim'},true,true)"),'Returning online players must track authoritative offline settlement separately from ordinary actions');
-ok(app.includes("setOfflineSettling(true)")&&app.includes("Calculating offline rewards…")&&app.includes('LoadingState'),'Offline reward settlement must visibly show shared progress before its rewards popup');
+ok(app.includes("perform({type:'claim'},true,true)")&&app.includes('if(welcomeBack)setOfflineSettling(true)')&&app.includes('finally{if(welcomeBack)setOfflineSettling(false);}')&&!app.includes('onlineForegroundSettlementRef'),'Actual online settlement tracks its own lifecycle without a preemptive foreground latch');
+ok(app.includes('online.loading||online.busy||online.pending||onlineStartupSettlementAccountRef.current===arrivalKey'),'Pending commands defer automatic settlement rather than losing the receipt');
+ok(app.includes('offlineSettling||(online.busy&&!quietCraftSaving))?<View pointerEvents="none" accessible accessibilityRole="progressbar"')&&app.includes("Calculating offline rewards…")&&app.includes('{!serverGameplayEnabled&&offlineSettling&&<View style={s.offlineLoadingOverlay}>'),'Online progress is accessible and nonblocking; only local settlement uses the full overlay');
 
 const rewards=read('src/components/RewardPopup.tsx');
 ok(rewards.includes('StatusPill label={gt("New").toLocaleUpperCase(language)} tone="special"'),'Reward discoveries must use the shared localized special NEW badge');

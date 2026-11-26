@@ -865,5 +865,40 @@
     "category": "pets",
     "file": "../../../assets/events/veilbreak/emote_gloam_facepalm_runtime.webp",
     "defaultAvailable": false
+  },
+  {
+    "id": "emote_snowbell_ring",
+    "label": "Frostbell Cheer",
+    "category": "pets",
+    "file": "../../../assets/events/frostfall/frostfall_emotes_runtime/emote_frostbell_cheer_runtime.webp",
+    "defaultAvailable": false
+  },
+  {
+    "id": "emote_frostfall_wave",
+    "label": "Frozen Shock",
+    "category": "male",
+    "file": "../../../assets/events/frostfall/frostfall_emotes_runtime/emote_frozen_shock_runtime.webp",
+    "defaultAvailable": false
+  },
+  {
+    "id": "emote_aurora_chime",
+    "label": "Aurora Hug",
+    "category": "pets",
+    "file": "../../../assets/events/frostfall/frostfall_emotes_runtime/emote_aurora_hug_runtime.webp",
+    "defaultAvailable": false
+  },
+  {
+    "id": "emote_cozy_hearth",
+    "label": "Cozy Hearth",
+    "category": "female",
+    "file": "../../../assets/events/frostfall/frostfall_emotes_runtime/emote_cozy_hearth_runtime.webp",
+    "defaultAvailable": false
+  },
+  {
+    "id": "emote_snowball_attack",
+    "label": "Snowball Attack",
+    "category": "male",
+    "file": "../../../assets/events/frostfall/frostfall_emotes_runtime/emote_snowball_attack_runtime.webp",
+    "defaultAvailable": false
   }
 ]

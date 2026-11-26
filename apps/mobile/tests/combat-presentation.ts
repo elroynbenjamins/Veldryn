@@ -54,11 +54,12 @@ if(!storyAttempt.battle||storyAttempt.won!==storyAttempt.battle.won)throw new Er
 const storyWinState={...storyState,character:{...storyState.character!,level:100,xp:characterTotalXpAtLevel(100),hp:50000,currentHp:50000,attack:30000,defense:15000}};
 const storyWin=challengeFallenKnight(storyWinState,222222);
 if(!storyWin.won||!storyWin.battle||storyWin.battle.mode!=='story')throw new Error('Prepared first story clear must settle through cinematic battle playback');
-if(!storyWin.state.inventory.stacks.some(row=>row.itemId==='FALLEN_KNIGHT_SIGIL'&&row.quantity>=1))throw new Error('First Fallen Knight clear must settle the guaranteed story Sigil from the boss drop table');
+if(storyWin.state.inventory.stacks.some(row=>row.itemId==='FALLEN_KNIGHT_SIGIL'))throw new Error('Retired Fallen Knight Sigil must not mint on first story clear');
+if(!storyWin.state.inventory.stacks.some(row=>row.itemId==='ECHO_TOUCHED_PELT'&&row.quantity>=2)||!storyWin.state.inventory.stacks.some(row=>row.itemId==='TORN_OATHCLOTH'&&row.quantity>=4))throw new Error('First Fallen Knight clear must still settle the guaranteed pelt and oathcloth boss drops');
 const repeatReady={...storyWin.state,character:{...storyWin.state.character!,level:100,currentHp:storyWin.state.character!.hp}};
 const repeat=challengeFallenKnight(repeatReady,222223);
 if(!repeat.won||!repeat.battle||repeat.battle.mode!=='rematch'||!repeat.battle.events.some(event=>event.type==='victory'))throw new Error('Weekly Fallen Knight rematches must return the full victory battle timeline');
-if(repeat.state.inventory.stacks.filter(row=>row.itemId==='FALLEN_KNIGHT_SIGIL').reduce((sum,row)=>sum+row.quantity,0)!==1)throw new Error('Weekly rematches must not repeat the unique story Sigil');
+if(repeat.state.inventory.stacks.some(row=>row.itemId==='FALLEN_KNIGHT_SIGIL'))throw new Error('Weekly rematches must not recreate the retired Sigil');
 // Each rematch may leave the player injured; recover between attempts to test the weekly reward cap independently.
 const recoverForRematch=(s:typeof repeat.state)=>({...s,character:{...s.character!,currentHp:effectiveStats(s).hp}});
 const repeat2=challengeFallenKnight(recoverForRematch(repeat.state),222224),repeat3=challengeFallenKnight(recoverForRematch(repeat2.state),222225);

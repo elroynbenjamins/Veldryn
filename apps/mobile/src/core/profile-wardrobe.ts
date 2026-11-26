@@ -1,3 +1,7 @@
+import {CELESTIAL_COLLECTION,CELESTIAL_IDS,isCelestialBackground,isCelestialBorder,releasedCelestialPetWardrobeDefinition} from './ascendant-cosmetics';
+import {ownedUltraLuxeTitles} from './ultra-luxe-titles';
+import {DRACONIC_IDS,DRACONIC_COLLECTION} from './draconic-showcase-layout';
+import {ownsUltraLuxeProfileCosmetic} from './ultra-luxe-cosmetics';
 import type {GameState} from './types';
 import {profileIconCollection} from './profile-icons';
 import {BASE_PROFILE_BACKGROUNDS,canUseProfileCosmetic,profileCosmeticReleased} from './profile-cosmetics';
@@ -6,14 +10,19 @@ import {profileRewardSource,type ProfileCustomizationDestination} from './profil
 import {JOURNAL_TITLES_V42} from './adventurers-journal-v42';
 import {collectibleJournal} from './collectibles';
 import {LIVE_EVENT_CATALOG} from '../content/live-events';
+import {frostfallRewardsDiscoverable,FROSTFALL_2026_EVENT_ID} from './frostfall-reward-visibility';
+import {canUseProfileEffect,profileAnimatedBorderDefinition,profileEffectDefinition} from './profile-effects';
+import {profileAnimatedCosmeticsEnabled,profileAnimatedEffectCategoryEnabled} from './profile-cosmetic-access';
+import {wave2SetFor,wave2Owned} from './profile-cosmetic-wave2';
+import {PREMIUM_PROFILE_COSMETICS} from './profile-premium-cosmetics';
 
 /** One flat wardrobe model so the Look tab renders every cosmetic family the same way:
  * a chip with an owned/total count and a grid of tiles that carry their own unlock source. */
-export type WardrobeKind='icon'|'scene'|'frame'|'pet'|'title';
-export const WARDROBE_KINDS:readonly WardrobeKind[]=['icon','scene','frame','pet','title'];
-export const WARDROBE_LABELS:Record<WardrobeKind,string>={icon:'Icons',scene:'Scenes',frame:'Frames',pet:'Pets',title:'Titles'};
+export type WardrobeKind='icon'|'scene'|'frame'|'effect'|'pet'|'title';
+export const WARDROBE_KINDS:readonly WardrobeKind[]=['icon','scene','frame','effect','pet','title'];
+export const WARDROBE_LABELS:Record<WardrobeKind,string>={icon:'Icons',scene:'Scenes',frame:'Frames',effect:'Effects',pet:'Pets',title:'Titles'};
 /** Locked artwork prints this tag, so a tile explains itself before it is tapped. */
-const DESTINATION_TAGS:Record<ProfileCustomizationDestination,string>={Events:'EVENT',Guild:'GUILD',Character:'LEVEL',Collections:'COLLECTION'};
+const DESTINATION_TAGS:Record<ProfileCustomizationDestination,string>={Events:'EVENT',Guild:'GUILD',Character:'LEVEL',Collections:'COLLECTION',Store:'STORE'};
 
 export interface WardrobeRow{
  kind:WardrobeKind;id:string;name:string;group:string;
@@ -26,12 +35,28 @@ export interface WardrobeRow{
 export interface WardrobeCategory{kind:WardrobeKind;label:string;owned:number;total:number;rows:WardrobeRow[]}
 export interface WardrobeProgress{owned:number;total:number;percent:number}
 
+/** Classify visible wardrobe rows, not entitlements. Scene and pet pieces
+ * belong to animated sets even when their standalone thumbnail is static. */
+export function wardrobeAnimatedSetPiece(row:Pick<WardrobeRow,'kind'|'id'|'clear'>):boolean{
+ if(row.clear||!row.id)return false;
+ if(row.kind==='effect')return !!profileEffectDefinition(row.id);
+ if(row.kind==='frame')return !!profileAnimatedBorderDefinition(row.id)||row.id===CELESTIAL_IDS.border||row.id===DRACONIC_IDS.border;
+ if(row.kind==='scene')return row.id===CELESTIAL_IDS.background||row.id===DRACONIC_IDS.background||PREMIUM_PROFILE_COSMETICS.some(set=>set.backgroundId===row.id);
+ if(row.kind==='pet')return row.id===CELESTIAL_IDS.pet||row.id===DRACONIC_IDS.pet||PREMIUM_PROFILE_COSMETICS.some(set=>set.petId===row.id);
+ return false;
+}
+export function wardrobeDisplaySections(rows:readonly WardrobeRow[]){
+ const standard:WardrobeRow[]=[],animated:WardrobeRow[]=[];
+ for(const row of rows)(wardrobeAnimatedSetPiece(row)?animated:standard).push(row);
+ return {standard,animated};
+}
+
 export function wardrobeLockTag(destination:ProfileCustomizationDestination|undefined){return destination?DESTINATION_TAGS[destination]:'LOCKED'}
 
 /** Scene and frame names/ids live in the art registry; core stays image-free and testable. */
-export interface WardrobeAssets{scenes:readonly {id:string;name:string}[];frames:readonly string[]}
+export interface WardrobeAssets{scenes:readonly {id:string;name:string}[];frames:readonly string[];effects?:readonly {id:string;name:string}[]}
 
-function lockFields(state:GameState,kind:'background'|'border'|'title',id:string):Partial<WardrobeRow>{
+function lockFields(state:GameState,kind:'background'|'border'|'effect'|'title',id:string):Partial<WardrobeRow>{
  const source=profileRewardSource(state,kind,id);
  return {lockTag:wardrobeLockTag(source.destination),sourceLabel:source.label,sourceDetail:source.detail,destination:source.destination,actionLabel:source.actionLabel};
 }
@@ -42,48 +67,64 @@ function iconRows(state:GameState):WardrobeRow[]{
    destination:(row.group==='Event'?'Events':row.group==='Guild'?'Guild':'Collections') as ProfileCustomizationDestination,actionLabel:row.group==='Event'?'Open Event':row.group==='Guild'?'Open Guild':'Open Collections'})}));
 }
 
-function sceneRows(state:GameState,assets:WardrobeAssets):WardrobeRow[]{
+function sceneRows(state:GameState,assets:WardrobeAssets,nowMs:number):WardrobeRow[]{
  const equipped=state.character?.profileBackgroundId??'asterfall-night';
  const base=BASE_PROFILE_BACKGROUNDS.map(item=>({kind:'scene' as const,id:item.id,name:item.name,group:'Starter',unlocked:true,equipped:equipped===item.id}));
- const released=assets.scenes.filter(item=>!BASE_PROFILE_BACKGROUNDS.some(row=>row.id===item.id)&&profileCosmeticReleased(state,'background',item.id));
+ const released=assets.scenes.filter(item=>!BASE_PROFILE_BACKGROUNDS.some(row=>row.id===item.id)&&profileCosmeticReleased(state,'background',item.id,nowMs));
  return [...base,...released.map(item=>{const unlocked=canUseProfileCosmetic(state,'background',item.id);
-  return {kind:'scene' as const,id:item.id,name:item.name,group:item.id.startsWith('dungeon:')?'Dungeon':'Event',unlocked,equipped:equipped===item.id,...(unlocked?{}:lockFields(state,'background',item.id))};})];
+  return {kind:'scene' as const,id:item.id,name:item.name,group:(isCelestialBackground(item.id)||item.id===DRACONIC_IDS.background)?'Ascendant':item.id.startsWith('dungeon:')?'Dungeon':'Event',unlocked,equipped:equipped===item.id,...(unlocked?{}:lockFields(state,'background',item.id))};})];
 }
 
-function frameRows(state:GameState,assets:WardrobeAssets):WardrobeRow[]{
+function frameRows(state:GameState,assets:WardrobeAssets,nowMs:number):WardrobeRow[]{
  const equipped=state.character?.profileBorderId??'';
- const released=assets.frames.filter(id=>profileCosmeticReleased(state,'border',id));
+ const released=assets.frames.filter(id=>profileCosmeticReleased(state,'border',id,nowMs));
  return [{kind:'frame' as const,id:'',name:'No frame',group:'Starter',unlocked:true,equipped:!equipped,clear:true},
   ...released.map(id=>{const unlocked=canUseProfileCosmetic(state,'border',id),source=profileRewardSource(state,'border',id);
-   return {kind:'frame' as const,id,name:source.name,group:source.destination==='Guild'?'Guild':id.startsWith('dungeon:')?'Dungeon':'Event',unlocked,equipped:equipped===id,...(unlocked?{}:lockFields(state,'border',id))};})];
+   return {kind:'frame' as const,id,name:id===DRACONIC_IDS.border?DRACONIC_COLLECTION.borderName:isCelestialBorder(id)?CELESTIAL_COLLECTION.borderName:source.name,group:(isCelestialBorder(id)||id===DRACONIC_IDS.border)?'Ascendant':source.destination==='Guild'?'Guild':id.startsWith('dungeon:')?'Dungeon':'Event',unlocked,equipped:equipped===id,...(unlocked?{}:lockFields(state,'border',id))};})];
 }
 
-function petRows(state:GameState):WardrobeRow[]{
+function effectRows(state:GameState,assets:WardrobeAssets,includeUnreleased=false):WardrobeRow[]{
+ const equipped=state.character?.profileEffectId??'';
+ return [{kind:'effect' as const,id:'',name:'No effect',group:'Starter',unlocked:true,equipped:!equipped,clear:true},
+  ...(assets.effects??[]).filter(item=>wave2SetFor('effect',item.id)?wave2Owned(state.account,'effect',item.id):profileAnimatedCosmeticsEnabled(state)||includeUnreleased).map(item=>{const unlocked=canUseProfileEffect(state,item.id);return {kind:'effect' as const,id:item.id,name:item.name,group:'Cosmetics',unlocked,equipped:equipped===item.id,...(unlocked?{}:lockFields(state,'effect',item.id))};})];
+}
+
+function petRows(state:GameState,assets:WardrobeAssets):WardrobeRow[]{
  const equipped=state.character?.selectedCosmeticPetId??'';
+ const premium=PREMIUM_PROFILE_COSMETICS.filter(row=>state.account.unlockedCosmeticPetIds?.includes(row.petId)).map(row=>({kind:'pet' as const,id:row.petId,name:row.petName,group:'Ascendant',unlocked:true,equipped:equipped===row.petId}));
  const rows=collectibleJournal(state).filter(row=>row.kind==='pet'&&(row.owned||row.collectionGroup==='event'))
   .sort((a,b)=>Number(b.owned)-Number(a.owned)||a.name.localeCompare(b.name));
+ const celestial=releasedCelestialPetWardrobeDefinition(state);
+ const draconic=assets.scenes.some(s=>s.id===DRACONIC_IDS.background)&&assets.frames.includes(DRACONIC_IDS.border)&&ownsUltraLuxeProfileCosmetic(state,'pet',DRACONIC_IDS.pet);
  return [{kind:'pet' as const,id:'',name:'No Pet',group:'Starter',unlocked:true,equipped:!equipped,clear:true},
+  ...(draconic?[{kind:'pet' as const,id:DRACONIC_IDS.pet,name:DRACONIC_COLLECTION.petName,group:'Ascendant',unlocked:true,equipped:equipped===DRACONIC_IDS.pet}]:[]),
+  ...(celestial?[{kind:'pet' as const,id:CELESTIAL_IDS.pet,name:celestial.name,group:celestial.group,unlocked:true,equipped:equipped===CELESTIAL_IDS.pet}]:[]),
+  ...premium,
   ...rows.map(row=>({kind:'pet' as const,id:row.id,name:row.name,group:row.collectionGroup==='event'?'Event':'Collection',unlocked:row.owned,equipped:equipped===row.id,
    ...(row.owned?{}:{lockTag:'COLLECTION',sourceLabel:'Collections',sourceDetail:'Unlock this Pet through its collection source.',destination:'Collections' as ProfileCustomizationDestination,actionLabel:'Open Collections'})}))];
 }
 
-function titleRows(state:GameState):WardrobeRow[]{
+function titleRows(state:GameState,nowMs:number):WardrobeRow[]{
  const equipped=state.character?.profileTitle??'New Adventurer';
  const journal=JOURNAL_TITLES_V42.filter(def=>state.account.journalState?.unlockedTitles?.[def.id]!==undefined)
   .map(def=>({kind:'title' as const,id:'journal:'+def.id,name:def.name,group:"Journal",unlocked:true,equipped:equipped===def.name}));
  const base=PROFILE_TITLES.map(def=>{const unlocked=profileTitleUnlocked(state,def.id);
   return {kind:'title' as const,id:def.id,name:def.name,group:'Progression',unlocked,equipped:equipped===def.name,...(unlocked?{}:lockFields(state,'title',def.id))};});
  const owned=new Set(state.account.unlockedTitleIds??[]);
- const eventRewards=[...new Map(LIVE_EVENT_CATALOG.flatMap(event=>[...event.milestones(state.character?.classId??'IRONWARDEN').map(row=>row.reward),...event.shop.map(row=>row.reward)])
+ const revealFrostfall=frostfallRewardsDiscoverable(state.account,nowMs);
+ const eventRewards=[...new Map(LIVE_EVENT_CATALOG.flatMap(event=>[...event.milestones(state.character?.classId??'IRONWARDEN').map(row=>row.reward),...event.shop.map(row=>row.reward)].filter(reward=>event.id!==FROSTFALL_2026_EVENT_ID||revealFrostfall||owned.has(reward.id)))
   .filter(reward=>reward.kind==='title').map(reward=>[reward.id,reward])).values()];
  const events=eventRewards.map(reward=>{const unlocked=owned.has(reward.id);
   return {kind:'title' as const,id:reward.id,name:reward.name,group:'Event',unlocked,equipped:equipped===reward.name,...(unlocked?{}:lockFields(state,'title',reward.id))};});
- return [...journal,...base,...events];
+ const privateTitles=ownedUltraLuxeTitles(state).map(def=>({kind:'title' as const,id:def.id,name:def.name,group:'Ascendant',unlocked:true,equipped:equipped===def.name}));
+ return [...privateTitles,...journal,...base,...events];
 }
 
-export function profileWardrobe(state:GameState,assets:WardrobeAssets):WardrobeCategory[]{
- const byKind:Record<WardrobeKind,WardrobeRow[]>={icon:iconRows(state),scene:sceneRows(state,assets),frame:frameRows(state,assets),pet:petRows(state),title:titleRows(state)};
- return WARDROBE_KINDS.map(kind=>{const rows=byKind[kind],counted=rows.filter(row=>!row.clear);
+export function profileWardrobe(state:GameState,assets:WardrobeAssets,options?:{includeUnreleasedEffects?:boolean;nowMs?:number}):WardrobeCategory[]{
+ const nowMs=options?.nowMs??Date.now();
+ const byKind:Record<WardrobeKind,WardrobeRow[]>={icon:iconRows(state),scene:sceneRows(state,assets,nowMs),frame:frameRows(state,assets,nowMs),effect:effectRows(state,assets,options?.includeUnreleasedEffects),pet:petRows(state,assets),title:titleRows(state,nowMs)};
+ const kinds=profileAnimatedEffectCategoryEnabled(state)||options?.includeUnreleasedEffects?WARDROBE_KINDS:WARDROBE_KINDS.filter(kind=>kind!=='effect');
+ return kinds.map(kind=>{const rows=byKind[kind],counted=rows.filter(row=>!row.clear);
   return {kind,label:WARDROBE_LABELS[kind],rows,owned:counted.filter(row=>row.unlocked).length,total:counted.length};});
 }
 
@@ -93,22 +134,29 @@ export function wardrobeProgress(categories:readonly WardrobeCategory[]):Wardrob
 }
 
 /** The equipped cosmetic of each family, used by the stage and by undo. */
-export interface WardrobeEquipped{icon:string;scene:string;frame:string;pet:string;title:string}
+export interface WardrobeEquipped{icon:string;scene:string;frame:string;effect:string;pet:string;title:string}
 export function wardrobeEquipped(state:GameState):WardrobeEquipped{
  const character=state.character;
  return {icon:character?.profileIconId??`class:${character?.classId??'IRONWARDEN'}`,scene:character?.profileBackgroundId??'asterfall-night',
-  frame:character?.profileBorderId??'',pet:character?.selectedCosmeticPetId??'',title:character?.profileTitle??'New Adventurer'};
+  frame:character?.profileBorderId??'',effect:character?.profileEffectId??'',pet:character?.selectedCosmeticPetId??'',title:character?.profileTitle??'New Adventurer'};
+}
+/** Rebase only explicitly edited families onto the latest authoritative appearance. */
+export function wardrobeChanges(before:WardrobeEquipped,after:WardrobeEquipped):Partial<WardrobeEquipped>{
+ const patch:Partial<WardrobeEquipped>={};
+ for(const key of Object.keys(before) as (keyof WardrobeEquipped)[])if(before[key]!==after[key])patch[key]=after[key];
+ return patch;
 }
 export function applyWardrobeEquipped(state:GameState,equipped:WardrobeEquipped):GameState{
  if(!state.character)return state;
  return {...state,character:{...state.character,profileIconId:equipped.icon,profileBackgroundId:equipped.scene,
-  profileBorderId:equipped.frame||undefined,selectedCosmeticPetId:equipped.pet||undefined,profileTitle:equipped.title}};
+  profileBorderId:equipped.frame||undefined,profileEffectId:equipped.effect||undefined,selectedCosmeticPetId:equipped.pet||undefined,profileTitle:equipped.title}};
 }
 /** A wardrobe tap writes exactly one family, so the other four keep their saved value. */
 export function wardrobeSelection(equipped:WardrobeEquipped,row:{kind:WardrobeKind;id:string;name:string}):WardrobeEquipped{
  return row.kind==='icon'?{...equipped,icon:row.id}
   :row.kind==='scene'?{...equipped,scene:row.id}
   :row.kind==='frame'?{...equipped,frame:row.id}
+  :row.kind==='effect'?{...equipped,effect:row.id}
   :row.kind==='pet'?{...equipped,pet:row.id}
   :{...equipped,title:row.name};
 }

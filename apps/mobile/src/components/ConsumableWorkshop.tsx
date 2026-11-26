@@ -10,7 +10,7 @@ import {processingRunCapacity} from '../core/processing';
 import {offlineCapSeconds} from '../core/game';
 import {professionActionPace} from '../core/profession-action-pace';
 import {potionDef,POTION_TIER_UNLOCK_LEVELS} from '../content/alchemy';
-import {mealBonusDef} from '../core/meal-buffs';
+import {mealBonusDef,MAX_MEAL_BUFF_HOURS} from '../core/meal-buffs';
 import {cookingRecipeXpPreview} from '../core/cooking-xp-preview';
 import {craftingDetailText,cookingMealEffectText,type craftingDetailRows} from '../i18n/crafting-details';
 import {formatGameNumber} from '../core/number-format';
@@ -27,14 +27,12 @@ type Skill='cooking'|'alchemy';
 type Props={state:GameState;skillId:Skill;preferredRecipeId?:string;onStart:(id:string,batches:number)=>Promise<unknown>};
 
 const categories={
- cooking:['Fish','Meals','Special'] as const,
+ cooking:['Fish','Meals'] as const,
  alchemy:['Potions','Infusions'] as const,
 };
 function categoryOf(recipe:Recipe):string{
  if(recipe.skillId==='cooking'){
-   if(['COOK_IRONWOOD_STEW','COOK_ASHLANDS_EMBER_STEW'].includes(recipe.id))return 'Meals';
-   if(['COOK_GLASSFIN_FEAST','COOK_ICEFISH','COOK_EMBERFIN'].includes(recipe.id))return 'Special';
-   return 'Fish';
+   return mealBonusDef(recipe.output.itemId)?'Meals':'Fish';
  }
  const def=potionDef(recipe.output.itemId);
  return def?'Potions':'Infusions';
@@ -191,7 +189,7 @@ export function ConsumableWorkshop({state,skillId,preferredRecipeId,onStart}:Pro
     <Text style={[s.caption,{color:C.muted}]}>{gt('Use the main Activity bar to stop or claim production.')}</Text>
   </View>:null}
   <View style={s.line}><Text style={[s.title,{color:C.text}]}>{gt('Recipes')}</Text><Pressable accessibilityRole="checkbox" accessibilityState={{checked:readyOnly}} onPress={()=>setReadyOnly(x=>!x)} style={[s.toggle,{borderColor:C.line,backgroundColor:readyOnly?C.selection:C.panel2}]}><Text style={[s.caption,{color:C.text}]}>{readyOnly?'✓ ':''}{gt('Craftable only')}</Text></Pressable></View>
-  <View style={s.categories}>{groups.map(g=><Pressable key={g} accessibilityRole="tab" accessibilityState={{selected:category===g}} onPress={()=>{setCategory(g);setDetailId(null)}} style={[s.category,{borderColor:category===g?C.selectionLine:C.line,backgroundColor:category===g?C.selection:C.panel2}]}><Text style={[s.categoryText,{color:category===g?C.text:C.muted}]}>{gt(g as 'Fish'|'Meals'|'Special'|'Potions'|'Infusions')}</Text></Pressable>)}</View>
+  <View style={s.categories}>{groups.map(g=><Pressable key={g} accessibilityRole="tab" accessibilityState={{selected:category===g}} onPress={()=>{setCategory(g);setDetailId(null)}} style={[s.category,{borderColor:category===g?C.selectionLine:C.line,backgroundColor:category===g?C.selection:C.panel2}]}><Text style={[s.categoryText,{color:category===g?C.text:C.muted}]}>{gt(g as 'Fish'|'Meals'|'Potions'|'Infusions')}</Text></Pressable>)}</View>
   {busy?<Text accessibilityLiveRegion="polite" style={[s.caption,{color:C.info}]}>{gt('Starting…')}</Text>:null}
   {error?<Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={[s.caption,{color:C.bad}]}>{error}</Text>:null}
   {potionList?<View style={s.potionList}>
@@ -231,10 +229,10 @@ export function ConsumableWorkshop({state,skillId,preferredRecipeId,onStart}:Pro
         <View style={s.line}><ItemArtwork itemId={detail.output.itemId} size={52}/><Text style={[s.caption,{color:C.good,flex:1}]}>{benefit(detail)}</Text></View>
         {detail.skillId==='cooking'?<Text style={[s.xp,{color:C.good}]}>{cookingXpLabel(detail)}</Text>:null}
         {detailXp?.usingReservedRate?<Text style={[s.caption,{color:C.muted}]}>{ct('Current cooking run uses the XP rate reserved when it started.')}</Text>:null}
-        {detailMeal?<><Text style={[s.buff,{color:C.info}]}>{cookingMealEffectText(language,detailMeal)} · {detailMeal.durationHours}h</Text><Text style={[s.caption,{color:C.muted}]}>{ct('Activate meal buffs from Inventory. Auto-eat only restores HP.')}</Text></>:null}
+        {detailMeal?<><Text style={[s.buff,{color:C.info}]}>{cookingMealEffectText(language,detailMeal)} · {detailMeal.durationHours}h</Text><Text style={[s.caption,{color:C.muted}]}>{ct('Activate meal buffs from Inventory. Auto-eat only restores HP.')} {ct('Same meal extends duration up to {hours}h.',{hours:MAX_MEAL_BUFF_HOURS})}</Text></>:null}
         <Text style={[s.caption,{color:C.muted}]}>{gt('Per batch')}: {detail.output.quantity} {gt('items')} · {detail.gold} {gt('Gold')} · {timeLabel(professionActionPace(state,detail,'batch').cycleSeconds)}</Text>
         {count(detail)>0?<CraftQuantitySelector key={detail.id} value={chosen(detail)} max={count(detail)} onChange={value=>setSelectedBatches(prev=>({...prev,[detail.id]:value}))} disabled={busy||activeId===detail.id} unit={gt('batches')} limitLabel={gt('Maximum production')+': '+count(detail)}/>:null}
-         {count(detail)>0?<Text style={[s.caption,{color:C.text}]}>{gt('Selected')}: {chosen(detail)*detail.output.quantity} {gt('items')} · {chosen(detail)*detail.gold} {gt('Gold')} · {timeLabel(chosen(detail)*professionActionPace(state,detail,'batch').cycleSeconds)}</Text>:<Text style={[s.caption,{color:C.warning}]}>{activity?gt('Stop the current activity to release reserved materials before starting another recipe.'):missingReason(detail)}</Text>}
+         {count(detail)>0?<Text style={[s.caption,{color:C.text}]}>{gt('Selected')}: {chosen(detail)*detail.output.quantity} {gt('items')} · {chosen(detail)*detail.gold} {gt('Gold')} ·  +{formatGameNumber(Math.min(detailXp?.remainingToCap??0,Math.floor((detailXp?.rawXpPerBatch??0)*chosen(detail)+1e-9)),state.settings.numberMode,language)} {gt('XP')} · {timeLabel(chosen(detail)*professionActionPace(state,detail,'batch').cycleSeconds)}</Text>:<Text style={[s.caption,{color:C.warning}]}>{activity?gt('Stop the current activity to release reserved materials before starting another recipe.'):missingReason(detail)}</Text>}
         <IngredientList inputs={detail.inputs.map(r=>({...r,quantity:r.quantity*Math.max(1,chosen(detail)),inventory:state.inventory.stacks.filter(s=>s.itemId===r.itemId).reduce((n,s)=>n+s.quantity,0),bank:state.bank.stacks.filter(s=>s.itemId===r.itemId).reduce((n,s)=>n+s.quantity,0)}))} numberMode={state.settings.numberMode} showStorage/>
         {skillId==='alchemy'&&potionDef(detail.output.itemId)?.effect.kind==='healing'?<Text style={[s.caption,{color:C.info}]}>{gt('Healing potions work in boss fights and between dungeon rooms. Food is disabled there. Choose a potion from the HP menu.')}</Text>:null}
       </ScrollView>

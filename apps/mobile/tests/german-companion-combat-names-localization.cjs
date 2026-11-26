@@ -31,9 +31,11 @@ const eventRows=[...event.slice(event.indexOf('const EVENT_IDENTITY_COPY:'),even
  .map(m=>({id:m[1],active:m[2]||m[3],bond:m[4]||m[5]}));
 const guildRows=[...guild.matchAll(/id:'(GUILD_UNIT_\d+)'[\s\S]*?activeName:(?:"([^"]+)"|'([^']+)')[\s\S]*?bondName:(?:"([^"]+)"|'([^']+)')/g)]
  .map(m=>({id:m[1],active:m[2]||m[3],bond:m[4]||m[5]}));
-assert.deepEqual([asterRows.length,regionalRows.length,eventRows.length,guildRows.length],[12,12,11,3]);
+assert.deepEqual([asterRows.length,regionalRows.length,eventRows.length,guildRows.length],[12,12,13,3]);
 const rows=[...asterRows,...regionalRows,...eventRows,...guildRows];
-assert.equal(rows.length,38,'Expected 38 authored companions');
+assert.equal(rows.length,40,'Expected 40 authored companions including two Frostfall recruits');
+assert.ok(eventRows.some(row=>row.id==='EVT_UNIT_012')&&eventRows.some(row=>row.id==='EVT_UNIT_013'),
+ 'Frostfall Lynx and Hearthguard combat identities must be covered by the German catalogue');
 assert.deepEqual(Object.keys(germanCompanionCombatNames).sort(),rows.map(row=>row.id).sort(),'German combat-name ID coverage drifted');
 for(const {id,active,bond} of rows){
  const copy=germanCompanionCombatNames[id];
@@ -76,10 +78,10 @@ for(const [english,german] of descriptions){
 assert.equal(companionCombatDescriptionText('de','Untrusted text $&'),undefined);
 
 const customTechniques=[...backend.matchAll(/suffix:'[^']+',name:(?:"([^"]+)"|'([^']+)')/g)].map(m=>m[1]||m[2]);
-assert.equal(customTechniques.length,76);
+assert.equal(customTechniques.length,80,'All current authored techniques must be discovered');
 const defaults=['Fortified Shell','Reflective Shell','Executioner','Relentless','Deep Restoration','Rapid Aid'];
 const names=[...customTechniques,...defaults];
-assert.equal(new Set(names).size,82,'Technique translations should have unique English sources');
+assert.equal(new Set(names).size,86,'Technique translations should have unique English sources');
 assert.deepEqual(Object.keys(germanCompanionTechniqueNames).sort(),names.sort(),'German technique coverage drifted');
 for(const name of names){
  assert.ok(germanCompanionTechniqueNames[name]&&germanCompanionTechniqueNames[name]!==name,'Missing German technique: '+name);
@@ -114,7 +116,9 @@ const markers={
  ],
  codex:[
   'summary={companionCombatAbilityName(language,model.def.id,model.def.activeAbility.name)}',
-  '{companionCombatAbilityName(language,model.def.id,model.def.activeAbility.name)}</Text>',
+  'title:companionCombatAbilityName(language,model.def.id,model.def.activeAbility.name)',
+  '{title}</Text>',
+  'frostfallCompanionAbilityArt(model.def.id,slot)',
   'companionTrialAbilityName(language,phase.name)',
   'phase.effects.map(effect=>companionContent(language,effect))',
  ],

@@ -2,12 +2,25 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
 const source=relative=>fs.readFileSync(path.join(__dirname,'..',relative),'utf8');
+const modal=source('src/components/GameModalSurface.tsx');
 const sheet=source('src/components/ItemQuickInspect.tsx');
 const inventory=source('src/screens/InventoryScreen.tsx');
 const pouch=source('src/components/EquipmentPouchPanel.tsx');
 const controls=source('src/components/InventoryItemHeaderControls.tsx');
 const disposal=source('src/components/EquipmentDisposalStatus.tsx');
 const i18n=source('src/i18n/equipment-pouch-ui.ts');
+
+// Android three-button navigation: the modal's own native window must
+// measure and reserve its bottom safe area OUTSIDE the button footer.
+const modalHost=modal.indexOf('return <Modal');
+const provider=modal.indexOf('<SafeAreaProvider style={{flex:1}}>',modalHost);
+const insetRead=modal.indexOf('insets=useSafeAreaInsets()',provider);
+assert(modalHost>=0&&provider>modalHost&&insetRead>provider,'A nested provider must measure safe-area insets in the modal window');
+assert(modal.includes("navigationBarTranslucent={Platform.OS==='android'}"),'Android navigation must be consistently edge-to-edge for insets to be measured');
+assert(modal.includes('const bottomClearance=sheet?Math.max(insets.bottom,keyboardOverlap)'),'Sheet clearance must include the native bottom inset without double-counting keyboard overlap');
+assert(modal.includes('paddingBottom:bottomClearance'),'Sheet clearance must apply to the backdrop outside action controls');
+assert(modal.includes('sheet&&{paddingBottom:spacing.lg}'),'Keep a constant touch-safe gap inside the sheet, not a duplicate safe-area inset');
+assert(!modal.includes('sheet&&{paddingBottom:Math.max(spacing.lg,insets.bottom+spacing.sm)}'),'Do not consume the native bar inset twice');
 
 assert(sheet.includes('[detailsOpen,setDetailsOpen]=useState(false)'),'Detailed content must start collapsed');
 assert(sheet.includes('setDetailsOpen(false)'),'Details disclosure must reset for each exact selected copy');
@@ -20,6 +33,14 @@ assert(!sheet.includes("gt('BONUS STATS')")&&!sheet.includes('s.bonusNote}>{gt('
 assert(sheet.includes('disposalActions?<View style={s.footerDisposal}')&&sheet.includes('footerDisposal:{borderTopWidth:StyleSheet.hairlineWidth'),'Keep Sell/Salvage visible below a clear divider');
 assert(!sheet.includes('actionsOpen')&&!sheet.includes('footerActionScroll'),'No equipment action may be hidden behind a More actions disclosure');
 assert(sheet.includes('compactHeader=width<390||fontScale>=1.25')&&controls.includes('button:{width:40,height:44'),'Header must accommodate compact phones and accessible target heights');
+
+// Stackable resources must inherit the toolbar amount and use one clamped value for both actions.
+assert(inventory.includes('setInspectQuantity(stack.instanceId?1:transferAmount(stack.quantity,quantity))'),'Opening a stack must inherit the selected amount, including All, without changing exact-copy actions');
+assert(inventory.includes('const inspectAmount=transferAmount(inspectStock,inspectQuantity??1)'),'Clamp the selected amount to live stock');
+const materialQuick=inventory.slice(inventory.indexOf("const inspectQuickActions=inspected?.type==='material'"),inventory.indexOf("inspected?.type==='gear'?<View style={s.inspectQuickActions}>"));
+assert(materialQuick.includes('keyboardType="number-pad" selectTextOnFocus')&&materialQuick.includes('String(inspectAmount)'),'Quantity must be directly editable and show exact units');
+assert(materialQuick.includes('disabled={inventoryBusyLabel!==null||!inspectAmountValid}')&&materialQuick.includes('!inspectAmountValid||inspectLocked||inspectFavorite||goalProtection.has(inspected.id)'),'Blank amounts must disable transfers and sales without bypassing protection');
+assert(materialQuick.includes('amount=inspectAmount')&&materialQuick.includes('quantity:inspectAmount')&&materialQuick.includes('itemVendorSellGold(inspected)*inspectAmount'),'Transfer, sale confirmation and gold preview must share the same clamped amount');
 
 const quickStart=inventory.indexOf("inspected?.type==='gear'?<View style={s.inspectQuickActions}>");
 assert(quickStart>=0,'Equipment must expose quick actions outside the secondary actions drawer');

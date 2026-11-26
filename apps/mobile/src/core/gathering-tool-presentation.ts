@@ -18,6 +18,7 @@ export function gatheringToolContribution(tool:Pick<GatheringToolDef,'actionTime
   qualityAdjustmentPercent:(qualityMultiplier-1)*100,
   speedRollPercent:copy?.bonus.stat==='speed'?copy.bonus.basisPoints/100:0,
   rarityRollPercent:copy?.bonus.stat==='rarity'?copy.bonus.basisPoints/100:0,
+  skillXpRollPercent:copy?.bonus.stat==='xp'?copy.bonus.basisPoints/100:0,
   legacy:!copy,
  };
 }
@@ -32,6 +33,7 @@ export function gatheringToolTotalBreakdown(effects:ReturnType<typeof gatheringT
   speedRollGainPoints:Math.max(0,effectivePercent-cappedTierPercent),
   capped:rawTierPercent>GATHERING_TOOL_MAX_EFFECTIVE_REDUCTION*100+1e-9||effectivePercent>=GATHERING_TOOL_MAX_EFFECTIVE_REDUCTION*100-1e-9,
   rarityChanceRelativePercent:(effects.rarityChanceMultiplier-1)*100,
+  skillXpRelativePercent:(effects.skillXpMultiplier-1)*100,
  };
 }
 export function gatheringToolPercent(value:number){

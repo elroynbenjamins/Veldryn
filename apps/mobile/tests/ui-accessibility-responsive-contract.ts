@@ -24,7 +24,7 @@ const modal=read('src/components/GameModalSurface.tsx');
 ok(modal.includes('KeyboardAvoidingView'),'Shared modals must protect focused fields from the iOS keyboard');
 ok(modal.includes('onAccessibilityEscape={onClose}'),'Shared modals must support the accessibility escape gesture');
 ok(modal.includes('accessible={false}')&&modal.includes('no-hide-descendants'),'Modal backdrops must not become redundant screen-reader focus targets');
-ok(modal.includes("behavior={Platform.OS==='ios'?'padding':undefined}")&&modal.includes("Keyboard.addListener('keyboardDidHide'")&&modal.includes('keyboardOverlap>0&&{paddingBottom:keyboardOverlap}'),'Shared modals must preserve Android keyboard clearance and clear stale overlap on dismiss');
+ok(modal.includes("behavior={Platform.OS==='ios'?'padding':undefined}")&&modal.includes("Keyboard.addListener('keyboardDidHide'")&&modal.includes('setAndroidKeyboardTop(null);return;')&&modal.includes('paddingBottom:bottomClearance')&&modal.includes("const bottomClearance=sheet?Math.max(insets.bottom,keyboardOverlap)"),'Shared modals must preserve Android keyboard clearance and clear stale overlap on dismiss');
 
 const reward=read('src/components/RewardPopup.tsx');
 ok(reward.includes('useSafeAreaInsets')&&reward.includes('statusBarTranslucent'),'Reward results must honor modal safe areas on edge-to-edge devices');
@@ -71,7 +71,11 @@ const recruitmentFilters=read('src/components/RecruitmentFiltersPanel.tsx');
 ok(recruitmentFilters.includes('clear:{minHeight:44')&&recruitmentFilters.includes('chip:{minHeight:44'),'Recruitment filter clear/chip actions must retain 44px touch targets');
 
 const inventoryTouch=read('src/screens/InventoryScreen.tsx');
-ok(inventoryTouch.includes('markSeen:{minHeight:44')&&inventoryTouch.includes('selectModeButton:{minHeight:44')&&inventoryTouch.includes('selectionQuickButton:{minHeight:44'),'Inventory utility and bulk-selection controls must retain 44px touch targets');
+ok(inventoryTouch.includes('viewOptionsTrigger:{flex:1,minWidth:0,minHeight:44')
+  &&inventoryTouch.includes('textAction:{minHeight:44')
+  &&inventoryTouch.includes('protectionToolbarButton:{width:44,minHeight:44')
+  &&inventoryTouch.includes('selectionQuickButton:{minHeight:44'),
+  'Current Inventory filter, bulk selection and protection buttons must retain 44px touch targets');
 
 const companionTrainingTouch=read('src/components/CompanionTrainingV50Panel.tsx');
 ok(companionTrainingTouch.includes('tab:{flex:1,minHeight:44')&&companionTrainingTouch.includes('sourceButton:{minWidth:56,minHeight:44'),'Companion Training tabs and source actions must retain 44px touch targets');
@@ -103,7 +107,7 @@ ok(guildHall.includes('Future Guild Legacy will preserve major trophies and seas
 
 const skills=read('src/screens/SkillsScreen.tsx');
 ok(skills.includes('useWindowDimensions')&&skills.includes('narrowNavigator=width<380||fontScale>=1.3||state.settings.textScale>=1.3'),'Skills filter must adapt on narrow phones or large text');
-ok(skills.includes('narrowNavigator&&searchExpanded?<SearchField')&&skills.includes('navigatorRow:{minHeight:72'),'Skills must preserve readable full-width skill rows and accessible search at larger text sizes');
+ok(skills.includes('narrowNavigator&&searchExpanded?<SearchField')&&skills.includes("stackCards=width<350||fontScale>=1.25||state.settings.textScale>=1.25")&&skills.includes('stackCards&&hubStyles.skillCardWide'),'Skills must stack cards for narrow phones and large text while preserving accessible search');
 ok(skills.includes('accessibilityHint'),'Skill cards must expose an action hint');
 ok(skills.includes('modeChip:{minHeight:44'),'Skill mode controls must retain a 44px touch target');
 ok(skills.includes('keyboardDismissMode="on-drag"'),'Skills search/crafting flow must dismiss the keyboard on drag');

@@ -30,7 +30,7 @@ ok(commands.includes("case 'craft_cancel'")&&commands.includes("case 'craft_prer
 ok(notifications.includes("'equipment_craft_ready'"),'Navigation notification kinds must include finished equipment');
 ok(notifications.includes("primary:'home'")&&notifications.includes("subroute:'home.forge'"),'Finished equipment must route attention to the Home Forge shortcut');
 ok(app.includes("kind:'equipment_craft_ready'"),'App must emit forge-ready notifications');
-ok(app.includes("Home:navigationBadgeModel.home.display?navigationBadgeModel.home.count")&&app.includes("forgeReadyCount={equipmentForge.ready}"),'Home navigation and Forge shortcut should show the finished-craft count');
+ok(app.includes("Home:navigationBadgeModel.home.display?navigationBadgeModel.home.count")&&app.includes("forgeReadyCount={forgeReadyCount}")&&app.includes('projectedEquipmentCraftingQueue(state,now).filter(job=>job.completesAtMs<=now).length')&&app.includes('count:forgeReadyCount,unread:forgeReadyCount>0'),'Home navigation and Forge shortcut must share the actual completed-job count');
 ok(app.includes("type:'craft_cancel'")&&app.includes("type:'craft_prerequisites'"),'Mobile online path must use trusted forge-management commands');
 
 console.log('PASS: forge management UI supports safe cancel, prerequisites and Skills ready notifications');

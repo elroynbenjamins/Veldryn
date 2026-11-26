@@ -382,6 +382,26 @@ export const russianCompanionCombatNames:Readonly<Record<string,{
       "Long Road",
       "Долгая дорога"
     ]
+  },
+  "EVT_UNIT_012": {
+    "active": [
+      "Rimeshard Mark",
+      "Метка ледяного осколка"
+    ],
+    "bond": [
+      "Shattering Trail",
+      "След осколков"
+    ]
+  },
+  "EVT_UNIT_013": {
+    "active": [
+      "Hearthguard Aegis",
+      "Эгида хранителя очага"
+    ],
+    "bond": [
+      "Hearthbound Vow",
+      "Клятва домашнего очага"
+    ]
   }
 };
 
@@ -461,6 +481,10 @@ export const russianCompanionTechniqueNames:Readonly<Record<string,string>>={
   "Last Lantern": "Последний фонарь",
   "Grand Bell": "Великий колокол",
   "Quick Bell": "Быстрый колокол",
+  "Rimeshard Focus": "Фокус ледяного осколка",
+  "Aurora Pursuit": "Погоня за сиянием",
+  "Hearth Ward": "Защита домашнего очага",
+  "Winter Mirror": "Зимнее зеркало",
   "Caravan Ward": "Защита каравана",
   "Adaptable Route": "Гибкий маршрут",
   "Fortified Shell": "Укреплённая оболочка",

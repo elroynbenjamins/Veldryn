@@ -10,7 +10,9 @@ import {useGameTheme} from '../theme/ThemeContext';
 import {ActivityArtwork} from './ActivityArtwork';
 import {MonsterPortraitFrame} from './MonsterPortraitFrame';
 import {activeGatheringRuntimeProjection,activityProgressFeedback} from '../core/balance-projection';
-import {activeCombatRuntimeProjection,previewActivityReward} from '../core/game';
+import {previewActivityReward} from '../core/game';
+import {battleText} from '../i18n/battle';
+import {useLiveHuntProjection} from './useLiveHuntProjection';
 import {bucketedMs} from '../core/use-delayed-busy';
 import {activityStopPresentation} from '../core/activity-stop-presentation';
 import {unclaimedCombatKillCount} from '../core/activity-rewards';
@@ -30,35 +32,59 @@ export function ActiveActivityBar(props:ActiveActivityBarProps){
  // Bucket time to cut the expensive offline-combat sim down to one recompute per 5s window.
  const previewMs=bucketedMs(props.nowMs,5_000);
  const reward=useMemo(()=>props.reward??(props.state.activity?.kind==='combat'?previewActivityReward(props.state,previewMs):undefined),[props.reward,props.state,previewMs]);
- if(reward?.stoppedReason){
-  const stop=activityStopPresentation(reward.stoppedReason);
+ const {fight}=useLiveHuntProjection(props.state,props.state.activity?.kind==='combat'&&!reward?.stoppedReason);
+ const stoppedReason=reward?.stoppedReason||fight?.stoppedReason;
+ if(stoppedReason){
+  const stop=activityStopPresentation(stoppedReason);
   const monster=MONSTERS.find(entry=>entry.id===props.state.activity?.targetId);
   const isCombat=props.state.activity?.kind==='combat';
-  return <Pressable accessibilityRole="button" accessibilityLabel={gl(stop.title)+'. '+gl(reward.stoppedReason)+'. '+gt('Open Home to collect rewards.')} onPress={props.onOpen} style={({pressed})=>[s.root,isCombat?s.combat:s.skilling,pressed&&s.pressed]}>
+  return <Pressable accessibilityRole="button" accessibilityLabel={gl(stop.title)+'. '+gl(stoppedReason)+'. '+gt('Open Home to collect rewards.')} onPress={props.onOpen} style={({pressed})=>[s.root,isCombat?s.combat:s.skilling,pressed&&s.pressed]}>
    <View style={[s.art,isCombat&&s.combatArt]}>{isCombat&&monster?<MonsterPortraitFrame monster={monster} size={28} framed={false} reduceMotion/>:<ActivityArtwork id={props.state.activity?activityIconId(props.state.activity):'combat'} size={28}/>}</View>
-   <View style={s.copy}><Text style={s.combatName}>{gl(stop.title)}</Text><Text style={s.combatMeta} numberOfLines={1}>{gl(reward.stoppedReason)} · {gt('Collect rewards on Home')}</Text></View>{stop.category==='recovery'&&props.onRecoverCombat?<Pressable accessibilityRole="button" accessibilityLabel={gt('Open food and gear')} onPress={props.onRecoverCombat} style={s.recoverButton}><Text style={s.recover}>{gt('Food')}</Text></Pressable>:null}<Text style={s.chevron}>›</Text>
+   <View style={s.copy}><Text style={s.combatName}>{gl(stop.title)}</Text><Text style={s.combatMeta} numberOfLines={1}>{gl(stoppedReason)} · {gt('Collect rewards on Home')}</Text></View>{stop.category==='recovery'&&props.onRecoverCombat?<Pressable accessibilityRole="button" accessibilityLabel={gt('Open food and gear')} onPress={props.onRecoverCombat} style={s.recoverButton}><Text style={s.recover}>{gt('Food')}</Text></Pressable>:null}<Text style={s.chevron}>›</Text>
   </Pressable>;
  }
- return props.state.activity?<RunningActivityBar {...props} combatKills={reward?.kills}/>:null;
+ if(props.state.activity?.kind==='combat')return <CombatActivityBar {...props} fight={fight} combatKills={reward?.kills}/>;
+ return props.state.activity?<RunningActivityBar {...props}/>:null;
 }
-function RunningActivityBar({state,nowMs,onOpen,combatKills,compact=false}:ActiveActivityBarProps&{combatKills?:number}){
+function CombatActivityBar({state,onOpen,compact=false,fight,combatKills}:ActiveActivityBarProps&{fight:ReturnType<typeof useLiveHuntProjection>['fight'];combatKills?:number}){
+ const {gt,gl}=useGameplayText(),C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
+ const activity=state.activity;
+ if(!activity||activity.kind!=='combat')return null;
+ const monster=MONSTERS.find(entry=>entry.id===activity.targetId),name=gl(activityTargetLabel(activity));
+ // The exact replay cursor counts completed defeats since the last claim.
+ const projectedKills=fight?Math.max(0,(fight.cursor.projected.activity?.sessionKills??0)-(activity.sessionKills??0)):undefined;
+ const kills=unclaimedCombatKillCount(projectedKills??combatKills,0);
+ const status=battleText(state.settings.language,fight?.searching?'Searching for an encounter...':'Live combat');
+ const meta=status+' · '+gt('{count} kills',{count:kills});
+ // A new enemy is not present while searching. Do not show an imaginary full HP bar.
+ const hpPct=fight&&!fight.searching?Math.max(0,Math.min(100,fight.enemyHp/Math.max(1,fight.enemyMaxHp)*100)):0;
+ const progress=`${hpPct}%` as `${number}%`;
+ const track=<View pointerEvents="none" style={s.combatTrack}><View style={[s.fill,s.combatFill,{width:progress}]}/></View>;
+ const accessibilityLabel=name+' · '+meta;
+ if(compact)return <Pressable accessibilityRole="button" accessibilityLabel={accessibilityLabel} accessibilityHint={gt("Opens the active activity")} onPress={onOpen} style={({pressed})=>[s.compactRoot,s.compactCombat,pressed&&s.pressed]}>
+  <Text style={s.compactSymbol}>⚔</Text><Text numberOfLines={1} style={s.compactLabel}>{name}</Text><Text numberOfLines={1} style={s.compactMeta}>{gt('{count} kills',{count:kills})}</Text><Text style={s.compactArrow}>›</Text>{track}
+ </Pressable>;
+ return <Pressable accessibilityRole="button" accessibilityLabel={accessibilityLabel} accessibilityHint={gt("Opens the active activity")} onPress={onOpen} style={({pressed})=>[s.root,s.combat,pressed&&s.pressed]}>
+  <View style={[s.art,s.combatArt]}>{monster?<MonsterPortraitFrame monster={monster} size={28} framed={false} reduceMotion={state.settings.reduceMotion}/>:<ActivityArtwork id="combat" size={28}/>}</View>
+  <View style={s.copy}><Text numberOfLines={1} style={s.combatName}>{name}</Text><Text numberOfLines={1} style={s.combatMeta}>{meta}</Text></View>
+  <Text style={s.chevron}>›</Text>{track}
+ </Pressable>;
+}
+function RunningActivityBar({state,nowMs,onOpen,compact=false}:ActiveActivityBarProps){
  const {gt,gl,language}=useGameplayText();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const [localNowMs,setLocalNowMs]=useState(()=>Date.now());
  useEffect(()=>{const id=setInterval(()=>setLocalNowMs(Date.now()),1_000);return()=>clearInterval(id)},[]);
  const displayNowMs=Math.max(nowMs,localNowMs);
  const activity=state.activity;
- if(!activity)return null;
- const combat=activity.kind==='combat';
- const monster=combat?MONSTERS.find(entry=>entry.id===activity.targetId):undefined;
- const gathering=!combat?[...GATHERING,...HERB_NODES].find(entry=>entry.id===activity.targetId):undefined,crafting=activity.kind==='processing'||activity.kind==='alchemy'?RECIPES.find(entry=>entry.id===activity.targetId):undefined;
- const route=activity.kind==='exploration'?explorationRoute(activity.targetId):undefined;
- const faithTier=activity.kind==='faith'?FAITH_TIERS.find(tier=>tier.id===activity.targetId):undefined;
+ const gathering=activity?[...GATHERING,...HERB_NODES].find(entry=>entry.id===activity.targetId):undefined,crafting=activity&&(activity.kind==='processing'||activity.kind==='alchemy')?RECIPES.find(entry=>entry.id===activity.targetId):undefined;
+ const route=activity?.kind==='exploration'?explorationRoute(activity.targetId):undefined;
+ const faithTier=activity?.kind==='faith'?FAITH_TIERS.find(tier=>tier.id===activity.targetId):undefined;
  // Runtime projections are cycle-time derivations, not time-dependent — only recompute when state changes.
- const combatRuntime=useMemo(()=>combat?activeCombatRuntimeProjection(state):undefined,[combat,state]);
- const gatherRuntime=useMemo(()=>!combat?activeGatheringRuntimeProjection(state):undefined,[combat,state]);
+ const gatherRuntime=useMemo(()=>activeGatheringRuntimeProjection(state),[state]);
+ if(!activity||activity.kind==='combat')return null;
  const name=gl(activityTargetLabel(activity));
- const cycleSeconds=Math.max(1,combatRuntime?.killCycleSeconds??route?.seconds??faithTier?.seconds??gatherRuntime?.cycleSeconds??activity.processing?.cycleSeconds??activity.brew?.cycleSeconds??gathering?.seconds??crafting?.seconds??(activity.kind==='training'?60:1));
+ const cycleSeconds=Math.max(1,route?.seconds??faithTier?.seconds??gatherRuntime?.cycleSeconds??activity.processing?.cycleSeconds??activity.brew?.cycleSeconds??gathering?.seconds??crafting?.seconds??(activity.kind==='training'?60:1));
  // Faith progress is settled in character.faith.practice; the activity reservation is a fallback for older saves.
  const faithPractice=activity.kind==='faith'?normalizeFaith(state.character?.faith).practice:undefined;
  const progressAnchorMs=activity.kind==='faith'?(faithPractice?.lastClaimAtMs??activity.faithPractice?.lastClaimAtMs??activity.lastClaimAtMs):activity.lastClaimAtMs;
@@ -67,28 +93,21 @@ function RunningActivityBar({state,nowMs,onOpen,combatKills,compact=false}:Activ
  const cycleProgressSeconds=bankedProgressSeconds+cycleElapsedSeconds;
  const faithRemaining=faithPractice?.remaining??activity.faithPractice?.remainingPractices??0;
  const faithFinishing=activity.kind==='faith'&&faithRemaining>0&&cycleProgressSeconds>=cycleSeconds*faithRemaining;
- const completedCycles=Math.floor(cycleProgressSeconds/cycleSeconds),progressPct=faithFinishing?100:Math.round((cycleProgressSeconds%cycleSeconds)/cycleSeconds*100),progress=`${progressPct}%` as `${number}%`;
- const progressKind=combat?'combat':activity.kind==='alchemy'||activity.kind==='processing'?'crafting':activity.kind==='faith'?'faith':activity.kind==='training'?'training':activity.kind==='exploration'?'exploration':'gathering',phase=activityProgressFeedback(progressKind,progressPct/100),cycleRemaining=Math.max(1,Math.ceil(cycleSeconds-(cycleProgressSeconds%cycleSeconds)));
- // The bar resets after a successful claim; persistent hunt progress stays in activity.sessionKills.
- const unclaimedKills=combat?unclaimedCombatKillCount(combatKills,completedCycles):0;
- const cycleCopy=faithFinishing?gl(phase).replace('…','').toLocaleUpperCase(language):combat?gt('Next kill {seconds}s',{seconds:cycleRemaining}):`${gl(phase).replace('…','').toLocaleUpperCase(language)} · ${cycleRemaining}s`;
+ const progressPct=faithFinishing?100:Math.round((cycleProgressSeconds%cycleSeconds)/cycleSeconds*100),progress=`${progressPct}%` as `${number}%`;
+ const progressKind=activity.kind==='alchemy'||activity.kind==='processing'?'crafting':activity.kind==='faith'?'faith':activity.kind==='training'?'training':activity.kind==='exploration'?'exploration':'gathering',phase=activityProgressFeedback(progressKind,progressPct/100),cycleRemaining=Math.max(1,Math.ceil(cycleSeconds-(cycleProgressSeconds%cycleSeconds)));
+ const cycleCopy=faithFinishing?gl(phase).replace('…','').toLocaleUpperCase(language):`${gl(phase).replace('…','').toLocaleUpperCase(language)} · ${cycleRemaining}s`;
  if(compact)return <Pressable accessibilityRole="button" accessibilityLabel={gt('{kind} {name}, active for {duration}',{kind:gl(labels[activity.kind]),name,duration:elapsed(activity.startedAtMs,displayNowMs)})} accessibilityHint={gt("Opens the active activity")} onPress={onOpen} style={({pressed})=>[s.compactRoot,pressed&&s.pressed]}>
-   <Text style={s.compactSymbol}>{combat?'⚔':'◈'}</Text><Text numberOfLines={1} style={s.compactLabel}>{name}</Text><Text numberOfLines={1} style={s.compactMeta}>{gl(labels[activity.kind])} · {cycleRemaining}s</Text><Text style={s.compactArrow}>›</Text>
+   <Text style={s.compactSymbol}>◈</Text><Text numberOfLines={1} style={s.compactLabel}>{name}</Text><Text numberOfLines={1} style={s.compactMeta}>{gl(labels[activity.kind])} · {cycleRemaining}s</Text><Text style={s.compactArrow}>›</Text>
  </Pressable>;
- if(combat)return <Pressable accessibilityRole="button" accessibilityLabel={gt('{kind} {name}, active for {duration}',{kind:gl(labels[activity.kind]),name,duration:elapsed(activity.startedAtMs,displayNowMs)})} accessibilityHint={gt("Opens the active activity")} onPress={onOpen} style={({pressed})=>[s.root,s.combat,pressed&&s.pressed]}>
-  <View style={[s.art,s.combatArt]}>{monster?<MonsterPortraitFrame monster={monster} size={28} framed={false} reduceMotion={state.settings.reduceMotion}/>:<ActivityArtwork id="combat" size={28}/>}</View>
-  <View style={s.copy}><Text numberOfLines={1} style={s.combatName}>{name}</Text><Text numberOfLines={1} style={s.combatMeta}>{cycleCopy} · {gt('{count} kills',{count:unclaimedKills})}</Text></View>
-  <Text style={s.time}>{elapsed(activity.startedAtMs,displayNowMs)}</Text><Text style={s.chevron}>›</Text>
-  <View pointerEvents="none" style={s.combatTrack}><View style={[s.fill,s.combatFill,{width:progress}]}/></View>
- </Pressable>;
- return <Pressable accessibilityRole="button" accessibilityLabel={gt('{kind} {name}, active for {duration}',{kind:gl(labels[activity.kind]),name,duration:elapsed(activity.startedAtMs,displayNowMs)})} accessibilityHint={gt("Opens the active activity")} onPress={onOpen} style={({pressed})=>[s.root,combat?s.combat:s.skilling,pressed&&s.pressed]}>
-  <View style={s.art}>{monster?<MonsterPortraitFrame monster={monster} size={32} active reduceMotion={state.settings.reduceMotion} framed={false}/>:<ActivityArtwork id={activityIconId(activity)} size={30}/>}</View>
+ return <Pressable accessibilityRole="button" accessibilityLabel={gt('{kind} {name}, active for {duration}',{kind:gl(labels[activity.kind]),name,duration:elapsed(activity.startedAtMs,displayNowMs)})} accessibilityHint={gt("Opens the active activity")} onPress={onOpen} style={({pressed})=>[s.root,s.skilling,pressed&&s.pressed]}>
+  <View style={s.art}><ActivityArtwork id={activityIconId(activity)} size={30}/></View>
   <View style={s.copy}><View style={s.line}><Text numberOfLines={1} style={s.name}>{name}</Text><Text style={s.time}>{elapsed(activity.startedAtMs,displayNowMs)}</Text></View><View style={s.meta}><Text style={[s.kind,s.skillText]}>{gl(labels[activity.kind])}</Text><Text numberOfLines={1} style={s.cycle}>{cycleCopy}</Text></View><View style={s.track}><View style={[s.fill,s.skillFill,{width:progress}]}/></View></View>
   <Text style={s.chevron}>›</Text>
  </Pressable>;
 }
 function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);return StyleSheet.create({
  compactRoot:{minHeight:30,maxHeight:34,flexDirection:'row',alignItems:'center',gap:7,paddingHorizontal:14,paddingVertical:4,backgroundColor:C.panel,borderBottomWidth:1,borderBottomColor:C.line},
+ compactCombat:{position:'relative',borderBottomColor:C.bad,paddingBottom:6},
  compactSymbol:{fontSize:13,color:C.info,fontWeight:'900'},
  compactLabel:{fontSize:12,lineHeight:17,fontWeight:'800',color:C.text,flex:1,minWidth:0},
  compactMeta:{fontSize:10,lineHeight:14,color:C.muted,fontWeight:'700'},

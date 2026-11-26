@@ -23,7 +23,7 @@ assert(!browser.includes('echoTools')&&!screen.includes('showEchoSharing'),'Manu
 assert(browser.includes('NPC or Echo allies fill the missing roles'),'Solo ally description must account for NPC fallback');
 const topBar=read('components/GameTopBar.tsx'),activityBar=read('components/ActiveActivityBar.tsx');
 const app=fs.readFileSync(path.join(root,'App.tsx'),'utf8');
-assert(app.includes("showActivityBar={tab!=='ProfileCustomize'&&tab!=='Coop'&&!featureHubShell.hideActivityBar}")&&app.includes('!immersiveDungeonFlow&&<GameTopBar')&&topBar.includes('compact={compactActivityBar}')&&activityBar.includes('if(compact)return <Pressable'),'Dungeon screens hide the non-dungeon activity bar while immersive runs hide the whole top bar');
+assert(app.includes("showActivityBar={tab!=='ProfileCustomize'&&tab!=='Coop'&&tab!=='Events'&&!(tab==='Guild'&&guildEventPageOpen)&&!featureHubShell.hideActivityBar}")&&app.includes('!immersiveDungeonFlow&&<GameTopBar')&&topBar.includes('compact={compactActivityBar}')&&activityBar.includes('if(compact)return <Pressable'),'Dungeon and seasonal event screens hide the activity bar; immersive dungeon runs hide the whole top bar');
 assert(app.includes("hideDock={tab==='ProfileCustomize'||tab==='Coop'||featureHubShell.hideGlobalChatDock}")&&app.includes('onOpenChat={()=>{setChatInitialChannel')&&browser.includes('accessibilityLabel={st("World Chat")}'),'Dungeon chat dock becomes a header shortcut without losing chat access');
 assert(screen.includes('onShop={()=>setShowShop(true)}')&&browser.includes('s.shopShortcut'),'Shop shortcut uses the existing live Expedition Shop handler');
 
@@ -51,9 +51,12 @@ assert(bossPanel.includes('accessibilityState={{expanded:detailsOpen}}')&&bossPa
 assert(bossPanel.includes('priorityCast')&&bossPanel.includes('priorityPhase'),'Only priority interrupt and phase threshold are shown at a glance');
 assert(bossPanel.includes('telegraph.castAbilities.map')&&bossPanel.includes('telegraph.phases.map')&&bossPanel.includes('telegraph.suppressedAbilities.map'),'All authoritative mechanics remain available in the expanded view');
 assert(bossPanel.includes('accessibilityState={{expanded:recapOpen}}')&&bossPanel.includes('recap.abilitiesCast.length'),'The boss recap is optional but complete');
-for(const kind of ['battle','elite','boss','camp','shrine','forge','treasure','secret','merchant','echo','risk','event']){
- assert(roomPresentation.includes(kind+':{name:'),'Every dungeon kind, including non-combat and seasonal rooms, has a presentation: '+kind);
+// Event Rooms were deliberately retired; keep supported utility/battle rooms
+// recognizable without resurrecting the old resource-only event option.
+for(const kind of ['battle','elite','boss','camp','shrine','forge','treasure','secret','merchant','echo','risk']){
+ assert(roomPresentation.includes(kind+':{name:'),'Every supported dungeon kind has a presentation: '+kind);
 }
+assert(!roomPresentation.includes("event:{name:'Event room'"),'Retired Event Rooms must not reappear in route previews');
 assert(roomPresentation.includes("Restore your party's health.")&&roomPresentation.includes("Gain resources, but take a curse."),'Room previews describe actual resolver effects without promising drops');
 assert(route.includes('const redundantReward=')&&route.includes('!redundantReward?'),'Backend rewardTag duplicates are hidden rather than rendered as pointless labels');
 assert(route.includes('const riskBaseline=')&&route.includes('!riskBaseline?'),'Default 1.0 risk does not produce unnecessary tags');

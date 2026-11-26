@@ -77,24 +77,24 @@ function AccountChatOverlay({state,initialChannel='world',visible,hideDock=false
  };
 
  useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;};},[]);
- useEffect(()=>{if(visible)void refresh();else setOnlinePlayersOpen(false);},[visible,refresh]);
+ useEffect(()=>{if(visible&&chatEnabled)void refresh();else setOnlinePlayersOpen(false);},[visible,chatEnabled,refresh]);
  useEffect(()=>{if(!party&&channel==='party'){if(partyOnly){onClose();return;}selectChannel('world');}},[party,channel,partyOnly,onClose]);
  useEffect(()=>{guildCheckedAt.current=0;},[visible,state.account.guildMember]);
  useEffect(()=>{
   if(!onlineConfigured){setOnlineGuildAvailable(state.account.guildMember);return;}
-  if(!visible)return;
+  if(!visible||!chatEnabled||partyOnly)return;
   let active=true;
   const load=async()=>{
    if(!active||(AppState.currentState!=='active'&&AppState.currentState!==null)||guildLoading.current||Date.now()-guildCheckedAt.current<30000)return;
    guildLoading.current=true;
-   try{const guild=await myGuild();if(mounted.current){setOnlineGuildAvailable(!!guild);guildCheckedAt.current=Date.now();}}
+   try{const guild=await myGuild();if(active&&mounted.current){setOnlineGuildAvailable(!!guild);guildCheckedAt.current=Date.now();}}
    catch{/* Keep confirmed membership through temporary network failures. */}
    finally{guildLoading.current=false;}
   };
   void load();const timer=setInterval(()=>void load(),30000);
   const foreground=AppState.addEventListener('change',next=>{if(next==='active')void load();});
   return()=>{active=false;clearInterval(timer);foreground.remove();};
- },[visible,state.account.guildMember]);
+ },[visible,chatEnabled,partyOnly,state.account.guildMember]);
  const guildAvailable=onlineConfigured?onlineGuildAvailable:state.account.guildMember;
  useEffect(()=>{if(!guildAvailable&&channel==='guild')selectChannel('world');},[guildAvailable,channel]);
  useEffect(()=>{if(!chatEnabled&&visible)onClose();},[chatEnabled,visible,onClose]);

@@ -1,0 +1,435 @@
+{
+  "status": "review candidate; borderless transparent portraits and refined frame; native QA pending",
+  "sourceFrame": [
+    768,
+    432
+  ],
+  "portraitSize": [
+    256,
+    256
+  ],
+  "effectPeriodMs": 13200,
+  "glowClockMs": 12000,
+  "glows": [
+    {
+      "name": "top-ruby",
+      "x": 0.4986979166666667,
+      "y": 0.0625,
+      "sizeDp": 9,
+      "sourceRect": [
+        373,
+        17,
+        20,
+        20
+      ],
+      "periodMs": 3300,
+      "phaseMs": 0,
+      "peakOpacity": 0.86
+    },
+    {
+      "name": "upper-right",
+      "x": 0.9557291666666666,
+      "y": 0.0787037037037037,
+      "sizeDp": 9,
+      "sourceRect": [
+        724,
+        24,
+        20,
+        20
+      ],
+      "periodMs": 2900,
+      "phaseMs": 620,
+      "peakOpacity": 0.86
+    },
+    {
+      "name": "right-ruby",
+      "x": 0.9700520833333334,
+      "y": 0.5,
+      "sizeDp": 9,
+      "sourceRect": [
+        735,
+        206,
+        20,
+        20
+      ],
+      "periodMs": 3400,
+      "phaseMs": 1190,
+      "peakOpacity": 0.86
+    },
+    {
+      "name": "lower-right",
+      "x": 0.95703125,
+      "y": 0.9351851851851852,
+      "sizeDp": 9,
+      "sourceRect": [
+        725,
+        394,
+        20,
+        20
+      ],
+      "periodMs": 3100,
+      "phaseMs": 1740,
+      "peakOpacity": 0.86
+    },
+    {
+      "name": "bottom-ruby",
+      "x": 0.50390625,
+      "y": 0.9537037037037037,
+      "sizeDp": 9,
+      "sourceRect": [
+        377,
+        402,
+        20,
+        20
+      ],
+      "periodMs": 3300,
+      "phaseMs": 2380,
+      "peakOpacity": 0.86
+    },
+    {
+      "name": "lower-left",
+      "x": 0.036458333333333336,
+      "y": 0.9375,
+      "sizeDp": 9,
+      "sourceRect": [
+        18,
+        395,
+        20,
+        20
+      ],
+      "periodMs": 3100,
+      "phaseMs": 2960,
+      "peakOpacity": 0.86
+    },
+    {
+      "name": "left-ruby",
+      "x": 0.029947916666666668,
+      "y": 0.5138888888888888,
+      "sizeDp": 9,
+      "sourceRect": [
+        13,
+        212,
+        20,
+        20
+      ],
+      "periodMs": 3400,
+      "phaseMs": 3560,
+      "peakOpacity": 0.86
+    },
+    {
+      "name": "upper-left",
+      "x": 0.037760416666666664,
+      "y": 0.08101851851851852,
+      "sizeDp": 9,
+      "sourceRect": [
+        19,
+        25,
+        20,
+        20
+      ],
+      "periodMs": 2900,
+      "phaseMs": 4240,
+      "peakOpacity": 0.86
+    }
+  ],
+  "tracks": [
+    {
+      "sprite": "scarlet-petal",
+      "points": [
+        [
+          0.1,
+          0.12
+        ],
+        [
+          0.18,
+          0.33
+        ],
+        [
+          0.14,
+          0.58
+        ],
+        [
+          0.28,
+          0.91
+        ]
+      ],
+      "phase": 5,
+      "width": 0.037,
+      "maxDp": 17,
+      "opacity": 0.68,
+      "rotation": 145,
+      "cycles": 0.9
+    },
+    {
+      "sprite": "scarlet-petal",
+      "points": [
+        [
+          0.88,
+          0.03
+        ],
+        [
+          0.76,
+          0.26
+        ],
+        [
+          0.82,
+          0.51
+        ],
+        [
+          0.7,
+          0.89
+        ]
+      ],
+      "phase": 29,
+      "width": 0.033,
+      "maxDp": 15,
+      "opacity": 0.6,
+      "rotation": -160,
+      "cycles": 1.05
+    },
+    {
+      "sprite": "scarlet-petal",
+      "points": [
+        [
+          0.4,
+          0.1
+        ],
+        [
+          0.3,
+          0.34
+        ],
+        [
+          0.41,
+          0.58
+        ],
+        [
+          0.36,
+          0.84
+        ]
+      ],
+      "phase": 52,
+      "width": 0.03,
+      "maxDp": 13,
+      "opacity": 0.56,
+      "rotation": 180,
+      "cycles": 0.8
+    },
+    {
+      "sprite": "ruby-mote",
+      "points": [
+        [
+          0.78,
+          0.82
+        ],
+        [
+          0.84,
+          0.64
+        ],
+        [
+          0.75,
+          0.42
+        ],
+        [
+          0.9,
+          0.23
+        ]
+      ],
+      "phase": 76,
+      "width": 0.026,
+      "maxDp": 12,
+      "opacity": 0.52,
+      "rotation": -60,
+      "cycles": 1.1
+    },
+    {
+      "sprite": "oath-glint",
+      "points": [
+        [
+          0.15,
+          0.75
+        ],
+        [
+          0.24,
+          0.58
+        ],
+        [
+          0.17,
+          0.38
+        ],
+        [
+          0.3,
+          0.25
+        ]
+      ],
+      "phase": 96,
+      "width": 0.022,
+      "maxDp": 10,
+      "opacity": 0.46,
+      "rotation": 0,
+      "cycles": 1.0
+    }
+  ],
+  "files": {
+    "justicar.png": {
+      "size": [
+        256,
+        256
+      ],
+      "mode": "RGBA",
+      "bytes": 118184,
+      "sha256": "f14624c3e1f75c148d5bedb753a0d9b7922508c06bc6df3c8c87864faacc7541"
+    },
+    "knight.png": {
+      "size": [
+        256,
+        256
+      ],
+      "mode": "RGBA",
+      "bytes": 109736,
+      "sha256": "ed1824ae26b4ce19f921b20f50cacbca2eef7163053bc826cde473b75d452b48"
+    },
+    "oath-glint.png": {
+      "size": [
+        64,
+        64
+      ],
+      "mode": "RGBA",
+      "bytes": 389,
+      "sha256": "eca384768c303d5d902c5ad4f1c80b5edb47deb4a0fced5d4287fc18cd5634ed"
+    },
+    "oathguard.png": {
+      "size": [
+        768,
+        432
+      ],
+      "mode": "RGBA",
+      "bytes": 194248,
+      "sha256": "425584736eea36e83f413655c0df0558c64cd8b07f009a84bf766f321753882e"
+    },
+    "ruby-mote.png": {
+      "size": [
+        64,
+        64
+      ],
+      "mode": "RGBA",
+      "bytes": 379,
+      "sha256": "3cc4b0f844ff5342e7635779bc3b4dc39ad819f45fd115ec50abe59a3851003e"
+    },
+    "scarlet-petal.png": {
+      "size": [
+        64,
+        64
+      ],
+      "mode": "RGBA",
+      "bytes": 509,
+      "sha256": "6e53346d5899f94715a25310d3beaa88d4f221eb51dc9f96a9c9a4378d167e0c"
+    },
+    "static-effect.png": {
+      "size": [
+        768,
+        432
+      ],
+      "mode": "RGBA",
+      "bytes": 8708,
+      "sha256": "bd3a8b09cac2e35e0fb12b7613bac5928d78fa356e4d6b64677acdaa1a527587"
+    }
+  },
+  "reviewMetrics": [
+    {
+      "size": [
+        104,
+        72
+      ],
+      "v1": {
+        "opaque_pixels": 1280,
+        "pre_stencil_clipped_pixels": 6
+      },
+      "v2": {
+        "opaque_pixels": 1109,
+        "pre_stencil_clipped_pixels": 0
+      },
+      "glow_fragments": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "size": [
+        260,
+        174
+      ],
+      "v1": {
+        "opaque_pixels": 7407,
+        "pre_stencil_clipped_pixels": 22
+      },
+      "v2": {
+        "opaque_pixels": 6397,
+        "pre_stencil_clipped_pixels": 0
+      },
+      "glow_fragments": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "size": [
+        340,
+        205
+      ],
+      "v1": {
+        "opaque_pixels": 10895,
+        "pre_stencil_clipped_pixels": 18
+      },
+      "v2": {
+        "opaque_pixels": 9269,
+        "pre_stencil_clipped_pixels": 0
+      },
+      "glow_fragments": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "size": [
+        480,
+        270
+      ],
+      "v1": {
+        "opaque_pixels": 19702,
+        "pre_stencil_clipped_pixels": 1013
+      },
+      "v2": {
+        "opaque_pixels": 16564,
+        "pre_stencil_clipped_pixels": 158
+      },
+      "glow_fragments": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    }
+  ]
+}

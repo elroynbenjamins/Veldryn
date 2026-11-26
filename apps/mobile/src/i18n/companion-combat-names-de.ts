@@ -47,6 +47,8 @@ export const germanCompanionCombatNames:Readonly<Record<string,{
  EVT_UNIT_011:{active:['Lantern Grace','Laternengnade'],bond:['Last Lantern','Letzte Laterne']},
  EVT_UNIT_009:{active:['Frostbell Cycle','Frostglockenklang'],bond:['Grand Bell','Große Glocke']},
  EVT_UNIT_010:{active:['Caravan Formation','Karawanenformation'],bond:['Long Road','Langer Weg']},
+ EVT_UNIT_012:{active:['Rimeshard Mark','Reifsplitter-Mal'],bond:['Shattering Trail','Splitterspur']},
+ EVT_UNIT_013:{active:['Hearthguard Aegis','Herdwacht-Ägis'],bond:['Hearthbound Vow','Schwur des Herdfeuers']},
 };
 
 /** Technique names from the fixed server-authored technique catalogue.
@@ -127,6 +129,10 @@ export const germanCompanionTechniqueNames:Readonly<Record<string,string>>={
  'Last Lantern':'Letzte Laterne',
  'Grand Bell':'Große Glocke',
  'Quick Bell':'Schnelle Glocke',
+ 'Rimeshard Focus':'Fokus auf Reifsplitter',
+ 'Aurora Pursuit':'Auroraverfolgung',
+ 'Hearth Ward':'Herdfeuerschutz',
+ 'Winter Mirror':'Winterspiegel',
  'Caravan Ward':'Karawanenschutz',
  'Adaptable Route':'Anpassungsfähige Route',
  'Fortified Shell':'Verstärkter Panzer',

@@ -5,7 +5,7 @@ import {Pressable,ScrollView,StyleSheet,Text,View,type ScrollViewInstance} from 
 import {GameButton} from '../components/GameButton';
 import {ProfileAudiencePreviewModal} from '../components/ProfileAudiencePreviewModal';
 import {ProfileIdentityPanel} from '../components/profile/ProfileIdentityPanel';
-import {ProfileLookPanel,WARDROBE_ASSETS,type ChipKind,type ProfileEquipNotice} from '../components/profile/ProfileLookPanel';
+import {ProfileLookPanel,WARDROBE_ASSETS,type ChipKind,type ProfileEquipNotice,type UltraLuxeFullSetPort} from '../components/profile/ProfileLookPanel';
 import {ProfileShowcasePanel} from '../components/profile/ProfileShowcasePanel';
 import {ProfileStage} from '../components/profile/ProfileStage';
 import {ProfileWardrobeChips} from '../components/profile/ProfileWardrobeChips';
@@ -27,8 +27,8 @@ const TABS:readonly Tab[]=['Look','Identity','Showcase'];
 const resolveTab=(section:Section):Tab=>section==='Appearance'?'Look':section;
 const COLLAPSE_AT=56,NOTICE_MS=6000;
 
-export function ProfileCustomizeScreen({state,onChange,onSaveNameStyle,onNavigateSource,onDirtyChange,initialSection='Look'}:{
- state:GameState;onChange:(next:GameState)=>void|Promise<void>;onSaveNameStyle:SavePlayerNameStyle;
+export function ProfileCustomizeScreen({state,onChange,onSaveNameStyle,onNavigateSource,onDirtyChange,fullSetPort,initialSection='Look'}:{
+ state:GameState;onChange:(next:GameState)=>void|Promise<void>;onSaveNameStyle:SavePlayerNameStyle;fullSetPort?:UltraLuxeFullSetPort;
  onNavigateSource?:(destination:ProfileCustomizationDestination)=>void;onDirtyChange?:(dirty:boolean)=>void;initialSection?:Section;
 }){
  const language=useGameLanguage();
@@ -97,7 +97,7 @@ export function ProfileCustomizeScreen({state,onChange,onSaveNameStyle,onNavigat
   </View>
 
   <View style={tab==='Look'?s.sectionShown:s.sectionHidden} pointerEvents={tab==='Look'?'auto':'none'}>
-   <ProfileLookPanel state={state} chip={chip} onChange={onChange} active={tab==='Look'} onNavigateSource={onNavigateSource}
+   <ProfileLookPanel fullSetPort={fullSetPort} state={state} chip={chip} onChange={onChange} active={tab==='Look'} onNavigateSource={onNavigateSource}
     onDirtyChange={setAppearanceDirty} onPreviewStateChange={setAppearancePreview} onNotice={setNotice}/>
   </View>
   <View style={tab==='Identity'?s.sectionShown:s.sectionHidden} pointerEvents={tab==='Identity'?'auto':'none'}>

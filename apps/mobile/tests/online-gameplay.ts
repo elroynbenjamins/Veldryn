@@ -139,6 +139,37 @@ async function main(){
 
  const stale=new OnlineGameRepository('alice',{read:async()=>snapshot,send:async()=>{throw new OnlineCommandError('stale_state',true);}},{read:async()=>pending,write:async value=>{pending=value;}},()=>`key-${++keys}`);
  await stale.load();try{await stale.execute({type:'claim'})}catch{}ok(!await stale.hasPending(),'definitive stale failure cleared');
+
+ // Return claims may retry a definitive conflict once, only for identical work.
+ for(const scenario of ['warm','stale','switched','changed-target','restarted','settled','no-work','same-version','timeout','second-stale','manual','refresh-failed','pending'] as const){
+  const sequence:string[]=[],requestIds:string[]=[];
+  const originalState=scenario==='no-work'?{...state,activity:null}:state;
+  const original={...snapshot,state:originalState};
+  const active=originalState.activity;
+  const updatedState=scenario==='switched'?{...originalState,character:{...originalState.character!,id:'other-character'}}:
+   scenario==='changed-target'&&active?{...originalState,activity:{...active,targetId:'OTHER'}}:
+   scenario==='restarted'&&active?{...originalState,activity:{...active,startedAtMs:active.startedAtMs+1}}:
+   scenario==='settled'&&active?{...originalState,activity:{...active,lastClaimAtMs:active.lastClaimAtMs+1}}:originalState;
+  let request:PendingGameCommand|null=scenario==='pending'?{requestId:'prior',expectedVersion:0,command:{type:'claim'}}:null,ids=0;
+  const returning=new OnlineGameRepository('alice',{
+   read:async()=>{sequence.push('read');if(scenario==='refresh-failed')throw new Error('network');return {...original,state:updatedState,version:scenario==='same-version'?0:5};},
+   send:async req=>{
+    sequence.push('send-'+req.expectedVersion);requestIds.push(req.requestId);
+    if(scenario==='timeout')throw new Error('connection_lost');
+    if(scenario!=='warm'&&(req.expectedVersion===0||scenario==='second-stale'))throw new OnlineCommandError('stale_state',true);
+    return {...original,version:req.expectedVersion+1};
+   },
+  },{read:async()=>request,write:async value=>{request=value;}},()=>`return-${++ids}`);
+  returning.snapshot=original;
+  let failed=false;
+  try{await returning.execute({type:'claim'},scenario!=='manual');}catch{failed=true;}
+  const expected=scenario==='stale'?'send-0,read,send-5':scenario==='second-stale'?'send-0,read,send-5,read':scenario==='warm'||scenario==='timeout'?'send-0':'send-0,read';
+  ok(sequence.join(',')===expected,'return claim sequence '+scenario);
+  ok(failed===(scenario!=='warm'&&scenario!=='stale'),'return claim outcome '+scenario);
+  ok(await returning.hasPending()===(scenario==='timeout'),'return claim durable receipt '+scenario);
+  if(scenario==='stale'||scenario==='second-stale')ok(requestIds[0]!==requestIds[1]&&ids===2,'definitive conflict generates exactly one new receipt');
+  if(scenario==='pending')ok(requestIds[0]==='prior'&&ids===0,'pending receipt cannot trigger a fresh automatic retry');
+ }
  let releaseRead:(value:OnlineSnapshot)=>void=()=>{};
  const racing=new OnlineGameRepository('alice',{read:()=>new Promise(resolve=>{releaseRead=resolve;}),send:async()=>({...snapshot,version:2,serverNow:now+2})},{read:async()=>null,write:async()=>{}},()=> 'race-key');
  const initial=racing.refresh();releaseRead({...snapshot,version:1});await initial;

@@ -64,36 +64,84 @@ export type AuthorizedSupportJob={
  operatorAccountId:string;accountId:string;characterId:string;reason:string;requestId:string;expectedVersion:number;
  intent:SupportActivityIntent;approveSelection:boolean;
 };
-// A service-only worker implements these ports. dispatch must use the existing
-// authoritative gameplay gateway, normal idempotent commit and target-account
-// revision CAS. Audit authorization MUST be durable before dispatch; replay
-// must be checked before fresh execution. Never connect this to a public route.
 export type SupportRecoveryResult={status:'committed'|'already_at_destination';version:number;plan:SupportActivityPlan};
+export type PreparedSupportStep={step:SupportRecoveryStep;plan:SupportActivityPlan};
+export type SupportCommitReadback={version:number;selectedCharacterId:string;regionId:string;activity?:{kind:string;targetId:string}|null};
 export interface SupportRecoveryPorts{
- // Must bind actor, account, character, intent, approval and revision to the
- // immutable job ID, and return a durable prior result for an exact replay.
- authorizeAndAudit(job:AuthorizedSupportJob):Promise<{replay?:SupportRecoveryResult}>;
+ // Bind immutable job identity, verify current authorization and record audit.
+ // Return previously prepared exact step (including the selected node), not a
+ // fresh plan when a transport error leaves the commit outcome unknown.
+ authorizeAndAudit(job:AuthorizedSupportJob):Promise<{replay?:SupportRecoveryResult;prepared?:PreparedSupportStep}>;
  read(accountId:string):Promise<SupportRecoverySnapshot>;
- dispatch(step:SupportRecoveryStep):Promise<{version:number;selectedCharacterId:string;regionId:string;activity?:{kind:string;targetId:string}|null}>;
+ // Persist before any side effect. Compare-and-set the immutable job, rejecting
+ // a conflicting preparation; concurrent workers must get the same step.
+ prepare(job:AuthorizedSupportJob,prepared:PreparedSupportStep):Promise<void>;
+ // Only an exact server receipt for this account, ID and canonical command.
+ // Never infer success from the current activity or a matching revision.
+ recoverReceipt(step:SupportRecoveryStep):Promise<SupportCommitReadback|null>;
+ // Use the ordinary server command engine, revision and wallet CAS; service
+ // only. Support request IDs must be reserved from public player requests.
+ dispatch(step:SupportRecoveryStep):Promise<SupportCommitReadback>;
  recordResult(job:AuthorizedSupportJob,result:SupportRecoveryResult):Promise<void>;
 }
-export async function executeSupportActivityStep(ports:SupportRecoveryPorts,job:AuthorizedSupportJob){
- if(!job.operatorAccountId||!job.accountId||!job.characterId||!job.reason.trim()||job.reason.length>500||
- !/^support_[a-zA-Z0-9_-]{8,100}$/.test(job.requestId)||!Number.isSafeInteger(job.expectedVersion)||job.expectedVersion<0)throw new Error('support_invalid_job');
+
+function validId(value:unknown):value is string{return typeof value==='string'&&value.length>0&&value.length<=128&&/^[a-zA-Z0-9_-]+$/.test(value);}
+function validIntent(value:unknown):value is SupportActivityIntent{
+ if(!value||typeof value!=='object'||Array.isArray(value))return false;
+ const row=value as Record<string,unknown>,keys=Object.keys(row);
+ if(row.kind==='claim'||row.kind==='highest_woodcutting')return keys.length===1;
+ if(row.kind==='travel')return keys.length===2&&validId(row.regionId);
+ if(row.kind==='start_gathering')return keys.length===2&&validId(row.nodeId);
+ return false;
+}
+function validatePrepared(job:AuthorizedSupportJob,prepared:PreparedSupportStep){
+ const {step,plan}=prepared;
+ if(step.accountId!==job.accountId||step.characterId!==job.characterId||step.expectedVersion!==job.expectedVersion||step.requestId!==job.requestId||
+ plan.selectedCharacterId!==job.characterId||plan.targetCharacterId!==job.characterId||plan.requiresSelectionApproval||
+ !['claim','travel','start'].includes(step.command.type)||JSON.stringify(step.command)!==JSON.stringify(plan.steps[0]))throw new Error('support_prepared_scope_mismatch');
+ const args=step.command.args??{},keys=Object.keys(args);
+ if((step.command.type==='claim'&&(keys.length!==0||job.intent.kind!=='claim'))||
+ (step.command.type==='travel'&&(keys.length!==1||!validId(args.id)||(job.intent.kind==='travel'?args.id!==job.intent.regionId:job.intent.kind==='claim'||args.id!==plan.destination?.regionId)))||
+ (step.command.type==='start'&&(keys.length!==2||args.kind!=='gathering'||!validId(args.id)||args.id!==plan.destination?.id||
+ (job.intent.kind==='start_gathering'?args.id!==job.intent.nodeId:job.intent.kind!=='highest_woodcutting'))))throw new Error('support_prepared_intent_mismatch');
+}
+export async function executeSupportActivityStep(ports:SupportRecoveryPorts,job:AuthorizedSupportJob):Promise<SupportRecoveryResult>{
+ if(!validId(job.operatorAccountId)||!validId(job.accountId)||!validId(job.characterId)||typeof job.reason!=='string'||!job.reason.trim()||job.reason.length>500||
+ typeof job.requestId!=='string'||!/^support_[a-zA-Z0-9_-]{8,100}$/.test(job.requestId)||!Number.isSafeInteger(job.expectedVersion)||job.expectedVersion<0||
+ typeof job.approveSelection!=='boolean'||!validIntent(job.intent))throw new Error('support_invalid_job');
  const authorized=await ports.authorizeAndAudit(job);
  if(authorized.replay)return authorized.replay;
- const snapshot=await ports.read(job.accountId);
- if(snapshot.accountId!==job.accountId||snapshot.version!==job.expectedVersion)throw new Error('support_stale_scope');
- const plan=planSupportActivityRecovery(snapshot.state,job.characterId,job.intent,snapshot.serverNow);
- if(plan.requiresSelectionApproval&&!job.approveSelection)throw new Error('support_selection_approval_required');
- const command=plan.steps[0];
- if(!command){const result={status:'already_at_destination' as const,version:snapshot.version,plan};await ports.recordResult(job,result);return result;}
- // One command per operator-approved step; do not silently retry or proceed
- // after a conflict. Re-read and explicitly approve the next step (if any).
- const result=await ports.dispatch({accountId:job.accountId,characterId:job.characterId,expectedVersion:snapshot.version,requestId:job.requestId,command});
- if(result.version!==snapshot.version+1||result.selectedCharacterId!==job.characterId||
- (command.type==='travel'&&result.regionId!==command.args?.id)||
- (command.type==='start'&&result.activity?.targetId!==command.args?.id))throw new Error('support_unconfirmed_commit');
+ let prepared=authorized.prepared;
+ if(!prepared){
+  const snapshot=await ports.read(job.accountId);
+  if(snapshot.accountId!==job.accountId||snapshot.version!==job.expectedVersion)throw new Error('support_stale_scope');
+  const plan=planSupportActivityRecovery(snapshot.state,job.characterId,job.intent,snapshot.serverNow);
+  // Current ordinary roster switching settles the old selected character;
+  // the current commit credits party contributions to the newly selected ID.
+  // Approval alone cannot repair attribution. Fail closed even if approved.
+  if(plan.requiresSelectionApproval)throw new Error('support_inactive_character_requires_isolated_settlement');
+  const command=plan.steps[0];
+  if(!command){const result={status:'already_at_destination' as const,version:snapshot.version,plan};await ports.recordResult(job,result);return result;}
+  prepared={step:{accountId:job.accountId,characterId:job.characterId,expectedVersion:snapshot.version,requestId:job.requestId,command},plan};
+  validatePrepared(job,prepared);
+  await ports.prepare(job,prepared);
+ }
+ validatePrepared(job,prepared);
+ // Receipt lookup comes BEFORE the current-state check: a lost response may
+ // have already committed the exact command and advanced the account version.
+ let result=await ports.recoverReceipt(prepared.step);
+ if(!result){
+  const current=await ports.read(job.accountId);
+  if(current.accountId!==job.accountId||current.version!==job.expectedVersion||current.state.character?.id!==job.characterId){
+   // A concurrent retry might have committed during the read.
+   result=await ports.recoverReceipt(prepared.step);
+   if(!result)throw new Error('support_stale_scope');
+  }else result=await ports.dispatch(prepared.step);
+ }
+ const {step,plan}=prepared;
+ if(result.version!==step.expectedVersion+1||result.selectedCharacterId!==job.characterId||
+ (step.command.type==='travel'&&result.regionId!==step.command.args?.id)||
+ (step.command.type==='start'&&result.activity?.targetId!==step.command.args?.id))throw new Error('support_unconfirmed_commit');
  const completed={status:'committed' as const,version:result.version,plan};
  await ports.recordResult(job,completed);
  return completed;

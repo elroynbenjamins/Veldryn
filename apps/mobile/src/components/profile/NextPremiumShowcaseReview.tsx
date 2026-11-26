@@ -7,6 +7,7 @@ import {getNextPremiumReviewFrame} from '../../theme/next-premium-frame-review-a
 import {getNextPremiumReviewBackground} from '../../theme/next-premium-background-review-assets';
 import {getNextPremiumReviewPet} from '../../theme/next-premium-pet-review-assets';
 import {getNextPremiumReviewDecoration} from '../../theme/next-premium-decoration-review-assets';
+import {nextPremiumSignatureTracks} from '../../core/next-premium-signature-review';
 import {NextPremiumPetReviewSprite} from './NextPremiumPetReviewSprite';
 
 type Sample={x:number;y:number;opacity:number;scale:number;rotate?:number};
@@ -35,8 +36,8 @@ const FxNode=memo(function FxNode({clock,track,phase,source,ratio}:LayerProps){
  return <Animated.Image accessible={false} source={source} resizeMode="contain" fadeDuration={0} style={[s.fx,{width:size,height:size},style]}/>;
 });
 const FxLayer=memo(function FxLayer({set,art,clock,ratio,fullSet,environment}:{set:NextPremiumSet;art:Art;clock:Animated.Value;ratio:number;fullSet:boolean;environment:boolean}){
- const tracks=useMemo(()=>environment?nextPremiumEnvironmentTracks(set.motion,fullSet):
-  set.motion==='petal-waltz'?sakuraV2OrnamentTracks('showcase',fullSet):stormforgedV2OrnamentTracks('showcase',fullSet),[set,environment,fullSet]);
+ const tracks=useMemo(()=>nextPremiumSignatureTracks<Track>(set.motion,environment?nextPremiumEnvironmentTracks(set.motion,fullSet):
+  set.motion==='petal-waltz'?sakuraV2OrnamentTracks('showcase',fullSet):stormforgedV2OrnamentTracks('showcase',fullSet),environment?'environment':'border',fullSet),[set,environment,fullSet]);
  const phase=environment?NEXT_ENVIRONMENT_PHASE:ORNAMENT_PHASE;
  return <View pointerEvents="none" accessible={false} style={StyleSheet.absoluteFill}>
   {tracks.map((track,i)=><FxNode key={i} clock={clock} track={track} phase={phase} ratio={ratio}
@@ -53,8 +54,8 @@ const Stage=memo(function Stage({set,props,background,border,pet,art}:{set:NextP
  return <View style={[s.stage,{width,height}]}>
   <Image accessible={false} source={background} resizeMode="stretch" fadeDuration={0} style={s.cover}/>
   {running&&<FxLayer set={set} art={art} clock={clock} ratio={ratio} fullSet={synchronized} environment/>}
-  {mode==='matching'&&<View pointerEvents="none" style={box(b.pet)}>
-   <NextPremiumPetReviewSprite source={pet.showcase} atlas={pet.atlas} clock={clock} width={b.pet.w*ratio} height={b.pet.h*ratio} running={running}/>
+  {mode==='matching'&&<View pointerEvents="box-none" style={box(b.pet)}>
+   <NextPremiumPetReviewSprite source={pet.showcase} atlas={pet.atlas} clock={clock} width={b.pet.w*ratio} height={b.pet.h*ratio} running={running} reactionTheme={set.motion} reactionLabel={set.petName}/>
   </View>}
   {mode==='alternate'&&alternatePetArt&&<Image accessible={false} source={alternatePetArt} resizeMode="contain" fadeDuration={0} style={box(b.alternatePet)}/>}
   <View style={[box(b.identity),s.identity]}>

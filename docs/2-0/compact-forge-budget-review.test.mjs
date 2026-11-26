@@ -43,7 +43,7 @@ function project(piece,r,q,healingWeapon=false){
   return {attack:round(budget*a),defense:round(budget*d),hp:round(budget*h*4),healingPower:0};
 }
 const weight=s=>s.attack+s.defense+s.hp/4+s.healingPower;
-function choose(profile,tier){
+export function choose(profile,tier){
   const pool=pieces.filter(p=>p.tier===tier&&p.role===profile.role&&(!p.classRestriction||p.classRestriction===profile.id));
   const weapon=pool.find(p=>p.slot==='weapon'&&p.classRestriction===profile.id);
   assert.ok(weapon);
@@ -54,7 +54,7 @@ function choose(profile,tier){
     return [p];
   });
 }
-function sum(items,r,q,healingWeapon=false){
+export function sum(items,r,q,healingWeapon=false){
   const out={attack:0,defense:0,hp:0,healingPower:0};
   for(const p of items)for(const [k,v] of Object.entries(project(p,r,q,healingWeapon)))out[k]+=v;
   return Object.fromEntries(Object.entries(out).map(([k,v])=>[k,round(v)]));

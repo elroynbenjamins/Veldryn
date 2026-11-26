@@ -47,30 +47,37 @@ function neutralGear(build:VerifiedSkillBuildV2,r:TrustedEquipmentRuntimeV2,p:Tr
     shieldStrengthPct:1,hexPotencyPct:1,tenacityPp:1,abilityDamagePct:1,forgeHealingPowerPct:1}}},
   {...p,receiptsByInstanceId});
 }
-type Arm='base-plus-10pct'|'quality-0'|'quality-100'|'rarity-common'|'set-six-to-five'|`affix:${EquipmentAffixIdV2}`;
-const arms:Arm[]=['base-plus-10pct','quality-0','quality-100','rarity-common','set-six-to-five',...idsOfAffixes.map(id=>('affix:'+id) as Arm)];
+type Arm='base-plus-10pct'|'quality-0'|'quality-100'|'rarity-common'|'set-six-to-five'|'set-six-to-three'|'set-six-to-one'|`affix:${EquipmentAffixIdV2}`;
+const arms:Arm[]=['base-plus-10pct','quality-0','quality-100','rarity-common','set-six-to-five','set-six-to-three','set-six-to-one',...idsOfAffixes.map(id=>('affix:'+id) as Arm)];
 function vary(g:Gear,arm:Arm):Gear{
  const {build,runtime:r,port:p}=g;
  const candidates=(Object.entries(build.selected.equipment) as [GearSlotV2,string][])
   .filter(([,id])=>!p.selectedTraitInstanceIds.includes(id));
  const affixId=arm.startsWith('affix:')?arm.slice(6) as EquipmentAffixIdV2:undefined;
  const match=candidates.find(([slot,id])=>affixId?EQUIPMENT_AFFIXES_V2[affixId].slots.includes(slot):
-  arm==='set-six-to-five'?Boolean(build.ownedItemsById[id].setFamilyId):slot==='chest');
+  arm.startsWith('set-six-to-')?Boolean(build.ownedItemsById[id].setFamilyId):slot==='chest');
  assert.ok(match,'no eligible non-trait copy: '+arm);
  const [slot,id]=match,copy=r.instancesById[id],definition=r.definitionsByItemId[copy.itemId],affix=r.affixesByInstanceId[id],receipt=p.receiptsByInstanceId[id];
  if(affixId){
   return resign(build,{...r,affixesByInstanceId:{...r.affixesByInstanceId,[id]:{...affix,affixes:[{id:affixId,value:.05}]}}},p);
  }
- if(arm==='set-six-to-five'){
-  const {setFamilyId:_removed,...standalone}=build.ownedItemsById[id];
-  return resign({...build,ownedItemsById:{...build.ownedItemsById,[id]:standalone}},r,p);
+ if(arm.startsWith('set-six-to-')){
+  const count=arm==='set-six-to-five'?1:arm==='set-six-to-three'?3:5;
+  const setCopies=candidates.filter(([,copyId])=>Boolean(build.ownedItemsById[copyId].setFamilyId));
+  assert.ok(setCopies.length>=count);
+  const ownedItemsById={...build.ownedItemsById};
+  for(const [,copyId] of setCopies.slice(0,count)){
+   const {setFamilyId:_removed,...standalone}=ownedItemsById[copyId];
+   ownedItemsById[copyId]=standalone;
+  }
+  return resign({...build,ownedItemsById},r,p);
  }
  if(arm==='base-plus-10pct'){
   const primaryStats=Object.fromEntries(Object.entries(definition.primaryStats).map(([k,val])=>[k,val*1.1]));
   return resign(build,{...r,definitionsByItemId:{...r.definitionsByItemId,[copy.itemId]:{...definition,primaryStats}}},p);
  }
  const quality=arm==='quality-0'?0:arm==='quality-100'?100:copy.quality;
- const rarity=arm==='rarity-common'?'common':copy.rarity;
+ const rarity=arm==='rarity-common'?'common':receipt.rarity;
  return resign(build,{...r,instancesById:{...r.instancesById,[id]:{...copy,rarity,quality}},
   affixesByInstanceId:{...r.affixesByInstanceId,[id]:{...affix,rarity,quality}}},
   {...p,receiptsByInstanceId:{...p.receiptsByInstanceId,[id]:{...receipt,rarity,quality}}});
@@ -157,9 +164,10 @@ for(const [partyIndex,ids] of parties.entries())for(const spec of [0,1] as const
     assert.equal(b.affixSources.length,1);
     assert.equal(b.affixSources[0].id,arm.slice(6));
     assert.equal(b.affixSources[0].value,.05);
-   }else if(arm==='set-six-to-five'){
+   }else if(arm.startsWith('set-six-to-')){
     assert.deepEqual(b.statStages.afterItemBase,a.statStages.afterItemBase);
-    assert.ok(b.setEffects.length<a.setEffects.length);
+    assert.equal(a.setEffects.length,3);
+    assert.equal(b.setEffects.length,arm==='set-six-to-five'?2:arm==='set-six-to-three'?1:0);
    }else{
     assert.equal(b.affixSources.length,0);
     const key=initial[i].runtime.definitionsByItemId[initial[i].runtime.instancesById[initial[i].build.selected.equipment.chest!].itemId].primaryStats;

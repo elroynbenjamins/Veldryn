@@ -137,6 +137,37 @@ async function socialBadgeParallelAndRecovery(){
  await act(async()=>renderer.unmount());
 }
 
+async function socialStartupPriority(){
+ let latest,enabled=false,account='a',calls=0,subscriptions=0,unsubscribed=0;
+ const timers=new Map();let sequence=0;
+ const {useSocialNotificationCounts}=load('src/online/useSocialNotificationCounts.ts',{
+  'react-native':{AppState:{currentState:'active',addEventListener:()=>{subscriptions++;return {remove:()=>{unsubscribed++}}}}},
+  './AuthSessionProvider':{useAuthSession:()=>({session:{user:{id:account}}})},
+  './social':{
+   incomingFriendRequestCount:async()=>{calls++;return 3;},
+   socialInvitations:async()=>({guild:[],party:[]}),
+   socialChatAttention:async()=>({}),
+   myGuild:async()=>null,
+  },
+  './guild-projects-v18':{},
+ },{setTimeout:fn=>{const id=++sequence;timers.set(id,fn);return id;},clearTimeout:id=>timers.delete(id)});
+ function Harness(){latest=useSocialNotificationCounts(enabled);return null;}
+ let renderer;
+ await act(async()=>{renderer=create(React.createElement(Harness));});
+ assert.equal(calls,0,'Startup must not request optional badges before gameplay is usable');
+ assert.equal(subscriptions,0);assert.equal(timers.size,0);
+ enabled=true;await act(async()=>renderer.update(React.createElement(Harness)));
+ assert.equal(calls,1);assert.equal(latest.counts.friendRequests,3);
+ assert.equal(subscriptions,1);assert.equal(timers.size,1);
+ enabled=false;await act(async()=>renderer.update(React.createElement(Harness)));
+ assert.equal(timers.size,0);assert.equal(unsubscribed,1);
+ assert.equal(latest.counts.friendRequests,3,'Pausing polling preserves confirmed badges');
+ await act(async()=>latest.refresh());assert.equal(calls,2,'Explicit refresh remains available');
+ account='b';await act(async()=>renderer.update(React.createElement(Harness)));
+ assert.equal(latest.counts.friendRequests,0,'A new account cannot inherit paused badges');
+ assert.equal(calls,2,'New account startup remains deferred');
+ await act(async()=>renderer.unmount());
+}
 function rewardPreviewClock(){
  const {activityRewardPreviewClock:clock}=load('src/components/activity-preview-clock.ts',{});
  const combat={kind:'combat',lastClaimAtMs:1000};
@@ -205,6 +236,7 @@ function wiring(){
  assert.ok(!app.includes("pointerEvents={serverGameplayEnabled&&online.busy?'none':'auto'}"),'Network saves must not freeze scrolling and navigation');
  assert.ok(!app.includes("showAlert('Online action'"),'Routine command failures use inline feedback');
  assert.ok(app.includes('message={onlineActionError}'),'Online failures remain visible inline');
+ assert.ok(app.includes('useSocialNotificationCounts(socialPollingReady)')&&app.includes('const socialPollingReady=loadOptionalContent&&ready&&!auth.recovering&&!!state?.character'),'Automatic social reads wait for a playable character shell');
  // Foreground refresh can finish with a durable pending command. That must
  // never leave a full-screen touch shield waiting for a claim that cannot run.
  assert.ok(!app.includes('onlineForegroundSettlementRef'),'Online foreground refresh cannot latch offline settlement UI');
@@ -216,4 +248,4 @@ function wiring(){
  assert.ok(app.includes('finally{if(welcomeBack)setOfflineSettling(false);}'),'Actual claim status clears on success or failure');
 
 }
-(async()=>{await buttons();await commandBusy();await combatSwapOptimism();await socialBadgeParallelAndRecovery();rewardPreviewClock();foregroundTaskLifecycle();await foregroundHuntReplay();wiring();console.log('PASS: online loading indicators, duplicate suppression, rejection recovery, overlapping-command busy state and non-blocking app feedback');})().catch(error=>{console.error(error);process.exitCode=1});
+(async()=>{await buttons();await commandBusy();await combatSwapOptimism();await socialBadgeParallelAndRecovery();await socialStartupPriority();rewardPreviewClock();foregroundTaskLifecycle();await foregroundHuntReplay();wiring();console.log('PASS: online loading indicators, duplicate suppression, rejection recovery, overlapping-command busy state and non-blocking app feedback');})().catch(error=>{console.error(error);process.exitCode=1});

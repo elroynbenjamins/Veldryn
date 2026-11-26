@@ -1,6 +1,6 @@
 # First transparent frame candidates — Sakura / Stormforged
 
-Candidate overlay prepared locally; binary WebP files are not yet in GitHub. The generated marketing/concept sheets are visual references only, not production assets. The four candidate textures use precisely drawn ornament geometry, gradients and clear apertures. This is the first art pass, not final Ultra Luxe quality approval.
+Candidate overlay uploaded and verified in GitHub at commit 237db1294b387e607658dc4d323f9aff4f250a6e. All four exact SHA-256 values, byte sizes, RIFF/WEBP containers, VP8X dimensions and alpha flags match independent readback. The generated marketing/concept sheets are visual references only, not production assets. The four candidate textures use precisely drawn ornament geometry, gradients and clear apertures. This is the first art pass, not final Ultra Luxe quality approval.
 
 | Asset path (under apps/mobile/assets/ascendant/) | Dimensions | Bytes | Alpha >32 coverage | SHA-256 |
 |---|---:|---:|---:|---|
@@ -11,4 +11,4 @@ Candidate overlay prepared locally; binary WebP files are not yet in GitHub. The
 
 All four decoded as RGBA; max alpha 0 in mirrored identity, guild and pet protected boxes at display widths 320, 340, 390 and 480px (48 asset/size/box combinations). Total 175742 bytes of WebP (171.6 KiB). Coverage measures occupancy, not visual quality or rendered brightness. Sakura and Stormforged still require richer sculpted relief, stronger thematic corner/crest detail (especially Stormforged's wolf motif), comparison against actual existing premium frames, independent aspect-fit review and ornament anchoring.
 
-Do not register until exact upload hashes verified. No production imports, grants, release flags or gameplay changes. Previous exact head c359e3a7b43bb9384b43d855645bb9ed73ddb9d4 returned four green PR workflows including Mobile UX and Mobile core; this document commit is a new head.
+Review-only registry now points to the exact static WebP files, with separate standard and showcase sources. CI verifies hashes, metadata and absence of production imports. Pixel alpha checks were performed on the original identical bytes, not repeated by the GitHub connector. No live registration until visual parity approval. No production imports, grants, release flags or gameplay changes. Previous exact head c359e3a7b43bb9384b43d855645bb9ed73ddb9d4 returned four green PR workflows including Mobile UX and Mobile core; this document commit is a new head.

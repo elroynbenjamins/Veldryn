@@ -121,7 +121,8 @@ export async function recordNonpayingPartyReviewV97(input:{
   }
   await tx.insert(expected);
   const readback=await tx.read(key);
-  if(readback===null)fail('missing_readback');
+  // Throw explicitly so strict TypeScript narrows the nullable store read.
+  if(readback===null)throw Error('party_event_v97_missing_readback');
   requireCanonicalReceipt(readback);
   if(!sameReceipt(readback,expected))fail('incorrect_readback');
   return {receipt:readback,newlyRecorded:true};

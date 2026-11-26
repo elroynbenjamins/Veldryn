@@ -1,0 +1,14 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs'),path=require('node:path');
+const read=p=>fs.readFileSync(path.join(__dirname,'../src/components',p),'utf8');
+const motion=read('anim/motion.ts'),name=read('PlayerStyledName.tsx'),art=read('GatheringToolArtwork.tsx');
+assert.match(motion,/listeners.add\(listener\);start\(\)/);
+assert.match(motion,/generation===subscriptionGeneration&&!preferenceChanged/);
+assert.match(motion,/if\(generation!==subscriptionGeneration\)return/);
+assert.match(motion,/active&&!reduceMotion\?subscribe:inactiveSubscribe/);
+assert.match(motion,/const reduced=reduceMotion\|\|\(state&4\)===0/);
+assert.match(name,/useMotionEnabled\(reduceMotion,normalized.mode==='gradient'&&normalized.animation!=='none'\)/);
+assert.match(name,/const normalized=nameStyle\?\?DEFAULT_NAME_STYLE/);
+assert.match(name,/if\(!animated\)\{setPhase\(0\);return;\}/);
+assert.match(art,/memo\(function GatheringToolArtwork/);
+console.log('PASS: shared motion lifecycle and static artwork render contracts');

@@ -44,7 +44,7 @@ function stop(){
   subscriptions=[];
 }
 function subscribe(listener:()=>void){
-  start();listeners.add(listener);
+  listeners.add(listener);start();
   return()=>{listeners.delete(listener);if(!listeners.size)stop();};
 }
 const snapshot=()=>(appActive?1:0)|(systemReduceMotion?2:0)|(preferenceKnown?4:0);

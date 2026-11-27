@@ -144,3 +144,30 @@ assert.throws(()=>reviewCombatLoadoutReservation({...reserveInput,config:{...con
 assert.throws(()=>reviewCombatLoadoutReservation({...reserveInput,config:{...config,bindings:[bindings[0]]}}));
 assert.throws(()=>reviewCombatLoadoutReservation({...reserveInput,state:wood.state}));
 console.log('ACTIVITY_LOADOUT_RESERVATION_REVIEW: all five encounter scopes, actual dungeon record, exact copy custody guard, no mutation or authorization');
+
+import {reviewActivityLoadoutUnlocks,type RegionalLoadoutUnlockProof} from '../src/core/activity-loadout-unlocks-review';
+const regionalProof:RegionalLoadoutUnlockProof={accountId:'qa-account',characterId:'qa-character',
+ region:'sunscar',encounterId:'qa-sunscar-final',settlementId:'qa-victory-1',
+ outcome:'victory',encounterKind:'regional_final_boss',status:'committed'};
+const frostProof:RegionalLoadoutUnlockProof={...regionalProof,region:'frostmarch',
+ encounterId:'qa-frostmarch-final',settlementId:'qa-victory-2',characterId:'qa-other-character'};
+const unlockContext={accountId:'qa-account',premiumSlots:0,
+ finalBossIds:{sunscar:'qa-sunscar-final',frostmarch:'qa-frostmarch-final'},verifyPersisted:()=>true};
+for(let premiumSlots=0;premiumSlots<=2;premiumSlots++)for(const proofs of [[],[regionalProof],[regionalProof,frostProof]]){
+ const result=reviewActivityLoadoutUnlocks({...unlockContext,premiumSlots,proofs});
+ assert.equal(result.slotCount,1+premiumSlots+proofs.length);
+ assert.equal(result.canGrantSlots,false);
+}
+assert.equal(reviewActivityLoadoutUnlocks({...unlockContext,proofs:[regionalProof,regionalProof,
+ {...regionalProof,settlementId:'qa-victory-3'},frostProof]}).slotCount,3);
+for(const invalid of [
+ {...unlockContext,proofs:[{...regionalProof,accountId:'foreign'}]},
+ {...unlockContext,proofs:[{...regionalProof,encounterId:'qa-dungeon-boss'}]},
+ {...unlockContext,proofs:[regionalProof],finalBossIds:{sunscar:null,frostmarch:null}},
+ {...unlockContext,proofs:[regionalProof],verifyPersisted:()=>false},
+ {...unlockContext,proofs:[regionalProof,{...frostProof,settlementId:regionalProof.settlementId}]},
+]){
+ let rejected=false;try{reviewActivityLoadoutUnlocks(invalid);}catch{rejected=true;}
+ assert.equal(rejected,true);
+}
+console.log('ACTIVITY_LOADOUT_UNLOCK_REVIEW: 9 progression/entitlement cases, repeated victories, foreign and unverified proof rejected; no grants');

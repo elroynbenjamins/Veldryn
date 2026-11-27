@@ -66,3 +66,19 @@ assert.ok(character.includes('Math.abs(row.value).toLocaleString(language)'),'Sc
 assert.ok(hero.includes("profileText(language,'Edit profile')"),'Character hero localizes Edit profile');
 assert.ok(showcase.includes('localizedEmpty')&&showcase.includes('localizedSubtitle'),'Profile showcases localize empty labels and subtitles');
 console.log('PASS: 29 Character/Profile strings and UI wiring in 8 supported languages');
+
+// Current stat help is localized and deliberately excludes unverified 2.0 mechanics.
+const {STAT_HELP,statHelpText}=require('../src/i18n/stat-help.ts');
+const expectedHelp=['health','currentHealth','attack','defense','power','critChance','critDamage','accuracy','evasion','haste','armor','ward'];
+assert.deepEqual(Object.keys(STAT_HELP).sort(),expectedHelp.sort());
+for(const id of expectedHelp){
+ assert.equal(STAT_HELP[id].length,SUPPORTED_LANGUAGES.length);
+ for(const language of SUPPORTED_LANGUAGES){
+  assert.ok(statHelpText(language,id).trim());
+  if(language!=='en')assert.notEqual(statHelpText(language,id),statHelpText('en',id));
+ }
+ assert.ok(character.includes('helpId="'+id+'"'),'Character help missing '+id);
+}
+const helpRowSource=source('components/StatRow.tsx'),compareHelpSource=source('components/EquipmentPreview.tsx');
+assert.ok(helpRowSource.includes('accessibilityState={{expanded}}')&&helpRowSource.includes('statHelpText(language,helpId)'));
+assert.ok(compareHelpSource.includes('statHelpText(language,row.id)')&&compareHelpSource.includes('setStatHelpOpen(false)'));

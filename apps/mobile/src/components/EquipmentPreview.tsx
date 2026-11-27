@@ -11,6 +11,8 @@ import {WEAPON_BONUS_LABELS,weaponBonusCompactLine} from '../core/weapon-bonus-r
 import {equipmentBonusCompactLine} from '../core/equipment-bonus-rolls';
 import {weaponBonusComparisonRows,weaponBonusDisplayPercent,weaponBonusDisplayDelta} from '../core/weapon-bonus-display';
 import {weaponBonusStatText,weaponBonusUiText} from '../i18n/weapon-bonus-ux';
+import {StatHelpDisclosure} from './StatHelpDisclosure';
+import type {StatHelpId} from '../i18n/stat-help';
 import type {GameState} from '../core/types';
 import {itemRarity,rarityMeta,rarityNameColor} from '../core/item-rarity';
 import {equipmentTheme,radii,spacing,typography,type ThemeColors} from '../theme/theme';
@@ -190,7 +192,7 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
    </View>:null}
    <View style={s.extra}>
    <View style={s.statPanel}>
-    <View style={s.sectionHeader}><Text style={s.sectionTitle}>{gl('TOTAL LOADOUT')}</Text></View>
+    <StatHelpDisclosure key={itemId+':'+instanceId+':'+source} label={gl('TOTAL LOADOUT')} entries={[...stats.map(row=>({id:row.id as StatHelpId,label:row.label})),...([{id:'armor',stat:'armor'},{id:'critChance',stat:'critRate'},{id:'critDamage',stat:'critDamage'},{id:'accuracy',stat:'accuracy'},{id:'evasion',stat:'evasion'},{id:'haste',stat:'haste'}] as const).map(row=>({id:row.id,label:weaponBonusStatText(language,row.stat)}))]}/>
     <View style={s.statRow}><Text style={s.statLabel}>{gl('Stat')}</Text><Text style={s.statColumn}>{gl('Current')}</Text><Text style={s.statColumn}>{gl('New')}</Text><Text style={s.statColumn}>{gl('Change')}</Text></View>
     {stats.map(row=><View key={row.id} style={s.statRow}>
      <Text numberOfLines={1} style={s.statLabel}>{row.label}</Text>

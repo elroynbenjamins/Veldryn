@@ -33,6 +33,7 @@ import {EquipmentPreview} from '../components/EquipmentPreview';
 import {EquipmentDisposalStatus} from '../components/EquipmentDisposalStatus';
 import {equipmentCopyDisposalDecision,type EquipmentDisposalDecision} from '../core/equipment-disposal-guidance';
 import {ItemQuickInspect} from '../components/ItemQuickInspect';
+import {StatHelpDisclosure} from '../components/StatHelpDisclosure';
 import {formatGameNumber} from '../core/number-format';
 import {displayStat} from '../core/stat-display';
 import {ot} from '../i18n';
@@ -463,6 +464,12 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
       </View>
       <Text style={s.toolSpeedValue}>+{gatheringToolPercent(gatheringToolContribution(inspectedToolDef).adjustedBasePercent)}%</Text>
     </View>:null}
+    {inspected.type==='tool'&&inspectedToolDef&&(exactToolCopies.length>0||hasLegacyStack)?<StatHelpDisclosure key={inspected.id+':'+location} label={gt('GATHERING TOOL DETAILS')} entries={[
+      {id:'gatheringSpeed',label:gt('Gathering Speed')},
+      ...(exactToolCopies.length?[{id:'toolQuality' as const,label:gt('Tier + Rarity + Quality')}]:[]),
+      ...(exactToolCopies.some(copy=>copy.bonus.stat==='rarity')?[{id:'gatheringRarity' as const,label:gt('Gathering Rarity Chance')}]:[]),
+      ...(exactToolCopies.some(copy=>copy.bonus.stat==='xp')?[{id:'gatheringXp' as const,label:gl(inspectedToolDef.skillId)+' XP'}]:[]),
+    ]}/>:null}
     {carried&&inspected.type==='food'?<GameButton compact title={state.character?.equippedFoodId===inspected.id?gt("Auto-eat selected"):gt("Use for auto-eat")} disabled={state.character?.equippedFoodId===inspected.id} onPress={()=>{run(()=>onFood(inspected.id));closeInspect()}}/>:null}
     {carried&&inspected.type==='food'&&mealBonusDef(inspected.id)?<>
       <Text style={[s.sub,{color:C.good}]}>{cookingMealEffectText(language,mealBonusDef(inspected.id)!)} · +{mealBonusDef(inspected.id)!.durationHours}h · {gt('Only one meal buff can be active.')}</Text>

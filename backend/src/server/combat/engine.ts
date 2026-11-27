@@ -729,11 +729,11 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
       (v2Encounter?1+clamp(source.definition.combatV2?.equipmentEffects?.shieldStrengthPct??0,0,1):1)*
       (1+sync(source,'shield_strength_pct'))*(privateDamageGem?.supportMultiplier(now,source,target,abilityId,'shield')??1));
       const privateAegis=privateDamageGem?.aegisBarrier(now,source,target,abilityId,requested,effect);
-      const amt=privateAegis??(enemyV2Effects&&target.definition.team==='enemies'
+      const amt=privateAegis?.amount??(enemyV2Effects&&target.definition.team==='enemies'
         ?enemyV2AllowedShieldAmount(target.definition.stats.maxHp,target.shield,requested):requested);
       target.shield+=amt;
-      if(privateAegis!==undefined&&privateAegis>0)events.push({atMs:now,type:'gem_state',actorId:source.definition.id,targetId:target.definition.id,abilityId,
-        amount:privateAegis,detail:'private_qa_lifecycle_aegis_grant'});
+      if(privateAegis&&privateAegis.amount>0)events.push({atMs:now,type:'gem_state',actorId:source.definition.id,targetId:target.definition.id,abilityId,
+        amount:privateAegis.amount,detail:privateAegis.owned?'private_qa_lifecycle_aegis_grant':'private_qa_lifecycle_aegis_magnitude_only'});
       privateDamageGem?.markSupportOutput(now,source,target,abilityId,'shield',amt);
       emitPrivateAllySupport(now,source,target,abilityId,'shield',amt);
       if(privateDamageGem)for(const row of privateDamageGem.onBarrier(now,source,target,abilityId,amt))

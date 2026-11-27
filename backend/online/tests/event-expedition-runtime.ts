@@ -93,6 +93,12 @@ async function main(){
  checkpointRun=checkpointService.choose({runId:checkpointRun.id,accountId:'domain-a',optionNodeId:'d8-c2',requestId:'checkpoint-exit'});
  assert.equal(checkpointRun.phase,'completed');
  const checkpointProjection=projectOnlineEventRun(checkpointRun,9,'EVT_ANNUAL_012_2026',Date.UTC(2026,11,10)) as any;
+ assert.deepEqual(checkpointProjection.endurance,{normalRoomsCleared:7,maxNormalRooms:42},'checkpoint boss does not count as a normal room');
+ assert.equal(checkpointProjection.practiceOnly,false);
+ const failedRoom=structuredClone(checkpointRun);failedRoom.phase='failed';failedRoom.currentNodeId='d7-c0';
+ assert.deepEqual(projectOnlineEventRun(failedRoom,10,'EVT_ANNUAL_012_2026').endurance,{normalRoomsCleared:6,maxNormalRooms:42},'failed normal room must not count as cleared');
+ const failedBoss=structuredClone(checkpointRun);failedBoss.phase='failed';
+ assert.deepEqual(projectOnlineEventRun(failedBoss,10,'EVT_ANNUAL_012_2026').endurance,{normalRoomsCleared:7,maxNormalRooms:42},'failed optional boss retains the seven cleared rooms');
  assert.ok(checkpointProjection.bossRecap,'optional seasonal boss exit must preserve boss recap');
  assert.ok(checkpointProjection.lastCombat?.cues.length,'optional seasonal boss exit must show the combat replay');
 
@@ -104,6 +110,8 @@ async function main(){
  assert.equal(bossRun.phase,'completed');assert.equal(bossRun.lastResolution?.result.summary.bossTuningProfile,expectedBossProfile.tuning.profileId);
  assert.ok(expectedBossProfile.telegraph.suppressedAbilities.some(ability=>ability.label==='Solar Nova'));
  const projectedBoss=projectOnlineEventRun(bossRun,99,'EVT_ANNUAL_006_2026') as any,bossSummary=bossRun.lastResolution!.result.summary as any;
+ assert.equal(projectedBoss.endurance,undefined,'ordinary seasonal routes do not show Frostfall depth');
+ assert.equal(projectedBoss.practiceOnly,undefined);
  assert.equal(bossSummary.pveTelemetry.schemaVersion,2);assert.equal(bossSummary.pveTelemetry.encounterId,suncrest.bossEncounterId);assert.equal(bossSummary.pveTelemetry.reason,bossSummary.reason);assert.equal(bossSummary.pveTelemetry.durationMs,bossSummary.durationMs);assert.equal(bossSummary.pveTelemetry.players.length,4);assert.ok(Array.isArray(bossSummary.pveTelemetry.bossCasts));assert.ok(Array.isArray(bossSummary.pveTelemetry.enemyCasts));assert.ok(Array.isArray(bossSummary.pveTelemetry.bossPhases));assert.ok(Array.isArray(bossSummary.pveTelemetry.encounterArchetypes));assert.ok(Array.isArray(bossSummary.pveTelemetry.encounterMechanics));assert.ok(typeof bossSummary.pveTelemetry.enemyEndHpPctAvg==='number');assert.ok(bossSummary.pveTelemetry.partyDamageByAbility&&typeof bossSummary.pveTelemetry.partyDamageByAbility==='object');assert.ok(bossSummary.pveTelemetry.enemyHealingByAbility&&typeof bossSummary.pveTelemetry.enemyHealingByAbility==='object');
  assert.equal(projectedBoss.bossMechanic.telegraph.bossName,'Aureon, First Champion');assert.ok(projectedBoss.bossMechanic.telegraph.phases.some((phase:any)=>phase.label==='Pressure Break'));assert.ok(projectedBoss.bossRecap);
  assert.equal(projectedBoss.bossRecap.durationMs,bossSummary.durationMs);assert.equal(projectedBoss.bossRecap.downs,bossSummary.downs.length);assert.equal(projectedBoss.bossRecap.phasesTriggered.length,bossSummary.bossPhaseIds.length);assert.equal(projectedBoss.bossRecap.abilitiesCast.length,bossSummary.bossCastAbilityIds.length);
@@ -156,6 +164,9 @@ async function main(){
  const frostPractice=await runtime.start(controllerRecord.accountId,{requestId:'frost-practice-0001',eventExpeditionId:'EVENT_FROSTFALL_AURORA_HOLLOW',tier:1,characterId:controllerRecord.characterId,loadoutId:'current',loadoutRevision:7}) as any;
  assert.equal(frostPractice.eventExpeditionId,'EVENT_FROSTFALL_AURORA_HOLLOW');
  assert.equal(frostPractice.settlement.status,'pending');
+ assert.equal(frostPractice.settlement.rewardMarks,0);
+ assert.equal(frostPractice.practiceOnly,true);
+ assert.deepEqual(frostPractice.endurance,{normalRoomsCleared:0,maxNormalRooms:42});
  assert.equal(stored?.privateState.run.practiceOnly,true,'no daily reward slots makes the next Frostfall attempt practice-only');
  assert.equal(stored?.privateState.run.graph.preBossNodeCount,42);
  liveEvent={eventId:'EVT_ANNUAL_010_2026',enabled:true,startsAtMs:now-60_000,endsAtMs:now+60_000};

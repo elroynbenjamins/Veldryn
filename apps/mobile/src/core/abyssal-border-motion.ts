@@ -12,7 +12,7 @@ export function abyssalBorderTracks(width:number,height:number,showcase=false,fu
  const q=Math.min(1,width/SAFE.referenceWidth,height/SAFE.referenceHeight);
  const side=showcase?28*k:SAFE.sideRail*q,rail=showcase?34*k:SAFE.horizontalRail*q;
  const phase=ABYSSAL_BORDER_PHASE;
- const cycle=(t:number,o:number)=>((t===1?0:t)*2+o)%1;
+ const cycle=(t:number,o:number)=>((t===1?0:t)*3+o)%1;
  const wave=(t:number,o:number)=>.5-.5*Math.cos(2*Math.PI*cycle(t,o));
  const energy=(t:number)=>{
   if(!showcase)return 0;
@@ -31,11 +31,11 @@ export function abyssalBorderTracks(width:number,height:number,showcase=false,fu
  };
  const sx=showcase?20*k:side*.55;
  const top=showcase?18*k:rail*.55,bottom=showcase?height-16*k:height-rail*.55;
- const tidal=(t:number,o:number)=>.24+.46*wave(t,o)+(.16+(fullSet&&showcase ? .10 : 0))*energy(t);
+ const tidal=(t:number,o:number)=>.30+.46*wave(t,o)+(.16+(fullSet&&showcase ? .10 : 0))*energy(t);
  const glint=(t:number,o:number)=>.20+.55*wave(t,o)+(.13+(fullSet&&showcase ? .10 : 0))*energy(t);
  const tracks=[
-  make('left-current','mote',9,'left',t=>sx+2*k*Math.sin(2*Math.PI*cycle(t,0)),t=>height*(.26+.48*wave(t,0)),t=>glint(t,.25)),
-  make('right-current','mote',9,'right',t=>width-sx-2*k*Math.sin(2*Math.PI*cycle(t,.5)),t=>height*(.26+.48*wave(t,.5)),t=>glint(t,.75)),
+  make('left-current','mote',13,'left',t=>sx+2*k*Math.sin(2*Math.PI*cycle(t,0)),t=>height*(.26+.48*wave(t,0)),t=>glint(t,.25)),
+  make('right-current','mote',13,'right',t=>width-sx-2*k*Math.sin(2*Math.PI*cycle(t,.5)),t=>height*(.26+.48*wave(t,.5)),t=>glint(t,.75)),
   make('crest-halo','aura',26,'top',()=>width/2,()=>top,t=>tidal(t,.12)),
   make('pearl-halo','aura',24,'bottom',()=>width/2,()=>bottom,t=>tidal(t,.62)),
   make('crest-glint','mote',12,'top',()=>width/2,()=>top,t=>glint(t,.12)),

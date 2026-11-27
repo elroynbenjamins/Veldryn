@@ -30,7 +30,8 @@ export function reviewActivityLoadoutUnlocks(input:{
   throw Error('loadout_unlock_ambiguous_registry');
  const snapshot=JSON.stringify({accountId:input.accountId,premiumSlots:input.premiumSlots,finalBossIds:input.finalBossIds,proofs:input.proofs});
  const completed=new Set<LoadoutUnlockRegion>(),settlements=new Map<string,string>();
- for(const proof of input.proofs){
+ const proofs:readonly RegionalLoadoutUnlockProof[]=input.proofs;
+ for(const proof of proofs){
   if(!proof||proof.accountId!==input.accountId||!validId(proof.characterId)||
    !regions.includes(proof.region)||!validId(proof.encounterId)||
    proof.encounterId!==input.finalBossIds[proof.region]||!validId(proof.settlementId)||

@@ -7,9 +7,11 @@ import {CLASS_ROLES_V2,type ClassIdV2} from '../combat/v2/build-contract';
 export const PARTY_ROSTER_SWAP_V103_RELEASED=false;
 export interface PartyCharacterV103{
  readonly accountId:string;readonly characterId:string;readonly classId:ClassIdV2;
+ readonly combatLevel?:number;
 }
 export interface PartySwapConsentV103{
  readonly accountId:string;readonly characterId:string;readonly rosterRevision:number;
+ readonly partyId?:string;readonly proposalId?:string;
 }
 const id=(v:unknown):v is string=>typeof v==='string'&&/^[A-Za-z0-9:_-]{1,128}$/.test(v);
 function fail(reason:string):never{throw Error('party_swap_v103_'+reason);}
@@ -22,7 +24,9 @@ function checkRoster(rows:readonly PartyCharacterV103[],size:number){
 }
 export function reviewPartyCharacterSwapV103(input:{
  readonly partyId:string;
- readonly mode:'dungeon'|'party_event';
+ readonly mode:'dungeon'|'party_event'|'persistent_party';
+ /** Permanent Party exchange uses a server-frozen proposal and existing minimum level. */
+ readonly proposalId?:string;readonly minimumLevel?:number;
  readonly phase:'lobby'|'ready_check'|'committed_run'|'event_frozen';
  readonly rosterRevision:number;
  readonly expectedRevision:number;
@@ -32,11 +36,15 @@ export function reviewPartyCharacterSwapV103(input:{
  readonly consents:readonly PartySwapConsentV103[];
 },qaEnabled=false){
  if(!qaEnabled||PARTY_ROSTER_SWAP_V103_RELEASED||process.env.NODE_ENV==='production')fail('unreleased');
- if(!input||!id(input.partyId)||!['dungeon','party_event'].includes(input.mode)||
+ if(!input||!id(input.partyId)||!['dungeon','party_event','persistent_party'].includes(input.mode)||
   !Number.isSafeInteger(input.rosterRevision)||input.rosterRevision<1||
   input.rosterRevision>=Number.MAX_SAFE_INTEGER||
   input.expectedRevision!==input.rosterRevision)fail('stale_or_invalid_revision');
  if(input.phase!=='lobby')fail('roster_locked');
+ const permanent=input.mode==='persistent_party';
+ if(permanent&&(!id(input.proposalId)||!Number.isSafeInteger(input.minimumLevel)||
+  input.minimumLevel!<0))fail('invalid_permanent_party_scope');
+ if(!Array.isArray(input.current))fail('invalid_roster');
  const size=input.current.length;
  if(size<2||size>4||(input.mode==='dungeon'&&size!==4))fail('invalid_party_size');
  checkRoster(input.current,size);checkRoster(input.proposed,size);
@@ -44,10 +52,16 @@ export function reviewPartyCharacterSwapV103(input:{
  if(input.proposed.some(r=>!current.has(r.accountId)))fail('membership_changed');
  if(!Array.isArray(input.ownedCharacters)||!Array.isArray(input.consents))fail('missing_verified_sources');
  const owned=new Map<string,PartyCharacterV103>();
+ const ownedRoles=new Set<string>();
  for(const row of input.ownedCharacters){
   if(!row||!id(row.accountId)||!id(row.characterId)||
    !Object.prototype.hasOwnProperty.call(CLASS_ROLES_V2,row.classId)||owned.has(row.characterId))
    fail('invalid_ownership_source');
+  if(permanent){
+   const roleKey=row.accountId+':'+CLASS_ROLES_V2[row.classId];
+   if(ownedRoles.has(roleKey))fail('multiple_characters_same_role');
+   ownedRoles.add(roleKey);
+  }
   owned.set(row.characterId,row);
  }
  for(const row of [...input.current,...input.proposed]){
@@ -56,10 +70,23 @@ export function reviewPartyCharacterSwapV103(input:{
  }
  const changed=input.proposed.filter(r=>current.get(r.accountId)!.characterId!==r.characterId);
  if(!changed.length)fail('no_change');
+ if(permanent){
+  if(changed.length<2)fail('coordinated_swap_required');
+  if(changed.some(r=>CLASS_ROLES_V2[current.get(r.accountId)!.classId]===CLASS_ROLES_V2[r.classId]))
+   fail('same_role_switch_not_allowed');
+  const roles=(rows:readonly PartyCharacterV103[])=>rows.map(r=>CLASS_ROLES_V2[r.classId]).sort().join(',');
+  if(roles(input.current)!==roles(input.proposed))fail('party_role_distribution_changed');
+  for(const row of changed){
+   const level=owned.get(row.characterId)!.combatLevel;
+   if(typeof level!=='number'||!Number.isSafeInteger(level)||level<Math.max(1,input.minimumLevel!))
+    fail('character_minimum_level_not_met');
+  }
+ }
  const approved=new Map<string,PartySwapConsentV103>();
  for(const row of input.consents){
   if(!row||!id(row.accountId)||!id(row.characterId)||
-   row.rosterRevision!==input.rosterRevision||approved.has(row.accountId))fail('invalid_consent');
+   row.rosterRevision!==input.rosterRevision||approved.has(row.accountId)||
+   (permanent&&(row.partyId!==input.partyId||row.proposalId!==input.proposalId)))fail('invalid_consent');
   approved.set(row.accountId,row);
  }
  if(approved.size!==changed.length||changed.some(r=>approved.get(r.accountId)?.characterId!==r.characterId))
@@ -74,6 +101,7 @@ export function reviewPartyCharacterSwapV103(input:{
  const proposedByAccount=new Map(input.proposed.map(r=>[r.accountId,r]));
  return Object.freeze({
   partyId:input.partyId,previousRevision:input.rosterRevision,
+  ...(permanent?{proposalId:input.proposalId}:{}),
   proposedRevision:input.rosterRevision+1,
   roster:Object.freeze(input.current.map(r=>Object.freeze({...proposedByAccount.get(r.accountId)!}))),
   changedAccounts:Object.freeze(changed.map(r=>r.accountId).sort()),

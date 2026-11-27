@@ -7,6 +7,7 @@ import {PGlite} from '@electric-sql/pglite';
 const require=createRequire(import.meta.url);
 const {createWorldBossChestSourceV104}=require('../../apps/mobile/.core-build/backend/src/server/loot/world-boss-chest-source-v104.js');
 const {accrueWorldBossDamageChestsV105}=require('../../apps/mobile/.core-build/backend/src/server/loot/world-boss-damage-chest-store-v105.js');
+const {createWorldBossChestSourceV106}=require('../../apps/mobile/.core-build/backend/src/server/loot/world-boss-chest-source-v106.js');
 const event='11111111-1111-4111-8111-111111111111',owner='22222222-2222-4222-8222-222222222222',foreign='33333333-3333-4333-8333-333333333333';
 const source=kind=>'world-boss:'+event+':'+owner+':'+kind;
 const db=await PGlite.create();
@@ -81,6 +82,12 @@ try{
  assert.equal(rolledBack.earnedChestCount,3);
  assert.equal(rolledBack.cumulativeDamage,600);
  assert.equal(await historyCount(),0);
+ // Opening cannot create an earned source from a rolled-back winning roll.
+ await db.query('INSERT INTO private.chest_account_fence_v70(account_id) VALUES($1) ON CONFLICT DO NOTHING',[owner]);
+ const damagePorts=createWorldBossChestSourceV106({readVerifiedCanonicalAttempts:args.readVerifiedCanonicalAttempts,readVersionedSecret:args.readVersionedSecret},true);
+ const earnedKind=rolledBack.earnedSourceKeys[0].split(':').slice(3).join(':');
+ await assert.rejects(()=>read(earnedKind,damagePorts),/unearned_damage_chest/);
+ assert.equal(await historyCount(),0);
  const fresh=await accrue();
  assert.deepEqual(fresh.rolls,rolledBack.rolls);
  assert.equal(fresh.earnedSourceKeys.length,3);
@@ -89,6 +96,30 @@ try{
  const replay=await accrue();
  assert.equal(replay.newRolls.length,0);
  assert.deepEqual(replay.earnedSourceKeys,fresh.earnedSourceKeys);
+ for(const key of fresh.earnedSourceKeys){
+  const kind=key.split(':').slice(3).join(':');
+  const proof=await read(kind,damagePorts);
+  assert.equal(proof.sourceKey,key);assert.equal(proof.lootTable.version,'world_boss_v98_unified_hollowroot');
+  assert.equal(proof.proofVersion,'world-boss-v106-persisted-damage');
+  assert.equal(proof.lootTable.groups[0].chanceBps,1000);
+  assert.equal(await damagePorts.verifyLockedSource(tx,owner,key),true);
+ }
+ const miss=fresh.rolls.find(x=>!x.hit);
+ assert.ok(miss);
+ await assert.rejects(()=>read('damage:'+miss.ordinal,damagePorts),/unearned_damage_chest/);
+ await assert.rejects(()=>read('damage:'+(fresh.rolls.length+1),damagePorts),/unearned_damage_chest/);
+ await assert.rejects(()=>damagePorts.readCanonicalSource(tx,foreign,fresh.earnedSourceKeys[0]),/invalid_damage_source/);
+ // Existing receipt must bind the same persisted winner, V106 proof and table.
+ const key=fresh.earnedSourceKeys[0];
+ const proof=await read(earnedKind,damagePorts);
+ const receipt={accountId:owner,sourceKey:key,committed:true,proofVersion:proof.proofVersion,tableId:proof.lootTable.tableId,tableVersion:proof.lootTable.version,guaranteed:proof.lootTable.guarantees};
+ await db.query('INSERT INTO private.chest_reward_receipts_v70 VALUES($1,$2,$3::jsonb)',[key,owner,JSON.stringify(receipt)]);
+ assert.equal(await damagePorts.verifyLockedSource(tx,owner,key),true);
+ await db.query("UPDATE private.chest_reward_receipts_v70 SET receipt=jsonb_set(receipt,'{proofVersion}',to_jsonb('wrong-proof'::text)) WHERE source_key=$1",[key]);
+ assert.equal(await damagePorts.verifyLockedSource(tx,owner,key),false);
+ assert.equal(await historyCount(),fresh.rolls.length);
+ console.log('WB_DAMAGE_SOURCE_V106_PG: rolled-back and missed rolls cannot open, 3 persisted hits use unified table, receipt binding and no new accrual');
+
  await assert.rejects(()=>accrue({...args,readVersionedSecret:()=>new Uint8Array(32).fill(99)}),/history_mismatch/);
  await assert.rejects(()=>db.query("UPDATE private.world_boss_damage_policy_v105 SET damage_per_roll=2"),/IMMUTABLE/);
  await assert.rejects(()=>db.query('DELETE FROM private.world_boss_damage_rolls_v105'),/IMMUTABLE/);

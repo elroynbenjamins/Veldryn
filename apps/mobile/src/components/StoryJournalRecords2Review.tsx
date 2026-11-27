@@ -1,4 +1,6 @@
 /** Unmounted Journal panels. Existing challenge and Exploration owners retain all claim actions. */
+import {useGameTheme} from '../theme/ThemeContext';
+import type {ThemeColors} from '../theme/theme';
 import React from 'react';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 type Period='daily'|'weekly'|'monthly';
@@ -11,10 +13,12 @@ const periods:Record<Period,string>={daily:'Daily',weekly:'Weekly',monthly:'Mont
 const status={active:'In progress',ready:'Ready',claimed:'Completed'};
 type Translate=(s:string)=>string;
 function Progress({value,total,t}:{value:number;total:number;t:Translate}){
+ const styles=makeStyles(useGameTheme());
  const max=Math.max(1,total),now=Math.max(0,Math.min(value,max));
  return <View accessibilityRole="progressbar" accessibilityLabel={t('Progress')} accessibilityValue={{min:0,max,now}} style={styles.track}><View style={[styles.fill,{width:(100*now/max+'%') as `${number}%`}]}/></View>;
 }
 export function StoryChallengePanel2Review({model,t,onPeriod,onChallenge,onMilestones}:{model?:ChallengePanelModel;t:Translate;onPeriod:(period:Period)=>void;onChallenge:(id:string,period:Period)=>void;onMilestones:()=>void}){
+ const styles=makeStyles(useGameTheme());
  if(model?.status!=='review')return <Text style={styles.muted}>{t('Challenges unavailable. Refresh to continue.')}</Text>;
  const rows=[...model.rows].sort((a,b)=>['ready','active','claimed'].indexOf(a.status)-['ready','active','claimed'].indexOf(b.status));
  return <View style={styles.panel}>
@@ -32,6 +36,7 @@ export function StoryChallengePanel2Review({model,t,onPeriod,onChallenge,onMiles
  </View>;
 }
 export function StoryRecordsPanel2Review({model,t,regionName,onDiscoveries,onLore,onExistingRecords}:{model?:RecordsPanelModel;t:Translate;regionName:(id:string)=>string;onDiscoveries:()=>void;onLore:(id:string)=>void;onExistingRecords:()=>void}){
+ const styles=makeStyles(useGameTheme());
  return <View style={styles.panel}>
   <Pressable accessibilityRole="button" onPress={onExistingRecords} style={styles.card}><View style={styles.row}><Text style={styles.title}>{t('Achievements & titles')}</Text><Text style={styles.muted}>›</Text></View></Pressable>
   {model?.status==='review'?<>
@@ -44,4 +49,4 @@ export function StoryRecordsPanel2Review({model,t,regionName,onDiscoveries,onLor
   </>:<Text style={styles.muted}>{t('Discoveries unavailable. Refresh to continue.')}</Text>}
  </View>;
 }
-const styles=StyleSheet.create({panel:{gap:8},wrap:{flexDirection:'row',flexWrap:'wrap',gap:6},chip:{minHeight:44,justifyContent:'center',paddingHorizontal:12,borderRadius:6,backgroundColor:'#242a32'},selected:{borderWidth:1,borderColor:'#d1b278',backgroundColor:'#3b3428'},card:{minHeight:44,padding:10,gap:8,borderRadius:8,borderWidth:1,borderColor:'#3c4650',backgroundColor:'#222931'},row:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8,flexWrap:'wrap'},title:{flexShrink:1,fontSize:14,fontWeight:'700',color:'#f0e2c9'},text:{fontSize:13,color:'#e6e9ed'},muted:{fontSize:12,color:'#b9c3cf',flexShrink:1},ready:{fontSize:12,color:'#abd29c'},growText:{flex:1,minWidth:0,fontSize:13,color:'#e6e9ed'},flex:{flex:1,minWidth:60},track:{height:5,borderRadius:3,backgroundColor:'#3a434c',overflow:'hidden'},fill:{height:5,backgroundColor:'#c6a46a'}});
+const makeStyles=(C:ThemeColors)=>StyleSheet.create({panel:{gap:8},wrap:{flexDirection:'row',flexWrap:'wrap',gap:6},chip:{minHeight:44,justifyContent:'center',paddingHorizontal:12,borderRadius:6,backgroundColor:C.panel2},selected:{borderWidth:1,borderColor:C.selectionLine,backgroundColor:C.selection},card:{minHeight:44,padding:10,gap:8,borderRadius:8,borderWidth:1,borderColor:C.lineStrong,backgroundColor:C.panelRaised},row:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8,flexWrap:'wrap'},title:{flexShrink:1,fontSize:14,fontWeight:'700',color:C.text},text:{fontSize:13,color:C.text},muted:{fontSize:12,color:C.muted,flexShrink:1},ready:{fontSize:12,color:C.good},growText:{flex:1,minWidth:0,fontSize:13,color:C.text},flex:{flex:1,minWidth:60},track:{height:5,borderRadius:3,backgroundColor:C.line,overflow:'hidden'},fill:{height:5,backgroundColor:C.accent}});

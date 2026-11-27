@@ -18,6 +18,7 @@ on:
       - 'apps/mobile/tests/material-retirement-offline.ts'
       - 'apps/mobile/tests/material-purpose-audit.ts'
       - 'apps/mobile/src/core/live-events.ts'
+      - 'apps/mobile/src/core/release-flags.ts'
       - 'apps/mobile/src/core/permanent-boosts.ts'
       - 'apps/mobile/src/core/equipment-salvage.ts'
       - 'apps/mobile/src/core/crafted-gear-ownership.ts'

@@ -115,6 +115,7 @@ revoke all on function private.enter_party_registration_v131(uuid,uuid,uuid,text
 create function private.inspect_party_deletion_v132(p_actor uuid,p_character uuid default null)
 returns jsonb language plpgsql stable security invoker set search_path='' as $$
 declare v_members integer;v_legacy integer;v_pending integer;v_history integer;v_leaders integer;
+ v_exchanges integer;v_applications integer;v_parent_leaders integer;v_receipts integer;v_outbox integer;
 begin
  if p_actor is null or not exists(select 1 from auth.users where id=p_actor)
  or (p_character is not null and not exists(select 1 from public.characters where id=p_character and account_id=p_actor))
@@ -133,9 +134,25 @@ begin
  where account_id=p_actor and (p_character is null or character_id=p_character);
  select count(*) into v_leaders from private.party_registration_state_v110
  where leader_account_id=p_actor and p_character is null;
+ select count(*) into v_exchanges from private.party_registration_exchange_history_v110
+ where account_id=p_actor and (p_character is null or p_character in (from_character_id,to_character_id));
+ select count(*) into v_applications from private.party_recruitment_applications_v124
+ where (applicant_account_id=p_actor and (p_character is null or character_id=p_character))
+ or (p_character is null and leader_account_id=p_actor);
+ select count(*) into v_parent_leaders from public.parties
+ where leader_account_id=p_actor and (p_character is null or leader_character_id=p_character);
+ select case when p_character is null then
+ (select count(*) from private.party_membership_receipts_v129 where actor_account_id=p_actor)+
+ (select count(*) from private.party_chat_action_receipts_v108 where account_id=p_actor)
+ else 0 end into v_receipts;
+ select case when p_character is null then
+ (select count(*) from private.party_chat_outbox_v125 where recipient_account_id=p_actor)
+ else 0 end into v_outbox;
  return jsonb_build_object('activeRegistrations',v_members,'legacyRows',v_legacy,
  'pendingRequests',v_pending,'departureHistory',v_history,'leaderReferences',v_leaders,
- 'requiresReconciliation',v_members+v_legacy+v_pending+v_history+v_leaders>0,
+ 'exchangeHistory',v_exchanges,'applications',v_applications,'legacyLeaderReferences',v_parent_leaders,
+ 'actionReceipts',v_receipts,'outboxRows',v_outbox,
+ 'requiresReconciliation',v_members+v_legacy+v_pending+v_history+v_leaders+v_exchanges+v_applications+v_parent_leaders+v_receipts+v_outbox>0,
  'canDelete',false,'releaseEnabled',false);
 end
 $$;

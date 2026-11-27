@@ -8,6 +8,7 @@ import {OnlineEventExpeditionRuntime,projectOnlineEventRun} from '../event-exped
 import {EVENT_EXPEDITIONS} from '../../src/server/expeditions/content/event-expeditions';
 import {seasonalEventExpeditionInfo} from '../../../apps/mobile/src/core/coop-event-expeditions';
 import {EventExpeditionService,MemoryEventRunRepository,effectiveEventNode,eventBossMechanicProjection} from '../../src/server/expeditions/event-service';
+import {FROSTFALL_ENDURANCE_GENERATOR} from '../../src/server/expeditions/frostfall-endurance';
 import {launchPlayer} from '../../src/server/combat/content/launch-combat';
 
 function preparedState(classId:ClassId,name:string,level:number,characterId:string):GameState{
@@ -38,8 +39,8 @@ async function main(){
  for(const [index,definition] of EVENT_EXPEDITIONS.entries()){
   const service=new EventExpeditionService(new MemoryEventRunRepository(),`online-route-preflight-${index}`);
   const run=service.start({requestId:`event-preflight-${index}`,runId:`event-route-${index}`,accountId:'domain-a',eventId:definition.id,activeLiveEventId:`${definition.liveEventSeriesId}_2026`,members:domainMembers,players:domainPlayers,nowMs:Date.UTC(2026,6,15)});
-  assert.equal(run.graph.preBossNodeCount,definition.routeNodeCount,`route length failed for ${definition.id}`);
-  assert.equal(run.graph.generatorVersion,'event-route-v5');
+  assert.equal(run.graph.preBossNodeCount,definition.id==='EVENT_FROSTFALL_AURORA_HOLLOW'?42:definition.routeNodeCount,`route length failed for ${definition.id}`);
+  assert.equal(run.graph.generatorVersion,definition.id==='EVENT_FROSTFALL_AURORA_HOLLOW'?FROSTFALL_ENDURANCE_GENERATOR:'event-route-v5');
   assert.equal(run.mechanic?.id,definition.mechanic.id);
   assert.equal(run.objective?.id,definition.objective.id);
   assert.equal(run.objective?.count,definition.objective.startCount);
@@ -80,6 +81,21 @@ async function main(){
    assert.ok(bossProfile!.telegraph.castAbilities.some(ability=>ability.id==='EVENT_FROSTFALL_BOSS_NOVA'&&ability.label==='Aurora Shatter'));
   }
  }
+ const seasonal=EVENT_EXPEDITIONS.find(item=>item.id==='EVENT_FROSTFALL_AURORA_HOLLOW')!;
+ const checkpointRepository=new MemoryEventRunRepository(),checkpointService=new EventExpeditionService(checkpointRepository,'event-checkpoint-recap-secret');
+ let checkpointRun=checkpointService.start({requestId:'event-checkpoint-start',runId:'event-checkpoint-run',accountId:'domain-a',eventId:seasonal.id,activeLiveEventId:'EVT_ANNUAL_012_2026',members:domainMembers,players:domainPlayers,nowMs:Date.UTC(2026,11,10)});
+ for(let depth=1;depth<=7;depth++){
+  const source=checkpointRun.graph.nodes.find(node=>node.nodeId===checkpointRun.currentNodeId)!;
+  const combat=source.nextNodeIds.map(id=>checkpointRun.graph.nodes.find(node=>node.nodeId===id)!).find(node=>node.kind==='battle')!;
+  checkpointRun=checkpointService.choose({runId:checkpointRun.id,accountId:'domain-a',optionNodeId:combat.nodeId,requestId:'checkpoint-combat-'+depth});
+  assert.equal(checkpointRun.phase,'awaiting_choice');
+ }
+ checkpointRun=checkpointService.choose({runId:checkpointRun.id,accountId:'domain-a',optionNodeId:'d8-c2',requestId:'checkpoint-exit'});
+ assert.equal(checkpointRun.phase,'completed');
+ const checkpointProjection=projectOnlineEventRun(checkpointRun,9,'EVT_ANNUAL_012_2026',Date.UTC(2026,11,10)) as any;
+ assert.ok(checkpointProjection.bossRecap,'optional seasonal boss exit must preserve boss recap');
+ assert.ok(checkpointProjection.lastCombat?.cues.length,'optional seasonal boss exit must show the combat replay');
+
  const bossRepo=new MemoryEventRunRepository(),bossService=new EventExpeditionService(bossRepo,'boss-tuning-integration-secret'),suncrest=EVENT_EXPEDITIONS.find(row=>row.id==='EVENT_SUNCREST_SHATTERED_ISLES')!;
  let bossRun=bossService.start({requestId:'boss-profile-request',runId:'boss-profile-run',accountId:'domain-a',eventId:suncrest.id,activeLiveEventId:'EVT_ANNUAL_006_2026',members:domainMembers,players:domainPlayers,nowMs:Date.UTC(2026,6,15)});
  bossRun.currentNodeId=`d${bossRun.graph.preBossNodeCount}-c0`;bossRun.objective={id:suncrest.objective.id,count:suncrest.objective.maxCount};bossRun.mechanic={id:suncrest.mechanic.id,value:suncrest.mechanic.maxValue};bossRepo.save(bossRun);
@@ -106,6 +122,7 @@ async function main(){
   randomId:()=>randomIds.shift()??'44444444-4444-4444-8444-444444444444',
   rpc:async<T>(name:string,args:Record<string,unknown>):Promise<T>=>{
    if(name==='read_online_coop_receipt_server_v1')return null as T;
+   if(name==='online_event_expedition_daily_budget_server_v1')return 0 as T;
    if(name==='load_online_game_server_v1')return {state:controllerState,version:7,serverNow:now,liveEvent} as T;
    if(name==='eligible_online_coop_echoes_server_v1')return echoRecords.map((record,index)=>({profileId:`55555555-5555-4555-8555-55555555555${index}`,sourceAccountId:record.accountId,publishedAtMs:now-1000,record})) as T;
    if(name==='start_online_event_expedition_server_v1'){
@@ -135,6 +152,12 @@ async function main(){
  stored!.privateState.run.phase='completed';stored!.privateState.run.settlement='pending';stored!.privateState.run.rewardMarks=96;
  const claimed=await runtime.claim(controllerRecord.accountId,start.runId,'event-claim-0001') as any;
  assert.equal(claimed.stateVersion,3);assert.equal(claimed.settlement.status,'claimed');assert.equal(claimed.settlement.rewardMarks,96);
+ liveEvent={eventId:'EVT_ANNUAL_012_2026',enabled:true,startsAtMs:now-60_000,endsAtMs:now+60_000};
+ const frostPractice=await runtime.start(controllerRecord.accountId,{requestId:'frost-practice-0001',eventExpeditionId:'EVENT_FROSTFALL_AURORA_HOLLOW',tier:1,characterId:controllerRecord.characterId,loadoutId:'current',loadoutRevision:7}) as any;
+ assert.equal(frostPractice.eventExpeditionId,'EVENT_FROSTFALL_AURORA_HOLLOW');
+ assert.equal(frostPractice.settlement.status,'pending');
+ assert.equal(stored?.privateState.run.practiceOnly,true,'no daily reward slots makes the next Frostfall attempt practice-only');
+ assert.equal(stored?.privateState.run.graph.preBossNodeCount,42);
  liveEvent={eventId:'EVT_ANNUAL_010_2026',enabled:true,startsAtMs:now-60_000,endsAtMs:now+60_000};
  await assert.rejects(()=>runtime.start(controllerRecord.accountId,{requestId:'event-start-0002',eventExpeditionId:'EVENT_SUNCREST_SHATTERED_ISLES',characterId:controllerRecord.characterId,loadoutId:'current',loadoutRevision:7}),/event_not_live/);
  console.log('PASS persistent seasonal expedition start, choice, settlement and LiveOps gating');

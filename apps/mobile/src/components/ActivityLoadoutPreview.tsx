@@ -5,44 +5,45 @@ import {useGameTheme} from '../theme/ThemeContext';
 import {ACTIVITY_LOADOUT_GEAR_SLOTS} from '../core/activity-loadout-editor-review';
 const categories=['Combat','Mining','Woodcutting','Fishing'] as const;
 type Category=typeof categories[number];
-type Draft={name:string;gear:Record<string,string>;pet:string;faith:Record<string,string>};
+type Draft={category:Category|'Manual';name:string;gear:Record<string,string>;pet:string;faith:Record<string,string>};
 const groups=['Combat','Gathering','Production','Experience'];
-const initial=():Draft[]=>categories.map(name=>({name,gear:{},pet:'None',faith:{}}));
+const initial=():Draft[]=>[...categories.map(name=>({category:name,name,gear:{},pet:'None',faith:{}})),{category:'Manual',name:'Alternate build',gear:{},pet:'None',faith:{}}];
 const gearExamples=['None','Example Common','Example Epic'];
 const faithExamples:Record<string,string[]>={Combat:['None','Ember Vow','Ward of Stone'],Gathering:['None','Verdant Whisper',"Nature's Covenant"],Production:['None',"Artisan's Prayer"],Experience:['None','Lantern of Wisdom']};
 export function ActivityLoadoutPreview(){
  const C=useGameTheme(),{width,fontScale}=useWindowDimensions();
  const compact=width<360||fontScale>=1.25;
  const [slots,setSlots]=useState(3),[auto,setAuto]=useState(true),[drafts,setDrafts]=useState(initial);
- const [active,setActive]=useState<Category>('Mining'),[editing,setEditing]=useState<number|null>(null);
+ const [active,setActive]=useState<Category>('Mining'),[activeSnapshot,setActiveSnapshot]=useState<Draft|null>(null),[editing,setEditing]=useState<number|null>(null);
  const [draft,setDraft]=useState<Draft|null>(null),[picker,setPicker]=useState<string|null>(null);
  const button=(label:string,action:()=>void,selected=false)=><Pressable accessibilityRole="button" onPress={action} style={[s.button,{borderColor:selected?C.selectionLine:C.line,backgroundColor:selected?C.selection:C.panelRaised}]}><Text style={{color:C.text,fontWeight:'700',fontSize:12,textAlign:'center'}}>{label}</Text></Pressable>;
  const edit=(index:number)=>{setDraft({...drafts[index],gear:{...drafts[index].gear},faith:{...drafts[index].faith}});setEditing(index);setPicker(null);};
  const close=()=>{setEditing(null);setDraft(null);setPicker(null);};
  const save=()=>{if(editing===null||!draft||!draft.name.trim())return;setDrafts(old=>old.map((row,i)=>i===editing?{...draft,name:draft.name.trim()}:row));close();};
- const activeIndex=categories.indexOf(active);
- const activeDraft=activeIndex<slots?drafts[activeIndex]:null;
- const options=picker==='pet'?['None','Example gathering pet','Example combat pet']:picker?.startsWith('faith:')?faithExamples[picker.slice(6)]??[]:gearExamples;
- const choose=(value:string)=>{if(!draft||!picker)return;if(picker==='pet')setDraft({...draft,pet:value});else if(picker.startsWith('faith:'))setDraft({...draft,faith:{...draft.faith,[picker.slice(6)]:value}});else setDraft({...draft,gear:{...draft.gear,[picker]:value}});setPicker(null);};
+ const activeDraft=activeSnapshot;
+ const launch=(category:Category)=>{setActive(category);setActiveSnapshot(auto?(drafts.slice(0,slots).find(row=>row.category===category)??null):null);};
+ const options=picker==='category'?['Manual',...categories.filter(category=>!drafts.some((row,i)=>i!==editing&&row.category===category))]:picker==='pet'?['None','Example gathering pet','Example combat pet']:picker?.startsWith('faith:')?faithExamples[picker.slice(6)]??[]:gearExamples;
+ const choose=(value:string)=>{if(!draft||!picker)return;if(picker==='category')setDraft({...draft,category:value as Draft['category']});else if(picker==='pet')setDraft({...draft,pet:value});else if(picker.startsWith('faith:'))setDraft({...draft,faith:{...draft.faith,[picker.slice(6)]:value}});else setDraft({...draft,gear:{...draft.gear,[picker]:value}});setPicker(null);};
  return <View style={[s.panel,{backgroundColor:C.panel,borderColor:C.line}]}>
   <Text style={{color:C.warning,fontSize:10,fontWeight:'900'}}>DEVELOPER PREVIEW · NO PLAYER SAVE</Text>
   <View style={s.row}><Text style={[s.title,{color:C.text}]}>Activity loadouts</Text><Text style={{color:C.muted}}>{slots} / 5 slots</Text></View>
   <Text style={{color:C.muted,fontSize:11}}>Sample slot availability</Text>
-  <View style={s.row}>{[1,2,3,4,5].map(n=><View key={n} style={{flex:1}}>{button(String(n),()=>setSlots(n),slots===n)}</View>)}</View>
-  <View style={s.row}><Text style={{color:C.text,flex:1}}>Automatic switching</Text>{button(auto?'On':'Off',()=>setAuto(v=>!v),auto)}</View>
-  {categories.map((category,index)=><Pressable key={category} accessibilityRole="button" accessibilityState={{disabled:index>=slots}} disabled={index>=slots} onPress={()=>edit(index)} style={[s.entry,{borderColor:index<slots&&active===category&&auto?C.good:C.line,backgroundColor:C.panelRaised}]}>
-   <View style={{flex:1,minWidth:0}}><Text style={{color:C.text,fontWeight:'800'}}>{drafts[index].name}</Text><Text style={{color:C.muted,fontSize:11}}>{index>=slots?'Slot locked':category+' · '+drafts[index].pet}</Text></View>
+  <View style={s.row}>{[1,2,3,4,5].map(n=><View key={n} style={{flex:1}}>{button(String(n),()=>{setSlots(n);setActiveSnapshot(null);},slots===n)}</View>)}</View>
+  <View style={s.row}><Text style={{color:C.text,flex:1}}>Automatic switching</Text>{button(auto?'On':'Off',()=>{setAuto(v=>!v);setActiveSnapshot(null);},auto)}</View>
+  {drafts.map((row,index)=><Pressable key={index} accessibilityRole="button" accessibilityState={{disabled:index>=slots}} disabled={index>=slots} onPress={()=>edit(index)} style={[s.entry,{borderColor:index<slots&&activeSnapshot?.category===row.category&&auto?C.good:C.line,backgroundColor:C.panelRaised}]}>
+   <View style={{flex:1,minWidth:0}}><Text style={{color:C.text,fontWeight:'800'}}>{drafts[index].name}</Text><Text style={{color:C.muted,fontSize:11}}>{index>=slots?'Slot locked':row.category+' · '+row.pet}</Text></View>
    <Text style={{color:index>=slots?C.muted:C.accent,fontSize:12}}>{index>=slots?'Locked':active===category&&auto?'Active · Edit':'Edit'}</Text>
   </Pressable>)}
-  {slots===5?<Text style={{color:C.muted,fontSize:11}}>Fifth slot: reserved for an alternate manual setup in this demo.</Text>:null}
+  
   <Text style={{color:C.muted,fontSize:11}}>Simulate starting an activity</Text>
-  <View style={s.wrap}>{categories.map(category=><View key={category} style={{flexGrow:1}}>{button(category,()=>setActive(category),active===category)}</View>)}</View>
+  <View style={s.wrap}>{categories.map(category=><View key={category} style={{flexGrow:1}}>{button(category,()=>launch(category),active===category)}</View>)}</View>
   <View style={[s.entry,{borderColor:C.line,backgroundColor:C.panel2}]}><View style={{flex:1}}><Text style={{color:C.text,fontWeight:'800'}}>{active}</Text><Text style={{color:auto&&activeDraft?C.good:C.muted,fontSize:11}}>{!auto?'Manual setup':activeDraft?activeDraft.name+' loadout active':'No assigned loadout'}</Text></View><Text style={{color:C.muted,fontSize:11}}>{auto&&activeDraft?activeDraft.pet:'—'}</Text></View>
   <Modal visible={draft!==null} transparent animationType="none" onRequestClose={close}>
    <View style={[s.shade,{backgroundColor:C.overlay}]}><View accessibilityViewIsModal style={[s.modal,{backgroundColor:C.panel,borderColor:C.lineStrong}]}>
-    <View style={s.row}><Text style={[s.title,{color:C.text}]}>{editing===null?'Loadout':categories[editing]} loadout</Text>{button('Cancel',close)}</View>
+    <View style={s.row}><Text style={[s.title,{color:C.text}]}>Edit loadout</Text>{button('Cancel',close)}</View>
     {draft?<><ScrollView style={{flexShrink:1}} contentContainerStyle={{gap:10}} keyboardShouldPersistTaps="handled">
      <TextInput accessibilityLabel="Loadout name" value={draft.name} maxLength={28} onChangeText={name=>setDraft({...draft,name})} style={[s.input,{color:C.text,borderColor:C.line,backgroundColor:C.inputBg}]}/>
+     {button('Assigned activity · '+draft.category,()=>setPicker('category'))}
      <View style={s.wrap}>{ACTIVITY_LOADOUT_GEAR_SLOTS.map(slot=><Pressable key={slot} accessibilityRole="button" accessibilityLabel={'Edit '+slot} onPress={()=>setPicker(slot)} style={[s.gear,{width:compact?'23%':'18%',backgroundColor:C.panelRaised,borderColor:C.line}]}><Text style={{color:C.text,fontWeight:'700',fontSize:11,textAlign:'center'}}>{slot}</Text><Text style={{color:C.muted,fontSize:10,textAlign:'center'}}>{draft.gear[slot]??'Empty'}</Text></Pressable>)}</View>
      {button('Active pet · '+draft.pet,()=>setPicker('pet'))}
      <Text style={{color:C.muted,fontSize:11,fontWeight:'800'}}>FAITH BLESSINGS</Text>

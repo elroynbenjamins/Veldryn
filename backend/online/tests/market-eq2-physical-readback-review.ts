@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {inspectMarketPhysicalReadback} from '../market-eq2-physical-readback-review';
 const empty=()=>({capacity:30,stacks:[] as {itemId:string;instanceId?:string;quantity:number}[]});
-const character=(id:string)=>({id,equipmentPouch:empty(),equipmentInstanceIds:{} as Record<string,string>});
+const character=(id:string)=>({id,equipmentPouch:empty(),equipmentInstanceIds:{} as Record<string,string>,savedLoadouts:[] as {equipment:Record<string,string>;equipmentInstanceIds?:Record<string,string>}[]});
 const copy={itemId:'EQ2_TEST_HELMET',instanceId:'copy-1',quantity:1};
 const base=()=>{
  const state={version:11,account:{craftedGearInstances:[] as {id:string}[]},character:character('a1'),
@@ -45,4 +45,8 @@ test('alt pouch',x=>{x.row.state.inventory.stacks=[];x.row.state.otherCharacters
 test('missing copy',x=>{x.row.state.inventory.stacks=[]},'physical_copy_count');
 test('bad capacity',x=>{x.row.state.inventory.capacity=0},'invalid_capacity');
 test('incomplete pouch',x=>{delete (x.row.state.character as Partial<typeof x.row.state.character>).equipmentPouch},'missing_store');
+test('active saved exact copy',x=>{x.row.state.character.savedLoadouts.push({equipment:{helmet:copy.itemId},equipmentInstanceIds:{helmet:copy.instanceId}})},'saved_loadout_protected',true);
+test('inactive hero saved exact copy',x=>{x.row.state.otherCharacters[0].character.savedLoadouts.push({equipment:{helmet:copy.itemId},equipmentInstanceIds:{helmet:copy.instanceId}})},'saved_loadout_protected',true);
+test('legacy saved definition',x=>{x.row.state.character.savedLoadouts.push({equipment:{helmet:copy.itemId}})},'saved_loadout_protected',true);
+test('different exact copy of same type',x=>{x.row.state.character.savedLoadouts.push({equipment:{helmet:copy.itemId},equipmentInstanceIds:{helmet:'copy-other'}})},'physical_match_requires_original_mint_and_atomic_recheck',true);
 console.log('Market source-shaped physical readback checks passed: '+count);

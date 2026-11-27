@@ -10,14 +10,18 @@ declare const process:{env:Record<string,string|undefined>};
 export const serverGameplayEnabled=process.env.EXPO_PUBLIC_SERVER_GAMEPLAY==='true';
 const url=process.env.EXPO_PUBLIC_SUPABASE_URL;
 const key=process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+// QA BRANCH ONLY: do not merge. No fallback to a production gameplay endpoint.
+const qaStagingUrl='https://iqfmmpvwanvvmxcftfxw.supabase.co';
+const qaGameplayEnabled=url===qaStagingUrl&&process.env.EXPO_PUBLIC_RELEASE_CHANNEL==='staging';
 export function createOnlineGameRepository(accountId:string){
  const pendingKey=`veldryn.online.pending.${accountId}`;
  async function request(body?:PendingGameCommand):Promise<OnlineSnapshot>{
+  if(!qaGameplayEnabled)throw new Error('This QA-only branch requires the isolated staging build profile.');
   if(!supabase||!url||!key)throw new Error('Online services are not configured.');
   const {data:{session},error}=await supabase.auth.getSession();if(error)throw error;
   if(!session||session.user.id!==accountId)throw new Error('Please sign in again.');
   const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),25000);
-  try{const response=await fetch(`${url}/functions/v1/gameplay`,{method:body?'POST':'GET',signal:controller.signal,headers:{Authorization:`Bearer ${session.access_token}`,apikey:key,'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined});
+  try{const response=await fetch(`${url}/functions/v1/gameplay-113-qa`,{method:body?'POST':'GET',signal:controller.signal,headers:{Authorization:`Bearer ${session.access_token}`,apikey:key,'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined});
    const payload=await response.json();if(!response.ok)throw new OnlineCommandError(payload.error??payload.message??'Online service unavailable.',response.status>=400&&response.status<500&&![408,426,429].includes(response.status));if(body?.command?.type===ULTRA_LUXE_FULL_SET_COMMAND){
     if(!payload?.gameplay||payload.gameplay.accountId!==accountId||payload.nameSelection?.accountId!==accountId||typeof payload.replayed!=='boolean')throw new Error('Full set readback unavailable. Retry the pending action.');
     return {...payload.gameplay,ultraLuxeNameSelection:payload.nameSelection,ultraLuxeFullSetReplayed:payload.replayed} as OnlineSnapshot;

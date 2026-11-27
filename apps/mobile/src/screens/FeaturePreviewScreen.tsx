@@ -38,9 +38,9 @@ const partyTreasureSets:Readonly<Record<'caravan'|'hunt'|'wards'|'reliquary',rea
 };
 /** World Boss V61/V62 chest design is NOT an authenticated entitlement feed. */
 const bossChestDesign:readonly {name:string;condition:string;guaranteed:string}[]=[
- {name:'War Camp Chest',condition:'Two War Camp tracks at Tier I and your committed donation',guaranteed:'450 Gold · 6 Essence · 2 Gem Dust · 2 Tempering Dust'},
- {name:'Warrior Chest',condition:'All 3 account attacks committed and replay-verified',guaranteed:'650 Gold · 8 Essence · 3 Gem Dust · 3 Tempering Dust'},
- {name:'Realm Victory Chest',condition:'70% of shared boss HP defeated and your proven attack',guaranteed:'900 Gold · 10 Essence · 4 Gem Dust · 4 Tempering Dust'},
+ {name:'War Camp milestone',condition:'Two War Camp tracks at Tier I and your committed donation',guaranteed:'450 Gold · 6 Essence · 2 Gem Dust · 2 Tempering Dust'},
+ {name:'Three completed attacks',condition:'All 3 account attacks committed and replay-verified',guaranteed:'450 Gold · 6 Essence · 2 Gem Dust · 2 Tempering Dust'},
+ {name:'Community damage milestone',condition:'70% of shared boss HP defeated and your proven attack',guaranteed:'450 Gold · 6 Essence · 2 Gem Dust · 2 Tempering Dust'},
 ];
 const bossGatheringSetLabel:Readonly<Record<'hollowroot'|'sunscar'|'frostmarch',string>>={
  hollowroot:'Rootbound Harvester · Woodcutting',
@@ -376,12 +376,12 @@ function BossContents({s,accent,tab,onTab,status,reduceMotion}:Shared&{tab:strin
    <Action label="Claim rewards · Not available" s={s} disabled/>
   </Card>
   <Card s={s}>
-   <SectionHeading s={s} kicker="FUTURE WORLD BOSS CHESTS" title="Up to six chests per account" sub="Design preview only. Three milestones and up to three personal damage chests."/>
+   <SectionHeading s={s} kicker="FUTURE WORLD BOSS CHESTS" title="Up to six chests per account" sub="Design preview only. One universal World Boss Chest earned from three milestones and up to three personal damage drops."/>
    {bossChestDesign.map(chest=><View key={chest.name} style={s.detailRow}>
     <View style={s.flex}>
      <Text style={s.choiceTitle}>{chest.name}</Text>
      <Text style={s.choiceSub}>{chest.condition}</Text>
-     <Text style={s.finePrint}>{chest.guaranteed} · 10% gathering gear chance</Text>
+     <Text style={s.finePrint}>Awards 1 World Boss Chest</Text>
     </View>
     <Tag s={s} label="PREVIEW"/>
    </View>)}
@@ -393,7 +393,7 @@ function BossContents({s,accent,tab,onTab,status,reduceMotion}:Shared&{tab:strin
     </View>
    </View>
    <Text style={s.finePrint}>Personal damage: 10% chance per server-configured damage threshold, up to 3 extra chests. Each earned chest independently has a 10% gear chance. No authenticated entitlement or opening is available in this design QA screen.</Text>
-   <Text style={s.finePrint}>Personal Damage Chest · 450 Gold · 6 Essence · 2 Gem Dust · 2 Tempering Dust · 8 boss-specific materials</Text>
+   <Text style={s.finePrint}>Each World Boss Chest · 450 Gold · 6 Essence · 2 Gem Dust · 2 Tempering Dust · 8 boss-specific materials · 10% gathering gear chance</Text>
    <Action label="Open chest · Not available" s={s} disabled/>
    <WorldBossChestOpeningPreview reduceMotion={reduceMotion}/>
   </Card>

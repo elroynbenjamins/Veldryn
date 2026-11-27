@@ -38,6 +38,7 @@ DO $$ DECLARE b jsonb; BEGIN
  OR market_review.read_browse(300,p_stat=>'defense',p_min_stat=>41)->>'total' IS DISTINCT FROM '0'
  OR market_review.read_browse(300,p_sort=>'newest')#>>'{entries,0,offerId}' IS DISTINCT FROM 'read-z'
  OR market_review.read_browse(300,p_sort=>'price_desc')#>>'{entries,0,offerId}' IS DISTINCT FROM 'read-y'
+ OR market_review.read_browse(300,p_min_total_gold=>200,p_max_total_gold=>200)->>'total' IS DISTINCT FROM '3'
  THEN RAISE EXCEPTION 'browse_filter_failed'; END IF;
 END $$;
 SELECT market_review.expect_error($q$SELECT market_review.read_browse(300,p_stat=>'defense')$q$,'invalid_browse_filters');
@@ -89,6 +90,8 @@ DO $$ BEGIN
  THEN RAISE EXCEPTION 'duplicate_expiry_failed'; END IF;
  IF market_review.read_inbox('a',false)->>'pendingCount' IS DISTINCT FROM '2'
  OR market_review.read_my_listings('a',604900)->>'activeCount' IS DISTINCT FROM '0'
+ OR market_review.read_my_listings('a',604900,true)->>'total' IS DISTINCT FROM '3'
+ OR jsonb_array_length(market_review.read_my_listings('a',604900,true,1)->'entries')<>2
  THEN RAISE EXCEPTION 'expiry_inbox_failed'; END IF;
 END $$;
 SELECT market_review.act('return','a','read-return-y','y',2,p_recipient=>'a1');

@@ -12,7 +12,7 @@ Owner feedback, 27 November 2026: Draconic public showcase appears nearly static
 ## Theme-specific acceptance
 | Set | Ambient and perimeter | Matching pet and signature |
 | --- | --- | --- |
-| Celestial Sovereign | Drifting stars, orbiting starlight, crest alignment | Clearly visible floating and wing/pose motion; constellation alignment |
+| Celestial Sovereign | Drifting stars, orbiting starlight, crest alignment | Clearly visible floating stag head, antler and tail motion; constellation alignment |
 | Draconic Dominion | Rising embers, molten rail light and wing glow | Visible breathing/wing movement, flame flare and awakening |
 | Abyssal Majesty | Tidal glow, rising bubbles, crystal currents | Leviathan body/fin undulation and deep surge |
 | Paradox Eternal | Opposing temporal glints, violet rift pulses | Aeon hovering/pose changes and a smooth time-fold signature |

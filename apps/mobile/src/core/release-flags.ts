@@ -1,7 +1,7 @@
 /** Enable the event client; the authoritative server window controls access and rewards. */
 export const EVENTS_RELEASED=true;
-/** Prepared Frostfall rewards stay out of all player catalogs until the seasonal launch is explicitly approved. */
-export const FROSTFALL_REWARDS_RELEASED=false;
+/** Frostfall reward definitions ship in the release binary. Authoritative runtime windows still control discovery and grants. */
+export const FROSTFALL_REWARDS_RELEASED=true;
 /** Winter Hearth code/art is shipped; the authoritative Frostfall runtime still controls discovery and every live write. */
 export const WINTER_HEARTH_GUILD_RELEASED=true;
 /** Pause shared event-wide contribution goals until the active population can support them.

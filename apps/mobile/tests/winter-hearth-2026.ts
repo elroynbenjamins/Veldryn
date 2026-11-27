@@ -8,8 +8,8 @@ import {WINTER_HEARTH_2026_ID,WINTER_HEARTH_CHRISTMAS_LIGHTS_ITEM_ID,WINTER_HEAR
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message);}
 
-ok(WINTER_HEARTH_GUILD_RELEASED&&!FROSTFALL_REWARDS_RELEASED,
- 'Frostfall guild bonuses and items must remain release-gated.');
+ok(WINTER_HEARTH_GUILD_RELEASED&&FROSTFALL_REWARDS_RELEASED,
+ 'The approved Frostfall and Winter Hearth definitions must ship together.');
 ok(!ITEMS.some(item=>item.id==='FROSTFALL_WISP_GLOW_2026')&&ITEMS.some(item=>item.id===WINTER_HEARTH_CHRISTMAS_LIGHTS_ITEM_ID),'Only the approved Christmas Lights definition ships.');
 ok(WINTER_HEARTH_LIGHT_RECIPE_IDS.length===2&&WINTER_HEARTH_LIGHT_RECIPE_IDS.every(isWinterHearthLightRecipe),'Both profession routes use the same seasonal recipe guard.');
 ok(WINTER_HEARTH_LIGHT_RECIPE_IDS.every(id=>RECIPES.some(recipe=>recipe.id===id)),'Both seasonal recipes ship for save compatibility.');

@@ -1,4 +1,4 @@
-require('./scripts/repair-frostfall-currency-images.cjs').repairFrostfallCurrencyImages();
+require('./scripts/repair-frostfall-currency-images.cjs').repairFrostfallCurrencyImages({verify:true});
 const fs = require('node:fs');
 const path = require('node:path');
 const {getDefaultConfig} = require('expo/metro-config');

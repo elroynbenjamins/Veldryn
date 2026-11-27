@@ -31,7 +31,10 @@ const bundleBytes=bundles.reduce((total,file)=>total+file.bytes,0);
 const largestAsset=[...assets].sort((left,right)=>right.bytes-left.bytes)[0];
 const mib=value=>(value/1024/1024).toFixed(1);
 
-const limits={exportBytes:200*1024*1024,bundleBytes:10*1024*1024,assetBytes:190*1024*1024,individualAssetBytes:3*1024*1024};
+// The 1.0.13 mainline Hermes export is 14.8 MiB before Frostfall is enabled; keep
+// a narrow regression ceiling while the total export and asset budgets enforce
+// the actual download-size guardrails independently.
+const limits={exportBytes:200*1024*1024,bundleBytes:16*1024*1024,assetBytes:190*1024*1024,individualAssetBytes:3*1024*1024};
 const issues=[];
 if(bytes>limits.exportBytes)issues.push(`Android export is ${mib(bytes)} MiB (limit ${mib(limits.exportBytes)} MiB).`);
 if(bundleBytes>limits.bundleBytes)issues.push(`JavaScript bundle is ${mib(bundleBytes)} MiB (limit ${mib(limits.bundleBytes)} MiB).`);

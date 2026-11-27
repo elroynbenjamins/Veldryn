@@ -10,8 +10,8 @@ import {canUseProfileCosmetic} from '../src/core/profile-cosmetics';
 import {executeGameCommand} from '../src/core/game-commands';
 import {DUNGEON_MARKS_SHOP_RELEASED,FROSTFALL_REWARDS_RELEASED} from '../src/core/release-flags';
 
-// Frostfall remains gated; released Dungeon Marks collectibles are registered.
-assert.equal(FROSTFALL_REWARDS_RELEASED,false,'Frostfall collectibles must remain gated ahead of event launch');
+// Frostfall definitions ship for the scheduled runtime; released Dungeon Marks collectibles are registered.
+assert.equal(FROSTFALL_REWARDS_RELEASED,true,'Frostfall collectibles must be packaged before the scheduled event launch');
 assert.equal(DUNGEON_MARKS_SHOP_RELEASED,true,'released Dungeon Marks collectibles must be registered');
 const now=Date.UTC(2026,9,13);
 const enabled=setLocalEventEnabled(createCharacter(newGame(now),'IRONWARDEN','Event Review'),true,now);

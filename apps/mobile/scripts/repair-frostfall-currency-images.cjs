@@ -1,10 +1,8 @@
 'use strict';
-// EAS / Metro native-build guard. The two checked-in Frostfall currency PNGs have
-// corrupted IDAT integrity (and Aurora's source is truncated). Do not disable
-// Android resource validation: safely restore Frostbell's exact pixels and supply
-// a valid replacement Aurora Chime pixel-art icon before Metro packages assets.
-// This is restricted to known historical Git blob identities; future valid art
-// is never overwritten. Keep until both binary replacements are committed.
+// EAS / Metro native-build guard. The checked-in Frostfall currency PNGs are
+// valid replacements for two historical corrupt blobs. Builds verify them and
+// fail closed; the legacy repair path remains restricted to those exact blobs
+// so older checkouts can still be diagnosed safely.
 const fs=require('node:fs');
 const path=require('node:path');
 const crypto=require('node:crypto');

@@ -1,9 +1,12 @@
 /** Unmounted Journal 2.0 tracker preview. Navigation only; no automatic claims. */
+import {useGameTheme} from '../theme/ThemeContext';
+import type {ThemeColors} from '../theme/theme';
 import React from 'react';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 type Objective={id:string;progress:number;required:number};
 type Props={model:{status:'visible';questId:string;title:string;objective:Objective|null;label:string}|{status:'hidden'};objectiveLabel:(o:Objective)=>string;t:(s:string)=>string;onOpen:(questId:string)=>void};
 export function StoryQuestTracker2Review({model,objectiveLabel,t,onOpen}:Props){
+ const styles=makeStyles(useGameTheme());
  if(model.status==='hidden')return null;
  const objective=model.objective;
  const progress=objective&&objective.required>0?Math.max(0,Math.min(100,100*objective.progress/objective.required)):0;
@@ -14,4 +17,4 @@ export function StoryQuestTracker2Review({model,objectiveLabel,t,onOpen}:Props){
   </View><Text accessible={false} style={styles.chevron}>›</Text>
  </Pressable>;
 }
-const styles=StyleSheet.create({card:{minHeight:48,paddingHorizontal:10,paddingVertical:7,flexDirection:'row',alignItems:'center',gap:8,borderRadius:8,borderWidth:1,borderColor:'#45515c',backgroundColor:'#222931'},textBlock:{flex:1,minWidth:0,gap:4},title:{color:'#f0e2c9',fontSize:13,fontWeight:'700'},row:{flexDirection:'row',alignItems:'center',gap:6},label:{flex:1,color:'#b9c3cf',fontSize:12},count:{color:'#e4e9ef',fontSize:12},track:{height:4,backgroundColor:'#3a434c',borderRadius:3,overflow:'hidden'},fill:{height:4,backgroundColor:'#c6a46a'},ready:{fontSize:12,color:'#abd29c'},chevron:{color:'#d1b278',fontSize:22}});
+const makeStyles=(C:ThemeColors)=>StyleSheet.create({card:{minHeight:48,paddingHorizontal:10,paddingVertical:7,flexDirection:'row',alignItems:'center',gap:8,borderRadius:8,borderWidth:1,borderColor:C.lineStrong,backgroundColor:C.panelRaised},textBlock:{flex:1,minWidth:0,gap:4},title:{color:C.text,fontSize:13,fontWeight:'700'},row:{flexDirection:'row',alignItems:'center',gap:6},label:{flex:1,color:C.muted,fontSize:12},count:{color:C.text,fontSize:12},track:{height:4,backgroundColor:C.line,borderRadius:3,overflow:'hidden'},fill:{height:4,backgroundColor:C.accent},ready:{fontSize:12,color:C.good},chevron:{color:C.accent,fontSize:22}});

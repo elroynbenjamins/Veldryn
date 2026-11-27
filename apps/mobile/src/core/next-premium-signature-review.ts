@@ -16,11 +16,11 @@ export function nextPremiumSignatureEnvelope(theme:SignatureTheme,t:number,node:
  if(theme==='petal-waltz'){
   // Bloom from the crest out to the corners, then petal and lantern shimmer.
   const offsets=layer==='border'?[.04,.07,0,.12,.02,.09,.04,.10]:[.07,.10,.13,.16,.12,.04];
-  const d=offsets[index];return bell(t,.36+d,.51+d,.70+d);
+  const d=offsets[index];return Math.max(.60*bell(t,.01+d*.35,.065+d*.35,.20+d*.35),bell(t,.36+d,.51+d,.70+d));
  }
  // Charge top jewels, travel down rails, discharge into the lower crest.
  const offsets=layer==='border'?[.07,.09,0,.15,.02,.13,.04,.11]:[.06,.08,.10,.12,.15,.02];
- const d=offsets[index];return bell(t,.38+d,.48+d,.60+d);
+ const d=offsets[index];return Math.max(.74*bell(t,.005+d*.35,.045+d*.35,.15+d*.35),bell(t,.38+d,.48+d,.60+d));
 }
 /** Keep the proven geometry unchanged; only redistribute opacity within prior limits. */
 export function nextPremiumSignatureTracks<T extends Track>(theme:SignatureTheme,tracks:T[],layer:Layer,fullSet:boolean):T[]{

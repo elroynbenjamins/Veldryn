@@ -6,6 +6,7 @@ declare
  ca uuid:=gen_random_uuid(); cb uuid:=gen_random_uuid(); cc uuid:=gen_random_uuid();
  first_b uuid; second_b uuid; reg_a uuid; result jsonb; before_rows jsonb;
  joined_b timestamptz; t timestamptz; snapshot jsonb;
+ app_id uuid:=gen_random_uuid(); msg_id uuid:=gen_random_uuid();
 begin
  insert into auth.users values(a),(b),(c);
  insert into public.characters values(ca,a,'IRONWARDEN',25),(cb,b,'WAYFINDER',25),(cc,c,'DAWNKEEPER',25);
@@ -90,6 +91,27 @@ begin
  result:=private.inspect_party_deletion_v132(c,null);
  if result->>'leaderReferences'<>'1' or result->>'activeRegistrations'<>'1'
  or result->>'canDelete'<>'false' then raise exception 'account deletion preflight failed';end if;
+ -- V135: old fenced membership cannot block a recruitment-based join.
+ perform private.change_party_membership_v129(b,p,'LEAVE_AGAIN_V135',3,'leave');
+ insert into public.chat_messages values(msg_id,null,'party',q::text,true);
+ perform private.open_party_recruitment_application_v124(app_id,b,q,cb,msg_id);
+ result:=private.read_party_recruitment_chat_v128(c,q,msg_id);
+ if result is null or result->>'status'<>'pending' or result->'allowedActions'<>'["accept","decline"]'::jsonb
+ then raise exception 'shared eligibility mismatch in recruitment projection';end if;
+ result:=private.respond_party_recruitment_chat_v128(c,'JOIN_V135',q,app_id,msg_id,1,1,'accept');
+ if result->'response'->>'state'<>'accepted'
+ or (select count(*) from private.party_active_members_v126(q))<>2
+ or exists(select 1 from private.party_active_members_v126(p) m where m.account_id=b)
+ then raise exception 'shared eligibility mismatch in recruitment join';end if;
+ if jsonb_array_length(private.read_party_chat_outbox_v125(b,q,50))=0
+ or private.read_party_chat_outbox_v125(b,q,50) is distinct from private.read_party_chat_outbox_v127(b,q,50)
+ then raise exception 'outbox parity before disband';end if;
+ perform private.change_party_membership_v129(c,q,'DISBAND_V135',2,'disband');
+ if private.read_party_chat_outbox_v125(b,q,50)<>'[]'::jsonb
+ or private.read_party_chat_outbox_v127(b,q,50)<>'[]'::jsonb
+ or private.read_party_recruitment_chat_v128(c,q,msg_id) is not null
+ or (select count(*) from private.party_active_members_v126(q))<>0
+ then raise exception 'private disband leaked active Party data';end if;
  if (select jsonb_agg(to_jsonb(m) order by character_id) from public.party_members m where party_id=p) is distinct from before_rows
  then raise exception 'legacy rows modified';end if;
  if has_function_privilege('authenticated','private.enter_party_registration_v131(uuid,uuid,uuid,text,bigint,text)','execute')

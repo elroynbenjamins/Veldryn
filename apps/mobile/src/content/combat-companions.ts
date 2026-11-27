@@ -56,7 +56,7 @@ export const COMPANION_SANCTUARY_CONFIG:Record<CompanionSanctuaryUpgrade,{
   masteryChamber:{maxLevel:1,goldCosts:[36000],essenceCosts:[1400],materialId:'OATHGLASS_FRAGMENT',materialCosts:[18],description:'Required for Prestige Mastery and highest companion progression.'},
 };
 export const COMPANION_SANCTUARY_BOND_BONUS=[0,.05,.10,.15] as const;
-export const COMPANION_SANCTUARY_TRAINING_XP_PER_DAY=[0,40,90,150] as const;
+export const COMPANION_SANCTUARY_TRAINING_XP_PER_DAY=[0,100,150,200] as const;
 export const COMPANION_SANCTUARY_WEEKLY_ESSENCE=[0,20,48,80] as const;
 
 const ability=(id:string,name:string,description:string,cooldownSeconds:number,target:string,kind:CompanionEffectDefinition['kind'],baseValue:number,perLevel:number,extra:Partial<CompanionEffectDefinition>={}):CompanionAbilityDefinition=>({

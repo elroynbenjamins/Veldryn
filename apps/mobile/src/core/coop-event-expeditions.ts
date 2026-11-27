@@ -40,6 +40,8 @@ export interface CoopEventRunServerProjection{
   dungeonName:string;
   phase:string;
   stateVersion:number;
+  endurance?:{normalRoomsCleared:number;maxNormalRooms:number};
+  practiceOnly?:boolean;
   decisionId?:string;
   decisionRevision?:number;
   team:Array<{memberId:string;displayName:string;role:CoopRole;classId:string;bodyPresentation?:'male'|'female';companionId?:string;kind:'controller'|'echo';effectiveLevel:number;currentHp?:number;maximumHp?:number;downed?:boolean}>;
@@ -109,6 +111,9 @@ export function validateCoopEventExpeditionPreview(value:CoopEventExpeditionPrev
 export function presentEventExpeditionRun(projection:CoopEventRunServerProjection):CoopRunView{
   if(!projection.runId.trim()||!projection.eventExpeditionId.trim()||!projection.liveEventId.trim()||!projection.eventName.trim()||!projection.dungeonName.trim())throw new Error('invalid_event_run_projection');
   if(!Number.isInteger(projection.stateVersion)||projection.stateVersion<1||projection.team.length!==4)throw new Error('invalid_event_run_projection');
+  if(projection.endurance&&(projection.eventExpeditionId!=='EVENT_FROSTFALL_AURORA_HOLLOW'||projection.endurance.maxNormalRooms!==42||!Number.isInteger(projection.endurance.normalRoomsCleared)||projection.endurance.normalRoomsCleared<0||projection.endurance.normalRoomsCleared>42))throw new Error('invalid_event_endurance_progress');
+  if(projection.practiceOnly!==undefined&&(typeof projection.practiceOnly!=='boolean'||projection.eventExpeditionId!=='EVENT_FROSTFALL_AURORA_HOLLOW'))throw new Error('invalid_event_practice_state');
+  if(projection.practiceOnly&&(projection.settlement.rewardMarks??0)!==0)throw new Error('invalid_event_practice_reward');
   const options=projection.options.map(option=>{
     if(!option.nodeId.trim()||!option.kind.trim()||!Number.isFinite(option.risk)||!option.rewardTag.trim())throw new Error('invalid_event_route_option');
     const title=option.title?.trim()||(option.kind==='boss'?'Final boss':option.kind.charAt(0).toUpperCase()+option.kind.slice(1));

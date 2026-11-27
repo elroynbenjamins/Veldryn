@@ -70,15 +70,20 @@ console.log('PASS: 29 Character/Profile strings and UI wiring in 8 supported lan
 // Current stat help is localized and deliberately excludes unverified 2.0 mechanics.
 const {STAT_HELP,statHelpText}=require('../src/i18n/stat-help.ts');
 const expectedHelp=['health','currentHealth','attack','defense','power','critChance','critDamage','accuracy','evasion','haste','armor','ward'];
-assert.deepEqual(Object.keys(STAT_HELP).sort(),expectedHelp.sort());
-for(const id of expectedHelp){
+const extraHelp=['gearQuality','toolQuality','gatheringSpeed','gatheringRarity','gatheringXp'];
+assert.deepEqual(Object.keys(STAT_HELP).sort(),[...expectedHelp,...extraHelp].sort());
+for(const id of [...expectedHelp,...extraHelp]){
  assert.equal(STAT_HELP[id].length,SUPPORTED_LANGUAGES.length);
  for(const language of SUPPORTED_LANGUAGES){
   assert.ok(statHelpText(language,id).trim());
   if(language!=='en')assert.notEqual(statHelpText(language,id),statHelpText('en',id));
  }
- assert.ok(character.includes('helpId="'+id+'"'),'Character help missing '+id);
+ if(expectedHelp.includes(id))assert.ok(character.includes('helpId="'+id+'"'),'Character help missing '+id);
 }
 const helpRowSource=source('components/StatRow.tsx'),compareHelpSource=source('components/EquipmentPreview.tsx');
 assert.ok(helpRowSource.includes('accessibilityState={{expanded}}')&&helpRowSource.includes('statHelpText(language,helpId)'));
-assert.ok(compareHelpSource.includes('statHelpText(language,row.id)')&&compareHelpSource.includes('setStatHelpOpen(false)'));
+const disclosure=source('components/StatHelpDisclosure.tsx'),inspect=source('components/ItemQuickInspect.tsx');
+assert.ok(disclosure.includes('statHelpText(language,entry.id)')&&disclosure.includes('accessibilityState={{expanded}}'));
+assert.ok(compareHelpSource.includes('<StatHelpDisclosure')&&compareHelpSource.includes("key={itemId+':'+instanceId+':'+source}"));
+assert.ok(inspect.includes('entries={gearHelpEntries}')&&inspect.includes('entries={rollHelpEntries}')&&inspect.includes('entries={toolHelpEntries}'));
+console.log('PASS: shared current stat help, exact-copy inspector and all 8 locales');

@@ -28,6 +28,11 @@ for(const theme of ['sakura','stormforged']){
  }
 }
 assert.notDeepEqual(m.nextPremiumPetIdleSamples('sakura'),m.nextPremiumPetIdleSamples('stormforged'));
+for(const theme of ['sakura','stormforged']){
+ const p=m.NEXT_PREMIUM_POSTURE_LIFT[theme],t=m.NEXT_PREMIUM_POSTURE_PHASE;
+ assert.equal(p.length,t.length);assert.equal(p[0],p.at(-1));assert(p[1]<0&&p.every(v=>v>=-3&&v<=0));
+}
+assert.notDeepEqual(m.NEXT_PREMIUM_POSTURE_LIFT.sakura,m.NEXT_PREMIUM_POSTURE_LIFT.stormforged);
 console.log('Next premium pet atlas contract and '+checks+' interpolated idle bounds passed.');
 
 const src=path.join(__dirname,'../src'),component='NextPremiumPetReviewSprite';

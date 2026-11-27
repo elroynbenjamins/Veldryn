@@ -66,7 +66,7 @@ BEGIN
  SELECT * INTO v FROM completion_review.terminal_fixture t WHERE t.receipt_id=p_receipt;
  IF NOT FOUND THEN RAISE EXCEPTION 'completion_receipt_not_found'; END IF;
  IF v.account_id<>p_account OR v.character_id<>p_character OR NOT v.victory OR v.reason<>'victory' OR v.enemy_hp<>0 OR v.player_hp<=0
- OR v.level_at_start<CASE v.boss_id WHEN 'FALLEN_KNIGHT' THEN 25 WHEN 'BOSS_002' THEN 50 ELSE 75 END THEN
+ OR v.level_at_start < (CASE v.boss_id WHEN 'FALLEN_KNIGHT' THEN 25 WHEN 'BOSS_002' THEN 50 ELSE 75 END) THEN
   RAISE EXCEPTION 'invalid_completion_victory';
  END IF;
  SELECT * INTO old_claim FROM completion_review.claim c WHERE c.receipt_id=p_receipt;

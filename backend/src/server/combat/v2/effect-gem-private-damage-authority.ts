@@ -152,14 +152,16 @@ export function authorizePrivateDamageGemReviewV2(input:CombatInput,
   },
   // Own the complete authored barrier only where duration is explicit and
   // reflection absent. No guessed timer or ownership of an ordinary pool.
+  // Untimed original nonreflective barriers get magnitude only; no invented expiry.
   // MaxHP capacity is a private QA candidate, not an approved global cap.
   aegisBarrier(now:number,source:CombatantState,target:CombatantState,abilityId:string,amount:number,effect:AbilityEffect){
    const g=groups.get('effect_aegis');
-   if(!g||!authoredEffect(now,source,target,abilityId,'shield')||!effect.durationMs||effect.durationMs<=0||effect.shieldReflectPct)return undefined;
+   if(!g||!authoredEffect(now,source,target,abilityId,'shield')||effect.shieldReflectPct)return undefined;
+   if(!effect.durationMs||effect.durationMs<=0)return {amount:amount*(1+g.totalValue),owned:false};
    const next=reviewAegisBarrierV2(g,{id:'QA_BARRIER_'+(++lifecycleSequence),casterId:row.actorId,recipientId:target.definition.id,now,
     authoredAmount:amount,baseCapacity:target.definition.stats.maxHp,durationMs:effect.durationMs,externalShield:externalBarrier(target),rows:barriers,authored:true});
    barriers=next.rows;
-   return next.granted;
+   return {amount:next.granted,owned:true};
   },
   afterHeal(now:number,source:CombatantState,target:CombatantState,abilityId:string,attempted:number,actual:number){
    if(!authoredEffect(now,source,target,abilityId,'heal'))return {mercy:0,renewal:0};

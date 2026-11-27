@@ -11,13 +11,15 @@ export const WORLD_BOSS_CHEST_POLICY_V96={
 } as const;
 export type WorldBossChestKindV96=WorldBossChestKindV58|'personal_damage';
 export function worldBossChestLootTableV96(bossId:WorldBossGatheringBossV64,kind:WorldBossChestKindV96){
- // Approved personal chest guarantees reuse War Camp quantities plus eight
- // of the boss's existing primary gathering material. Never alter V68.
- const source=worldBossChestLootTableV68({bossId,kind:kind==='personal_damage'?'donations_goal':kind});
+ // All earning sources use one universal chest table per originating boss.
+ // Preserve prior versioned tables and distinguish earning source in the receipt.
+ if(!['donations_goal','three_attempts','community_damage_goal','personal_damage'].includes(kind))
+  throw Error('world_boss_unknown_chest_source');
+ const source=worldBossChestLootTableV68({bossId,kind:'donations_goal'});
  return defineChestLootTableV67({
-  ...source,version:'world_boss_v96_'+bossId+'_'+kind,
-  guarantees:kind==='personal_damage'?[...source.guarantees,
-   {id:worldBossGatheringSetV64(bossId).primaryMaterial.itemId,quantity:8}]:source.guarantees,
+  ...source,version:'world_boss_v98_unified_'+bossId,
+  guarantees:[...source.guarantees,
+   {id:worldBossGatheringSetV64(bossId).primaryMaterial.itemId,quantity:8}],
   groups:source.groups.map(group=>({...group,chanceBps:WORLD_BOSS_CHEST_POLICY_V96.equipmentChanceBps})),
  });
 }

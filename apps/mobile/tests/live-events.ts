@@ -145,8 +145,10 @@ ok(EQUIPMENT_MAIN_RESOURCE_BUNDLES.length===7,'Both shops use seven reviewed equ
 ok(eventShopOffers(frost,frostTime).filter(offer=>offer.reward.kind==='crafting_material').length===7,'Frostfall offers all seven selectable main materials');
 ok(eventShopOffers(frost,frostTime).length>=20,'Frostfall has a full holiday catalogue beyond the original five rewards');
 const frostShopCatalog=liveEventDef(frostId)!.shop;
-ok(frostShopCatalog.length===20,'Frostfall shop must retain its 20 permanent/consumable offer definitions');
-ok(new Set(frostShopCatalog.map(offer=>offer.id)).size===20,'Frostfall offer IDs must remain unique');
+ok(frostShopCatalog.filter(offer=>offer.reward.kind!=='crafting_material').length===20,'Frostfall shop must retain its 20 permanent/consumable offer definitions');
+ok(frostShopCatalog.filter(offer=>offer.reward.kind==='crafting_material').length===EQUIPMENT_MAIN_RESOURCE_BUNDLES.length,'Frostfall must also retain every weekly resource offer');
+ok(frostShopCatalog.length===20+EQUIPMENT_MAIN_RESOURCE_BUNDLES.length,'All 27 current offers must be tested');
+ok(new Set(frostShopCatalog.map(offer=>offer.id)).size===frostShopCatalog.length,'Frostfall offer IDs must remain unique');
 for(const offer of frostShopCatalog){
  ok(Number.isInteger(offer.cost)&&offer.cost>0&&Number.isInteger(offer.limit)&&offer.limit>=1,'Frostfall prices and purchase limits must be positive integers: '+offer.id);
  const trialBase=createCharacter(newGame(frostTime),'IRONWARDEN','FrostShopAudit');

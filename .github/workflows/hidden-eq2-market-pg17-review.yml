@@ -58,6 +58,9 @@ jobs:
       - name: Rehearse resource delivery claims and safe returns
         if: matrix.suite == 'settlement'
         run: psql -X -v ON_ERROR_STOP=1 -f tools/market-review/pg17/09_resource_delivery_claim_review.sql
+      - name: Run unified Inbox, listing lifecycle and browsing regressions
+        if: matrix.suite == 'settlement'
+        run: psql -X -v ON_ERROR_STOP=1 -f tools/market-review/pg17/16_market_read_lifecycle_regressions.sql
       - name: Run concurrent purchase and cancellation tests
         if: matrix.suite == 'settlement'
         run: bash tools/market-review/pg17/02_concurrency.sh

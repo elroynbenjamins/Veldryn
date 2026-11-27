@@ -11,7 +11,7 @@ import {regionalHuntPlan,usesDamageDrivenHunts} from './ordinary-hunt';
 import {characterCombatXpScale} from './combat-progression-pacing';
 import {eventCandyWindow} from './live-events';
 import {WINTER_HEARTH_GUILD_RELEASED} from './release-flags';
-import {winterHearthLightRecipeAvailable,isWinterHearthLightRecipe,winterHearthCraftSettlementWindow,WINTER_HEARTH_2026_ID} from './winter-hearth-2026';
+import {winterHearthLightRecipeAvailable,isWinterHearthLightRecipe,winterHearthCraftSettlementWindow,WINTER_HEARTH_2026_ID,winterHearthCraftWeekEndMs,winterHearthCompletedBatchAllowance,recordWinterHearthCompletedBatches} from './winter-hearth-2026';
 import {winterHearthGatheringTimeline,winterHearthXpFactorForActionTimes} from './winter-hearth-bonus-windows';
 import {professionActionPace} from './profession-action-pace';
 import {captureSkillAffinity,activeSkillAffinity,affinityXpRemainderKey,settleAffinitySkillXp} from './class-skill-affinities';
@@ -95,7 +95,7 @@ export function beginProcessingBatch(state:GameState,recipeId:string,nowMs:numbe
  const ready=finishClassDrills(state,nowMs);
  if(isWinterHearthLightRecipe(recipeId)&&!winterHearthLightRecipeAvailable(ready,nowMs))throw new Error('Winter Hearth crafting is closed.');
  if(batches===undefined)return startProcessingUntilLimited(ready,recipeId,nowMs,offlineCapSeconds(ready));
- const capacity=processingRunCapacity(ready,recipeId,offlineCapSeconds(ready));
+ const capacity=processingRunCapacity(ready,recipeId,offlineCapSeconds(ready),false,nowMs);
  if(!Number.isSafeInteger(batches)||batches<1||batches>capacity.availableBatches)throw new Error('Selected processing count exceeds available materials, Gold or AFK time.');
  return startProcessingBatch(ready,recipeId,batches,nowMs);
 }
@@ -1083,14 +1083,17 @@ function idleRuleSettlementWindow(state:GameState,nowMs:number){
 
 function processingSettlementWindow(state:GameState,nowMs:number){
  const activity=state.activity!,processing=activity.processing!;
- if(!isWinterHearthLightRecipe(processing.recipeId))return {expired:false,elapsedSeconds:Math.min(offlineCapSeconds(state),Math.max(0,(nowMs-activity.lastClaimAtMs)/1000))};
+ if(!isWinterHearthLightRecipe(processing.recipeId))return {expired:false,weeklyExpired:false,elapsedSeconds:Math.min(offlineCapSeconds(state),Math.max(0,(nowMs-activity.lastClaimAtMs)/1000))};
  const runtime=state.account.liveEvent;
- return winterHearthCraftSettlementWindow({lastClaimAtMs:activity.lastClaimAtMs,nowMs,offlineCapSeconds:offlineCapSeconds(state),savedEndMs:processing.seasonEndsAtMs,runtimeEndMs:runtime?.eventId===WINTER_HEARTH_2026_ID?runtime.endsAtMs:undefined,released:WINTER_HEARTH_GUILD_RELEASED});
+ const weekEnd=winterHearthCraftWeekEndMs(activity.startedAtMs);
+ const window=winterHearthCraftSettlementWindow({lastClaimAtMs:activity.lastClaimAtMs,nowMs,offlineCapSeconds:offlineCapSeconds(state),savedEndMs:Math.min(processing.seasonEndsAtMs??Infinity,weekEnd),runtimeEndMs:runtime?.eventId===WINTER_HEARTH_2026_ID?runtime.endsAtMs:undefined,released:WINTER_HEARTH_GUILD_RELEASED});
+ return {...window,weeklyExpired:window.expired&&nowMs>=weekEnd&&weekEnd<(runtime?.endsAtMs??Infinity)};
 }
 function processingTimedPreview(state:GameState,nowMs:number){
  const window=processingSettlementWindow(state,nowMs),elapsed=window.elapsedSeconds;
  const raw=dailySupplyAdjustTimedCraftReward(state,previewProcessingReward(state,dailySupplyCraftWorkSeconds(state,elapsed)),elapsed);
- return {window,raw:{...raw,xp:Math.floor((raw.xp??0)*(WINTER_HEARTH_GUILD_RELEASED?winterHearthXpFactorForActionTimes(state.winterHearthBonusWindows??[],raw.craftingCompletedAtMs??[],'skill'):1)),...timedEventRewards(state,'crafting',raw.craftingCompletedAtMs??[])}};
+ const capReached=isWinterHearthLightRecipe(state.activity!.processing!.recipeId)&&!!raw.nextProcessingRemaining&&(raw.craftingActions??0)>=winterHearthCompletedBatchAllowance(state,state.activity!.startedAtMs);
+ return {window:capReached?{...window,expired:true,weeklyExpired:true}:window,raw:{...raw,xp:Math.floor((raw.xp??0)*(WINTER_HEARTH_GUILD_RELEASED?winterHearthXpFactorForActionTimes(state.winterHearthBonusWindows??[],raw.craftingCompletedAtMs??[],'skill'):1)),...timedEventRewards(state,'crafting',raw.craftingCompletedAtMs??[])}};
 }
 export function previewActivityReward(state:GameState,nowMs:number):RewardBundle{
   if(state.character?.classTraining)return settleClassDrills(state,nowMs,offlineCapSeconds(state)).reward;
@@ -1105,7 +1108,7 @@ export function previewActivityReward(state:GameState,nowMs:number):RewardBundle
   if(state.activity?.kind==='processing'){
     const {window,raw}=processingTimedPreview(state,nowMs);
     const reward=previewDailySupplyTimedReward(state,raw,'crafting').reward;
-    return window.expired?{...reward,stoppedReason:'Winter Hearth crafting ended. Unfinished reservations are refunded.'}:reward;
+    return window.expired?{...reward,stoppedReason:window.weeklyExpired?'Winter Hearth weekly crafting reset or cap reached. Unfinished reservations are refunded.':'Winter Hearth crafting ended. Unfinished reservations are refunded.'}:reward;
   }
   if(!state.activity||!state.character)return {xp:0,gold:0,items:[],kills:0,elapsedSeconds:0};
   const idleWindow=idleRuleSettlementWindow(state,nowMs),reward=idleWindow.supply.reward;
@@ -1292,7 +1295,7 @@ function claimActivitySegmentRaw(state:GameState,nowMs:number){
     const routed=routeRewards(state,reward.items,nowMs);
     const skills=state.skills.map(x=>x.skillId==='alchemy'?{...x,xp:Math.min(totalXpAtLevel(100),x.xp+(reward.xp??0)),level:levelFromXp(Math.min(totalXpAtLevel(100),x.xp+(reward.xp??0)))}:x);
     const nextBase={...state,...routed,skills,rewardRemainders:reward.nextRewardRemainders,activity:reward.nextBrewRemaining?{...state.activity,lastClaimAtMs:nowMs,progressFraction:reward.nextProgressFraction,brew:{...brew,remainingBatches:reward.nextBrewRemaining}}:null} as GameState;
-    const next=commitDailySupplyTimedBoost(nextBase,boost),actions=reward.craftingActions??0;
+    const actions=reward.craftingActions??0,withCraftLedger=isWinterHearthLightRecipe(processing.recipeId)?recordWinterHearthCompletedBatches(nextBase,source.startedAtMs,actions):nextBase,next=commitDailySupplyTimedBoost(withCraftLedger,boost);
     const progressed=actions>0?applyTrustedLongTermProgression(next,[{kind:'crafting',contentId:brew.recipeId,units:actions,skillId:'alchemy',startedAtMs:state.activity.lastClaimAtMs}],reward,nowMs,{accountId:longTermAccountScope(state),eventId:`alchemy:${state.character?.id??'unknown'}:${brew.recipeId}:${state.activity.lastClaimAtMs}:${nowMs}`}).state:next;
     const eventApplied=applyEventDiscoveries(applyEventDrops(progressed,reward.eventDrops??[]),reward.eventDiscoveries??[]);
     const queuedState=!reward.nextBrewRemaining&&(source.queueManaged||state.character?.activityQueue?.length)?startFinishedQueuedActivity(eventApplied,nowMs):eventApplied;
@@ -1301,7 +1304,7 @@ function claimActivitySegmentRaw(state:GameState,nowMs:number){
   if(state.activity?.kind==='processing'){
     const source=state.activity;
     if(nowMs<=state.activity.lastClaimAtMs)return {state,reward:previewActivityReward(state,state.activity.lastClaimAtMs)};
-    const {window,raw}=processingTimedPreview(state,nowMs),boost=previewDailySupplyTimedReward(state,raw,'crafting'),reward=window.expired?{...boost.reward,stoppedReason:'Winter Hearth crafting ended. Unfinished reservations are refunded.'}:boost.reward,processing=state.activity.processing!;
+    const {window,raw}=processingTimedPreview(state,nowMs),boost=previewDailySupplyTimedReward(state,raw,'crafting'),reward=window.expired?{...boost.reward,stoppedReason:window.weeklyExpired?'Winter Hearth weekly crafting reset or cap reached. Unfinished reservations are refunded.':'Winter Hearth crafting ended. Unfinished reservations are refunded.'}:boost.reward,processing=state.activity.processing!;
     const unfinished=reward.nextProcessingRemaining??0,refund=window.expired&&unfinished>0?processingRefund({...processing,remainingBatches:unfinished}):null;
     const routed=routeRewards(state,[...reward.items,...(refund?.items??[])],nowMs),nextXp=(state.skills.find(x=>x.skillId===processing.skillId)?.xp??0)+(reward.xp??0);
     const skills=state.skills.map(x=>x.skillId===processing.skillId?{...x,xp:Math.min(totalXpAtLevel(100),nextXp),level:levelFromXp(Math.min(totalXpAtLevel(100),nextXp))}:x);
@@ -1785,7 +1788,7 @@ export function craftRecipe(state:GameState,recipeId:string,nowMs=Date.now(),seq
   if(!state.character)throw new Error('No character');
   if(recipeId.startsWith('BREW_'))throw new Error('Timed alchemy recipes must be started as a batch.');
   const r=recipeDef(recipeId);if(!r)throw new Error('Unknown recipe');
-  if(isWinterHearthLightRecipe(recipeId)&&!winterHearthLightRecipeAvailable(state,nowMs))throw new Error('Winter Hearth crafting is closed.');
+  if(isWinterHearthLightRecipe(recipeId))throw new Error('Winter Hearth Lights must be crafted as timed processing.');
   if(r.classId&&r.classId!==state.character.classId&&!r.v33SetId)throw new Error('This recipe belongs to another class');
   if(state.character.level<(r.characterLevel??1))throw new Error(`Requires character level ${r.characterLevel}`);
   if(r.requiresCraftedItemId&&!state.character.craftedNoviceItemIds?.includes(r.requiresCraftedItemId))throw new Error(`Craft ${itemDef(r.requiresCraftedItemId).name} first`);

@@ -1,3 +1,4 @@
+import type {ProtectionTraceV2} from './v2/world-boss-protection-review';
 import { clamp, defenseMitigation, damageAfterMitigation, hitChance, roleAdjustedAttackPower } from './calculations';
 import { CombatRng } from './deterministic-rng';
 import {applyEnemyV2Periodic,applyEnemyV2Modifier,enemyV2AllowedShieldAmount} from './enemy-v2-status-rules';
@@ -45,22 +46,27 @@ export interface ServerCombatAuthoritiesV2 {
  readonly partySync?:PartySyncAuthorityV2;
  /** Explicit private review policy; omission retains Forge's authored-priority execution. */
  readonly aiPolicy?:'tactical'|'authored-priority';
+ /** Private QA trace; no gameplay authority and no public input field. */
+ readonly protectionTrace?:ProtectionTraceV2[];
 }
 export function simulateCombatWithServerAuthoritiesV2(
  input:CombatInput,authorities:ServerCombatAuthoritiesV2,
 ):CombatResult{
  if(!authorities||typeof authorities!=='object'||Array.isArray(authorities)||
-   Object.keys(authorities).some(key=>!['enemy','equipmentTrait','dungeonReward','privateHit','partySync','aiPolicy'].includes(key)))
+   Object.keys(authorities).some(key=>!['enemy','equipmentTrait','dungeonReward','privateHit','partySync','aiPolicy','protectionTrace'].includes(key)))
   throw Error('combat_v2_unknown_authority_channel');
  if(authorities.aiPolicy!==undefined&&authorities.aiPolicy!=='tactical'&&authorities.aiPolicy!=='authored-priority')
   throw Error('combat_v2_unknown_ai_policy');
  return simulateCombat(input,authorities.enemy,authorities.equipmentTrait,
-  authorities.dungeonReward,authorities.privateHit,authorities.partySync,authorities.aiPolicy);
+  authorities.dungeonReward,authorities.privateHit,authorities.partySync,authorities.aiPolicy,authorities.protectionTrace);
 }
 
 /** Optional server-issued second parameter is never parsed from CombatInput JSON. */
-export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2EngineAuthority, equipmentTraitAuthority?:EquipmentV2TraitEngineAuthority, dungeonRewardAuthority?:DungeonRewardEngineAuthorityV2, eq2PrivateHitAuthority?:Eq2PrivateHitAuthorityV22, partySyncAuthority?:PartySyncAuthorityV2, reviewAiPolicy?:'tactical'|'authored-priority'): CombatResult {
+export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2EngineAuthority, equipmentTraitAuthority?:EquipmentV2TraitEngineAuthority, dungeonRewardAuthority?:DungeonRewardEngineAuthorityV2, eq2PrivateHitAuthority?:Eq2PrivateHitAuthorityV22, partySyncAuthority?:PartySyncAuthorityV2, reviewAiPolicy?:'tactical'|'authored-priority', protectionTrace?:ProtectionTraceV2[]): CombatResult {
   if (!input.players.length || !input.enemies.length) throw new Error('combat_requires_both_teams');
+  if(protectionTrace!==undefined&&(!Array.isArray(protectionTrace)||protectionTrace.length!==0||
+    !equipmentTraitAuthority||input.initialPlayerState!==undefined||input.enemyDamageProfile!==undefined||
+    dungeonRewardAuthority||eq2PrivateHitAuthority||partySyncAuthority))throw Error('combat_v2_invalid_protection_review_scope');
   const enemyV2Effects=authorizeEnemyV2EngineExecution(input,enemyV2Authority);
   // No token -> no equipment trait runtime actions, preserving every legacy
   // and previously compiled V2 run. Exact-token validation is server-owned.
@@ -269,8 +275,15 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
     if(v2Encounter&&eventType==='damage'&&!abilityId.startsWith('V2_')){
       if(source.combatV2)raw*=outgoingReactiveMultiplierV2(source,target,now);
       if(target.combatV2){
+        const beforeReactive=raw;
         raw*=incomingReactiveMultiplierV2(target,source,now);
         raw=Math.max(0,raw-reactiveDamageFlatReductionV2(target,raw));
+        if(protectionTrace&&source.definition.team==='enemies'&&target.definition.team==='players'){
+          const shield=eventType==='dot_tick'&&effect.damageType==='true'?0:target.shield;
+          const saved=Math.max(0,Math.min(target.hp,Math.max(0,beforeReactive-shield))-
+            Math.min(target.hp,Math.max(0,raw-shield)));
+          if(saved>0)protectionTrace.push({kind:'reactive_reduction',atMs:now,targetId:target.definition.id,amount:saved});
+        }
       }
     }
     // V2 Rupture consumes one own applied DoT and converts a bounded portion of
@@ -349,7 +362,9 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
     // Poison applied as a true-damage DoT attacks HP directly, regardless of shields.
     // Direct true damage retains its legacy shield interaction.
     const bypassShield=eventType==='dot_tick'&&effect.damageType==='true';
-    const absorbed=bypassShield?0:Math.min(target.shield,raw); target.shield-=absorbed;
+    const absorbed=bypassShield?0:Math.min(target.shield,raw); const shieldBefore=target.shield; target.shield-=absorbed;
+    if(protectionTrace&&absorbed>0)protectionTrace.push({kind:'absorb',atMs:now,sourceId:source.definition.id,
+      targetId:target.definition.id,amount:absorbed,before:shieldBefore,after:target.shield,hpBefore:target.hp,raw});
     // The ordinary shield pool/reflect ledger is untouched by equipment
     // shield consumption. Only residual nontrue original enemy damage qualifies.
     const eq2Absorption=eq2PrivateHit&&eq2Incoming?eq2PrivateHit.absorbShield(eq2Incoming,Math.max(0,raw-absorbed)):undefined;
@@ -603,7 +618,7 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
         }
       }
     }
-    if(direct){const post=gemOnDirectHealV1(now,source,target,amount,actual);if(post.mercyBarrier>0){target.shield+=post.mercyBarrier;events.push({atMs:now,type:'shield',actorId:source.definition.id,targetId:target.definition.id,abilityId:'GEM_MERCY',amount:Number(post.mercyBarrier.toFixed(2))});}if(post.renewalTotal>0){const existing=target.periodic.filter(p=>p.effectId==='GEM_RENEWAL'&&p.sourceId===source.definition.id).sort((a,b)=>a.expiresAt-b.expiresAt);while(existing.length>=post.renewalMax){const remove=existing.shift();if(remove)target.periodic=target.periodic.filter(p=>p!==remove);}const tickMs=2000,ticks=Math.max(1,Math.floor(post.renewalDuration/tickMs));target.periodic.push({sourceId:source.definition.id,effectId:'GEM_RENEWAL',kind:'hot',coeff:0,flat:post.renewalTotal/ticks,nextTickAt:now+tickMs,expiresAt:now+post.renewalDuration,tickMs});}gemConsumeSupportChargeV1(now,source);emitGemState(now);}
+    if(direct){const post=gemOnDirectHealV1(now,source,target,amount,actual);if(post.mercyBarrier>0){const before=target.shield;target.shield+=post.mercyBarrier;if(protectionTrace)protectionTrace.push({kind:'grant',atMs:now,ownerId:source.definition.id,targetId:target.definition.id,amount:post.mercyBarrier,before,after:target.shield});events.push({atMs:now,type:'shield',actorId:source.definition.id,targetId:target.definition.id,abilityId:'GEM_MERCY',amount:Number(post.mercyBarrier.toFixed(2))});}if(post.renewalTotal>0){const existing=target.periodic.filter(p=>p.effectId==='GEM_RENEWAL'&&p.sourceId===source.definition.id).sort((a,b)=>a.expiresAt-b.expiresAt);while(existing.length>=post.renewalMax){const remove=existing.shift();if(remove)target.periodic=target.periodic.filter(p=>p!==remove);}const tickMs=2000,ticks=Math.max(1,Math.floor(post.renewalDuration/tickMs));target.periodic.push({sourceId:source.definition.id,effectId:'GEM_RENEWAL',kind:'hot',coeff:0,flat:post.renewalTotal/ticks,nextTickAt:now+tickMs,expiresAt:now+post.renewalDuration,tickMs});}gemConsumeSupportChargeV1(now,source);emitGemState(now);}
     enemies.forEach(e=>{if(e.alive)addThreat(e,source,actual*.5*(effect.threatMultiplier??1));}); };
   // Forge Tenacity modifies only ordinary hostile abilities on Combat 2.0
   // actors; boss-exclusive status locks, authored phases, buffs and HoTs
@@ -627,7 +642,7 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
       (1+sync(source,'shield_strength_pct')));
       const amt=enemyV2Effects&&target.definition.team==='enemies'
         ?enemyV2AllowedShieldAmount(target.definition.stats.maxHp,target.shield,requested):requested;
-      target.shield+=amt;if(effect.shieldReflectPct&&amt>0)(target.reflectiveShields??=[]).push({remaining:amt,rate:clamp(effect.shieldReflectPct,0,.5),sourceId:source.definition.id});gemOnShieldAppliedV1(now,source,target);gemConsumeSupportChargeV1(now,source);emitGemState(now);events.push({atMs:now,type:'shield',actorId:source.definition.id,targetId:target.definition.id,abilityId,amount:Number(amt.toFixed(2))});if(amt>0&&source.definition.team==='players'){
+      const before=target.shield;target.shield+=amt;if(protectionTrace&&amt>0)protectionTrace.push({kind:'grant',atMs:now,ownerId:source.definition.id,targetId:target.definition.id,amount:amt,before,after:target.shield});if(effect.shieldReflectPct&&amt>0)(target.reflectiveShields??=[]).push({remaining:amt,rate:clamp(effect.shieldReflectPct,0,.5),sourceId:source.definition.id});gemOnShieldAppliedV1(now,source,target);gemConsumeSupportChargeV1(now,source);emitGemState(now);events.push({atMs:now,type:'shield',actorId:source.definition.id,targetId:target.definition.id,abilityId,amount:Number(amt.toFixed(2))});if(amt>0&&source.definition.team==='players'){
       resource(source,'shield_granted',now,abilityId);
       if(!abilityId.startsWith('V2_CAPSTONE')){
         const ability=source.definition.abilities.find(a=>a.id===abilityId);

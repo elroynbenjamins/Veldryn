@@ -568,3 +568,51 @@ rejectsGatheringSpeedReview(()=>reviewWorldBossGatheringCustodyV101({accountId:s
  copies:[unclaimed101],ownedCharacterIds:[snapCharacter],intent:{kind:'claim_to_bank',requestId:'qa-full',instanceId:mint100.instanceId},
  verifyPersisted:()=>true,verifyMoveAllowed:()=>true}));
 console.log('WORLD_BOSS_GATHERING_CUSTODY_V101: unclaimed-to-bank/withdraw/equip/freeze/unequip/deposit; no mutation, duplicate claim and full bank rejection');
+
+import {worldBossMintEntropyV102,issueWorldBossGatheringMintV102} from '../../../backend/src/server/loot/world-boss-gathering-mint-v102';
+import {rollWorldBossGatheringSlotV96} from '../../../backend/src/server/combat/world-boss-chest-policy-v96';
+import type {ChestSqlV70} from '../../../backend/src/server/loot/chest-postgres-store-v70';
+const secret102=new Uint8Array(32).fill(13);
+const source102=mint100.originalChest.sourceKey;
+const seeded102=()=>rollWorldBossGatheringSlotV96('hollowroot',roll100.slot,worldBossMintEntropyV102(secret102,source102,'qa-v1'));
+assert.deepEqual(seeded102(),seeded102());
+const draw102=worldBossMintEntropyV102(secret102,source102,'qa-v1');
+for(let i=0;i<1000;i++){const value=draw102(1000000);assert.ok(Number.isInteger(value)&&value>=0&&value<1000000);}
+rejectsGatheringSpeedReview(()=>worldBossMintEntropyV102(new Uint8Array(1),source102,'qa-v1'));
+async function testMint102(){
+ let mint:Record<string,unknown>|null=null,custody:Record<string,unknown>|null=null;
+ let inserts=0,receipt=mint100.originalChest;
+ const instance='30000000-0000-4000-8000-000000000001';
+ const tx:ChestSqlV70={
+  async query<T extends Record<string,unknown>>(sql:string,params:readonly unknown[]=[]){
+   let rows:Record<string,unknown>[]=[];
+   if(sql.includes('FROM private.chest_account_fence_v70'))rows=[{account_id:snapAccount}];
+   else if(sql.includes('FROM private.chest_reward_receipts_v70'))rows=[{receipt}];
+   else if(sql.startsWith('SELECT')&&sql.includes('world_boss_gathering_mints_v102'))rows=mint?[mint]:[];
+   else if(sql.startsWith('INSERT INTO private.world_boss_gathering_mints_v102')){
+    assert.equal(mint,null);inserts++;
+    mint={id:instance,source_key:params[0],account_id:params[1],event_id:params[2],boss_id:params[3],piece_id:params[4],slot:params[5],roll:JSON.parse(String(params[6])),roll_digest:params[7],chest_digest:params[8],entropy_version:params[9]};rows=[mint];
+   }else if(sql.startsWith('INSERT INTO private.world_boss_gathering_custody_v102')){
+    custody={instance_id:instance,account_id:snapAccount,location:'unclaimed',holder_character_id:null,revision:1};
+   }else if(sql.startsWith('SELECT')&&sql.includes('world_boss_gathering_custody_v102'))rows=custody?[custody]:[];
+   else throw Error('unexpected V102 SQL '+sql);
+   return {rows:rows as T[]};
+  },release(){}
+ };
+ const args={accountId:snapAccount,sourceKey:source102,entropyVersion:'qa-v1',secret:secret102,verifyLockedSource:async()=>true};
+ const rejects=async(fn:()=>Promise<unknown>)=>{let failed=false;try{await fn();}catch{failed=true;}assert.equal(failed,true);};
+ await rejects(()=>issueWorldBossGatheringMintV102(tx,args));
+ await rejects(()=>issueWorldBossGatheringMintV102(tx,{...args,verifyLockedSource:async()=>false},true));
+ const fresh=await issueWorldBossGatheringMintV102(tx,args,true);
+ assert.equal(fresh.replayed,false);assert.equal(fresh.committed,false);
+ assert.equal(fresh.copy.location,'unclaimed');assert.deepEqual(fresh.copy.roll,seeded102());
+ const replay=await issueWorldBossGatheringMintV102(tx,{...args,secret:new Uint8Array(32).fill(99),entropyVersion:'qa-v2'},true);
+ assert.equal(replay.replayed,true);assert.equal(replay.itemInstanceId,fresh.itemInstanceId);
+ assert.deepEqual(replay.copy.roll,fresh.copy.roll);assert.equal(inserts,1);
+ receipt={...receipt,tableVersion:'old-table'};
+ await rejects(()=>issueWorldBossGatheringMintV102(tx,args,true));
+ receipt=mint100.originalChest;custody=null;
+ await rejects(()=>issueWorldBossGatheringMintV102(tx,args,true));
+ console.log('WORLD_BOSS_GATHERING_MINT_V102: SQL-shaped port fresh/replay, same identity/roll, secret rotation, gate, stale receipt and missing custody rejection');
+}
+void testMint102().catch(error=>{console.error(error);process.exitCode=1;});

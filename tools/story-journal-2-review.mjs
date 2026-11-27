@@ -19,6 +19,7 @@ export function validateStoryBook(book) {
     const seen = new Set();
     for (const o of q.objectives) {
       if (!id(o.id) || seen.has(o.id) || !kinds.has(o.kind) || !id(o.targetId) || !positive(o.required) || o.evidence !== (o.kind === 'kill' ? 'sinceActivation' : 'verifiedFact')) throw Error('invalid_objective');
+      if(o.mapScope!==undefined&&(o.kind!=='map'||!['account','character'].includes(o.mapScope)))throw Error('invalid_map_scope');
       seen.add(o.id);
     }
     byId.set(q.id,q); if(q.legacyQuestId!==undefined)legacy.add(q.legacyQuestId);

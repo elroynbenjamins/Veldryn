@@ -308,7 +308,8 @@ export function simulateFrozenPartyEventEquipmentV92(input:{
  const {witness,combat,sources,ports}=input;
  checkWitness(witness);
  if(!ports||typeof ports.verifyPersisted!=='function'||
-   !combat||combat.seed!==witness.seed||
+   !combat||Object.keys(combat).some(key=>!['seed','players','enemies','maxDurationMs'].includes(key))||
+   combat.seed!==witness.seed||
    combat.maxDurationMs!==PARTY_EVENT_EQ2_TRAIT_V92_MAX_MS||
    combat.tickMs!==undefined||combat.mitigationConstant!==undefined||
    combat.accuracyScale!==undefined||combat.initialPlayerState!==undefined||

@@ -10,23 +10,27 @@ const guides={
 const C={panel:'#111',panel2:'#222',line:'#333',accent:'#dda',text:'#fff',muted:'#aaa',selection:'#444',selectionLine:'#666'};
 const deps={
  react:React,'react/jsx-runtime':require('react/jsx-runtime'),
- 'react-native':{Modal:'Modal',Pressable:'Pressable',ScrollView:'ScrollView',StyleSheet:{create:x=>x,absoluteFill:{}},Text:'Text',View:'View'},
+ 'react-native':{Modal:'Modal',Pressable:'Pressable',ScrollView:'ScrollView',StyleSheet:{create:x=>x,absoluteFill:{},hairlineWidth:1},Text:'Text',View:'View'},
  '../i18n/guild-detailed-guide-locales':{localizedGuildDetailedGuide:(_language,id)=>guides[id]},
  '../i18n/guild-guide-library':{guildGuideLibraryText:(_language,label)=>label,guildGuideSectionTitle:(_language,_id,title)=>title},
  '../i18n/GameLanguageProvider':{useGameLanguage:()=>'nl'},
  '../theme/ThemeContext':{useGameTheme:()=>C},
  './ThemedNavigationIcon':{ThemedIcon:()=>React.createElement('GuildIcon')},
 };
-const source=fs.readFileSync(path.join(__dirname,'../src/components/GuildGuideLibrary.tsx'),'utf8');
-const code=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX}}).outputText;
-const sandbox={exports:{},require:name=>deps[name]??{}};
-vm.runInNewContext(code,sandbox);
-const GuildGuideLibrary=sandbox.exports.GuildGuideLibrary;
+function loadComponent(name){
+ const source=fs.readFileSync(path.join(__dirname,'../src/components',name+'.tsx'),'utf8');
+ const code=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX}}).outputText;
+ const sandbox={exports:{},require:name=>deps[name]??{}};
+ vm.runInNewContext(code,sandbox);
+ return sandbox.exports;
+}
+deps['./GuideTopicAccordion']=loadComponent('GuideTopicAccordion');
+const {GuildGuideLibrary}=loadComponent('GuildGuideLibrary');
 (async()=>{
  let renderer,closed=0;
  const app=role=>React.createElement(GuildGuideLibrary,{visible:true,role,onClose:()=>closed++});
  const buttons=()=>renderer.root.findAllByType('Pressable').filter(x=>x.props.accessibilityRole==='button');
- const tabButtons=()=>renderer.root.findAllByType('Pressable').filter(x=>x.props.accessibilityRole==='tab');
+ const topicButtons=()=>buttons().filter(x=>typeof x.props.accessibilityState?.expanded==='boolean');
  const button=name=>buttons().find(x=>x.props.accessibilityLabel===name);
  const text=value=>renderer.root.findAllByType('Text').some(x=>x.props.children===value);
  await act(async()=>{renderer=create(app('member'))});
@@ -36,14 +40,27 @@ const GuildGuideLibrary=sandbox.exports.GuildGuideLibrary;
  assert.ok(renderer.root.findAllByType('ScrollView').length>0,'library list can scroll');
  await act(async()=>{button('Muster & Rally').props.onPress()});
  assert.ok(text('Translated Muster summary'),'locale summary appears after selecting a guide');
- assert.equal(tabButtons().length,2,'topic choice tabs are available');
- assert.equal(tabButtons()[0].props.accessibilityState.selected,true,'first topic is selected');
- await act(async()=>{tabButtons()[1].props.onPress()});
- assert.equal(tabButtons()[1].props.accessibilityState.selected,true,'topic selection updates');
+ assert.equal(topicButtons().length,2,'all accordion topics are available');
+ assert.equal(button('Daily points').props.accessibilityState.expanded,true,'first topic is expanded');
+ assert.equal(button('Weekly Rally').props.accessibilityState.expanded,false,'second topic is collapsed');
+ assert.ok(text('Earn 25 points.'),'first topic body is visible');
+ assert.ok(!text('Earn marks on four days.'),'collapsed content is not rendered');
+ await act(async()=>{button('Weekly Rally').props.onPress()});
+ assert.equal(button('Weekly Rally').props.accessibilityState.expanded,true,'topic expansion updates');
+ assert.equal(button('Daily points').props.accessibilityState.expanded,false,'prior topic collapses');
+ assert.ok(!text('Earn 25 points.'),'previous body is removed');
  assert.ok(text('Earn marks on four days.'),'second topic body is visible');
- assert.ok(renderer.root.findAllByType('ScrollView').length>0,'long topic body remains scrollable');
+ await act(async()=>{button('Weekly Rally').props.onPress()});
+ assert.ok(topicButtons().every(x=>!x.props.accessibilityState.expanded),'tapping the active topic collapses it');
+ assert.ok(!text('Earn marks on four days.'),'collapsed body is removed');
+ assert.ok(renderer.root.findAllByType('ScrollView').every(x=>!x.props.horizontal&&x.props.showsHorizontalScrollIndicator===false&&x.props.showsVerticalScrollIndicator===false),'guide scrolls vertically without indicators');
+ await act(async()=>{button('Daily points').props.onPress()});
+ assert.ok(text('Earn 25 points.'),'collapsed topic can reopen');
  await act(async()=>{button('All guides').props.onPress()});
  assert.ok(button('Guild Home'),'back returns to the library');
+ await act(async()=>{button('Muster & Rally').props.onPress()});
+ assert.equal(button('Daily points').props.accessibilityState.expanded,true,'reopening starts with the first topic');
+ await act(async()=>{button('All guides').props.onPress()});
  await act(async()=>{renderer.update(app('officer'))});
  assert.ok(button('Manage your Guild'),'officers can access leadership guides');
  await act(async()=>{button('Manage your Guild').props.onPress()});
@@ -52,5 +69,5 @@ const GuildGuideLibrary=sandbox.exports.GuildGuideLibrary;
  await act(async()=>{modal.props.onRequestClose()});
  assert.equal(closed,1,'native Android Back dismisses the guide');
  await act(async()=>renderer.unmount());
- console.log('PASS: Guild Guide Library member/officer access, scrollable locale topics, selection, Back and dismissal');
+ console.log('PASS: Guild Guide Library member/officer access, scrollable locale topics, accordion expansion/collapse, reset, Back and dismissal');
 })().catch(error=>{console.error(error);process.exitCode=1});

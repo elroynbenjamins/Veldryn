@@ -1,0 +1,248 @@
+-- DISPOSABLE only. This is an atomic mirror/CAS rehearsal, NOT a GameState writer.
+-- Run on pristine fixture after rollback regressions, before concurrent tests.
+DO $$ BEGIN
+ IF current_database()<>'eq2_market_review' OR current_user<>'eq2_market_review'
+ OR current_setting('market_review.disposable',true) IS DISTINCT FROM 'yes'
+ THEN RAISE EXCEPTION 'disposable_only'; END IF;
+END $$;
+BEGIN;
+CREATE TABLE market_review.mirror_character_wallet(
+ character_id text PRIMARY KEY REFERENCES market_review.character(id),
+ gold bigint NOT NULL CHECK(gold>=0)
+);
+CREATE TABLE market_review.mirror_online(
+ account_id text PRIMARY KEY REFERENCES market_review.wallet(id),
+ character_id text NOT NULL,
+ revision bigint NOT NULL CHECK(revision>=0),
+ state jsonb NOT NULL,
+ FOREIGN KEY(character_id,account_id) REFERENCES market_review.character(id,owner)
+);
+INSERT INTO market_review.mirror_character_wallet VALUES('a1',1000),('b1',1000),('b2',77),('c1',1000);
+-- Simplified projection: one active wallet and account-wide exact copies.
+-- Real inactive wallet, per-container capacity and canonical serializer remain open.
+CREATE FUNCTION market_review.mirror_projection(p_account text,p_character text)
+ RETURNS jsonb LANGUAGE sql STABLE SET search_path='' AS $$
+ SELECT jsonb_build_object('character',jsonb_build_object('id',p_character,'gold',w.gold),
+ 'copies',coalesce((SELECT jsonb_agg(jsonb_build_object('instance',c.id,'location',c.state,'holder',c.holder)
+   ORDER BY c.id) FROM market_review.custody c WHERE c.owner=w.id),'[]'::jsonb))
+ FROM market_review.wallet w WHERE w.id=p_account
+$$;
+INSERT INTO market_review.mirror_online
+ SELECT id,id||'1',0,market_review.mirror_projection(id,id||'1') FROM market_review.wallet;
+CREATE TABLE market_review.mirror_receipt(
+ actor text NOT NULL,request_id text NOT NULL,args jsonb NOT NULL,response jsonb NOT NULL,
+ receipt_id uuid NOT NULL UNIQUE DEFAULT gen_random_uuid(),
+ actor_revision bigint NOT NULL CHECK(actor_revision>=0),
+ PRIMARY KEY(actor,request_id)
+);
+CREATE TRIGGER mirror_receipt_immutable BEFORE UPDATE OR DELETE ON market_review.mirror_receipt
+ FOR EACH ROW EXECUTE FUNCTION market_review.immutable();
+-- Read committed evidence only. A missing row is UNKNOWN, never a failed buy.
+-- The caller here is a fixture identity; real gateway must bind verified Auth.
+CREATE FUNCTION market_review.mirror_receipt_status(p_actor text,p_request text)
+ RETURNS jsonb LANGUAGE sql STABLE SECURITY INVOKER SET search_path='' AS $$
+ SELECT coalesce((SELECT jsonb_build_object('status','committed','requestKey',r.request_id,
+  'operation',CASE r.args->>0 WHEN 'list' THEN 'publish' ELSE r.args->>0 END,
+  'revision',r.actor_revision,'receiptId',r.receipt_id)
+  FROM market_review.mirror_receipt r WHERE r.actor=p_actor AND r.request_id=p_request
+    AND r.args->>0 IN ('list','buy','cancel','claim')),
+  jsonb_build_object('status','unknown','requestKey',p_request))
+$$;
+CREATE FUNCTION market_review.mirror_act(
+ p_op text,p_actor text,p_request text,p_instance text,p_copy_revision bigint,
+ p_actor_revision bigint,p_owner_revision bigint,p_offer text DEFAULT NULL,
+ p_price bigint DEFAULT NULL,p_now bigint DEFAULT NULL,p_recipient text DEFAULT NULL,
+ p_abort boolean DEFAULT false,p_abort_after_receipt boolean DEFAULT false
+) RETURNS jsonb LANGUAGE plpgsql SET search_path='' AS $$
+DECLARE c market_review.custody%ROWTYPE; rec market_review.mirror_receipt%ROWTYPE;
+ a market_review.mirror_online%ROWTYPE; row_account market_review.mirror_online%ROWTYPE;
+ args jsonb; result jsonb; gold_now bigint; owner_before text;
+BEGIN
+ -- Single-copy test lock order matches normalized act; never transplant this
+ -- to real gameplay without reconciling historical account-first locking.
+ SELECT * INTO STRICT c FROM market_review.custody WHERE id=p_instance FOR UPDATE;
+ owner_before:=c.owner;
+ PERFORM 1 FROM market_review.policy WHERE id=p_instance FOR UPDATE;
+ -- Serialize this small fixture's accounts to prove mirrors and replay; not scalable.
+ PERFORM 1 FROM market_review.wallet ORDER BY id FOR UPDATE;
+ PERFORM 1 FROM market_review.mirror_online ORDER BY account_id FOR UPDATE;
+ PERFORM 1 FROM market_review.mirror_character_wallet ORDER BY character_id FOR UPDATE;
+ args:=jsonb_build_array(p_op,p_instance,p_copy_revision,p_actor_revision,p_owner_revision,p_offer,p_price,p_now,p_recipient);
+ SELECT * INTO rec FROM market_review.mirror_receipt WHERE actor=p_actor AND request_id=p_request;
+ IF FOUND THEN
+  IF rec.args<>args THEN RAISE EXCEPTION 'mirror_request_conflict'; END IF;
+  RETURN rec.response;
+ END IF;
+ SELECT * INTO STRICT a FROM market_review.mirror_online WHERE account_id=p_actor;
+ IF a.revision IS DISTINCT FROM p_actor_revision OR
+  (SELECT revision FROM market_review.mirror_online WHERE account_id=owner_before) IS DISTINCT FROM p_owner_revision
+ THEN RAISE EXCEPTION 'mirror_stale_state'; END IF;
+ FOR row_account IN SELECT * FROM market_review.mirror_online LOOP
+  SELECT gold INTO STRICT gold_now FROM market_review.wallet WHERE id=row_account.account_id;
+  IF row_account.state IS DISTINCT FROM market_review.mirror_projection(row_account.account_id,row_account.character_id)
+   OR (SELECT gold FROM market_review.mirror_character_wallet WHERE character_id=row_account.character_id) IS DISTINCT FROM gold_now
+  THEN RAISE EXCEPTION 'mirror_diverged'; END IF;
+ END LOOP;
+ result:=market_review.act(p_op,p_actor,p_request,p_instance,p_copy_revision,p_offer,p_price,p_now,p_recipient);
+ -- Fault injection after normalized wallet/custody/history mutation. Exception
+ -- must roll back *all* legs, including request receipt and any fees.
+ IF p_abort THEN RAISE EXCEPTION 'injected_after_settlement'; END IF;
+ FOR row_account IN SELECT * FROM market_review.mirror_online WHERE account_id IN (p_actor,owner_before) LOOP
+  SELECT gold INTO STRICT gold_now FROM market_review.wallet WHERE id=row_account.account_id;
+  UPDATE market_review.mirror_character_wallet SET gold=gold_now WHERE character_id=row_account.character_id;
+  UPDATE market_review.mirror_online
+   SET state=market_review.mirror_projection(row_account.account_id,row_account.character_id),revision=revision+1
+   WHERE account_id=row_account.account_id AND revision=row_account.revision;
+  IF NOT FOUND THEN RAISE EXCEPTION 'mirror_cas_failed'; END IF;
+ END LOOP;
+ INSERT INTO market_review.mirror_receipt(actor,request_id,args,response,actor_revision)
+ VALUES(p_actor,p_request,args,result,(SELECT revision FROM market_review.mirror_online WHERE account_id=p_actor));
+ IF p_abort_after_receipt THEN RAISE EXCEPTION 'injected_after_receipt'; END IF;
+ RETURN result;
+END $$;
+REVOKE ALL ON ALL TABLES IN SCHEMA market_review FROM PUBLIC;
+REVOKE ALL ON ALL FUNCTIONS IN SCHEMA market_review FROM PUBLIC;
+SELECT market_review.mirror_act('list','a','mirror-list','x',0,0,0,'mirror-offer',125,100);
+SELECT market_review.expect_error($q$SELECT market_review.mirror_act('buy','b','mirror-buy','x',1,0,0,'mirror-offer',125,101,'b1')$q$,'mirror_stale_state');
+SELECT market_review.expect_error($q$SELECT market_review.mirror_act('buy','b','mirror-buy','x',1,1,1,'mirror-offer',125,101,'b1')$q$,'mirror_stale_state');
+SELECT market_review.expect_error($q$SELECT market_review.mirror_act('buy','b','mirror-buy','x',1,0,1,'mirror-offer',125,101,'b1',true)$q$,'injected_after_settlement');
+SELECT market_review.expect_error($q$SELECT market_review.mirror_act('buy','b','mirror-buy','x',1,0,1,'mirror-offer',125,101,'b1',false,true)$q$,'injected_after_receipt');
+DO $$ BEGIN
+ IF (SELECT count(*) FROM market_review.sale)<>0 OR EXISTS(SELECT 1 FROM market_review.request WHERE request_id='mirror-buy')
+ OR (SELECT gold FROM market_review.wallet WHERE id='b')<>1000
+ OR NOT EXISTS(SELECT 1 FROM market_review.custody WHERE id='x' AND owner='a' AND state='escrow' AND revision=1)
+ OR (SELECT revision FROM market_review.mirror_online WHERE account_id='b')<>0
+ OR (SELECT revision FROM market_review.mirror_online WHERE account_id='a')<>1
+ OR (SELECT gold FROM market_review.wallet WHERE id='a')<>1000
+ OR (SELECT gold FROM market_review.mirror_character_wallet WHERE character_id='b1')<>1000
+ OR (SELECT gold FROM market_review.mirror_character_wallet WHERE character_id='a1')<>1000
+ OR market_review.mirror_receipt_status('b','mirror-buy') IS DISTINCT FROM '{"status":"unknown","requestKey":"mirror-buy"}'::jsonb
+ OR EXISTS(SELECT 1 FROM market_review.mirror_receipt WHERE request_id='mirror-buy')
+ THEN RAISE EXCEPTION 'fault_rollback_failed'; END IF;
+END $$;
+SELECT market_review.mirror_act('buy','b','mirror-buy','x',1,0,1,'mirror-offer',125,101,'b1');
+-- Simulate loss of the successful buy response: use a read-only status lookup.
+CREATE TEMP TABLE saved_buy_status AS SELECT market_review.mirror_receipt_status('b','mirror-buy') AS status;
+DO $$ DECLARE s jsonb; BEGIN
+ SELECT status INTO STRICT s FROM pg_temp.saved_buy_status;
+ IF s IS DISTINCT FROM jsonb_build_object('status','committed','requestKey','mirror-buy','operation','buy','revision',1,
+   'receiptId',(SELECT receipt_id FROM market_review.mirror_receipt WHERE actor='b' AND request_id='mirror-buy'))
+ OR s->>'receiptId' IS NULL
+ OR market_review.mirror_receipt_status('a','mirror-buy')->>'status' IS DISTINCT FROM 'unknown'
+ OR market_review.mirror_receipt_status('c','mirror-buy')->>'status' IS DISTINCT FROM 'unknown'
+ THEN RAISE EXCEPTION 'receipt_projection_failed'; END IF;
+END $$;
+SELECT market_review.expect_error($q$UPDATE market_review.mirror_receipt SET actor_revision=999 WHERE actor='b' AND request_id='mirror-buy'$q$,'immutable_history');
+-- Replaying after revision changes returns the same committed receipt.
+SELECT market_review.mirror_act('buy','b','mirror-buy','x',1,0,1,'mirror-offer',125,101,'b1');
+SELECT market_review.expect_error($q$SELECT market_review.mirror_act('buy','b','mirror-buy','x',1,0,1,'mirror-offer',126,101,'b1')$q$,'mirror_request_conflict');
+UPDATE market_review.wallet SET inventory_cap=0 WHERE id='b';
+SELECT market_review.expect_error($q$SELECT market_review.mirror_act('claim','b','mirror-claim','x',2,1,1,p_recipient=>'b1')$q$,'inventory_full');
+DO $$ BEGIN
+ IF market_review.mirror_receipt_status('b','mirror-claim')->>'status' IS DISTINCT FROM 'unknown'
+ OR NOT EXISTS(SELECT 1 FROM market_review.custody WHERE id='x' AND owner='b' AND state='pending_delivery')
+ OR market_review.mirror_receipt_status('b','mirror-buy') IS DISTINCT FROM (SELECT status FROM pg_temp.saved_buy_status)
+ THEN RAISE EXCEPTION 'blocked_delivery_lost_receipt'; END IF;
+END $$;
+UPDATE market_review.wallet SET inventory_cap=2 WHERE id='b';
+SELECT market_review.mirror_act('claim','b','mirror-claim','x',2,1,1,p_recipient=>'b1');
+SELECT market_review.mirror_act('deposit','b','mirror-deposit','x',3,2,2);
+SELECT market_review.mirror_act('withdraw','b','mirror-withdraw','x',4,3,3,p_recipient=>'b2');
+DO $$ BEGIN
+ IF (SELECT count(*) FROM market_review.sale)<>1 OR (SELECT sum(fee) FROM market_review.sale)<>7
+ OR (SELECT gold FROM market_review.mirror_character_wallet WHERE character_id='b2')<>77
+ OR (SELECT gold FROM market_review.mirror_character_wallet WHERE character_id='b1')<>875
+ OR (SELECT gold FROM market_review.mirror_character_wallet WHERE character_id='a1')<>1118
+ OR EXISTS(SELECT 1 FROM market_review.mirror_online m WHERE m.state IS DISTINCT FROM market_review.mirror_projection(m.account_id,m.character_id))
+ OR NOT EXISTS(SELECT 1 FROM market_review.custody WHERE id='x' AND owner='b' AND holder='b2' AND state='inventory' AND revision=5)
+ OR (SELECT revision FROM market_review.mirror_online WHERE account_id='b')<>4
+ OR market_review.mirror_receipt_status('b','mirror-buy') IS DISTINCT FROM (SELECT status FROM pg_temp.saved_buy_status)
+ OR market_review.mirror_receipt_status('b','mirror-claim')->>'revision' IS DISTINCT FROM '2'
+ OR market_review.mirror_receipt_status('a','mirror-list')->>'operation' IS DISTINCT FROM 'publish'
+ OR market_review.mirror_receipt_status('b','mirror-deposit')->>'status' IS DISTINCT FROM 'unknown'
+ THEN RAISE EXCEPTION 'mirror_settlement_failed'; END IF;
+END $$;
+
+-- Two further resales, with the original exact-copy mint unchanged.
+CREATE TEMP TABLE saved_resale_mint AS SELECT * FROM market_review.mint WHERE id='x';
+SELECT market_review.mirror_act('list','b','resale-list-b','x',5,4,4,'resale-b',150,200);
+SELECT market_review.expect_error($q$SELECT market_review.mirror_act('buy','c','resale-buy-c','x',6,0,5,'resale-b',150,201,'c1',false,true)$q$,'injected_after_receipt');
+DO $$ BEGIN
+ IF (SELECT count(*) FROM market_review.sale WHERE instance='x')<>1
+ OR NOT EXISTS(SELECT 1 FROM market_review.custody WHERE id='x' AND owner='b' AND state='escrow' AND revision=6)
+ OR market_review.mirror_receipt_status('c','resale-buy-c')->>'status' IS DISTINCT FROM 'unknown'
+ OR (SELECT gold FROM market_review.wallet WHERE id='c')<>1000
+ OR (SELECT gold FROM market_review.wallet WHERE id='b')<>875
+ THEN RAISE EXCEPTION 'resale_atomic_rollback_failed'; END IF;
+END $$;
+SELECT market_review.mirror_act('buy','c','resale-buy-c','x',6,0,5,'resale-b',150,201,'c1');
+CREATE TEMP TABLE saved_resale_status AS SELECT market_review.mirror_receipt_status('c','resale-buy-c') AS status;
+SELECT market_review.mirror_act('claim','c','resale-claim-c','x',7,1,1,p_recipient=>'c1');
+SELECT market_review.mirror_act('list','c','resale-list-c','x',8,2,2,'resale-c',100,300);
+SELECT market_review.mirror_act('buy','a','resale-buy-a','x',9,2,3,'resale-c',100,301,'a1');
+SELECT market_review.mirror_act('claim','a','resale-claim-a','x',10,3,3,p_recipient=>'a1');
+-- Historic receipts remain exact, even after the copy returns to its first owner.
+SELECT market_review.mirror_act('buy','b','mirror-buy','x',1,0,1,'mirror-offer',125,101,'b1');
+SELECT market_review.mirror_act('buy','c','resale-buy-c','x',6,0,5,'resale-b',150,201,'c1');
+SELECT market_review.expect_error($q$UPDATE market_review.sale SET buyer='b' WHERE instance='x' AND ordinal=3$q$,'immutable_history');
+SELECT market_review.expect_error($q$UPDATE market_review.mint SET snapshot='{}' WHERE id='x'$q$,'immutable_history');
+DO $$ BEGIN
+ IF (SELECT count(*) FROM market_review.sale WHERE instance='x')<>3
+ OR NOT EXISTS(SELECT 1 FROM market_review.sale WHERE instance='x' AND ordinal=1 AND parent IS NULL AND seller='a' AND buyer='b' AND gross=125 AND fee=7)
+ OR NOT EXISTS(SELECT 1 FROM market_review.sale WHERE instance='x' AND ordinal=2 AND parent=1 AND seller='b' AND buyer='c' AND gross=150 AND fee=8)
+ OR NOT EXISTS(SELECT 1 FROM market_review.sale WHERE instance='x' AND ordinal=3 AND parent=2 AND seller='c' AND buyer='a' AND gross=100 AND fee=5)
+ OR EXISTS(SELECT * FROM market_review.mint WHERE id='x' EXCEPT SELECT * FROM pg_temp.saved_resale_mint)
+ OR (SELECT count(*) FROM market_review.mint WHERE id='x' AND original_owner='a' AND receipt='mint-x')<>1
+ OR NOT EXISTS(SELECT 1 FROM market_review.custody WHERE id='x' AND owner='a' AND holder='a1' AND state='inventory' AND revision=11)
+ OR market_review.mirror_receipt_status('b','mirror-buy') IS DISTINCT FROM (SELECT status FROM pg_temp.saved_buy_status)
+ OR market_review.mirror_receipt_status('c','resale-buy-c') IS DISTINCT FROM (SELECT status FROM pg_temp.saved_resale_status)
+ OR EXISTS(SELECT 1 FROM market_review.mirror_online m WHERE m.state IS DISTINCT FROM market_review.mirror_projection(m.account_id,m.character_id))
+ OR (SELECT gold FROM market_review.mirror_character_wallet WHERE character_id='b2')<>77
+ OR (SELECT gold FROM market_review.wallet WHERE id='a')<>1018
+ OR (SELECT gold FROM market_review.wallet WHERE id='b')<>1017
+ OR (SELECT gold FROM market_review.wallet WHERE id='c')<>945
+ OR (SELECT sum(gold) FROM market_review.wallet)+(SELECT sum(fee) FROM market_review.sale)<>3000
+ THEN RAISE EXCEPTION 'complete_equipment_resale_history_failed'; END IF;
+END $$;
+ROLLBACK;
+
+-- Independent original issuance registration rehearsal, in a fresh rollback.
+-- Source rows stand in for an independently persisted Forge claim; they are
+-- synthetic fixtures, NOT authority or a canonical digest implementation.
+BEGIN;
+\ir 07_original_registration_schema.sql
+INSERT INTO market_review.original_forge_claim VALUES
+ ('forge-original-1','forge-job-1','new-eq2-copy','b','b1','equipment-2.0',repeat('a',64),'{"quality":77,"rarity":"rare"}'),
+ ('forge-original-2','forge-job-2','new-eq2-copy-2','b','b1','equipment-2.0',repeat('b',64),'{"quality":50,"rarity":"common"}'),
+ ('forge-collision','forge-job-3','x','a','a1','equipment-2.0',repeat('c',64),'{"quality":77,"rarity":"rare"}');
+SELECT market_review.expect_error($q$SELECT market_review.register_original_forge('missing','fake','b','b1',repeat('a',64))$q$,'original_claim_mismatch');
+SELECT market_review.expect_error($q$SELECT market_review.register_original_forge('forge-original-1','new-eq2-copy','a','a1',repeat('a',64))$q$,'original_claim_mismatch');
+SELECT market_review.expect_error($q$SELECT market_review.register_original_forge('forge-original-1','new-eq2-copy','b','b2',repeat('a',64))$q$,'original_claim_mismatch');
+SELECT market_review.expect_error($q$SELECT market_review.register_original_forge('forge-original-1','new-eq2-copy','b','b1',repeat('f',64))$q$,'original_claim_mismatch');
+SELECT market_review.expect_error($q$SELECT market_review.register_original_forge('forge-original-1','fake','b','b1',repeat('a',64))$q$,'original_claim_mismatch');
+SELECT market_review.expect_error($q$SELECT market_review.register_original_forge('forge-collision','x','a','a1',repeat('c',64))$q$,'original_registration_conflict');
+SELECT market_review.expect_error($q$SELECT market_review.register_original_forge('forge-original-1','new-eq2-copy','b','b1',repeat('a',64),true)$q$,'injected_after_mint_registration');
+DO $$ BEGIN
+ IF EXISTS(SELECT 1 FROM market_review.mint WHERE id='new-eq2-copy')
+ OR EXISTS(SELECT 1 FROM market_review.custody WHERE id='new-eq2-copy')
+ OR EXISTS(SELECT 1 FROM market_review.policy WHERE id='new-eq2-copy')
+ THEN RAISE EXCEPTION 'original_partial_registration'; END IF;
+END $$;
+SELECT market_review.register_original_forge('forge-original-1','new-eq2-copy','b','b1',repeat('a',64));
+SELECT market_review.register_original_forge('forge-original-1','new-eq2-copy','b','b1',repeat('a',64));
+SELECT market_review.expect_error($q$SELECT market_review.act('list','b','mint-list','new-eq2-copy',0,'mint-offer',100,1)$q$,'not_listable');
+UPDATE market_review.wallet SET inventory_cap=1 WHERE id='b';
+SELECT market_review.expect_error($q$SELECT market_review.register_original_forge('forge-original-2','new-eq2-copy-2','b','b1',repeat('b',64))$q$,'original_inventory_full');
+SELECT market_review.act('deposit','b','mint-bank','new-eq2-copy',0);
+SELECT market_review.register_original_forge('forge-original-1','new-eq2-copy','b','b1',repeat('a',64));
+SELECT market_review.expect_error($q$UPDATE market_review.original_forge_claim SET digest=repeat('d',64) WHERE receipt='forge-original-1'$q$,'immutable_history');
+DO $$ BEGIN
+ IF (SELECT count(*) FROM market_review.mint WHERE receipt='forge-original-1')<>1
+ OR NOT EXISTS(SELECT 1 FROM market_review.custody WHERE id='new-eq2-copy' AND owner='b' AND state='bank' AND revision=1)
+ OR NOT EXISTS(SELECT 1 FROM market_review.policy WHERE id='new-eq2-copy' AND NOT approved)
+ OR EXISTS(SELECT 1 FROM market_review.mint WHERE id='new-eq2-copy-2')
+ OR (SELECT sum(gold) FROM market_review.wallet)<>3000
+ OR EXISTS(SELECT 1 FROM market_review.sale)
+ THEN RAISE EXCEPTION 'original_registration_invariant'; END IF;
+END $$;
+ROLLBACK;

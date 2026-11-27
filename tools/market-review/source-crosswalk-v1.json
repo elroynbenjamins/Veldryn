@@ -1,0 +1,4107 @@
+{
+  "schema": "market-source-review-v1",
+  "reviewOnly": true,
+  "marketAuthorized": false,
+  "pins": {
+    "catalogue": {
+      "ref": "087be0d98978c7fdf4889f9a1c4f74c13cafb233",
+      "path": "docs/2-0/eq2-t1-t5-unified-hidden-review-catalogue-v1.json",
+      "blob": "e5cd2bdaf2a9dcd6db69a4f936987d8639db8177"
+    },
+    "raw": {
+      "ref": "0d9451dd522ceb99cd6740141ca231af45887e1f",
+      "path": "backend/src/server/equipment/equipment-crafting-v2-material-source-review.ts",
+      "blob": "bed6217f424b33e8d0fb5335819fa7497f476992"
+    },
+    "processed": {
+      "ref": "0d9451dd522ceb99cd6740141ca231af45887e1f",
+      "path": "backend/src/server/equipment/equipment-crafting-v2-stackable-material-boundary-review.ts",
+      "blob": "79f7e7bb1cd949e704b06af33ef0d250bb4e3d9f"
+    }
+  },
+  "equipment": [
+    {
+      "itemId": "EQ2_LAUNCH_T1_BLACKSCRIPT_BOOTS",
+      "tier": 1,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T1_BLACKSCRIPT_CAPE",
+      "tier": 1,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T1_BLACKSCRIPT_CHEST",
+      "tier": 1,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T1_BLACKSCRIPT_LEGS",
+      "tier": 1,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T1_BLOODSTEEL_AMULET",
+      "tier": 1,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T1_BLOODSTEEL_BOOTS",
+      "tier": 1,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T1_BLOODSTEEL_GLOVES",
+      "tier": 1,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T1_BLOODSTEEL_RING",
+      "tier": 1,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T1_BREAKERFORGE_AMULET",
+      "tier": 1,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T1_BREAKERFORGE_BOOTS",
+      "tier": 1,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T1_BREAKERFORGE_CHEST",
+      "tier": 1,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T1_BREAKERFORGE_HELMET",
+      "tier": 1,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T1_BREAKERFORGE_LEGS",
+      "tier": 1,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T1_BREAKERFORGE_RING",
+      "tier": 1,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T1_BRIGHTWEAVE_AMULET",
+      "tier": 1,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T1_BRIGHTWEAVE_CAPE",
+      "tier": 1,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T1_BRIGHTWEAVE_CHEST",
+      "tier": 1,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T1_BRIGHTWEAVE_GLOVES",
+      "tier": 1,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T1_CITADEL_BOOTS",
+      "tier": 1,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T1_CITADEL_CAPE",
+      "tier": 1,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T1_CITADEL_CHEST",
+      "tier": 1,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T1_CITADEL_HELMET",
+      "tier": 1,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T1_CITADEL_LEGS",
+      "tier": 1,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T1_CITADEL_RING",
+      "tier": 1,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T1_ECHOHIDE_BOOTS",
+      "tier": 1,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T1_ECHOHIDE_HELMET",
+      "tier": 1,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T1_ECHOHIDE_LEGS",
+      "tier": 1,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T1_ECHOHIDE_RING",
+      "tier": 1,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T1_HORIZON_AMULET",
+      "tier": 1,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T1_HORIZON_GLOVES",
+      "tier": 1,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T1_HORIZON_HELMET",
+      "tier": 1,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T1_HORIZON_RING",
+      "tier": 1,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T1_OATHPLATE_CAPE",
+      "tier": 1,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T1_OATHPLATE_CHEST",
+      "tier": 1,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T1_OATHPLATE_HELMET",
+      "tier": 1,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T1_OATHPLATE_LEGS",
+      "tier": 1,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T1_QUICKSTEP_BOOTS",
+      "tier": 1,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T1_QUICKSTEP_CAPE",
+      "tier": 1,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T1_QUICKSTEP_GLOVES",
+      "tier": 1,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T1_ROOTSHIELD_BOOTS",
+      "tier": 1,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T1_ROOTSHIELD_CAPE",
+      "tier": 1,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T1_ROOTSHIELD_CHEST",
+      "tier": 1,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T1_ROOTSHIELD_HELMET",
+      "tier": 1,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T1_ROOTSHIELD_LEGS",
+      "tier": 1,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T1_ROOTSHIELD_RING",
+      "tier": 1,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T1_STORMTHREAD_BOOTS",
+      "tier": 1,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T1_STORMTHREAD_GLOVES",
+      "tier": 1,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T1_STORMTHREAD_HELMET",
+      "tier": 1,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T1_VIGILHIDE_BOOTS",
+      "tier": 1,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T1_VIGILHIDE_GLOVES",
+      "tier": 1,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T1_VIGILHIDE_HELMET",
+      "tier": 1,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_EXP_T1_DAMAGE_AMULET",
+      "tier": 1,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_EXP_T1_DAMAGE_HELMET",
+      "tier": 1,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_EXP_T1_DAMAGE_LEGS",
+      "tier": 1,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_EXP_T1_DAMAGE_RING",
+      "tier": 1,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_EXP_T1_SUPPORT_BOOTS",
+      "tier": 1,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_EXP_T1_SUPPORT_CHEST",
+      "tier": 1,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_EXP_T1_SUPPORT_LEGS",
+      "tier": 1,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_EXP_T1_SUPPORT_RING",
+      "tier": 1,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_EXP_T1_TANK_AMULET",
+      "tier": 1,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_EXP_T1_TANK_BOOTS",
+      "tier": 1,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_EXP_T1_TANK_CAPE",
+      "tier": 1,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_EXP_T1_TANK_GLOVES",
+      "tier": 1,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_FIELDBORN_ACOLYTE_AMULET",
+      "tier": 1,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_FIELDBORN_ACOLYTE_CAPE",
+      "tier": 1,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_FIELDBORN_GUARD_CHEST",
+      "tier": 1,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_FIELDBORN_GUARD_HELMET",
+      "tier": 1,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_FIELDBORN_TRAIL_BOOTS",
+      "tier": 1,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_FIELDBORN_TRAIL_GLOVES",
+      "tier": 1,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_OFFHAND_T1_BASTION",
+      "tier": 1,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_OFFHAND_T1_DAWNKEEPER",
+      "tier": 1,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_OFFHAND_T1_HEXWEAVER",
+      "tier": 1,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_OFFHAND_T1_IRONWARDEN",
+      "tier": 1,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_SOLO_FIELDBORN_GUARD_SIGNET",
+      "tier": 1,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_SOLO_FIELDBORN_HUNTER_VEST",
+      "tier": 1,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_SOLO_FIELDBORN_LONGSTRIDE_CAPE",
+      "tier": 1,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_SOLO_FIELDBORN_MEND_GLOVES",
+      "tier": 1,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_SOLO_FIELDBORN_PRAYER_HOOD",
+      "tier": 1,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_SOLO_FIELDBORN_STEEL_GREAVES",
+      "tier": 1,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_WEAPON_T1_BASTION",
+      "tier": 1,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_WEAPON_T1_DAWNKEEPER",
+      "tier": 1,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_WEAPON_T1_DREADGUARD",
+      "tier": 1,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_WEAPON_T1_HEXWEAVER",
+      "tier": 1,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_WEAPON_T1_IRONWARDEN",
+      "tier": 1,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_WEAPON_T1_KNIFE_DANCER",
+      "tier": 1,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_WEAPON_T1_RAVAGER",
+      "tier": 1,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_WEAPON_T1_STONECALLER",
+      "tier": 1,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_WEAPON_T1_WAYFINDER",
+      "tier": 1,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T2_BLACKSCRIPT_BOOTS",
+      "tier": 2,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T2_BLACKSCRIPT_CAPE",
+      "tier": 2,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T2_BLACKSCRIPT_CHEST",
+      "tier": 2,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T2_BLACKSCRIPT_LEGS",
+      "tier": 2,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T2_BLOODSTEEL_AMULET",
+      "tier": 2,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T2_BLOODSTEEL_BOOTS",
+      "tier": 2,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T2_BLOODSTEEL_GLOVES",
+      "tier": 2,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T2_BLOODSTEEL_RING",
+      "tier": 2,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T2_BREAKERFORGE_AMULET",
+      "tier": 2,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T2_BREAKERFORGE_BOOTS",
+      "tier": 2,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T2_BREAKERFORGE_CHEST",
+      "tier": 2,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T2_BREAKERFORGE_HELMET",
+      "tier": 2,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T2_BREAKERFORGE_LEGS",
+      "tier": 2,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T2_BREAKERFORGE_RING",
+      "tier": 2,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T2_BRIGHTWEAVE_AMULET",
+      "tier": 2,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T2_BRIGHTWEAVE_CAPE",
+      "tier": 2,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T2_BRIGHTWEAVE_CHEST",
+      "tier": 2,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T2_BRIGHTWEAVE_GLOVES",
+      "tier": 2,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T2_CITADEL_BOOTS",
+      "tier": 2,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T2_CITADEL_CAPE",
+      "tier": 2,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T2_CITADEL_CHEST",
+      "tier": 2,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T2_CITADEL_HELMET",
+      "tier": 2,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T2_CITADEL_LEGS",
+      "tier": 2,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T2_CITADEL_RING",
+      "tier": 2,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T2_ECHOHIDE_BOOTS",
+      "tier": 2,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T2_ECHOHIDE_HELMET",
+      "tier": 2,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T2_ECHOHIDE_LEGS",
+      "tier": 2,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T2_ECHOHIDE_RING",
+      "tier": 2,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T2_HORIZON_AMULET",
+      "tier": 2,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T2_HORIZON_GLOVES",
+      "tier": 2,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T2_HORIZON_HELMET",
+      "tier": 2,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T2_HORIZON_RING",
+      "tier": 2,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T2_OATHPLATE_CAPE",
+      "tier": 2,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T2_OATHPLATE_CHEST",
+      "tier": 2,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T2_OATHPLATE_HELMET",
+      "tier": 2,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T2_OATHPLATE_LEGS",
+      "tier": 2,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T2_QUICKSTEP_BOOTS",
+      "tier": 2,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T2_QUICKSTEP_CAPE",
+      "tier": 2,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T2_QUICKSTEP_GLOVES",
+      "tier": 2,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T2_ROOTSHIELD_BOOTS",
+      "tier": 2,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T2_ROOTSHIELD_CAPE",
+      "tier": 2,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T2_ROOTSHIELD_CHEST",
+      "tier": 2,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T2_ROOTSHIELD_HELMET",
+      "tier": 2,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T2_ROOTSHIELD_LEGS",
+      "tier": 2,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T2_ROOTSHIELD_RING",
+      "tier": 2,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T2_STORMTHREAD_BOOTS",
+      "tier": 2,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T2_STORMTHREAD_GLOVES",
+      "tier": 2,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T2_STORMTHREAD_HELMET",
+      "tier": 2,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T2_VIGILHIDE_BOOTS",
+      "tier": 2,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T2_VIGILHIDE_GLOVES",
+      "tier": 2,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T2_VIGILHIDE_HELMET",
+      "tier": 2,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_ALT_T2_DAMAGE_GLOVES",
+      "tier": 2,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_ALT_T2_DAMAGE_RING",
+      "tier": 2,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_ALT_T2_SUPPORT_AMULET",
+      "tier": 2,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_ALT_T2_SUPPORT_CHEST",
+      "tier": 2,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_ALT_T2_TANK_BOOTS",
+      "tier": 2,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_ALT_T2_TANK_CHEST",
+      "tier": 2,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_EXP_T2_DAMAGE_AMULET",
+      "tier": 2,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_EXP_T2_DAMAGE_BOOTS",
+      "tier": 2,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_EXP_T2_DAMAGE_LEGS",
+      "tier": 2,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_EXP_T2_SUPPORT_CAPE",
+      "tier": 2,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_EXP_T2_SUPPORT_LEGS",
+      "tier": 2,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_EXP_T2_SUPPORT_RING",
+      "tier": 2,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_EXP_T2_TANK_AMULET",
+      "tier": 2,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_EXP_T2_TANK_GLOVES",
+      "tier": 2,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_EXP_T2_TANK_RING",
+      "tier": 2,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_IRONWOOD_MENDER_AMULET",
+      "tier": 2,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_IRONWOOD_MENDER_GLOVES",
+      "tier": 2,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_IRONWOOD_MENDER_HELMET",
+      "tier": 2,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_IRONWOOD_SENTINEL_BOOTS",
+      "tier": 2,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_IRONWOOD_SENTINEL_CHEST",
+      "tier": 2,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_IRONWOOD_SENTINEL_LEGS",
+      "tier": 2,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_IRONWOOD_STALKER_CAPE",
+      "tier": 2,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_IRONWOOD_STALKER_GLOVES",
+      "tier": 2,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_IRONWOOD_STALKER_HELMET",
+      "tier": 2,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_OFFHAND_T2_BASTION",
+      "tier": 2,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_OFFHAND_T2_DAWNKEEPER",
+      "tier": 2,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_OFFHAND_T2_HEXWEAVER",
+      "tier": 2,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_OFFHAND_T2_IRONWARDEN",
+      "tier": 2,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_SOLO_IRONWOOD_AIMSTONE_RING",
+      "tier": 2,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_SOLO_IRONWOOD_BASTION_CAPE",
+      "tier": 2,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_SOLO_IRONWOOD_CARETAKER_BOOTS",
+      "tier": 2,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_SOLO_IRONWOOD_DUELIST_VEST",
+      "tier": 2,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_SOLO_IRONWOOD_IRONCAP",
+      "tier": 2,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_SOLO_IRONWOOD_VERDANT_ROBES",
+      "tier": 2,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_WEAPON_T2_BASTION",
+      "tier": 2,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_WEAPON_T2_DAWNKEEPER",
+      "tier": 2,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_WEAPON_T2_DREADGUARD",
+      "tier": 2,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_WEAPON_T2_HEXWEAVER",
+      "tier": 2,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_WEAPON_T2_IRONWARDEN",
+      "tier": 2,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_WEAPON_T2_KNIFE_DANCER",
+      "tier": 2,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_WEAPON_T2_RAVAGER",
+      "tier": 2,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_WEAPON_T2_STONECALLER",
+      "tier": 2,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_WEAPON_T2_WAYFINDER",
+      "tier": 2,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_HEARTWARD_CHEST",
+      "tier": 2,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_HEARTWARD_HELMET",
+      "tier": 2,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_HEARTWARD_LEGS",
+      "tier": 2,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_HEARTWARD_RING",
+      "tier": 2,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_LIFEBLOOM_CAPE",
+      "tier": 2,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_LIFEBLOOM_CHEST",
+      "tier": 2,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_LIFEBLOOM_HELMET",
+      "tier": 2,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_LIFEBLOOM_RING",
+      "tier": 2,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_OFFHAND_BASTION",
+      "tier": 2,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_OFFHAND_DAWNKEEPER",
+      "tier": 2,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_OFFHAND_HEXWEAVER",
+      "tier": 2,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_OFFHAND_IRONWARDEN",
+      "tier": 2,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_THORNSTRIDER_AMULET",
+      "tier": 2,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_THORNSTRIDER_BOOTS",
+      "tier": 2,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_THORNSTRIDER_CAPE",
+      "tier": 2,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_THORNSTRIDER_GLOVES",
+      "tier": 2,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_WEAPON_BASTION",
+      "tier": 2,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_WEAPON_DAWNKEEPER",
+      "tier": 2,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_WEAPON_DREADGUARD",
+      "tier": 2,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_WEAPON_HEXWEAVER",
+      "tier": 2,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_WEAPON_IRONWARDEN",
+      "tier": 2,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_WEAPON_KNIFE_DANCER",
+      "tier": 2,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_WEAPON_RAVAGER",
+      "tier": 2,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_WEAPON_STONECALLER",
+      "tier": 2,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_WEAPON_WAYFINDER",
+      "tier": 2,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_RARE_T2_IRONROOT_GUARD",
+      "tier": 2,
+      "sourceType": "elite_or_zone_boss_blueprint_craft_proposal",
+      "sourceGroup": "unregistered_t2_t4_rare_blueprint_6",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_RARE_T2_WOODLAND_MENDING",
+      "tier": 2,
+      "sourceType": "elite_or_zone_boss_blueprint_craft_proposal",
+      "sourceGroup": "unregistered_t2_t4_rare_blueprint_6",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T3_BLACKSCRIPT_BOOTS",
+      "tier": 3,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T3_BLACKSCRIPT_CAPE",
+      "tier": 3,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T3_BLACKSCRIPT_CHEST",
+      "tier": 3,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T3_BLACKSCRIPT_LEGS",
+      "tier": 3,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T3_BLOODSTEEL_AMULET",
+      "tier": 3,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T3_BLOODSTEEL_BOOTS",
+      "tier": 3,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T3_BLOODSTEEL_GLOVES",
+      "tier": 3,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T3_BLOODSTEEL_RING",
+      "tier": 3,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T3_BREAKERFORGE_AMULET",
+      "tier": 3,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T3_BREAKERFORGE_BOOTS",
+      "tier": 3,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T3_BREAKERFORGE_CHEST",
+      "tier": 3,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T3_BREAKERFORGE_HELMET",
+      "tier": 3,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T3_BREAKERFORGE_LEGS",
+      "tier": 3,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T3_BREAKERFORGE_RING",
+      "tier": 3,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T3_BRIGHTWEAVE_AMULET",
+      "tier": 3,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T3_BRIGHTWEAVE_CAPE",
+      "tier": 3,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T3_BRIGHTWEAVE_CHEST",
+      "tier": 3,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T3_BRIGHTWEAVE_GLOVES",
+      "tier": 3,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T3_CITADEL_BOOTS",
+      "tier": 3,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T3_CITADEL_CAPE",
+      "tier": 3,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T3_CITADEL_CHEST",
+      "tier": 3,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T3_CITADEL_HELMET",
+      "tier": 3,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T3_CITADEL_LEGS",
+      "tier": 3,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T3_CITADEL_RING",
+      "tier": 3,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T3_ECHOHIDE_BOOTS",
+      "tier": 3,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T3_ECHOHIDE_HELMET",
+      "tier": 3,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T3_ECHOHIDE_LEGS",
+      "tier": 3,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T3_ECHOHIDE_RING",
+      "tier": 3,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T3_HORIZON_AMULET",
+      "tier": 3,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T3_HORIZON_GLOVES",
+      "tier": 3,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T3_HORIZON_HELMET",
+      "tier": 3,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T3_HORIZON_RING",
+      "tier": 3,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T3_OATHPLATE_CAPE",
+      "tier": 3,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T3_OATHPLATE_CHEST",
+      "tier": 3,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T3_OATHPLATE_HELMET",
+      "tier": 3,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T3_OATHPLATE_LEGS",
+      "tier": 3,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T3_QUICKSTEP_BOOTS",
+      "tier": 3,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T3_QUICKSTEP_CAPE",
+      "tier": 3,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T3_QUICKSTEP_GLOVES",
+      "tier": 3,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T3_ROOTSHIELD_BOOTS",
+      "tier": 3,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T3_ROOTSHIELD_CAPE",
+      "tier": 3,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T3_ROOTSHIELD_CHEST",
+      "tier": 3,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T3_ROOTSHIELD_HELMET",
+      "tier": 3,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T3_ROOTSHIELD_LEGS",
+      "tier": 3,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T3_ROOTSHIELD_RING",
+      "tier": 3,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T3_STORMTHREAD_BOOTS",
+      "tier": 3,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T3_STORMTHREAD_GLOVES",
+      "tier": 3,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T3_STORMTHREAD_HELMET",
+      "tier": 3,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T3_VIGILHIDE_BOOTS",
+      "tier": 3,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T3_VIGILHIDE_GLOVES",
+      "tier": 3,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T3_VIGILHIDE_HELMET",
+      "tier": 3,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_ALT_T3_DAMAGE_BOOTS",
+      "tier": 3,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_ALT_T3_DAMAGE_GLOVES",
+      "tier": 3,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_ALT_T3_SUPPORT_AMULET",
+      "tier": 3,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_ALT_T3_SUPPORT_HELMET",
+      "tier": 3,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_ALT_T3_TANK_CHEST",
+      "tier": 3,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_ALT_T3_TANK_RING",
+      "tier": 3,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_EXP_T3_DAMAGE_AMULET",
+      "tier": 3,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_EXP_T3_DAMAGE_CAPE",
+      "tier": 3,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_EXP_T3_DAMAGE_RING",
+      "tier": 3,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_EXP_T3_SUPPORT_GLOVES",
+      "tier": 3,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_EXP_T3_SUPPORT_LEGS",
+      "tier": 3,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_EXP_T3_SUPPORT_RING",
+      "tier": 3,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_EXP_T3_TANK_AMULET",
+      "tier": 3,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_EXP_T3_TANK_BOOTS",
+      "tier": 3,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_EXP_T3_TANK_LEGS",
+      "tier": 3,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_OFFHAND_T3_BASTION",
+      "tier": 3,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_OFFHAND_T3_DAWNKEEPER",
+      "tier": 3,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_OFFHAND_T3_HEXWEAVER",
+      "tier": 3,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_OFFHAND_T3_IRONWARDEN",
+      "tier": 3,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_SOLO_SUNSCAR_DUELIST_BOOTS",
+      "tier": 3,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_SOLO_SUNSCAR_GATEHELM",
+      "tier": 3,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_SOLO_SUNSCAR_GUARDIAN_RING",
+      "tier": 3,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_SOLO_SUNSCAR_RUNESILK_VEST",
+      "tier": 3,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_SOLO_SUNSCAR_SPELLTHREAD_HOOD",
+      "tier": 3,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_SOLO_SUNSCAR_WELLSPRING_AMULET",
+      "tier": 3,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_SUNSCAR_BREAKSTEEL_CHEST",
+      "tier": 3,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_SUNSCAR_BREAKSTEEL_GLOVES",
+      "tier": 3,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_SUNSCAR_BREAKSTEEL_LEGS",
+      "tier": 3,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_SUNSCAR_THORNHIDE_CAPE",
+      "tier": 3,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_SUNSCAR_THORNHIDE_CHEST",
+      "tier": 3,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_SUNSCAR_THORNHIDE_GLOVES",
+      "tier": 3,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_SUNSCAR_WILDROOT_BOOTS",
+      "tier": 3,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_SUNSCAR_WILDROOT_CAPE",
+      "tier": 3,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_SUNSCAR_WILDROOT_HELMET",
+      "tier": 3,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_WEAPON_T3_BASTION",
+      "tier": 3,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_WEAPON_T3_DAWNKEEPER",
+      "tier": 3,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_WEAPON_T3_DREADGUARD",
+      "tier": 3,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_WEAPON_T3_HEXWEAVER",
+      "tier": 3,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_WEAPON_T3_IRONWARDEN",
+      "tier": 3,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_WEAPON_T3_KNIFE_DANCER",
+      "tier": 3,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_WEAPON_T3_RAVAGER",
+      "tier": 3,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_WEAPON_T3_STONECALLER",
+      "tier": 3,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_WEAPON_T3_WAYFINDER",
+      "tier": 3,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_RARE_T3_AMBERGLASS_WARD",
+      "tier": 3,
+      "sourceType": "elite_or_zone_boss_blueprint_craft_proposal",
+      "sourceGroup": "unregistered_t2_t4_rare_blueprint_6",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_RARE_T3_MIRAGE_PRECISION",
+      "tier": 3,
+      "sourceType": "elite_or_zone_boss_blueprint_craft_proposal",
+      "sourceGroup": "unregistered_t2_t4_rare_blueprint_6",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_BLACKSCRIPT_BOOTS",
+      "tier": 4,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_BLACKSCRIPT_CAPE",
+      "tier": 4,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_BLACKSCRIPT_CHEST",
+      "tier": 4,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_BLACKSCRIPT_LEGS",
+      "tier": 4,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_BLOODSTEEL_AMULET",
+      "tier": 4,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_BLOODSTEEL_BOOTS",
+      "tier": 4,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_BLOODSTEEL_GLOVES",
+      "tier": 4,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_BLOODSTEEL_RING",
+      "tier": 4,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_BREAKERFORGE_AMULET",
+      "tier": 4,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_BREAKERFORGE_BOOTS",
+      "tier": 4,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_BREAKERFORGE_CHEST",
+      "tier": 4,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_BREAKERFORGE_HELMET",
+      "tier": 4,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_BREAKERFORGE_LEGS",
+      "tier": 4,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_BREAKERFORGE_RING",
+      "tier": 4,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_BRIGHTWEAVE_AMULET",
+      "tier": 4,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_BRIGHTWEAVE_CAPE",
+      "tier": 4,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_BRIGHTWEAVE_CHEST",
+      "tier": 4,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_BRIGHTWEAVE_GLOVES",
+      "tier": 4,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_CITADEL_BOOTS",
+      "tier": 4,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_CITADEL_CAPE",
+      "tier": 4,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_CITADEL_CHEST",
+      "tier": 4,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_CITADEL_HELMET",
+      "tier": 4,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_CITADEL_LEGS",
+      "tier": 4,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_CITADEL_RING",
+      "tier": 4,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_ECHOHIDE_BOOTS",
+      "tier": 4,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_ECHOHIDE_HELMET",
+      "tier": 4,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_ECHOHIDE_LEGS",
+      "tier": 4,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_ECHOHIDE_RING",
+      "tier": 4,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_HORIZON_AMULET",
+      "tier": 4,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_HORIZON_GLOVES",
+      "tier": 4,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_HORIZON_HELMET",
+      "tier": 4,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_HORIZON_RING",
+      "tier": 4,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_OATHPLATE_CAPE",
+      "tier": 4,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_OATHPLATE_CHEST",
+      "tier": 4,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_OATHPLATE_HELMET",
+      "tier": 4,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_OATHPLATE_LEGS",
+      "tier": 4,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_QUICKSTEP_BOOTS",
+      "tier": 4,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_QUICKSTEP_CAPE",
+      "tier": 4,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_QUICKSTEP_GLOVES",
+      "tier": 4,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_ROOTSHIELD_BOOTS",
+      "tier": 4,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_ROOTSHIELD_CAPE",
+      "tier": 4,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_ROOTSHIELD_CHEST",
+      "tier": 4,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_ROOTSHIELD_HELMET",
+      "tier": 4,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_ROOTSHIELD_LEGS",
+      "tier": 4,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_ROOTSHIELD_RING",
+      "tier": 4,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_STORMTHREAD_BOOTS",
+      "tier": 4,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_STORMTHREAD_GLOVES",
+      "tier": 4,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_STORMTHREAD_HELMET",
+      "tier": 4,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_VIGILHIDE_BOOTS",
+      "tier": 4,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_VIGILHIDE_GLOVES",
+      "tier": 4,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_VIGILHIDE_HELMET",
+      "tier": 4,
+      "sourceType": "structural_set_member_proposal",
+      "sourceGroup": "expanded_48_set_204",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_ALT_T4_DAMAGE_BOOTS",
+      "tier": 4,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_ALT_T4_DAMAGE_RING",
+      "tier": 4,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_ALT_T4_SUPPORT_CHEST",
+      "tier": 4,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_ALT_T4_SUPPORT_RING",
+      "tier": 4,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_ALT_T4_TANK_CAPE",
+      "tier": 4,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_ALT_T4_TANK_HELMET",
+      "tier": 4,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_EXP_T4_DAMAGE_LEGS",
+      "tier": 4,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_EXP_T4_SUPPORT_AMULET",
+      "tier": 4,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_EXP_T4_TANK_RING",
+      "tier": 4,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_GLASSBOUND_BULWARK_BOOTS",
+      "tier": 4,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_GLASSBOUND_BULWARK_CHEST",
+      "tier": 4,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_GLASSBOUND_BULWARK_HELMET",
+      "tier": 4,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_GLASSBOUND_BULWARK_LEGS",
+      "tier": 4,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_GLASSBOUND_DAWNSHIELD_CAPE",
+      "tier": 4,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_GLASSBOUND_DAWNSHIELD_GLOVES",
+      "tier": 4,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_GLASSBOUND_LIFEWOVEN_BOOTS",
+      "tier": 4,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_GLASSBOUND_LIFEWOVEN_CHEST",
+      "tier": 4,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_GLASSBOUND_LIFEWOVEN_HELMET",
+      "tier": 4,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_GLASSBOUND_LIFEWOVEN_LEGS",
+      "tier": 4,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_GLASSBOUND_RETALIATOR_CAPE",
+      "tier": 4,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_GLASSBOUND_RETALIATOR_GLOVES",
+      "tier": 4,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_GLASSBOUND_SHADOWSTEP_BOOTS",
+      "tier": 4,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_GLASSBOUND_SHADOWSTEP_CHEST",
+      "tier": 4,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_GLASSBOUND_SHADOWSTEP_GLOVES",
+      "tier": 4,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_GLASSBOUND_SHADOWSTEP_HELMET",
+      "tier": 4,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_GLASSBOUND_SPELLWEAVE_AMULET",
+      "tier": 4,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_GLASSBOUND_SPELLWEAVE_CAPE",
+      "tier": 4,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_OFFHAND_T4_BASTION",
+      "tier": 4,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_OFFHAND_T4_DAWNKEEPER",
+      "tier": 4,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_OFFHAND_T4_HEXWEAVER",
+      "tier": 4,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_OFFHAND_T4_IRONWARDEN",
+      "tier": 4,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_SOLO_GLASSBOUND_CLARITY_RING",
+      "tier": 4,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_SOLO_GLASSBOUND_DEVOTION_CAPE",
+      "tier": 4,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_SOLO_GLASSBOUND_EMBER_RING",
+      "tier": 4,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_SOLO_GLASSBOUND_FORTRESS_AMULET",
+      "tier": 4,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_SOLO_GLASSBOUND_SWIFTGUARD_CAPE",
+      "tier": 4,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_SOLO_GLASSBOUND_WARD_GLOVES",
+      "tier": 4,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_WEAPON_T4_BASTION",
+      "tier": 4,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_WEAPON_T4_DAWNKEEPER",
+      "tier": 4,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_WEAPON_T4_DREADGUARD",
+      "tier": 4,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_WEAPON_T4_HEXWEAVER",
+      "tier": 4,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_WEAPON_T4_IRONWARDEN",
+      "tier": 4,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_WEAPON_T4_KNIFE_DANCER",
+      "tier": 4,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_WEAPON_T4_RAVAGER",
+      "tier": 4,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_WEAPON_T4_STONECALLER",
+      "tier": 4,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_WEAPON_T4_WAYFINDER",
+      "tier": 4,
+      "sourceType": "ordinary_forge_template",
+      "sourceGroup": "pinned_forge_169",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_HELIOGUARD_CHEST",
+      "tier": 4,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_HELIOGUARD_HELMET",
+      "tier": 4,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_HELIOGUARD_LEGS",
+      "tier": 4,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_HELIOGUARD_RING",
+      "tier": 4,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_MIRAGEVEIL_CAPE",
+      "tier": 4,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_MIRAGEVEIL_CHEST",
+      "tier": 4,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_MIRAGEVEIL_HELMET",
+      "tier": 4,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_MIRAGEVEIL_RING",
+      "tier": 4,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_OFFHAND_BASTION",
+      "tier": 4,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_OFFHAND_DAWNKEEPER",
+      "tier": 4,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_OFFHAND_HEXWEAVER",
+      "tier": 4,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_OFFHAND_IRONWARDEN",
+      "tier": 4,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_SPHINXCLAW_AMULET",
+      "tier": 4,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_SPHINXCLAW_BOOTS",
+      "tier": 4,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_SPHINXCLAW_CAPE",
+      "tier": 4,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_SPHINXCLAW_GLOVES",
+      "tier": 4,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_WEAPON_BASTION",
+      "tier": 4,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_WEAPON_DAWNKEEPER",
+      "tier": 4,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_WEAPON_DREADGUARD",
+      "tier": 4,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_WEAPON_HEXWEAVER",
+      "tier": 4,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_WEAPON_IRONWARDEN",
+      "tier": 4,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_WEAPON_KNIFE_DANCER",
+      "tier": 4,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_WEAPON_RAVAGER",
+      "tier": 4,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_WEAPON_STONECALLER",
+      "tier": 4,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_WEAPON_WAYFINDER",
+      "tier": 4,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_RARE_T4_SPELLTHREAD_ECHO",
+      "tier": 4,
+      "sourceType": "elite_or_zone_boss_blueprint_craft_proposal",
+      "sourceGroup": "unregistered_t2_t4_rare_blueprint_6",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_RARE_T4_STEADFAST_ANCHOR",
+      "tier": 4,
+      "sourceType": "elite_or_zone_boss_blueprint_craft_proposal",
+      "sourceGroup": "unregistered_t2_t4_rare_blueprint_6",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_RARE_T5_BLOODSTEEL_AMULET",
+      "tier": 5,
+      "sourceType": "rare_crafted_set_candidate",
+      "sourceGroup": "inherited_rare_t5_10",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_RARE_T5_BLOODSTEEL_BOOTS",
+      "tier": 5,
+      "sourceType": "rare_crafted_set_candidate",
+      "sourceGroup": "inherited_rare_t5_10",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_RARE_T5_BLOODSTEEL_GLOVES",
+      "tier": 5,
+      "sourceType": "rare_crafted_set_candidate",
+      "sourceGroup": "inherited_rare_t5_10",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_RARE_T5_BLOODSTEEL_RING",
+      "tier": 5,
+      "sourceType": "rare_crafted_set_candidate",
+      "sourceGroup": "inherited_rare_t5_10",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_RARE_T5_CITADEL_BOOTS",
+      "tier": 5,
+      "sourceType": "rare_crafted_set_candidate",
+      "sourceGroup": "inherited_rare_t5_10",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_RARE_T5_CITADEL_CAPE",
+      "tier": 5,
+      "sourceType": "rare_crafted_set_candidate",
+      "sourceGroup": "inherited_rare_t5_10",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_RARE_T5_CITADEL_CHEST",
+      "tier": 5,
+      "sourceType": "rare_crafted_set_candidate",
+      "sourceGroup": "inherited_rare_t5_10",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_RARE_T5_CITADEL_HELMET",
+      "tier": 5,
+      "sourceType": "rare_crafted_set_candidate",
+      "sourceGroup": "inherited_rare_t5_10",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_RARE_T5_CITADEL_LEGS",
+      "tier": 5,
+      "sourceType": "rare_crafted_set_candidate",
+      "sourceGroup": "inherited_rare_t5_10",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_RARE_T5_CITADEL_RING",
+      "tier": 5,
+      "sourceType": "rare_crafted_set_candidate",
+      "sourceGroup": "inherited_rare_t5_10",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_CANTORSHARD_AMULET",
+      "tier": 5,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_CANTORSHARD_BOOTS",
+      "tier": 5,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_CANTORSHARD_CAPE",
+      "tier": 5,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_CANTORSHARD_GLOVES",
+      "tier": 5,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_FROSTHYM_CAPE",
+      "tier": 5,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_FROSTHYM_CHEST",
+      "tier": 5,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_FROSTHYM_HELMET",
+      "tier": 5,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_FROSTHYM_RING",
+      "tier": 5,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_OFFHAND_BASTION",
+      "tier": 5,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_OFFHAND_DAWNKEEPER",
+      "tier": 5,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_OFFHAND_HEXWEAVER",
+      "tier": 5,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_OFFHAND_IRONWARDEN",
+      "tier": 5,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_RIMEVANGUARD_CHEST",
+      "tier": 5,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_RIMEVANGUARD_HELMET",
+      "tier": 5,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_RIMEVANGUARD_LEGS",
+      "tier": 5,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_RIMEVANGUARD_RING",
+      "tier": 5,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_WEAPON_BASTION",
+      "tier": 5,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_WEAPON_DAWNKEEPER",
+      "tier": 5,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_WEAPON_DREADGUARD",
+      "tier": 5,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_WEAPON_HEXWEAVER",
+      "tier": 5,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_WEAPON_IRONWARDEN",
+      "tier": 5,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_WEAPON_KNIFE_DANCER",
+      "tier": 5,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_WEAPON_RAVAGER",
+      "tier": 5,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_WEAPON_STONECALLER",
+      "tier": 5,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_WEAPON_WAYFINDER",
+      "tier": 5,
+      "sourceType": "dungeon_boss_drop_only",
+      "sourceGroup": "regional_dungeon_premium",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_T5_SHIVERLAKE_BELLWAKE_CAPE",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_bellwake_4",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_T5_SHIVERLAKE_BELLWAKE_CHEST",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_bellwake_4",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_T5_SHIVERLAKE_BELLWAKE_HELMET",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_bellwake_4",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_T5_SHIVERLAKE_BELLWAKE_RING",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_bellwake_4",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_COMBO_T5_ASTRAL_RIME_CAPE",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_combo_12",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_COMBO_T5_ASTRAL_RIME_RING",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_combo_12",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_COMBO_T5_DAWNMENDER_CHAIN_AMULET",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_combo_12",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_COMBO_T5_DAWNMENDER_CHAIN_LEGS",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_combo_12",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_COMBO_T5_FROSTCLASP_AEGIS_CAPE",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_combo_12",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_COMBO_T5_FROSTCLASP_AEGIS_HELMET",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_combo_12",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_COMBO_T5_GLACIER_TALONS_BOOTS",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_combo_12",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_COMBO_T5_GLACIER_TALONS_GLOVES",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_combo_12",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_COMBO_T5_RUNEFORGE_LINK_AMULET",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_combo_12",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_COMBO_T5_RUNEFORGE_LINK_GLOVES",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_combo_12",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_COMBO_T5_STONEWINTER_FRAME_CHEST",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_combo_12",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_COMBO_T5_STONEWINTER_FRAME_LEGS",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_combo_12",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_OFFHAND_T5_BASTION",
+      "tier": 5,
+      "sourceType": "class_armament_craft_proposal",
+      "sourceGroup": "t5_crafted_armaments_13",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_OFFHAND_T5_DAWNKEEPER",
+      "tier": 5,
+      "sourceType": "class_armament_craft_proposal",
+      "sourceGroup": "t5_crafted_armaments_13",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_OFFHAND_T5_HEXWEAVER",
+      "tier": 5,
+      "sourceType": "class_armament_craft_proposal",
+      "sourceGroup": "t5_crafted_armaments_13",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_OFFHAND_T5_IRONWARDEN",
+      "tier": 5,
+      "sourceType": "class_armament_craft_proposal",
+      "sourceGroup": "t5_crafted_armaments_13",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_WEAPON_T5_BASTION",
+      "tier": 5,
+      "sourceType": "class_armament_craft_proposal",
+      "sourceGroup": "t5_crafted_armaments_13",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_WEAPON_T5_DAWNKEEPER",
+      "tier": 5,
+      "sourceType": "class_armament_craft_proposal",
+      "sourceGroup": "t5_crafted_armaments_13",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_WEAPON_T5_DREADGUARD",
+      "tier": 5,
+      "sourceType": "class_armament_craft_proposal",
+      "sourceGroup": "t5_crafted_armaments_13",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_WEAPON_T5_HEXWEAVER",
+      "tier": 5,
+      "sourceType": "class_armament_craft_proposal",
+      "sourceGroup": "t5_crafted_armaments_13",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_WEAPON_T5_IRONWARDEN",
+      "tier": 5,
+      "sourceType": "class_armament_craft_proposal",
+      "sourceGroup": "t5_crafted_armaments_13",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_WEAPON_T5_KNIFE_DANCER",
+      "tier": 5,
+      "sourceType": "class_armament_craft_proposal",
+      "sourceGroup": "t5_crafted_armaments_13",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_WEAPON_T5_RAVAGER",
+      "tier": 5,
+      "sourceType": "class_armament_craft_proposal",
+      "sourceGroup": "t5_crafted_armaments_13",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_WEAPON_T5_STONECALLER",
+      "tier": 5,
+      "sourceType": "class_armament_craft_proposal",
+      "sourceGroup": "t5_crafted_armaments_13",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_WEAPON_T5_WAYFINDER",
+      "tier": 5,
+      "sourceType": "class_armament_craft_proposal",
+      "sourceGroup": "t5_crafted_armaments_13",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_RARE_T5_DAWNSPIRE_BOOTS",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_new_rare_10",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_RARE_T5_DAWNSPIRE_CAPE",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_new_rare_10",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_RARE_T5_DAWNSPIRE_CHEST",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_new_rare_10",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_RARE_T5_DAWNSPIRE_GLOVES",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_new_rare_10",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_RARE_T5_DAWNSPIRE_HELMET",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_new_rare_10",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_RARE_T5_DAWNSPIRE_RING",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_new_rare_10",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_RARE_T5_SHARDRUNNER_AMULET",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_new_rare_10",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_RARE_T5_SHARDRUNNER_BOOTS",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_new_rare_10",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_RARE_T5_SHARDRUNNER_CAPE",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_new_rare_10",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_RARE_T5_SHARDRUNNER_GLOVES",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_new_rare_10",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T5_AVALANCHE_AMULET",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_standard_51",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T5_AVALANCHE_BOOTS",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_standard_51",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T5_AVALANCHE_CHEST",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_standard_51",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T5_AVALANCHE_HELMET",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_standard_51",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T5_AVALANCHE_LEGS",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_standard_51",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T5_AVALANCHE_RING",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_standard_51",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T5_DAWNWEAVE_AMULET",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_standard_51",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T5_DAWNWEAVE_CAPE",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_standard_51",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T5_DAWNWEAVE_CHEST",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_standard_51",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T5_DAWNWEAVE_GLOVES",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_standard_51",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T5_ECHOHIDE_BOOTS",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_standard_51",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T5_ECHOHIDE_HELMET",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_standard_51",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T5_ECHOHIDE_LEGS",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_standard_51",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T5_ECHOHIDE_RING",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_standard_51",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T5_FARWIND_AMULET",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_standard_51",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T5_FARWIND_GLOVES",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_standard_51",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T5_FARWIND_HELMET",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_standard_51",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T5_FARWIND_RING",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_standard_51",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T5_NIGHTGLASS_BOOTS",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_standard_51",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T5_NIGHTGLASS_CAPE",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_standard_51",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T5_NIGHTGLASS_CHEST",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_standard_51",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T5_NIGHTGLASS_LEGS",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_standard_51",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T5_OATHPLATE_CAPE",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_standard_51",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T5_OATHPLATE_CHEST",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_standard_51",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T5_OATHPLATE_HELMET",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_standard_51",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T5_OATHPLATE_LEGS",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_standard_51",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T5_RIMEBRAND_AMULET",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_standard_51",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T5_RIMEBRAND_BOOTS",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_standard_51",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T5_RIMEBRAND_GLOVES",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_standard_51",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T5_RIMEBRAND_RING",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_standard_51",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T5_RIMEWATCH_BOOTS",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_standard_51",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T5_RIMEWATCH_CAPE",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_standard_51",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T5_RIMEWATCH_CHEST",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_standard_51",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T5_RIMEWATCH_HELMET",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_standard_51",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T5_RIMEWATCH_LEGS",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_standard_51",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T5_RIMEWATCH_RING",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_standard_51",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T5_SNOWVEIL_BOOTS",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_standard_51",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T5_SNOWVEIL_GLOVES",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_standard_51",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T5_SNOWVEIL_HELMET",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_standard_51",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T5_STORMTHREAD_BOOTS",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_standard_51",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T5_STORMTHREAD_GLOVES",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_standard_51",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T5_STORMTHREAD_HELMET",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_standard_51",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T5_WHITEFANG_BOOTS",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_standard_51",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T5_WHITEFANG_CAPE",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_standard_51",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T5_WHITEFANG_GLOVES",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_standard_51",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T5_WINTERROOT_BOOTS",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_standard_51",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T5_WINTERROOT_CAPE",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_standard_51",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T5_WINTERROOT_CHEST",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_standard_51",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T5_WINTERROOT_HELMET",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_standard_51",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T5_WINTERROOT_LEGS",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_standard_51",
+      "mayTrade": false
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T5_WINTERROOT_RING",
+      "tier": 5,
+      "sourceType": "craft_recipe_proposal",
+      "sourceGroup": "t5_standard_51",
+      "mayTrade": false
+    }
+  ],
+  "materials": [
+    {
+      "itemId": "EQ2_BOAR_TUSK",
+      "tier": 1,
+      "source": "monster",
+      "mayTrade": false,
+      "registered": false
+    },
+    {
+      "itemId": "EQ2_RIVERSTONE",
+      "tier": 1,
+      "source": "gathering",
+      "mayTrade": false,
+      "registered": false
+    },
+    {
+      "itemId": "EQ2_TROLL_SINEW",
+      "tier": 2,
+      "source": "monster",
+      "mayTrade": false,
+      "registered": false
+    },
+    {
+      "itemId": "EQ2_THORNSTONE",
+      "tier": 2,
+      "source": "gathering",
+      "mayTrade": false,
+      "registered": false
+    },
+    {
+      "itemId": "EQ2_THORN_FIBRE",
+      "tier": 2,
+      "source": "gathering",
+      "mayTrade": false,
+      "registered": false
+    },
+    {
+      "itemId": "EQ2_SUNSCAR_SCALE",
+      "tier": 3,
+      "source": "monster",
+      "mayTrade": false,
+      "registered": false
+    },
+    {
+      "itemId": "EQ2_MIRAGEFANG_CORE",
+      "tier": 3,
+      "source": "monster",
+      "mayTrade": false,
+      "registered": false
+    },
+    {
+      "itemId": "EQ2_SUNSCAR_HIDE",
+      "tier": 3,
+      "source": "monster",
+      "mayTrade": false,
+      "registered": false
+    },
+    {
+      "itemId": "EQ2_DUNE_FIBRE",
+      "tier": 3,
+      "source": "gathering",
+      "mayTrade": false,
+      "registered": false
+    },
+    {
+      "itemId": "EQ2_GLASSBOUND_PLATE",
+      "tier": 4,
+      "source": "monster",
+      "mayTrade": false,
+      "registered": false
+    },
+    {
+      "itemId": "EQ2_GLASSHEART_FRAGMENT",
+      "tier": 4,
+      "source": "monster",
+      "mayTrade": false,
+      "registered": false
+    },
+    {
+      "itemId": "EQ2_GLASSBOUND_DUST",
+      "tier": 4,
+      "source": "either",
+      "mayTrade": false,
+      "registered": false
+    },
+    {
+      "itemId": "EQ2_GLASSBOUND_SHARD",
+      "tier": 4,
+      "source": "gathering",
+      "mayTrade": false,
+      "registered": false
+    },
+    {
+      "itemId": "EQ2_SOUL_FIBRE",
+      "tier": 4,
+      "source": "gathering",
+      "mayTrade": false,
+      "registered": false
+    },
+    {
+      "itemId": "EQ2_COPPER_BAR",
+      "tier": 1,
+      "source": "processing",
+      "mayTrade": false,
+      "registered": false
+    },
+    {
+      "itemId": "EQ2_GREENWOOD_PLANK",
+      "tier": 1,
+      "source": "processing",
+      "mayTrade": false,
+      "registered": false
+    },
+    {
+      "itemId": "EQ2_BOAR_LEATHER",
+      "tier": 1,
+      "source": "processing",
+      "mayTrade": false,
+      "registered": false
+    },
+    {
+      "itemId": "EQ2_MOSS_CLOTH",
+      "tier": 1,
+      "source": "processing",
+      "mayTrade": false,
+      "registered": false
+    },
+    {
+      "itemId": "EQ2_IRON_BAR",
+      "tier": 2,
+      "source": "processing",
+      "mayTrade": false,
+      "registered": false
+    },
+    {
+      "itemId": "EQ2_IRONWOOD_PLANK",
+      "tier": 2,
+      "source": "processing",
+      "mayTrade": false,
+      "registered": false
+    },
+    {
+      "itemId": "EQ2_WOLF_LEATHER",
+      "tier": 2,
+      "source": "processing",
+      "mayTrade": false,
+      "registered": false
+    },
+    {
+      "itemId": "EQ2_THORN_CLOTH",
+      "tier": 2,
+      "source": "processing",
+      "mayTrade": false,
+      "registered": false
+    },
+    {
+      "itemId": "EQ2_TREATED_DUNEWOOD",
+      "tier": 3,
+      "source": "processing",
+      "mayTrade": false,
+      "registered": false
+    },
+    {
+      "itemId": "EQ2_SUNSCAR_LEATHER",
+      "tier": 3,
+      "source": "processing",
+      "mayTrade": false,
+      "registered": false
+    },
+    {
+      "itemId": "EQ2_DUNE_CLOTH",
+      "tier": 3,
+      "source": "processing",
+      "mayTrade": false,
+      "registered": false
+    },
+    {
+      "itemId": "EQ2_GLASSBOUND_ALLOY_BAR",
+      "tier": 4,
+      "source": "processing",
+      "mayTrade": false,
+      "registered": false
+    },
+    {
+      "itemId": "EQ2_REINFORCED_DUNEWOOD",
+      "tier": 4,
+      "source": "processing",
+      "mayTrade": false,
+      "registered": false
+    },
+    {
+      "itemId": "EQ2_HARDENED_SUNSCAR_LEATHER",
+      "tier": 4,
+      "source": "processing",
+      "mayTrade": false,
+      "registered": false
+    },
+    {
+      "itemId": "EQ2_SOULWEAVE_CLOTH",
+      "tier": 4,
+      "source": "processing",
+      "mayTrade": false,
+      "registered": false
+    }
+  ]
+}

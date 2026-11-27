@@ -1,0 +1,78 @@
+name: Hidden EQ2 Market PG17 review
+on:
+  pull_request:
+    paths:
+      - 'tools/market-review/pg17/**'
+      - '.github/workflows/hidden-eq2-market-pg17-review.yml'
+permissions:
+  contents: read
+jobs:
+  disposable-settlement:
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [settlement, resource-claims]
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: eq2_market_review
+          POSTGRES_PASSWORD: disposable-local-review
+          POSTGRES_DB: eq2_market_review
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U eq2_market_review -d eq2_market_review"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGDATABASE: eq2_market_review
+      PGUSER: eq2_market_review
+      PGPASSWORD: disposable-local-review
+      PGSSLMODE: disable
+      PGOPTIONS: '-c market_review.disposable=yes -c statement_timeout=15000 -c lock_timeout=10000'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Validate isolated PostgreSQL version and schema
+        run: |
+          test "$(psql -XAt -v ON_ERROR_STOP=1 -c "select current_database()")" = eq2_market_review
+          psql -X -v ON_ERROR_STOP=1 -f tools/market-review/pg17/00_disposable_settlement.sql
+      - name: Run rollback settlement and bank tests
+        if: matrix.suite == 'settlement'
+        run: psql -X -v ON_ERROR_STOP=1 -f tools/market-review/pg17/01_settlement_regression.sql
+      - name: Extend disposable resource schema
+        run: psql -X -v ON_ERROR_STOP=1 -f tools/market-review/pg17/03_bulk_resources.sql
+      - name: Run bulk rollback regressions
+        if: matrix.suite == 'settlement'
+        run: psql -X -v ON_ERROR_STOP=1 -f tools/market-review/pg17/04_bulk_regressions.sql
+      - name: Rehearse atomic wallet and inventory mirror rollback
+        if: matrix.suite == 'settlement'
+        run: psql -X -v ON_ERROR_STOP=1 -f tools/market-review/pg17/06_atomic_mirror_review.sql
+      - name: Rehearse resource delivery claims and safe returns
+        if: matrix.suite == 'settlement'
+        run: psql -X -v ON_ERROR_STOP=1 -f tools/market-review/pg17/09_resource_delivery_claim_review.sql
+      - name: Run unified Inbox, listing lifecycle and browsing regressions
+        if: matrix.suite == 'settlement'
+        run: psql -X -v ON_ERROR_STOP=1 -f tools/market-review/pg17/16_market_read_lifecycle_regressions.sql
+      - name: Run concurrent purchase and cancellation tests
+        if: matrix.suite == 'settlement'
+        run: bash tools/market-review/pg17/02_concurrency.sh
+      - name: Run concurrent bulk fills and account cap tests
+        if: matrix.suite == 'settlement'
+        run: bash tools/market-review/pg17/05_bulk_concurrency.sh
+      - name: Run original mint replay and inventory capacity races
+        if: matrix.suite == 'settlement'
+        run: bash tools/market-review/pg17/08_original_registration_concurrency.sh
+      - name: Run resource claim and source-lot races on fresh fixture
+        if: matrix.suite == 'resource-claims'
+        run: bash tools/market-review/pg17/12_resource_claim_concurrency.sh
+      - name: Verify absence of live schema
+        run: |
+          test "$(psql -XAt -v ON_ERROR_STOP=1 -c "select count(*) from information_schema.tables where table_schema='public'")" = 0

@@ -1,0 +1,21 @@
+# Market V32–V33 — source handoff and synthetic settlement
+26 November 2026. HIDDEN review only, no deployment, no production/staging data, no actual Gold, inventory or policy changes.
+
+## Source handoff (V32 partial)
+Pinned Forge/Combat #1665 d994a0ec365386eb64755cf5a8f0629eb39a22e4:
+- backend/src/server/combat/v2/equipment-online-readback-review.ts reads the account.equipmentV2Hidden ledger on a previously supplied online_game_states row, checks account/revision, actual owned characters, job/claim/XP ledger, shared receipt namespace, reservations and virtual custody. It expressly does not authenticate, lock, query, persist, grant or authorize combat.
+- Its projected custody derives from virtual history and sets locked/favorite false; never treat it as verified physical inventory, protection status or listing authority. Future Market adapter must independently compare inventory/pouch/bank/escrow exact-copy locations, equipped/saved loadout/lock/favorite status, authoritative sockets and original mint digest under account/instance locks; compare-and-swap before commit. Distinguish immutable mint snapshot from mutable authorized socket/upgrade history.
+- backend/src/server/equipment/equipment-crafting-v2-atomic-handoff-v7-review.ts is noncommittable, validates hypothetical material lot reservations, and does not establish trusted issuance.
+- #1717 087be0d98978c7fdf4889f9a1c4f74c13cafb233 declares 554 review-only equipment IDs, ALL mayTrade/mayMint false. #1731 9e2c9f1e7aa5189528f52f9d2ffd585858d551a4 has separate socket-history and custody review. #1686 boss original-mint proof is disposable. Do not copy any of their preview booleans as database authority. Pin successor exact heads before integration.
+- V31 review now requires committed paid delivery proof (buyer, instance, original digest, sale ordinal and ID) for claim. Revoking source trade policy stops new sales, not already-paid delivery recovery. Recipient requirements, physical capacity and independent ledger verification remain necessary. Invalid or irreconcilable entitlements stay pending for explicit recovery, not erased; no automatic refund policy is chosen. Requirement policy/version semantics remain to be decided with EQ2.
+
+## V33 synthetic settlement
+Run node tools/market-review/eq2-settlement-review-v33.mjs. Clone-on-write disposable model, single synthetic original item and three fictional wallets; 43 checks in JS isolate. Two completed sales 125 and 200 Gold; taxes 7 and 10 (ceil 5% as old historical baseline), net 118 and 190. Wallet sum plus cumulative fees stays 3000. No new economy decision.
+- Original mint and rolls remain constant, chain parent and seller/buyer continuity checked, no repeat sale while pending or escrowed.
+- Same account/request key/fingerprint replay returns existing receipt; conflicting payload, stale revision, wrong account, self-buy, wrong price, insufficient gold, expired purchase and early expiry reject unchanged.
+- Cancellation and expiry produce return entitlement without Gold movement. Full storage blocks claim/return without deleting entitlement. Paid claim and return can proceed with source trade policy revoked, but claim still requires eligible recipient.
+- Synthetic expiry uses an explicit worker marker only; actual privileged worker authentication, trusted database clock and durable job idempotency are missing. Synthetic capacity and eligibility are fixture values, not real validation.
+- This is NOT a PostgreSQL transaction, database proof, concurrency test, authenticated adapter or release gate. All output receipts have marketAuthorized:false. Single-copy fixture does not establish global cross-account uniqueness, resource partial fills, account-wide listing caps, bank capacity, exact inventory write, multi-wallet contention or crash recovery. Do not deploy the model.
+
+## Next
+Build disposable PostgreSQL 17 schema and genuine multi-session races for list/buy/cancel/expire/claim, deterministic lock order, durable idempotency, append-only settlement legs and copy conservation; add many-copy and bulk-resource regression. Then integrate trusted real issuer/serializer, resolve legacy outstanding escrow/pending deliveries and paid entitlement policy, reconcile main base, assess balance and review UI. No automatic release.

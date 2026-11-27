@@ -58,9 +58,9 @@ async function main(){
     p_sort:'newest',p_min_total_gold:20,p_max_total_gold:90,
     p_limit:12,p_offset:3,
   });
-  assert.equal(req.payload?.p_account_id,undefined,'no caller-supplied actor');
-  assert.equal(req.payload?.sellerAccountId,undefined);
-  assert.equal(req.payload?.serviceKey,undefined);
+  assert.equal(Object.hasOwn(req.payload??{},'p_account_id'),false,'no caller-supplied actor');
+  assert.equal(Object.hasOwn(req.payload??{},'sellerAccountId'),false);
+  assert.equal(Object.hasOwn(req.payload??{},'serviceKey'),false);
   assert.equal((req.init.headers as Record<string,string>)['Accept-Profile'],undefined);
 
   const inbox=await run(incoming('action=inbox&history=true'));

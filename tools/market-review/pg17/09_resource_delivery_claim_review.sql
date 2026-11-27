@@ -84,6 +84,7 @@ REVOKE ALL ON ALL FUNCTIONS IN SCHEMA market_review FROM PUBLIC;
 INSERT INTO market_review.resource_claim_destination VALUES
  ('a','bank',NULL,100),('b','inventory:b1','b1',10),
  ('b','inventory:b2','b2',100),('b','bank',NULL,100),('c','bank',NULL,100);
+\ir 10_material_lot_provenance_schema.sql
 SELECT market_review.resource_act('list','a','claim-list','claim-offer',0,'ore',100,2,100);
 SELECT market_review.resource_act('buy','b','claim-buy','claim-offer',0,p_quantity=>30,p_price=>2,p_now=>101);
 UPDATE market_review.resource_policy SET approved=false WHERE item='ore';
@@ -120,5 +121,31 @@ DO $$ BEGIN
  OR (SELECT gold FROM market_review.wallet WHERE id='a')<>1057
  OR (SELECT sum(gold) FROM market_review.wallet)+(SELECT sum(fee) FROM market_review.resource_delivery)<>3000
  THEN RAISE EXCEPTION 'resource_claim_conservation_failed'; END IF;
+END $$;
+
+-- Both original source lots survive the partial purchase and return.
+SELECT market_review.assert_material_conservation();
+DO $$ BEGIN
+ IF (SELECT quantity FROM market_review.material_stock_lot WHERE owner='b' AND origin='origin-01' AND destination='inventory:b2') IS DISTINCT FROM 20::bigint
+ OR (SELECT quantity FROM market_review.material_stock_lot WHERE owner='b' AND origin='origin-02' AND destination='inventory:b2') IS DISTINCT FROM 10::bigint
+ OR (SELECT quantity FROM market_review.material_stock_lot WHERE owner='a' AND origin='origin-02' AND destination='bank') IS DISTINCT FROM 70::bigint
+ THEN RAISE EXCEPTION 'material_initial_partition_failed'; END IF;
+END $$;
+UPDATE market_review.resource_policy SET approved=true WHERE item='ore';
+SELECT market_review.resource_act('list','b','resale-list','resale-offer',0,'ore',20,3,200);
+SELECT market_review.assert_material_conservation();
+SELECT market_review.resource_act('buy','c','resale-buy','resale-offer',0,p_quantity=>20,p_price=>3,p_now=>201);
+SELECT market_review.assert_material_conservation();
+SELECT market_review.claim_resource_delivery('c','resale-claim','c','resale-buy','bank');
+SELECT market_review.claim_resource_delivery('c','resale-claim','c','resale-buy','bank');
+SELECT market_review.assert_material_conservation();
+SELECT market_review.expect_error($q$UPDATE market_review.material_origin SET issued=999 WHERE id='origin-01'$q$,'immutable_history');
+SELECT market_review.expect_error($q$UPDATE market_review.material_delivery_lot SET quantity=999 WHERE actor='c' AND request_id='resale-buy'$q$,'immutable_history');
+DO $$ BEGIN
+ IF (SELECT quantity FROM market_review.material_stock_lot WHERE owner='c' AND origin='origin-01' AND destination='bank') IS DISTINCT FROM 20::bigint
+ OR (SELECT original_owner FROM market_review.material_origin WHERE id='origin-01') IS DISTINCT FROM 'a'
+ OR (SELECT quantity FROM market_review.resource_claim_projection WHERE owner='b' AND destination='inventory:b2' AND item='ore') IS DISTINCT FROM 10::bigint
+ OR (SELECT sum(gold) FROM market_review.wallet)+(SELECT sum(fee) FROM market_review.resource_delivery)<>3000
+ THEN RAISE EXCEPTION 'material_resale_partition_failed'; END IF;
 END $$;
 ROLLBACK;

@@ -357,3 +357,23 @@ for(let pieces=0;pieces<=10;pieces++){
 assert.throws(()=>reviewGatheringRewardChannelsV2({matchingSetPieces:0,skillXpAffixBps:1}));
 assert.throws(()=>reviewGatheringRewardChannelsV2({matchingSetPieces:10,rareChanceAffixBps:8251}));
 console.log('GATHERING_REWARD_CHANNELS_REVIEW: 60 matched one-hour cases, same actions, independent XP/yield/rare channel thresholds');
+
+import {buildGatheringBonusDisplayReview} from '../src/core/gathering-bonus-display-review';
+for(const skill of ['mining','woodcutting','fishing'] as const)for(let pieces=0;pieces<=10;pieces++){
+ const input={skill,matchingSetPieces:pieces,gearRatingBps:pieces*1000};
+ const display=buildGatheringBonusDisplayReview(input);
+ const pace=reviewGatheringSpeedV2({baseActionSeconds:1,toolTimeMultiplier:1,existingRateMultiplier:1,gearRatingBps:input.gearRatingBps,setTimeMultiplier:pieces>=8?.96:1});
+ assert.equal(display.effectiveSpeedPercent,Math.round(pace.effectiveRatingBps)/100);
+ assert.equal(display.rareConsumerAvailable,skill==='mining');
+ assert.equal(display.unlockedThresholds.length,Math.floor(pieces/2));
+ assert.equal(display.releaseReady,false);
+}
+const fullDisplay=buildGatheringBonusDisplayReview({skill:'mining',matchingSetPieces:10,gearRatingBps:10000});
+assert.equal(fullDisplay.rawSpeedPercent,104.17);
+assert.equal(fullDisplay.effectiveSpeedPercent,103.13);
+assert.equal(fullDisplay.actionTimeReductionPercent,50.77);
+assert.equal(fullDisplay.xpPercent,8);
+assert.equal(fullDisplay.yieldPercent,7);
+assert.equal(fullDisplay.rareRelativePercent,10);
+assert.throws(()=>buildGatheringBonusDisplayReview({skill:'mining',matchingSetPieces:1,gearRatingBps:3000}));
+console.log('GATHERING_BONUS_DISPLAY: 33 skill/set profiles use same review engine; raw/effective duration and rare-consumer clarity');

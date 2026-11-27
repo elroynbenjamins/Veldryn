@@ -5,7 +5,9 @@ import {WORLD_ZONES} from '../content/world-map';
 import {ActiveActivity,ActivityEnvironmentSnapshot,ActivityKind,SeasonId,WeatherId} from './types';
 import {hash32} from './rng';
 
-export interface EnvironmentEffect{actionTimeMultiplier:number;xpMultiplier:number;goldMultiplier:number;itemMultiplier:number;dropChanceMultiplier:number;notes:string[];}
+// Environmental gathering benefits change cycle duration or drop probability, never item quantity.
+// Keep the neutral itemMultiplier for existing consumers and save compatibility.
+export interface EnvironmentEffect{actionTimeMultiplier:number;xpMultiplier:number;goldMultiplier:number;itemMultiplier:1;dropChanceMultiplier:number;notes:string[];}
 export interface WorldEnvironment{seasonId:SeasonId;seasonName:string;seasonSymbol:string;seasonColor:string;weatherId:WeatherId;weatherName:string;weatherSymbol:string;weatherColor:string;zoneId:string;zoneName:string;changesAtMs:number;seasonChangesAtMs:number;}
 export interface SeasonDefinition{name:string;symbol:string;color:string;months:string;description:string;weather:WeatherId[];}
 export interface WeatherDefinition{name:string;symbol:string;color:string;description:string;}
@@ -70,13 +72,13 @@ export function environmentForActivity(activity:ActiveActivity):WorldEnvironment
 }
 function neutralEffect():EnvironmentEffect{return {actionTimeMultiplier:1,xpMultiplier:1,goldMultiplier:1,itemMultiplier:1,dropChanceMultiplier:1,notes:[]}}
 export function seasonEffect(kind:ActivityKind,seasonId:SeasonId):EnvironmentEffect{
-  let actionTimeMultiplier=1,xpMultiplier=1,goldMultiplier=1,itemMultiplier=1,dropChanceMultiplier=1;
+  let actionTimeMultiplier=1,xpMultiplier=1,goldMultiplier=1,dropChanceMultiplier=1;
   const notes:string[]=[];
   if(seasonId==='spring'&&kind!=='combat'){actionTimeMultiplier*=.92;notes.push('+8% gathering speed')}
   if(seasonId==='summer'&&kind!=='combat'){actionTimeMultiplier*=.95;notes.push('+5% gathering speed')}
   if(seasonId==='autumn'){if(kind==='combat'){goldMultiplier*=1.08;notes.push('+8% combat gold')}else{actionTimeMultiplier*=.95;notes.push('+5% gathering speed')}}
   if(seasonId==='winter'&&kind==='combat'){xpMultiplier*=1.08;actionTimeMultiplier*=1.05;notes.push('+8% combat XP','−5% combat speed')}
-  return {actionTimeMultiplier,xpMultiplier,goldMultiplier,itemMultiplier,dropChanceMultiplier,notes};
+  return {actionTimeMultiplier,xpMultiplier,goldMultiplier,itemMultiplier:1,dropChanceMultiplier,notes};
 }
 export function weatherEffect(kind:ActivityKind,weatherId:WeatherId):EnvironmentEffect{
   let effect=neutralEffect();const notes:string[]=[];
@@ -95,7 +97,7 @@ export function environmentEffect(kind:ActivityKind,env:Pick<WorldEnvironment,'s
   if(kind==='alchemy'||kind==='faith')return neutralEffect();
   const season=seasonEffect(kind,env.seasonId),weather=weatherEffect(kind,env.weatherId);
   const notes=[...season.notes,...weather.notes];
-  return {actionTimeMultiplier:season.actionTimeMultiplier*weather.actionTimeMultiplier,xpMultiplier:season.xpMultiplier*weather.xpMultiplier,goldMultiplier:season.goldMultiplier*weather.goldMultiplier,itemMultiplier:season.itemMultiplier*weather.itemMultiplier,dropChanceMultiplier:season.dropChanceMultiplier*weather.dropChanceMultiplier,notes:notes.length?notes:['No activity modifier']};
+  return {actionTimeMultiplier:season.actionTimeMultiplier*weather.actionTimeMultiplier,xpMultiplier:season.xpMultiplier*weather.xpMultiplier,goldMultiplier:season.goldMultiplier*weather.goldMultiplier,itemMultiplier:1,dropChanceMultiplier:season.dropChanceMultiplier*weather.dropChanceMultiplier,notes:notes.length?notes:['No activity modifier']};
 }
 export function environmentEffectForActivity(activity:ActiveActivity){const env=environmentForActivity(activity);return {environment:env,effect:environmentEffect(activity.kind,env)}}
 export function environmentSummary(kind:ActivityKind,env:WorldEnvironment){return environmentEffect(kind,env).notes.join(' · ')}

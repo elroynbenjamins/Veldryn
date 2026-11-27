@@ -167,6 +167,40 @@ const flexible=reviewPartyCharacterSwapV103({...swapInput,mode:'party_event',cur
  proposed:[alternateA,currentRoster[1]!],consents:swapInput.consents.slice(0,1)},true);
 assert.equal(flexible.roster.length,2,'event lobby permits two damage characters');
 denied(()=>reviewPartyCharacterSwapV103(swapInput),'unreleased');
+const permanent={
+ ...swapInput,mode:'persistent_party' as const,proposalId:'QA_SWAP_1',minimumLevel:10,
+ ownedCharacters:swapInput.ownedCharacters.map(row=>({...row,combatLevel:25})),
+ consents:swapInput.consents.map(row=>({...row,partyId:swapInput.partyId,proposalId:'QA_SWAP_1'})),
+};
+const permanentResult=reviewPartyCharacterSwapV103(permanent,true);
+assert.equal(permanentResult.partyId,permanent.partyId);
+assert.deepEqual(permanentResult.roster.map(row=>row.characterId),['A_damage','B_tank','C_damage','D_support']);
+assert.ok(permanentResult.roster.every(row=>row.combatLevel===25));
+assert.equal(permanentResult.canPersist,false);
+denied(()=>reviewPartyCharacterSwapV103({...permanent,proposed:[alternateA,...currentRoster.slice(1)],
+ consents:permanent.consents.slice(0,1)},true),'coordinated_swap_required');
+denied(()=>reviewPartyCharacterSwapV103({...permanent,consents:permanent.consents.map(row=>({...row,proposalId:'OTHER'}))},true),'invalid_consent');
+denied(()=>reviewPartyCharacterSwapV103({...permanent,ownedCharacters:permanent.ownedCharacters.map(row=>
+ row.characterId==='A_damage'?{...row,combatLevel:9}:row)},true),'character_minimum_level_not_met');
+denied(()=>reviewPartyCharacterSwapV103({...permanent,ownedCharacters:[...permanent.ownedCharacters,
+ {accountId:'A',characterId:'A_second_tank',classId:'BASTION',combatLevel:25}]},true),'multiple_characters_same_role');
+const partialPermanent=reviewPartyCharacterSwapV103({...permanent,current:currentRoster.slice(0,2),
+ proposed:[alternateB,alternateA]},true);
+assert.equal(partialPermanent.roster.length,2,'permanent partial party retains existing role slots');
+const third:{accountId:string;characterId:string;classId:'STONECALLER';combatLevel:number}={
+ accountId:'B',characterId:'B_support',classId:'STONECALLER',combatLevel:25};
+const fourth:{accountId:string;characterId:string;classId:'DREADGUARD';combatLevel:number}={
+ accountId:'D',characterId:'D_tank',classId:'DREADGUARD',combatLevel:25};
+const rotation=reviewPartyCharacterSwapV103({...permanent,proposed:[alternateA,third,currentRoster[2]!,fourth],
+ ownedCharacters:[...permanent.ownedCharacters,third,fourth],
+ consents:[{accountId:'A',characterId:'A_damage',rosterRevision:7},
+ {accountId:'B',characterId:'B_support',rosterRevision:7},
+ {accountId:'D',characterId:'D_tank',rosterRevision:7}].map(row=>({...row,partyId:permanent.partyId,proposalId:permanent.proposalId}))},true);
+assert.equal(rotation.changedAccounts.length,3,'consented three-way rotation');
+denied(()=>reviewPartyCharacterSwapV103({...permanent,proposed:[alternateA,third,...currentRoster.slice(2)],
+ ownedCharacters:[...permanent.ownedCharacters,third],
+ consents:permanent.consents.map(row=>row.accountId==='B'?{...row,characterId:third.characterId}:row)},true),'party_role_distribution_changed');
+console.log('PARTY_PERMANENT_ROLE_SWAP_REVIEW_OK: paired/three-way consent, stable role counts, owned hero and minimum level');
 console.log('PARTY_ROSTER_SWAP_V103_REVIEW_OK: account-stable role exchange and frozen encounter isolation');
 assert.equal(PARTY_EVENT_EQ2_TRAIT_V92_RELEASED,false);
 let scenarios=0,traitEvents=0,baselineEvents=0;

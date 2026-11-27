@@ -14,6 +14,8 @@ import {runEffectLifecycleReviewV2} from './effect-gem-lifecycle-review';
 import {createGentleStatCombatReviewV2} from './gentle-stat-gem-combat-review';
 import {createGentleGemPartyPressureReviewV2} from './gentle-gem-party-pressure-review';
 import {compactUnifiedStatsV2,compactCoreCpIndexV2} from './compact-unified-calibration-fixture';
+import {regionalProgressionAtV2,regionalPressureReviewV2} from './regional-progression-review';
+import {runRegionalProgressionReviewV2} from './regional-progression-forge-audit';
 import {STAT_GEMS_V1,EFFECT_GEMS_V1,gemItemId,type GemGrade,GEM_BALANCE_REVIEW_V2,STAT_GEMS_REVIEW_V2,EFFECT_GEMS_REVIEW_V2,EFFECT_GEM_REVIEW_MULTIPLIERS_V2} from '../../../equipment/gems/gem-catalog-v1';
 import type {V2GemSidecarState} from '../../../equipment/equipment-crafting-v2-gem-sidecar-types';
 import {writeFileSync} from 'node:fs';
@@ -1983,6 +1985,80 @@ function makeV21Loadout(classId:ClassIdV2,specIndex:0|1,targetTier:1|2|3|4,targe
    survivorLosses:a.filter(r=>r.result.after.partyAlive<r.result.before.partyAlive).length,
    lostVictories:a.filter(r=>r.result.before.victory>r.result.after.victory).length}])),
   releaseEnabled:false,cpApproved:false}));
+}
+// Fail-fast source audit independent of the longer combat matrix.
+runRegionalProgressionReviewV2();
+// Midpoint and region-entry pressure, independently frozen normal/elite
+// enemy reference and authentic compact class + Forge build. Compare the
+// same character level before/after a pressure step, then the intended
+// equipment upgrade at the same pressure. No release-facing coefficients.
+{
+ const comparisons:{level:number;classId:ClassIdV2;spec:number;kind:string;seed:number;priorTier:number;nextTier:number;
+  before:{win:number;hp:number;enemyHp:number;duration:number};pressure:{win:number;hp:number;enemyHp:number;duration:number};
+  upgrade:{win:number;hp:number;enemyHp:number;duration:number}}[]=[];
+ for(const level of [13,26,38,51,63]){
+  const prior=regionalProgressionAtV2(level-1),next=regionalProgressionAtV2(level);
+  if(!next.regionLaunchEligible||next.region==='region4'||prior.expectedTier===5||next.expectedTier===5)throw Error('region_review_scope');
+  const previousPressure=regionalPressureReviewV2(level-1),nextPressure=regionalPressureReviewV2(level);
+  const oldTier=prior.expectedTier,newTier=next.expectedTier;
+  const region=next.region as 'asterfall'|'sunscar'|'frostmarch';
+  const enemyTier=Math.max(2,newTier) as 2|3|4;
+  const k=30+2*level;
+  const all=Object.keys(CLASS_NAMES_V2) as ClassIdV2[];
+  const compile=(classId:ClassIdV2,spec:0|1,tier:1|2|3|4)=>{
+   const qa=makeV21Loadout(classId,spec,tier,level);
+   const classProfile=qa.source.classBaselinePolicy.profiles[classId]!;
+   const source={...qa.source,classBaselinePolicy:{version:'QA_COMPACT_REGION_STEP_20261127',profiles:{
+    [classId]:{...classProfile,maxLevel:100,statsAtLevel:(n:number)=>compactUnifiedStatsV2(classId,n)}}}};
+   return compileRealFrozenForgeActorV2(qa.actor,qa.build,source).actor;
+  };
+  const builds=all.flatMap(classId=>([0,1] as const).map(spec=>({classId,spec,
+   old:compile(classId,spec,oldTier),next:oldTier===newTier?undefined:compile(classId,spec,newTier)})));
+  const meanHp=builds.reduce((n,x)=>n+x.old.stats.maxHp,0)/builds.length;
+  const meanAttack=builds.reduce((n,x)=>n+x.old.stats.attackPower,0)/builds.length;
+  const base={hp:meanAttack*16,attack:meanHp*.085,defense:k*.35};
+  for(const row of builds)for(const kind of ['normal','elite'] as const)for(const seedIndex of [0,1]){
+   const seed=['QA_REGION_STEP',level,row.classId,row.spec,kind,seedIndex].join('_');
+   const id='QA_REGION_STEP_ENEMY';
+   const enemy=(p:ReturnType<typeof regionalPressureReviewV2>):CombatantDefinition=>({...boss,
+    id,name:'Regional pressure fixture',level,boss:false,phases:undefined,abilities:[],
+    stats:{...boss.stats,maxHp:Math.round(base.hp*p.hp*(kind==='elite'?1.5:1)),
+     attackPower:Math.round(base.attack*p.attack*(kind==='elite'?1.2:1)),
+     defense:Math.round(base.defense*p.defense)}});
+   const run=(actor:CombatantDefinition,foe:CombatantDefinition)=>{
+    const proposed=prepareSoloEnemyKitsV2([foe],{ruleset:ENEMY_V2_RULESET,region,equipmentTier:enemyTier,
+     encounterId:seed,serverSeed:seed,eliteEnemyIds:kind==='elite'?[id]:[]});
+    const persisted={...proposed,source:'server-persisted-v2' as const,revision:6};
+    const verified=verifyPersistedEnemyKitsV2([foe],persisted);
+    const input:CombatInput={seed,players:[actor],enemies:[...verified.enemies],maxDurationMs:30000,mitigationConstant:k};
+    const scope={source:'server-persisted-v2' as const,version:2 as const,ruleset:persisted.ruleset,
+     mode:'solo' as const,encounterId:persisted.encounterId,revision:persisted.revision,seed:persisted.seed,
+     playerIds:[actor.id],enemyIds:persisted.enemyIds,bossIds:persisted.bossIds};
+    const result=simulateCombat(input,issueEnemyV2EngineAuthority(scope,input,(_s,d)=>/^[a-f0-9]{64}$/.test(d)));
+    assert.ok(result.players[0].hp>=0&&result.players[0].hp<=actor.stats.maxHp+1e-8);
+    assert.ok(result.events.every(e=>e.amount===undefined||Number.isFinite(e.amount)));
+    return {win:Number(result.victory),hp:result.players[0].hp/actor.stats.maxHp,
+     enemyHp:result.enemies[0].hp/result.enemies[0].definition.stats.maxHp,duration:result.durationMs};
+   };
+   const pre=enemy(previousPressure),post=enemy(nextPressure);
+   assert.ok(post.stats.maxHp>=pre.stats.maxHp&&post.stats.attackPower>=pre.stats.attackPower&&post.stats.defense>=pre.stats.defense);
+   const before=run(row.old,pre),pressure=run(row.old,post),upgrade=row.next?run(row.next,post):pressure;
+   if(seedIndex===0&&kind==='normal')assert.deepEqual(run(row.old,post),pressure);
+   comparisons.push({level,classId:row.classId,spec:row.spec,kind,seed:seedIndex,priorTier:oldTier,nextTier:newTier,before,pressure,upgrade});
+  }
+ }
+ assert.equal(comparisons.length,360);
+ const keys=[...new Set(comparisons.map(r=>r.level+'|'+CLASS_ROLES_V2[r.classId]+'|'+r.kind))].sort();
+ assert.equal(keys.length,30);
+ const mean=(values:number[])=>values.reduce((n,v)=>n+v,0)/values.length;
+ console.log('REGIONAL_STEP_COMBAT_REVIEW '+JSON.stringify({cases:comparisons.length,groups:keys.map(key=>{
+  const rows=comparisons.filter(r=>r.level+'|'+CLASS_ROLES_V2[r.classId]+'|'+r.kind===key);
+  return {key,cases:rows.length,priorTier:rows[0].priorTier,nextTier:rows[0].nextTier,
+   beforeWins:rows.reduce((n,r)=>n+r.before.win,0),pressureWins:rows.reduce((n,r)=>n+r.pressure.win,0),
+   upgradedWins:rows.reduce((n,r)=>n+r.upgrade.win,0),pressureHpDelta:mean(rows.map(r=>r.pressure.hp-r.before.hp)),
+   upgradeHpDelta:mean(rows.map(r=>r.upgrade.hp-r.pressure.hp)),pressureEnemyHpDelta:mean(rows.map(r=>r.pressure.enemyHp-r.before.enemyHp)),
+   upgradeEnemyHpDelta:mean(rows.map(r=>r.upgrade.enemyHp-r.pressure.enemyHp))};
+ }),releaseEnabled:false,cpApproved:false}));
 }
 // Unified compact class -> actual V2 skills -> original Forge -> exact socket
 // projection -> verified authored party enemy kits. The only modified source

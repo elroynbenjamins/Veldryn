@@ -32,16 +32,6 @@ end
 $$;
 revoke all on function private.capture_party_contract_scope_v130(uuid,uuid,uuid,uuid,bigint,timestamptz) from public,anon,authenticated,service_role;
 
--- V131: seeded/fenced private roster is authoritative. Ignore frozen legacy
--- rows ONLY for fenced Parties; unfenced active memberships still block entry.
-create function private.party_entry_account_available_v131(p_actor uuid)
-returns boolean language sql stable security invoker set search_path='' as $$
- select not exists(select 1 from private.party_registration_members_v110 where account_id=p_actor)
- and not exists(select 1 from public.party_members m where m.account_id=p_actor and m.left_at is null
- and not exists(select 1 from private.party_registration_cutover_fence_v126 f where f.party_id=m.party_id))
-$$;
-revoke all on function private.party_entry_account_available_v131(uuid) from public,anon,authenticated,service_role;
-
 -- Shared exact-key receipts with lifecycle V129. A rejoin creates a NEW
 -- registration ID and joined_at; never revives archived participation.
 create function private.enter_party_registration_v131(

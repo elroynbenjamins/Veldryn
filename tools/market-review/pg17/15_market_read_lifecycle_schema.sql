@@ -18,19 +18,19 @@ CREATE TABLE market_review.fixture_copy_item(
 -- correlated to immutable action receipts by instance, offer and revision.
 -- Current custody alone cannot determine historical delivery status after resale.
 CREATE VIEW market_review.inbox_entry AS
- SELECT 'resource-delivery:'||d.actor||':'||d.request_id AS id,d.recipient AS owner,
+ SELECT 'resource-delivery:'||encode(sha256(convert_to(jsonb_build_array(d.actor,d.request_id)::text,'UTF8')),'hex') AS id,d.recipient AS owner,
  CASE d.kind WHEN 'purchase' THEN 'purchased' ELSE 'returned' END AS kind,
  o.item,'resource'::text AS asset_kind,d.quantity::bigint AS quantity,-d.gross AS gold_change,
  CASE WHEN c.request_id IS NULL THEN 'ready' ELSE 'claimed' END AS status
  FROM market_review.resource_delivery d JOIN market_review.resource_offer o ON o.id=d.offer
  LEFT JOIN market_review.resource_claim c ON c.delivery_actor=d.actor AND c.delivery_request=d.request_id
  UNION ALL
- SELECT 'resource-sale:'||d.actor||':'||d.request_id,o.seller,'sold',o.item,'resource',d.quantity,d.gross-d.fee,'credited'
+ SELECT 'resource-sale:'||encode(sha256(convert_to(jsonb_build_array(d.actor,d.request_id)::text,'UTF8')),'hex'),o.seller,'sold',o.item,'resource',d.quantity,d.gross-d.fee,'credited'
  FROM market_review.resource_delivery d JOIN market_review.resource_offer o ON o.id=d.offer WHERE d.kind='purchase'
  UNION ALL
  SELECT 'equipment-purchase:'||s.offer,s.buyer,'purchased',i.item,'equipment',1,-s.gross,
  CASE WHEN EXISTS(SELECT 1 FROM market_review.request c WHERE c.actor=s.buyer AND c.args->>0='claim'
-  AND c.args->>1=s.instance AND (c.args->>2)::bigint=(b.args->>2)::bigint+1
+  AND c.args->>1=s.instance AND c.args->2=to_jsonb(CASE WHEN jsonb_typeof(b.args->2)='number' THEN (b.args->>2)::bigint+1 END)
   AND c.receipt->>'state'='inventory') THEN 'claimed' ELSE 'ready' END
  FROM market_review.sale s JOIN market_review.fixture_copy_item i ON i.instance=s.instance
  JOIN market_review.request b ON b.actor=s.buyer AND b.args->>0='buy' AND b.args->>1=s.instance
@@ -41,7 +41,7 @@ CREATE VIEW market_review.inbox_entry AS
  UNION ALL
  SELECT 'equipment-return:'||o.id,o.seller,'returned',i.item,'equipment',1,0,
  CASE WHEN EXISTS(SELECT 1 FROM market_review.request c WHERE c.actor=o.seller AND c.args->>0='return'
-  AND c.args->>1=o.instance AND (c.args->>2)::bigint=(r.args->>2)::bigint+1
+  AND c.args->>1=o.instance AND c.args->2=to_jsonb(CASE WHEN jsonb_typeof(r.args->2)='number' THEN (r.args->>2)::bigint+1 END)
   AND c.receipt->>'state'='inventory') THEN 'claimed' ELSE 'ready' END
  FROM market_review.offer o JOIN market_review.fixture_copy_item i ON i.instance=o.instance
  JOIN market_review.request r ON r.args->>0 IN ('cancel','expire') AND r.args->>1=o.instance
@@ -77,25 +77,29 @@ CREATE VIEW market_review.listing_entry AS
  SELECT 'resource',o.id,o.seller,o.item,o.initial_qty,o.remaining,o.price,o.expires,o.status,o.revision,
  p.approved AND o.price BETWEEN p.min_price AND p.max_price AND o.remaining>=p.min_lot,
  NULL::jsonb FROM market_review.resource_offer o JOIN market_review.resource_policy p ON p.item=o.item;
-CREATE FUNCTION market_review.read_my_listings(p_actor text,p_now bigint)
+CREATE FUNCTION market_review.read_my_listings(p_actor text,p_now bigint,p_history boolean DEFAULT false,p_offset int DEFAULT 0)
  RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY INVOKER SET search_path='' AS $$
 DECLARE result jsonb;
 BEGIN
- IF p_actor IS NULL OR p_now IS NULL OR p_now<0 OR NOT EXISTS(SELECT 1 FROM market_review.wallet WHERE id=p_actor)
+ IF p_actor IS NULL OR p_now IS NULL OR p_now<0 OR p_history IS NULL OR p_offset IS NULL
+ OR p_offset NOT BETWEEN 0 AND 10000 OR NOT EXISTS(SELECT 1 FROM market_review.wallet WHERE id=p_actor)
  THEN RAISE EXCEPTION 'invalid_listings'; END IF;
- SELECT jsonb_build_object('entries',coalesce(jsonb_agg(jsonb_build_object(
+ WITH scoped AS (SELECT * FROM market_review.listing_entry WHERE seller=p_actor),
+ filtered AS (SELECT * FROM scoped WHERE (status<>'active')=p_history),
+ page AS (SELECT * FROM filtered ORDER BY expires,id,kind LIMIT 40 OFFSET p_offset)
+ SELECT jsonb_build_object('entries',coalesce((SELECT jsonb_agg(jsonb_build_object(
  'offerId',id,'assetKind',kind,'itemId',item,'initialQuantity',initial_qty,'remainingQuantity',remaining,
  'unitGold',price,'expiresAt',expires,'status',CASE WHEN status='active' AND expires<=p_now THEN 'expiry_pending' ELSE status END,
- 'canCancel',status='active' AND expires>p_now,'marketAuthorized',false) ORDER BY expires,id,kind),'[]'::jsonb),
- 'activeCount',count(*) FILTER(WHERE status='active'),'marketAuthorized',false) INTO result
- FROM market_review.listing_entry WHERE seller=p_actor;
+ 'canCancel',status='active' AND expires>p_now,'marketAuthorized',false) ORDER BY expires,id,kind) FROM page),'[]'::jsonb),
+ 'activeCount',(SELECT count(*) FROM scoped WHERE status='active'),
+ 'total',(SELECT count(*) FROM filtered),'offset',p_offset,'marketAuthorized',false) INTO result;
  RETURN result;
 END $$;
 -- Single due listing per transaction, same existing settlement routines.
 -- Do not create a scheduler or use client clock in a future real worker.
 CREATE FUNCTION market_review.expire_next(p_now bigint) RETURNS jsonb
  LANGUAGE plpgsql SECURITY INVOKER SET search_path='' AS $$
-DECLARE chosen record; copy_id text; result jsonb; key text;
+DECLARE chosen record; copy_id text; result jsonb; key text; locked_revision bigint;
 BEGIN
  IF p_now IS NULL OR p_now<0 THEN RAISE EXCEPTION 'invalid_expiry_clock'; END IF;
  SELECT * INTO chosen FROM market_review.listing_entry WHERE status='active' AND expires<=p_now
@@ -105,9 +109,18 @@ BEGIN
  BEGIN
  IF chosen.kind='equipment' THEN
   SELECT instance INTO STRICT copy_id FROM market_review.offer WHERE id=chosen.id;
-  result:=market_review.act('expire',chosen.seller,key,copy_id,chosen.revision,chosen.id,p_now=>p_now,p_worker=>true);
+  -- Match existing equipment act lock order (custody first), then recheck.
+  SELECT revision INTO STRICT locked_revision FROM market_review.custody WHERE id=copy_id FOR UPDATE;
+  IF locked_revision<>chosen.revision OR NOT EXISTS(SELECT 1 FROM market_review.offer WHERE id=chosen.id AND status='active' AND expires<=p_now)
+  THEN RETURN jsonb_build_object('processed',false,'reason','changed','marketAuthorized',false); END IF;
+  result:=market_review.act('expire',chosen.seller,key,copy_id,locked_revision,chosen.id,p_now=>chosen.expires,p_worker=>true);
  ELSE
-  result:=market_review.resource_act('expire',chosen.seller,key,chosen.id,chosen.revision,p_now=>p_now,p_worker=>true);
+  -- Match resource_act lock order (offer first). A concurrent partial buy
+  -- invalidates this selection; the next worker pass reselects its remainder.
+  SELECT revision INTO locked_revision FROM market_review.resource_offer WHERE id=chosen.id AND status='active' AND expires<=p_now FOR UPDATE;
+  IF NOT FOUND OR locked_revision<>chosen.revision
+  THEN RETURN jsonb_build_object('processed',false,'reason','changed','marketAuthorized',false); END IF;
+  result:=market_review.resource_act('expire',chosen.seller,key,chosen.id,locked_revision,p_now=>chosen.expires,p_worker=>true);
  END IF;
  EXCEPTION WHEN raise_exception THEN
   IF SQLERRM IN ('stale_revision','stale_resource_revision','offer_unavailable','resource_offer_closed')
@@ -122,7 +135,8 @@ CREATE FUNCTION market_review.read_browse(
  p_now bigint,p_kind text DEFAULT 'all',p_search text DEFAULT NULL,p_tier int DEFAULT NULL,
  p_category text DEFAULT NULL,p_rarity text DEFAULT NULL,p_quality int DEFAULT NULL,
  p_stat text DEFAULT NULL,p_min_stat int DEFAULT NULL,p_sort text DEFAULT 'price_asc',
- p_limit int DEFAULT 25,p_offset int DEFAULT 0
+ p_limit int DEFAULT 25,p_offset int DEFAULT 0,
+ p_min_total_gold bigint DEFAULT NULL,p_max_total_gold bigint DEFAULT NULL
 ) RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY INVOKER SET search_path='' AS $$
 DECLARE result jsonb;
 BEGIN
@@ -130,6 +144,9 @@ BEGIN
  OR p_sort IS NULL OR p_sort NOT IN ('price_asc','price_desc','newest')
  OR p_limit IS NULL OR p_limit NOT BETWEEN 1 AND 50 OR p_offset IS NULL OR p_offset NOT BETWEEN 0 AND 1000
  OR (p_search IS NOT NULL AND (length(p_search) NOT BETWEEN 1 AND 60 OR p_search!~'^[A-Za-z0-9_ -]+$'))
+ OR (p_min_total_gold IS NOT NULL AND p_min_total_gold NOT BETWEEN 1 AND 1000000000000000)
+ OR (p_max_total_gold IS NOT NULL AND p_max_total_gold NOT BETWEEN 1 AND 1000000000000000)
+ OR (p_min_total_gold IS NOT NULL AND p_max_total_gold IS NOT NULL AND p_min_total_gold>p_max_total_gold)
  OR (p_tier IS NOT NULL AND p_tier NOT BETWEEN 1 AND 5)
  OR (p_category IS NOT NULL AND p_category NOT IN ('weapon','armor','material'))
  OR (p_rarity IS NOT NULL AND p_rarity NOT IN ('common','rare','epic','mythic'))
@@ -144,6 +161,8 @@ BEGIN
  WHERE l.status='active' AND l.approved AND l.expires>p_now AND l.remaining>0
  AND (l.kind='resource' OR EXISTS(SELECT 1 FROM market_review.offer o JOIN market_review.custody c ON c.id=o.instance
  WHERE o.id=l.id AND c.owner=l.seller AND c.state='escrow' AND NOT c.protected))
+ AND (p_min_total_gold IS NULL OR l.remaining*l.price>=p_min_total_gold)
+ AND (p_max_total_gold IS NULL OR l.remaining*l.price<=p_max_total_gold)
  AND (p_kind='all' OR l.kind=p_kind)
  AND (p_search IS NULL OR strpos(lower(i.label||' '||i.item),lower(p_search))>0)
  AND (p_tier IS NULL OR i.tier=p_tier) AND (p_category IS NULL OR i.category=p_category)

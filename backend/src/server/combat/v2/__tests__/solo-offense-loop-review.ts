@@ -2,7 +2,7 @@
  * The full input is checked before projecting the source-compiled actor.
  * No global stat or encounter-specific enemy adjustment. */
 import type {CombatInput,CombatantDefinition} from '../../types';
-import {secondaryOffenseActorReviewV2,secondaryOffenseAmountV2} from './secondary-offense-review';
+import {secondaryOffenseActorReviewV2} from './secondary-offense-review';
 import type {ClassIdV2} from '../build-contract';
 export type SoloOffenseLoopArm='expanded_start'|'expanded_double'|'solo_tempo';
 export function soloOffenseLoopReviewV2(classId:ClassIdV2,input:CombatInput,arm:SoloOffenseLoopArm){

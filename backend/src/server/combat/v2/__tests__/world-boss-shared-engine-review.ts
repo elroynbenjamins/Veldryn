@@ -1,5 +1,7 @@
 import {strict as assert} from 'node:assert';
 import type {CombatInput} from '../../types';
+import {makeWorldBossWarCampSnapshotV11} from '../../world-boss-war-camp-v11';
+import {deriveWorldBossPreparationReviewV2,applyWorldBossStartingHpReviewV2,initialWorldBossGuardReviewV2,advanceWorldBossGuardReviewV2} from '../world-boss-preparation-review';
 import {CLASS_ROLES_V2,type ClassIdV2} from '../build-contract';
 import {reviewWorldBossProtectionV2} from '../world-boss-protection-review';
 import {bosses,profiles,setup} from './ten-slot-boss-fixture';
@@ -20,7 +22,7 @@ const cases=[
 ] as const;
 const phases=['armored','exposed','enraged'] as const;
 function fixture(b:typeof cases[number],phase:typeof phases[number],size:number,
- classes:readonly ClassIdV2[]=['IRONWARDEN','WAYFINDER','STONECALLER'],spec:0|1=0,grade:0|1=1,seedIndex=0){
+ classes:readonly ClassIdV2[]=['IRONWARDEN','WAYFINDER','STONECALLER'],spec:0|1=0,grade:0|1=1,seedIndex=0,pressure=1,duration=12000){
  const rows=classes.slice(0,size).map(id=>setup(id,spec,b.regional,profiles[grade]));
  const accountId='QA_WORLD_ACCOUNT';
  const builds=rows.map(x=>x.build),runtime=rows.map(x=>x.runtime);
@@ -30,13 +32,13 @@ function fixture(b:typeof cases[number],phase:typeof phases[number],size:number,
   rs.length===1&&enemyV2SnapshotDigest(rs[0])===enemyV2SnapshotDigest(sources[i])&&/^[a-f0-9]{64}$/.test(digest)}));
  const seed='QA_WORLD_'+b.id+'_'+phase+'_'+seedIndex;
  const authored=buildWorldBossAuthoredReviewV2({bossId:b.id,phase,
-  level:b.regional.level,stats:rows[0].input.enemies[0].stats,
+  level:b.regional.level,stats:{...rows[0].input.enemies[0].stats,attackPower:rows[0].input.enemies[0].stats.attackPower*pressure},
   localShieldAmount:phase==='armored'?300:150});
  const boss=authored.definition;
  assert.equal(authored.digest,enemyV2SnapshotDigest(boss));
  assert.equal(boss.abilities.length,3);
  assert.equal(boss.phases,undefined);
- const input:CombatInput={seed,players:rows.map(x=>x.actor),enemies:[boss],maxDurationMs:12000,tickMs:100};
+ const input:CombatInput={seed,players:rows.map(x=>x.actor),enemies:[boss],maxDurationMs:duration,tickMs:100};
  const scope:WorldBossSharedRosterReviewV2={accountId,eventId:'QA_WORLD_EVENT',
   reservationId:'QA_WORLD_RESERVATION',attempt:1,entitlementRevision:7,
   unlockedCharacterSlots:3,rosterDigest:'a'.repeat(64),contentVersion:'qa_content',balanceVersion:'qa_balance',
@@ -168,3 +170,57 @@ for(const b of cases)for(const phase of phases)for(const seedIndex of [0,1]){
 }
 assert.equal(accountCases,54);
 console.log(JSON.stringify({kind:'WORLD_BOSS_V93_ACCOUNT_SIZE_MATCHED_REVIEW',accountCases,accountRegressions}));
+
+ // Long-horizon pressure review: fixed independent threat, no attacker CP
+ // scaling, equal seed and gear within each comparison. No balance assertions.
+let stressCount=0;
+const stress:Record<string,{runs:number;survivors:number;damage:number;healing:number;protected:number}>={};
+for(const b of cases)for(const id of Object.keys(CLASS_ROLES_V2) as ClassIdV2[])
+ for(const spec of [0,1] as const)for(const pressure of [4,8,12]){
+  const f=fixture(b,'enraged',1,[id],spec,1,0,pressure,60000);
+  const out=simulateWorldBossSharedEngineReviewV2(f.input,f.builds,f.runtime,f.traitPorts,f.scope,f.verify,true);
+  const evidence=reviewWorldBossContributionV2(out.combat);
+  assert.ok(out.protection);assert.equal(out.globalHpCredited,0);
+  const key=b.id+'|'+CLASS_ROLES_V2[id]+'|'+id+'|'+spec+'|'+pressure;
+  const row=stress[key]??{runs:0,survivors:0,damage:0,healing:0,protected:0};
+  row.runs++;row.survivors+=evidence.characters[0].survived?1:0;row.damage+=evidence.localHpLoss;
+  row.healing+=evidence.characters[0].engineEffectiveHealing;row.protected+=out.protection.characters[0].effectiveHpProtected;
+  stress[key]=row;stressCount++;
+ }
+assert.equal(stressCount,162);
+console.log(JSON.stringify({kind:'WORLD_BOSS_V93B_STRESS_REVIEW',stressCount,stress}));
+
+// Review-only War Camp source and Guard boundary. All other camp multipliers
+// are derived but not applied to engine hit/heal resolution yet.
+const camp=makeWorldBossWarCampSnapshotV11({eventId:f.scope.eventId,revision:2,
+ levels:{fortifications:2,fieldProvisions:2,siegecraft:2}});
+const preparation={eventId:f.scope.eventId,bossId:f.scope.bossId,phase:f.scope.phase,
+ tactic:'break_armor' as const,camp,guardMax:100};
+const effects=deriveWorldBossPreparationReviewV2(preparation,f.scope);
+assert.equal(effects.initialGuard,100);assert.equal(effects.startingHpMultiplier,1.05);
+assert.equal(effects.healingMultiplier,1.05);assert.equal(effects.bossIncomingMultiplier,.9);
+assert.ok(Math.abs(effects.guardBreakMultiplier-1.1025)<1e-10);
+const start=initialWorldBossGuardReviewV2(effects);
+const hit=advanceWorldBossGuardReviewV2(start,effects,{kind:'hit',amount:120,atMs:1000});
+assert.equal(hit.guardDamage,100);assert.equal(hit.broken,true);
+assert.ok(Math.abs(hit.localHpCandidate-(120-100/1.1025))<1e-9);
+assert.equal(hit.state.exposedUntilMs,11000);
+const exposed=advanceWorldBossGuardReviewV2(hit.state,effects,{kind:'hit',amount:100,atMs:10999});
+assert.ok(Math.abs(exposed.localHpCandidate-115.5)<1e-9);
+assert.equal(advanceWorldBossGuardReviewV2(exposed.state,effects,{kind:'hit',amount:100,atMs:11000}).localHpCandidate,100);
+const restored=advanceWorldBossGuardReviewV2(hit.state,effects,{kind:'restore',amount:200,atMs:2000});
+assert.equal(restored.state.remaining,100);assert.equal(restored.state.exposedUntilMs,0);
+assert.throws(()=>advanceWorldBossGuardReviewV2(restored.state,effects,{kind:'hit',amount:1,atMs:1000}),/invalid_transition/);
+assert.throws(()=>deriveWorldBossPreparationReviewV2({...preparation,camp:{...camp,digest:'f'.repeat(64)}},f.scope),/war_camp_digest_mismatch/);
+assert.throws(()=>deriveWorldBossPreparationReviewV2({...preparation,eventId:'foreign'},f.scope),/scope_mismatch/);
+const preparedScope={...f.scope,preparation};
+const preparedInput=applyWorldBossStartingHpReviewV2({...f.input,players:f.compiled.players},effects);
+const preparedBinding={scope:preparedScope,bossDefinitionDigest:enemyV2SnapshotDigest(preparedInput.enemies[0]),
+ compiledInputDigest:enemyV2SnapshotDigest(preparedInput),equipmentSourcesDigest:enemyV2SnapshotDigest(f.compiled.sources)};
+const prepared=simulateWorldBossSharedEngineReviewV2(f.input,f.builds,f.runtime,f.traitPorts,preparedScope,
+ binding=>enemyV2SnapshotDigest(binding)===enemyV2SnapshotDigest(preparedBinding),true);
+assert.equal(prepared.combat.players[0].definition.stats.maxHp,preparedInput.players[0].stats.maxHp);
+assert.equal(prepared.preparation?.digest,effects.digest);
+assert.equal(prepared.guardSettlement,false);
+assert.equal(prepared.globalHpCredited,0);
+console.log('WORLD_BOSS_V94A_PREPARATION_GUARD_REVIEW: starting HP executed; Guard transitions separate; no settlement');

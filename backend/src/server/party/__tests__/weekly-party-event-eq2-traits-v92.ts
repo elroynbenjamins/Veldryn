@@ -1,3 +1,4 @@
+import {buildContractFocusCardV112,planContractFocusBallotV112,type ContractFocusOfferV112} from '../party-contract-focus-vote-review-v112';
 import {permanentPartyRosterDigestV109,planPermanentPartyRosterWriteV109,type PartyStorageSnapshotV109} from '../permanent-party-roster-write-plan-v109';
 import {planPartyRoleSwapResponseV107} from '../party-role-swap-transition-review-v107';
 import {reviewPartyChatActionTransactionV106,type PartyChatStoreV106,type PartyChatTransactionV106,type PartyChatRequestV106,type PartyChatReceiptV106,type PartyChatEffectV106,type PartyChatWorkflowV106} from '../party-chat-action-transaction-review-v106';
@@ -364,6 +365,42 @@ denied(()=>projectPartyChatCardV105({...cardScope,card:achievement,message:{...c
 denied(()=>projectPartyChatCardV105({...cardScope,card:achievement,viewerAccountId:'OUTSIDER'},true),'chat_scope_mismatch');
 denied(()=>projectPartyChatCardV105({...cardScope,card:achievement}), 'unreleased');
 console.log('PARTY_CHAT_ACTION_CARDS_V105_REVIEW_OK');
+const contractWeek=Date.UTC(2026,10,23);
+const contractFocusOffer:ContractFocusOfferV112={
+ partyId:workflowBase.partyId,sourceId:workflowBase.sourceId,messageId:workflowBase.messageId,
+ rosterRevision:7,sourceRevision:2,createdAtMs:contractWeek+1000,expiresAtMs:contractWeek+301000,
+ weekStartsAtMs:contractWeek,weekEndsAtMs:contractWeek+604800000,
+ eligibleAccountIds:['A','B','C','D'],instanceIds:['HUNT_INSTANCE','GATHER_INSTANCE'],ballots:[],
+};
+const contractInstances=[
+ {id:'HUNT_INSTANCE',partyId:contractFocusOffer.partyId,definitionId:'HUNT',definitionVersion:1,
+  cadence:'weekly' as const,seasonKey:'2026-11-23',startsAtMs:contractWeek,endsAtMs:contractWeek+604800000,
+  status:'active' as const,labelKey:'contract_hunt',totalTargetPoints:100},
+ {id:'GATHER_INSTANCE',partyId:contractFocusOffer.partyId,definitionId:'GATHER',definitionVersion:2,
+  cadence:'weekly' as const,seasonKey:'2026-11-23',startsAtMs:contractWeek,endsAtMs:contractWeek+604800000,
+  status:'active' as const,labelKey:'contract_gather',totalTargetPoints:100},
+];
+const focusInput={offer:contractFocusOffer,instances:contractInstances,
+ scope:{...cardScope,serverNowMs:contractWeek+2000},optionId:'HUNT_INSTANCE'};
+const focusCard=buildContractFocusCardV112(focusInput,true);
+assert.deepEqual(focusCard.options.map(x=>x.id),contractFocusOffer.instanceIds);
+const focusBallot=planContractFocusBallotV112(focusInput,true);
+assert.deepEqual(focusBallot.ballot,{accountId:'B',optionId:'HUNT_INSTANCE'});
+assert.equal(focusBallot.canAssignContract,false);
+assert.equal(focusBallot.canChangeRewards,false);
+assert.equal(focusBallot.canResolveVote,false);
+assert.equal(contractFocusOffer.ballots.length,0);
+denied(()=>planContractFocusBallotV112({...focusInput,optionId:'FORGED'},true),'invalid_option');
+denied(()=>planContractFocusBallotV112({...focusInput,offer:{...contractFocusOffer,ballots:focusBallot.proposedBallots}},true),'vote_not_allowed');
+denied(()=>planContractFocusBallotV112({...focusInput,scope:{...focusInput.scope,serverNowMs:contractFocusOffer.expiresAtMs}},true),'vote_not_allowed');
+denied(()=>planContractFocusBallotV112({...focusInput,instances:contractInstances.map(x=>({...x,cadence:'mini_event' as const}))},true),'instance_not_eligible');
+denied(()=>planContractFocusBallotV112({...focusInput,instances:contractInstances.map(x=>({...x,partyId:'OTHER_PARTY'}))},true),'instance_not_eligible');
+denied(()=>planContractFocusBallotV112({...focusInput,instances:contractInstances.map(x=>({...x,status:'completed' as const}))},true),'instance_not_eligible');
+denied(()=>planContractFocusBallotV112({...focusInput,instances:contractInstances.map(x=>({...x,seasonKey:'2026-11-16'}))},true),'instance_not_eligible');
+denied(()=>planContractFocusBallotV112({...focusInput,instances:contractInstances.map(x=>({...x,definitionId:'HUNT'}))},true),'duplicate_definition');
+denied(()=>planContractFocusBallotV112(focusInput),'unreleased');
+console.log('PARTY_CONTRACT_FOCUS_V112_REVIEW_OK');
+
 async function testPartyChatTransactionsV106(){
  const vote:VoteCardV105={...workflowBase,kind:'contract_vote',options,ballots:[]};
  const scope:PartyChatWorkflowV106={...cardScope,kind:'contract_vote',card:vote};

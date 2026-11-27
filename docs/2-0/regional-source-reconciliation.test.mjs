@@ -1,0 +1,90 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+// Read source declarations, not generated builds or live drop receipts. Source format changes fail the count checks.
+function audit(read){
+ const mobile='apps/mobile/src/content/', equip='backend/src/server/equipment/';
+ const raw=read(mobile+'monsters.ts');
+ const block=raw.split('const MONSTERS_RAW:MonsterDef[]=[')[1].split('];')[0];
+ const reb=raw.split('const REGIONAL_25_LEVEL_REBALANCE:')[1].split('};')[0];
+ const field=(s,k)=>s.match(new RegExp('\\b'+k+':\\s*(?:\\\'([^\\\']*)\\\'|"([^"]*)"|([0-9.]+))'))?.slice(1).find(x=>x!==undefined);
+ const monsters=block.split('\n').filter(l=>/^\s*\{id:/.test(l)).map(l=>{
+  const id=field(l,'id'),zone=field(l,'zone'),override=reb.split('\n').find(x=>x.trim().startsWith(id+':'));
+  const regional=zone==='Sunscar'||zone==='Frostmarch';
+  return {id,zone,boss:l.includes('boss:true'),level:Number(field(override||l,'level')),unlock:Number(field(override||l,'unlockLevel')),
+   levelBasis:regional?'rebased_authored':'legacy_requires_rebase',drops:[...l.matchAll(/\{itemId:'([^']+)',chance:([.0-9]+),min:(\d+),max:(\d+)\}/g)].map(m=>({itemId:m[1],rawChance:Number(m[2]),min:Number(m[3]),max:Number(m[4])}))};
+ });
+ const recipeLines=['skills.ts','cross-profession-components.ts','alchemy.ts'].flatMap(file=>read(mobile+file).split('\n').filter(l=>l.includes("inputs:[")&&l.includes("output:{itemId:")).map(l=>({file,line:l})));
+ const recipes=recipeLines.map(({file,line:l})=>({file,id:field(l,'id'),skill:field(l,'skillId'),level:Number(field(l,'level')),output:l.match(/output:\{itemId:'([^']+)',quantity:(\d+)/)?.[1],inputs:[...l.split('inputs:[')[1].split('],output:')[0].matchAll(/\{itemId:'([^']+)',quantity:(\d+)\}/g)].map(m=>({itemId:m[1],quantity:Number(m[2])}))})).filter(x=>x.output&&x.inputs.length);
+ const nodes=['skills.ts','herbalism.ts'].flatMap(file=>read(mobile+file).split('\n').filter(l=>/^\s*\{id:/.test(l)&&l.includes("zoneId:")&&l.includes("itemId:")&&!l.includes('inputs:')).map(l=>({id:field(l,'id'),itemId:field(l,'itemId'),zone:field(l,'zoneId'),skillLevel:Number(field(l,'unlockLevel')),skill:file==='herbalism.ts'?'herbalism':field(l,'skillId')})));
+ const pinned=['manifest','expansion-manifest','armament-manifest'].flatMap(n=>[...read(equip+'equipment-crafting-v2-'+n+'.ts').matchAll(/(?:CORE|EXPANSION|ARMAMENT)_RECIPES:readonly V2ServerRecipe\[\]=(\[.*?\]);/gs)].flatMap(m=>JSON.parse(m[1])));
+ const ids=[...new Set(pinned.flatMap(r=>r.inputs.map(x=>x.itemId)))].sort();
+ const herbalEssences=[...read(mobile+'herbalism.ts').matchAll(/([A-Z_]+):\{itemId:'([^']+)',baseChance:([.0-9]+)\}/g)].map(m=>({zone:m[1],itemId:m[2],baseChance:Number(m[3])}));
+ const direct=id=>({rareGathering:herbalEssences.filter(x=>x.itemId===id),drops:monsters.filter(m=>m.drops.some(d=>d.itemId===id)&&!m.boss&&m.zone!=='Ashlands').map(m=>({id:m.id,zone:m.zone,unlock:m.unlock,levelBasis:m.levelBasis})),nodes:nodes.filter(n=>n.itemId===id),recipes:recipes.filter(r=>r.output===id)});
+ const graph=new Map();
+ function traverse(id,path=[]){if(path.includes(id))throw Error('cycle '+[...path,id]);if(graph.has(id))return;const x=direct(id);graph.set(id,x);for(const r of x.recipes)for(const i of r.inputs)traverse(i.itemId,[...path,id]);}
+ ids.forEach(id=>traverse(id));
+ const roots=ids.map(id=>({id,tiers:[...new Set(pinned.filter(r=>r.inputs.some(i=>i.itemId===id)).map(r=>r.tier))],...graph.get(id)}));
+ // A declarative path is not a verified server grant or accessibility
+ // proof. Require at least one acyclic nonboss route through every input
+ // of a candidate processing recipe, not just a recipe output name.
+ const reachable=(id,path=[])=>{
+  if(path.includes(id))return false;
+  const x=graph.get(id);if(!x)return false;
+  if(x.drops.length||x.nodes.length||x.rareGathering.length)return true;
+  return x.recipes.some(r=>r.inputs.every(i=>reachable(i.itemId,[...path,id])));
+ };
+ const preparation=[{tier:1,prepare:1,wear:2,need:1},{tier:2,prepare:8,wear:12,need:13},
+  {tier:3,prepare:32,wear:37,need:38},{tier:4,prepare:57,wear:62,need:63}];
+ const preparationAudit=preparation.map(p=>{
+  const relevant=roots.filter(x=>x.tiers.includes(p.tier));
+  return {...p,ingredients:relevant.length,missingDeclaredPath:relevant.filter(x=>!reachable(x.id)).map(x=>x.id),
+   actualAccessVerified:false,professionIndependentAccessVerified:false,
+   sourceTimingStatus:'REQUIRES_REGION_TRAVEL_AND_SKILL_GATE_REVIEW'};
+ });
+ const t5=JSON.parse(read('docs/2-0/eq2-t1-t5-canonical-membership-reconciliation-v2.json'));
+ const five=t5.entries.filter(x=>x.tier===5),sourceCounts={};for(const e of five)sourceCounts[e.reconciliation.sourceStatus]=(sourceCounts[e.reconciliation.sourceStatus]||0)+1;
+ const t5Production=JSON.parse(read('docs/2-0/eq2-t5-material-production-review-v11.json'));
+ const familyText=read(mobile+'enemy-families.ts').split('export const ENEMY_FAMILIES=')[1].split('] as const;')[0]+']';
+ const families=JSON.parse(familyText);
+ const candidates={NATURE:'root_guard_or_bleed',VERMIN:'poison_or_burst',BEAST:'direct_burst',CONSTRUCT:'barrier_or_sunder',HUMAN:'telegraphed_strike',UNDEAD:'shadow_or_vulnerability',ELEMENTAL:'elemental_burst',SPIRIT:'spell_or_hex',GIANT:'heavy_strike'};
+ const mapped=monsters.filter(m=>!m.boss&&m.zone!=='Ashlands').map(m=>{
+  const family=families.find(f=>f.monsterIds.includes(m.id));
+  const region=m.zone==='Sunscar'?'sunscar':m.zone==='Frostmarch'?'frostmarch':'asterfall';
+  return {id:m.id,region,level:m.level,unlock:m.unlock,levelBasis:m.levelBasis,family:family?.id??null,
+   candidate:candidates[family?.id]??'NEEDS_AUTHORING',enabled:false};
+ });
+ const boss=read('apps/mobile/src/core/regional-combat-catalog-v1.ts');
+ const sand=boss.split('\n').find(x=>x.includes("kind:'regional_boss'")&&x.includes("contentId:'BOSS_002'"));
+ const serverBoss=(file,id)=>read('backend/src/server/content/'+file).split('\n').find(x=>x.includes("{id:'"+id+"',name:")&&x.includes('phases:['));
+ const sandServer=serverBoss('sunscar-region-v20.ts','BOSS_002');
+ const frostServer=serverBoss('frostmarch-region-v21.ts','BOSS_003');
+ const gate=(row,id,target)=>({id,sourceLevel:Number(field(row??'','level')),targetLevel:target,authoredName:field(row??'','name'),gateEnabled:false});
+ const essence=herbalEssences.find(x=>x.zone==='GREENFIELDS'&&x.itemId==='ASTERFALL_BOTANICAL_ESSENCE');
+ const dewleaf=nodes.find(x=>x.id==='DEWLEAF_PATCH');
+ // Raw base probability is not the final effective rate. Illustrative
+ // expected actions only, one essence per hit assumed; no bonus, pity,
+ // multi-yield or trade, and not an observed completion time.
+ const earlyBinderIllustration={baseChance:essence?.baseChance,expectedActionsPerSingleEssence:1/(essence?.baseChance??NaN),node:dewleaf?.id,assumesOneEssencePerSuccess:true};
+ return {pinnedRecipeCount:pinned.length,roots,preparationAudit,graph:[...graph].map(([id,x])=>({id,...x})),monsters:mapped,t5:{count:five.length,sourceCounts,closed:five.every(e=>!e.mayMint&&!e.mayEquip&&!e.mayTrade&&!e.mayDrop),raw:t5Production.existingRaw,processing:t5Production.processing.length,productionClosed:t5Production.releaseActivation===false&&t5Production.mayMint===false},gateEvidence:{asterfall:monsters.find(x=>x.id==='FALLEN_KNIGHT'),sunscar:{...gate(sandServer,'BOSS_002',50),mobileCatalogueMatched:Boolean(sand)},frostmarch:gate(frostServer,'BOSS_003',75)},earlyBinderIllustration};
+}
+const read=p=>readFileSync(new URL('../../'+p,import.meta.url),'utf8');
+test('canonical source declarations, preparation requirements and closed T5 design',()=>{
+ const a=audit(read);
+ assert.equal(a.pinnedRecipeCount,338);assert.equal(a.roots.length,22);
+ assert.ok(a.preparationAudit.every(x=>x.missingDeclaredPath.length===0));
+ assert.ok(a.preparationAudit.every(x=>x.actualAccessVerified===false&&x.professionIndependentAccessVerified===false));
+ assert.equal(a.t5.count,125);assert.ok(a.t5.closed&&a.t5.productionClosed);
+ assert.ok(a.roots.find(x=>x.id==='THORN_SAP').drops.some(x=>x.id==='VENOM_WEAVER'));
+ assert.ok(a.roots.find(x=>x.id==='ASTRAL_SCRIPT').drops.some(x=>x.id==='DUNE_ORACLE'&&x.unlock===32));
+ assert.ok(a.roots.find(x=>x.id==='GLASSBOUND_BINDER').recipes.some(x=>x.id==='BREW_GLASSBOUND_BINDER'));
+ assert.ok(a.graph.find(x=>x.id==='ASTERFALL_BOTANICAL_ESSENCE').rareGathering.some(x=>x.zone==='GREENFIELDS'&&x.baseChance===.02));
+ assert.equal(a.roots.filter(x=>!x.drops.length&&!x.nodes.length&&!x.recipes.length&&!x.rareGathering.length).length,0);
+ assert.equal(a.monsters.length,46);assert.equal(new Set(a.monsters.map(x=>x.id)).size,46);
+ assert.ok(a.monsters.every(x=>x.enabled===false));
+ assert.ok(a.monsters.some(x=>x.id==='FROSTWOLF'&&x.region==='frostmarch'&&x.level===51));
+ assert.ok(a.gateEvidence.asterfall?.boss);assert.deepEqual(a.gateEvidence.sunscar,{id:'BOSS_002',sourceLevel:45,targetLevel:50,authoredName:'The Sand Tyrant',gateEnabled:false,mobileCatalogueMatched:true});
+ assert.deepEqual(a.gateEvidence.frostmarch,{id:'BOSS_003',sourceLevel:70,targetLevel:75,authoredName:'Frost Wyrm',gateEnabled:false});
+ assert.equal(a.earlyBinderIllustration.expectedActionsPerSingleEssence,50);
+ console.log('REGIONAL_SOURCE_DECLARATION_REVIEW '+JSON.stringify({...a,sourceGrantVerified:false,releaseEnabled:false}));
+});

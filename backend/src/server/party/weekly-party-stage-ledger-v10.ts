@@ -114,7 +114,8 @@ function assertWeek(week:PartyEventWeekRecordV10,nowMs:number,openedAtMs:number)
  for(const member of members){
   const l=member.loadout,actor=l.actor;
   if(!validId(member.accountId)||!validId(member.characterId)
-   ||!validTime(member.joinedAtMs)||member.joinedAtMs>openedAtMs
+   ||!validTime(member.joinedAtMs)||member.joinedAtMs<start
+   ||member.joinedAtMs>openedAtMs
    ||l.accountId!==member.accountId||l.characterId!==member.characterId
    ||!validId(l.loadoutId)||!Number.isSafeInteger(l.revision)||l.revision<0
    ||!validTime(l.savedAtMs)||l.savedAtMs<member.joinedAtMs||l.savedAtMs>nowMs
@@ -220,20 +221,23 @@ export function planPartyEventStageReceiptV10(input:{
   ||!['verified_combat','verified_noncombat'].includes(e.kind)
   ||(stageRecord.stage===1&&e.kind!=='verified_noncombat'))
   invalid('unverified_or_out_of_window_source');
- const existing=input.existingReceipts.filter(r=>r.partyId===week.partyId
-  &&r.eventStartsAtMs===week.eventStartsAtMs);
- const sameAction=existing.find(r=>r.accountId===e.accountId
+ // Match V11's global source/request uniqueness and account/week/action
+ // identity, even when the supplied evidence includes a different party.
+ // Repository uniqueness is still authoritative under concurrent writes.
+ const matchingActions=input.existingReceipts.filter(r=>
+  r.eventStartsAtMs===week.eventStartsAtMs&&r.accountId===e.accountId
   &&r.actionId===input.actionId);
- if(sameAction){
-  if(sameAction.requestId!==input.requestId
+ if(matchingActions.length>1)invalid('action_already_claimed');
+ const sameAction=matchingActions[0];
+ if(sameAction&&(sameAction.partyId!==week.partyId
+   ||sameAction.requestId!==input.requestId
    ||sameAction.sourceEventId!==e.sourceEventId
-   ||sameAction.stage!==stageRecord.stage)
-   invalid('action_already_claimed');
-  return {status:'replay',receipt:structuredClone(sameAction),eventPointsGranted:0};
- }
- if(existing.some(r=>r.sourceEventId===e.sourceEventId
-  ||r.requestId===input.requestId))
+   ||sameAction.stage!==stageRecord.stage))
+  invalid('action_already_claimed');
+ if(input.existingReceipts.some(r=>r!==sameAction&&
+  (r.sourceEventId===e.sourceEventId||r.requestId===input.requestId)))
   invalid('reused_source_or_request');
+ if(sameAction)return {status:'replay',receipt:structuredClone(sameAction),eventPointsGranted:0};
  const receipt:PartyEventStageReceiptV10={
   partyId:week.partyId,eventStartsAtMs:week.eventStartsAtMs,
   accountId:e.accountId,stage:stageRecord.stage,actionId:input.actionId,

@@ -32,18 +32,18 @@ export function draconicBorderTracks(width:number,height:number,showcase:boolean
  // Smooth up-and-down movement; embers fade during their downward return.
  const rise=(t:number,o:number)=>.5-.5*Math.cos(2*Math.PI*cycle(t,o));
  const ember=(t:number,o:number)=>.08+(.72+.16*energy(t))*Math.pow(Math.max(0,Math.sin(2*Math.PI*cycle(t,o))),1.2);
- const molten=(t:number,o:number)=>.20+.48*pulse(t,o)+.26*energy(t);
+ const molten=(t:number,o:number)=>.27+.54*pulse(t,o)+.17*energy(t);
  const tracks=[
-  make('left-ember','ember',10,'left',t=>side*(.50+.07*Math.sin(2*Math.PI*cycle(t,0))),t=>height*(.78-.56*rise(t,0)),t=>ember(t,0)),
-  make('right-ember','ember',10,'right',t=>width-side*(.50+.07*Math.sin(2*Math.PI*cycle(t,.5))),t=>height*(.78-.56*rise(t,.5)),t=>ember(t,.5)),
+  make('left-ember','ember',14,'left',t=>side*(.50+.07*Math.sin(2*Math.PI*cycle(t,0))),t=>height*(.78-.56*rise(t,0)),t=>ember(t,0)),
+  make('right-ember','ember',14,'right',t=>width-side*(.50+.07*Math.sin(2*Math.PI*cycle(t,.5))),t=>height*(.78-.56*rise(t,.5)),t=>ember(t,.5)),
   make('crest-heat','glow',27,'top',()=>width/2,()=>rail*.58,t=>molten(t,.08)),
   make('lower-heat','glow',24,'bottom',()=>width/2,()=>height-rail*.58,t=>molten(t,.58)),
   make('crest-ember','ember',13,'top',()=>width/2,()=>rail*.58,t=>molten(t,.08)),
   make('lower-ember','ember',12,'bottom',()=>width/2,()=>height-rail*.58,t=>molten(t,.58)),
  ];
  if(showcase)tracks.push(
-  make('left-wing-heat','glow',18,'top',()=>width*.24,()=>rail*.55,t=>molten(t,.32)),
-  make('right-wing-heat','glow',18,'top',()=>width*.76,()=>rail*.55,t=>molten(t,.82)),
+  make('left-wing-heat','glow',24,'top',()=>width*.24,()=>rail*.55,t=>molten(t,.32)),
+  make('right-wing-heat','glow',24,'top',()=>width*.76,()=>rail*.55,t=>molten(t,.82)),
  );
  return tracks;
 }

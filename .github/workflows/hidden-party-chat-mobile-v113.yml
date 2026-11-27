@@ -1,0 +1,36 @@
+name: Hidden Party Chat mobile preview
+on:
+  pull_request:
+    paths:
+      - 'apps/mobile/src/i18n/party-chat-preview-v117.ts'
+      - 'apps/mobile/src/core/party-chat-card-preview-v113.ts'
+      - 'apps/mobile/src/core/party-chat-refresh-preview-v114.ts'
+      - 'apps/mobile/src/core/party-chat-active-requests-preview-v115.ts'
+      - 'apps/mobile/src/components/PartyActiveRequestsPanelPreviewV115.tsx'
+      - 'apps/mobile/src/components/PartyChatActionCardPreviewV113.tsx'
+      - 'apps/mobile/tests/party-chat-action-card-preview-v113.cjs'
+      - '.github/workflows/hidden-party-chat-mobile-v113.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/mobile/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: Typecheck isolated preview models
+        run: pnpm exec tsc --ignoreConfig --strict --skipLibCheck --noEmit --target ES2020 --module node16 --moduleResolution node16 src/core/party-chat-card-preview-v113.ts src/core/party-chat-refresh-preview-v114.ts src/core/party-chat-active-requests-preview-v115.ts
+      - name: Test hidden preview action and layout fences
+        run: node tests/party-chat-action-card-preview-v113.cjs

@@ -1,0 +1,26 @@
+# Party Events V92 — real Combat/Equipment 2.0 trait engine pilot
+
+**22 Nov 2026. HIDDEN INTEGRATION / QA ONLY. DO NOT MERGE INTO MAIN, RELEASE, DEPLOY OR MODIFY LIVE UI.**
+
+## Why this must be stacked on the actual Combat 2.0 engine
+
+Party Events V90 is on the consolidated hidden Party branch (#1416); executable new-item trait hooks live instead on the unpublished Combat V2 stack (#1558/#1559). The existing unified Equipment V2 entrypoint explicitly rejects party-sized trait-equipped encounters; silently passing parties into that solo-only function would produce a false integration claim. V92 therefore adds a separate **test-only** coordinator on top of the #1559 branch:
+
+- Copied **unchanged** `weekly-party-boss-traits-v90.ts` from the Party Events branch so the exact four existing authored kits are tested, not four imaginary new bosses.
+- `weekly-party-event-eq2-traits-v92.ts` binds a 2–4 account roster, each actor's trusted equipped-item digest and revision, the settled event/week/family/tier, V90 boss kit, a 90,000ms new-run seed, and independent server-only persistence verification into a private V2 trait token. It executes `simulateCombat(combat,undefined,traitAuthority)` with **actual** V2 equipment hooks: basic/ability modifiers and currently implemented Sword Dance, Echoing Strike, Thornbound Riposte, Mending Echo and Restorative Bloom. Remaining 23 proposed signature traits are not claimed executable.
+- Validates exact boss family/name/ability IDs, 70% and 35% phase IDs, shield/cast budgets, no reflected boss casts, account/character ownership, no duplicate roster, no legacy persistent HP, no arbitrary fight timer, and positive persisted-ledger confirmation. It does not reapply Equipment 2.0 base/set/13-affix stats, preventing double counting: **the upstream actor must already be correctly compiled**.
+- `__tests__/weekly-party-event-eq2-traits-v92.ts`: 4 families × 3 difficulties × 3 sizes × tiers 1/4/8/12 = **144 real-engine, 90-second-cap** deterministic synthetic runs, with repeat-seed parity and phase/proc/reflection safety checks. Includes trait-disabled controls and denied tampered party/gear/boss/legacy conditions.
+- Registered the V92 test with the strict hidden Combat Equipment 2.0 CI workflow; all release flags are `false`.
+
+**Additional real-source integration:** `prepareFullyEquippedPartyV92` now reuses the source-verified Combat 2.0 class/skill/item-base/quality/rarity/set/13-affix pipeline and exact-copy new-affix/trait receipt compiler for each member, without double counting. The `weekly-party-event-eq2-full-build-v92.ts` test compiles a two-character Ironwarden + Wayfinder party from actual Equipment V2 build code before fighting a V90 boss. These are still synthetic verified-source fixtures with fake persistence decisions, NOT a production account/item/certificate read or final 2.0 balance.\n\n**Crucial qualification:** The QA harness uses synthetic level-25 class actors and a deliberately fake receipt verifier. It does **not** prove the account really owns those items, complete class/spec/item stats, 17 affix approvals, all 28 traits, companion/gem/tonic migration, appropriate actual player win rates or final numerical tuning. The integration is real **inside the unpublished trait engine**, not authorized live gameplay. No real reward settlement, Victory V87 certificate issuer, SQL migration, account mutation or Android UI exists here.
+
+## Required before next stage
+
+1. Check exact-head TypeScript and CI, fix failures and run under the correct 2.0 branch (not a historical green run).
+2. Implement a server-owned new-run Party V92 loadout builder that calls the existing full Equip/Skill V2 compiler **per character**, validates all exact item receipts and policy versions, then freezes actor snapshots and two-trait active selection. No raw client actor/roll/source may reach V92.
+3. Integrate an independently trusted multi-player persistence verifier: canonical V11/V18/V23 and V87 battle-victory/tier proof, source ownership and roster locks, full Party Event source history and per-account receipt-claim immutability. The current QA boolean is NOT a persistence implementation.
+4. Replace the synthetic level-25 profiles with an approved 9-class × 18-spec × T1–T4 equipment/rarity/quality/affix matrix across party sizes and difficulties, all four bosses, and optional preparation. Record P50/P95 time, wipes, 90s timeouts, shields, effective healing, interrupts, boss-phase opportunities and cross-player reflection at the shared 0.1% boss max HP / 5s cap. No mandatory class/rare item.
+5. After numeric approval, route the new-version-only battle result to the existing V87/V69/V70/V86 exactly-once reward path and real Equipment 2.0 item custody, never to V63 prototype. Test under PostgreSQL 17.6 with concurrent devices and account erasure.
+6. Obtain explicit user approval of visual boss telegraphs, Android layout, eight languages and themes **before** any mobile UI runtime changes. Then perform staged security, regression and release review.
+
+**Release decision: HOLD**. This pilot's branch is deliberately **stacked on hidden Combat 2.0**, not merged into #1416 or main. A reviewed future cross-system consolidation is required.

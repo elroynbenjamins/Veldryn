@@ -78,7 +78,9 @@ export interface UnifiedEquipmentEncounterResultV2 {
  readonly enemyMechanicLabels:readonly string[];
  readonly equipmentEvidence:readonly EquipmentEncounterEvidenceV2[];
 }
-function compileEquippedActor(
+/** Server-internal full EQ2 build compiler reused by hidden Party V92 QA.
+ * Keep trust anchored in the supplied verified build, policies and exact items. */
+export function compileEquippedActor(
  actor:CombatantDefinition,
  build:VerifiedSkillBuildV2,
  runtime:TrustedEquipmentRuntimeV2,

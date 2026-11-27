@@ -1,0 +1,84 @@
+name: Hidden Party registration PG17 review
+on:
+  pull_request:
+    paths:
+      - 'docs/roadmap/party-events/hidden-migrations/permanent-party-*-review.sql'
+      - 'backend/tests/permanent-party-registration-v111-*.sql'
+      - 'backend/tests/permanent-party-registration-v121-concurrency.py'
+      - 'backend/tests/permanent-party-registration-v124-recruitment.sql'
+      - 'backend/tests/permanent-party-registration-v125-outbox.sql'
+      - 'backend/tests/permanent-party-registration-v126-compatibility.sql'
+      - 'backend/tests/permanent-party-registration-v127-performance.sql'
+      - 'backend/tests/permanent-party-registration-v129-lifecycle.sql'
+      - 'backend/tests/permanent-party-registration-v130-v132-regression.sql'
+      - '.github/workflows/hidden-party-registration-v111.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  disposable-postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:17.6
+        env:
+          POSTGRES_PASSWORD: local-fixture-only
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run isolated storage and round-trip regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat backend/tests/permanent-party-registration-v111-fixture.sql \
+            docs/roadmap/party-events/hidden-migrations/permanent-party-role-swap-storage-v108-review.sql \
+            docs/roadmap/party-events/hidden-migrations/permanent-party-stable-registration-v110-review.sql \
+            docs/roadmap/party-events/hidden-migrations/permanent-party-atomic-exchange-v111-review.sql \
+            docs/roadmap/party-events/hidden-migrations/permanent-party-action-receipts-v122-review.sql \
+            docs/roadmap/party-events/hidden-migrations/permanent-party-recruitment-applications-v124-review.sql \
+            docs/roadmap/party-events/hidden-migrations/permanent-party-notification-outbox-v125-review.sql \
+            docs/roadmap/party-events/hidden-migrations/permanent-party-recruitment-chat-v128-review.sql \
+            backend/tests/permanent-party-registration-v111-regression.sql \
+            | docker exec -i ${{ job.services.postgres.id }} psql -U postgres -d postgres -v ON_ERROR_STOP=1
+      - name: Verify independent PostgreSQL sessions and atomic action receipts
+        run: python3 backend/tests/permanent-party-registration-v121-concurrency.py ${{ job.services.postgres.id }}
+      - name: Verify applicant consent and leader-approved private registration
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat backend/tests/permanent-party-registration-v124-recruitment.sql \
+            backend/tests/permanent-party-registration-v125-outbox.sql \
+            | docker exec -i ${{ job.services.postgres.id }} psql -U postgres -d postgres -v ON_ERROR_STOP=1
+      - name: Verify legacy cutover ambiguity checks and isolated membership fence
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat docs/roadmap/party-events/hidden-migrations/permanent-party-compatibility-v126-review.sql \
+            backend/tests/permanent-party-registration-v126-compatibility.sql \
+            | docker exec -i ${{ job.services.postgres.id }} psql -U postgres -d postgres -v ON_ERROR_STOP=1
+      - name: Benchmark scoped Party outbox reads on disposable synthetic data
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat docs/roadmap/party-events/hidden-migrations/permanent-party-query-performance-v127-review.sql \
+            backend/tests/permanent-party-registration-v127-performance.sql \
+            | docker exec -i ${{ job.services.postgres.id }} psql -U postgres -d postgres -v ON_ERROR_STOP=1
+      - name: Verify private membership lifecycle and departure history
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat docs/roadmap/party-events/hidden-migrations/permanent-party-membership-lifecycle-v129-review.sql \
+            backend/tests/permanent-party-registration-v129-lifecycle.sql \
+            | docker exec -i ${{ job.services.postgres.id }} psql -U postgres -d postgres -v ON_ERROR_STOP=1
+      - name: Verify contract custody, creation/rejoining and deletion preflight
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat docs/roadmap/party-events/hidden-migrations/permanent-party-custody-entry-deletion-v130-v132-review.sql \
+            backend/tests/permanent-party-registration-v130-v132-regression.sql \
+            | docker exec -i ${{ job.services.postgres.id }} psql -U postgres -d postgres -v ON_ERROR_STOP=1

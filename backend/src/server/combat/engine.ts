@@ -138,9 +138,11 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
     }
   };
   const finishPrivateGemAction=(now:number,actor:CombatantState,abilityId:string)=>{
-    const row=privateDamageGem?.finishAction(now,actor,abilityId);
+    const completed=privateDamageGem?.finishAction(now,actor,abilityId),row=completed?.charge;
     if(row)events.push({atMs:now,type:'gem_state',actorId:actor.definition.id,abilityId,amount:row.bonus,
       detail:'private_qa_support_charge:'+row.familyId+':'+row.sequence+':'+Number(row.consumed)+':'+row.charges});
+    if(completed?.rhythmTrace)events.push({atMs:now,type:'gem_state',actorId:actor.definition.id,abilityId,amount:completed.rhythmTrace.fraction,
+      detail:'private_qa_rhythm:'+completed.rhythmTrace.sequence+':'+completed.rhythmTrace.category});
   };
   const emitPrivateAllySupport=(now:number,source:CombatantState,target:CombatantState,abilityId:string,kind:'shield'|'buff',amount:number)=>{
     const row=privateDamageGem?.onAllySupport(now,source,target,abilityId,kind,amount);
@@ -442,6 +444,7 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
       ?Math.min(target.hp,residual):residual);
     target.hp=Math.max(0,target.hp-dealt); source.damageDone+=dealt; target.damageTaken+=dealt;
     const privateActualHpDamage=privateDamageGem?Math.max(0,privateHpBefore-target.hp):0;
+    const privateOriginalLethal=!!privateDamageGem&&eventType==='damage'&&privateHpBefore>0&&target.hp===0;
     if(privateDamageGem&&eventType==='damage')
       for(const row of privateDamageGem.afterIncomingDefense(now,source,target,abilityId,privateHpBefore))
         events.push({atMs:now,type:'gem_state',actorId:target.definition.id,targetId:source.definition.id,
@@ -591,7 +594,18 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
       if(source.hp<=0){source.alive=false;source.downed=source.definition.team==='players';events.push({atMs:now,type:source.downed?'down':'death',targetId:source.definition.id,actorId:owner.definition.id,abilityId:'COMPANION_REFLECT'});}
     }
     if(target.reflectiveShields)target.reflectiveShields=target.reflectiveShields.filter(s=>s.remaining>0);
-    if(target.hp<=0&&target.alive){gemOnKillV1(now,source,target);emitGemState(now);target.alive=false;target.downed=target.definition.team==='players';events.push({atMs:now,type:target.downed?'down':'death',targetId:target.definition.id,actorId:source.definition.id,abilityId});
+    if(target.hp<=0&&target.alive){
+      const kill=privateDamageGem?.onOriginalKill(now,source,target,abilityId,privateOriginalLethal);
+      if(kill){
+        const heal=Math.min(kill.heal,Math.max(0,source.definition.stats.maxHp-source.hp));
+        if(heal>0){source.hp+=heal;source.healingDone+=heal;events.push({atMs:now,type:'heal',actorId:source.definition.id,targetId:source.definition.id,
+          abilityId:'V2_QA_GEM_SUSTENANCE',amount:heal,detail:'private_qa_sustenance_heal'});}
+        if(kill.barrier>0){source.shield+=kill.barrier;events.push({atMs:now,type:'shield',actorId:source.definition.id,targetId:source.definition.id,
+          abilityId:'V2_QA_GEM_SUSTENANCE',amount:kill.barrier,detail:'private_qa_sustenance_barrier'});}
+        events.push({atMs:now,type:'gem_state',actorId:source.definition.id,targetId:target.definition.id,abilityId,
+          detail:'private_qa_sustenance_kill:'+Number(kill.elite)});
+      }
+      gemOnKillV1(now,source,target);emitGemState(now);target.alive=false;target.downed=target.definition.team==='players';events.push({atMs:now,type:target.downed?'down':'death',targetId:target.definition.id,actorId:source.definition.id,abilityId});
       if(source.combatV2&&target.definition.team==='enemies'&&!abilityId.startsWith('V2_'))
         runReactive(source,'kill',now,target);
     }

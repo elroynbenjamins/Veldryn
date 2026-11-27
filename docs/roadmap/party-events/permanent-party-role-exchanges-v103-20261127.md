@@ -19,3 +19,14 @@ Each account has at most one owned character per role. No unilateral registered 
 
 ## Current status
 The hidden V103 pure review now has an explicit persistent_party mode, exact role multiset preservation, one-character-per-role source validation, proposal-scoped consents, minimum level and owned-character readback. Tests cover two-way exchange, three-way rotation, incomplete Party, unilateral denial, stale/cross-proposal consent and ownership/level. No actual transaction, pending proposal store, RPC, UI or schema deployment implemented. CI pending. No live changes, no main merge.
+
+## V104 — approved Party Chat confirmation cards
+Actual main OnlinePartyChat.tsx already renders account_id=null + is_system system rows as a compact herald row; partyChatMessages in online/party-social.ts reads only id/account_id/is_system/sender_name/body/created_at with the existing recent-message limit. Extend with a typed private proposal projection keyed by canonical server-created message ID; never parse chat body, Markdown or player text into commands. Avoid adding a per-message network request; batch the recent relevant projections or include in a versioned feed. Only current Party members receive these cards, and only pending affected members without consent see Accept/Decline. Use authoritative server time; 5-minute expiry; stale revision/member departure disables actions. Show each participant's before/after role and acceptance status; completed/cancelled/declined/expired history is passive. Completed state requires committed revision evidence, not just unanimous acceptance. Preserve existing chat feed scope, unread handling, system row fallback and account-change guards. Never make a chat card a source of roster mutation authority; the dedicated authenticated response transaction revalidates the full proposal. Proposed compact gold accent, no extra chat tab; UI runtime not implemented. QA-only projection plus tests now authored, no live activation.
+
+## Further interaction ideas — recommendations only, not approved for implementation
+- Party contract vote: choose next offered contract, with a deadline and one account vote; no automatic reward claim.
+- Party Event route/preparation votes: use existing authoritative event voting window, not a second competing vote mechanism.
+- Group readiness check: ready/not ready for a planned group activity; preserve actual dungeon ready-check authority.
+- Invitation and join request: permitted recipient actions, leader approval only where already required; no public exposure of private invite cards.
+- Shared milestone notifications: passive contract completions, upcoming expiry and Party Event milestones; deduplicate and avoid chat spam.
+Keep the first four structured actions within their owning workflows; no cross-channel automatic acceptance, resource spending, reward claims or leader changes through arbitrary chat text.

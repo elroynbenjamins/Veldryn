@@ -32,4 +32,23 @@ assert.equal(huntingDiagnostics.filter(x=>x.category===ts.DiagnosticCategory.Err
 assert.ok(focus.includes('kind===\'combat\'&&monster&&props.gameState?<HuntingPreview')&&focus.includes('sceneOnly/>'),'Active combat must use the same scene position as gathering');
 assert.ok(home.includes('gameState={state}')&&!home.includes('showEncounter'),'Home must pass live combat state without a duplicate battle preview');
 assert.ok(hunting.includes('sceneOnly=false')&&hunting.includes('!sceneOnly&&fight')&&hunting.includes('!sceneOnly&&!monster.boss'),'Compact combat must retain animation while hiding the large details and baseline rewards');
+const faithPanel=src('components/FaithPanel.tsx');
+const app=fs.readFileSync(path.join(__dirname,'../App.tsx'),'utf8');
+assert.ok(app.includes('<HomeScreen onQuickCommand={runCompanionCommand}')&&home.includes('onQuickCommand={onQuickCommand}'),'Quick selectors must use the existing gameplay command path');
+assert.ok(focus.indexOf("gl('CURRENT ACTIVITY')}</Text>")<focus.indexOf('s.quickActions')&&focus.indexOf('s.quickActions')<focus.indexOf('s.status,{'),'Keep both shortcuts between the activity heading and status');
+assert.ok(focus.includes('<FaithPanel state={state} onCommand={runQuick} blessingsOnly/>')&&faithPanel.includes('{!blessingsOnly?<><Panel')&&faithPanel.includes('</View></>:null}'),'Quick Faith must omit practice and stop controls');
+assert.ok(focus.includes("earlyFeatureUnlocked(state,'pets')")&&focus.includes("row.kind==='pet'&&row.owned")&&focus.includes("type:'profile',args:{selectedCosmeticPetId:id??null}"),'Pet selection must remain owned-only and use the validated profile command');
+assert.ok(focus.includes('quickPending.current=true')&&focus.includes('finally{quickPending.current=false;setQuickBusy(false);}')&&focus.includes('closeDisabled={quickBusy}')&&focus.includes('dismissOnBackdrop={!quickBusy}'),'Quick commands are single-flight with guarded dismissal and recovery');
+assert.ok(focus.includes('loading={quickBusy&&pendingPet===null}')&&focus.includes('quickBusy&&pendingPet===row.id?<ActivityIndicator'),'Both clearing and selecting a pet must display pending feedback');
+assert.ok(focus.includes('quickButton:{width:44,height:44')&&focus.includes('eyebrow:{flex:1,minWidth:0'),'Keep independent touch targets and a flexible title');
+const gameplay=src('i18n/gameplay.ts');
+assert.ok(faithPanel.includes('stackActions&&s.blessingRowStack')&&faithPanel.includes("blessingActionStack:{width:'100%'"),'Narrow Faith sheets must move the action onto its own row rather than squeezing the text');
+assert.ok(faithPanel.includes('gl(faithBlessingEffectLabel(blessing))')&&focus.includes('gl(faithBlessingEffectLabel(blessing))'),'Faith effects must use shared localization in both selectors and accessibility labels');
+for(const key of ['CURRENT ACTIVITY','AFK FULL','+{percent}% Damage','{percent}% Damage reduction','+{percent}% Maximum HP','+{percent}% Combat speed','+{percent}% Gathering speed','+{percent}% Production speed','+{percent}% Combat & skill XP','Favorite {name}','Remove {name} from favorites']){
+ const matches=gameplay.split('\n').filter(line=>line.trimStart().startsWith(JSON.stringify(key)+':'));
+ assert.equal(matches.length,2,key+' must have the six-language row and the Russian/Turkish row');
+ const translated=matches.map(line=>JSON.parse(line.slice(line.indexOf(':')+1).replace(/,\s*$/,'')));
+ assert.equal(translated[0].length,6);assert.equal(translated[1].length,2);
+ for(const value of translated.flat())for(const placeholder of key.match(/\{\w+\}/g)??[])assert.ok(value.includes(placeholder),key+' must preserve '+placeholder);
+}
 console.log('PASS: Home approved hierarchy, server-backed rewards, confirmation, queue safety and native sheets');

@@ -1,5 +1,5 @@
-import {useEffect,useMemo,useState} from 'react';
-import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {useEffect,useMemo,useRef,useState} from 'react';
+import {ActivityIndicator,Image,Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import type {ActiveActivity,ActivityKind,RewardBundle,GameState} from '../core/types';
 import type {IdleResourceRate} from '../core/idle-activity-insights';
 import type {LevelPaceProjection} from '../core/balance-projection';
@@ -20,13 +20,23 @@ import {GameModalHeader,GameModalSurface} from './GameModalSurface';
 import {GatheringScene} from './GatheringScene';
 import {HuntingPreview} from './HuntingPreview';
 import {isGatheringSceneKind} from '../core/gathering-scene';
+import type {GameCommand} from '../core/game-commands';
+import {FaithPanel} from './FaithPanel';
+import {selectedFaithBlessings} from '../core/faith';
+import {faithBlessingEffectLabel} from '../content/faith';
+import {earlyFeatureUnlocked} from '../core/feature-unlocks';
+import {collectibleJournal} from '../core/collectibles';
+import {COLLECTIBLE_TARGET_LABELS} from '../content/collectibles';
+import {petArtSource} from '../theme/pet-art';
+import {companionTranslator,companionLabel,companionContent} from '../i18n/companions';
 
 type Props={
  title:string;kind:ActivityKind;activity:ActiveActivity;cycleSeconds:number;capHours:number;
  preview:RewardBundle;rates:{actionsPerHour:number;xpPerHour:number;goldPerHour:number};
  resourceRate?:IdleResourceRate;maxHp?:number;levelPace?:LevelPaceProjection;reduceMotion?:boolean;
- /** Only needed for the live combat scene; gathering panels stay unchanged. */
+ /** State for the live scene and quick blessing/pet selectors. */
  gameState?:GameState;
+ onQuickCommand?:(command:GameCommand)=>Promise<void>;
  numberMode?:'exact'|'abbreviated';onClaim:()=>void;onStop:()=>void;
  /** Authoritative gathering action time; keeps the scene's completion cue on the settlement clock. */
  gatheringCycleSeconds?:number;
@@ -36,8 +46,33 @@ const unitNames:Record<ActivityKind,string>={combat:'kills',mining:'actions',woo
 export function HomeActivityFocus(props:Props){
  const {gl,language}=useGameplayText();
  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
+ const {fontScale}=useWindowDimensions();
  const [detailOpen,setDetailOpen]=useState(false),[stopOpen,setStopOpen]=useState(false),[stopFor,setStopFor]=useState<string|null>(null);
  const {kind,preview,activity,rates,resourceRate}=props;
+ const [quickOpen,setQuickOpen]=useState<'faith'|'pet'|null>(null),[quickBusy,setQuickBusy]=useState(false),[pendingPet,setPendingPet]=useState<string|null>(null),[petError,setPetError]=useState('');
+ const quickPending=useRef(false);
+ const state=props.gameState,command=props.onQuickCommand;
+ const canQuick=!!state?.character&&!!command;
+ const petsUnlocked=!!state&&earlyFeatureUnlocked(state,'pets');
+ const ownedPets=useMemo(()=>state&&petsUnlocked?collectibleJournal(state).filter(row=>row.kind==='pet'&&row.owned).sort((a,b)=>Number(b.selected)-Number(a.selected)||a.name.localeCompare(b.name,language)):[],[state,petsUnlocked,language]);
+ const blessings=useMemo(()=>state?selectedFaithBlessings(state):[],[state]);
+ const compactHeader=Math.max(fontScale,state?.settings.textScale??1)>=1.2;
+ const activePet=ownedPets.find(row=>row.selected),activePetArt=activePet?petArtSource(activePet.id):undefined;
+ const pt=companionTranslator(language),pl=(value:string)=>companionLabel(language,value);
+ const closeQuick=()=>{if(!quickPending.current){setQuickOpen(null);setPetError('')}};
+ const runQuick=async(next:GameCommand)=>{
+  if(!command||quickPending.current)throw new Error(gl('Action failed.'));
+  quickPending.current=true;setQuickBusy(true);
+  try{await command(next);}finally{quickPending.current=false;setQuickBusy(false);}
+ };
+ const choosePet=async(id?:string)=>{
+  if(!command||!petsUnlocked||quickPending.current||(id!==undefined&&!ownedPets.some(row=>row.id===id)))return;
+  if(id===activePet?.id){closeQuick();return;}
+  setPendingPet(id??null);setPetError('');
+  try{await runQuick({type:'profile',args:{selectedCosmeticPetId:id??null}});setQuickOpen(null);}
+  catch(e){setPetError(e instanceof Error?e.message:gl('Action failed.'));}
+  finally{setPendingPet(null);}
+ };
  const activityKey=activity.kind+':'+activity.targetId+':'+activity.startedAtMs;
  useEffect(()=>{if(stopFor&&stopFor!==activityKey){setStopOpen(false);setStopFor(null)}},[stopFor,activityKey]);
  const requestStop=()=>{setStopFor(activityKey);setStopOpen(true)};
@@ -56,7 +91,11 @@ export function HomeActivityFocus(props:Props){
  const act=()=>{if(stopFor!==activityKey){setStopOpen(false);return;}setStopOpen(false);setStopFor(null);setDetailOpen(false);props.onStop()};
  return <>
   <View style={[s.card,stopped&&s.stopped]}>
-   <View style={s.top}><Text style={s.eyebrow}>{gl('CURRENT ACTIVITY')}</Text>
+   <View style={[s.top,compactHeader&&s.topCompact]}><Text style={s.eyebrow}>{gl('CURRENT ACTIVITY')}</Text>
+    {canQuick?<View style={s.quickActions}>
+     <Pressable accessibilityRole="button" accessibilityLabel={gl('ACTIVE BLESSINGS')+(blessings.length?': '+blessings.map(blessing=>gl(faithBlessingEffectLabel(blessing))).join(', '):'')} onPress={()=>setQuickOpen('faith')} style={({pressed})=>[s.quickButton,blessings.length>0&&s.quickEquipped,pressed&&s.pressed]}><ActivityArtwork id="faith" size={24}/>{blessings.length>0?<View style={s.quickDot}/>:null}</Pressable>
+     {petsUnlocked?<Pressable accessibilityRole="button" accessibilityLabel={pt('Choose Active Pet')+(activePet?': '+companionContent(language,activePet.name):'')} onPress={()=>{setPetError('');setQuickOpen('pet')}} style={({pressed})=>[s.quickButton,!!activePet&&s.quickEquipped,pressed&&s.pressed]}>{activePetArt?<Image accessible={false} source={activePetArt} resizeMode="contain" style={s.quickArt}/>:<Text style={s.quickGlyph}>🐾</Text>}{activePet?<View style={s.quickDot}/>:null}</Pressable>:null}
+    </View>:null}
     <View style={[s.status,{borderColor:stopped?C.bad:capped?C.warning:C.good,backgroundColor:stopped?C.badSurface:capped?C.warningSurface:C.goodSurface}]}>
      <Text style={[s.statusLabel,{color:stopped?C.bad:capped?C.warning:C.good}]}>{stopped?gl('STOPPED'):capped?gl('AFK FULL'):gl('ACTIVE')}</Text>
     </View>
@@ -79,6 +118,21 @@ export function HomeActivityFocus(props:Props){
    <View style={s.bottom}><View style={s.flex}><Text style={s.reward}>{formatted(count)} {gl(unitNames[kind])} {gl('ready')}</Text><Text style={s.sub}>+{formatted(preview.xp)} XP{resourceRate?' · '+resourceRate.name:''}</Text></View><Pressable accessibilityRole="button" accessibilityLabel={gl('More activity details')} onPress={()=>setDetailOpen(true)} style={s.detailLink}><Text style={s.detailText}>{gl('Details')} ›</Text></Pressable></View>
    <View style={s.actions}><View style={s.flex}><GameButton title={canCollect?gl('Collect rewards'):gl('Rewards building…')} disabled={!canCollect} onPress={()=>{setDetailOpen(false);props.onClaim()}}/></View><View style={s.secondary}><GameButton title={gl('Stop')} tone="secondary" onPress={()=>requestStop()}/></View></View>
   </View>
+  {quickOpen&&state&&command?<GameModalSurface visible onClose={closeQuick} dismissOnBackdrop={!quickBusy} reduceMotion={props.reduceMotion} surfaceStyle={s.sheet}>
+   <GameModalHeader eyebrow={gl('CURRENT ACTIVITY')} title={quickOpen==='faith'?gl('ACTIVE BLESSINGS'):pt('Choose Active Pet')} onClose={closeQuick} closeDisabled={quickBusy}/>
+   {quickOpen==='faith'?<ScrollView style={s.scroll} contentContainerStyle={s.content} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}><FaithPanel state={state} onCommand={runQuick} blessingsOnly/></ScrollView>:<>
+    <Text style={s.sub}>{pt('The pet remains owned account-wide; this only changes the stronger active bonus.')}</Text>
+    <ScrollView style={s.scroll} contentContainerStyle={s.petList} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
+     {ownedPets.length?ownedPets.map(row=>{const art=petArtSource(row.id);return <Pressable key={row.id} accessibilityRole="radio" accessibilityLabel={companionContent(language,row.name)+' · '+pt('{value0} · +{value1} active',{value0:pl(COLLECTIBLE_TARGET_LABELS[row.target]),value1:(row.activeBps/100).toFixed(2)+'%'})} accessibilityState={{selected:row.selected,disabled:quickBusy,busy:quickBusy&&pendingPet===row.id}} disabled={quickBusy} onPress={()=>choosePet(row.id)} style={({pressed})=>[s.petOption,row.selected&&s.petSelected,pressed&&s.pressed]}>
+      <View style={s.petArt}>{art?<Image accessible={false} source={art} resizeMode="contain" style={s.petImage}/>:<Text style={s.quickGlyph}>🐾</Text>}</View>
+      <View style={s.copy}><Text style={s.name}>{companionContent(language,row.name)}</Text><Text style={s.sub}>{pt('{value0} · +{value1} active',{value0:pl(COLLECTIBLE_TARGET_LABELS[row.target]),value1:(row.activeBps/100).toFixed(2)+'%'})}{row.rarity?' · '+pl(row.rarity):''}</Text></View>
+      {quickBusy&&pendingPet===row.id?<ActivityIndicator color={C.accent} size="small"/>:row.selected?<Text style={s.petCheck}>✓</Text>:null}
+     </Pressable>}):<Text style={s.sub}>{pt('Collect your first pet to begin building passive bonuses.')}</Text>}
+    </ScrollView>
+    {petError?<Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={[s.warning,{color:C.bad}]}>{petError}</Text>:null}
+    {activePet?<GameButton title={pt('Clear Active Pet')} tone="secondary" disabled={quickBusy} loading={quickBusy&&pendingPet===null} onPress={()=>choosePet()}/>:null}
+   </>}
+  </GameModalSurface>:null}
   {detailOpen?<GameModalSurface visible onClose={()=>setDetailOpen(false)} reduceMotion={props.reduceMotion} surfaceStyle={s.sheet}>
    <GameModalHeader eyebrow={gl('CURRENT ACTIVITY')} title={gl(props.title)} onClose={()=>setDetailOpen(false)}/>
    <ScrollView style={s.scroll} contentContainerStyle={s.content} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
@@ -98,9 +152,11 @@ export function HomeActivityFocus(props:Props){
 }
 function styles(C:ThemeColors){return StyleSheet.create({
  card:{padding:spacing.md,gap:spacing.sm,borderWidth:1,borderRadius:radii.lg,borderColor:C.good,backgroundColor:C.panelRaised},
- stopped:{borderColor:C.bad},top:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},
- eyebrow:{fontSize:10,lineHeight:14,fontWeight:'900',letterSpacing:.8,color:C.accent},
- status:{minHeight:24,paddingHorizontal:8,borderWidth:1,borderRadius:99,justifyContent:'center'},statusLabel:{fontSize:9,lineHeight:12,fontWeight:'900'},
+ stopped:{borderColor:C.bad},top:{flexDirection:'row',alignItems:'center',gap:4},topCompact:{gap:2},
+ eyebrow:{flex:1,minWidth:0,fontSize:10,fontWeight:'900',letterSpacing:.5,color:C.accent},
+ quickActions:{flexDirection:'row',alignItems:'center',gap:3,flexShrink:0},quickButton:{width:44,height:44,alignItems:'center',justifyContent:'center',borderRadius:8,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2},quickEquipped:{borderColor:C.special,backgroundColor:C.specialSurface},quickDot:{position:'absolute',right:4,bottom:4,width:6,height:6,borderRadius:3,backgroundColor:C.good},quickArt:{width:29,height:29},quickGlyph:{fontSize:19,color:C.accent},
+ petOption:{minHeight:60,flexDirection:'row',alignItems:'center',gap:8,padding:7,borderWidth:1,borderColor:C.line,borderRadius:8,backgroundColor:C.panel2},petSelected:{borderColor:C.good},petArt:{width:42,height:42,alignItems:'center',justifyContent:'center'},petImage:{width:42,height:42},petCheck:{fontSize:19,color:C.good,fontWeight:'900'},
+ status:{minHeight:24,maxWidth:'35%',flexShrink:1,paddingHorizontal:6,borderWidth:1,borderRadius:99,justifyContent:'center'},statusLabel:{fontSize:9,textAlign:'center',fontWeight:'900'},
  identity:{flexDirection:'row',gap:10,alignItems:'center'},art:{width:50,height:50,alignItems:'center',justifyContent:'center',backgroundColor:C.panel2,borderWidth:1,borderColor:C.line,borderRadius:10},
  copy:{flex:1,minWidth:0,gap:3},name:{fontSize:16,lineHeight:21,fontWeight:'900',color:C.text},sub:{fontSize:10,lineHeight:15,color:C.muted},info:{width:44,height:44,alignItems:'center',justifyContent:'center',borderRadius:9,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2},infoText:{fontSize:23,color:C.accent},
  progressHead:{flexDirection:'row',justifyContent:'space-between',gap:8},meta:{fontSize:10,fontWeight:'900',color:C.muted},time:{fontSize:11,fontWeight:'900',color:C.text,fontVariant:['tabular-nums']},
@@ -109,7 +165,7 @@ function styles(C:ThemeColors){return StyleSheet.create({
  bottom:{flexDirection:'row',alignItems:'center',gap:8},flex:{flex:1,minWidth:0},reward:{fontSize:11,lineHeight:16,fontWeight:'800',color:C.good},
  detailLink:{minHeight:44,justifyContent:'center',paddingHorizontal:7},detailText:{fontSize:11,fontWeight:'800',color:C.info},
  actions:{flexDirection:'row',gap:8,alignItems:'stretch'},secondary:{flex:0.57,minWidth:0},pressed:{opacity:.72},
- sheet:{paddingHorizontal:spacing.md},scroll:{flexShrink:1,minHeight:0},content:{gap:spacing.md,paddingBottom:spacing.md},
+ sheet:{paddingHorizontal:spacing.md},scroll:{flexShrink:1,minHeight:0},content:{gap:spacing.md,paddingBottom:spacing.md},petList:{gap:6,paddingVertical:4},
  warning:{fontSize:11,lineHeight:16,fontWeight:'700'},confirmSheet:{gap:spacing.md},confirmCopy:{fontSize:13,lineHeight:19,color:C.muted},
  confirmPreview:{padding:spacing.md,borderRadius:10,borderWidth:1,gap:5}
 });}

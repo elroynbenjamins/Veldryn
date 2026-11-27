@@ -48,9 +48,12 @@ export function reviewWorldBossGatheringSpeedV99(input:{
   if(input.verifyEquippedCopy(copy)!==true||JSON.stringify(copies)!==before)throw Error('gathering_speed_unverified_copy');
   if(piece.skill===skill){matchingIds.push(piece.itemId);gearRatingBps+=g.gatheringSpeedBasisPoints+extra;skillXpAffixBps+=xp;rareChanceAffixBps+=rare;}
  }
- const set=previewWorldBossGatheringBonusV64(skill,matchingIds);
+ // Historical V64 remains immutable; only its registered piece count is reused.
+ const matched=previewWorldBossGatheringBonusV64(skill,matchingIds);
  const pace=reviewGatheringSpeedV2({baseActionSeconds:input.baseActionSeconds,toolTimeMultiplier:input.toolTimeMultiplier,
- existingRateMultiplier:input.existingRateMultiplier,gearRatingBps,setTimeMultiplier:set.pieces>=8?.96:1});
- const channels=reviewGatheringRewardChannelsV2({matchingSetPieces:set.pieces,skillXpAffixBps,rareChanceAffixBps});
- return {...pace,skill,pieces:set.pieces,gearRatingBps,set,channels,canApply:false as const,rewardGranted:false as const};
+ existingRateMultiplier:input.existingRateMultiplier,gearRatingBps,setTimeMultiplier:matched.pieces>=8?.96:1});
+ const channels=reviewGatheringRewardChannelsV2({matchingSetPieces:matched.pieces,skillXpAffixBps,rareChanceAffixBps});
+ const set={pieces:matched.pieces,thresholds:matched.thresholds,xpBonusFraction:channels.setXpBps/10000,
+  rareDropRelativeBonusFraction:channels.setRareBps/10000,actionTimeMultiplier:matched.pieces>=8?.96:1};
+ return {...pace,skill,pieces:matched.pieces,gearRatingBps,set,channels,canApply:false as const,rewardGranted:false as const};
 }

@@ -48,6 +48,8 @@ jobs:
           psql -X -v ON_ERROR_STOP=1 -f tools/market-review/pg17/04_bulk_regressions.sql
       - name: Rehearse atomic wallet and inventory mirror rollback
         run: psql -X -v ON_ERROR_STOP=1 -f tools/market-review/pg17/06_atomic_mirror_review.sql
+      - name: Rehearse resource delivery claims and safe returns
+        run: psql -X -v ON_ERROR_STOP=1 -f tools/market-review/pg17/09_resource_delivery_claim_review.sql
       - name: Run concurrent purchase and cancellation tests
         run: bash tools/market-review/pg17/02_concurrency.sh
       - name: Run concurrent bulk fills and account cap tests

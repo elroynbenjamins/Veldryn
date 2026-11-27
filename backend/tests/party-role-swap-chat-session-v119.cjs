@@ -6,6 +6,7 @@ const path=require('node:path');
 const ts=require('typescript');
 const {enemyV2SnapshotDigest:digest}=require('../dist/server/combat/v2/enemy-engine-authority.js');
 const {planPartyRoleSwapResponseV107:plan}=require('../dist/server/party/party-role-swap-transition-review-v107.js');
+const {planRoleSwapRefreshNoticesV120:planNotices}=require('../dist/server/party/party-role-swap-notification-review-v120.js');
 const {readPartyRoleSwapCardV119:read,respondPartyRoleSwapCardV119:respond}=require('../dist/server/party/party-role-swap-chat-session-review-v119.js');
 const modules={};
 function loadModel(name){
@@ -56,12 +57,13 @@ function fixture(){
       status:transition.proposal.state==='completed'?'workflow_completed':transition.proposal.state==='declined'?'workflow_declined':'response_recorded',
       effectId:'effect_'+state.snapshotRevision};
      state.effects.set(effect.effectId,effect);
-     // Disposable outbox: one committed event per effect, not live delivery.
-     state.notices.push({eventId:effect.effectId,kind:'role_swap',terminal:transition.proposal.state!=='pending',rosterChanged:transition.refreshRoster});
      return effect;
     },
     readEffect:async key=>fault?null:state.effects.get(key)??null,
-    insertReceipt:async receipt=>{state.receipts.set(receipt.key,structuredClone(receipt));},
+    insertReceipt:async receipt=>{
+     state.receipts.set(receipt.key,structuredClone(receipt));
+     state.notices.push(...planNotices({workflow:workflow(),receipt,persistedEffect:state.effects.get(receipt.effect.effectId)},true));
+    },
    });}catch(error){state=before;throw error;}
   });
   tail=run.catch(()=>{});return run;
@@ -70,7 +72,7 @@ function fixture(){
  const readFor=accountId=>read({session:session(accountId),workflow:workflow(),snapshotRevision:state.snapshotRevision,
   names:{A:'Hero A',B:'Hero B'},title:'Role Swap',summary:'Exchange roles'},true);
  const send=(accountId,body)=>respond({session:session(accountId),body,store},true);
- return {readFor,send,session,state:()=>state,advance:ms=>{state.serverNowMs+=ms;},
+ return {readFor,send,session,workflow,state:()=>state,advance:ms=>{state.serverNowMs+=ms;},
   setFault:v=>{fault=v;},setPhase:v=>{state.phase=v;}};
 }
 function client(f,accountId){
@@ -96,14 +98,20 @@ async function run(){
  f.setFault(true);
  await assert.rejects(f.send('B',second),/missing_effect_readback/);
  assert.equal(f.state().revision,7);assert.equal(f.state().proposal.state,'pending');
- assert.equal(f.state().notices.length,1);assert.equal(f.state().receipts.size,1);
+ assert.equal(f.state().notices.length,2);assert.equal(f.state().receipts.size,1);
+ assert.deepEqual(f.state().notices.filter(n=>n.needsResponse).map(n=>n.accountId),['B']);
  f.setFault(false);
  const [completed,retry]=await Promise.all([f.send('B',second),f.send('B',second)]);
  assert.equal(completed.newlyRecorded,true);assert.equal(retry.newlyRecorded,false);
  assert.equal(completed.receipt.effect.status,'workflow_completed');
  assert.deepEqual(f.state().current,[altA,altB]);assert.equal(f.state().revision,8);
- assert.equal(f.state().notices.length,2);
- assert.equal(f.state().notices.filter(n=>n.rosterChanged).length,1);
+ assert.equal(f.state().notices.length,4);
+ assert.equal(f.state().notices.filter(n=>n.rosterChanged).length,2);
+ assert.ok(f.state().notices.filter(n=>n.terminal).every(n=>!n.needsResponse&&!n.canDeliver));
+ const after=f.workflow(),receipt=completed.receipt,persistedEffect=receipt.effect;
+ assert.deepEqual(planNotices({workflow:after,receipt,persistedEffect},true),f.state().notices.slice(2));
+ assert.throws(()=>planNotices({workflow:after,receipt,persistedEffect:{...persistedEffect,effectId:'FORGED'}},true),/receipt_scope_mismatch/);
+ assert.throws(()=>planNotices({workflow:after,receipt,persistedEffect}),/unreleased/);
  assert.equal(f.readFor('A').card.status,'completed');
  A.active.invalidate();B.active.invalidate();A.reload();B.reload();
  assert.equal(A.view().requests.length,0);assert.equal(B.view().requests.length,0);
@@ -113,7 +121,10 @@ async function run(){
  const refreshes=[];
  const refresh=new Refresh(async(scope,targets)=>{refreshes.push({scope,targets});},true);
  refresh.setScope(f.session('A'));refresh.setActive(true);await refresh.flush();refreshes.length=0;
- for(const n of f.state().notices){assert.equal(refresh.invalidate({...f.session('A'),...n}),true);assert.equal(refresh.invalidate({...f.session('A'),...n}),false);}
+ for(const n of f.state().notices){
+  if(n.accountId!=='A'){assert.equal(refresh.invalidate(n),false);continue;}
+  assert.equal(refresh.invalidate(n),true);assert.equal(refresh.invalidate(n),false);
+ }
  await refresh.flush();assert.deepEqual(refreshes.map(x=>x.targets),[{feed:true,party:true}]);
  const declined=fixture(),D=client(declined,'B');D.reload();
  assert.equal((await declined.send('B',D.intent('decline','REQ_DECLINE'))).receipt.effect.status,'workflow_declined');
@@ -123,6 +134,6 @@ async function run(){
  const locked=fixture(),L=client(locked,'B');L.reload();locked.setPhase('committed_run');
  await assert.rejects(locked.send('B',L.intent('accept','REQ_LOCKED')),/roster_locked/);
  assert.equal(locked.state().receipts.size,0);
- console.log('PARTY_ROLE_SWAP_CHAT_V119_E2E_PASS');
+ console.log('PARTY_ROLE_SWAP_CHAT_V119_V120_E2E_PASS');
 }
 run().catch(error=>{console.error(error);process.exitCode=1;});

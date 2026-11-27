@@ -22,6 +22,7 @@ import {secondaryOffenseActorReviewV2,secondaryOffenseAmountV2,type SecondaryOff
 import {soloOffenseLoopReviewV2,type SoloOffenseLoopArm} from './solo-offense-loop-review';
 import {soloRoleBudgetReviewV2,type SoloRoleBudgetArm} from './solo-role-budget-review';
 import {soloOffensiveProgressionReviewV2,type SoloProgressionArm} from './solo-offensive-progression-review';
+import {COMPLETION_BOSSES_REVIEW_V2,createCompletionBossReviewV2,type CompletionBossArmV2} from './regional-completion-boss-review';
 import {STAT_GEMS_V1,EFFECT_GEMS_V1,gemItemId,type GemGrade,GEM_BALANCE_REVIEW_V2,STAT_GEMS_REVIEW_V2,EFFECT_GEMS_REVIEW_V2,EFFECT_GEM_REVIEW_MULTIPLIERS_V2} from '../../../equipment/gems/gem-catalog-v1';
 import type {V2GemSidecarState} from '../../../equipment/equipment-crafting-v2-gem-sidecar-types';
 import {writeFileSync} from 'node:fs';
@@ -2640,6 +2641,88 @@ runRegionalProgressionReviewV2();
    interrupts:a.reduce((n,r)=>n+r.interrupts,0),bands:relative};
  }),releaseEnabled:false,cpApproved:false}));
 
+}
+// Regional completion bosses, NOT dungeon kits. Source identities preserved.
+// Separate fresh QA issuer binds the exact authored input; no changes to
+// dungeon composer allowlist, actual persistence, rewards or progression.
+{
+ const arms:CompletionBossArmV2[]=['reference','mechanics','mixed'];
+ const rows:{boss:string;level:number;classId:ClassIdV2;spec:number;profile:SoloGearReviewProfile;seed:number;arm:string;win:number;reason:string;duration:number;hp:number;enemyHp:number;phases:number;casts:number;interrupts:number;dots:number;shields:number;heal:number}[]=[];
+ for(const profile of COMPLETION_BOSSES_REVIEW_V2){
+  const level=profile.level,tier=profile.tier,k=30+2*level;
+  const ids=Object.keys(CLASS_NAMES_V2) as ClassIdV2[];
+  const build=(classId:ClassIdV2,spec:0|1,gear:SoloGearReviewProfile)=>{
+   const qa=makeV21Loadout(classId,spec,tier,level,gear);
+   const classProfile=qa.source.classBaselinePolicy.profiles[classId]!;
+   const source={...qa.source,classBaselinePolicy:{version:'QA_COMPACT_COMPLETION_BOSS',profiles:{
+    [classId]:{...classProfile,maxLevel:100,statsAtLevel:(n:number)=>compactUnifiedStatsV2(classId,n)}}}};
+   const original=compileRealFrozenForgeActorV2(qa.actor,qa.build,source);
+   const choice=selectSoloReviewLoadoutsV2(qa.build,profile.region);
+   const compiled=compileRealFrozenForgeActorV2(qa.actor,{...qa.build,selected:{...qa.build.selected,activeSkills:choice.selections.counter_full}},source);
+   assert.deepEqual(compiled.evidence.equippedInstanceIds,original.evidence.equippedInstanceIds);
+   assert.deepEqual(compiled.actor.stats,original.actor.stats);
+   if(gear==='low_common')assert.ok(qa.rolls.every(r=>r.rarity==='common'&&r.quality>=10&&r.quality<=30));
+   const actor=secondaryOffenseActorReviewV2(classId,compiled.actor,'approved_start').actor;
+   assert.deepEqual(actor.stats,compiled.actor.stats);
+   return {classId,spec,gear,original:original.actor,baseline:compiled.actor,actor};
+  };
+  const references=ids.flatMap(classId=>([0,1] as const).map(spec=>build(classId,spec,'pinned_reference')));
+  const builds=[...references,...references.map(r=>build(r.classId,r.spec,'low_common'))];
+  const meanHp=references.reduce((n,r)=>n+r.original.stats.maxHp,0)/references.length;
+  const meanAttack=references.reduce((n,r)=>n+r.original.stats.attackPower,0)/references.length;
+  // Fixed initial boss calibration, not derived from an individual player's
+  // gear, level or selected skill. A separate 120s boss window.
+  const referenceStats:CombatStats={...boss.stats,maxHp:Math.round(meanAttack*20),
+   attackPower:Math.round(meanHp*.045),defense:Math.round(k*.35)};
+  const fixtures=arms.map(arm=>createCompletionBossReviewV2(profile.id,referenceStats,arm));
+  assert.deepEqual(fixtures[0].enemy.stats,fixtures[1].enemy.stats);
+  assert.ok(fixtures.every(f=>!f.releaseEnabled&&!f.rewardEnabled&&!f.unlockEnabled&&f.enemy.boss&&f.enemy.id===profile.id));
+  assert.ok(fixtures[1].enemy.phases?.length===2&&fixtures[2].enemy.phases?.length===2);
+  assert.ok(fixtures[1].enemy.abilities.every(a=>a.interruptible&&a.castTimeMs>0));
+  for(const row of builds)for(const seedIndex of [0,1]){
+   const seed=['QA_COMPLETION',profile.id,row.classId,row.spec,seedIndex].join('_');
+   for(const arm of [...arms,'mixed_unconverted'] as const){
+    const fixture=fixtures[arm==='mixed_unconverted'?2:arms.indexOf(arm)];
+    const actor=arm==='mixed_unconverted'?row.baseline:row.actor;
+    const input:CombatInput={seed,players:[actor],enemies:[fixture.enemy],maxDurationMs:120000,mitigationConstant:k};
+    const scope={source:'server-persisted-v2' as const,version:2 as const,ruleset:ENEMY_V2_RULESET,
+     mode:'solo' as const,encounterId:seed,revision:1,seed,playerIds:[actor.id],enemyIds:[profile.id],bossIds:[profile.id]};
+    // Mock verifier for private QA; not a new persisted boss composer or
+    // grant authority. The opaque engine issuer still binds full input.
+    const authority=issueEnemyV2EngineAuthority(scope,input,(_s,d)=>/^[a-f0-9]{64}$/.test(d));
+    const result=simulateCombat(input,authority);
+    if(row.spec===0&&seedIndex===0&&row.gear==='pinned_reference'&&arm==='mechanics'){
+     assert.deepEqual(simulateCombat(input,authority),result);
+     assert.throws(()=>simulateCombat({...input,maxDurationMs:119900},authority),/scope_does_not_match/);
+     assert.throws(()=>soloOffensiveProgressionReviewV2(row.classId,input,'offensive_progression'),/fresh_solo_only/);
+    }
+    assert.ok(result.events.every(e=>e.amount===undefined||Number.isFinite(e.amount)));
+    assert.ok(result.players[0].hp>=0&&result.players[0].hp<=actor.stats.maxHp+1e-8);
+    const phases=result.events.filter(e=>e.type==='phase'&&e.actorId===profile.id);
+    assert.ok(phases.length<=(fixture.enemy.phases?.length??0));
+    const own=result.events.filter(e=>e.actorId===profile.id);
+    rows.push({boss:profile.id,level,classId:row.classId,spec:row.spec,profile:row.gear,seed:seedIndex,arm,
+     win:Number(result.victory),reason:result.reason,duration:result.durationMs,
+     hp:result.players[0].hp/actor.stats.maxHp,enemyHp:result.enemies[0].hp/fixture.enemy.stats.maxHp,
+     phases:phases.length,casts:own.filter(e=>e.type==='cast_complete').length,
+     interrupts:result.events.filter(e=>e.type==='interrupt'&&e.targetId===profile.id).length,
+     dots:own.filter(e=>e.type==='dot_tick').length,shields:own.filter(e=>e.type==='shield').length,
+     heal:result.players[0].healingDone});
+   }
+  }
+ }
+ assert.equal(rows.length,864);
+ const keys=[...new Set(rows.map(r=>r.boss+'|'+r.classId+'|'+r.profile+'|'+r.arm))].sort();
+ assert.equal(keys.length,216);
+ const mean=(a:number[])=>a.reduce((n,v)=>n+v,0)/a.length;
+ console.log('REGIONAL_COMPLETION_BOSS_REVIEW '+JSON.stringify({matchedSets:216,executions:rows.length,
+  groups:keys.map(key=>{
+   const a=rows.filter(r=>r.boss+'|'+r.classId+'|'+r.profile+'|'+r.arm===key);
+   return {key,cases:a.length,wins:a.reduce((n,r)=>n+r.win,0),timeouts:a.filter(r=>r.reason==='timeout').length,wipes:a.filter(r=>r.reason==='wipe').length,
+    meanDuration:mean(a.map(r=>r.duration)),meanHp:mean(a.map(r=>r.hp)),meanEnemyHp:mean(a.map(r=>r.enemyHp)),
+    phases:a.reduce((n,r)=>n+r.phases,0),casts:a.reduce((n,r)=>n+r.casts,0),interrupts:a.reduce((n,r)=>n+r.interrupts,0),
+    dots:a.reduce((n,r)=>n+r.dots,0),shields:a.reduce((n,r)=>n+r.shields,0),meanHeal:mean(a.map(r=>r.heal))};
+  }),releaseEnabled:false,rewardEnabled:false,unlockEnabled:false,cpApproved:false}));
 }
 // Unified compact class -> actual V2 skills -> original Forge -> exact socket
 // projection -> verified authored party enemy kits. The only modified source

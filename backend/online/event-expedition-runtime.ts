@@ -30,7 +30,8 @@ export function projectOnlineEventRun(run:EventRun,version:number,liveEventId:st
  const options=run.phase==='awaiting_choice'&&current?current.nextNodeIds.map(id=>run.graph.nodes.find(node=>node.nodeId===id)).filter((node):node is NonNullable<typeof node>=>Boolean(node)).map(node=>effectiveEventNode(run,node)).map(node=>({nodeId:node.nodeId,kind:node.kind,risk:node.risk,rewardTag:node.rewardTag,title:node.title,mechanicDelta:node.mechanicDelta??0,objectiveDelta:node.objectiveDelta??0,reactionLabel:node.reactionLabel,...(['battle','elite','boss'].includes(node.kind)?{encounterPreview:expeditionEncounterPreview(node.contentId,run.syncLevel)}:{})})):[];
  const mechanic=eventMechanicProjection(run),objective=eventObjectiveProjection(run),bossProfile=eventBossMechanicProjection(run);
  const bossMechanic=bossProfile?{profileId:bossProfile.profileId,label:bossProfile.label,summary:bossProfile.summary,tone:bossProfile.tone,telegraph:bossProfile.telegraph}:undefined;
- const summary=run.lastResolution?.nodeId===run.graph.bossNodeId?run.lastResolution.result.summary:undefined;
+ const wasBossExit=run.graph.nodes.some(node=>node.nodeId===run.lastResolution?.nodeId&&node.kind==='boss');
+ const summary=wasBossExit?run.lastResolution?.result.summary:undefined;
  const list=(value:unknown)=>Array.isArray(value)?value.filter((item):item is string=>typeof item==='string'):[];
  const phaseLabels=new Map(bossProfile?.telegraph.phases.map(item=>[item.id,item.label])??[]);
  const abilityLabels=new Map(bossProfile?.telegraph.castAbilities.map(item=>[item.id,item.label])??[]);
@@ -45,7 +46,7 @@ export function projectOnlineEventRun(run:EventRun,version:number,liveEventId:st
   runId:run.id,eventExpeditionId:run.eventId,tier:run.tier??1,liveEventId,eventName:definition.eventName,dungeonName:definition.name,phase:run.phase,
   stateVersion:version,decisionId:run.currentNodeId,decisionRevision:version,
   team:run.players.map((member,index)=>{const state=run.persistentState.actors[member.id],companionId=(member.tags??[]).find(tag=>tag.startsWith('companion:'))?.slice('companion:'.length),bodyTag=(member.tags??[]).find(tag=>tag.startsWith('body:'))?.slice('body:'.length),bodyPresentation=bodyTag==='female'?'female' as const:bodyTag==='male'?'male' as const:undefined;return{memberId:member.id,displayName:member.name,role:role(member.role),classId:member.classId??'',bodyPresentation,companionId,kind:index===0?'controller' as const:'echo' as const,effectiveLevel:member.level,currentHp:state?.hp??member.stats.maxHp,maximumHp:member.stats.maxHp,downed:state?.downed??false};}),
-  options,mechanic,objective,bossMechanic,bossRecap,lastCombat:projectCombatReplay(run.lastResolution),lastRoomOutcome:publicCoopRoomOutcome(run.lastResolution?.nodeId,run.lastResolution?.result.summary),settlement:{status:run.settlement,rewardMarks:run.rewardMarks??promotedEventCurrency(liveEventId,eventTierRewardMarks(definition,run.tier??1)+mechanic.rewardBonus+objective.rewardBonus,serverNow)},
+  options,mechanic,objective,bossMechanic,bossRecap,lastCombat:projectCombatReplay(run.lastResolution),lastRoomOutcome:publicCoopRoomOutcome(run.lastResolution?.nodeId,run.lastResolution?.result.summary),settlement:{status:run.settlement,rewardMarks:run.rewardMarks??(run.practiceOnly?0:promotedEventCurrency(liveEventId,eventTierRewardMarks(definition,run.tier??1)+mechanic.rewardBonus+objective.rewardBonus,serverNow))},
  };
 }
 
@@ -66,6 +67,11 @@ export class OnlineEventExpeditionRuntime{
   const game=await this.services.rpc<Game>('load_online_game_server_v1',{p_account_id:accountId});
   const runtime=game.liveEvent;
   if(!runtime?.enabled||game.serverNow<runtime.startsAtMs||game.serverNow>=runtime.endsAtMs||!runtime.eventId.startsWith(`${definition.liveEventSeriesId}_`))throw new GameplayError('event_not_live');
+  // Server-owned daily quota. Unrewarded practice starts remain available after both rewarded clears.
+  // No optimistic client fallback: a stale backend must not create unclaimable event rewards.
+  const dailyBudget=isFrostfallEventExpedition(definition.id)?await this.services.rpc<number>('online_event_expedition_daily_budget_server_v1',{p_account_id:accountId,p_event_id:runtime.eventId}):2;
+  if(!Number.isInteger(dailyBudget)||dailyBudget<0||dailyBudget>2)throw new GameplayError('event_reward_budget_unavailable',503);
+  const practiceOnly=isFrostfallEventExpedition(definition.id)&&dailyBudget===0;
   if(!game.state?.character)throw new GameplayError('character_required');
   const record=deriveOnlineCoopLoadout(accountId,game.state,game.version);
   if(record.characterId!==request.characterId||request.loadoutId!=='current')throw new GameplayError('loadout_not_owned',403);
@@ -86,7 +92,7 @@ export class OnlineEventExpeditionRuntime{
   const selectedSources=selected.map(echo=>raw.find(item=>item.profileId===echo.profileId)).filter((value):value is Echo=>Boolean(value));
   const scaling=definition.levelScaling,averageLobbyLevel=isFrostfallEventExpedition(definition.id)?requiredLevel:scaling?Math.max(scaling.minLevel,Math.min(scaling.maxLevel,Math.round([record.combatScalingLevel??record.characterLevel,...selectedSources.map(echo=>echo.record.combatScalingLevel??echo.record.characterLevel)].reduce((sum,level)=>sum+level,0)/(1+selectedSources.length)))):definition.minLevel;
   const controller=freeze(record,averageLobbyLevel),snapshots=[controller,...selectedSources.map(echo=>freeze(echo.record,averageLobbyLevel))],runId=this.services.randomId(),repository=new MemoryEventRunRepository(),domain=new EventExpeditionService(repository,seed);
-  const run=domain.start({requestId:request.requestId,runId,accountId,eventId:definition.id,tier:selectedTier,activeLiveEventId:runtime.eventId,members:snapshots.map(snapshot=>({accountId:snapshot.accountId,characterId:snapshot.characterId,role:snapshot.readiness.role})),players:snapshots.map(player),nowMs:game.serverNow});
+  const run=domain.start({requestId:request.requestId,runId,accountId,eventId:definition.id,tier:selectedTier,practiceOnly,activeLiveEventId:runtime.eventId,members:snapshots.map(snapshot=>({accountId:snapshot.accountId,characterId:snapshot.characterId,role:snapshot.readiness.role})),players:snapshots.map(player),nowMs:game.serverNow});
   const members=snapshots.map((snapshot,index)=>{
    if(index===0)return {snapshot,sourceHash:onlineCoopLoadoutHash(record),profileId:null};
    const chosen=selected[index-1],source=selectedSources[index-1];if(!source)throw new GameplayError('echo_no_longer_eligible',409);
@@ -107,7 +113,7 @@ export class OnlineEventExpeditionRuntime{
   const domain=new EventExpeditionService(repository,loaded.privateState.seed);
   const run=domain.choose({runId,accountId,optionNodeId:request.optionId,requestId:request.requestId});
   // Freeze the promotion into the first completed result. Claim/retry reads this stored amount.
-  if(run.phase==='completed'&&before.phase!=='completed'&&run.rewardMarks!==undefined)run.rewardMarks=promotedEventCurrency(loaded.privateState.liveEventId,run.rewardMarks,loaded.serverNow);
+  if(run.phase==='completed'&&before.phase!=='completed'&&!run.practiceOnly&&run.rewardMarks!==undefined)run.rewardMarks=promotedEventCurrency(loaded.privateState.liveEventId,run.rewardMarks,loaded.serverNow);
   const result=run.lastResolution;if(!result)throw new GameplayError('event_resolution_missing');
   const projection=projectOnlineEventRun(run,loaded.stateVersion+1,loaded.privateState.liveEventId,loaded.serverNow);
   return this.services.rpc('advance_online_event_expedition_server_v1',{p_account_id:accountId,p_run_id:runId,p_expected_version:loaded.stateVersion,p_request_id:request.requestId,p_request_hash:hash,p_private_state:{run,seed:loaded.privateState.seed,liveEventId:loaded.privateState.liveEventId},p_client_projection:projection,p_node_id:result.nodeId,p_result:result.result,p_start_state_hash:digest(before.persistentState)});

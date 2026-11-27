@@ -1,0 +1,37 @@
+name: Hidden Activity Loadout review
+on:
+  pull_request:
+    paths:
+      - 'apps/mobile/src/core/activity-loadout-*.ts'
+      - 'apps/mobile/src/core/character-loadouts.ts'
+      - 'apps/mobile/src/core/types.ts'
+      - 'apps/mobile/tests/activity-loadout-transition-review.ts'
+      - 'backend/online/activity-loadout-reservation-review.ts'
+      - 'backend/online/gathering-speed-settlement-review.ts'
+      - 'apps/mobile/src/core/gathering-speed-v2-review.ts'
+      - 'apps/mobile/src/core/game.ts'
+      - '.github/workflows/activity-loadout-review.yml'
+concurrency:
+  group: activity-loadout-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: pnpm --dir apps/mobile install --frozen-lockfile
+      - run: pnpm --dir backend install --frozen-lockfile
+      - run: node tools/run-mobile-tests.mjs activity-loadout-transition-review
+      - name: Confirm transition remains unmounted
+        run: |
+          grep -q 'ACTIVITY_LOADOUT_TRANSITION_LIVE=false' apps/mobile/src/core/activity-loadout-transition-review.ts
+          if grep -R -n 'activity-loadout-transition-review' apps/mobile/App.tsx apps/mobile/src/screens apps/mobile/src/components apps/mobile/src/core/game-commands.ts apps/mobile/src/core/playability.ts apps/mobile/src/core/game.ts backend/online --exclude=activity-loadout-reservation-review.ts; then
+            echo 'Unexpected activity loadout runtime import'
+            exit 1
+          fi

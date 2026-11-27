@@ -13,6 +13,7 @@ import {WorldBossBattleStage} from '../components/WorldBossBattleStage';
 import {WORLD_BOSS_REPLAY_FIXTURE} from '../dev/world-boss-replay-fixture';
 import {filterMarketPreviewItems,type MarketPreviewItem,type MarketPreviewSort} from '../core/market-preview-filter';
 import {UiIcon} from '../components/UiIcon';
+import {ActivityLoadoutPreview} from '../components/ActivityLoadoutPreview';
 
 type Feature='boss'|'party'|'market';
 type TabItem={id:string;label:string};
@@ -20,7 +21,7 @@ type Props={route:FeatureHubPreviewRoute;onClose:()=>void;onOpenParty:()=>void;o
 
 const bossTabs:TabItem[]=[
  {id:'overview',label:'Overview'},{id:'camp',label:'War Camp'},{id:'battle',label:'Battle'},
- {id:'rewards',label:'Rewards'},{id:'rankings',label:'Rankings'},
+ {id:'rewards',label:'Rewards'},{id:'rankings',label:'Rankings'},{id:'loadouts',label:'Loadouts QA'},
 ];
 const partyTabs:TabItem[]=[
  {id:'adventure',label:'Adventure'},{id:'stages',label:'Stages'},{id:'supplies',label:'Supplies'},
@@ -198,7 +199,8 @@ export function FeaturePreviewScreen({route,onClose,onOpenParty,onOpenPartyChat,
     </ScrollView>
     {feature==='boss'?<Action label="Watch a recorded World Boss fight" s={s} onPress={()=>setFightPreview(true)}/>:null}
     {feature==='boss'&&fightPreview?<WorldBossBattleStage input={WORLD_BOSS_REPLAY_FIXTURE} language="en" reduceMotion={reduceMotion} onClose={()=>setFightPreview(false)}/>:null}
-    {feature==='boss'?<BossContents s={s} C={C} accent={accent} tab={activeTab} onTab={changeTab} status={bossStatus}/>:null}
+    {feature==='boss'&&activeTab==='loadouts'?<ActivityLoadoutPreview/>:null}
+    {feature==='boss'&&activeTab!=='loadouts'?<BossContents s={s} C={C} accent={accent} tab={activeTab} onTab={changeTab} status={bossStatus}/>:null}
     {feature==='party'?<PartyPreviewPanel s={s} C={C} accent={accent} tab={activeTab} onTab={changeTab} storyId={storyId} onStoryChange={setStoryId} onOpenParty={onOpenParty} partyEventStatus={displayPartyStatus} nowMs={statusNowMs}/>:null}
     {feature==='market'?<MarketContents s={s} C={C} accent={accent} tab={activeTab}/>:null}
     <View style={s.footer}><Text style={s.footerText}>VELDRYN  •  FEATURE DESIGN REVIEW</Text></View>

@@ -1,0 +1,136 @@
+name: Staging-only cosmetic QA APK
+
+# Never merge this workflow into main. No EAS credentials, store upload or production secrets.
+on:
+  push:
+    branches: ['qa/1.0.13-gameplay-canary']
+    paths: ['.github/workflows/cosmetic-qa-apk.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cosmetic-qa-apk
+  cancel-in-progress: true
+
+jobs:
+  staging-apk:
+    if: github.ref == 'refs/heads/qa/1.0.13-gameplay-canary'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: apps/mobile
+    env:
+      NODE_ENV: production
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          sparse-checkout: |
+            apps/mobile
+            backend/src
+            packages/guild-shop/src
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/mobile/pnpm-lock.yaml
+      - name: Validate isolated staging config and separate Android identity
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const config=require('./eas.json');
+          const env=config.build.staging.env;
+          const host='https://iqfmmpvwanvvmxcftfxw.supabase.co';
+          if(Object.keys(config.build).join()!=='staging'||config.submit||env.EXPO_PUBLIC_SUPABASE_URL!==host||env.EXPO_PUBLIC_COOP_API_URL!==host+'/functions/v1/coop'||env.EXPO_PUBLIC_RELEASE_CHANNEL!=='staging'||env.EXPO_PUBLIC_ULTRA_LUXE_FULL_SET!=='true')throw Error('Staging isolation/config mismatch');
+          if(!env.EXPO_PUBLIC_SUPABASE_ANON_KEY.startsWith('sb_publishable_'))throw Error('Only publishable keys allowed');
+          const transport=fs.readFileSync('src/online/gameplay.ts','utf8');
+          if(!transport.includes(host)||!transport.includes('/functions/v1/gameplay-113-qa')||!transport.includes('if(!qaGameplayEnabled)throw'))throw Error('Missing isolated canary transport');
+          const app=require('./app.json');
+          if(app.expo.version!=='1.0.13'||require('./package.json').version!==app.expo.version)throw Error('Wrong candidate version');
+          app.expo.name='VELDRYN QA';
+          app.expo.android.package='com.elroybenjamins.veldryn.qa';
+          app.expo.scheme='veldrynqa';
+          fs.writeFileSync('app.json',JSON.stringify(app,null,2)+'\n');
+          for(const [k,v] of Object.entries(env)){
+            if(!/^EXPO_PUBLIC_[A-Z0-9_]+$/.test(k)||typeof v!=='string'||/[\r\n]/.test(v))throw Error('Unexpected public config');
+            if(k.includes('GOOGLE_'))continue;
+            fs.appendFileSync(process.env.GITHUB_ENV,k+'='+v+'\n');
+          }
+          NODE
+      - name: Install mobile dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Validate Expo SDK
+        run: npx -y expo-doctor
+      - name: Verify shared runtime and artwork
+        run: |
+          test -f ../../backend/src/server/companions/trial-season.ts
+          test -f ../../backend/src/server/companions/content.ts
+          test -f ../../packages/guild-shop/src/catalogue.ts
+          node scripts/repair-frostfall-currency-images.cjs
+          node scripts/repair-frostfall-currency-images.cjs --verify
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+      - name: Install Android toolchain
+        shell: bash
+        run: |
+          SDKMANAGER="${ANDROID_SDK_ROOT:-$ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+      - name: Generate isolated native project
+        run: npx expo prebuild --platform android --clean --no-install
+      - name: Build standalone release-mode QA APK
+        working-directory: apps/mobile/android
+        run: ./gradlew :app:assembleRelease --stacktrace --no-daemon
+      - name: Verify package identity and sign with disposable QA key
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK="${ANDROID_SDK_ROOT:-$ANDROID_HOME}/build-tools/36.0.0"
+          mapfile -t apks < <(find android/app/build/outputs/apk/release -maxdepth 1 -name '*.apk' -type f)
+          test "${#apks[@]}" -eq 1
+          mkdir -p qa-artifact
+          keytool -genkeypair -noprompt -keystore "$RUNNER_TEMP/qa-signing.jks" -storepass android -keypass android -alias qa -keyalg RSA -keysize 2048 -validity 365 -dname 'CN=Veldryn isolated staging QA'
+          "$SDK/zipalign" -f -P 16 4 "${apks[0]}" "$RUNNER_TEMP/qa-aligned.apk"
+          "$SDK/apksigner" sign --ks "$RUNNER_TEMP/qa-signing.jks" --ks-pass pass:android --key-pass pass:android --ks-key-alias qa --out qa-artifact/veldryn-1.0.13-staging-qa.apk "$RUNNER_TEMP/qa-aligned.apk"
+          "$SDK/apksigner" verify qa-artifact/veldryn-1.0.13-staging-qa.apk
+          "$SDK/aapt" dump badging qa-artifact/veldryn-1.0.13-staging-qa.apk | grep -E "^package: name='com\.elroybenjamins\.veldryn\.qa'.*versionName='1\.0\.13'"
+          (cd qa-artifact && sha256sum veldryn-1.0.13-staging-qa.apk > SHA256SUMS)
+      - name: Enable hardware-accelerated emulator
+        shell: bash
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Boot staging APK on Android 15
+        uses: reactivecircus/android-emulator-runner@v2.38.0
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: |
+            adb install apps/mobile/qa-artifact/veldryn-1.0.13-staging-qa.apk
+            adb logcat -c
+            adb shell am start -W -n com.elroybenjamins.veldryn.qa/.MainActivity
+            sleep 25
+            adb shell pidof com.elroybenjamins.veldryn.qa
+            adb logcat -d -v brief -s AndroidRuntime:E ReactNativeJS:E ReactNative:E > apps/mobile/qa-artifact/startup-errors.log
+            if grep -q 'FATAL EXCEPTION' apps/mobile/qa-artifact/startup-errors.log; then exit 1; fi
+            adb exec-out screencap -p > apps/mobile/qa-artifact/startup-screen.png
+      - name: Retain isolated staging APK after startup passes
+        uses: actions/upload-artifact@v4
+        with:
+          name: veldryn-staging-cosmetic-qa-apk-${{ github.sha }}
+          path: apps/mobile/qa-artifact/
+          if-no-files-found: error
+          retention-days: 7

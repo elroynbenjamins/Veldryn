@@ -31,13 +31,28 @@ INSERT INTO market_review.mirror_online
  SELECT id,id||'1',0,market_review.mirror_projection(id,id||'1') FROM market_review.wallet;
 CREATE TABLE market_review.mirror_receipt(
  actor text NOT NULL,request_id text NOT NULL,args jsonb NOT NULL,response jsonb NOT NULL,
+ receipt_id uuid NOT NULL UNIQUE DEFAULT gen_random_uuid(),
+ actor_revision bigint NOT NULL CHECK(actor_revision>=0),
  PRIMARY KEY(actor,request_id)
 );
+CREATE TRIGGER mirror_receipt_immutable BEFORE UPDATE OR DELETE ON market_review.mirror_receipt
+ FOR EACH ROW EXECUTE FUNCTION market_review.immutable();
+-- Read committed evidence only. A missing row is UNKNOWN, never a failed buy.
+-- The caller here is a fixture identity; real gateway must bind verified Auth.
+CREATE FUNCTION market_review.mirror_receipt_status(p_actor text,p_request text)
+ RETURNS jsonb LANGUAGE sql STABLE SECURITY INVOKER SET search_path='' AS $
+ SELECT coalesce((SELECT jsonb_build_object('status','committed','requestKey',r.request_id,
+  'operation',CASE r.args->>0 WHEN 'list' THEN 'publish' ELSE r.args->>0 END,
+  'revision',r.actor_revision,'receiptId',r.receipt_id)
+  FROM market_review.mirror_receipt r WHERE r.actor=p_actor AND r.request_id=p_request
+    AND r.args->>0 IN ('list','buy','cancel','claim')),
+  jsonb_build_object('status','unknown','requestKey',p_request))
+$;
 CREATE FUNCTION market_review.mirror_act(
  p_op text,p_actor text,p_request text,p_instance text,p_copy_revision bigint,
  p_actor_revision bigint,p_owner_revision bigint,p_offer text DEFAULT NULL,
  p_price bigint DEFAULT NULL,p_now bigint DEFAULT NULL,p_recipient text DEFAULT NULL,
- p_abort boolean DEFAULT false
+ p_abort boolean DEFAULT false,p_abort_after_receipt boolean DEFAULT false
 ) RETURNS jsonb LANGUAGE plpgsql SET search_path='' AS $$
 DECLARE c market_review.custody%ROWTYPE; rec market_review.mirror_receipt%ROWTYPE;
  a market_review.mirror_online%ROWTYPE; row_account market_review.mirror_online%ROWTYPE;
@@ -80,27 +95,55 @@ BEGIN
    WHERE account_id=row_account.account_id AND revision=row_account.revision;
   IF NOT FOUND THEN RAISE EXCEPTION 'mirror_cas_failed'; END IF;
  END LOOP;
- INSERT INTO market_review.mirror_receipt VALUES(p_actor,p_request,args,result);
+ INSERT INTO market_review.mirror_receipt(actor,request_id,args,response,actor_revision)
+ VALUES(p_actor,p_request,args,result,(SELECT revision FROM market_review.mirror_online WHERE account_id=p_actor));
+ IF p_abort_after_receipt THEN RAISE EXCEPTION 'injected_after_receipt'; END IF;
  RETURN result;
 END $$;
 REVOKE ALL ON ALL TABLES IN SCHEMA market_review FROM PUBLIC;
 REVOKE ALL ON ALL FUNCTIONS IN SCHEMA market_review FROM PUBLIC;
 SELECT market_review.mirror_act('list','a','mirror-list','x',0,0,0,'mirror-offer',125,100);
 SELECT market_review.expect_error($q$SELECT market_review.mirror_act('buy','b','mirror-buy','x',1,0,0,'mirror-offer',125,101,'b1')$q$,'mirror_stale_state');
+SELECT market_review.expect_error($q$SELECT market_review.mirror_act('buy','b','mirror-buy','x',1,1,1,'mirror-offer',125,101,'b1')$q$,'mirror_stale_state');
 SELECT market_review.expect_error($q$SELECT market_review.mirror_act('buy','b','mirror-buy','x',1,0,1,'mirror-offer',125,101,'b1',true)$q$,'injected_after_settlement');
+SELECT market_review.expect_error($q$SELECT market_review.mirror_act('buy','b','mirror-buy','x',1,0,1,'mirror-offer',125,101,'b1',false,true)$q$,'injected_after_receipt');
 DO $$ BEGIN
  IF (SELECT count(*) FROM market_review.sale)<>0 OR EXISTS(SELECT 1 FROM market_review.request WHERE request_id='mirror-buy')
  OR (SELECT gold FROM market_review.wallet WHERE id='b')<>1000
  OR NOT EXISTS(SELECT 1 FROM market_review.custody WHERE id='x' AND owner='a' AND state='escrow' AND revision=1)
  OR (SELECT revision FROM market_review.mirror_online WHERE account_id='b')<>0
+ OR (SELECT revision FROM market_review.mirror_online WHERE account_id='a')<>1
+ OR (SELECT gold FROM market_review.wallet WHERE id='a')<>1000
+ OR (SELECT gold FROM market_review.mirror_character_wallet WHERE character_id='b1')<>1000
+ OR (SELECT gold FROM market_review.mirror_character_wallet WHERE character_id='a1')<>1000
+ OR market_review.mirror_receipt_status('b','mirror-buy') IS DISTINCT FROM '{"status":"unknown","requestKey":"mirror-buy"}'::jsonb
+ OR EXISTS(SELECT 1 FROM market_review.mirror_receipt WHERE request_id='mirror-buy')
  THEN RAISE EXCEPTION 'fault_rollback_failed'; END IF;
 END $$;
 SELECT market_review.mirror_act('buy','b','mirror-buy','x',1,0,1,'mirror-offer',125,101,'b1');
+-- Simulate loss of the successful buy response: use a read-only status lookup.
+CREATE TEMP TABLE saved_buy_status AS SELECT market_review.mirror_receipt_status('b','mirror-buy') AS status;
+DO $ DECLARE s jsonb; BEGIN
+ SELECT status INTO STRICT s FROM pg_temp.saved_buy_status;
+ IF s IS DISTINCT FROM jsonb_build_object('status','committed','requestKey','mirror-buy','operation','buy','revision',1,
+   'receiptId',(SELECT receipt_id FROM market_review.mirror_receipt WHERE actor='b' AND request_id='mirror-buy'))
+ OR s->>'receiptId' IS NULL
+ OR market_review.mirror_receipt_status('a','mirror-buy')->>'status' IS DISTINCT FROM 'unknown'
+ OR market_review.mirror_receipt_status('c','mirror-buy')->>'status' IS DISTINCT FROM 'unknown'
+ THEN RAISE EXCEPTION 'receipt_projection_failed'; END IF;
+END $;
+SELECT market_review.expect_error($q$UPDATE market_review.mirror_receipt SET actor_revision=999 WHERE actor='b' AND request_id='mirror-buy'$q$,'immutable_history');
 -- Replaying after revision changes returns the same committed receipt.
 SELECT market_review.mirror_act('buy','b','mirror-buy','x',1,0,1,'mirror-offer',125,101,'b1');
 SELECT market_review.expect_error($q$SELECT market_review.mirror_act('buy','b','mirror-buy','x',1,0,1,'mirror-offer',126,101,'b1')$q$,'mirror_request_conflict');
 UPDATE market_review.wallet SET inventory_cap=0 WHERE id='b';
 SELECT market_review.expect_error($q$SELECT market_review.mirror_act('claim','b','mirror-claim','x',2,1,1,p_recipient=>'b1')$q$,'inventory_full');
+DO $ BEGIN
+ IF market_review.mirror_receipt_status('b','mirror-claim')->>'status' IS DISTINCT FROM 'unknown'
+ OR NOT EXISTS(SELECT 1 FROM market_review.custody WHERE id='x' AND owner='b' AND state='pending_delivery')
+ OR market_review.mirror_receipt_status('b','mirror-buy') IS DISTINCT FROM (SELECT status FROM pg_temp.saved_buy_status)
+ THEN RAISE EXCEPTION 'blocked_delivery_lost_receipt'; END IF;
+END $;
 UPDATE market_review.wallet SET inventory_cap=2 WHERE id='b';
 SELECT market_review.mirror_act('claim','b','mirror-claim','x',2,1,1,p_recipient=>'b1');
 SELECT market_review.mirror_act('deposit','b','mirror-deposit','x',3,2,2);
@@ -113,6 +156,10 @@ DO $$ BEGIN
  OR EXISTS(SELECT 1 FROM market_review.mirror_online m WHERE m.state IS DISTINCT FROM market_review.mirror_projection(m.account_id,m.character_id))
  OR NOT EXISTS(SELECT 1 FROM market_review.custody WHERE id='x' AND owner='b' AND holder='b2' AND state='inventory' AND revision=5)
  OR (SELECT revision FROM market_review.mirror_online WHERE account_id='b')<>4
+ OR market_review.mirror_receipt_status('b','mirror-buy') IS DISTINCT FROM (SELECT status FROM pg_temp.saved_buy_status)
+ OR market_review.mirror_receipt_status('b','mirror-claim')->>'revision' IS DISTINCT FROM '2'
+ OR market_review.mirror_receipt_status('a','mirror-list')->>'operation' IS DISTINCT FROM 'publish'
+ OR market_review.mirror_receipt_status('b','mirror-deposit')->>'status' IS DISTINCT FROM 'unknown'
  THEN RAISE EXCEPTION 'mirror_settlement_failed'; END IF;
 END $$;
 ROLLBACK;

@@ -6,7 +6,7 @@ import type {GameState,ItemStack,RewardBundle,SkillId} from './types';
 import {characterPermanentMultipliers} from './permanent-boosts';
 import {professionMasteryMultipliers} from './profession-mastery-v40';
 import {totalXpAtLevel} from './progression';
-import {isWinterHearthLightRecipe,winterHearthLightRecipeAvailable,WINTER_HEARTH_2026_END_MS} from './winter-hearth-2026';
+import {isWinterHearthLightRecipe,winterHearthLightRecipeAvailable,WINTER_HEARTH_2026_END_MS,winterHearthCraftWeekEndMs,winterHearthRemainingCraftBatches,winterHearthCompletedBatchAllowance,WINTER_HEARTH_LIGHTS_PER_BATCH} from './winter-hearth-2026';
 import {mealBonusDef} from './meal-buffs';
 
 // One processing start reserves the complete AFK run, capped by its normal AFK window.
@@ -46,25 +46,26 @@ export function processingRecipeDef(recipeId:string):Recipe|undefined{
 export function isTimedProcessingRecipe(recipeId:string){return !!processingRecipeDef(recipeId);}
 
 /** UI may opt into replacement readiness; the start primitive itself remains strict. */
-export function processingAvailability(state:GameState,recipeId:string,batches=1,allowActivityReplacement=false){
+export function processingAvailability(state:GameState,recipeId:string,batches=1,allowActivityReplacement=false,nowMs=Date.now()){
   const recipe=processingRecipeDef(recipeId),countValid=Number.isSafeInteger(batches)&&batches>=1&&batches<=MAX_PROCESSING_BATCHES,count=countValid?batches:1;
   const inputs=(recipe?.inputs??[]).map(input=>({...input,quantity:input.quantity*count,inventory:storedQuantity(state.inventory.stacks,input.itemId),bank:storedQuantity(state.bank.stacks,input.itemId)}));
   const gold=(recipe?.gold??0)*count,skill=recipe?state.skills.find(entry=>entry.skillId===recipe.skillId):undefined;
   const materialMax=recipe&&recipe.inputs.length?Math.min(...recipe.inputs.map(input=>Math.floor((storedQuantity(state.inventory.stacks,input.itemId)+storedQuantity(state.bank.stacks,input.itemId))/input.quantity))):MAX_PROCESSING_BATCHES;
   const goldMax=recipe?.gold?Math.floor((state.character?.gold??0)/recipe.gold):MAX_PROCESSING_BATCHES;
-  const maxBatches=Math.max(0,Math.min(MAX_PROCESSING_BATCHES,materialMax,goldMax));
+  const seasonal=isWinterHearthLightRecipe(recipeId),seasonalOpen=!seasonal||winterHearthLightRecipeAvailable(state,nowMs),weeklyBatches=seasonal?(seasonalOpen?winterHearthRemainingCraftBatches(state,nowMs):0):MAX_PROCESSING_BATCHES;
+  const maxBatches=Math.max(0,Math.min(MAX_PROCESSING_BATCHES,materialMax,goldMax,weeklyBatches));
   const reason=!recipe?'This recipe is not a repeatable processing recipe.':!state.character?'Create a character first.':!countValid?`Choose 1–${MAX_PROCESSING_BATCHES.toLocaleString()} batches.`:
-    state.activity&&!allowActivityReplacement?'Stop the current activity before starting processing.':recipe.classId&&recipe.classId!==state.character.classId?'This recipe belongs to another class.':
+    !seasonalOpen?'Winter Hearth crafting is closed.':seasonal&&count>weeklyBatches?'Winter Hearth weekly crafting allowance reached.':state.activity&&!allowActivityReplacement?'Stop the current activity before starting processing.':recipe.classId&&recipe.classId!==state.character.classId?'This recipe belongs to another class.':
     state.character.level<(recipe.characterLevel??1)?`Requires character level ${recipe.characterLevel}.`:(skill?.level??0)<recipe.level?`Requires ${recipe.skillId} level ${recipe.level}.`:
     state.character.gold<gold?`Requires ${gold} Gold on this character.`:inputs.some(input=>input.inventory+input.bank<input.quantity)?'Missing ingredients. Inventory and Bank are available; overflow is not.':'Ready to reserve and process.';
-  return {ready:!!recipe&&!!state.character&&countValid&&(allowActivityReplacement||!state.activity)&&(!recipe.classId||recipe.classId===state.character.classId)&&state.character.level>=(recipe.characterLevel??1)&&(skill?.level??0)>=recipe.level&&state.character.gold>=gold&&inputs.every(input=>input.inventory+input.bank>=input.quantity),reason,inputs,gold,maxBatches,recipe};
+  return {ready:!!recipe&&!!state.character&&countValid&&seasonalOpen&&count<=weeklyBatches&&(allowActivityReplacement||!state.activity)&&(!recipe.classId||recipe.classId===state.character.classId)&&state.character.level>=(recipe.characterLevel??1)&&(skill?.level??0)>=recipe.level&&state.character.gold>=gold&&inputs.every(input=>input.inventory+input.bank>=input.quantity),reason,inputs,gold,maxBatches,recipe,weeklyRemainingLights:seasonal?weeklyBatches*WINTER_HEARTH_LIGHTS_PER_BATCH:undefined};
 }
 
 /** Reserves every chosen batch up front. Outputs and skill XP arrive only as timed cycles complete. */
 export function startProcessingBatch(state:GameState,recipeId:string,batches:number,nowMs:number):GameState{
   if(!Number.isFinite(nowMs)||nowMs<0)throw new Error('Invalid processing time.');
   if(isWinterHearthLightRecipe(recipeId)&&!winterHearthLightRecipeAvailable(state,nowMs))throw new Error('Winter Hearth crafting is closed.');
-  const status=processingAvailability(state,recipeId,batches);if(!status.ready)throw new Error(status.reason);
+  const status=processingAvailability(state,recipeId,batches,false,nowMs);if(!status.ready)throw new Error(status.reason);
   const recipe=status.recipe!;
   let inventory=state.inventory.stacks,bank=state.bank.stacks;
   for(const input of status.inputs){
@@ -75,14 +76,14 @@ export function startProcessingBatch(state:GameState,recipeId:string,batches:num
   const processing:ProcessingBatchState={version:1,recipeId:recipe.id,skillId:recipe.skillId as ProcessingSkillId,totalBatches:batches,remainingBatches:batches,
     inputsPerBatch:recipe.inputs.map(input=>({...input})),goldPerBatch:recipe.gold,outputPerBatch:{...recipe.output},
     ...(recipe.skillId==='cooking'&&mealBonusDef(recipe.output.itemId)?{fixedMealOutput:true as const}:{}),
-    cycleSeconds:pace.cycleSeconds,xpPerBatch:pace.xpPerAction,...(isWinterHearthLightRecipe(recipe.id)?{seasonEndsAtMs:Math.min(WINTER_HEARTH_2026_END_MS,state.account.liveEvent!.endsAtMs)}:{})};
+    cycleSeconds:pace.cycleSeconds,xpPerBatch:pace.xpPerAction,...(isWinterHearthLightRecipe(recipe.id)?{seasonEndsAtMs:Math.min(WINTER_HEARTH_2026_END_MS,state.account.liveEvent!.endsAtMs,winterHearthCraftWeekEndMs(nowMs))}:{})};
   return {...state,character:{...state.character!,gold:state.character!.gold-status.gold},inventory:{...state.inventory,stacks:inventory},bank:{...state.bank,stacks:bank},
     activity:{kind:'processing',targetId:recipe.id,startedAtMs:nowMs,lastClaimAtMs:nowMs,progressFraction:0,bonusSnapshot:bonuses,skillAffinity:captureSkillAffinity(state,recipe.skillId),processing}};
 }
 
 /** Uses the same material, Gold and AFK-time limits for UI previews and actual reservations. */
-export function processingRunCapacity(state:GameState,recipeId:string,afkCapSeconds:number,allowActivityReplacement=false){
- const status=processingAvailability(state,recipeId,1,allowActivityReplacement);
+export function processingRunCapacity(state:GameState,recipeId:string,afkCapSeconds:number,allowActivityReplacement=false,nowMs=Date.now()){
+ const status=processingAvailability(state,recipeId,1,allowActivityReplacement,nowMs);
  const cycleSeconds=status.ready&&status.recipe?professionActionPace(state,status.recipe,'batch').cycleSeconds:0;
  const timeBatches=cycleSeconds>0&&Number.isFinite(afkCapSeconds)?Math.max(0,Math.floor(Math.max(0,afkCapSeconds)/cycleSeconds)):0;
  return {...status,timeBatches,availableBatches:status.ready?Math.min(status.maxBatches,timeBatches):0};
@@ -90,7 +91,7 @@ export function processingRunCapacity(state:GameState,recipeId:string,afkCapSeco
 
 /** Starts as many cycles as the available materials, Gold and the current AFK allowance permit. */
 export function startProcessingUntilLimited(state:GameState,recipeId:string,nowMs:number,afkCapSeconds:number):GameState{
- const status=processingRunCapacity(state,recipeId,afkCapSeconds);
+ const status=processingRunCapacity(state,recipeId,afkCapSeconds,false,nowMs);
  if(!status.ready)throw new Error(status.reason);
  const batches=status.availableBatches;
  if(batches<1)throw new Error('Not enough AFK time for one processing cycle.');
@@ -100,11 +101,11 @@ export function startProcessingUntilLimited(state:GameState,recipeId:string,nowM
 export function previewProcessingReward(state:GameState,elapsed:number):RewardBundle{
   const activity=state.activity,processing=activity?.processing;
   if(activity?.kind!=='processing'||!processing)throw new Error('Missing reserved processing batch.');
-  const progress=elapsed/processing.cycleSeconds+(activity.progressFraction??0),actions=Math.min(processing.remainingBatches,Math.max(0,Math.floor(progress+1e-10))),remaining=processing.remainingBatches-actions,remainders={...(state.rewardRemainders??{})};
+  const seasonal=isWinterHearthLightRecipe(processing.recipeId),progress=elapsed/processing.cycleSeconds+(activity.progressFraction??0),actions=Math.min(processing.remainingBatches,seasonal?winterHearthCompletedBatchAllowance(state,activity.startedAtMs):MAX_PROCESSING_BATCHES,Math.max(0,Math.floor(progress+1e-10))),remaining=processing.remainingBatches-actions,remainders={...(state.rewardRemainders??{})};
   const xpKey=activity.skillAffinity?affinityXpRemainderKey(state.character!.id,processing.skillId):`xp:processing:${processing.skillId}`,rawXp=actions*processing.xpPerBatch+(remainders[xpKey]??0),wholeXp=Math.floor(rawXp+1e-10),skill=state.skills.find(row=>row.skillId===processing.skillId);
   const xp=Math.max(0,Math.min(wholeXp,totalXpAtLevel(100)-(skill?.xp??0)));remainders[xpKey]=xp<wholeXp?0:Math.max(0,rawXp-wholeXp);
-  const mastery=professionMasteryMultipliers(processing.recipeId,state.account.professionMasteryByAction?.[processing.recipeId]),yieldKey=`mastery:processing:${processing.recipeId}:yield`,yieldRaw=actions*processing.outputPerBatch.quantity*mastery.yield+(remainders[yieldKey]??0),yieldQuantity=processing.fixedMealOutput?actions:Math.floor(yieldRaw+1e-10);
-  if(!processing.fixedMealOutput)remainders[yieldKey]=Math.max(0,yieldRaw-yieldQuantity);
+  const mastery=professionMasteryMultipliers(processing.recipeId,state.account.professionMasteryByAction?.[processing.recipeId]),yieldKey=`mastery:processing:${processing.recipeId}:yield`,yieldRaw=actions*processing.outputPerBatch.quantity*mastery.yield+(remainders[yieldKey]??0),yieldQuantity=seasonal?actions*WINTER_HEARTH_LIGHTS_PER_BATCH:processing.fixedMealOutput?actions:Math.floor(yieldRaw+1e-10);
+  if(!seasonal&&!processing.fixedMealOutput)remainders[yieldKey]=Math.max(0,yieldRaw-yieldQuantity);
   const first=Math.max(0,(1-(activity.progressFraction??0))*processing.cycleSeconds),times=Array.from({length:actions},(_,index)=>Math.round(activity.lastClaimAtMs+(first+index*processing.cycleSeconds)*1000));
   const qualifyingActivitySeconds=remaining?elapsed:actions?Math.max(0,Math.min(elapsed,(times[times.length-1]-activity.lastClaimAtMs)/1000)):0;
   return {xp,gold:0,items:actions&&yieldQuantity?[{itemId:processing.outputPerBatch.itemId,quantity:yieldQuantity}]:[],kills:0,craftingActions:actions,elapsedSeconds:elapsed,qualifyingActivitySeconds,

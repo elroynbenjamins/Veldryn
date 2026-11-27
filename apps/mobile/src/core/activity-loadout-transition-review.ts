@@ -2,7 +2,7 @@
  * imports this module. Caller must independently authorize the account,
  * check all combat reservations and persist one atomic state revision.
  */
-import type {CharacterLoadoutPreset,GameState,CombatTacticId} from './types';
+import type {CharacterLoadoutPreset,GameState,CombatTacticId,ActiveActivity} from './types';
 import type {HuntGoalId} from './hunt-goals';
 import {GATHERING} from '../content/skills';
 import {HERB_NODES} from '../content/herbalism';
@@ -11,7 +11,7 @@ import {faithBlessingDef,faithBlessingGroup,FAITH_BLESSING_GROUPS,type FaithBles
 import {activeFaithPreferences,faithLevel} from './faith';
 import {collectibleCatalogForState,selectCollectible} from './collectibles';
 import {characterLoadoutSlotCount,normalizeCharacterLoadouts,applyCharacterLoadout,saveCharacterLoadout} from './character-loadouts';
-import {claimActivity,stopActivity,startCombat,startGathering,effectiveStats} from './game';
+import {claimActivity,stopActivity,startCombat,startGathering,effectiveStats,startNextQueuedActivity,type QueueBoundaryReview} from './game';
 import {reviewActivityLoadoutRoute,type ActivityLoadoutBinding} from './activity-loadout-routing-review';
 export const ACTIVITY_LOADOUT_TRANSITION_LIVE=false as const;
 export type ActivityLoadoutSelections={
@@ -96,13 +96,33 @@ export function reviewActivityLoadoutTransition(input:{
  const claimed=claimActivity(candidate,nowMs);
  let next=stopActivity(claimed.state,nowMs);
  if(!next.character||next.activity||next.character.classTraining)throw Error('loadout_boundary_not_idle');
+ const prepared=prepareSettledActivityLoadoutReview(next,category,nowMs,input,state.activity?.kind);
+ next=prepared.state;
+ const route=prepared.route;
+ const started=target.kind==='combat'?startCombat(next,target.id,nowMs,target.tacticId??'balanced',target.goalId??'open'):
+  startGathering(next,target.id,nowMs);
+ if(started.activity?.kind!==category||started.activity.targetId!==target.id||started.activity.startedAtMs!==nowMs)
+  throw Error('loadout_start_snapshot_mismatch');
+ return {state:started,reward:claimed.reward,route,category,persisted:false as const,releaseReady:false as const};
+}
+
+type ReviewConfig={
+ readonly autoSwitch:boolean;readonly bindings:readonly ActivityLoadoutBinding[];
+ readonly verifyNoFrozenEncounter:(characterId:string)=>boolean;
+};
+function prepareSettledActivityLoadoutReview(state:GameState,category:string,nowMs:number,input:ReviewConfig,previousKind?:ActiveActivity['kind']){
+ if(!state.character||state.activity||state.character.classTraining||
+  !Number.isSafeInteger(nowMs)||nowMs<0||
+  typeof input.verifyNoFrozenEncounter!=='function'||input.verifyNoFrozenEncounter(state.character.id)!==true)
+  throw Error('loadout_boundary_not_authorized');
+ let next=copy(state);
  const slotCount=characterLoadoutSlotCount(next);
  const presets=normalizeCharacterLoadouts(next.character.savedLoadouts,next.character.classId,slotCount);
  const route=reviewActivityLoadoutRoute({slotCount,autoSwitch:input.autoSwitch,activity:category,
   bindings:input.bindings,availablePresets:presets});
  if(route.decision==='locked'||route.decision==='missing')throw Error('loadout_'+route.decision);
  if(route.decision==='unassigned'&&category==='combat'&&
-  ['mining','woodcutting','fishing'].includes(state.activity?.kind??''))
+  ['mining','woodcutting','fishing'].includes(previousKind??''))
   throw Error('loadout_combat_setup_confirmation_required');
  if(route.presetId){
   const preset=presets.find(row=>row.id===route.presetId);
@@ -125,9 +145,29 @@ export function reviewActivityLoadoutTransition(input:{
   next={...next,character:{...next.character!,currentHp:settledHp}};
   next=applyActivityLoadoutSelectionsReview(next,selections,nowMs);
  }
- const started=target.kind==='combat'?startCombat(next,target.id,nowMs,target.tacticId??'balanced',target.goalId??'open'):
-  startGathering(next,target.id,nowMs);
- if(started.activity?.kind!==category||started.activity.targetId!==target.id||started.activity.startedAtMs!==nowMs)
-  throw Error('loadout_start_snapshot_mismatch');
- return {state:started,reward:claimed.reward,route,category,persisted:false as const,releaseReady:false as const};
+
+ return {state:next,route};
+}
+/** A nonpersisted hook, called only after the actual queue settlement ended.
+ * No claim/start here: the original queue reducer owns time, travel and goals.
+ */
+function queueBoundaryReview(config:ReviewConfig):QueueBoundaryReview{
+ return (state,entry,nowMs,previousKind)=>{
+  if(entry.kind!=='combat'&&entry.kind!=='gathering')return state;
+  const category=categoryForTarget({kind:entry.kind,id:entry.targetId});
+  return prepareSettledActivityLoadoutReview(state,category,nowMs,config,previousKind).state;
+ };
+}
+export function reviewActivityLoadoutQueueStart(state:GameState,nowMs:number,config:ReviewConfig){
+ if(!state.character||state.activity||state.character.classTraining||
+ !Number.isSafeInteger(nowMs)||nowMs<0||config.verifyNoFrozenEncounter(state.character.id)!==true)
+  throw Error('loadout_queue_start_not_authorized');
+ return {state:startNextQueuedActivity(copy(state),nowMs,queueBoundaryReview(config)),persisted:false as const,releaseReady:false as const};
+}
+export function reviewActivityLoadoutOfflineClaim(state:GameState,nowMs:number,config:ReviewConfig){
+ if(!state.character||state.character.classTraining||!Number.isSafeInteger(nowMs)||nowMs<0||
+ nowMs<(state.activity?.lastClaimAtMs??0)||config.verifyNoFrozenEncounter(state.character.id)!==true)
+  throw Error('loadout_claim_not_authorized');
+ const result=claimActivity(copy(state),nowMs,queueBoundaryReview(config));
+ return {...result,persisted:false as const,releaseReady:false as const};
 }

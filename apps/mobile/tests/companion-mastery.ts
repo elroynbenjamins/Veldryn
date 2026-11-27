@@ -58,7 +58,10 @@ assert.equal(expectedClaimXp,110,'Training tier 1 awards 100 base XP plus the ca
 assert.equal(sanctuaryClaimReceipt(prepared,claimed,'companion_training')?.companions.find(row=>row.id===companion.id)?.xp,expectedClaimXp,'Mastery multiplier must apply to the configured daily training award, including level-ups');
 assert.ok(!('masteryStatMultiplier' in (claimed.account.combatCompanionProgress?.[companion.id]??{})),'transient runtime stat bonus never persists in owned progress');
 const repeated=claimCompanionTraining(claimed,now);
-assert.equal(JSON.stringify(repeated.account.combatCompanionProgress?.[companion.id]),JSON.stringify(claimed.account.combatCompanionProgress?.[companion.id]),'same-day training cannot grant companion XP twice');
+for(const key of ['level','xp','bankedXp'] as const){
+ assert.equal(repeated.account.combatCompanionProgress?.[companion.id]?.[key],claimed.account.combatCompanionProgress?.[companion.id]?.[key],'same-day training cannot grant companion XP twice: '+key);
+}
+assert.equal(repeated.account.companionEssence,claimed.account.companionEssence,'same-day training cannot convert XP to Essence twice');
 assert.equal(repeated.account.companionMasteryXp,COMPANION_MASTERY_MAX_XP,'same-day training cannot grant Mastery XP twice');
 
 const earning={...prepared,account:{...prepared.account,companionMasteryXp:0}};

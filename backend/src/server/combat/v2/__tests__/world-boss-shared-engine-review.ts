@@ -152,3 +152,19 @@ for(const b of cases)for(const phase of phases)for(const id of Object.keys(CLASS
  }
 assert.equal(matrixCount,648);
 console.log(JSON.stringify({kind:'WORLD_BOSS_V93_SOLO_MATCHED_MATRIX_NOT_APPROVED',matrixCount,upgradeDamageRegressions,summaries}));
+
+let accountCases=0;
+const accountRegressions:{boss:string;phase:string;seed:number;size:number;previous:number;next:number}[]=[];
+for(const b of cases)for(const phase of phases)for(const seedIndex of [0,1]){
+ let previous=0;
+ for(let size=1;size<=3;size++){
+  const f=fixture(b,phase,size,['RAVAGER','BASTION','DAWNKEEPER'],1,0,seedIndex);
+  const out=simulateWorldBossSharedEngineReviewV2(f.input,f.builds,f.runtime,f.traitPorts,f.scope,f.verify,true);
+  const next=out.localBossHpLoss;
+  if(size>1&&next<previous)accountRegressions.push({boss:b.id,phase,seed:seedIndex,size,previous,next});
+  previous=next;accountCases++;
+  assert.equal(out.rewardGranted,false);
+ }
+}
+assert.equal(accountCases,54);
+console.log(JSON.stringify({kind:'WORLD_BOSS_V93_ACCOUNT_SIZE_MATCHED_REVIEW',accountCases,accountRegressions}));

@@ -65,7 +65,22 @@ export function runRegionalProgressionReviewV2(){
  });
  assert.equal(rows.reduce((n,r)=>n+r.recipes,0),V2_SERVER_RECIPES.length);
  assert.equal(rows[4].pieces,0,'T5 catalogue has not been reconciled; do not silently promote it');
- const materialRows=[...requirements].map(([itemId,r])=>({itemId,...r,tiers:[...r.tiers],sourceStatus:'NEEDS_VERIFIED_GATHER_DROP_OR_COMPONENT_RECIPE'}));
+ // Proposed routing only: categorization of canonical ingredient IDs, not
+ // invented drops. Common foundation components must never depend on the
+ // boss that the resulting gear is intended to beat.
+ const routing:Readonly<Record<string,'gather'|'refine'|'ordinary_combat'|'crafted_component'|'unresolved'>>={
+  GREENWOOD_LOG:'gather',MOSS_FIBER:'gather',CLOTH_BINDINGS:'crafted_component',
+  VERDANT_BINDING_RESIN:'crafted_component',BOAR_HIDE:'ordinary_combat',METAL_CLASPS:'crafted_component',
+  IRONWOOD_LOG:'gather',WOLF_PELT:'ordinary_combat',PADDED_LININGS:'crafted_component',
+  IRONWOOD_BINDING_RESIN:'crafted_component',THORN_SAP:'unresolved',REINFORCED_BUCKLES:'crafted_component',
+  SUNSCALE:'ordinary_combat',DUNEWOOD:'gather',AMBERGLASS:'refine',ARMOR_RIVETS:'crafted_component',
+  SUNSCAR_DUNE_BINDER:'crafted_component',SUNSTONE_ORE:'gather',REINFORCED_STRAPS:'crafted_component',
+  SUNSTONE_INGOT:'refine',ASTRAL_SCRIPT:'unresolved',GLASSBOUND_BINDER:'crafted_component',
+ };
+ const materialRows=[...requirements].map(([itemId,r])=>({itemId,...r,tiers:[...r.tiers],
+  routeCandidate:routing[itemId]??'unresolved',sourceStatus:'NEEDS_VERIFIED_GATHER_DROP_OR_COMPONENT_RECIPE',
+  mustHavePreCheckpointNonBossPath:true,independentProfessionAccess:true}));
+ assert.equal(materialRows.length,new Set(V2_SERVER_RECIPES.flatMap(r=>r.inputs.map(i=>i.itemId))).size);
  console.log('REGIONAL_PROGRESSION_REVIEW '+JSON.stringify({checkpoints:REGIONAL_BANDS_V2,levels:100,
   pressure:REGIONAL_BANDS_V2.flatMap(r=>[regionalPressureReviewV2(r.start),regionalPressureReviewV2(r.midpoint-1),
    regionalPressureReviewV2(r.midpoint),regionalPressureReviewV2(r.end,true)]),

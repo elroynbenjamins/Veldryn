@@ -3,12 +3,19 @@ import {useState} from 'react';
 import {Modal,Pressable,ScrollView,StyleSheet,Text,TextInput,View,useWindowDimensions} from 'react-native';
 import {useGameTheme} from '../theme/ThemeContext';
 import {ACTIVITY_LOADOUT_GEAR_SLOTS} from '../core/activity-loadout-editor-review';
+import {GatheringBonusReviewPanel} from './GatheringBonusReviewPanel';
+import type {GatheringBonusDisplayInput} from '../core/gathering-bonus-display-review';
 const categories=['Combat','Mining','Woodcutting','Fishing'] as const;
 type Category=typeof categories[number];
 type Draft={category:Category|'Manual';name:string;gear:Record<string,string>;pet:string;faith:Record<string,string>};
 const groups=['Combat','Gathering','Production','Experience'];
 const initial=():Draft[]=>[...categories.map(name=>({category:name,name,gear:{},pet:'None',faith:{}})),{category:'Manual',name:'Alternate build',gear:{},pet:'None',faith:{}}];
 const gearExamples=['None','Example Common','Example Epic'];
+function gatheringDemo(draft:Draft|null):GatheringBonusDisplayInput|null{
+ if(!draft||draft.category==='Combat'||draft.category==='Manual')return null;
+ const pieces=Object.values(draft.gear).filter(value=>value==='Example Common'||value==='Example Epic');
+ return {skill:draft.category.toLowerCase() as GatheringBonusDisplayInput['skill'],matchingSetPieces:pieces.length,gearRatingBps:pieces.reduce((sum,value)=>sum+(value==='Example Epic'?1500:1000),0)};
+}
 const faithExamples:Record<string,string[]>={Combat:['None','Ember Vow','Ward of Stone'],Gathering:['None','Verdant Whisper',"Nature's Covenant"],Production:['None',"Artisan's Prayer"],Experience:['None','Lantern of Wisdom']};
 export function ActivityLoadoutPreview(){
  const C=useGameTheme(),{width,fontScale}=useWindowDimensions();
@@ -21,6 +28,7 @@ export function ActivityLoadoutPreview(){
  const close=()=>{setEditing(null);setDraft(null);setPicker(null);};
  const save=()=>{if(editing===null||!draft||!draft.name.trim())return;setDrafts(old=>old.map((row,i)=>i===editing?{...draft,name:draft.name.trim()}:draft.category!=='Manual'&&row.category===draft.category?{...row,category:'Manual'}:row));close();};
  const activeDraft=activeSnapshot;
+ const activeBonuses=gatheringDemo(activeDraft),draftBonuses=gatheringDemo(draft);
  const launch=(category:Category)=>{setActive(category);setActiveSnapshot(auto?(drafts.slice(0,slots).find(row=>row.category===category)??null):null);};
  const options=picker==='category'?['Manual',...categories.filter(category=>!drafts.some((row,i)=>i!==editing&&i<slots&&row.category===category))]:picker==='pet'?['None','Example gathering pet','Example combat pet']:picker?.startsWith('faith:')?faithExamples[picker.slice(6)]??[]:gearExamples;
  const choose=(value:string)=>{if(!draft||!picker)return;if(picker==='category')setDraft({...draft,category:value as Draft['category']});else if(picker==='pet')setDraft({...draft,pet:value});else if(picker.startsWith('faith:'))setDraft({...draft,faith:{...draft.faith,[picker.slice(6)]:value}});else setDraft({...draft,gear:{...draft.gear,[picker]:value}});setPicker(null);};
@@ -38,6 +46,7 @@ export function ActivityLoadoutPreview(){
   <Text style={{color:C.muted,fontSize:11}}>Simulate starting an activity</Text>
   <View style={s.wrap}>{categories.map(category=><View key={category} style={{flexGrow:1}}>{button(category,()=>launch(category),active===category)}</View>)}</View>
   <View style={[s.entry,{borderColor:C.line,backgroundColor:C.panel2}]}><View style={{flex:1}}><Text style={{color:C.text,fontWeight:'800'}}>{active}</Text><Text style={{color:auto&&activeDraft?C.good:C.muted,fontSize:11}}>{!auto?'Manual setup':activeDraft?activeDraft.name+' loadout active':'No assigned loadout'}</Text></View><Text style={{color:C.muted,fontSize:11}}>{auto&&activeDraft?activeDraft.pet:'—'}</Text></View>
+  {activeBonuses?<GatheringBonusReviewPanel input={activeBonuses} title="Active equipment bonuses"/>:null}
   <Modal visible={draft!==null} transparent animationType="none" onRequestClose={close}>
    <View style={[s.shade,{backgroundColor:C.overlay}]}><View accessibilityViewIsModal style={[s.modal,{backgroundColor:C.panel,borderColor:C.lineStrong}]}>
     <View style={s.row}><Text style={[s.title,{color:C.text}]}>Edit loadout</Text>{button('Cancel',close)}</View>
@@ -45,6 +54,7 @@ export function ActivityLoadoutPreview(){
      <TextInput accessibilityLabel="Loadout name" value={draft.name} maxLength={28} onChangeText={name=>setDraft({...draft,name})} style={[s.input,{color:C.text,borderColor:C.line,backgroundColor:C.inputBg}]}/>
      {button('Assigned activity · '+draft.category,()=>setPicker('category'))}
      <View style={s.wrap}>{ACTIVITY_LOADOUT_GEAR_SLOTS.map(slot=><Pressable key={slot} accessibilityRole="button" accessibilityLabel={'Edit '+slot} onPress={()=>setPicker(slot)} style={[s.gear,{width:compact?'23%':'18%',backgroundColor:C.panelRaised,borderColor:C.line}]}><Text style={{color:C.text,fontWeight:'700',fontSize:11,textAlign:'center'}}>{slot}</Text><Text style={{color:C.muted,fontSize:10,textAlign:'center'}}>{draft.gear[slot]??'Empty'}</Text></Pressable>)}</View>
+     {draftBonuses?<GatheringBonusReviewPanel input={draftBonuses} title="Saved equipment preview"/>:null}
      {button('Active pet · '+draft.pet,()=>setPicker('pet'))}
      <Text style={{color:C.muted,fontSize:11,fontWeight:'800'}}>FAITH BLESSINGS</Text>
      {groups.map(group=><View key={group}>{button(group+' · '+(draft.faith[group]??'None'),()=>setPicker('faith:'+group))}</View>)}

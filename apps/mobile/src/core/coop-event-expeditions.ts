@@ -20,6 +20,10 @@ export interface CoopEventExpeditionPreview{
   levelScaling?:{minLevel:number;maxLevel:number};
   rewardMarks:number;
   routeNodeCount?:number;
+  /** Only new Frostfall runs; older saved routes remain as frozen snapshots. */
+  endurance?:{checkpointInterval:number;maxNormalRooms:number};
+  /** Server-projected paid clears still available this UTC day; 0 means practice. */
+  rewardedClearsRemaining?:number;
   mechanic?:{id:string;label:string;description:string;startValue:number;maxValue:number;lowThreshold:number;highThreshold:number};
   objective?:{id:string;label:string;description:string;startCount:number;maxCount:number;effect:'boss_attack_down'|'boss_hp_down'|'boss_defense_down'|'reward_bonus'|'preboss_heal';perPoint:number};
   lockedReason?:string;
@@ -96,6 +100,8 @@ export function validateCoopEventExpeditionPreview(value:CoopEventExpeditionPrev
   if(value.status==='available'&&!value.liveEventId?.trim())throw new Error('available_event_requires_live_event');
   if(value.routeHighlights.length<3||new Set(value.routeHighlights.map(item=>item.trim().toLocaleLowerCase())).size!==value.routeHighlights.length||value.routeHighlights.some(item=>!item.trim()))throw new Error('invalid_event_route_highlights');
   if(value.routeNodeCount!==undefined&&(!Number.isInteger(value.routeNodeCount)||value.routeNodeCount<5||value.routeNodeCount>7))throw new Error('invalid_event_route_length');
+  if(value.endurance&&(!Number.isInteger(value.endurance.checkpointInterval)||value.endurance.checkpointInterval!==7||value.endurance.maxNormalRooms!==42))throw new Error('invalid_event_endurance_bounds');
+  if(value.rewardedClearsRemaining!==undefined&&(!Number.isInteger(value.rewardedClearsRemaining)||value.rewardedClearsRemaining<0||value.rewardedClearsRemaining>2))throw new Error('invalid_event_daily_budget');
   if(value.mechanic&&(!value.mechanic.id.trim()||!value.mechanic.label.trim()||!value.mechanic.description.trim()||!Number.isFinite(value.mechanic.startValue)||!Number.isFinite(value.mechanic.maxValue)||value.mechanic.maxValue<=0||value.mechanic.startValue<0||value.mechanic.startValue>value.mechanic.maxValue||value.mechanic.lowThreshold>=value.mechanic.highThreshold))throw new Error('invalid_event_mechanic');
   if(value.objective&&(!value.objective.id.trim()||!value.objective.label.trim()||!value.objective.description.trim()||!Number.isInteger(value.objective.startCount)||!Number.isInteger(value.objective.maxCount)||value.objective.maxCount<1||value.objective.startCount<0||value.objective.startCount>value.objective.maxCount||!Number.isFinite(value.objective.perPoint)||value.objective.perPoint<=0))throw new Error('invalid_event_objective');
 }
@@ -131,7 +137,7 @@ export function presentEventExpeditionRun(projection:CoopEventRunServerProjectio
     stateVersion:projection.stateVersion,
     decisionId:projection.decisionId,
     decisionRevision:projection.decisionRevision,
-    rewardText:projection.phase==='completed'?(projection.settlement.status==='claimed'?`${marks} event currency collected.`:`${marks} event currency ready to collect.`):undefined,
+    rewardText:projection.phase==='completed'?(marks===0&&projection.settlement.status==='claimed'?'Practice clear — both daily currency rewards already used.':projection.settlement.status==='claimed'?`${marks} event currency collected.`:`${marks} event currency ready to collect.`):undefined,
   };
   validateCoopRunView(run);
   return run;

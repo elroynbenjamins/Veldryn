@@ -1,0 +1,19 @@
+name: Story Journal 2.0 review
+on:
+  pull_request:
+    paths:
+      - 'docs/2-0/story-*-review-*.json'
+      - 'tools/story-journal-2-review*.mjs'
+      - 'apps/mobile/src/content/**'
+      - '.github/workflows/story-journal-2-review.yml'
+permissions:
+  contents: read
+jobs:
+  hidden-story-catalogue:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node tools/story-journal-2-review.test.mjs

@@ -8,11 +8,14 @@ import {useGameTheme} from '../theme/ThemeContext';
 import {radii,typography,type ThemeColors} from '../theme/theme';
 import {ProfileFrameOverlay} from './ProfileFrameOverlay';
 import {ProfileEffectThumbnail} from './ProfileCosmeticMotion';
+import {StoreCosmeticSetPreview,type StorePreviewSelection} from './StoreCosmeticSetPreview';
+import {NEXT_PREMIUM_SETS} from '../core/next-premium-set-review';
 
 /** Authored catalog preview only. No price lookup, checkout callback, Play product id or entitlement mutation exists here. */
 export function StoreCosmeticsCatalog({state}:{state:GameState}){
  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
  const [selected,setSelected]=useState<ProfileCosmeticCollectionId>('gloamward');
+ const [preview,setPreview]=useState<StorePreviewSelection|null>(null);
  const collection=PROFILE_COSMETIC_STORE_COLLECTIONS.find(row=>row.id===selected)??PROFILE_COSMETIC_STORE_COLLECTIONS[0];
  const owned=profileCosmeticCollectionOwnership(state,collection);
  const runtime=profileCosmeticRuntimeByEffect.get(collection.effect.itemId);
@@ -31,12 +34,13 @@ export function StoreCosmeticsCatalog({state}:{state:GameState}){
 
   <View style={[s.hero,{borderColor:collection.accent}]}>
    <View style={s.preview}>
-    {runtime?<ProfileEffectThumbnail runtime={runtime}/>:null}
+    {runtime&&!preview?<ProfileEffectThumbnail runtime={runtime}/>:null}
     {borderSource?<ProfileFrameOverlay source={borderSource}/>:null}
    </View>
    <View style={s.heroCopy}><Text style={s.eyebrow}>STANDARD COSMETIC SET</Text><Text style={[s.collectionName,{color:collection.accent}]}>{collection.name}</Text><Text style={s.copy}>{collection.description}</Text></View>
   </View>
 
+  <Pressable accessibilityRole="button" onPress={()=>setPreview({kind:'standard',collection})} style={[s.previewButton,{borderColor:collection.accent}]}><Text style={s.previewLabel}>Preview full animated set</Text></Pressable>
   <View style={[s.setCard,{borderColor:owned.setOwned?C.good:collection.accent}]}>
    <View style={s.between}><View style={s.flex}><Text style={s.pieceType}>SET ONLY</Text><Text style={s.setName}>{collection.set.name}</Text></View><Text style={[s.bundleCount,{color:owned.setOwned?C.good:collection.accent}]}>{owned.ownedPieces}/4</Text></View>
    <Text style={s.copy}>The Store does not sell any of the four set contents separately.</Text>
@@ -49,6 +53,12 @@ export function StoreCosmeticsCatalog({state}:{state:GameState}){
    <Text style={s.noPrice}>Price and checkout are intentionally not registered in this build.</Text>
   </View>
 
+  <View style={[s.setCard,{borderColor:NEXT_PREMIUM_SETS[0].colors[0]}]}>
+   <Text style={s.pieceType}>ASCENDANT · PREVIEW ONLY</Text><Text style={[s.setName,{color:NEXT_PREMIUM_SETS[0].colors[0]}]}>{NEXT_PREMIUM_SETS[0].name}</Text>
+   <Text style={s.copy}>See the native full-set showcase. This is not a registered purchase offer.</Text>
+   <Pressable accessibilityRole="button" onPress={()=>setPreview({kind:'sakura'})} style={[s.previewButton,{borderColor:NEXT_PREMIUM_SETS[0].colors[0]}]}><Text style={s.previewLabel}>Preview Sakura Enchantment</Text></Pressable>
+  </View>
+  {preview?<StoreCosmeticSetPreview state={state} selection={preview} onClose={()=>setPreview(null)}/>:null}
   <View style={[s.note,{borderColor:C.info,backgroundColor:C.infoSurface}]}>
    <Text style={s.noteTitle}>Prepared, not released</Text>
    <Text style={s.copy}>This catalog performs no purchase, grant, restore or entitlement write. Google Play set products will be connected only after native QA and server migration approval.</Text>
@@ -56,6 +66,7 @@ export function StoreCosmeticsCatalog({state}:{state:GameState}){
  </View>;
 }
 function styles(C:ThemeColors){return StyleSheet.create({
+ previewButton:{minHeight:44,justifyContent:'center',alignItems:'center',borderWidth:1,borderRadius:radii.sm,paddingHorizontal:10,backgroundColor:C.panel},previewLabel:{color:C.text,fontSize:12,fontWeight:'800'},
  root:{gap:12},flex:{flex:1,minWidth:0},between:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},
  title:{...typography.title,color:C.text},copy:{fontSize:11.5,lineHeight:17,color:C.muted},
  disabled:{fontSize:9,lineHeight:13,fontWeight:'900',letterSpacing:.65,color:C.warning,borderWidth:1,borderColor:C.warning,borderRadius:radii.sm,paddingHorizontal:7,paddingVertical:4},

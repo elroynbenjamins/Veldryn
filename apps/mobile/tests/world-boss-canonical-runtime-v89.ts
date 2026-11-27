@@ -241,7 +241,7 @@ for(const bossId of bossIds){
  assert.equal(result95.previews.length,3);assert.equal(result95.verifiedAttempts,3);
  assert.equal(result95.rewardAuthorized,false);assert.equal(result95.impactEnabled,false);
  assert.equal(result95.previews.every(c=>c.gearChanceBps===1000&&c.gearPiecesInSet===10&&!c.claimable),true);
- assert.equal(result95.previews.reduce((sum,c)=>sum+c.guaranteed.gold,0),2000);
+ assert.equal(result95.previews.reduce((sum,c)=>sum+c.guaranteed.gold,0),1350);
  const rejects=(rows:readonly WorldBossV95SettledAttemptReview[],verify:(r:WorldBossV95SettledAttemptReview)=>boolean=()=>true)=>{
   let rejected=false;try{reviewWorldBossRewardHandoffV95(canonical95,rows,verify);}catch{rejected=true;}
   assert.equal(rejected,true);
@@ -267,7 +267,9 @@ for(const bossId of bossIds)for(const kind of ['donations_goal','three_attempts'
  const table=worldBossChestLootTableV96(bossId,kind);
  assert.equal(table.groups[0].chanceBps,1000);
  assert.equal(table.groups[0].entries.length,10);
- if(kind==='personal_damage'){
+ {
+  assert.equal(table.version,worldBossChestLootTableV96(bossId,'personal_damage').version);
+  assert.equal(JSON.stringify(table),JSON.stringify(worldBossChestLootTableV96(bossId,'donations_goal')));
   const expectedMaterial={hollowroot:'IRONWOOD_LOG',sunscar:'SUNSTONE_ORE',frostmarch:'ICEFIN'}[bossId];
   const amounts=new Map(table.guarantees.map(g=>[g.id,g.quantity]));
   assert.equal(amounts.size,5);assert.equal(amounts.get('gold'),450);

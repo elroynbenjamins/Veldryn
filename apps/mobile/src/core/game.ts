@@ -901,7 +901,9 @@ export function activeCombatHitProjection(state:GameState,nowMs:number,previous?
    progressFraction:current.nextProgressFraction,stoppedReason:current.stoppedReason,lastHit:visibleHit,lastSkillEffect,lastSkillEffects,cursor};
 }
 
-function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number):RewardBundle{
+/** Nonpersisted gathering rate review hook. Normal gameplay callers omit it. */
+export type GatheringRateReview=(state:GameState)=>number;
+function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number,rateReview?:GatheringRateReview):RewardBundle{
   if(!state.activity||!state.character)return {xp:0,gold:0,items:[],kills:0,elapsedSeconds:0};
   const elapsed=Math.min(offlineCapSeconds(state),Math.max(0,Math.floor((effectiveNowMs-state.activity.lastClaimAtMs)/1000)));
   const multipliers=characterPermanentMultipliers(state);
@@ -924,7 +926,9 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number)
     const pacing=gatheringPacing(state,g),mastery=professionMasteryMultipliers(g.id,state.account.professionMasteryByAction?.[g.id]),affinity=activeSkillAffinity(state,g.skillId);
     const herbLevel=state.skills.find(row=>row.skillId==='herbalism')?.level??1,method=g.skillId==='herbalism'?herbalismMethod(state.activity.herbalismMethodId??state.character.herbalismMethodId,herbLevel):undefined;
     const specialtySpeed=g.skillId==='fishing'?multipliers.fishingSpeedMultiplier:g.skillId==='herbalism'?multipliers.herbalismSpeedMultiplier:1;
-    const effectiveActionSeconds=g.seconds*GATHER_TIME_SCALE*pacing.timeMultiplier*effect.actionTimeMultiplier*(method?.actionTimeMultiplier??1)/(multipliers.gatheringSpeedMultiplier*specialtySpeed*mastery.speed*affinity.speedMultiplier*dailySupplySpeedMultiplier(state,'gathering_speed',elapsed));
+    const gearRate=rateReview&&g.skillId!=='herbalism'?rateReview(state):1;
+    if(!Number.isFinite(gearRate)||gearRate<1||gearRate>6.75)throw Error('gathering_review_invalid_rate');
+    const effectiveActionSeconds=g.seconds*GATHER_TIME_SCALE*pacing.timeMultiplier*effect.actionTimeMultiplier*(method?.actionTimeMultiplier??1)/(multipliers.gatheringSpeedMultiplier*specialtySpeed*mastery.speed*affinity.speedMultiplier*dailySupplySpeedMultiplier(state,'gathering_speed',elapsed)*gearRate);
     const elapsedMs=Math.min(offlineCapSeconds(state)*1000,Math.max(0,effectiveNowMs-state.activity.lastClaimAtMs));
     const timeline=WINTER_HEARTH_GUILD_RELEASED&&state.winterHearthBonusWindows?.length
       ?winterHearthGatheringTimeline({startsAtMs:state.activity.lastClaimAtMs,elapsedSeconds:elapsedMs/1000,
@@ -1001,8 +1005,8 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number)
   const reward:RewardBundle={nextRewardRemainders:{...(state.rewardRemainders??{}),[explorationRemainderKey]:explorationRemainder,[xpFractionKey]:nextXpFraction,[goldFractionKey]:nextGoldFraction},combatEffort:{startsAtMs:state.activity.lastClaimAtMs,endsAtMs:state.activity.lastClaimAtMs+sim.qualifyingActivitySeconds*1000},classSkillXp:classGain.awards,explorationXp,xp:earnedBaseXp+momentumXp+champion.xp,gold:earnedBaseGold+momentumGold+champion.gold,items:rewardItems,kills:sim.kills,elapsedSeconds:elapsed,qualifyingActivitySeconds:sim.qualifyingActivitySeconds,preparationEncounters:sim.preparationEncounters,foodConsumed:sim.foodConsumed,foodConsumedById:sim.foodConsumedById,endHp:sim.endHp,nextCombatEnemyHp:sim.enemyHp,stoppedReason:sim.stoppedReason,nextProgressFraction:sim.nextProgressFraction,...(sim.championKills>0?{championEncounters:{count:sim.championKills,bonusXp:champion.xp,bonusGold:champion.gold}}:{})};
   return {...reward,masteryMaterialRemainders:materialRemainders,...timedEventRewards(state,'combat',sim.completed.map(row=>row.atMs))};
 }
-function previewStandardActivityRewardWithSupplies(state:GameState,effectiveNowMs:number){
-  const base=previewStandardActivityRewardRaw(state,effectiveNowMs),mode=dailySupplyActivityMode(state.activity);
+function previewStandardActivityRewardWithSupplies(state:GameState,effectiveNowMs:number,rateReview?:GatheringRateReview){
+  const base=previewStandardActivityRewardRaw(state,effectiveNowMs,rateReview),mode=dailySupplyActivityMode(state.activity);
   return mode?previewDailySupplyTimedReward(state,base,mode):{reward:base,consumedSeconds:0,nextRemainders:{}};
 }
 
@@ -1051,16 +1055,16 @@ function projectedIdleContext(state:GameState,reward:RewardBundle,settleAtMs:num
     elapsedSeconds:Math.max(0,Math.floor((settleAtMs-activity.startedAtMs)/1000)),projectedRewardFits:afterOverflow<=beforeOverflow
   };
 }
-function idleRuleSettlementWindow(state:GameState,nowMs:number){
+function idleRuleSettlementWindow(state:GameState,nowMs:number,rateReview?:GatheringRateReview){
   const rule=activeIdleRuleForState(state),activity=state.activity;
-  if(!activity||!state.character)return {supply:previewStandardActivityRewardWithSupplies(state,nowMs),settleAtMs:nowMs,shouldStop:false as const,safety:false,combatRecovery:false};
+  if(!activity||!state.character)return {supply:previewStandardActivityRewardWithSupplies(state,nowMs,rateReview),settleAtMs:nowMs,shouldStop:false as const,safety:false,combatRecovery:false};
   const node=[...GATHERING,...HERB_NODES].find(row=>row.id===activity.targetId),queueGoal=activity.queueGoal;
   const condition=queueGoal?{id:'queue-goal',kind:queueGoal.kind,targetId:queueGoal.kind==='item_quantity'?node?.itemId:queueGoal.kind==='skill_level'?node?.skillId:undefined,value:queueGoal.value,enabled:true}:activity.kind==='combat'&&activity.huntGoal?{id:'hunt-goal-condition',kind:activity.huntGoal.kind,targetId:activity.targetId,value:activity.huntGoal.value,enabled:true}:undefined;
   const goalRule=condition&&activity.queueGoalCompletedAtMs===undefined?{id:'activity-goal',characterId:state.character.id,name:'Activity goal',conditions:[condition],stopIfOutOfFood:false,stopIfRewardsWouldOverflow:false,finishCurrentCycle:true} as IdleRuleSet:undefined;
-  if(!rule&&!goalRule&&!activity.queueManaged&&!state.character.activityQueue?.length)return {supply:previewStandardActivityRewardWithSupplies(state,nowMs),settleAtMs:nowMs,shouldStop:false as const,safety:false,combatRecovery:false};
+  if(!rule&&!goalRule&&!activity.queueManaged&&!state.character.activityQueue?.length)return {supply:previewStandardActivityRewardWithSupplies(state,nowMs,rateReview),settleAtMs:nowMs,shouldStop:false as const,safety:false,combatRecovery:false};
   const capAtMs=activity.lastClaimAtMs+offlineCapSeconds(state)*1000,upper=Math.max(activity.lastClaimAtMs,Math.min(nowMs,capAtMs));
   const evaluateAt=(time:number)=>{
-    const supply=previewStandardActivityRewardWithSupplies(state,time);
+    const supply=previewStandardActivityRewardWithSupplies(state,time,rateReview);
     const reward=supply.reward,ctx=projectedIdleContext(state,reward,time),saved=rule?evaluateIdleRuleSet(rule,ctx):{shouldStop:false,safety:false},goal=goalRule?evaluateIdleRuleSet(goalRule,ctx):{shouldStop:false,safety:false};
     const evaluation=reward.stoppedReason?{shouldStop:true,safety:true,reason:reward.stoppedReason}:saved.safety?saved:goal.shouldStop?{...goal,reason:queueGoal?'Queue goal reached.':`Hunt goal reached: ${activity.huntGoal?.label??'target'}.`}:saved;
     const combatRecovery=activity.kind==='combat'&&(!!reward.stoppedReason?.toLowerCase().includes('injured')||saved.safety&&(saved.reason==='Food reserve is empty.'||rule?.conditions.some(row=>row.id===saved.conditionId&&row.kind==='food_below')===true));
@@ -1080,7 +1084,7 @@ function idleRuleSettlementWindow(state:GameState,nowMs:number){
   let settleAtMs=high,supply=final.supply;
   if(final.evaluation.safety&&final.evaluation.reason==='Storage cannot safely accept the next reward.'&&settleAtMs>activity.lastClaimAtMs){
     settleAtMs=Math.max(activity.lastClaimAtMs,settleAtMs-1);
-    supply=settleAtMs===low?below.supply:previewStandardActivityRewardWithSupplies(state,settleAtMs);
+    supply=settleAtMs===low?below.supply:previewStandardActivityRewardWithSupplies(state,settleAtMs,rateReview);
   }
   return {supply,settleAtMs,shouldStop:true as const,safety:final.evaluation.safety,combatRecovery:final.combatRecovery,reason:final.evaluation.reason??'Configured Idle Rule target reached.'};
 }
@@ -1096,7 +1100,7 @@ function processingTimedPreview(state:GameState,nowMs:number){
  const raw=dailySupplyAdjustTimedCraftReward(state,previewProcessingReward(state,dailySupplyCraftWorkSeconds(state,elapsed)),elapsed);
  return {window,raw:{...raw,xp:Math.floor((raw.xp??0)*(WINTER_HEARTH_GUILD_RELEASED?winterHearthXpFactorForActionTimes(state.winterHearthBonusWindows??[],raw.craftingCompletedAtMs??[],'skill'):1)),...timedEventRewards(state,'crafting',raw.craftingCompletedAtMs??[])}};
 }
-export function previewActivityReward(state:GameState,nowMs:number):RewardBundle{
+export function previewActivityReward(state:GameState,nowMs:number,rateReview?:GatheringRateReview):RewardBundle{
   if(state.character?.classTraining)return settleClassDrills(state,nowMs,offlineCapSeconds(state)).reward;
   if(state.activity?.kind==='faith'){
     const settled=settleFaithPractice(state,nowMs,offlineCapSeconds(state));
@@ -1112,7 +1116,7 @@ export function previewActivityReward(state:GameState,nowMs:number):RewardBundle
     return window.expired?{...reward,stoppedReason:'Winter Hearth crafting ended. Unfinished reservations are refunded.'}:reward;
   }
   if(!state.activity||!state.character)return {xp:0,gold:0,items:[],kills:0,elapsedSeconds:0};
-  const idleWindow=idleRuleSettlementWindow(state,nowMs),reward=idleWindow.supply.reward;
+  const idleWindow=idleRuleSettlementWindow(state,nowMs,rateReview),reward=idleWindow.supply.reward;
   return idleWindow.shouldStop&&!reward.stoppedReason?{...reward,stoppedReason:idleWindow.reason}:reward;
 }
 
@@ -1205,15 +1209,15 @@ function queuedReservationEnd(state:GameState):number|undefined{
  return undefined;
 }
 
-export function claimActivity(state:GameState,nowMs:number,boundaryReview?:QueueBoundaryReview):{state:GameState;reward:RewardBundle}{
+export function claimActivity(state:GameState,nowMs:number,boundaryReview?:QueueBoundaryReview,rateReview?:GatheringRateReview):{state:GameState;reward:RewardBundle}{
  const source=state.activity;
- if(!source||(!source.queueManaged&&!state.character?.activityQueue?.length))return claimActivitySegment(state,nowMs,boundaryReview);
+ if(!source||(!source.queueManaged&&!state.character?.activityQueue?.length))return claimActivitySegment(state,nowMs,boundaryReview,rateReview);
  // All handoffs share the original offline allowance, even if progression increases it.
  const until=Math.max(source.lastClaimAtMs,Math.min(nowMs,source.lastClaimAtMs+offlineCapSeconds(state)*1000));
  const results:NonNullable<RewardBundle['activityResults']>=[];
  const limit=(state.character?.activityQueue?.length??0)+2;
  for(let index=0;index<limit&&state.activity;index++){
-  const activity=state.activity,completion=queuedReservationEnd(state),segmentUntil=completion===undefined?until:Math.min(until,Math.max(activity.lastClaimAtMs,completion)),result=claimActivitySegment(state,segmentUntil,boundaryReview);
+  const activity=state.activity,completion=queuedReservationEnd(state),segmentUntil=completion===undefined?until:Math.min(until,Math.max(activity.lastClaimAtMs,completion)),result=claimActivitySegment(state,segmentUntil,boundaryReview,rateReview);
   if(completion!==undefined&&completion<=until&&result.state.activity!==activity&&!(result.state.activity?.kind===activity.kind&&result.state.activity.startedAtMs===activity.startedAtMs))result.reward.goalReached=true;
   results.push({activity,reward:result.reward,goalReached:!!result.reward.goalReached});
   state=result.state;
@@ -1238,7 +1242,7 @@ export function claimActivity(state:GameState,nowMs:number,boundaryReview?:Queue
 /** Respect meal duration even if an entire AFK window is claimed at once.
  * Each side of the expiry is settled with the correct bonuses and no duplicate rewards.
  */
-function claimActivitySegment(state:GameState,nowMs:number,boundaryReview?:QueueBoundaryReview):{state:GameState;reward:RewardBundle}{
+function claimActivitySegment(state:GameState,nowMs:number,boundaryReview?:QueueBoundaryReview,rateReview?:GatheringRateReview):{state:GameState;reward:RewardBundle}{
  // Class drills have a timer but no ActiveActivity; treat their interval as eligible
  // without inventing a persisted activity or changing the class-drill save shape.
  const drill=state.character?.classTraining;
@@ -1248,13 +1252,13 @@ function claimActivitySegment(state:GameState,nowMs:number,boundaryReview?:Queue
   const cappedEnd=Math.min(nowMs,source.lastClaimAtMs+offlineCapSeconds(state)*1000);
   const cut=source.lastClaimAtMs+buff.remainingSeconds*1000;
   if(cut>source.lastClaimAtMs&&cut<cappedEnd){
-   const first=claimActivitySegmentRaw(state,cut,boundaryReview);
+   const first=claimActivitySegmentRaw(state,cut,boundaryReview,rateReview);
    const elapsedState=commitMealActivityTime(first.state,source,first.reward);
    const updated=retimeReservedMealCraft(elapsedState,state.character);
    if(!updated.activity&&!updated.character?.classTraining)return {state:updated,reward:first.reward};
    const nextDrill=updated.character?.classTraining;
    const nextSource=updated.activity??(nextDrill?{kind:'training' as const,targetId:'class_drills',startedAtMs:nextDrill.lastClaimAtMs,lastClaimAtMs:nextDrill.lastClaimAtMs}:source);
-   const second=claimActivitySegment(updated,cappedEnd,boundaryReview);
+   const second=claimActivitySegment(updated,cappedEnd,boundaryReview,rateReview);
    const combined=combineActivityRewards([
     {activity:source,reward:first.reward,goalReached:!!first.reward.goalReached},
     {activity:nextSource,reward:second.reward,goalReached:!!second.reward.goalReached},
@@ -1265,10 +1269,10 @@ function claimActivitySegment(state:GameState,nowMs:number,boundaryReview?:Queue
    return {state:final,reward:{...combined,offlineCapReached:hasCappedRemainder||combined.offlineCapReached}};
   }
  }
- const result=claimActivitySegmentRaw(state,nowMs,boundaryReview);
+ const result=claimActivitySegmentRaw(state,nowMs,boundaryReview,rateReview);
  return {state:commitMealActivityTime(result.state,source,result.reward),reward:result.reward};
 }
-function claimActivitySegmentRaw(state:GameState,nowMs:number,boundaryReview?:QueueBoundaryReview){
+function claimActivitySegmentRaw(state:GameState,nowMs:number,boundaryReview?:QueueBoundaryReview,rateReview?:GatheringRateReview){
 
   state=reconcileWeeklyOrderRollover(state,nowMs).state;
   if(state.character?.classTraining){const r=settleClassDrills(state,nowMs,offlineCapSeconds(state)),next=reconcileCombatCompanionUnlocks(r.state,nowMs);return {state:next,reward:withCompanionUnlocks(r.reward,state,next)};}
@@ -1319,7 +1323,7 @@ function claimActivitySegmentRaw(state:GameState,nowMs:number,boundaryReview?:Qu
     return {state:queuedState,reward:withCompanionUnlocks(reward,state,queuedState)};
   }
   if(!state.character||!state.activity){const recovered=settleOutOfCombatRecovery(state,nowMs);return {state:recovered,reward:previewActivityReward(state,nowMs)};}
-  const idleWindow=idleRuleSettlementWindow(state,nowMs),settledAtMs=idleWindow.settleAtMs,idleStopReason=idleWindow.shouldStop?idleWindow.reason:undefined,supply=idleWindow.supply,boosted=supply.reward;
+  const idleWindow=idleRuleSettlementWindow(state,nowMs,rateReview),settledAtMs=idleWindow.settleAtMs,idleStopReason=idleWindow.shouldStop?idleWindow.reason:undefined,supply=idleWindow.supply,boosted=supply.reward;
   const reward:RewardBundle=idleWindow.shouldStop&&!boosted.stoppedReason?{...boosted,stoppedReason:idleStopReason,goalReached:!idleWindow.safety}:boosted;
   if(state.activity.kind!=='combat'){
     const skills=state.skills.map(x=>x.skillId===state.activity!.kind?{...x,xp:x.xp+reward.xp,level:levelFromXp(x.xp+reward.xp)}:x);

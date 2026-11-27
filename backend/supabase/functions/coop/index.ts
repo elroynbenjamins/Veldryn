@@ -53129,7 +53129,7 @@ function projectOnlineEventRun(run, version, liveEventId, serverNow = Date.now()
     stateVersion: version,
     decisionId: run.currentNodeId,
     decisionRevision: version,
-    ...run.graph.generatorVersion === "event-route-v5-endurance-v2" && current ? { endurance: { normalRoomsCleared: Math.min(run.graph.preBossNodeCount, Math.max(0, current.kind === "boss" ? current.depth - 1 : current.depth)), maxNormalRooms: run.graph.preBossNodeCount }, practiceOnly: run.practiceOnly === true } : {},
+    ...run.graph.generatorVersion === "event-route-v5-endurance-v2" && current ? { endurance: { normalRoomsCleared: Math.min(run.graph.preBossNodeCount, Math.max(0, current.kind === "boss" || run.phase === "failed" ? current.depth - 1 : current.depth)), maxNormalRooms: run.graph.preBossNodeCount }, practiceOnly: run.practiceOnly === true } : {},
     team: run.players.map((member, index) => {
       const state = run.persistentState.actors[member.id], companionId = (member.tags ?? []).find((tag) => tag.startsWith("companion:"))?.slice("companion:".length), bodyTag = (member.tags ?? []).find((tag) => tag.startsWith("body:"))?.slice("body:".length), bodyPresentation = bodyTag === "female" ? "female" : bodyTag === "male" ? "male" : void 0;
       return { memberId: member.id, displayName: member.name, role: role(member.role), classId: member.classId ?? "", bodyPresentation, companionId, kind: index === 0 ? "controller" : "echo", effectiveLevel: member.level, currentHp: state?.hp ?? member.stats.maxHp, maximumHp: member.stats.maxHp, downed: state?.downed ?? false };

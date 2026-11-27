@@ -26,8 +26,10 @@ export function withReleaseGate(handler:(request:Request)=>Promise<Response>,loa
   };
 }
 export function releasePolicyLoader(url:string,publicKey:string){
-  return async()=>{
-    // No stale allow-cache: a new minimum takes effect on the next request.
+  let pending:Promise<Record<string,unknown>[]>|undefined;
+  const load=async()=>{
+    // No completed-result cache: every non-overlapping request verifies policy.
+    // Concurrent callers may join only the currently running database read.
     const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),5000);
     try{
       // The control table deliberately grants SELECT to anon/authenticated,
@@ -36,5 +38,9 @@ export function releasePolicyLoader(url:string,publicKey:string){
       if(!response.ok)throw new Error('release_policy_unavailable');
       const rows=await response.json();if(!Array.isArray(rows))throw new Error('release_policy_unavailable');return rows as Record<string,unknown>[];
     }finally{clearTimeout(timer);}
+  };
+  return ()=>{
+    if(!pending)pending=load().finally(()=>{pending=undefined;});
+    return pending;
   };
 }

@@ -417,3 +417,27 @@ assert.ok(gearPace.actionSeconds<1&&gearPace.actionSeconds>0);
 assert.throws(()=>gatheringSpeedEffectiveRatingV2(-1));
 assert.throws(()=>reviewGatheringSpeedV2({baseActionSeconds:10,toolTimeMultiplier:0,existingRateMultiplier:1,gearRatingBps:0,setTimeMultiplier:1}));
 console.log('GATHERING_SPEED_V2_REVIEW: 6020 monotonic pace cases; preserve legacy tool/buff baseline and positive action times');
+
+import {reviewWorldBossGatheringSpeedV99,type GatheringSpeedCopyV99} from '../../../backend/src/server/combat/world-boss-gathering-speed-v99';
+for(const bossId of bossIds){
+ const copies:GatheringSpeedCopyV99[]=[];
+ const ownedSlots:NonNullable<ReturnType<typeof previewWorldBossChestRollV96>['gear']>['slot'][]=[];
+ for(let index=0;index<10;index++){
+  let drawIndex=0;
+  const g=previewWorldBossChestRollV96({bossId,kind:'personal_damage',hitRoll:0,slotRoll:0,ownedSlots,
+   nextInt:()=>{const i=drawIndex++;return i===0?999999:i===1?Math.floor(Math.pow(50.5/101,.8)*1_000_000):0;}}).gear!;
+  assert.ok(g);ownedSlots.push(g.slot);
+  copies.push({accountId:'qa-account',characterId:'qa-character',instanceId:'qa-copy-'+index,roll:g});
+ }
+ const input={accountId:'qa-account',characterId:'qa-character',skill:copies[0].roll.skill,copies,
+  baseActionSeconds:10,toolTimeMultiplier:.8,existingRateMultiplier:1.1,verifyEquippedCopy:()=>true};
+ const full=reviewWorldBossGatheringSpeedV99(input);
+ assert.equal(full.pieces,10);assert.equal(full.gearRatingBps,10340);assert.equal(full.setRatingBps,417);
+ assert.equal(full.canApply,false);
+ const offSkill=reviewWorldBossGatheringSpeedV99({...input,skill:input.skill==='mining'?'woodcutting':'mining'});
+ assert.equal(offSkill.gearRatingBps,0);assert.equal(offSkill.actionSeconds,offSkill.existingSeconds);
+ assert.throws(()=>reviewWorldBossGatheringSpeedV99({...input,copies:[copies[0],copies[0]]}));
+ assert.throws(()=>reviewWorldBossGatheringSpeedV99({...input,copies:[{...copies[0],roll:{...copies[0].roll,gatheringSpeedBasisPoints:9000}}]}));
+ assert.throws(()=>reviewWorldBossGatheringSpeedV99({...input,verifyEquippedCopy:()=>false}));
+}
+console.log('WORLD_BOSS_GATHERING_SPEED_V99: 30 actual roll previews, skill isolation, exact-copy and forged-roll rejection');

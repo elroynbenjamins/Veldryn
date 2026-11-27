@@ -68,7 +68,8 @@ export function projectStoryReview(book,s,expected) {
       const status=claimed.has(q.id)?'claimed':missing.length?'locked':activation===undefined?'available':progress.every(x=>x.complete)?'ready':'active';
       return {id:q.id,legacyQuestId:q.legacyQuestId,status,migrated,missingPrerequisites:missing,objectives:progress,authorizesReward:false};
     });
-    return {status:'review',quests,released:false,authorizesReward:false,authorizesAccess:false};
+    const finale=book.finale?{id:book.finale.id,status:'unavailable',reason:'solo_boss_binding_pending',authorizesReward:false}:undefined;
+    return {status:'review',quests,...(finale?{finale}:{}),released:false,authorizesReward:false,authorizesAccess:false};
   } catch(e){return denied(e.message);}
 }
 export function projectSideReview(content,s,expected) {

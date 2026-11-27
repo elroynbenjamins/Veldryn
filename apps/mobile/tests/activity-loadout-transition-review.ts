@@ -315,7 +315,7 @@ for(const band of bands)for(const targetId of band.nodes)for(const toolMode of [
    assert.equal(full.preview.xp,full.candidateReward.xp);
    assert.equal(full.pace.gearRateMultiplier,review.pace.gearRateMultiplier);
    assert.ok(full.candidateReward.xp>=reward.xp);
-   assert.ok(qty(full.candidateReward,node.itemId)>=qty(reward,node.itemId));
+   assert.equal(qty(full.candidateReward,node.itemId),qty(reward,node.itemId));
    // Existing ordinary gathering rare-drop consumer is mining essence only.
    for(const item of reward.items.filter(row=>row.itemId!==node.itemId)){
     if(skill==='mining')assert.ok(qty(full.candidateReward,item.itemId)>=item.quantity);
@@ -350,13 +350,13 @@ console.log('GATHERING_MATRIX_REVIEW: 300 actual one-hour reward rehearsals; 15 
 
 for(let pieces=0;pieces<=10;pieces++){
  const x=reviewGatheringRewardChannelsV2({matchingSetPieces:pieces});
- assert.equal(x.setXpBps,(pieces>=2?300:0)+(pieces>=10?500:0));
- assert.equal(x.setYieldBps,(pieces>=4?400:0)+(pieces>=10?300:0));
+ assert.equal(x.setXpBps,(pieces>=2?300:0)+(pieces>=4?400:0)+(pieces>=10?800:0));
+ assert.equal(Object.prototype.hasOwnProperty.call(x,'yieldMultiplier'),false);
  assert.equal(x.setRareBps,pieces>=6?1000:0);
 }
 assert.throws(()=>reviewGatheringRewardChannelsV2({matchingSetPieces:0,skillXpAffixBps:1}));
 assert.throws(()=>reviewGatheringRewardChannelsV2({matchingSetPieces:10,rareChanceAffixBps:8251}));
-console.log('GATHERING_REWARD_CHANNELS_REVIEW: 60 matched one-hour cases, same actions, independent XP/yield/rare channel thresholds');
+console.log('GATHERING_REWARD_CHANNELS_REVIEW: 60 matched one-hour cases, same actions, independent XP/rare thresholds, identical primary resource yield');
 
 import {buildGatheringBonusDisplayReview} from '../src/core/gathering-bonus-display-review';
 for(const skill of ['mining','woodcutting','fishing'] as const)for(let pieces=0;pieces<=10;pieces++){
@@ -372,8 +372,8 @@ const fullDisplay=buildGatheringBonusDisplayReview({skill:'mining',matchingSetPi
 assert.equal(fullDisplay.rawSpeedPercent,104.17);
 assert.equal(fullDisplay.effectiveSpeedPercent,103.13);
 assert.equal(fullDisplay.actionTimeReductionPercent,50.77);
-assert.equal(fullDisplay.xpPercent,8);
-assert.equal(fullDisplay.yieldPercent,7);
+assert.equal(fullDisplay.xpPercent,15);
+assert.equal(Object.prototype.hasOwnProperty.call(fullDisplay,'yieldPercent'),false);
 assert.equal(fullDisplay.rareRelativePercent,10);
 assert.throws(()=>buildGatheringBonusDisplayReview({skill:'mining',matchingSetPieces:1,gearRatingBps:3000}));
 console.log('GATHERING_BONUS_DISPLAY: 33 skill/set profiles use same review engine; raw/effective duration and rare-consumer clarity');

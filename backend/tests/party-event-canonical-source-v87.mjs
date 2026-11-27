@@ -28,8 +28,9 @@ const party='55555555-5555-4555-8555-555555555555';
 const reservation='66666666-6666-4666-8666-666666666666';
 const order='77777777-7777-4777-8777-777777777777';
 const donation='88888888-8888-4888-8888-888888888888';
+const optionalOrders=[order,'77777777-7777-4777-8777-777777777778','77777777-7777-4777-8777-777777777779'];
 const digest='a'.repeat(64),snapshot='b'.repeat(64);
-const week=Date.UTC(2026,10,2);
+const week=Date.UTC(2026,10,9);
 const end=week+604800000,attested=end+3600000,issued=end+7200000;
 const key=(kind,account=owner)=>'party-event:'+week+':'+account+':'+kind;
 const db=await PGlite.create();
@@ -90,15 +91,17 @@ try{
   [party,week,owner,hero,another,otherHero]);
  await db.query('INSERT INTO private.party_event_member_progress_v14 VALUES'+
   '($1,to_timestamp($2::double precision/1000),$3,22)',[party,week,owner]);
- await db.query('INSERT INTO private.party_event_supply_orders_v16 VALUES'+
-  "($1,$2,to_timestamp($3::double precision/1000),3,'optional',10,10)",
-  [order,party,week]);
+ for(const optionalOrder of optionalOrders){
+  await db.query('INSERT INTO private.party_event_supply_orders_v16 VALUES'+
+   "($1,$2,to_timestamp($3::double precision/1000),2,'optional',10,10)",
+   [optionalOrder,party,week]);
+ }
  await db.query('INSERT INTO private.party_event_supply_donations_v16 VALUES'+
   '($1,$2,$3,to_timestamp($4::double precision/1000),$5,'+
   'to_timestamp($6::double precision/1000))',
-  [donation,order,party,week,owner,week+3600000]);
+  [donation,order,party,week,owner,week+172800000+3600000]);
  await db.query('INSERT INTO private.party_event_stage_seals_v17 VALUES'+
-  '($1,to_timestamp($2::double precision/1000),3,'+
+  '($1,to_timestamp($2::double precision/1000),2,'+
   'to_timestamp($3::double precision/1000))',[party,week,week+172800000]);
  await db.query('INSERT INTO private.party_event_boss_loadouts_v18 VALUES'+
   '($1,to_timestamp($2::double precision/1000),$3,$4,25,$5,'+
@@ -179,6 +182,20 @@ try{
  assert.equal((await read('participation')).earned,true);
  await db.query('UPDATE private.party_event_supply_orders_v16 '+
   'SET donated_quantity=10 WHERE id=$1',[order]);
+ // Stage 3-only rows cannot impersonate the three canonical Stage 2 preparations.
+ await db.query('UPDATE private.party_event_supply_orders_v16 SET stage=3 WHERE party_id=$1',[party]);
+ await assert.rejects(()=>read('preparation'),/unearned_or_foreign_chest/);
+ await db.query('UPDATE private.party_event_supply_orders_v16 SET stage=2 WHERE party_id=$1',[party]);
+ await db.query('UPDATE private.party_event_stage_seals_v17 SET stage=3 WHERE party_id=$1',[party]);
+ await assert.rejects(()=>read('preparation'),/unearned_or_foreign_chest/);
+ await db.query('UPDATE private.party_event_stage_seals_v17 SET stage=2 WHERE party_id=$1',[party]);
+ await db.query('UPDATE private.party_event_supply_donations_v16 SET account_id=$1 WHERE id=$2',[another,donation]);
+ await assert.rejects(()=>read('preparation'),/unearned_or_foreign_chest/);
+ await db.query('UPDATE private.party_event_supply_donations_v16 SET account_id=$1 WHERE id=$2',[owner,donation]);
+ await db.query('UPDATE private.party_event_supply_orders_v16 SET donated_quantity=9 WHERE id=$1',[optionalOrders[2]]);
+ await assert.rejects(()=>read('preparation'),/unearned_or_foreign_chest/);
+ await db.query('UPDATE private.party_event_supply_orders_v16 SET donated_quantity=10 WHERE id=$1',[optionalOrders[2]]);
+ assert.equal((await read('preparation')).earned,true);
  await db.exec('BEGIN;');
  try{
   await db.query(

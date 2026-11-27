@@ -11,7 +11,7 @@ import {firstInstalledReleaseVersion,shouldAutoAnnounceReleaseNotes,shouldAutoSh
 import {WhatsNewModal} from './src/components/WhatsNewModal';
 import {selectGlobalPopup} from './src/core/global-popup-priority';
 import {buildWelcomeBackFromStates,type WelcomeBackProgressReport} from './src/core/welcome-back-v46';
-import {ActivityIndicator,Animated,ScrollView,AppState,BackHandler,Image,Keyboard,PanResponder,Pressable,Share,StyleSheet,Text,TextInput,View,useWindowDimensions} from 'react-native';
+import {ActivityIndicator,ScrollView,AppState,BackHandler,Image,Keyboard,PanResponder,Pressable,Share,StyleSheet,Text,TextInput,View,useWindowDimensions} from 'react-native';
 import {StatusBar} from 'expo-status-bar';
 import {SafeAreaProvider,SafeAreaView} from 'react-native-safe-area-context';
 import {AccountWelcomeScreen} from './src/components/AccountWelcomeScreen';
@@ -352,30 +352,12 @@ function VeldrynApp(){
   const [guildInitialPve,setGuildInitialPve]=useState(false);
   const [guildMembershipRevision,setGuildMembershipRevision]=useState(0);
   const [eventStartPopup,setEventStartPopup]=useState<import('./src/core/types').LiveEventRuntime|null>(null);
-  const startupOpacity=useRef(new Animated.Value(1)).current;
-  const appEntranceOpacity=useRef(new Animated.Value(1)).current;
-  const appEntranceY=useRef(new Animated.Value(0)).current;
-  const [startupOverlayVisible,setStartupOverlayVisible]=useState(true);
   const versionGateOwnsScreen=!!(versionGate?.maintenanceMode&&versionGate.policy)||!!(versionGate?.updateRequired&&versionGate.policy);
   const startupBlocking=!versionGateChecked||(!versionGateOwnsScreen&&(serverGameplayEnabled
     ?auth.loading||online.loading||!!(auth.session&&!auth.recovering&&online.snapshot&&!ready)
     :!ready));
-  useEffect(()=>{
-    startupOpacity.stopAnimation();appEntranceOpacity.stopAnimation();appEntranceY.stopAnimation();
-    if(startupBlocking){
-      startupOpacity.setValue(1);appEntranceOpacity.setValue(1);appEntranceY.setValue(0);setStartupOverlayVisible(true);return;
-    }
-    const reduced=state?.settings.reduceMotion===true;
-    setStartupOverlayVisible(true);
-    startupOpacity.setValue(1);appEntranceOpacity.setValue(reduced?1:.94);appEntranceY.setValue(reduced?0:4);
-    if(reduced){startupOpacity.setValue(0);setStartupOverlayVisible(false);return;}
-    Animated.parallel([
-        Animated.timing(startupOpacity,{toValue:0,duration:240,useNativeDriver:true}),
-        Animated.timing(appEntranceOpacity,{toValue:1,duration:260,useNativeDriver:true}),
-        Animated.timing(appEntranceY,{toValue:0,duration:260,useNativeDriver:true}),
-      ]).start(({finished})=>{if(finished)setStartupOverlayVisible(false);});
-    return()=>{startupOpacity.stopAnimation();appEntranceOpacity.stopAnimation();appEntranceY.stopAnimation();};
-  },[startupBlocking,state?.settings.reduceMotion,startupOpacity,appEntranceOpacity,appEntranceY]);
+  // Keep the interactive root stationary and remove the splash window as soon as ready.
+  const startupOverlayVisible=startupBlocking;
   useEffect(()=>{let alive=true;
     const check=async()=>{try{const result=await Promise.race([fetchAppVersionGate(),new Promise<null>(resolve=>setTimeout(()=>resolve(null),2500))]);if(alive&&result)setVersionGate(result);}finally{if(alive)setVersionGateChecked(true);}};
     void check();
@@ -585,7 +567,7 @@ function VeldrynApp(){
   useEffect(()=>{if(!forgeClaimFeedback)return;const timer=setTimeout(()=>setForgeClaimFeedback(null),4500);return()=>clearTimeout(timer)},[forgeClaimFeedback]);
   useEffect(()=>{if(tab!=='Skills'){toolRecipeReturnRef.current=null;setSelectedSkill(undefined);setGoalActionId(undefined);setGoalRecipeId(undefined)}},[tab]);
   // Global announcements share one presentation slot; foreground user dialogs win.
-  const popupBlocked=!!profileDiscardAction||creatingRoster||showChatOverlay||showAdminQa||showCoopUiGallery
+  const popupBlocked=(serverGameplayEnabled&&online.pending)||!!profileDiscardAction||creatingRoster||showChatOverlay||showAdminQa||showCoopUiGallery
     ||startupBlocking||startupOverlayVisible||offlineSettling||hasBlockingAlert;
   const popupCandidates={
     characterWelcome:!!creationWelcome,activityReward:!!collected,storyBoss:!!storyBossBattle,
@@ -1137,10 +1119,10 @@ const next=normalizeProfileIcon(migrateGemPouch(migrateRetiredStoryRewards(expli
   };
   const renderedApp=renderApp();
   return <GameLanguageProvider language={state?.settings.language??recoveryLanguage}><View style={s.appRoot}>
-    <Animated.View style={[s.appRoot,{opacity:appEntranceOpacity,transform:[{translateY:appEntranceY}]}]}><ActiveProfileCharacterContext.Provider value={activeProfileCharacter}>{renderedApp}</ActiveProfileCharacterContext.Provider></Animated.View>
-    {(startupOverlayVisible||startupBlocking)&&<Animated.View pointerEvents={startupBlocking?'auto':'none'} style={[s.startupOverlay,{opacity:startupBlocking?1:startupOpacity}]}>
+    <View style={s.appRoot}><ActiveProfileCharacterContext.Provider value={activeProfileCharacter}>{renderedApp}</ActiveProfileCharacterContext.Provider></View>
+    {startupBlocking&&<View style={s.startupOverlay}>
       <StartupScreen scene={startupScene} language={state?.settings.language??recoveryLanguage} themeId={displayedThemeId}/>
-    </Animated.View>}
+    </View>}
   </View></GameLanguageProvider>;
 }
 const s=StyleSheet.create({appRoot:{flex:1},startupOverlay:{...StyleSheet.absoluteFill,zIndex:100},startupUnderlay:{flex:1,backgroundColor:C.bg},safe:{flex:1,backgroundColor:C.bg},offlineLoadingOverlay:{...StyleSheet.absoluteFill,zIndex:20,justifyContent:'center',padding:16,backgroundColor:'rgba(5,9,15,.86)'},masteryNotice:{paddingHorizontal:10,paddingVertical:4,backgroundColor:C.bg},center:{flex:1,backgroundColor:C.bg,alignItems:'center',justifyContent:'center',gap:10},txt:{color:C.text},body:{flex:1}});

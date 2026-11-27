@@ -165,17 +165,18 @@ const tierItems:Readonly<Record<1|2|3|4,Readonly<Record<'tank'|'damage'|'support
 const minByTier:Readonly<Record<1|2|3|4,number>>={1:2,2:12,3:26,4:40};
 function make(classId:ClassIdV2,specIndex:0|1,
  kind:'supported'|'unsupported'|'offslot'|'set'='supported',tier:1|2|3|4=1,
- originalPieceId?:string,uniqueTag?:string,forcedLevel?:number){
+ originalPieceId?:string,uniqueTag?:string,forcedLevel?:number,rollFilter:(roll:V2DraftRollOutcome)=>boolean=()=>true){
  const role=CLASS_ROLES_V2[classId];
  const pieceId=originalPieceId??(kind==='set'?
   (specIndex===0?'EQ2_FIELDBORN_GUARD_HELMET':'EQ2_FIELDBORN_GUARD_CHEST'):
   tierItems[tier][role]);
- const selection=generated(pieceId,kind==='supported'?eligible(pieceId):
+ const acceptance:(roll:V2DraftRollOutcome)=>boolean=kind==='supported'?eligible(pieceId):
   kind==='unsupported'?roll=>roll.affixes.length>0&&!EQ2_COMBAT_FROZEN_AFFIX_MAP_V2[roll.affixes[0].stat]:
   kind==='offslot'?roll=>roll.affixes.length>0&&
    Boolean(EQ2_COMBAT_FROZEN_AFFIX_MAP_V2[roll.affixes[0].stat])&&
    !EQUIPMENT_AFFIXES_V2[EQ2_COMBAT_FROZEN_AFFIX_MAP_V2[roll.affixes[0].stat]!]
-    .slots.includes(v2ServerPiece(pieceId)!.slot):()=>true);
+    .slots.includes(v2ServerPiece(pieceId)!.slot):()=>true;
+ const selection=generated(pieceId,roll=>acceptance(roll)&&rollFilter(roll));
  const {roll,exact,profession}=selection;
  const originalRecipe=V2_SERVER_RECIPES.find(r=>r.id===roll.recipeId);
  const originalPiece=v2ServerPiece(exact.pieceId);
@@ -1544,18 +1545,22 @@ function v19ApplyPermanentSensitivity(actor:CombatantDefinition,effect:V19Effect
 // V21: original Forge QA receipts only, no new catalogue items or grants.
 // Prefer the highest source-compatible tier at or below the intended tier;
 // gaps and downgrades are reported, not filled by invented pieces.
-function makeV21Loadout(classId:ClassIdV2,specIndex:0|1,targetTier:1|2|3|4,targetLevel:number){
+type SoloGearReviewProfile='pinned_reference'|'low_common'|'transition_common';
+function makeV21Loadout(classId:ClassIdV2,specIndex:0|1,targetTier:1|2|3|4,targetLevel:number,gearProfile:SoloGearReviewProfile='pinned_reference'){
+ const low=gearProfile!=='pinned_reference';
+ const rollFilter=(roll:V2DraftRollOutcome)=>!low||(roll.rarity==='common'&&roll.quality>=10&&roll.quality<=30);
  const role=CLASS_ROLES_V2[classId];
  const pinned:ReturnType<typeof make>[]=[];
  const missing:string[]=[];
  const slots=['weapon','offhand','helmet','chest','gloves','legs','boots','cape','amulet','ring'] as const;
  for(const slot of slots){
   if(slot==='offhand'&&pinned.some(p=>p.exact.slot==='weapon'&&p.exact.hands!=='one'))continue;
-  const choices=V2_SERVER_PIECES.filter(p=>p.role===role&&p.slot===slot&&!p.setId&&p.tier<=targetTier&&(!p.classRestriction||p.classRestriction===classId))
+  const slotTarget=gearProfile==='transition_common'&&['helmet','legs','cape','ring'].includes(slot)?Math.max(1,targetTier-1):targetTier;
+  const choices=V2_SERVER_PIECES.filter(p=>p.role===role&&p.slot===slot&&!p.setId&&p.tier<=slotTarget&&(!p.classRestriction||p.classRestriction===classId))
    .sort((a,b)=>b.tier-a.tier||a.id.localeCompare(b.id));
   let picked:ReturnType<typeof make>|undefined;
   for(const piece of choices){
-   try{picked=make(classId,specIndex,'supported',piece.tier as 1|2|3|4,piece.id,'V21_'+slot,targetLevel);break;}
+   try{picked=make(classId,specIndex,'supported',piece.tier as 1|2|3|4,piece.id,'V21_'+slot+(low?'_'+gearProfile:''),targetLevel,rollFilter);break;}
    catch(e){if(!String(e).includes('Could not locate a deterministic Forge QA roll'))throw e;}
   }
   if(picked)pinned.push(picked);else missing.push(slot);
@@ -1599,7 +1604,8 @@ function makeV21Loadout(classId:ClassIdV2,specIndex:0|1,targetTier:1|2|3|4,targe
 
  return {actor:originalActor,build,source:composedSource,ids,missing,
   tiers:pinned.map(p=>({slot:p.exact.slot,tier:p.exact.tier,pieceId:p.exact.pieceId,instanceId:p.mint.id})),
-  downgraded:pinned.filter(p=>p.exact.tier<targetTier).length};
+  downgraded:pinned.filter(p=>p.exact.tier<targetTier).length,
+  gearProfile,rolls:pinned.map(p=>({slot:p.exact.slot,tier:p.exact.tier,rarity:p.mint.outcome.rarity,quality:p.mint.outcome.quality}))};
 }
 
 // Full worn-loadout gem stacking on actual draft Forge source copies.
@@ -2438,6 +2444,128 @@ runRegionalProgressionReviewV2();
    relativeEfficiency:reference>0?throughput/reference:null};
  }),releaseEnabled:false,cpApproved:false}));
 
+}
+// Robustness: independently rolled common items and incomplete tier upgrades.
+// Enemy references remain fixed on the original two-skill pinned loadouts,
+// never scaled to the weaker or stronger equipped actor in each test.
+{
+ const arms=['solo_tempo','role_budget','role_budget_skill'] as const;
+ type Arm=typeof arms[number];
+ const rows:{level:number;classId:ClassIdV2;spec:number;profile:SoloGearReviewProfile;seed:number;kind:string;arm:Arm;
+  win:number;reason:string;duration:number;hp:number;enemyHp:number;damage:number;healing:number;ratio:number}[]=[];
+ const gearRows:{level:number;classId:ClassIdV2;spec:number;profile:SoloGearReviewProfile;
+  slots:number;downgraded:number;meanQuality:number;rarities:string[];rolls:ReturnType<typeof makeV21Loadout>['rolls'];
+  attack:number;defense:number;maxHp:number;healingPower:number}[]=[];
+ for(const level of [10,13,38,63]){
+  const progression=regionalProgressionAtV2(level);
+  if(progression.region==='region4'||progression.expectedTier===5)throw Error('solo_robustness_scope');
+  const tier=progression.expectedTier,region=progression.region,k=30+2*level;
+  const ids=Object.keys(CLASS_NAMES_V2) as ClassIdV2[];
+  const build=(classId:ClassIdV2,spec:0|1,profile:SoloGearReviewProfile)=>{
+   const qa=makeV21Loadout(classId,spec,tier,level,profile);
+   assert.ok(qa.rolls.length===qa.ids.length&&qa.rolls.length>0);
+   if(profile!=='pinned_reference')assert.ok(qa.rolls.every(r=>r.rarity==='common'&&r.quality>=10&&r.quality<=30));
+   if(profile==='transition_common')assert.ok(qa.rolls.every(r=>!['helmet','legs','cape','ring'].includes(r.slot)||r.tier<=tier-1));
+   const classProfile=qa.source.classBaselinePolicy.profiles[classId]!;
+   const source={...qa.source,classBaselinePolicy:{version:'QA_COMPACT_REGION_MECHANICS',profiles:{
+    [classId]:{...classProfile,maxLevel:100,statsAtLevel:(n:number)=>compactUnifiedStatsV2(classId,n)}}}};
+   const original=compileRealFrozenForgeActorV2(qa.actor,qa.build,source);
+   const choice=selectSoloReviewLoadoutsV2(qa.build,region);
+   const compiled=compileRealFrozenForgeActorV2(qa.actor,{...qa.build,selected:{...qa.build.selected,activeSkills:choice.selections.counter_full}},source);
+   assert.deepEqual(compiled.evidence.equippedInstanceIds,original.evidence.equippedInstanceIds);
+   assert.deepEqual(compiled.actor.stats,original.actor.stats);
+   const stats=compiled.actor.stats;
+   gearRows.push({level,classId,spec,profile,slots:qa.ids.length,downgraded:qa.downgraded,
+    meanQuality:qa.rolls.reduce((n,r)=>n+r.quality,0)/qa.rolls.length,rarities:[...new Set(qa.rolls.map(r=>r.rarity))],rolls:qa.rolls,
+    attack:stats.attackPower,defense:stats.defense,maxHp:stats.maxHp,healingPower:stats.healingPower});
+   return {classId,spec,profile,original:original.actor,actor:compiled.actor,skills:choice.selections.counter_full};
+  };
+  const references=ids.flatMap(classId=>([0,1] as const).map(spec=>build(classId,spec,'pinned_reference')));
+  const profiles:SoloGearReviewProfile[]=tier===1?['low_common']:['low_common','transition_common'];
+  const candidates=[...references,...references.flatMap(r=>profiles.map(profile=>{
+   const candidate=build(r.classId,r.spec,profile);
+   assert.deepEqual(candidate.skills,r.skills,'gear profile must not select different skills');
+   return candidate;
+  }))];
+  const meanHp=references.reduce((n,x)=>n+x.original.stats.maxHp,0)/references.length;
+  const meanAttack=references.reduce((n,x)=>n+x.original.stats.attackPower,0)/references.length;
+  const p=level===10?regionalPressureReviewV2(level):regionalMechanicPressureV2(level,'mixed');
+  for(const row of candidates)for(const kind of ['normal','elite'] as const)for(const seedIndex of [0,1]){
+   // Different deterministic encounter RNG streams, not a resampled favorable outcome.
+   // Same seeds and kit across every profile and policy arm for this class/spec.
+   const seed=['QA_REGION_ROBUST',level,row.classId,row.spec,kind,seedIndex].join('_');
+   const id='QA_REGION_MECHANIC_ENEMY';
+   const base:CombatantDefinition={...boss,id,name:'Regional mechanics fixture',level,boss:false,
+    phases:undefined,abilities:[],tags:[kind==='elite'?'pve:archetype:guardian':'pve:archetype:caster'],
+    stats:{...boss.stats,maxHp:Math.round(meanAttack*10*p.hp*(kind==='elite'?1.5:1)),
+     attackPower:Math.round(meanHp*.055*p.attack*(kind==='elite'?1.2:1)),defense:Math.round(k*.30*p.defense)}};
+   const foe=regionalMechanicsV2(base,kind,level!==10);
+   const proposed=prepareSoloEnemyKitsV2([foe],{ruleset:ENEMY_V2_RULESET,region,equipmentTier:Math.max(2,tier) as 2|3|4,
+    encounterId:seed,serverSeed:seed,eliteEnemyIds:kind==='elite'?[id]:[]});
+   const persisted={...proposed,source:'server-persisted-v2' as const,revision:6};
+   const verified=verifyPersistedEnemyKitsV2([foe],persisted);
+   const originalInput:CombatInput={seed,players:[row.actor],enemies:[...verified.enemies],maxDurationMs:60000,mitigationConstant:k};
+   const scope={source:'server-persisted-v2' as const,version:2 as const,ruleset:persisted.ruleset,
+    mode:'solo' as const,encounterId:persisted.encounterId,revision:persisted.revision,seed:persisted.seed,
+    playerIds:[row.actor.id],enemyIds:persisted.enemyIds,bossIds:persisted.bossIds};
+   let reference:ReturnType<typeof simulateCombat>|undefined;
+   for(const arm of arms){
+    const candidate=arm==='solo_tempo'?soloOffenseLoopReviewV2(row.classId,originalInput,arm):soloRoleBudgetReviewV2(row.classId,originalInput,arm);
+    const input=candidate.input,actor=input.players[0];
+    assert.deepEqual(input.enemies,originalInput.enemies);
+    assert.deepEqual(actor.stats,row.actor.stats);
+    assert.deepEqual(actor.combatV2,row.actor.combatV2);
+    const run=()=>simulateCombat(input,issueEnemyV2EngineAuthority(scope,input,(_s,d)=>/^[a-f0-9]{64}$/.test(d)));
+    const result=run();
+    if(arm==='solo_tempo')reference=result;
+    if(actor.role==='damage'){assert.deepEqual(actor,row.actor);assert.deepEqual(result,reference);}
+    if(row.spec===0&&kind==='normal'&&seedIndex===0&&arm==='role_budget_skill')assert.deepEqual(run(),result);
+    assert.ok(result.events.every(e=>e.amount===undefined||Number.isFinite(e.amount)));
+    assert.ok(result.players[0].hp>=0&&result.players[0].hp<=actor.stats.maxHp+1e-8);
+    rows.push({level,classId:row.classId,spec:row.spec,profile:row.profile,seed:seedIndex,kind,arm,
+     win:Number(result.victory),reason:result.reason,duration:result.durationMs,
+     hp:result.players[0].hp/actor.stats.maxHp,enemyHp:result.enemies[0].hp/result.enemies[0].definition.stats.maxHp,
+     damage:result.players[0].damageDone,healing:result.players[0].healingDone,ratio:candidate.ratio});
+   }
+  }
+ }
+ assert.equal(gearRows.length,198);
+ assert.equal(rows.length,2376);
+ assert.equal(new Set(rows.map(r=>[r.level,r.classId,r.spec,r.profile,r.seed,r.kind,r.arm].join('|'))).size,rows.length);
+ const mean=(values:number[])=>values.reduce((n,v)=>n+v,0)/values.length;
+ const killsPerMinute=(a:readonly {win:number;duration:number}[])=>60000*a.reduce((n,r)=>n+r.win,0)/a.reduce((n,r)=>n+r.duration,0);
+ const keys=[...new Set(rows.map(r=>r.level+'|'+r.classId+'|'+r.profile+'|'+r.kind+'|'+r.arm))].sort();
+ assert.equal(keys.length,594);
+ // Concise decision summary kept separately from full per-band diagnostics.
+ const summaryKeys=[...new Set(rows.map(r=>r.classId+'|'+r.profile+'|'+r.arm))].sort();
+ console.log('SOLO_EQUIPMENT_ROBUSTNESS_SUMMARY '+JSON.stringify({matchedSets:rows.length/3,executions:rows.length,groups:summaryKeys.map(key=>{
+  const a=rows.filter(r=>r.classId+'|'+r.profile+'|'+r.arm===key);
+  const bands=[...new Set(a.map(r=>r.level+'|'+r.kind))];
+  const relative=bands.map(band=>{
+   const subset=a.filter(r=>r.level+'|'+r.kind===band),s=subset[0];
+   const reference=rows.filter(r=>r.level===s.level&&r.kind===s.kind&&r.profile===s.profile&&r.arm===s.arm&&CLASS_ROLES_V2[r.classId]==='damage');
+   const rate=killsPerMinute(reference);
+   return rate>0?killsPerMinute(subset)/rate:null;
+  }).filter((r):r is number=>r!==null);
+  return {key,cases:a.length,wins:a.reduce((n,r)=>n+r.win,0),timeouts:a.filter(r=>r.reason==='timeout').length,wipes:a.filter(r=>r.reason==='wipe').length,
+   meanRelative:relative.length?mean(relative):null,minRelative:relative.length?Math.min(...relative):null,maxRelative:relative.length?Math.max(...relative):null,
+   below75:relative.filter(r=>r<.75).length,withinTarget:relative.filter(r=>r>=.75&&r<=.85).length,above85:relative.filter(r=>r>.85).length,
+   bandsWithoutDamageReference:bands.length-relative.length};
+ }),releaseEnabled:false}));
+ console.log('SOLO_EQUIPMENT_ROBUSTNESS_REVIEW '+JSON.stringify({matchedSets:rows.length/3,executions:rows.length,
+  gearProfiles:gearRows.map(({rolls,...r})=>({...r,minQuality:Math.min(...rolls.map(x=>x.quality)),maxQuality:Math.max(...rolls.map(x=>x.quality))})),
+  groups:keys.map(key=>{
+   const a=rows.filter(r=>r.level+'|'+r.classId+'|'+r.profile+'|'+r.kind+'|'+r.arm===key);
+   const sample=a[0];
+   const sameGearDamage=rows.filter(r=>r.level===sample.level&&r.kind===sample.kind&&r.profile===sample.profile&&r.arm===sample.arm&&CLASS_ROLES_V2[r.classId]==='damage');
+   const pinnedDamage=rows.filter(r=>r.level===sample.level&&r.kind===sample.kind&&r.profile==='pinned_reference'&&r.arm===sample.arm&&CLASS_ROLES_V2[r.classId]==='damage');
+   const throughput=killsPerMinute(a),reference=killsPerMinute(sameGearDamage),pinnedReference=killsPerMinute(pinnedDamage);
+   return {key,cases:a.length,wins:a.reduce((n,r)=>n+r.win,0),timeouts:a.filter(r=>r.reason==='timeout').length,wipes:a.filter(r=>r.reason==='wipe').length,
+    meanDuration:mean(a.map(r=>r.duration)),meanHp:mean(a.map(r=>r.hp)),meanEnemyHp:mean(a.map(r=>r.enemyHp)),
+    meanDamage:mean(a.map(r=>r.damage)),meanHealing:mean(a.map(r=>r.healing)),meanRatio:mean(a.map(r=>r.ratio)),
+    killsPerMinute:throughput,sameGearDamageKillsPerMinute:reference,pinnedDamageKillsPerMinute:pinnedReference,
+    relativeEfficiency:reference>0?throughput/reference:null,relativePinnedEfficiency:pinnedReference>0?throughput/pinnedReference:null};
+  }),releaseEnabled:false,cpApproved:false}));
 }
 // Unified compact class -> actual V2 skills -> original Forge -> exact socket
 // projection -> verified authored party enemy kits. The only modified source

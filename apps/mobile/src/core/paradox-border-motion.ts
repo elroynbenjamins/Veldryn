@@ -29,11 +29,11 @@ export function paradoxBorderTracks(width:number,height:number,showcase=false,fu
  };
  const travel=(t:number)=>sample(PARADOX_GLINT_PHASE,[.14,.22,.42,.82,.86,.82,.5,.22,.14,.14],t);
  const glint=(t:number)=>sample(PARADOX_GLINT_PHASE,PARADOX_GLINT_OPACITY,t);
- const halo=(t:number,o:number)=>.20+.49*pulse(t,o)+(.18+(fullSet&&showcase ? .09 : 0))*energy(t);
+ const halo=(t:number,o:number)=>.27+.49*pulse(t,o)+(.18+(fullSet&&showcase ? .09 : 0))*energy(t);
  const top=showcase?21*k:rail*.58,bottom=showcase?height-13*k:height-rail*.55;
  const tracks=[
-  make('upper-fold','glint',12,'top',t=>width*travel(t),()=>rail*.45,glint),
-  make('lower-fold','glint',10,'bottom',t=>width*(1-travel(t)),()=>height-rail*.4,glint),
+  make('upper-fold','glint',15,'top',t=>width*travel(t),()=>rail*.45,glint),
+  make('lower-fold','glint',13,'bottom',t=>width*(1-travel(t)),()=>height-rail*.4,glint),
   make('hourglass-aura','aura',26,'top',()=>width/2,()=>top,t=>halo(t,.12)),
   make('seal-aura','aura',23,'bottom',()=>width/2,()=>bottom,t=>halo(t,.62)),
   make('hourglass-glint','glint',12,'top',()=>width/2,()=>top,t=>halo(t,.12)),

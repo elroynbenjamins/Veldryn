@@ -629,7 +629,8 @@ export function simulateWorldBossSharedEngineReviewV2(
   ...(collectProtection?{protectionTrace:trace}:{})});
  const protection=collectProtection?reviewWorldBossProtectionV2(trace,finalInput.players.map(p=>p.id),
   Object.fromEntries([...combat.players,...combat.enemies].map(p=>[p.definition.id,p.shield]))):null;
- return {combat,binding,protection,guardReview:guardRuntime?.read()??null,preparation:preparation??null,compiledActorDigests:compiled.compiledActorDigests,
+ const {players:_reviewPlayers,enemies:_reviewEnemies,...reviewRules}=finalInput;
+ return {combat,binding,reviewRulesDigest:enemyV2SnapshotDigest(reviewRules),protection,guardReview:guardRuntime?.read()??null,preparation:preparation??null,compiledActorDigests:compiled.compiledActorDigests,
   equipmentEvidence:compiled.evidence,
   localBossHpLoss:Math.max(0,finalInput.enemies[0].stats.maxHp-combat.enemies[0].hp),
   globalHpCredited:0 as const,releaseReady:false as const,

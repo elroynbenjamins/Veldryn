@@ -39,7 +39,17 @@ function audit(read){
  });
  const boss=read('apps/mobile/src/core/regional-combat-catalog-v1.ts');
  const sand=boss.split('\n').find(x=>x.includes("kind:'regional_boss'")&&x.includes("contentId:'BOSS_002'"));
- return {pinnedRecipeCount:pinned.length,roots,graph:[...graph].map(([id,x])=>({id,...x})),monsters:mapped,t5:{count:five.length,sourceCounts,closed:five.every(e=>!e.mayMint&&!e.mayEquip&&!e.mayTrade&&!e.mayDrop),raw:t5Production.existingRaw,processing:t5Production.processing.length,productionClosed:t5Production.releaseActivation===false&&t5Production.mayMint===false},gateEvidence:{asterfall:monsters.find(x=>x.id==='FALLEN_KNIGHT'),sunscar:sand||null,frostmarch:null}};
+ const serverBoss=(file,id)=>read('backend/src/server/content/'+file).split('\n').find(x=>x.includes("{id:'"+id+"',name:")&&x.includes('phases:['));
+ const sandServer=serverBoss('sunscar-region-v20.ts','BOSS_002');
+ const frostServer=serverBoss('frostmarch-region-v21.ts','BOSS_003');
+ const gate=(row,id,target)=>({id,sourceLevel:Number(field(row??'','level')),targetLevel:target,authoredName:field(row??'','name'),gateEnabled:false});
+ const essence=herbalEssences.find(x=>x.zone==='GREENFIELDS'&&x.itemId==='ASTERFALL_BOTANICAL_ESSENCE');
+ const dewleaf=nodes.find(x=>x.id==='DEWLEAF_PATCH');
+ // Raw base probability is not the final effective rate. Illustrative
+ // expected actions only, one essence per hit assumed; no bonus, pity,
+ // multi-yield or trade, and not an observed completion time.
+ const earlyBinderIllustration={baseChance:essence?.baseChance,expectedActionsPerSingleEssence:1/(essence?.baseChance??NaN),node:dewleaf?.id,assumesOneEssencePerSuccess:true};
+ return {pinnedRecipeCount:pinned.length,roots,graph:[...graph].map(([id,x])=>({id,...x})),monsters:mapped,t5:{count:five.length,sourceCounts,closed:five.every(e=>!e.mayMint&&!e.mayEquip&&!e.mayTrade&&!e.mayDrop),raw:t5Production.existingRaw,processing:t5Production.processing.length,productionClosed:t5Production.releaseActivation===false&&t5Production.mayMint===false},gateEvidence:{asterfall:monsters.find(x=>x.id==='FALLEN_KNIGHT'),sunscar:{...gate(sandServer,'BOSS_002',50),mobileCatalogueMatched:Boolean(sand)},frostmarch:gate(frostServer,'BOSS_003',75)},earlyBinderIllustration};
 }
 const read=p=>readFileSync(new URL('../../'+p,import.meta.url),'utf8');
 test('canonical source declarations, preparation requirements and closed T5 design',()=>{
@@ -54,6 +64,8 @@ test('canonical source declarations, preparation requirements and closed T5 desi
  assert.equal(a.monsters.length,46);assert.equal(new Set(a.monsters.map(x=>x.id)).size,46);
  assert.ok(a.monsters.every(x=>x.enabled===false));
  assert.ok(a.monsters.some(x=>x.id==='FROSTWOLF'&&x.region==='frostmarch'&&x.level===51));
- assert.ok(a.gateEvidence.asterfall?.boss);assert.ok(a.gateEvidence.sunscar);assert.equal(a.gateEvidence.frostmarch,null);
+ assert.ok(a.gateEvidence.asterfall?.boss);assert.deepEqual(a.gateEvidence.sunscar,{id:'BOSS_002',sourceLevel:45,targetLevel:50,authoredName:'The Sand Tyrant',gateEnabled:false,mobileCatalogueMatched:true});
+ assert.deepEqual(a.gateEvidence.frostmarch,{id:'BOSS_003',sourceLevel:70,targetLevel:75,authoredName:'Frost Wyrm',gateEnabled:false});
+ assert.equal(a.earlyBinderIllustration.expectedActionsPerSingleEssence,50);
  console.log('REGIONAL_SOURCE_DECLARATION_REVIEW '+JSON.stringify({...a,sourceGrantVerified:false,releaseEnabled:false}));
 });

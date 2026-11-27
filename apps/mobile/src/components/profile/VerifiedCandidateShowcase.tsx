@@ -15,12 +15,13 @@ type Props=Omit<ComponentProps<typeof AbyssalMajestyPreview>,'assets'> & {collec
 export function VerifiedCandidateShowcase({collectionId,...props}:Props){
  if(collectionId==='ascendant-abyssal-majesty')return <AbyssalMajestyPreview {...props} assets={getAbyssalReviewAssets().scene}/>;
  if(collectionId==='ascendant-paradox-eternal')return <ParadoxEternalPreview {...props} assets={getParadoxReviewAssets().scene}/>;
- if(NEXT_PREMIUM_SETS.some(set=>set.id===collectionId))return <VerifiedNextPremiumShowcase collectionId={collectionId} {...props}/>;
+ if(NEXT_PREMIUM_SETS.some(set=>set.id===collectionId))return <NextPremiumShowcaseStage collectionId={collectionId} {...props}/>;
  return <>{props.fallback}</>;
 }
-/** Only reachable through the existing verified collection/pair selector. Keep
- * unsupported sizes static and do not infer a badge or full-set from artwork. */
-function VerifiedNextPremiumShowcase({collectionId,equippedPetId,alternatePetSource,portrait,identity,badges,guild,fallback,fullSet=false,active=false,reduceMotion=false}:Props){
+/** Presentation-only stage. Profile callers use the verified collection/pair
+ * selector; the store may render a local catalogue sample without a grant.
+ * Unsupported sizes use the supplied fallback. No ownership or writes here. */
+export function NextPremiumShowcaseStage({collectionId,equippedPetId,alternatePetSource,portrait,identity,badges,guild,fallback,fullSet=false,active=false,reduceMotion=false}:Props){
  const [width,setWidth]=useState(0),{fontScale}=useWindowDimensions();
  const set=NEXT_PREMIUM_SETS.find(row=>row.id===collectionId);
  const supported=!!set&&nextPremiumStageSupported(width,fontScale);

@@ -52,12 +52,11 @@ export function reviewGatheringRewardChannelsV2(input:{
  !Number.isSafeInteger(skillXpAffixBps)||skillXpAffixBps<0||skillXpAffixBps>330*matchingSetPieces||
  !Number.isSafeInteger(rareChanceAffixBps)||rareChanceAffixBps<0||rareChanceAffixBps>825*matchingSetPieces)
   throw Error('gathering_review_invalid_reward_channels');
- const setXpBps=(matchingSetPieces>=2?300:0)+(matchingSetPieces>=10?500:0);
- const setYieldBps=(matchingSetPieces>=4?400:0)+(matchingSetPieces>=10?300:0);
+ // Approved replacement: previous +4%/+3% yield becomes equal Skill XP.
+ const setXpBps=(matchingSetPieces>=2?300:0)+(matchingSetPieces>=4?400:0)+(matchingSetPieces>=10?800:0);
  const setRareBps=matchingSetPieces>=6?1000:0;
- return {skillXpAffixBps,rareChanceAffixBps,setXpBps,setYieldBps,setRareBps,
+ return {skillXpAffixBps,rareChanceAffixBps,setXpBps,setRareBps,
   xpMultiplier:1+(skillXpAffixBps+setXpBps)/10000,
-  yieldMultiplier:1+setYieldBps/10000,
   rareChanceMultiplier:1+(rareChanceAffixBps+setRareBps)/10000,
   releaseReady:false as const};
 }

@@ -366,6 +366,133 @@ var init_faith2 = __esm({
   }
 });
 
+// ../apps/mobile/src/core/ultra-luxe-name-gradients.ts
+var ULTRA_LUXE_GRADIENTS = [
+  { id: "ascendant-celestial-name", name: "Astral Radiance", colors: ["#F3C86F", "#FFF4D9", "#D6E8FF"], motion: "starlight" },
+  { id: "ascendant-draconic-name", name: "Ember Sovereignty", colors: ["#FF9460", "#FFE0A1", "#EE6651"], motion: "ember" },
+  { id: "ascendant-abyssal-name", name: "Abyssal Luminescence", colors: ["#55C8C9", "#D4FFF4", "#70A9F2"], motion: "tidal" },
+  { id: "ascendant-paradox-name", name: "Eternal Refraction", colors: ["#B9A0F9", "#F4EDFF", "#8FB5F9"], motion: "temporal" },
+  { id: "ascendant-sakura-name", name: "Sakura Radiance", colors: ["#F5A6C8", "#FFF5FA", "#E58BB7"], motion: "petal" },
+  { id: "ascendant-stormforged-name", name: "Stormborn Radiance", colors: ["#63CFFF", "#E0EAF5", "#639AF8"], motion: "storm" }
+];
+function ultraLuxeGradient(id) {
+  return ULTRA_LUXE_GRADIENTS.find((row) => row.id === id);
+}
+
+// ../apps/mobile/src/core/ultra-luxe-full-set-name.ts
+var SET_PRESETS = [
+  ["celestial-sovereign", "ascendant-celestial-name"],
+  ["draconic-dominion", "ascendant-draconic-name"],
+  ["abyssal-majesty", "ascendant-abyssal-name"],
+  ["paradox-eternal", "ascendant-paradox-name"],
+  ["sakura-enchantment", "ascendant-sakura-name"],
+  ["stormforged-sovereign", "ascendant-stormforged-name"]
+];
+function ultraLuxeFullSetNamePreset(setId) {
+  return SET_PRESETS.find(([id]) => setId === id || setId === "ascendant-" + id)?.[1];
+}
+
+// ../apps/mobile/src/core/ultra-luxe-full-set-command.ts
+var ULTRA_LUXE_FULL_SET_COMMAND = "ultra_luxe_full_set";
+var ULTRA_LUXE_REQUEST_PREFIX = "luxe_full_set_";
+function canonicalUltraLuxeCollection(id) {
+  if (typeof id !== "string" || !ultraLuxeFullSetNamePreset(id)) return void 0;
+  return id.startsWith("ascendant-") ? id : "ascendant-" + id;
+}
+var ULTRA_LUXE_FULL_SET_DEFINITIONS = [
+  ["ascendant-celestial-sovereign", "ascendant-celestial-astral-sanctum", "ascendant-celestial-crown-of-the-cosmos", "ascendant-celestial-aetherion", "Sovereign of the Stars"],
+  ["ascendant-draconic-dominion", "ascendant-draconic-dominion-of-ash", "ascendant-draconic-throne-of-embers", "ascendant-draconic-vharaxis", "Dragon Sovereign"],
+  ["ascendant-abyssal-majesty", "ascendant-abyssal-forgotten-abyss", "ascendant-abyssal-crown-of-the-depths", "ascendant-abyssal-nhalzuun", "Monarch of the Deep"],
+  ["ascendant-paradox-eternal", "ascendant-paradox-beyond-the-veil", "ascendant-paradox-fractured-eternity", "ascendant-paradox-aeon", "Beyond Existence"],
+  ["ascendant-sakura-enchantment", "ascendant-sakura-petal-sanctuary", "ascendant-sakura-blossom-crown", "ascendant-sakura-spirit-fox", "Sakura Dreamkeeper"],
+  ["ascendant-stormforged-sovereign", "ascendant-stormforged-thunderkeep", "ascendant-stormforged-steel-crown", "ascendant-stormforged-direwolf", "Stormforged Warden"]
+];
+
+// online/ultra-luxe-full-set-command.ts
+var object = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : void 0;
+var FullSetCommandError = class extends Error {
+  constructor(message, status = 400) {
+    super(message);
+    this.status = status;
+  }
+  status;
+};
+var exactKeys = (v, keys) => Object.keys(v).length === keys.length && keys.every((k) => Object.prototype.hasOwnProperty.call(v, k));
+async function executeUltraLuxeFullSetCommand(services2, accountId, raw2) {
+  if (!services2.enabled) throw new FullSetCommandError("feature_not_released", 403);
+  if (!accountId) throw new FullSetCommandError("auth_required", 401);
+  const body = object(raw2), cmd = object(body?.command), a = object(cmd?.args);
+  if (!body || !cmd || !a || !exactKeys(body, ["requestId", "expectedVersion", "command"]) || !exactKeys(cmd, ["type", "args"]) || !exactKeys(a, ["collectionId", "characterId", "expectedNameId"]) || cmd.type !== ULTRA_LUXE_FULL_SET_COMMAND || typeof body.requestId !== "string" || !body.requestId.startsWith(ULTRA_LUXE_REQUEST_PREFIX) || !/^luxe_full_set_[A-Za-z0-9_-]{16,80}$/.test(body.requestId) || typeof body.expectedVersion !== "number" || !Number.isSafeInteger(body.expectedVersion) || body.expectedVersion < 0 || typeof a.characterId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(a.characterId) || !(a.expectedNameId === null || ultraLuxeGradient(a.expectedNameId))) throw new FullSetCommandError("invalid_full_set_request");
+  const collection = canonicalUltraLuxeCollection(a.collectionId);
+  const definition = ULTRA_LUXE_FULL_SET_DEFINITIONS.find((d) => d[0] === collection);
+  if (!definition || a.collectionId !== collection) throw new FullSetCommandError("invalid_full_set_collection");
+  const requestHash = await services2.hash(JSON.stringify([ULTRA_LUXE_FULL_SET_COMMAND, body.expectedVersion, collection, a.characterId, a.expectedNameId]));
+  const loaded = await services2.rpc("load_online_game_ultra_luxe_v1", { p_account_id: accountId });
+  if (!loaded || !Array.isArray(loaded.ultraLuxeCollectionIds) || !Number.isSafeInteger(loaded.walletGold) || !loaded.state) throw new FullSetCommandError("full_set_authority_unavailable", 503);
+  const state = structuredClone(loaded.state);
+  if (state.character) {
+    state.character = {
+      ...state.character,
+      profileBackgroundId: definition[1],
+      profileBorderId: definition[2],
+      selectedCosmeticPetId: definition[3],
+      profileTitle: definition[4],
+      profileEffectId: void 0,
+      gold: loaded.walletGold
+    };
+  }
+  const response = { accountId, state, version: body.expectedVersion + 1, serverNow: loaded.serverNow };
+  const result = object(await services2.rpc("commit_ultra_luxe_full_set_server_v1", {
+    p_account_id: accountId,
+    p_character_id: a.characterId,
+    p_collection_id: collection,
+    p_expected_version: body.expectedVersion,
+    p_expected_gold: loaded.walletGold,
+    p_expected_grants: loaded.ultraLuxeCollectionIds,
+    p_expected_name_id: a.expectedNameId,
+    p_request_id: body.requestId,
+    p_request_hash: requestHash,
+    p_response: response
+  }));
+  const gameplay2 = object(result?.gameplay), names = object(result?.nameSelection);
+  if (!result || !gameplay2 || !names || names.accountId !== accountId || gameplay2.accountId !== void 0 && gameplay2.accountId !== accountId || typeof result.replayed !== "boolean" || !Number.isSafeInteger(gameplay2.version) || !object(gameplay2.state)) throw new FullSetCommandError("full_set_readback_invalid", 503);
+  return {
+    replayed: result.replayed,
+    gameplay: { ...gameplay2, accountId },
+    nameSelection: names,
+    undoEquipRequestId: result.undoEquipRequestId === body.requestId ? body.requestId : void 0
+  };
+}
+
+// ../apps/mobile/src/core/ultra-luxe-full-set-undo-command.ts
+var ULTRA_LUXE_UNDO_COMMAND = "ultra_luxe_full_set_undo";
+var ULTRA_LUXE_UNDO_PREFIX = "luxe_undo_set_";
+function isFullSetEquipReceipt(id) {
+  return typeof id === "string" && /^luxe_full_set_[A-Za-z0-9_-]{16,80}$/.test(id);
+}
+
+// online/ultra-luxe-full-set-undo-command.ts
+var object2 = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : void 0;
+var exactKeys2 = (v, keys) => Object.keys(v).length === keys.length && keys.every((k) => Object.prototype.hasOwnProperty.call(v, k));
+async function executeUltraLuxeUndoCommand(services2, accountId, raw2) {
+  if (!services2.enabled) throw new FullSetCommandError("feature_not_released", 403);
+  if (!accountId) throw new FullSetCommandError("auth_required", 401);
+  const body = object2(raw2), cmd = object2(body?.command), a = object2(cmd?.args);
+  if (!body || !cmd || !a || !exactKeys2(body, ["requestId", "expectedVersion", "command"]) || !exactKeys2(cmd, ["type", "args"]) || !exactKeys2(a, ["characterId", "equipRequestId"]) || cmd.type !== ULTRA_LUXE_UNDO_COMMAND || typeof body.requestId !== "string" || !/^luxe_undo_set_[A-Za-z0-9_-]{16,80}$/.test(body.requestId) || typeof body.expectedVersion !== "number" || !Number.isSafeInteger(body.expectedVersion) || body.expectedVersion < 0 || typeof a.characterId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(a.characterId) || !isFullSetEquipReceipt(a.equipRequestId)) throw new FullSetCommandError("invalid_full_set_undo_request");
+  const requestHash = await services2.hash(JSON.stringify([ULTRA_LUXE_UNDO_COMMAND, body.expectedVersion, a.characterId, a.equipRequestId]));
+  const result = object2(await services2.rpc("undo_ultra_luxe_full_set_server_v1", {
+    p_account_id: accountId,
+    p_character_id: a.characterId,
+    p_equip_request_id: a.equipRequestId,
+    p_expected_version: body.expectedVersion,
+    p_request_id: body.requestId,
+    p_request_hash: requestHash
+  }));
+  const gameplay2 = object2(result?.gameplay), names = object2(result?.nameSelection);
+  if (!result || !gameplay2 || !names || names.accountId !== accountId || gameplay2.accountId !== void 0 && gameplay2.accountId !== accountId || typeof result.replayed !== "boolean" || !Number.isSafeInteger(gameplay2.version) || !object2(gameplay2.state)) throw new FullSetCommandError("full_set_undo_readback_invalid", 503);
+  return { replayed: result.replayed, gameplay: { ...gameplay2, accountId }, nameSelection: names };
+}
+
 // ../apps/mobile/src/core/ultra-luxe-prestige.ts
 var ULTRA_LUXE_ICONS = [
   { id: "ascendant-celestial-crown-icon", name: "Crown of the Cosmos" },
@@ -56715,10 +56842,23 @@ var ULTRA_LUXE_GRANT_COLLECTIONS = [
   { id: "ascendant-celestial-sovereign", background: "ascendant-celestial-astral-sanctum", border: "ascendant-celestial-crown-of-the-cosmos", pet: "ascendant-celestial-aetherion", icon: "ascendant-celestial-crown-icon", title: "ascendant-celestial-title", titleName: "Sovereign of the Stars", badge: "ascendant_sovereign_of_stars", nameStyle: "ascendant-celestial-name" },
   { id: "ascendant-draconic-dominion", background: "ascendant-draconic-dominion-of-ash", border: "ascendant-draconic-throne-of-embers", pet: "ascendant-draconic-vharaxis", icon: "ascendant-draconic-ruby-icon", title: "ascendant-draconic-title", titleName: "Dragon Sovereign", badge: "ascendant_dragon_sovereign", nameStyle: "ascendant-draconic-name" }
 ];
-function ultraLuxeGrantProjection(raw2) {
+var ULTRA_LUXE_CANDIDATE_GRANT_COLLECTIONS = [
+  { id: "ascendant-abyssal-majesty", background: "ascendant-abyssal-forgotten-abyss", border: "ascendant-abyssal-crown-of-the-depths", pet: "ascendant-abyssal-nhalzuun", icon: null, title: "ascendant-abyssal-title", titleName: "Monarch of the Deep", badge: "ascendant_monarch_of_deep", nameStyle: null },
+  { id: "ascendant-paradox-eternal", background: "ascendant-paradox-beyond-the-veil", border: "ascendant-paradox-fractured-eternity", pet: "ascendant-paradox-aeon", icon: null, title: "ascendant-paradox-title", titleName: "Beyond Existence", badge: "ascendant_beyond_existence", nameStyle: null }
+];
+var FOUR_COLLECTIONS = [...ULTRA_LUXE_GRANT_COLLECTIONS, ...ULTRA_LUXE_CANDIDATE_GRANT_COLLECTIONS];
+var SIX_ONLY_COLLECTIONS = [
+  { id: "ascendant-sakura-enchantment", background: "ascendant-sakura-petal-sanctuary", border: "ascendant-sakura-blossom-crown", pet: "ascendant-sakura-spirit-fox", icon: null, title: "ascendant-sakura-title", titleName: "Sakura Dreamkeeper", badge: "ascendant_sakura_blossom_crest", nameStyle: "ascendant-sakura-name" },
+  { id: "ascendant-stormforged-sovereign", background: "ascendant-stormforged-thunderkeep", border: "ascendant-stormforged-steel-crown", pet: "ascendant-stormforged-direwolf", icon: null, title: "ascendant-stormforged-title", titleName: "Stormforged Warden", badge: "ascendant_stormforged_wolf_crest", nameStyle: "ascendant-stormforged-name" }
+];
+var ALL_COLLECTIONS = [...ULTRA_LUXE_GRANT_COLLECTIONS, { ...ULTRA_LUXE_CANDIDATE_GRANT_COLLECTIONS[0], nameStyle: "ascendant-abyssal-name" }, { ...ULTRA_LUXE_CANDIDATE_GRANT_COLLECTIONS[1], nameStyle: "ascendant-paradox-name" }, ...SIX_ONLY_COLLECTIONS];
+function grantRows(includeCandidates, includeSix = false) {
+  return includeCandidates && includeSix ? ALL_COLLECTIONS : includeCandidates ? FOUR_COLLECTIONS : ULTRA_LUXE_GRANT_COLLECTIONS;
+}
+function ultraLuxeGrantProjection(raw2, includeCandidates = false, includeSix = false) {
   const ids2 = new Set(Array.isArray(raw2) ? raw2.filter((id) => typeof id === "string") : []);
-  const rows2 = ULTRA_LUXE_GRANT_COLLECTIONS.filter((row) => ids2.has(row.id));
-  return { collectionIds: rows2.map((row) => row.id), backgrounds: rows2.map((row) => row.background), borders: rows2.map((row) => row.border), pets: rows2.map((row) => row.pet), icons: rows2.map((row) => row.icon), titles: rows2.map((row) => row.title), badges: rows2.map((row) => row.badge), nameStyles: rows2.map((row) => row.nameStyle) };
+  const rows2 = grantRows(includeCandidates, includeSix).filter((row) => ids2.has(row.id));
+  return { collectionIds: rows2.map((row) => row.id), backgrounds: rows2.map((row) => row.background), borders: rows2.map((row) => row.border), pets: rows2.map((row) => row.pet), icons: rows2.flatMap((row) => row.icon ? [row.icon] : []), titles: rows2.map((row) => row.title), badges: rows2.map((row) => row.badge), nameStyles: rows2.flatMap((row) => row.nameStyle ? [row.nameStyle] : []) };
 }
 var privateId = (id) => id.startsWith("ascendant-") || id.startsWith("ascendant_");
 function replacePrivate(existing, verified) {
@@ -56727,10 +56867,10 @@ function replacePrivate(existing, verified) {
 function allowed2(id, owned) {
   return !id || !privateId(id) || owned.includes(id);
 }
-function withVerifiedUltraLuxeGrants(state, raw2) {
-  const grants = ultraLuxeGrantProjection(raw2);
+function withVerifiedUltraLuxeGrants(state, raw2, includeCandidates = false, includeSix = false) {
+  const grants = ultraLuxeGrantProjection(raw2, includeCandidates, includeSix);
   const sanitize = (c) => {
-    const title2 = ULTRA_LUXE_GRANT_COLLECTIONS.find((row) => row.titleName.toLowerCase() === c.profileTitle?.trim().toLowerCase());
+    const title2 = ALL_COLLECTIONS.find((row) => row.titleName.toLowerCase() === c.profileTitle?.trim().toLowerCase());
     return {
       ...c,
       profileBackgroundId: allowed2(c.profileBackgroundId, grants.backgrounds) ? c.profileBackgroundId : "asterfall-night",
@@ -56756,7 +56896,7 @@ function withVerifiedUltraLuxeGrants(state, raw2) {
   };
 }
 function canUsePrivateTitleText(state, title2) {
-  const reserved = ULTRA_LUXE_GRANT_COLLECTIONS.find((row) => row.titleName.toLowerCase() === title2?.trim().toLowerCase());
+  const reserved = ALL_COLLECTIONS.find((row) => row.titleName.toLowerCase() === title2?.trim().toLowerCase());
   return !reserved || (state.account.unlockedTitleIds?.includes(reserved.title) ?? false);
 }
 
@@ -61154,6 +61294,8 @@ function gameplayHandler(services2, authenticatePlayer2 = async (token) => {
   return accountId ? { accountId, adminQa: false } : null;
 }) {
   const privateGrants = services2.ultraLuxeGrantAuthority === true;
+  const fullSetAuthority = privateGrants && services2.ultraLuxeFullSetAuthority === true;
+  const undoAuthority = fullSetAuthority && services2.ultraLuxeUndoAuthority === true;
   const receiptRpc = privateGrants ? "read_online_game_receipt_ultra_luxe_v1" : "read_online_game_receipt_server_v1";
   const loadRpc = privateGrants ? "load_online_game_ultra_luxe_v1" : "load_online_game_server_v1";
   return async (request) => {
@@ -61184,6 +61326,20 @@ function gameplayHandler(services2, authenticatePlayer2 = async (token) => {
         }
         if (!body || typeof body !== "object" || Array.isArray(body) || Object.keys(body).some((key) => !["requestId", "expectedVersion", "command"].includes(key))) throw new GameplayError("invalid_request");
         if (typeof body.requestId !== "string" || !/^[a-zA-Z0-9_-]{8,128}$/.test(body.requestId) || !Number.isSafeInteger(body.expectedVersion) || body.expectedVersion < 0) throw new GameplayError("invalid_request");
+        if (body.command?.type === ULTRA_LUXE_FULL_SET_COMMAND) {
+          telemetryCommandType = ULTRA_LUXE_FULL_SET_COMMAND;
+          const result2 = await executeUltraLuxeFullSetCommand({ enabled: fullSetAuthority, rpc: services2.rpc, hash: hash2 }, accountId, body);
+          await recordOutcome(result2.replayed ? "replayed" : "committed");
+          return json(result2);
+        }
+        if (body.command?.type === ULTRA_LUXE_UNDO_COMMAND) {
+          telemetryCommandType = ULTRA_LUXE_UNDO_COMMAND;
+          const result2 = await executeUltraLuxeUndoCommand({ enabled: undoAuthority, rpc: services2.rpc, hash: hash2 }, accountId, body);
+          await recordOutcome(result2.replayed ? "replayed" : "committed");
+          return json(result2);
+        }
+        if (body.requestId.startsWith(ULTRA_LUXE_REQUEST_PREFIX)) throw new GameplayError("invalid_request");
+        if (body.requestId.startsWith(ULTRA_LUXE_UNDO_PREFIX)) throw new GameplayError("invalid_request");
         try {
           command = validateGameCommand(body.command);
           telemetryCommandType = command.type;
@@ -61210,7 +61366,7 @@ function gameplayHandler(services2, authenticatePlayer2 = async (token) => {
         request.method === "GET" ? recordActivity("foreground") : Promise.resolve()
       ]);
       if (privateGrants && !Array.isArray(loaded.ultraLuxeCollectionIds)) throw new Error("ultra_luxe_grant_projection_missing");
-      const storedState = rebaseCombatGameState(privateGrants ? withVerifiedUltraLuxeGrants(loaded.state ?? newGame(loaded.serverNow), loaded.ultraLuxeCollectionIds) : loaded.state ?? newGame(loaded.serverNow));
+      const storedState = rebaseCombatGameState(privateGrants ? withVerifiedUltraLuxeGrants(loaded.state ?? newGame(loaded.serverNow), loaded.ultraLuxeCollectionIds, true, fullSetAuthority) : loaded.state ?? newGame(loaded.serverNow));
       const trustedState = request.method === "POST" ? snapshotEarnedLegacySeasonalClaims(storedState, loaded.serverNow) : storedState;
       const state = reconcileAccountProfileIcon(restoreCumulativeMonsterUnlocks(ensurePersonalSeasonalState(trustedState)));
       state.account.longTermAccountScopeId = accountId;
@@ -61294,7 +61450,11 @@ function gameplayHandler(services2, authenticatePlayer2 = async (token) => {
       ];
       const response = { guildProjectEffort, guildPveEffort, state: restoreCumulativeMonsterUnlocks(result.state), version: loaded.version + 1, serverNow: loaded.serverNow, accountId, reward: result.reward, activity: result.activity, message: result.message, won: result.won, storyBossBattle: result.storyBossBattle, upgrade: result.upgrade, forgeResults: result.forgeResults };
       const commitRpc = privateGrants ? "commit_online_game_ultra_luxe_v1" : "commit_online_game_guild_pve_v1";
-      const committed = await services2.rpc(commitRpc, { p_account_id: accountId, p_expected_version: loaded.version, p_expected_gold: loaded.walletGold, p_request_id: body.requestId, p_request_hash: requestHash, p_response: response, p_contributions: contributions, ...privateGrants ? { p_expected_grants: [...ultraLuxeGrantProjection(loaded.ultraLuxeCollectionIds).collectionIds].sort() } : {}, ...command.type === "roster_delete" ? { p_deleted_character_id: command.args.id } : {} });
+      const committed = await services2.rpc(commitRpc, { p_account_id: accountId, p_expected_version: loaded.version, p_expected_gold: loaded.walletGold, p_request_id: body.requestId, p_request_hash: requestHash, p_response: response, p_contributions: contributions, ...privateGrants ? { p_expected_grants: (fullSetAuthority ? loaded.ultraLuxeCollectionIds.map((id) => {
+        const canonicalId = canonicalUltraLuxeCollection(id);
+        if (!canonicalId || canonicalId !== id) throw Error("ultra_luxe_grant_projection_invalid");
+        return canonicalId;
+      }) : [...ultraLuxeGrantProjection(loaded.ultraLuxeCollectionIds, true).collectionIds]).sort() } : {}, ...command.type === "roster_delete" ? { p_deleted_character_id: command.args.id } : {} });
       if (contributions.length > 0) try {
         await services2.rpc("guild_quest_record_contributions_v1", { p_account_id: accountId, p_contributions: contributions.map((e) => ({ ...e, units: e.questUnits ?? e.units })) });
       } catch {
@@ -61303,8 +61463,8 @@ function gameplayHandler(services2, authenticatePlayer2 = async (token) => {
       return json(committed);
     } catch (error) {
       const message = error instanceof Error ? error.message : "server_error";
-      const conflict = /stale_state|idempotency_key_conflict/.test(message);
-      const status = conflict ? 409 : error instanceof GameplayError ? error.status : 503;
+      const conflict = /stale_state|idempotency_key_conflict|^STALE_ULTRA_LUXE_|^ULTRA_LUXE_REQUEST_HASH_MISMATCH$/.test(message);
+      const status = conflict ? 409 : error instanceof GameplayError || error instanceof FullSetCommandError ? error.status : 503;
       await recordOutcome(conflict ? "conflict" : status === 503 ? "retryable_failure" : "rejected");
       return json({ error: status === 503 ? "Server temporarily unavailable. Retry the pending action." : message }, status);
     }
@@ -62676,6 +62836,10 @@ async function authenticatePlayer(token) {
   return { accountId: user.id, adminQa: meta?.admin_qa === true || Array.isArray(meta?.roles) && meta.roles.includes("admin_qa") };
 }
 var services = {
+  // Both opt-in flags require the unified server schema and completed rendering QA.
+  ultraLuxeGrantAuthority: Deno.env.get("ULTRA_LUXE_GRANT_AUTHORITY") === "true",
+  ultraLuxeFullSetAuthority: Deno.env.get("ULTRA_LUXE_FULL_SET_AUTHORITY") === "true",
+  ultraLuxeUndoAuthority: Deno.env.get("ULTRA_LUXE_FULL_SET_UNDO_AUTHORITY") === "true",
   authenticate: async (token) => (await authenticatePlayer(token))?.accountId ?? null,
   rpc: async (name, args) => {
     const response = await fetch(`${url}/rest/v1/rpc/${name}`, { method: "POST", headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json" }, body: JSON.stringify(args) });

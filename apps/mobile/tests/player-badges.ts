@@ -12,7 +12,7 @@ ok(playerBadgeIds(snapshot(null,true),now).join(',')==='supporter','legacy Suppo
 ok(playerBadgeIds(snapshot(null,false),now).length===0,'ordinary player has no badge');
 ok(playerBadgeIds(snapshot('admin',true),2000).length===0,'expired cache fails closed');
 ok(MAX_EQUIPPED_PLAYER_BADGES===1,'one elective badge by design');
-ok(COLLECTIBLE_PLAYER_BADGE_IDS.length===9,'five ordinary and four private earned badge IDs exist');
+ok(COLLECTIBLE_PLAYER_BADGE_IDS.length===11,'five ordinary and six private earned badge IDs exist');
 ok(visibleCollectiblePlayerBadgeIds().length===5&&!visibleCollectiblePlayerBadgeIds().includes('ascendant_sovereign_of_stars'),'unowned ultra-luxe badge is absent from player-facing badge settings');
 ok(visibleCollectiblePlayerBadgeIds(['ascendant_sovereign_of_stars']).includes('ascendant_sovereign_of_stars'),'granted ultra-luxe badge becomes visible only to its owner');
 for(const id of COLLECTIBLE_PLAYER_BADGE_IDS.filter(id=>id.startsWith('ascendant_'))){ok(!visibleCollectiblePlayerBadgeIds().includes(id),'private badge hidden without grant '+id);ok(visibleCollectiblePlayerBadgeIds([id]).includes(id),'verified ownership exposes exactly that badge '+id);}
@@ -124,7 +124,8 @@ ok(badgeArt.includes('export function PlayerBadgeShowcase')&&badgeArt.includes('
 ok(badgeArt.includes("variant='framed'")&&badgeArt.includes("bareShowcase:{paddingVertical:2,paddingHorizontal:0}"),'bare Ultra Luxe shelf does not alter the ordinary framed default');
 for(const file of ['components/PublicProfileScene.tsx','components/ProfileScenePreview.tsx']){
  const scene=read('src/'+file);
- ok((scene.match(/variant="bare"/g)??[]).length===2,'both Ultra Luxe renderers use bare badge shelves in '+file);
+ ok((scene.match(/variant="bare"/g)??[]).length===3,'Celestial, Draconic and the shared Abyssal/Paradox branch use bare badge shelves in '+file);
+ ok(scene.includes('<VerifiedCandidateShowcase'),'new pair uses verified renderer in '+file);
 }
 for(const [path,marker] of [['components/PublicProfileScene.tsx','profile.playerBadges'],['components/profile/ProfileStage.tsx','badges.identity'],['components/profile/ProfileShowcasePanel.tsx','badges.identity']] as const)
  ok(read('src/'+path).includes('<PlayerBadgeShowcase identity={'+marker),'the profile badge shelf is shown on '+path);
@@ -184,3 +185,14 @@ ok(badgeComponent.includes('size={size} showLabel={showLabels} interactive/>')&&
 ok(badgeComponent.includes('nativeEvent.pageX')&&badgeComponent.includes('nativeEvent.pageY')&&badgeComponent.includes('setAnchor(null)')&&badgeComponent.includes('onRequestClose'),'badge bubble anchors to the pressed icon and dismisses on tap outside or Android back');
 ok(badgeComponent.includes('event.stopPropagation()'),'tapping a badge inside a chat name does not also open that player profile');
 console.log('PASS: one badge beside the name, three on the profile, automatic staff, supporter 0/3/6/12 tiers, artwork, authenticated tenure and old-client compatibility');
+
+for(const id of ['ascendant_sakura_blossom_crest','ascendant_stormforged_wolf_crest'] as const){
+ ok(!visibleCollectiblePlayerBadgeIds().includes(id),'new premium badge remains undiscoverable without ownership');
+ ok(visibleCollectiblePlayerBadgeIds([id]).includes(id),'server-owned new badge visible');
+ ok(playerBadgeIds(normalizePlayerBadges({staff:null,supporter:false,equippedBadgeId:id,extras:[id],validUntilMs:2000}),now).join(',')===id,'verified new name badge');
+ ok(playerBadgeIds(normalizePlayerBadges({staff:null,supporter:false,equippedBadgeId:id,extras:[],validUntilMs:2000}),now).length===0,'unverified name badge rejected');
+ ok(profileBadgeIds(normalizePlayerBadges({staff:null,supporter:false,featured:[id],validUntilMs:2000}),now).join(',')===id,'verified new featured badge');
+ ok(profileBadgeIds(normalizePlayerBadges({staff:null,supporter:false,featured:[id],validUntilMs:2000}),2000).length===0,'expired featured badge rejected');
+}
+ok(art.includes('sakura/blossom_crest_64.webp')&&art.includes('stormforged/wolf_crest_64.webp'),'both new static badge images bundled');
+ok(!badgeArt.includes('Animated.'),'all badges remain static');

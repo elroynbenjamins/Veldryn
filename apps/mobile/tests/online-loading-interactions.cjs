@@ -4,7 +4,7 @@ globalThis.IS_REACT_ACT_ENVIRONMENT=true;
 const deferred=()=>{let resolve,reject;const promise=new Promise((yes,no)=>{resolve=yes;reject=no});return {promise,resolve,reject}};
 function load(file,dependencies,globals={}){
  const code=ts.transpileModule(fs.readFileSync(path.join(__dirname,'../',file),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX}}).outputText;
- const sandbox={exports:{},Error,Promise,setTimeout,clearTimeout,console:{warn:()=>{}},...globals,require:name=>dependencies[name]??(name==='react'?React:name==='react/jsx-runtime'?require(name):{})};
+ const sandbox={exports:{},Error,Promise,setTimeout,clearTimeout,process:{env:{}},console:{warn:()=>{}},...globals,require:name=>dependencies[name]??(name==='react'?React:name==='react/jsx-runtime'?require(name):{})};
  vm.runInNewContext(code,sandbox);return sandbox.exports;
 }
 const native={Pressable:'Pressable',Text:'Text',ActivityIndicator:'ActivityIndicator',StyleSheet:{create:styles=>styles},AppState:{currentState:'active',addEventListener:()=>({remove(){}})}};

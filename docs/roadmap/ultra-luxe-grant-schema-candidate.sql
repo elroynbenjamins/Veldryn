@@ -1,9 +1,9 @@
--- DRAFT ONLY. Not a migration. Run only in an isolated test database first.
+-- DRAFT ONLY. Four-collection candidate. Not a migration. Run only in an isolated test database first.
 -- The deployment must include transactional game commit and public identity checks.
 begin;
 create table private.ultra_luxe_collection_grants_v1 (
  account_id uuid not null references auth.users(id) on delete cascade,
- collection_id text not null check(collection_id in ('ascendant-celestial-sovereign','ascendant-draconic-dominion')),
+ collection_id text not null check(collection_id in ('ascendant-celestial-sovereign','ascendant-draconic-dominion','ascendant-abyssal-majesty','ascendant-paradox-eternal')),
  granted_at timestamptz not null default now(),
  revoked_at timestamptz,
  primary key(account_id,collection_id)
@@ -34,6 +34,17 @@ $$;
 revoke all on function public.ultra_luxe_grants_server_v1(uuid) from public,anon,authenticated;
 grant execute on function public.ultra_luxe_grants_server_v1(uuid) to service_role;
 
+-- Self-only readback for wardrobe discovery. Never accept a target account ID.
+create function public.ultra_luxe_collection_self_v1()
+returns jsonb language plpgsql stable security definer set search_path='' as $self_collections$
+declare uid uuid:=auth.uid();
+begin
+ if uid is null then raise exception 'AUTH_REQUIRED';end if;
+ return jsonb_build_object('accountId',uid,'collectionIds',public.ultra_luxe_grants_server_v1(uid));
+end $self_collections$;
+revoke all on function public.ultra_luxe_collection_self_v1() from public,anon,authenticated;
+grant execute on function public.ultra_luxe_collection_self_v1() to authenticated;
+
 -- Narrow account existence check; no broad auth.users read grant.
 create function private.ultra_luxe_account_exists_v1(p_account_id uuid)
 returns boolean language sql stable security definer set search_path='' as $exists$
@@ -46,7 +57,7 @@ create function public.set_ultra_luxe_grant_server_v1(p_account_id uuid,p_collec
 returns jsonb language plpgsql security invoker set search_path='' as $$
 declare changed integer;
 begin
- if p_account_id is null or p_collection_id is null or p_collection_id not in ('ascendant-celestial-sovereign','ascendant-draconic-dominion') or p_granted is null or p_reason is null or length(trim(p_reason)) not between 1 and 240 then
+ if p_account_id is null or p_collection_id is null or p_collection_id not in ('ascendant-celestial-sovereign','ascendant-draconic-dominion','ascendant-abyssal-majesty','ascendant-paradox-eternal') or p_granted is null or p_reason is null or length(trim(p_reason)) not between 1 and 240 then
   raise exception 'INVALID_ULTRA_LUXE_GRANT';
  end if;
  -- The account must exist even for a no-op revoke.
@@ -75,8 +86,10 @@ grant execute on function public.set_ultra_luxe_grant_server_v1(uuid,text,boolea
 create function private.ultra_luxe_project_hero_v1(hero jsonb, grants jsonb)
 returns jsonb language plpgsql immutable security invoker set search_path='' as $hero$
 declare
- c boolean:=grants ? 'ascendant-celestial-sovereign';
- d boolean:=grants ? 'ascendant-draconic-dominion';
+ c boolean:=coalesce(grants ? 'ascendant-celestial-sovereign',false);
+ d boolean:=coalesce(grants ? 'ascendant-draconic-dominion',false);
+ a boolean:=coalesce(grants ? 'ascendant-abyssal-majesty',false);
+ p boolean:=coalesce(grants ? 'ascendant-paradox-eternal',false);
  field text; val text;
 begin
  if jsonb_typeof(hero) is distinct from 'object' then return hero;end if;
@@ -84,7 +97,9 @@ begin
   val:=hero->>field;
   if left(val,10)='ascendant-' or left(val,10)='ascendant_' then
    if not ((c and val=case field when 'profileBackgroundId' then 'ascendant-celestial-astral-sanctum' when 'profileBorderId' then 'ascendant-celestial-crown-of-the-cosmos' when 'selectedCosmeticPetId' then 'ascendant-celestial-aetherion' else 'ascendant-celestial-crown-icon' end) or
-           (d and val=case field when 'profileBackgroundId' then 'ascendant-draconic-dominion-of-ash' when 'profileBorderId' then 'ascendant-draconic-throne-of-embers' when 'selectedCosmeticPetId' then 'ascendant-draconic-vharaxis' else 'ascendant-draconic-ruby-icon' end)) then
+           (d and val=case field when 'profileBackgroundId' then 'ascendant-draconic-dominion-of-ash' when 'profileBorderId' then 'ascendant-draconic-throne-of-embers' when 'selectedCosmeticPetId' then 'ascendant-draconic-vharaxis' else 'ascendant-draconic-ruby-icon' end)
+           or (a and coalesce(val=case field when 'profileBackgroundId' then 'ascendant-abyssal-forgotten-abyss' when 'profileBorderId' then 'ascendant-abyssal-crown-of-the-depths' when 'selectedCosmeticPetId' then 'ascendant-abyssal-nhalzuun' end,false))
+           or (p and coalesce(val=case field when 'profileBackgroundId' then 'ascendant-paradox-beyond-the-veil' when 'profileBorderId' then 'ascendant-paradox-fractured-eternity' when 'selectedCosmeticPetId' then 'ascendant-paradox-aeon' end,false))) then
     if field='profileBackgroundId' then hero:=jsonb_set(hero,array[field],to_jsonb('asterfall-night'::text));
     elsif field='profileIconId' then hero:=jsonb_set(hero,array[field],to_jsonb('class:'||coalesce(hero->>'classId','IRONWARDEN')));
     else hero:=hero-field;end if;
@@ -92,7 +107,7 @@ begin
   end if;
  end loop;
  val:=lower(trim(hero->>'profileTitle'));
- if (val='sovereign of the stars' and not c) or (val='dragon sovereign' and not d) then
+ if (val='sovereign of the stars' and not c) or (val='dragon sovereign' and not d) or (val='monarch of the deep' and not a) or (val='beyond existence' and not p) then
   hero:=jsonb_set(hero,'{profileTitle}',to_jsonb('New Adventurer'::text));
  end if;
  return hero;
@@ -101,7 +116,7 @@ end $hero$;
 create function private.ultra_luxe_project_state_v1(s jsonb, grants jsonb)
 returns jsonb language plpgsql immutable security invoker set search_path='' as $state$
 declare
- a jsonb; field text; item text; celestial text; draconic text; clean jsonb; roster jsonb;
+ a jsonb; field text; item text; celestial text; draconic text; abyssal text; paradox text; clean jsonb; roster jsonb;
 begin
  if jsonb_typeof(s) is distinct from 'object' then return s;end if;
  a:=case when jsonb_typeof(s->'account')='object' then s->'account' else '{}'::jsonb end;
@@ -113,8 +128,19 @@ begin
   draconic:=case field when 'unlockedProfileBackgroundIds' then 'ascendant-draconic-dominion-of-ash' when 'unlockedProfileBorderIds' then 'ascendant-draconic-throne-of-embers' when 'unlockedCosmeticPetIds' then 'ascendant-draconic-vharaxis' when 'unlockedProfileIconIds' then 'ascendant-draconic-ruby-icon' else 'ascendant-draconic-title' end;
   if grants ? 'ascendant-celestial-sovereign' then clean:=clean||jsonb_build_array(celestial);end if;
   if grants ? 'ascendant-draconic-dominion' then clean:=clean||jsonb_build_array(draconic);end if;
+  abyssal:=case field when 'unlockedProfileBackgroundIds' then 'ascendant-abyssal-forgotten-abyss' when 'unlockedProfileBorderIds' then 'ascendant-abyssal-crown-of-the-depths' when 'unlockedCosmeticPetIds' then 'ascendant-abyssal-nhalzuun' when 'unlockedTitleIds' then 'ascendant-abyssal-title' end;
+  paradox:=case field when 'unlockedProfileBackgroundIds' then 'ascendant-paradox-beyond-the-veil' when 'unlockedProfileBorderIds' then 'ascendant-paradox-fractured-eternity' when 'unlockedCosmeticPetIds' then 'ascendant-paradox-aeon' when 'unlockedTitleIds' then 'ascendant-paradox-title' end;
+  if abyssal is not null and grants ? 'ascendant-abyssal-majesty' then clean:=clean||jsonb_build_array(abyssal);end if;
+  if paradox is not null and grants ? 'ascendant-paradox-eternal' then clean:=clean||jsonb_build_array(paradox);end if;
   a:=jsonb_set(a,array[field],clean);
  end loop;
+ -- The shared social portrait also needs the same private-ID sanitation.
+ item:=a->>'profileIconId';
+ if left(item,10) in ('ascendant-','ascendant_') and not (coalesce(a->'unlockedProfileIconIds','[]'::jsonb) ? item) then
+  if jsonb_typeof(s->'character')='object' then
+   a:=jsonb_set(a,'{profileIconId}',to_jsonb('class:'||coalesce(s#>>'{character,classId}','IRONWARDEN')));
+  else a:=a-'profileIconId';end if;
+ end if;
  s:=jsonb_set(s,'{account}',a);
  if jsonb_typeof(s->'character')='object' then s:=jsonb_set(s,'{character}',private.ultra_luxe_project_hero_v1(s->'character',grants));end if;
  if jsonb_typeof(s->'otherCharacters')='array' then
@@ -192,14 +218,20 @@ begin
  if projected->'profileIconId' is distinct from hero->'profileIconId' then
   p_profile:=jsonb_set(p_profile,'{character,profileIconId}',coalesce(projected->'profileIconId','null'::jsonb));
  end if;
- p_profile:=p_profile-'ultraLuxeTitleId';
+ p_profile:=(p_profile-'ultraLuxeTitleId'-'ultraLuxeAppearanceVerified')||jsonb_build_object('ultraLuxeAppearanceVerified',true);
  if g ? 'ascendant-celestial-sovereign' and p_profile->>'title'='Sovereign of the Stars' then
   p_profile:=p_profile||jsonb_build_object('ultraLuxeTitleId','ascendant-celestial-title');
  elsif g ? 'ascendant-draconic-dominion' and p_profile->>'title'='Dragon Sovereign' then
   p_profile:=p_profile||jsonb_build_object('ultraLuxeTitleId','ascendant-draconic-title');
+ elsif g ? 'ascendant-abyssal-majesty' and p_profile->>'title'='Monarch of the Deep' then
+  p_profile:=p_profile||jsonb_build_object('ultraLuxeTitleId','ascendant-abyssal-title');
+ elsif g ? 'ascendant-paradox-eternal' and p_profile->>'title'='Beyond Existence' then
+  p_profile:=p_profile||jsonb_build_object('ultraLuxeTitleId','ascendant-paradox-title');
  end if;
  if g ? 'ascendant-celestial-sovereign' then allowed_ids:=allowed_ids||array['ascendant-celestial-astral-sanctum','ascendant-celestial-crown-of-the-cosmos','ascendant-celestial-aetherion','ascendant-celestial-crown-icon'];end if;
  if g ? 'ascendant-draconic-dominion' then allowed_ids:=allowed_ids||array['ascendant-draconic-dominion-of-ash','ascendant-draconic-throne-of-embers','ascendant-draconic-vharaxis','ascendant-draconic-ruby-icon'];end if;
+ if g ? 'ascendant-abyssal-majesty' then allowed_ids:=allowed_ids||array['ascendant-abyssal-forgotten-abyss','ascendant-abyssal-crown-of-the-depths','ascendant-abyssal-nhalzuun'];end if;
+ if g ? 'ascendant-paradox-eternal' then allowed_ids:=allowed_ids||array['ascendant-paradox-beyond-the-veil','ascendant-paradox-fractured-eternity','ascendant-paradox-aeon'];end if;
  if jsonb_typeof(p_profile->'collectionShowcase')='array' then
   select coalesce(jsonb_agg(value order by ord),'[]'::jsonb) into showcase
   from jsonb_array_elements(p_profile->'collectionShowcase') with ordinality t(value,ord)
@@ -253,8 +285,8 @@ alter table private.ultra_luxe_name_selection_v1 enable row level security;
 revoke all on private.ultra_luxe_name_selection_v1 from public,anon,authenticated;
 create function private.ultra_luxe_owned_names_v1(p_account_id uuid) returns text[]
 language sql stable security invoker set search_path='' as $names$
- select coalesce(array_agg(case collection_id when 'ascendant-celestial-sovereign' then 'ascendant-celestial-name' else 'ascendant-draconic-name' end order by collection_id),array[]::text[])
- from private.ultra_luxe_collection_grants_v1 where account_id=p_account_id and revoked_at is null
+ select coalesce(array_agg(case collection_id when 'ascendant-celestial-sovereign' then 'ascendant-celestial-name' when 'ascendant-draconic-dominion' then 'ascendant-draconic-name' end order by collection_id),array[]::text[])
+ from private.ultra_luxe_collection_grants_v1 where account_id=p_account_id and revoked_at is null and collection_id in ('ascendant-celestial-sovereign','ascendant-draconic-dominion')
 $names$;
 create function private.ultra_luxe_selected_name_v1(p_account_id uuid) returns text
 language sql stable security invoker set search_path='' as $selected$
@@ -299,7 +331,7 @@ grant execute on function public.ultra_luxe_name_self_v1(),public.ultra_luxe_nam
 do $badge_patch$
 declare d text; old text:=' ) unlocked;'; new text:=$union$
   union
-  select case collection_id when 'ascendant-celestial-sovereign' then 'ascendant_sovereign_of_stars' else 'ascendant_dragon_sovereign' end,6
+  select case collection_id when 'ascendant-celestial-sovereign' then 'ascendant_sovereign_of_stars' when 'ascendant-draconic-dominion' then 'ascendant_dragon_sovereign' when 'ascendant-abyssal-majesty' then 'ascendant_monarch_of_deep' when 'ascendant-paradox-eternal' then 'ascendant_beyond_existence' end,6
   from private.ultra_luxe_collection_grants_v1 where account_id=p_account_id and revoked_at is null
  ) unlocked;$union$;
 begin
@@ -330,9 +362,9 @@ language plpgsql security definer set search_path='' as $revoke$
 declare badge text; preset text;
 begin
  if old.revoked_at is null and new.revoked_at is not null then
-  badge:=case new.collection_id when 'ascendant-celestial-sovereign' then 'ascendant_sovereign_of_stars' else 'ascendant_dragon_sovereign' end;
-  preset:=case new.collection_id when 'ascendant-celestial-sovereign' then 'ascendant-celestial-name' else 'ascendant-draconic-name' end;
-  delete from private.ultra_luxe_name_selection_v1 where account_id=new.account_id and preset_id=preset;
+  badge:=case new.collection_id when 'ascendant-celestial-sovereign' then 'ascendant_sovereign_of_stars' when 'ascendant-draconic-dominion' then 'ascendant_dragon_sovereign' when 'ascendant-abyssal-majesty' then 'ascendant_monarch_of_deep' when 'ascendant-paradox-eternal' then 'ascendant_beyond_existence' end;
+  preset:=case new.collection_id when 'ascendant-celestial-sovereign' then 'ascendant-celestial-name' when 'ascendant-draconic-dominion' then 'ascendant-draconic-name' end;
+  if preset is not null then delete from private.ultra_luxe_name_selection_v1 where account_id=new.account_id and preset_id=preset;end if;
   if not exists(select 1 from private.player_collectible_badges_v1 where account_id=new.account_id and badge_id=badge) then
    update private.player_badge_preferences_v1 set equipped_badge_id=case when equipped_badge_id=badge then 'none' else equipped_badge_id end,
     featured_badge_ids=array_remove(featured_badge_ids,badge),profile_badge_ids=array_remove(profile_badge_ids,badge)

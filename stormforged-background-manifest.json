@@ -1,0 +1,14 @@
+{
+  "apps/mobile/assets/ascendant/stormforged/thunderkeep.webp": {
+    "width": 1020,
+    "height": 615,
+    "bytes": 131590,
+    "sha256": "e8b3863aa02087021b6ce0514ee73d4a38cbabecbb439397b72029e5ecabc25a"
+  },
+  "apps/mobile/assets/ascendant/stormforged/thunderkeep_square.webp": {
+    "width": 512,
+    "height": 512,
+    "bytes": 90198,
+    "sha256": "941018f70014373392e86b243a26de65aadba2f37e6d40cbedce8b8ed473d82c"
+  }
+}

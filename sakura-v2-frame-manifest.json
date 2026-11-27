@@ -1,0 +1,46 @@
+{
+  "apps/mobile/assets/ascendant/sakura/blossom_crown_v2.webp": {
+    "width": 1020,
+    "height": 615,
+    "bytes": 157670,
+    "sha256": "6fc85ad5d157d82a5501f8fc1a7b707b51674e1a2f0490253589b9777fed81d2",
+    "alpha_gt_32_fraction": 0.26845,
+    "protected_max_alpha": 0,
+    "all_maxes": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "apps/mobile/assets/ascendant/sakura/blossom_crown_v2_standard.webp": {
+    "width": 1024,
+    "height": 576,
+    "bytes": 155624,
+    "sha256": "6844f2520245c5cda5f6cf6efb3f5508865010b675035a8c051a692ab71427d5",
+    "alpha_gt_32_fraction": 0.27976,
+    "protected_max_alpha": 0,
+    "all_maxes": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  }
+}

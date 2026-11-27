@@ -48968,6 +48968,22 @@ function possibleDungeonCompanionCounters(dungeonId) {
   return [...result];
 }
 
+// ../apps/mobile/src/core/ultra-luxe-grants.ts
+var ULTRA_LUXE_GRANT_COLLECTIONS = [
+  { id: "ascendant-celestial-sovereign", background: "ascendant-celestial-astral-sanctum", border: "ascendant-celestial-crown-of-the-cosmos", pet: "ascendant-celestial-aetherion", icon: "ascendant-celestial-crown-icon", title: "ascendant-celestial-title", titleName: "Sovereign of the Stars", badge: "ascendant_sovereign_of_stars", nameStyle: "ascendant-celestial-name" },
+  { id: "ascendant-draconic-dominion", background: "ascendant-draconic-dominion-of-ash", border: "ascendant-draconic-throne-of-embers", pet: "ascendant-draconic-vharaxis", icon: "ascendant-draconic-ruby-icon", title: "ascendant-draconic-title", titleName: "Dragon Sovereign", badge: "ascendant_dragon_sovereign", nameStyle: "ascendant-draconic-name" }
+];
+var ULTRA_LUXE_CANDIDATE_GRANT_COLLECTIONS = [
+  { id: "ascendant-abyssal-majesty", background: "ascendant-abyssal-forgotten-abyss", border: "ascendant-abyssal-crown-of-the-depths", pet: "ascendant-abyssal-nhalzuun", icon: null, title: "ascendant-abyssal-title", titleName: "Monarch of the Deep", badge: "ascendant_monarch_of_deep", nameStyle: null },
+  { id: "ascendant-paradox-eternal", background: "ascendant-paradox-beyond-the-veil", border: "ascendant-paradox-fractured-eternity", pet: "ascendant-paradox-aeon", icon: null, title: "ascendant-paradox-title", titleName: "Beyond Existence", badge: "ascendant_beyond_existence", nameStyle: null }
+];
+var FOUR_COLLECTIONS = [...ULTRA_LUXE_GRANT_COLLECTIONS, ...ULTRA_LUXE_CANDIDATE_GRANT_COLLECTIONS];
+var SIX_ONLY_COLLECTIONS = [
+  { id: "ascendant-sakura-enchantment", background: "ascendant-sakura-petal-sanctuary", border: "ascendant-sakura-blossom-crown", pet: "ascendant-sakura-spirit-fox", icon: null, title: "ascendant-sakura-title", titleName: "Sakura Dreamkeeper", badge: "ascendant_sakura_blossom_crest", nameStyle: "ascendant-sakura-name" },
+  { id: "ascendant-stormforged-sovereign", background: "ascendant-stormforged-thunderkeep", border: "ascendant-stormforged-steel-crown", pet: "ascendant-stormforged-direwolf", icon: null, title: "ascendant-stormforged-title", titleName: "Stormforged Warden", badge: "ascendant_stormforged_wolf_crest", nameStyle: "ascendant-stormforged-name" }
+];
+var ALL_COLLECTIONS = [...ULTRA_LUXE_GRANT_COLLECTIONS, { ...ULTRA_LUXE_CANDIDATE_GRANT_COLLECTIONS[0], nameStyle: "ascendant-abyssal-name" }, { ...ULTRA_LUXE_CANDIDATE_GRANT_COLLECTIONS[1], nameStyle: "ascendant-paradox-name" }, ...SIX_ONLY_COLLECTIONS];
+
 // ../apps/mobile/src/core/profile-premium-cosmetics.ts
 var PREMIUM_PROFILE_COSMETICS = [
   { id: "celestial-sovereign", name: "Celestial Sovereign", tier: "ascendant", borderId: "premium:celestial-sovereign:crown-of-cosmos", borderName: "Crown of the Cosmos", fallbackBorderId: "guild-border-royal", effectId: "premium:celestial-sovereign:celestial-alignment", effectName: "Celestial Alignment", backgroundId: "premium:celestial-sovereign:astral-sanctum", backgroundName: "Astral Sanctum", fallbackBackgroundId: "bg_frostfall", petId: "premium:celestial-sovereign:aetherion-starborn", petName: "Aetherion, the Starborn", fallbackPetId: "EVT_PET_009", badgeId: "ascendant_sovereign_of_stars", badgeName: "Sovereign of the Stars", accent: "#F5D982", softAccent: "#7181C8" },

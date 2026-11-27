@@ -1,5 +1,6 @@
 import {COLLECTIBLE_PLAYER_BADGE_IDS,SUPPORTER_BADGE_IDS,VIP_BADGE_IDS,canEquipSupporterBadge,isCollectiblePlayerBadgeId,isEquippablePlayerBadgeId,normalizePlayerBadges,supporterTierMonths,validatedFeaturedBadges,type CollectiblePlayerBadgeId,type EquippablePlayerBadgeId,type PlayerBadgeIdentity,type SupporterTenureTier} from '../core/player-badges';
 import {supabase} from './supabase';
+import {isUltraLuxeBadge} from '../core/ultra-luxe-cosmetics';
 
 export interface PlayerBadgePreferences{
  identity?:PlayerBadgeIdentity;
@@ -44,7 +45,7 @@ async function request(name:string,args:Record<string,unknown>={}):Promise<Playe
   vipPlusAvailable,
   supporterTierMonths:tier,
   supporterTotalDays:typeof data?.supporterTotalDays==='number'&&Number.isSafeInteger(data.supporterTotalDays)&&data.supporterTotalDays>=0?data.supporterTotalDays:0,
-  equippedBadgeId:selected,
+  equippedBadgeId:selected&&selectable.includes(selected)?selected:null,
   ownedExtras:ownedCollectibles,
   selectableBadgeIds:selectable,
   featuredExtras:validatedFeaturedBadges(data?.featuredExtras,selectable),
@@ -67,7 +68,7 @@ const missingBadgeRpc=(error:unknown)=>error instanceof Error&&error.message==='
 export async function updatePlayerEquippedBadge(id:EquippablePlayerBadgeId|null):Promise<PlayerBadgePreferences>{
  try{return await request('update_player_equipped_badge_v2',{p_badge_id:id});}
  catch(error){
-  if(!missingBadgeRpc(error)||id==='vip'||id==='vip_plus'||id==='supporter_3m'||id==='supporter_6m'||id==='supporter_12m')throw error;
+  if(!missingBadgeRpc(error)||id&&isUltraLuxeBadge(id)||id==='vip'||id==='vip_plus'||id==='supporter_3m'||id==='supporter_6m'||id==='supporter_12m')throw error;
   if(isCollectiblePlayerBadgeId(id))return updateLegacyFeaturedBadges([id]);
   try{await updateLegacyFeaturedBadges([]);}
   catch(legacyError){if(!missingBadgeRpc(legacyError))throw legacyError;}

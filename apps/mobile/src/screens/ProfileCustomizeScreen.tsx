@@ -5,7 +5,7 @@ import {Pressable,ScrollView,StyleSheet,Text,View,type ScrollViewInstance} from 
 import {GameButton} from '../components/GameButton';
 import {ProfileAudiencePreviewModal} from '../components/ProfileAudiencePreviewModal';
 import {ProfileIdentityPanel} from '../components/profile/ProfileIdentityPanel';
-import {ProfileLookPanel,WARDROBE_ASSETS,type ChipKind,type ProfileEquipNotice} from '../components/profile/ProfileLookPanel';
+import {ProfileLookPanel,WARDROBE_ASSETS,type ChipKind,type ProfileEquipNotice,type UltraLuxeFullSetPort} from '../components/profile/ProfileLookPanel';
 import {ProfileShowcasePanel} from '../components/profile/ProfileShowcasePanel';
 import {ProfileStage} from '../components/profile/ProfileStage';
 import {ProfileWardrobeChips} from '../components/profile/ProfileWardrobeChips';
@@ -14,6 +14,9 @@ import {normalizePlayerNameStyle,savePlayerNameStyle,type PlayerNameStylePrefere
 import type {SavePlayerNameStyle} from '../core/player-name-style-save';
 import type {ProfileCustomizationDestination} from '../core/profile-customization';
 import {profileWardrobe,wardrobeProgress} from '../core/profile-wardrobe';
+import {useUltraLuxeNameSelection} from '../online/useUltraLuxeNameSelection';
+import type {FullSetPlan,FullSetScope} from '../core/ultra-luxe-full-set-name';
+import type {OnlineSnapshot} from '../core/online-game-repository';
 import {useAuthSession} from '../online/AuthSessionProvider';
 import {invalidatePlayerIdentity} from '../online/player-identity-cache';
 import {useProfileExtensionDraft} from '../online/useProfileExtensionDraft';
@@ -27,13 +30,15 @@ const TABS:readonly Tab[]=['Look','Identity','Showcase'];
 const resolveTab=(section:Section):Tab=>section==='Appearance'?'Look':section;
 const COLLAPSE_AT=56,NOTICE_MS=6000;
 
-export function ProfileCustomizeScreen({state,onChange,onSaveNameStyle,onNavigateSource,onDirtyChange,initialSection='Look'}:{
- state:GameState;onChange:(next:GameState)=>void|Promise<void>;onSaveNameStyle:SavePlayerNameStyle;
+export function ProfileCustomizeScreen({state,onChange,onSaveNameStyle,onNavigateSource,onDirtyChange,fullSetPort,onEquipUltraLuxe,onUndoUltraLuxe,initialSection='Look'}:{
+ state:GameState;onChange:(next:GameState)=>void|Promise<void>;onSaveNameStyle:SavePlayerNameStyle;fullSetPort?:UltraLuxeFullSetPort;onEquipUltraLuxe?:(plan:FullSetPlan)=>Promise<OnlineSnapshot>;onUndoUltraLuxe?:(scope:FullSetScope,equipRequestId:string)=>Promise<OnlineSnapshot>;
  onNavigateSource?:(destination:ProfileCustomizationDestination)=>void;onDirtyChange?:(dirty:boolean)=>void;initialSection?:Section;
 }){
  const language=useGameLanguage();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const accountId=useAuthSession().session?.user.id??'';
+ const verifiedNames=useUltraLuxeNameSelection(!!onEquipUltraLuxe&&!!state.account.unlockedTitleIds?.some(id=>id.startsWith('ascendant-')));
+ const combinedPort=fullSetPort??(onEquipUltraLuxe&&verifiedNames.projection&&!verifiedNames.saving?{names:verifiedNames.projection,apply:onEquipUltraLuxe,undo:onUndoUltraLuxe}:undefined);
  const [tab,setTab]=useState<Tab>(resolveTab(initialSection));
  useEffect(()=>{setTab(resolveTab(initialSection))},[initialSection]);
  const [appearanceDirty,setAppearanceDirty]=useState(false),[nameInputDirty,setNameInputDirty]=useState(false);
@@ -86,7 +91,7 @@ export function ProfileCustomizeScreen({state,onChange,onSaveNameStyle,onNavigat
     <View style={[s.pill,dirty&&s.pillDirty]}><Text style={[s.pillText,dirty&&s.pillTextDirty]}>
      {dirty?profileT(language,"UNSAVED CHANGES"):profileT(language,'Collection {percent}%',{percent:progress.percent})}</Text></View>
    </View>
-   <ProfileStage state={previewState} collapsed={collapsed} active={!previewOpen} onToggle={()=>setExpandOverride(collapsed)} onAudiencePreview={()=>setPreviewOpen(true)}/>
+   <ProfileStage managedPrivateName={onEquipUltraLuxe?{style:verifiedNames.style}:undefined} state={previewState} collapsed={collapsed} active={!previewOpen} onToggle={()=>setExpandOverride(collapsed)} onAudiencePreview={()=>setPreviewOpen(true)}/>
    <View accessibilityRole="tablist" style={s.tabs}>
     {TABS.map(value=><Pressable key={value} accessibilityRole="tab" accessibilityState={{selected:tab===value}} onPress={()=>openTab(value)}
       style={({pressed})=>[s.tab,tab===value&&s.tabOn,pressed&&s.pressed]}>
@@ -97,11 +102,11 @@ export function ProfileCustomizeScreen({state,onChange,onSaveNameStyle,onNavigat
   </View>
 
   <View style={tab==='Look'?s.sectionShown:s.sectionHidden} pointerEvents={tab==='Look'?'auto':'none'}>
-   <ProfileLookPanel state={state} chip={chip} onChange={onChange} active={tab==='Look'} onNavigateSource={onNavigateSource}
+   <ProfileLookPanel fullSetEnabled={!!onEquipUltraLuxe||!!fullSetPort} fullSetPort={combinedPort} state={state} chip={chip} onChange={onChange} active={tab==='Look'} onNavigateSource={onNavigateSource}
     onDirtyChange={setAppearanceDirty} onPreviewStateChange={setAppearancePreview} onNotice={setNotice}/>
   </View>
   <View style={tab==='Identity'?s.sectionShown:s.sectionHidden} pointerEvents={tab==='Identity'?'auto':'none'}>
-   <ProfileIdentityPanel state={state} draft={draft} nameStyle={nameStyle} onNameStyleChange={setNameStyle} onSaveNameStyle={applyNameStyle}
+   <ProfileIdentityPanel prestige={onEquipUltraLuxe?verifiedNames:undefined} state={state} draft={draft} nameStyle={nameStyle} onNameStyleChange={setNameStyle} onSaveNameStyle={applyNameStyle}
     onNameInputDirtyChange={setNameInputDirty} nameResetVersion={nameResetVersion} active={tab==='Identity'}/>
   </View>
   <View style={tab==='Showcase'?s.sectionShown:s.sectionHidden} pointerEvents={tab==='Showcase'?'auto':'none'}>

@@ -21,7 +21,7 @@ import {issuePrivateDamageGemAuthorityV2,authorizePrivateDamageGemReviewV2} from
 type Projection=ReturnType<typeof reviewFrozenForgeSocketsV2>;
 type Member={classId:ClassIdV2;accountId:string;characterId:string;revision:number;
  compiled:ReturnType<typeof compileRealFrozenForgeActorV2>;baseline:Projection};
-type BossProfile={region:'asterfall'|'sunscar'|'frostmarch';tier:2|3|4;enemy:CombatantDefinition};
+type BossProfile={region:'asterfall'|'sunscar'|'frostmarch';tier:2|3|4;enemy:CombatantDefinition;mitigationConstant?:number};
 function measure(r:CombatResult,i:number){
  const a=r.players[i],sec=r.durationMs/1000;
  assert.ok(sec>0);
@@ -48,7 +48,7 @@ export function createGentleGemPartyPressureReviewV2(members:readonly Member[],p
  const verified=verifyPersistedPartyEnemyKitsV2([profile.enemy],kit);
  const kitDigest=enemyV2SnapshotDigest(kit);
  const run=(projections:readonly Projection[],players:CombatantDefinition[])=>{
-  const input:CombatInput={seed,players,enemies:[...verified.enemies],maxDurationMs:60000,tickMs:100};
+  const input:CombatInput={seed,players,enemies:[...verified.enemies],maxDurationMs:60000,tickMs:100,...(profile.mitigationConstant===undefined?{}:{mitigationConstant:profile.mitigationConstant})};
   const roster:ReadyRosterMember[]=members.map((m,i)=>({accountId:m.accountId,characterId:m.characterId,
    ticketId:'QA_TICKET_'+i,role:CLASS_ROLES_V2[m.classId],originalEnqueuedAtMs:1,
    loadoutId:'QA_LOADOUT_'+i,loadoutRevision:m.revision,loadoutSnapshotHash:projections[i].digest}));

@@ -13,6 +13,7 @@ import {runEffectEventProvenanceReviewV2} from './effect-gem-event-provenance-re
 import {runEffectLifecycleReviewV2} from './effect-gem-lifecycle-review';
 import {createGentleStatCombatReviewV2} from './gentle-stat-gem-combat-review';
 import {createGentleGemPartyPressureReviewV2} from './gentle-gem-party-pressure-review';
+import {compactUnifiedStatsV2,compactCoreCpIndexV2} from './compact-unified-calibration-fixture';
 import {STAT_GEMS_V1,EFFECT_GEMS_V1,gemItemId,type GemGrade,GEM_BALANCE_REVIEW_V2,STAT_GEMS_REVIEW_V2,EFFECT_GEMS_REVIEW_V2,EFFECT_GEM_REVIEW_MULTIPLIERS_V2} from '../../../equipment/gems/gem-catalog-v1';
 import type {V2GemSidecarState} from '../../../equipment/equipment-crafting-v2-gem-sidecar-types';
 import {writeFileSync} from 'node:fs';
@@ -1982,6 +1983,105 @@ function makeV21Loadout(classId:ClassIdV2,specIndex:0|1,targetTier:1|2|3|4,targe
    survivorLosses:a.filter(r=>r.result.after.partyAlive<r.result.before.partyAlive).length,
    lostVictories:a.filter(r=>r.result.before.victory>r.result.after.victory).length}])),
   releaseEnabled:false,cpApproved:false}));
+}
+// Unified compact class -> actual V2 skills -> original Forge -> exact socket
+// projection -> verified authored party enemy kits. The only modified source
+// policy is the versioned test class baseline; no post-compile stat scaling.
+{
+ const policy:ForgeSocketReviewPolicyV2={version:'QA_UNIFIED_COMPACT_V2',gemBalancePolicy:GEM_BALANCE_REVIEW_V2,
+  mechanicsReview:{version:FORGE_SOCKET_MECHANICS_REVIEW_V2,maxFinalAttackPower:1e8},
+  maxFinalHp:1e8,maxFinalDefense:1e8};
+ const parties:ClassIdV2[][]=[['IRONWARDEN','WAYFINDER','HEXWEAVER','STONECALLER'],
+  ['BASTION','RAVAGER','KNIFE_DANCER','DAWNKEEPER'],['DREADGUARD','HEXWEAVER','RAVAGER','STONECALLER']];
+ const roleMix={tank:['effect_unyielding','effect_last_stand','effect_bulwark'],
+  damage:['effect_execution','effect_momentum','effect_predator'],
+  support:['effect_benediction','effect_shared_resolve','effect_guardians_gift']} as const;
+ const statMix={tank:['stat_vitality','stat_iron','stat_ward','stat_elusive'],
+  damage:['stat_might','stat_keen','stat_savage','stat_precision'],
+  support:['stat_swift','stat_potent','stat_vitality','stat_ward']} as const;
+ type Comparison=ReturnType<ReturnType<typeof createGentleGemPartyPressureReviewV2>>;
+ const rows:{region:string;boss:string;band:string;classId:ClassIdV2;spec:number;seed:number;cp:number;arm:'stat'|'effect';result:Comparison}[]=[];
+ const cpRows:{boss:string;classId:ClassIdV2;spec:number;index:number;gearPoints:number;slots:number}[]=[];
+ let baseCount=0;
+ for(const profile of exactBossProfiles){
+  const level=profile.level,k=30+2*level;
+  const all=Object.keys(CLASS_NAMES_V2) as ClassIdV2[];
+  const membersByClass=new Map(all.map(classId=>[classId,([0,1] as const).map(spec=>{
+   const qa=makeV21Loadout(classId,spec,profile.forgeTier,level);
+   const classProfile=qa.source.classBaselinePolicy.profiles[classId]!;
+   const revision=qa.source.ledgerRevision+qa.ids.length;
+   const source={...qa.source,ledgerRevision:revision,verifyPersisted:(d:string,r:number)=>r===revision&&/^[a-f0-9]{64}$/.test(d),
+    classBaselinePolicy:{version:'QA_COMPACT_CLASS_CURVE_20261126',profiles:{[classId]:{...classProfile,maxLevel:100,statsAtLevel:(n:number)=>compactUnifiedStatsV2(classId,n)}}}};
+   const chosen=selectReviewSkillLoadoutV2(classId,qa.build.selected.specializationId!,qa.actor,profile.id,'targeted');
+   const build={...qa.build,selected:{...qa.build.selected,activeSkills:chosen.activeSkills}};
+   const compiled=compileRealFrozenForgeActorV2(qa.actor,build,source);
+   const baseline=reviewFrozenForgeSocketsV2(qa.actor,build,source,{slots:[],receipts:[]},policy);
+   assert.deepEqual(baseline.stats,compiled.actor.stats);
+   const exactGear=compiled.evidence.items.reduce((a,x)=>({attack:a.attack+x.scaledBaseStats.attack,
+    defense:a.defense+x.scaledBaseStats.defense,hp:a.hp+x.scaledBaseStats.hp}),{attack:0,defense:0,hp:0});
+   const cp=compactCoreCpIndexV2(level,exactGear);
+   assert.ok(cp.index>40*level/25&&cp.cpApproved===false);
+   cpRows.push({boss:profile.id,classId,spec,index:cp.index,gearPoints:cp.gearPoints,slots:qa.ids.length});
+   const role=CLASS_ROLES_V2[classId];
+   const project=(kind:'stat'|'effect')=>{
+    const sockets:V2GemSidecarState={slots:[],receipts:[]};
+    const pool=kind==='stat'?statMix[role]:roleMix[role];
+    const ids=kind==='stat'?qa.ids:qa.ids.slice(0,6);
+    assert.ok(ids.length>=6);
+    for(const [i,instanceId] of ids.entries()){
+     const family=kind==='stat'?pool[i%pool.length]:pool[Math.floor(i/2)];
+     const gemId=gemItemId(family,5);
+     sockets.slots.push(kind==='stat'?{instanceId,stat:{gemId,rollPercent:100}}:{instanceId,effect:{gemId,rollPercent:100}});
+     sockets.receipts.push({requestId:'QA_COMPACT_GEM_'+i,fingerprint:'gem:'+instanceId+':'+gemId,instanceId,
+      socket:kind,gemId,source:'gem_pouch',rollPercent:100,burnedGemId:null,version:qa.source.ledgerRevision+i+1});
+    }
+    const projection=reviewFrozenForgeSocketsV2(qa.actor,build,source,sockets,policy);
+    assert.equal(projection.cpApproved,false);
+    return projection;
+   };
+   return {classId,accountId:source.accountId,characterId:source.characterId,revision,compiled,baseline,cp:cp.index,
+    stat:project('stat'),effect:project('effect')};
+  })] as const));
+  const reference=[...membersByClass.values()].flat().map(x=>x.compiled.actor);
+  const meanHp=reference.reduce((n,x)=>n+x.stats.maxHp,0)/reference.length;
+  const meanAttack=reference.reduce((n,x)=>n+x.stats.attackPower,0)/reference.length;
+  // Same fixed boss input for all parties and both gem arms; not dynamic
+  // scaling to a wearer's CP or gear. Region progression follows reference
+  // fixture stats and the mitigation curve, not approved difficulty values.
+  const fixed={...boss,id:profile.id,name:profile.id,level,abilities:[],phases:undefined,
+   stats:{...boss.stats,maxHp:Math.round(meanAttack*4*30),attackPower:Math.round(meanHp*.30),defense:Math.round(k*.60)}};
+  for(const [pi,ids] of parties.entries())for(const spec of [0,1] as const){
+   const members=ids.map(id=>membersByClass.get(id)![spec]);
+   for(const seed of [0,1])for(const [band,hpFactor,apFactor] of [['accessible',.8,.8],['standard',1,1],['pressure',1.25,1.25]] as const){
+    const enemy={...fixed,stats:{...fixed.stats,maxHp:Math.round(fixed.stats.maxHp*hpFactor),attackPower:Math.round(fixed.stats.attackPower*apFactor)}};
+    const fight=createGentleGemPartyPressureReviewV2(members,{region:profile.region,tier:profile.tier,enemy,mitigationConstant:k},
+     ['COMPACT',profile.id,pi,spec,seed,band].join('_'));
+    baseCount++;
+    // Rotate wearer deterministically; across two specs/seeds all four
+    // positions are exercised. Compare independent stat/effect arms only.
+    const index=spec*2+seed,member=members[index];
+    for(const arm of ['stat','effect'] as const)rows.push({region:profile.region,boss:profile.id,band,classId:member.classId,spec,seed,cp:member.cp,arm,
+     result:fight(index,member[arm],seed===0)});
+   }
+  }
+ }
+ assert.equal(cpRows.length,108);assert.equal(baseCount,216);assert.equal(rows.length,432);
+ assert.equal(new Set(rows.map(r=>r.classId)).size,9);
+ const keys=[...new Set(rows.map(r=>r.boss+'|'+r.band+'|'+r.arm))].sort();
+ assert.equal(keys.length,36);
+ const mean=(values:number[])=>values.reduce((n,v)=>n+v,0)/values.length;
+ console.log('PRIVATE_COMPACT_CP_REGIONAL_REVIEW '+JSON.stringify({cases:rows.length,baseCount,cpProfiles:cpRows,
+  scope:'UNIFIED_COMPACT_CLASS_ORIGINAL_FORGE_V2_SKILLS_SOCKET_AUTHORED_BOSS_QA',
+  byBossBandArm:keys.map(key=>{
+   const a=rows.filter(r=>r.boss+'|'+r.band+'|'+r.arm===key);
+   return {key,cases:a.length,meanCoreCp:mean(a.map(r=>r.cp)),baselineWins:a.reduce((n,r)=>n+r.result.before.victory,0),
+    candidateWins:a.reduce((n,r)=>n+r.result.after.victory,0),meanBaselinePartyAlive:mean(a.map(r=>r.result.before.partyAlive)),
+    meanCandidatePartyAlive:mean(a.map(r=>r.result.after.partyAlive)),meanBaselineEnemyHp:mean(a.map(r=>r.result.before.enemyHp)),
+    meanCandidateEnemyHp:mean(a.map(r=>r.result.after.enemyHp)),lostVictories:a.filter(r=>r.result.before.victory>r.result.after.victory).length,
+    gainedVictories:a.filter(r=>r.result.before.victory<r.result.after.victory).length,
+    meanDpsDelta:mean(a.map(r=>r.result.after.dps-r.result.before.dps)),meanHpsDelta:mean(a.map(r=>r.result.after.hps-r.result.before.hps)),
+    meanWearerHpDelta:mean(a.map(r=>r.result.after.hpFraction-r.result.before.hpFraction))};
+  }),releaseEnabled:false,cpApproved:false}));
 }
 // Exact-copy effect magnitude and resonance: every family at 1/2/3
 // copies, low, mixed and max strength. No execution of effect hooks here.

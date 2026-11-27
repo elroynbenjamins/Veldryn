@@ -93,3 +93,24 @@ assert.equal(paused.state.character?.activityQueuePausedReason,'loadout_combat_s
 assert.equal(paused.state.character?.selectedCosmeticPetId,'PET_001');
 assert.throws(()=>reviewActivityLoadoutOfflineClaim(queueInitial,62000,{...config,verifyNoFrozenEncounter:()=>false}));
 console.log('ACTIVITY_LOADOUT_QUEUE_REVIEW: actual offline handoffs, split claim parity, missing combat preset pause and reservation fence');
+
+import {reviewSaveInactiveLoadout} from '../src/core/activity-loadout-editor-review';
+const beforeEdit=JSON.stringify(wood.state);
+const oldCombat=wood.state.character!.savedLoadouts!.find(row=>row.slotIndex===1)!;
+const edited=reviewSaveInactiveLoadout(wood.state,1,{name:'Combat alternate',
+ equipment:oldCombat.equipment,equipmentInstanceIds:oldCombat.equipmentInstanceIds??{},
+ petId:'PET_018',faithSelections:{combat:'SUNFIRE_VOW'}},3000);
+assert.equal(edited.preset.name,'Combat alternate');
+assert.equal(edited.preset.petId,'PET_018');
+assert.deepEqual(edited.state.activity,wood.state.activity);
+assert.deepEqual(edited.state.inventory,wood.state.inventory);
+assert.deepEqual(edited.state.account,wood.state.account);
+assert.deepEqual(edited.state.character?.equipment,wood.state.character?.equipment);
+assert.equal(edited.state.character?.selectedCosmeticPetId,'PET_001');
+assert.deepEqual(edited.state.character?.faith,wood.state.character?.faith);
+assert.equal(edited.applied,false);
+assert.equal(JSON.stringify(wood.state),beforeEdit);
+assert.throws(()=>reviewSaveInactiveLoadout(wood.state,1,{name:'Bad',equipment:{weapon:'not-an-item'},equipmentInstanceIds:{}},3000));
+assert.throws(()=>reviewSaveInactiveLoadout(wood.state,4,{name:'Locked',equipment:{},equipmentInstanceIds:{}},3000));
+assert.throws(()=>reviewSaveInactiveLoadout(wood.state,1,{name:'Bad',equipment:{},equipmentInstanceIds:{},petId:'PET_042'},3000));
+console.log('ACTIVITY_LOADOUT_EDITOR_REVIEW: inactive save only, current activity/gear/pet/Faith/inventory unchanged, invalid selection rejected');

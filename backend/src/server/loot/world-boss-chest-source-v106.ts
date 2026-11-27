@@ -24,7 +24,7 @@ export function createWorldBossChestSourceV106(deps:Pick<DamageChestStoreInputV1
  const milestone=createWorldBossChestSourceV104({readVerifiedCanonicalAttempts:deps.readVerifiedCanonicalAttempts},qaEnabled);
  const readDamage=async(tx:ChestSqlV70,accountId:string,key:string)=>{
   gate();const id=identity(accountId,key);
-  const proof=await readEarnedWorldBossDamageSourcesV105(tx,{...id,...deps},true);
+  const proof=await readEarnedWorldBossDamageSourcesV105(tx,{accountId:id.accountId,eventId:id.eventId,readVerifiedCanonicalAttempts:deps.readVerifiedCanonicalAttempts,readVersionedSecret:deps.readVersionedSecret},true);
   if(!proof.earnedSourceKeys.includes(key))throw Error('world_boss_v106_unearned_damage_chest');
   return {sourceKey:key,accountId,earned:true as const,proofVersion:PROOF,
    recipientCharacterId:null,equipmentDeliveryMode:'account_unclaimed' as const,

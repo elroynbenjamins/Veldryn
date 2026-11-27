@@ -116,6 +116,37 @@ async function run(){
  x.reload();assert.equal(x.view().requests.length,0);
  assert.equal(g.readFor('B').card.status,'completed');
  assert.equal(g.readFor('B').card.members.filter(m=>m.ready).length,2);
+ const {projectRecruitmentChatCardV128:projectRecruit,recruitmentChatSqlArgumentsV128:sqlArgs}=
+  require('../dist/server/party/party-recruitment-chat-session-review-v128.js');
+ const recruitSession={accountId:'A',partyId};
+ const row={viewerAccountId:'A',partyId,id:'RECRUIT',messageId:'RECRUIT_MSG',kind:'recruitment_request',
+  status:'pending',expiresAtMs:week+301000,rosterRevision:7,sourceRevision:1,allowedActions:['accept','decline'],
+  applicantAccountId:'APPLICANT',classId:'DAWNKEEPER',role:'support',combatLevel:25,releaseEnabled:false};
+ const input={session:recruitSession,sqlProjection:row,names:{APPLICANT:'Applicant'},
+  title:'Recruitment',describe:(classId,level)=>classId+' · '+level,snapshotRevision:1,serverNowMs:week+2000};
+ const recruitment=projectRecruit(input,true);
+ assert.equal(recruitment.card.applicantName,'Applicant');
+ assert.equal(recruitment.card.applicantAccountId,undefined);
+ assert.equal(recruitment.card.viewerAccountId,undefined);
+ assert.equal(projectRecruit({...input,sqlProjection:null},true),null);
+ assert.throws(()=>projectRecruit({...input,session:{accountId:'B',partyId}},true),/invalid_projection/);
+ assert.throws(()=>projectRecruit({...input,sqlProjection:{...row,role:'tank'}},true),/invalid_projection/);
+ assert.throws(()=>projectRecruit({...input,sqlProjection:{...row,status:'completed'}},true),/invalid_projection/);
+ assert.throws(()=>projectRecruit(input),/unreleased/);
+ const activeRecruit=new Active(true);activeRecruit.setScope(recruitSession);activeRecruit.setActive(true);
+ const ticket=activeRecruit.beginRead(10);
+ assert.equal(activeRecruit.acceptRead(ticket,recruitment.activeSnapshot,11),true);
+ const intent=activeRecruit.intent('RECRUIT','accept',12);
+ assert.ok(intent);
+ const body={...intent,requestId:'RECRUIT_REQUEST'};
+ assert.deepEqual(sqlArgs(recruitSession,body,true),{p_actor:'A',p_request_id:'RECRUIT_REQUEST',
+  p_party:partyId,p_application:'RECRUIT',p_message:'RECRUIT_MSG',p_roster_revision:7,p_source_revision:1,p_decision:'accept'});
+ assert.throws(()=>sqlArgs(recruitSession,{...body,actorAccountId:'B'},true),/invalid_intent/);
+ assert.throws(()=>sqlArgs(recruitSession,{...body,partyId:'OTHER'},true),/invalid_intent/);
+ assert.equal(projectRecruit({...input,serverNowMs:row.expiresAtMs},true).activeSnapshot.requests.length,0);
+ const accepted=projectRecruit({...input,sqlProjection:{...row,status:'completed',allowedActions:[]}},true);
+ assert.equal(accepted.card.status,'completed');assert.equal(accepted.activeSnapshot.requests.length,0);
+ console.log('PARTY_RECRUITMENT_CHAT_V128_MOBILE_MAPPING_PASS');
  console.log('PARTY_SOCIAL_ACTION_V123_OWNER_INTEGRATION_PASS');
 }
 run().catch(error=>{console.error(error);process.exitCode=1;});

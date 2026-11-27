@@ -109,4 +109,53 @@ DO $$ BEGIN
  OR (SELECT sum(gold) FROM market_review.wallet)+(SELECT sum(fee) FROM market_review.resource_delivery)<>3000
  THEN RAISE EXCEPTION 'material_consumption_invariant_failed'; END IF;
 END $$;
+
+-- Multi-input recipe: ore debits precede wood; a later missing ingredient
+-- must undo earlier stock, destination and source-lot changes.
+INSERT INTO market_review.resource_policy VALUES('wood',true,10,1,100);
+INSERT INTO market_review.resource_stock VALUES('a','wood',20);
+INSERT INTO market_review.material_origin VALUES('origin-wood','wood','a','gathering',20);
+INSERT INTO market_review.material_stock_lot VALUES('a','origin-wood','opening',20);
+INSERT INTO market_review.consume_recipe VALUES('fixture-multi-input'),('fixture-empty-recipe');
+INSERT INTO market_review.consume_recipe_input VALUES('fixture-multi-input','ore',3),('fixture-multi-input','wood',2);
+SELECT market_review.expect_error($q$SELECT market_review.consume_material('b','multi-empty','b2','fixture-empty-recipe',1)$q$,'unregistered_consume_recipe');
+SELECT market_review.expect_error($q$UPDATE market_review.consume_recipe_input SET per_batch=1 WHERE recipe='fixture-multi-input' AND item='wood'$q$,'immutable_history');
+SELECT market_review.resource_act('list','a','wood-list','wood-offer',0,'wood',20,2,400);
+SELECT market_review.resource_act('buy','b','wood-buy','wood-offer',0,p_quantity=>10,p_price=>2,p_now=>401);
+SELECT market_review.expect_error($q$SELECT market_review.consume_material('b','multi-spend','b2','fixture-multi-input',3)$q$,'insufficient_claimed_materials');
+SELECT market_review.assert_material_conservation();
+DO $$ BEGIN
+ IF (SELECT quantity FROM market_review.resource_stock WHERE owner='b' AND item='ore') IS DISTINCT FROM 12::bigint
+ OR (SELECT quantity FROM market_review.resource_claim_projection WHERE owner='b' AND destination='bank' AND item='ore') IS DISTINCT FROM 12::bigint
+ OR EXISTS(SELECT 1 FROM market_review.material_spend WHERE owner='b' AND request_id='multi-spend')
+ OR EXISTS(SELECT 1 FROM market_review.material_spent_lot WHERE owner='b' AND request_id='multi-spend')
+ OR EXISTS(SELECT 1 FROM market_review.request WHERE actor='b' AND request_id='multi-spend')
+ THEN RAISE EXCEPTION 'later_ingredient_rollback_failed'; END IF;
+END $$;
+SELECT market_review.claim_resource_delivery('b','wood-collect','b','wood-buy','inventory:b2');
+SELECT market_review.expect_error($q$SELECT market_review.consume_material('b','multi-spend','b2','fixture-multi-input',3,true)$q$,'injected_after_consumption');
+SELECT market_review.assert_material_conservation();
+DO $$ BEGIN
+ IF (SELECT quantity FROM market_review.resource_stock WHERE owner='b' AND item='ore') IS DISTINCT FROM 12::bigint
+ OR (SELECT quantity FROM market_review.resource_stock WHERE owner='b' AND item='wood') IS DISTINCT FROM 10::bigint
+ OR EXISTS(SELECT 1 FROM market_review.material_spend WHERE owner='b' AND request_id='multi-spend')
+ OR EXISTS(SELECT 1 FROM market_review.request WHERE actor='b' AND request_id='multi-spend')
+ THEN RAISE EXCEPTION 'multi_input_fault_rollback_failed'; END IF;
+END $$;
+SELECT market_review.consume_material('b','multi-spend','b2','fixture-multi-input',3);
+SELECT market_review.consume_material('b','multi-spend','b2','fixture-multi-input',3);
+SELECT market_review.expect_error($q$SELECT market_review.consume_material('b','multi-spend','b2','fixture-multi-input',2)$q$,'request_conflict');
+SELECT market_review.assert_material_conservation();
+DO $$ BEGIN
+ IF (SELECT count(*) FROM market_review.material_spend WHERE owner='b')<>2
+ OR (SELECT quantity FROM market_review.resource_stock WHERE owner='b' AND item='ore') IS DISTINCT FROM 3::bigint
+ OR (SELECT quantity FROM market_review.resource_stock WHERE owner='b' AND item='wood') IS DISTINCT FROM 4::bigint
+ OR (SELECT quantity FROM market_review.material_spent_lot WHERE owner='b' AND request_id='multi-spend' AND origin='origin-02' AND destination='bank') IS DISTINCT FROM 9::bigint
+ OR (SELECT quantity FROM market_review.material_spent_lot WHERE owner='b' AND request_id='multi-spend' AND origin='origin-wood' AND destination='inventory:b2') IS DISTINCT FROM 6::bigint
+ OR (SELECT receipt->'inputs' FROM market_review.request WHERE actor='b' AND request_id='multi-spend') IS DISTINCT FROM '{"ore":9,"wood":6}'::jsonb
+ OR (SELECT remaining FROM market_review.resource_offer WHERE id='wood-offer') IS DISTINCT FROM 10
+ OR (SELECT gold FROM market_review.wallet WHERE id='b')<>937
+ OR (SELECT sum(gold) FROM market_review.wallet)+(SELECT sum(fee) FROM market_review.resource_delivery)<>3000
+ THEN RAISE EXCEPTION 'multi_input_conservation_failed'; END IF;
+END $$;
 ROLLBACK;

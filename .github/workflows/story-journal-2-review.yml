@@ -19,3 +19,4 @@ jobs:
       - run: node tools/story-journal-2-review.test.mjs
       - run: node tools/story-journal-2-evidence-review.test.mjs
       - run: node tools/story-journal-2-navigation-review.test.mjs
+      - run: node tools/story-journal-2-regional-review.test.mjs

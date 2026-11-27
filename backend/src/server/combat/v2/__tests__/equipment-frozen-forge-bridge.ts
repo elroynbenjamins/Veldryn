@@ -16,6 +16,7 @@ import {createGentleGemPartyPressureReviewV2} from './gentle-gem-party-pressure-
 import {compactUnifiedStatsV2,compactCoreCpIndexV2} from './compact-unified-calibration-fixture';
 import {regionalProgressionAtV2,regionalPressureReviewV2} from './regional-progression-review';
 import {runRegionalProgressionReviewV2} from './regional-progression-forge-audit';
+import {regionalMechanicsV2,regionalMechanicPressureV2,type RegionalMechanicArm} from './regional-mechanics-review';
 import {STAT_GEMS_V1,EFFECT_GEMS_V1,gemItemId,type GemGrade,GEM_BALANCE_REVIEW_V2,STAT_GEMS_REVIEW_V2,EFFECT_GEMS_REVIEW_V2,EFFECT_GEM_REVIEW_MULTIPLIERS_V2} from '../../../equipment/gems/gem-catalog-v1';
 import type {V2GemSidecarState} from '../../../equipment/equipment-crafting-v2-gem-sidecar-types';
 import {writeFileSync} from 'node:fs';
@@ -2058,6 +2059,74 @@ runRegionalProgressionReviewV2();
    upgradedWins:rows.reduce((n,r)=>n+r.upgrade.win,0),pressureHpDelta:mean(rows.map(r=>r.pressure.hp-r.before.hp)),
    upgradeHpDelta:mean(rows.map(r=>r.upgrade.hp-r.pressure.hp)),pressureEnemyHpDelta:mean(rows.map(r=>r.pressure.enemyHp-r.before.enemyHp)),
    upgradeEnemyHpDelta:mean(rows.map(r=>r.upgrade.enemyHp-r.pressure.enemyHp))};
+ }),releaseEnabled:false,cpApproved:false}));
+}
+// Mechanics vs stats on identical compact Forge builds and fixed reference
+// stats. 180 matched four-arm sets, no newly minted or live enemy definitions.
+{
+ const arms:RegionalMechanicArm[]=['reference','stats_only','mechanics_only','mixed'];
+ const rows:{level:number;classId:ClassIdV2;spec:number;kind:string;arm:RegionalMechanicArm;win:number;hp:number;enemyHp:number;duration:number;cast:number;interrupt:number;dot:number;debuff:number;shield:number}[]=[];
+ for(const level of [13,26,38,51,63]){
+  const progression=regionalProgressionAtV2(level);
+  if(progression.region==='region4'||progression.expectedTier===5)throw Error('regional_mechanics_scope');
+  const tier=progression.expectedTier,region=progression.region,k=30+2*level;
+  const builds=(Object.keys(CLASS_NAMES_V2) as ClassIdV2[]).flatMap(classId=>([0,1] as const).map(spec=>{
+   const qa=makeV21Loadout(classId,spec,tier,level);
+   const classProfile=qa.source.classBaselinePolicy.profiles[classId]!;
+   const source={...qa.source,classBaselinePolicy:{version:'QA_COMPACT_REGION_MECHANICS',profiles:{
+    [classId]:{...classProfile,maxLevel:100,statsAtLevel:(n:number)=>compactUnifiedStatsV2(classId,n)}}}};
+   return {classId,spec,actor:compileRealFrozenForgeActorV2(qa.actor,qa.build,source).actor};
+  }));
+  const meanHp=builds.reduce((n,x)=>n+x.actor.stats.maxHp,0)/builds.length;
+  const meanAttack=builds.reduce((n,x)=>n+x.actor.stats.attackPower,0)/builds.length;
+  for(const row of builds)for(const kind of ['normal','elite'] as const){
+   const seed=['QA_REGION_MECHANICS',level,row.classId,row.spec,kind].join('_');
+   const id='QA_REGION_MECHANIC_ENEMY';
+   let previousStats:CombatantDefinition['stats']|undefined;
+   for(const arm of arms){
+    const p=regionalMechanicPressureV2(level,arm);
+    const base:CombatantDefinition={...boss,id,name:'Regional mechanics fixture',level,boss:false,
+     phases:undefined,abilities:[],tags:[kind==='elite'?'pve:archetype:guardian':'pve:archetype:caster'],
+     stats:{...boss.stats,maxHp:Math.round(meanAttack*10*p.hp*(kind==='elite'?1.5:1)),
+      attackPower:Math.round(meanHp*.055*p.attack*(kind==='elite'?1.2:1)),defense:Math.round(k*.30*p.defense)}};
+    const foe=regionalMechanicsV2(base,kind,arm==='mechanics_only'||arm==='mixed');
+    assert.deepEqual(foe.stats,base.stats);
+    assert.equal(base.abilities.length,0);
+    if(arm==='reference')previousStats=foe.stats;
+    if(arm==='mechanics_only')assert.deepEqual(foe.stats,previousStats);
+    assert.ok(foe.abilities.length===((arm==='mechanics_only'||arm==='mixed')&&kind==='elite'?2:1));
+    const proposed=prepareSoloEnemyKitsV2([foe],{ruleset:ENEMY_V2_RULESET,region,equipmentTier:Math.max(2,tier) as 2|3|4,
+     encounterId:seed,serverSeed:seed,eliteEnemyIds:kind==='elite'?[id]:[]});
+    const persisted={...proposed,source:'server-persisted-v2' as const,revision:6};
+    const verified=verifyPersistedEnemyKitsV2([foe],persisted);
+    const input:CombatInput={seed,players:[row.actor],enemies:[...verified.enemies],maxDurationMs:60000,mitigationConstant:k};
+    const scope={source:'server-persisted-v2' as const,version:2 as const,ruleset:persisted.ruleset,
+     mode:'solo' as const,encounterId:persisted.encounterId,revision:persisted.revision,seed:persisted.seed,
+     playerIds:[row.actor.id],enemyIds:persisted.enemyIds,bossIds:persisted.bossIds};
+    const run=()=>simulateCombat(input,issueEnemyV2EngineAuthority(scope,input,(_s,d)=>/^[a-f0-9]{64}$/.test(d)));
+    const result=run();
+    if(row.spec===0&&kind==='normal'&&arm==='mechanics_only')assert.deepEqual(run(),result);
+    const own=result.events.filter(e=>e.actorId===id&&e.abilityId?.startsWith('QA_REGION_'));
+    assert.ok(result.events.every(e=>e.amount===undefined||Number.isFinite(e.amount)));
+    assert.ok(result.players[0].hp>=0&&result.players[0].hp<=row.actor.stats.maxHp+1e-8);
+    rows.push({level,classId:row.classId,spec:row.spec,kind,arm,win:Number(result.victory),
+     hp:result.players[0].hp/row.actor.stats.maxHp,enemyHp:result.enemies[0].hp/result.enemies[0].definition.stats.maxHp,
+     duration:result.durationMs,cast:own.filter(e=>e.type==='cast_complete').length,
+     interrupt:result.events.filter(e=>e.type==='interrupt'&&e.targetId===id).length,
+     dot:own.filter(e=>e.type==='dot_tick').length,debuff:own.filter(e=>e.type==='status_apply'&&e.statusKind==='debuff').length,
+     shield:own.filter(e=>e.type==='shield').length});
+   }
+  }
+ }
+ assert.equal(rows.length,720);
+ const keys=[...new Set(rows.map(r=>r.level+'|'+CLASS_ROLES_V2[r.classId]+'|'+r.kind+'|'+r.arm))].sort();
+ assert.equal(keys.length,120);
+ const mean=(values:number[])=>values.reduce((n,v)=>n+v,0)/values.length;
+ console.log('REGIONAL_MECHANICS_COMPARISON '+JSON.stringify({matchedSets:rows.length/4,executions:rows.length,groups:keys.map(key=>{
+  const a=rows.filter(r=>r.level+'|'+CLASS_ROLES_V2[r.classId]+'|'+r.kind+'|'+r.arm===key);
+  return {key,cases:a.length,wins:a.reduce((n,r)=>n+r.win,0),meanHp:mean(a.map(r=>r.hp)),meanEnemyHp:mean(a.map(r=>r.enemyHp)),
+   meanDuration:mean(a.map(r=>r.duration)),casts:a.reduce((n,r)=>n+r.cast,0),interrupts:a.reduce((n,r)=>n+r.interrupt,0),
+   dotTicks:a.reduce((n,r)=>n+r.dot,0),debuffs:a.reduce((n,r)=>n+r.debuff,0),shields:a.reduce((n,r)=>n+r.shield,0)};
  }),releaseEnabled:false,cpApproved:false}));
 }
 // Unified compact class -> actual V2 skills -> original Forge -> exact socket

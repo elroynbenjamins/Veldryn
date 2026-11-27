@@ -68,6 +68,8 @@ export class OnlineEventExpeditionRuntime{
   const game=await this.services.rpc<Game>('load_online_game_server_v1',{p_account_id:accountId});
   const runtime=game.liveEvent;
   if(!runtime?.enabled||game.serverNow<runtime.startsAtMs||game.serverNow>=runtime.endsAtMs||!runtime.eventId.startsWith(`${definition.liveEventSeriesId}_`))throw new GameplayError('event_not_live');
+  // Festival activation is independent from readiness of the seasonal expedition module.
+  if(isFrostfallEventExpedition(definition.id)&&runtime.modules?.includes('expedition')!==true)throw new GameplayError('event_not_live');
   // Server-owned daily quota. Unrewarded practice starts remain available after both rewarded clears.
   // No optimistic client fallback: a stale backend must not create unclaimable event rewards.
   const dailyBudget=isFrostfallEventExpedition(definition.id)?await this.services.rpc<number>('online_event_expedition_daily_budget_server_v1',{p_account_id:accountId,p_event_id:runtime.eventId}):2;

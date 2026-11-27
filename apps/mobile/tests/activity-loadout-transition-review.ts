@@ -247,6 +247,7 @@ console.log('GATHERING_SETTLEMENT_REVIEW: actual 10-minute reward engine, unchan
 
 import {GATHERING,RECIPES} from '../src/content/skills';
 import {GATHERING_TOOLS} from '../src/content/gathering-tools';
+import {WORLD_ZONES} from '../src/content/world-map';
 import {startGathering} from '../src/core/game';
 import {gatheringToolEffects} from '../src/core/gathering-tools';
 import type {GatheringGearSkillV2} from '../src/core/gathering-speed-v2-review';
@@ -278,9 +279,11 @@ for(const band of bands)for(const targetId of band.nodes)for(const toolMode of [
  assert.ok(node&&node.skillId!=='herbalism');
  const skill=node.skillId as GatheringGearSkillV2;
  let base=createCharacter(newGame(startMs),'IRONWARDEN','Gathering QA');
- const equipped=toolMode==='eligible_tiers'?GATHERING_TOOLS.filter(t=>t.skillId===skill&&t.unlockLevel<=band.level&&t.requiredCharacterLevel<=band.level):[];
- base={...base,currentRegionId:node.zoneId,skills:base.skills.map(row=>row.skillId===skill?{...row,level:band.level,xp:totalXpAtLevel(band.level)}:row),
-  character:{...base.character!,level:band.level,equippedToolIdsByTier:{[skill]:Object.fromEntries(equipped.map(t=>[t.tier,t.id]))}}};
+ const zone=WORLD_ZONES.find(z=>z.id===node.zoneId)!;
+ const characterLevel=Math.max(band.level,zone.minLevel);
+ const equipped=toolMode==='eligible_tiers'?GATHERING_TOOLS.filter(t=>t.skillId===skill&&t.unlockLevel<=band.level&&t.requiredCharacterLevel<=characterLevel):[];
+ base={...base,currentRegionId:node.zoneId,defeatedBossIds:['FALLEN_KNIGHT'],exploredRouteIds:['SCOUT_IRONWOOD','SCOUT_OLD_MINES','SCOUT_KINGS_ROAD','SCOUT_SUNSCAR'],skills:base.skills.map(row=>row.skillId===skill?{...row,level:band.level,xp:totalXpAtLevel(band.level)}:row),
+  character:{...base.character!,level:characterLevel,xp:totalXpAtLevel(characterLevel),equippedToolIdsByTier:{[skill]:Object.fromEntries(equipped.map(t=>[t.tier,t.id]))}}};
  const started=startGathering(base,targetId,startMs);
  const source=activityLoadoutSnapshotDigest(started);
  const tool=gatheringToolEffects(started,skill);

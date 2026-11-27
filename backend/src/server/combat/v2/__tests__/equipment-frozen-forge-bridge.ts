@@ -23,6 +23,7 @@ import {soloOffenseLoopReviewV2,type SoloOffenseLoopArm} from './solo-offense-lo
 import {soloRoleBudgetReviewV2,type SoloRoleBudgetArm} from './solo-role-budget-review';
 import {soloOffensiveProgressionReviewV2,type SoloProgressionArm} from './solo-offensive-progression-review';
 import {COMPLETION_BOSSES_REVIEW_V2,createCompletionBossReviewV2,type CompletionBossArmV2} from './regional-completion-boss-review';
+import {completionBossPressureReviewV2,completionBossOffenseReviewV2} from './regional-completion-counterplay-review';
 import {STAT_GEMS_V1,EFFECT_GEMS_V1,gemItemId,type GemGrade,GEM_BALANCE_REVIEW_V2,STAT_GEMS_REVIEW_V2,EFFECT_GEMS_REVIEW_V2,EFFECT_GEM_REVIEW_MULTIPLIERS_V2} from '../../../equipment/gems/gem-catalog-v1';
 import type {V2GemSidecarState} from '../../../equipment/equipment-crafting-v2-gem-sidecar-types';
 import {writeFileSync} from 'node:fs';
@@ -2647,6 +2648,10 @@ runRegionalProgressionReviewV2();
 // dungeon composer allowlist, actual persistence, rewards or progression.
 {
  const arms:CompletionBossArmV2[]=['reference','mechanics','mixed'];
+ const counterArms=['mixed_counter','pressure_counter','pressure_default','pressure_offensive','pressure_counter_basic'] as const;
+ type CounterArm=typeof counterArms[number];
+ const counterRows:{boss:string;classId:ClassIdV2;spec:number;profile:SoloGearReviewProfile;seed:number;arm:CounterArm;
+  win:number;reason:string;duration:number;hp:number;enemyHp:number;phases:number;casts:number;interrupts:number;cleanses:number;phaseDamage:number;damageTaken:number;healing:number;skills:string[]}[]=[];
  const rows:{boss:string;level:number;classId:ClassIdV2;spec:number;profile:SoloGearReviewProfile;seed:number;arm:string;win:number;reason:string;duration:number;hp:number;enemyHp:number;phases:number;casts:number;interrupts:number;dots:number;shields:number;heal:number}[]=[];
  for(const profile of COMPLETION_BOSSES_REVIEW_V2){
   const level=profile.level,tier=profile.tier,k=30+2*level;
@@ -2661,10 +2666,18 @@ runRegionalProgressionReviewV2();
    const compiled=compileRealFrozenForgeActorV2(qa.actor,{...qa.build,selected:{...qa.build.selected,activeSkills:choice.selections.counter_full}},source);
    assert.deepEqual(compiled.evidence.equippedInstanceIds,original.evidence.equippedInstanceIds);
    assert.deepEqual(compiled.actor.stats,original.actor.stats);
-   if(gear==='low_common')assert.ok(qa.rolls.every(r=>r.rarity==='common'&&r.quality>=10&&r.quality<=30));
+   if(gear!=='pinned_reference')assert.ok(qa.rolls.every(r=>r.rarity==='common'&&r.quality>=10&&r.quality<=30));
+   if(gear==='transition_common')assert.ok(qa.rolls.every(r=>!['helmet','legs','cape','ring'].includes(r.slot)||r.tier<=tier-1));
    const actor=secondaryOffenseActorReviewV2(classId,compiled.actor,'approved_start').actor;
    assert.deepEqual(actor.stats,compiled.actor.stats);
-   return {classId,spec,gear,original:original.actor,baseline:compiled.actor,actor};
+   const alternatives=Object.fromEntries((['default_full','offensive_full'] as const).map(arm=>{
+    const alt=compileRealFrozenForgeActorV2(qa.actor,{...qa.build,selected:{...qa.build.selected,activeSkills:choice.selections[arm]}},source);
+    assert.deepEqual(alt.evidence.equippedInstanceIds,compiled.evidence.equippedInstanceIds);
+    assert.deepEqual(alt.actor.stats,compiled.actor.stats);
+    assert.deepEqual(alt.actor.combatV2,compiled.actor.combatV2);
+    return [arm,alt.actor];
+   })) as Record<'default_full'|'offensive_full',CombatantDefinition>;
+   return {classId,spec,gear,original:original.actor,baseline:compiled.actor,actor,alternatives};
   };
   const references=ids.flatMap(classId=>([0,1] as const).map(spec=>build(classId,spec,'pinned_reference')));
   const builds=[...references,...references.map(r=>build(r.classId,r.spec,'low_common'))];
@@ -2710,6 +2723,63 @@ runRegionalProgressionReviewV2();
      heal:result.players[0].healingDone});
    }
   }
+  // Same boss reference and frozen gear; additionally test partial upgrades.
+  const robustness=[...builds,...references.map(r=>build(r.classId,r.spec,'transition_common'))];
+  const mixed=fixtures[2].enemy,pressure=completionBossPressureReviewV2(mixed);
+  assert.deepEqual(pressure.stats,mixed.stats);
+  assert.equal(pressure.id,mixed.id);assert.equal(pressure.level,mixed.level);
+  assert.equal(pressure.abilities.length,mixed.abilities.length);
+  for(const [i,a] of pressure.abilities.entries()){
+   const old=mixed.abilities[i];
+   assert.ok(a.cooldownMs<old.cooldownMs);
+   assert.deepEqual({...a,cooldownMs:old.cooldownMs},old);
+  }
+  for(const [i,p] of pressure.phases!.entries()){
+   const old=mixed.phases![i];
+   assert.deepEqual({...p,effects:p.effects.slice(0,-1)},old);
+   assert.equal(p.effects.at(-1)?.kind,'damage');
+  }
+  for(const row of robustness)for(const seedIndex of [0,1]){
+   const seed=['QA_COMPLETION',profile.id,row.classId,row.spec,seedIndex].join('_');
+   for(const arm of counterArms){
+    const baseline=arm==='pressure_default'?row.alternatives.default_full:arm==='pressure_offensive'?row.alternatives.offensive_full:row.baseline;
+    const enemy=arm==='mixed_counter'?mixed:pressure;
+    const original:CombatInput={seed,players:[baseline],enemies:[enemy],maxDurationMs:120000,mitigationConstant:k};
+    const candidate=completionBossOffenseReviewV2(row.classId,original,arm==='pressure_counter_basic');
+    const input=candidate.input,actor=input.players[0];
+    assert.deepEqual(actor.stats,baseline.stats);
+    assert.deepEqual(actor.combatV2,baseline.combatV2);
+    assert.equal(actor.basicAttackMs,baseline.basicAttackMs);
+    assert.deepEqual(actor.abilities,secondaryOffenseActorReviewV2(row.classId,baseline,'approved_start').actor.abilities);
+    if(actor.role==='damage')assert.deepEqual(actor,baseline);
+    if(arm!=='pressure_counter_basic')assert.equal(actor.basicAttackCoeff,baseline.basicAttackCoeff);
+    else assert.ok(actor.basicAttackCoeff>=baseline.basicAttackCoeff&&actor.basicAttackCoeff<=baseline.basicAttackCoeff*2+1e-8);
+    const scope={source:'server-persisted-v2' as const,version:2 as const,ruleset:ENEMY_V2_RULESET,
+     mode:'solo' as const,encounterId:seed,revision:1,seed,playerIds:[actor.id],enemyIds:[profile.id],bossIds:[profile.id]};
+    const run=()=>simulateCombat(input,issueEnemyV2EngineAuthority(scope,input,(_s,d)=>/^[a-f0-9]{64}$/.test(d)));
+    const result=run();
+    if(row.spec===0&&seedIndex===0&&row.gear==='pinned_reference'&&arm==='pressure_counter_basic'){
+     assert.deepEqual(run(),result);
+     assert.throws(()=>completionBossOffenseReviewV2(row.classId,{...original,enemies:[{...enemy,id:'BOSS_EXP_ROOT'}]},true),/fresh_review_boss/);
+     assert.throws(()=>completionBossOffenseReviewV2(row.classId,{...original,players:[...original.players,...original.players]},true),/fresh_review_boss/);
+     assert.throws(()=>completionBossOffenseReviewV2(row.classId,{...original,initialPlayerState:{}},true),/fresh_review_boss/);
+    }
+    assert.ok(result.events.every(e=>e.amount===undefined||Number.isFinite(e.amount)));
+    assert.ok(result.players[0].hp>=0&&result.players[0].hp<=actor.stats.maxHp+1e-8);
+    const phaseIds=new Set(enemy.phases?.map(p=>p.id));
+    const phases=result.events.filter(e=>e.type==='phase'&&e.actorId===profile.id);
+    assert.ok(phases.length<=2&&new Set(phases.map(e=>e.abilityId)).size===phases.length);
+    const own=result.events.filter(e=>e.actorId===profile.id);
+    counterRows.push({boss:profile.id,classId:row.classId,spec:row.spec,profile:row.gear,seed:seedIndex,arm,
+     win:Number(result.victory),reason:result.reason,duration:result.durationMs,
+     hp:result.players[0].hp/actor.stats.maxHp,enemyHp:result.enemies[0].hp/enemy.stats.maxHp,
+     phases:phases.length,casts:own.filter(e=>e.type==='cast_complete').length,
+     interrupts:result.events.filter(e=>e.type==='interrupt'&&e.targetId===profile.id).length,
+     cleanses:result.events.filter(e=>e.type==='status_remove'&&e.actorId===actor.id&&e.detail==='combat_v2_cleanse').length,
+     phaseDamage:own.filter(e=>e.type==='damage'&&e.abilityId&&phaseIds.has(e.abilityId)).reduce((n,e)=>n+(e.amount??0),0),
+     damageTaken:result.players[0].damageTaken,healing:result.players[0].healingDone,skills:actor.abilities.map(a=>a.id)});
+   }
+  }
  }
  assert.equal(rows.length,864);
  const keys=[...new Set(rows.map(r=>r.boss+'|'+r.classId+'|'+r.profile+'|'+r.arm))].sort();
@@ -2723,6 +2793,21 @@ runRegionalProgressionReviewV2();
     phases:a.reduce((n,r)=>n+r.phases,0),casts:a.reduce((n,r)=>n+r.casts,0),interrupts:a.reduce((n,r)=>n+r.interrupts,0),
     dots:a.reduce((n,r)=>n+r.dots,0),shields:a.reduce((n,r)=>n+r.shields,0),meanHeal:mean(a.map(r=>r.heal))};
   }),releaseEnabled:false,rewardEnabled:false,unlockEnabled:false,cpApproved:false}));
+ assert.equal(counterRows.length,1620);
+ assert.equal(counterRows.filter(r=>r.arm==='mixed_counter'&&r.profile!=='transition_common').reduce((n,r)=>n+r.win,0),216);
+ const counterKeys=[...new Set(counterRows.map(r=>r.boss+'|'+r.classId+'|'+r.profile+'|'+r.arm))].sort();
+ assert.equal(counterKeys.length,405);
+ console.log('REGIONAL_COMPLETION_COUNTERPLAY_REVIEW '+JSON.stringify({matchedSets:324,executions:counterRows.length,
+ groups:counterKeys.map(key=>{
+  const a=counterRows.filter(r=>r.boss+'|'+r.classId+'|'+r.profile+'|'+r.arm===key);
+  return {key,cases:a.length,wins:a.reduce((n,r)=>n+r.win,0),timeouts:a.filter(r=>r.reason==='timeout').length,wipes:a.filter(r=>r.reason==='wipe').length,
+   meanDuration:mean(a.map(r=>r.duration)),meanHp:mean(a.map(r=>r.hp)),meanEnemyHp:mean(a.map(r=>r.enemyHp)),
+   phases:a.reduce((n,r)=>n+r.phases,0),casts:a.reduce((n,r)=>n+r.casts,0),interrupts:a.reduce((n,r)=>n+r.interrupts,0),
+   cleanses:a.reduce((n,r)=>n+r.cleanses,0),meanPhaseDamage:mean(a.map(r=>r.phaseDamage)),
+   meanDamageTaken:mean(a.map(r=>r.damageTaken)),meanHealing:mean(a.map(r=>r.healing)),
+   skills:[...new Set(a.flatMap(r=>r.skills))]};
+ }),releaseEnabled:false,rewardEnabled:false,unlockEnabled:false,cpApproved:false}));
+
 }
 // Unified compact class -> actual V2 skills -> original Forge -> exact socket
 // projection -> verified authored party enemy kits. The only modified source

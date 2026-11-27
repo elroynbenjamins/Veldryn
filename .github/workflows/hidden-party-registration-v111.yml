@@ -6,6 +6,7 @@ on:
       - 'backend/tests/permanent-party-registration-v111-*.sql'
       - 'backend/tests/permanent-party-registration-v121-concurrency.py'
       - 'backend/tests/permanent-party-registration-v124-recruitment.sql'
+      - 'backend/tests/permanent-party-registration-v125-outbox.sql'
       - '.github/workflows/hidden-party-registration-v111.yml'
   workflow_dispatch:
 permissions:
@@ -35,6 +36,8 @@ jobs:
             docs/roadmap/party-events/hidden-migrations/permanent-party-stable-registration-v110-review.sql \
             docs/roadmap/party-events/hidden-migrations/permanent-party-atomic-exchange-v111-review.sql \
             docs/roadmap/party-events/hidden-migrations/permanent-party-action-receipts-v122-review.sql \
+            docs/roadmap/party-events/hidden-migrations/permanent-party-recruitment-applications-v124-review.sql \
+            docs/roadmap/party-events/hidden-migrations/permanent-party-notification-outbox-v125-review.sql \
             backend/tests/permanent-party-registration-v111-regression.sql \
             | docker exec -i ${{ job.services.postgres.id }} psql -U postgres -d postgres -v ON_ERROR_STOP=1
       - name: Verify independent PostgreSQL sessions and atomic action receipts
@@ -43,6 +46,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cat docs/roadmap/party-events/hidden-migrations/permanent-party-recruitment-applications-v124-review.sql \
-            backend/tests/permanent-party-registration-v124-recruitment.sql \
+          cat backend/tests/permanent-party-registration-v124-recruitment.sql \
+            backend/tests/permanent-party-registration-v125-outbox.sql \
             | docker exec -i ${{ job.services.postgres.id }} psql -U postgres -d postgres -v ON_ERROR_STOP=1

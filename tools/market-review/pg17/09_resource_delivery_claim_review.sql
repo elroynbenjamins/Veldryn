@@ -158,4 +158,5 @@ DO $$ BEGIN
  OR (SELECT sum(gold) FROM market_review.wallet)+(SELECT sum(fee) FROM market_review.resource_delivery)<>3000
  THEN RAISE EXCEPTION 'multi_input_conservation_failed'; END IF;
 END $$;
+\ir 14_processing_lineage_review.sql
 ROLLBACK;

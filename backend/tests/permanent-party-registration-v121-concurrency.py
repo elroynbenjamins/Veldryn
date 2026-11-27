@@ -77,6 +77,7 @@ def race(statements, expire_proposal=None):
             time.sleep(.05)
         if expire_proposal:
             # Await the real DB deadline while the contender is blocked.
+            assert sql(f"select expires_at>clock_timestamp() from private.party_role_swap_proposals_v108 where id='{expire_proposal}';")=="t", "contender must reach lock before deadline"
             sql(f"select pg_sleep(greatest(0,extract(epoch from (expires_at-clock_timestamp())))+0.15) from private.party_role_swap_proposals_v108 where id='{expire_proposal}';")
         holder.stdin.write("commit;\n\\q\n")
         holder.stdin.flush()
@@ -140,12 +141,26 @@ assert json.loads(sql(f"select private.party_registration_snapshot_v110('{party}
 # must not record a consent or exchange.
 proposal3="00000000-0000-0000-0000-000000000033"
 message3="00000000-0000-0000-0000-000000000043"
-setup(proposal3,message3,11,remaining_seconds=5)
+setup(proposal3,message3,11,remaining_seconds=10)
 expired,=race([action(a,"V121_EXPIRED",proposal3,message3,11)],expire_proposal=proposal3)
 assert expired["response"]["state"]=="expired"
 assert int(sql(f"select count(*) from private.party_role_swap_participants_v108 where proposal_id='{proposal3}' and decision is not null;"))==0
 assert int(sql(f"select roster_revision from private.party_registration_state_v110 where party_id='{party}';"))==11
 assert int(sql(f"select count(*) from private.party_registration_exchange_history_v110 where proposal_id='{proposal3}';"))==0
+# Message linkage, exact single consent, and decline do not change the roster.
+proposal4="00000000-0000-0000-0000-000000000034"
+message4="00000000-0000-0000-0000-000000000044"
+setup(proposal4,message4,11)
+sql(f"update public.chat_messages set is_system=false,account_id='{a}' where id='{message4}';")
+reject(action(a,"V121_FORGED",proposal4,message4,11),"unverified_message")
+sql(f"update public.chat_messages set is_system=true,account_id=null where id='{message4}';")
+reject(action(a,"V121_STALE",proposal4,message4,10),"stale_scope")
+assert json.loads(sql(action(a,"V121_A4",proposal4,message4,11)))["response"]["state"]=="pending"
+reject(action(a,"V121_A4_NEW",proposal4,message4,11),"response_already_recorded")
+assert json.loads(sql(action(b,"V121_B4",proposal4,message4,11,"decline")))["response"]["state"]=="declined"
+assert json.loads(sql(f"select private.party_registration_snapshot_v110('{party}');"))["members"]==orig["members"]
+assert int(sql(f"select roster_revision from private.party_registration_state_v110 where party_id='{party}';"))==11
+assert int(sql(f"select count(*) from private.party_registration_exchange_history_v110 where proposal_id='{proposal4}';"))==0
 for role in ["anon","authenticated","service_role"]:
     assert sql(f"select has_function_privilege('{role}','private.respond_party_registration_chat_v122(uuid,text,uuid,uuid,uuid,bigint,bigint,text)','execute');")=="f"
 print("PARTY_V121_V122_PG17_CONCURRENT_RECEIPTS_ROLLBACK_EXPIRY_PASS")

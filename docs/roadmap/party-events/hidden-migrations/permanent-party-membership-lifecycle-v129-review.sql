@@ -1,7 +1,5 @@
 -- DISPOSABLE PG17 REVIEW ONLY, after V126/V128. Not a public RPC.
 -- Authoritative fixture registrations only. No live dual-write.
-alter table private.party_registration_state_v110 add column lifecycle_status text not null default 'active'
- check(lifecycle_status in ('active','disbanded'));
 create table private.party_registration_departures_v129 (
  registration_id uuid primary key,
  party_id uuid not null references private.party_registration_state_v110(party_id) on delete cascade,

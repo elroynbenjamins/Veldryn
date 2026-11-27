@@ -40,6 +40,7 @@ jobs:
             docs/roadmap/party-events/hidden-migrations/permanent-party-action-receipts-v122-review.sql \
             docs/roadmap/party-events/hidden-migrations/permanent-party-recruitment-applications-v124-review.sql \
             docs/roadmap/party-events/hidden-migrations/permanent-party-notification-outbox-v125-review.sql \
+            docs/roadmap/party-events/hidden-migrations/permanent-party-recruitment-chat-v128-review.sql \
             backend/tests/permanent-party-registration-v111-regression.sql \
             | docker exec -i ${{ job.services.postgres.id }} psql -U postgres -d postgres -v ON_ERROR_STOP=1
       - name: Verify independent PostgreSQL sessions and atomic action receipts

@@ -23,6 +23,7 @@ const gameplay=gameplayHandler(services,authenticatePlayer),regionalCombat=regio
 const guildShopServices:GuildShopReadServices={
  authenticate:services.authenticate,
  rpc:services.rpc,
+ batchSnapshotEnabled:Deno.env.get('GUILD_SHOP_BATCH_SNAPSHOT_V1')==='true',
  guildLevelForAccount:accountId=>services.rpc<number|null>('guild_shop_guild_level_server_v1',{p_account_id:accountId}),
 };
 const guildShop=guildShopReadHandler(guildShopServices);

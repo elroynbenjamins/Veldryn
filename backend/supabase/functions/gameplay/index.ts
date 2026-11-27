@@ -51193,21 +51193,21 @@ var classCombatStyle = (id) => CLASS_COMBAT_STYLES[id];
 
 // ../apps/mobile/src/core/world-weather.ts
 var SEASON_DEFINITIONS = {
-  spring: { name: "Bloomtide", symbol: "\u2740", color: "#8bcf9b", months: "March\u2013May", description: "Renewal increases yields from every gathering discipline.", weather: ["rain", "rain", "mist", "clear", "bloomwind"] },
+  spring: { name: "Bloomtide", symbol: "\u2740", color: "#8bcf9b", months: "March\u2013May", description: "Renewal speeds up every gathering discipline.", weather: ["rain", "rain", "mist", "clear", "bloomwind"] },
   summer: { name: "Suncrest", symbol: "\u2600", color: "#e4b65b", months: "June\u2013August", description: "Long daylight shortens every gathering action.", weather: ["clear", "clear", "heatwave", "storm", "mist"] },
-  autumn: { name: "Emberfall", symbol: "\u{1F342}", color: "#d88755", months: "September\u2013November", description: "A season of plenty: gathering yields and combat spoils increase.", weather: ["mist", "rain", "harvest_wind", "clear", "storm"] },
+  autumn: { name: "Emberfall", symbol: "\u{1F342}", color: "#d88755", months: "September\u2013November", description: "A season of plenty: gathering speeds up and combat grants more gold.", weather: ["mist", "rain", "harvest_wind", "clear", "storm"] },
   winter: { name: "Frostwane", symbol: "\u2744", color: "#9bc8e8", months: "December\u2013February", description: "Harsh battles take longer but teach more.", weather: ["snow", "snow", "frost", "clear", "mist"] }
 };
 var WEATHER_DEFINITIONS = {
   clear: { name: "Clear Skies", symbol: "\u25C7", color: "#d8c58c", description: "Favorable visibility speeds every activity." },
-  rain: { name: "Steady Rain", symbol: "\u2602", color: "#78acd1", description: "Fish rise quickly and herbs grow lush, while wet ground slows combat." },
+  rain: { name: "Steady Rain", symbol: "\u2602", color: "#78acd1", description: "Fishing and Herbalism speed up, while wet ground slows combat." },
   mist: { name: "Gloam Mist", symbol: "\u224B", color: "#a8b2c2", description: "Hidden paths reveal more combat loot and unusual botanicals." },
-  storm: { name: "Thunderstorm", symbol: "\u03DF", color: "#b195df", description: "Charged stone yields more ore; dangerous combat grants more XP." },
-  bloomwind: { name: "Bloomwind", symbol: "\u2740", color: "#8fd39a", description: "Living winds carry extra timber and expose rare botanical traces." },
+  storm: { name: "Thunderstorm", symbol: "\u03DF", color: "#b195df", description: "Charged stone speeds up mining; dangerous combat grants more XP." },
+  bloomwind: { name: "Bloomwind", symbol: "\u2740", color: "#8fd39a", description: "Living winds speed up woodcutting and expose rare botanical traces." },
   heatwave: { name: "Heatwave", symbol: "\u2600", color: "#e59b54", description: "Dry seams mine quickly, but woodland and river work slow down." },
   harvest_wind: { name: "Harvest Wind", symbol: "\u3030", color: "#d59c65", description: "Steady autumn gusts speed woodcutting." },
   snow: { name: "Snowfall", symbol: "\u2744", color: "#b9d8ee", description: "Slow, difficult hunts grant increased combat experience." },
-  frost: { name: "Deep Frost", symbol: "\u2727", color: "#86c7e8", description: "Frozen seams yield more ore while iced waters slow fishing." }
+  frost: { name: "Deep Frost", symbol: "\u2727", color: "#86c7e8", description: "Frozen seams speed up mining while iced waters slow fishing." }
 };
 function seasonAt(atMs) {
   const month = new Date(atMs).getUTCMonth();
@@ -51254,11 +51254,11 @@ function neutralEffect() {
   return { actionTimeMultiplier: 1, xpMultiplier: 1, goldMultiplier: 1, itemMultiplier: 1, dropChanceMultiplier: 1, notes: [] };
 }
 function seasonEffect(kind, seasonId) {
-  let actionTimeMultiplier = 1, xpMultiplier = 1, goldMultiplier = 1, itemMultiplier = 1, dropChanceMultiplier = 1;
+  let actionTimeMultiplier = 1, xpMultiplier = 1, goldMultiplier = 1, dropChanceMultiplier = 1;
   const notes = [];
   if (seasonId === "spring" && kind !== "combat") {
-    itemMultiplier *= 1.08;
-    notes.push("+8% gathered materials");
+    actionTimeMultiplier *= 0.92;
+    notes.push("+8% gathering speed");
   }
   if (seasonId === "summer" && kind !== "combat") {
     actionTimeMultiplier *= 0.95;
@@ -51269,8 +51269,8 @@ function seasonEffect(kind, seasonId) {
       goldMultiplier *= 1.08;
       notes.push("+8% combat gold");
     } else {
-      itemMultiplier *= 1.05;
-      notes.push("+5% gathered materials");
+      actionTimeMultiplier *= 0.95;
+      notes.push("+5% gathering speed");
     }
   }
   if (seasonId === "winter" && kind === "combat") {
@@ -51278,7 +51278,7 @@ function seasonEffect(kind, seasonId) {
     actionTimeMultiplier *= 1.05;
     notes.push("+8% combat XP", "\u22125% combat speed");
   }
-  return { actionTimeMultiplier, xpMultiplier, goldMultiplier, itemMultiplier, dropChanceMultiplier, notes };
+  return { actionTimeMultiplier, xpMultiplier, goldMultiplier, itemMultiplier: 1, dropChanceMultiplier, notes };
 }
 function weatherEffect(kind, weatherId) {
   let effect2 = neutralEffect();
@@ -51289,12 +51289,11 @@ function weatherEffect(kind, weatherId) {
   }
   if (weatherId === "rain") {
     if (kind === "fishing") {
-      effect2.actionTimeMultiplier *= 0.88;
-      effect2.itemMultiplier *= 1.1;
-      notes.push("+12% fishing speed", "+10% fish");
+      effect2.actionTimeMultiplier *= 0.8;
+      notes.push("+20% fishing speed");
     } else if (kind === "herbalism") {
-      effect2.itemMultiplier *= 1.08;
-      notes.push("+8% herbs");
+      effect2.actionTimeMultiplier *= 0.92;
+      notes.push("+8% herbalism speed");
     } else if (kind === "combat") {
       effect2.actionTimeMultiplier *= 1.05;
       notes.push("\u22125% combat speed");
@@ -51306,13 +51305,13 @@ function weatherEffect(kind, weatherId) {
       notes.push("+12% loot chance");
     } else if (kind === "herbalism") {
       effect2.dropChanceMultiplier *= 1.1;
-      notes.push("+10% rare botanicals");
+      notes.push("+10% rare botanical chance");
     }
   }
   if (weatherId === "storm") {
     if (kind === "mining") {
-      effect2.itemMultiplier *= 1.12;
-      notes.push("+12% ore");
+      effect2.actionTimeMultiplier *= 0.88;
+      notes.push("+12% mining speed");
     } else if (kind === "combat") {
       effect2.actionTimeMultiplier *= 1.08;
       effect2.xpMultiplier *= 1.1;
@@ -51321,11 +51320,11 @@ function weatherEffect(kind, weatherId) {
   }
   if (weatherId === "bloomwind") {
     if (kind === "woodcutting") {
-      effect2.itemMultiplier *= 1.12;
-      notes.push("+12% logs");
+      effect2.actionTimeMultiplier *= 0.88;
+      notes.push("+12% woodcutting speed");
     } else if (kind === "herbalism") {
       effect2.dropChanceMultiplier *= 1.25;
-      notes.push("+25% rare botanicals");
+      notes.push("+25% rare botanical chance");
     }
   }
   if (weatherId === "heatwave") {
@@ -51348,8 +51347,8 @@ function weatherEffect(kind, weatherId) {
   }
   if (weatherId === "frost") {
     if (kind === "mining") {
-      effect2.itemMultiplier *= 1.1;
-      notes.push("+10% ore");
+      effect2.actionTimeMultiplier *= 0.9;
+      notes.push("+10% mining speed");
     } else if (kind === "fishing") {
       effect2.actionTimeMultiplier *= 1.12;
       notes.push("\u221212% fishing speed");
@@ -51361,7 +51360,7 @@ function environmentEffect(kind, env) {
   if (kind === "alchemy" || kind === "faith") return neutralEffect();
   const season = seasonEffect(kind, env.seasonId), weather = weatherEffect(kind, env.weatherId);
   const notes = [...season.notes, ...weather.notes];
-  return { actionTimeMultiplier: season.actionTimeMultiplier * weather.actionTimeMultiplier, xpMultiplier: season.xpMultiplier * weather.xpMultiplier, goldMultiplier: season.goldMultiplier * weather.goldMultiplier, itemMultiplier: season.itemMultiplier * weather.itemMultiplier, dropChanceMultiplier: season.dropChanceMultiplier * weather.dropChanceMultiplier, notes: notes.length ? notes : ["No activity modifier"] };
+  return { actionTimeMultiplier: season.actionTimeMultiplier * weather.actionTimeMultiplier, xpMultiplier: season.xpMultiplier * weather.xpMultiplier, goldMultiplier: season.goldMultiplier * weather.goldMultiplier, itemMultiplier: 1, dropChanceMultiplier: season.dropChanceMultiplier * weather.dropChanceMultiplier, notes: notes.length ? notes : ["No activity modifier"] };
 }
 function environmentEffectForActivity(activity) {
   const env = environmentForActivity(activity);

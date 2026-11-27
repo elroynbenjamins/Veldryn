@@ -45,6 +45,11 @@ for (const language of languages) {
 }
 assert.equal(progressionEnvironmentText('de', '+8% combat XP · −5% combat speed'), '+8% Kampf-EP · −5% Kampftempo');
 assert.equal(progressionEnvironmentText('fr', 'Clear Skies'), 'Ciel dégagé');
+assert.equal(progressionEnvironmentText('nl', '+8% herbalism speed · +10% rare botanical chance'), '+8% kruidenkundesnelheid · +10% kans op zeldzame planten');
+for (const language of languages.filter(language=>language!=='en')) {
+  assert.notEqual(progressionEnvironmentText(language, 'Renewal speeds up every gathering discipline.'), 'Renewal speeds up every gathering discipline.');
+}
+
 assert.equal(progressionError('fr', new Error('raw_server_failure_123'), 'Could not update goals.'), progressionT('fr', 'Could not update goals.'));
 
 const screens = ['WorldScreen','QuestScreen','EventScreen','MasteryHallScreen','AchievementsScreen','AdventurersJournalScreen','WorldMilestoneFeedScreen'];

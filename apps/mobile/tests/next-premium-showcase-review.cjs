@@ -4,8 +4,8 @@ const component=path.join(src,'components/profile/NextPremiumShowcaseReview.tsx'
 // Render pure component structure with a mock native host. This is not device or visual QA.
 const clock={interpolate:config=>({config})};
 const jsx=(type,props)=>typeof type==='function'?type(props):({type,props});
-let starts=0,stops=0,finish,cleanups=[];
-const rn={View:'View',Image:'Image',Pressable:'Pressable',Easing:{linear:x=>x},
+let starts=0,stops=0,finish,cleanups=[],mockWidth=340,mockFontScale=1,mockSize={width:340,height:205},motionCalls=[];
+const rn={useWindowDimensions:()=>({fontScale:mockFontScale}),View:'View',Image:'Image',Pressable:'Pressable',Easing:{linear:x=>x},
  Animated:{Image:'Animated.Image',View:'Animated.View',multiply:()=>clock,modulo:()=>clock,
  Value:class {constructor(v){this.v=v;} interpolate(config){return {config};} setValue(v){this.v=v;}},
  timing:(value,cfg)=>({start:cb=>{starts++;finish=cb;assert.equal(cfg.useNativeDriver,true);assert.equal(cfg.isInteraction,false);},stop:()=>{stops++;}})},
@@ -18,10 +18,13 @@ function load(file){
  assert(!transpile.diagnostics.some(d=>d.category===ts.DiagnosticCategory.Error),file);
  const mod={exports:{}};cache.set(file,mod.exports);
  const req=name=>{
-  if(name==='react')return {memo:x=>x,useMemo:f=>f(),useRef:x=>({current:x}),useEffect:f=>{const cleanup=f();if(cleanup)cleanups.push(cleanup);}};
+  if(name==='react')return {memo:x=>x,useMemo:f=>f(),useRef:x=>({current:x}),useState:x=>[typeof x==='number'?mockWidth:mockSize,()=>{}],useEffect:f=>{const cleanup=f();if(cleanup)cleanups.push(cleanup);}};
   if(name==='react/jsx-runtime')return {jsx,jsxs:jsx,Fragment:'Fragment'};
   if(name==='react-native')return rn;
   if(name.endsWith('.webp'))return name;
+  if(name==='../anim/motion')return {useCosmeticMotionPolicy:(active,reduced)=>{motionCalls.push([active,reduced]);return {running:active&&!reduced};},useLoopProgress:()=>clock};
+  if(/^(\.\/)(AbyssalMajestyPreview|ParadoxEternalPreview|AbyssalBorderLight|ParadoxBorderLight)$/.test(name))return new Proxy({}, {get:()=>props=>({type:'Legacy',props})});
+  if(/integration-assets$/.test(name))return new Proxy({}, {get:()=>()=>({scene:{}})});
   if(name.startsWith('.')){
    const base=path.resolve(path.dirname(file),name);
    for(const ext of ['.ts','.tsx'])if(fs.existsSync(base+ext))return load(base+ext);
@@ -84,3 +87,41 @@ assert(adapter.includes('useCosmeticMotionPolicy(active&&supported,reduceMotion)
 const source=fs.readFileSync(component,'utf8');
 assert(!/Animated\.loop\(|setInterval\(|setTimeout\(|\.start\(/.test(source));
 console.log('Both isolated showcase trees, 14 FX nodes + atlas, static badge, fallback and import isolation passed in mocked host.');
+
+const standard=load(path.join(src,'core/next-premium-standard-border.ts'));
+const safe=load(path.join(src,'core/profile-frame-layout.ts')).PROFILE_SCENE_SAFE_LAYOUT;
+const {VerifiedCandidateShowcase,VerifiedCandidateBorderEffects}=load(path.join(src,'components/profile/VerifiedCandidateShowcase.tsx'));
+let checks=0;
+for(const set of sets){
+ for(const [w,h] of [[44,32],[104,104],[260,168],[340,205],[480,270],[340,340]]){
+  const tracks=standard.nextPremiumStandardBorderTracks(set.motion,w,h);
+  assert.equal(tracks.length,6);
+  const q=Math.min(1,w/safe.referenceWidth,h/safe.referenceHeight),side=safe.sideRail*q,rail=safe.horizontalRail*q;
+  for(const [index,t] of tracks.entries()){
+   assert.deepEqual(t.frames[0],t.frames.at(-1));
+   for(let i=1;i<t.frames.length;i++)for(let j=0;j<=4;j++){
+    const a=t.frames[i-1],b=t.frames[i],p=j/4,x=a.x+(b.x-a.x)*p,y=a.y+(b.y-a.y)*p,r=t.radius*(a.scale+(b.scale-a.scale)*p),eps=1e-8;
+    assert(x-r>=-eps&&x+r<=w+eps&&y-r>=-eps&&y+r<=h+eps);
+    assert(index===0?x+r<=side+eps:index===1?x-r>=w-side-eps:t.frames[0].y<h/2?y+r<=rail+eps:y-r>=h-rail-eps);
+    checks++;
+   }
+  }
+ }
+ assert.deepEqual(standard.nextPremiumStandardBorderTracks(set.motion,43,32),[]);
+ const props={collectionId:set.id,active:true,fullSet:true,equippedPetId:set.pet,portrait:'Portrait',identity:'Identity',badges:'Badge shelf',guild:'Guild',fallback:'Fallback'};
+ mockWidth=340;mockFontScale=1;
+ const tree=VerifiedCandidateShowcase(props);
+ assert.equal(count(tree,'Animated.Image'),15);
+ assert.equal(bySource(tree,'_crest_64').length,0,'avoid duplicate static badge when a shelf is supplied');
+ assert(JSON.stringify(tree).includes('Portrait')&&JSON.stringify(tree).includes('Badge shelf'));
+ assert.equal(count(VerifiedCandidateShowcase({...props,active:false}),'Animated.Image'),0);
+ assert.equal(count(VerifiedCandidateShowcase({...props,reduceMotion:true}),'Animated.Image'),0);
+ mockWidth=319;assert(JSON.stringify(VerifiedCandidateShowcase(props)).includes('Fallback'));
+ mockWidth=340;mockFontScale=1.1;assert(JSON.stringify(VerifiedCandidateShowcase(props)).includes('Fallback'));mockFontScale=1;
+ mockSize={width:340,height:205};
+ assert.equal(count(VerifiedCandidateBorderEffects({id:set.border,active:true}),'Animated.Image'),6);
+ assert.equal(count(VerifiedCandidateBorderEffects({id:set.border,active:true,reduceMotion:true}),'Animated.Image'),0);
+ assert.equal(count(VerifiedCandidateBorderEffects({id:set.border,active:false}),'Animated.Image'),0);
+}
+assert(motionCalls.some(([active,reduced])=>active&&reduced)&&motionCalls.some(([active])=>!active));
+console.log('PASS: verified native route mock, portrait/badge shelf, static fallback, six-node standard rails; '+checks+' interpolated perimeter samples');

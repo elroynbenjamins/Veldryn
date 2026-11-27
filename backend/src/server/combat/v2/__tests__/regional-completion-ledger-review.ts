@@ -4,11 +4,11 @@
 import {COMPLETION_BOSSES_REVIEW_V2,type CompletionBossIdV2} from './regional-completion-boss-review';
 type Chapter='asterfall'|'sunscar'|'frostmarch'|'region4';
 type Identity={accountId:string;characterId:string};
-type Victory={accountId:string;characterId:string;receiptId:string;bossId:CompletionBossIdV2;
+export type CompletionVictoryEvidenceV2={accountId:string;characterId:string;receiptId:string;bossId:CompletionBossIdV2;
  kind:'regional_completion';levelAtStart:number;inputDigest:string;eventDigest:string;
  reason:'victory'|'wipe'|'timeout';victory:boolean;enemyHp:number;playerHp:number;completedAtMs:number;
  ruleset:'completion-v2-review'};
-type LegacyEvidence={accountId:string;characterId:string;source:'legacy_story_state'|'legacy_regional_receipt';
+export type LegacyCompletionEvidenceV2={accountId:string;characterId:string;source:'legacy_story_state'|'legacy_regional_receipt';
  sourceId:string;bossId:CompletionBossIdV2;victory:boolean};
 type Entry={bossId:CompletionBossIdV2;sourceId:string;source:'v2_receipt'|'legacy_story_state'|'legacy_regional_receipt'};
 export type CompletionLedgerReviewV2=Identity&{entries:readonly Entry[];legacyTravel:readonly Chapter[]};
@@ -29,10 +29,13 @@ export function completionAccessReviewV2(ledger:CompletionLedgerReviewV2){
 function append(ledger:CompletionLedgerReviewV2,e:Entry){
  const bySource=ledger.entries.find(x=>x.source===e.source&&x.sourceId===e.sourceId);
  if(bySource&&bySource.bossId!==e.bossId)throw Error('completion_source_conflict');
- if(ledger.entries.some(x=>x.bossId===e.bossId))return {ledger,duplicate:true,grant:false as const};
- return {ledger:{...ledger,entries:[...ledger.entries,e]},duplicate:false,grant:false as const};
+ if(bySource)return {ledger,duplicate:true,grant:false as const};
+ // Record distinct verified receipts even for an already completed boss,
+ // so a source ID cannot later be reused for a different boss.
+ const duplicate=ledger.entries.some(x=>x.bossId===e.bossId);
+ return {ledger:{...ledger,entries:[...ledger.entries,e]},duplicate,grant:false as const};
 }
-export function reviewCompletionVictoryV2(ledger:CompletionLedgerReviewV2,e:Victory,verify:(e:Readonly<Victory>)=>boolean){
+export function reviewCompletionVictoryV2(ledger:CompletionLedgerReviewV2,e:CompletionVictoryEvidenceV2,verify:(e:Readonly<CompletionVictoryEvidenceV2>)=>boolean){
  const p=profile(e.bossId);
  if(!p||!own(ledger,e)||!e.receiptId||e.kind!=='regional_completion'||e.ruleset!=='completion-v2-review'||
   !Number.isSafeInteger(e.levelAtStart)||e.levelAtStart<p.level||!hex(e.inputDigest)||!hex(e.eventDigest)||
@@ -44,7 +47,7 @@ export function reviewCompletionVictoryV2(ledger:CompletionLedgerReviewV2,e:Vict
  if(!access[p.region])throw Error('completion_region_locked');
  return append(ledger,{bossId:e.bossId,sourceId:e.receiptId,source:'v2_receipt'});
 }
-export function reviewLegacyCompletionV2(ledger:CompletionLedgerReviewV2,e:LegacyEvidence,verify:(e:Readonly<LegacyEvidence>)=>boolean){
+export function reviewLegacyCompletionV2(ledger:CompletionLedgerReviewV2,e:LegacyCompletionEvidenceV2,verify:(e:Readonly<LegacyCompletionEvidenceV2>)=>boolean){
  // Explicit source allowlist: Fallen Knight server state and the actual
  // Sunscar regional receipt only. No assumed Frostmarch historical receipt.
  if(!own(ledger,e)||!e.sourceId||e.victory!==true||

@@ -22,3 +22,5 @@ jobs:
       - run: node tools/market-review/eq2-settlement-review-v33.mjs
       - run: node tools/market-review/eq2-physical-custody-review.mjs
       - run: node tools/market-review/eq2-economy-review.mjs
+      - run: node tools/market-review/eq2-source-handoff-review.mjs
+      - run: node tools/market-review/market-ui-state-review.mjs

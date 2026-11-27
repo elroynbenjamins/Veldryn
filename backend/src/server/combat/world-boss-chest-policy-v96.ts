@@ -27,7 +27,7 @@ export type WorldBossGatheringBonusV96='gathering_speed'|'gathering_rarity_chanc
 /** Preview ranges only; these are equipment-piece budgets, NOT full tool
  * roll ranges multiplied by ten slots. Preserve V65 rarity and quality
  * curve. Final range/cap and tier-specific scaling need economy approval. */
-const bonusRanges:Readonly<Record<WorldBossGatheringBonusV96,readonly [number,number]>>={
+export const WORLD_BOSS_GATHERING_BONUS_RANGES_V96:Readonly<Record<WorldBossGatheringBonusV96,readonly [number,number]>>={
  gathering_speed:[40,130],gathering_rarity_chance:[200,550],skill_xp:[80,220],
 };
 const draw=(rng:WorldBossGatheringRandomV64,max:number)=>{
@@ -51,11 +51,11 @@ export function previewWorldBossChestRollV96(input:{
  let rarity=WORLD_BOSS_GATHERING_RARITY_V65[WORLD_BOSS_GATHERING_RARITY_V65.length-1];
  for(const row of WORLD_BOSS_GATHERING_RARITY_V65){if(n<row.weightPerMillion){rarity=row;break;}n-=row.weightPerMillion;}
  const quality=Math.min(100,Math.floor(Math.pow(draw(input.nextInt,1_000_000)/1_000_000,1.25)*101));
- const pool=Object.keys(bonusRanges) as WorldBossGatheringBonusV96[];
+ const pool=Object.keys(WORLD_BOSS_GATHERING_BONUS_RANGES_V96) as WorldBossGatheringBonusV96[];
  const count=['epic','legendary','mythic'].includes(rarity.rarity)?2:1;
  const bonusStats=Array.from({length:count},()=>{
   const stat=pool.splice(draw(input.nextInt,pool.length),1)[0];
-  const [min,max]=bonusRanges[stat];
+  const [min,max]=WORLD_BOSS_GATHERING_BONUS_RANGES_V96[stat];
   const low=Math.round(min*rarity.affixScale),high=Math.round(max*rarity.affixScale);
   return {stat,skill:piece.skill,bonusBasisPoints:low+draw(input.nextInt,high-low+1)};
  });

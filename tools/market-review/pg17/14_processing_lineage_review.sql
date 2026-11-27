@@ -102,3 +102,28 @@ DO $$ BEGIN
  OR (SELECT sum(quantity) FROM market_review.material_spent_lot WHERE owner='b' AND request_id='process-1') IS DISTINCT FROM 5::numeric
  THEN RAISE EXCEPTION 'processing_lineage_failed'; END IF;
 END $$;
+
+-- Sell the refined output through the existing lot-aware Market, not a new
+-- sale path. The output's original processing receipt and input spends stay.
+CREATE TEMP TABLE saved_process_output AS SELECT * FROM market_review.process_output;
+SELECT market_review.resource_act('list','b','processed-list','processed-offer',0,'fixture-refined',1,10,500);
+SELECT market_review.expect_error($q$SELECT market_review.resource_act('list','b','processed-double-list','processed-double-offer',0,'fixture-refined',1,10,500)$q$,'insufficient_stock');
+SELECT market_review.resource_act('buy','c','processed-buy','processed-offer',0,p_quantity=>1,p_price=>10,p_now=>501);
+SELECT market_review.claim_resource_delivery('c','processed-claim','c','processed-buy','bank');
+SELECT market_review.claim_resource_delivery('c','processed-claim','c','processed-buy','bank');
+-- Original processing replay after resale must NOT recreate stock.
+SELECT market_review.process_material('b','process-1','b2','fixture-multi-input',1,'inventory:b2');
+SELECT market_review.assert_material_conservation();
+DO $$ BEGIN
+ IF (SELECT count(*) FROM market_review.process_output)<>1
+ OR EXISTS(SELECT * FROM market_review.process_output EXCEPT SELECT * FROM pg_temp.saved_process_output)
+ OR NOT EXISTS(SELECT 1 FROM market_review.material_stock_lot l JOIN market_review.process_output p ON p.origin=l.origin
+  JOIN market_review.material_origin o ON o.id=l.origin
+  WHERE l.owner='c' AND l.destination='bank' AND l.quantity=1 AND o.original_owner='b' AND o.source_kind='processing')
+ OR (SELECT quantity FROM market_review.resource_stock WHERE owner='b' AND item='fixture-refined') IS DISTINCT FROM 0::bigint
+ OR (SELECT quantity FROM market_review.resource_stock WHERE owner='c' AND item='fixture-refined') IS DISTINCT FROM 1::bigint
+ OR (SELECT sum(quantity) FROM market_review.material_spent_lot WHERE owner='b' AND request_id='process-1') IS DISTINCT FROM 5::numeric
+ OR (SELECT gold FROM market_review.wallet WHERE id='b')<>946
+ OR (SELECT sum(gold) FROM market_review.wallet)+(SELECT sum(fee) FROM market_review.resource_delivery)<>3000
+ THEN RAISE EXCEPTION 'processed_resale_lineage_failed'; END IF;
+END $$;

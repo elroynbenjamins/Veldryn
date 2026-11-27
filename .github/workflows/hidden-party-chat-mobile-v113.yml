@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - 'apps/mobile/src/core/party-chat-card-preview-v113.ts'
+      - 'apps/mobile/src/core/party-chat-refresh-preview-v114.ts'
       - 'apps/mobile/src/components/PartyChatActionCardPreviewV113.tsx'
       - 'apps/mobile/tests/party-chat-action-card-preview-v113.cjs'
       - '.github/workflows/hidden-party-chat-mobile-v113.yml'

@@ -91,6 +91,7 @@ try{
  assert.deepEqual(await counts(source),[1,1,7,1]);
  await db.exec('COMMIT');
  await assert.rejects(()=>db.query("UPDATE private.world_boss_gathering_mints_v102 SET entropy_version='edited' WHERE source_key=$1",[source]),/IMMUTABLE/);
+ await assert.rejects(()=>db.query('DELETE FROM private.world_boss_gathering_mints_v102 WHERE source_key=$1',[source]),/IMMUTABLE/);
  await assert.rejects(()=>db.query('INSERT INTO private.world_boss_gathering_mints_v102(source_key,account_id,event_id,boss_id,piece_id,slot,roll,roll_digest,chest_digest,entropy_version) SELECT source_key,account_id,event_id,boss_id,piece_id,slot,roll,roll_digest,chest_digest,entropy_version FROM private.world_boss_gathering_mints_v102 WHERE source_key=$1',[source]),/duplicate key/);
  // Force a real DB error after mint insertion, then rollback all legs.
  await db.exec('BEGIN ISOLATION LEVEL READ COMMITTED');
@@ -132,5 +133,8 @@ try{
   }finally{await Promise.all(connections.map(conn=>conn.end()));}
   console.log('WB_GATHERING_MINT_V102_PG17_CONCURRENT: two independent transactions, exactly one physical mint');
  }
+ await db.query('DELETE FROM auth.users WHERE id=$1',[account]);
+ assert.deepEqual(await counts(source),[0,0,0,0]);
+ assert.deepEqual(await counts(source2),[0,0,0,0]);
  console.log('WB_GATHERING_MINT_V102_PG: real DDL/port, rollback and lost-ACK replay, immutable mint, unique source, bad inbox rollback, no-hit/foreign/private grants');
 }finally{await db.close();}

@@ -21,8 +21,8 @@ export const MARKET_AUTHENTICATED_SERVICE_READY=false;
 /** Regional Dungeon Marks collectibles are released. Server per-offer gates still own purchases. */
 export const DUNGEON_MARKS_SHOP_RELEASED=true;
 
-/** Keep manual translation invisible until the provider, public privacy disclosure and staging QA pass. */
-export const CHAT_TRANSLATION_RELEASED=false;
+/** Manual translation: production function deployed; enable only after DeepL secret and E2E verification. */
+export const CHAT_TRANSLATION_RELEASED=true;
 
 /** Production RPC verified: authenticated-only roster, block filtering, no emails or session secrets. */
 export const ONLINE_PLAYER_ROSTER_RELEASED=true;

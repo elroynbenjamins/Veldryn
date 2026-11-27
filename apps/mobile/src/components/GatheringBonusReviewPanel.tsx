@@ -13,7 +13,6 @@ export function GatheringBonusReviewPanel({input,title='Gathering equipment bonu
   <View style={s.row}><Text accessibilityRole="header" style={[s.header,{color:C.text}]}>{title}</Text><Text style={{color:C.muted,fontSize:11}}>{b.pieces}/10</Text></View>
   {row('Effective gathering speed',fmt(b.effectiveSpeedPercent))}
   {row('Skill XP',fmt(b.xpPercent))}
-  {row('Resource yield',fmt(b.yieldPercent))}
   {row('Rare material chance',fmt(b.rareRelativePercent)+' relative',!b.rareConsumerAvailable)}
   {!b.rareConsumerAvailable&&b.rareRelativePercent>0?<Text style={{color:C.warning,fontSize:11}}>Ordinary rare-material drops for this skill are not implemented yet.</Text>:null}
   <Pressable accessibilityRole="button" accessibilityState={{expanded:details}} onPress={()=>setDetails(v=>!v)} style={s.toggle}><Text style={{color:C.accent,fontSize:12,fontWeight:'700'}}>{details?'Hide calculation':'Show calculation'}</Text></Pressable>

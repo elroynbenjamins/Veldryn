@@ -490,7 +490,7 @@ import {resolveChestLootV67 as resolveSnapshotChest} from '../../../backend/src/
 import {reviewWorldBossGatheringSnapshotV100,gatheringSnapshotDigestV100,type GatheringMintReadbackV100} from '../../../backend/src/server/combat/world-boss-gathering-snapshot-v100';
 const baseSnapshotHero=createSnapshotHero(newSnapshotGame(1000),'IRONWARDEN','Snapshot QA');
 const activeSnapshotHero=startSnapshotGather(baseSnapshotHero,'GREENWOOD_TREE',2000);
-const snapAccount='qa-account',snapCharacter=activeSnapshotHero.character!.id;
+const snapAccount=account95,snapCharacter=activeSnapshotHero.character!.id;
 const table100=worldBossChestLootTableV96('hollowroot','donations_goal');
 const chest100=resolveSnapshotChest(table100,{rolls:[{groupId:'equipment',hitRoll:0,selectionRoll:0}],ownedDropIds:[]});
 let draw100=0;
@@ -499,7 +499,7 @@ const roll100=previewWorldBossChestRollV96({bossId:'hollowroot',kind:'donations_
 assert.ok(roll100);
 const mint100:GatheringMintReadbackV100={accountId:snapAccount,characterId:snapCharacter,instanceId:'qa-world-copy',custody:'equipped',
  roll:roll100,rollDigest:gatheringSnapshotDigestV100(roll100),
- originalChest:{rulesVersion:'chest-settlement-v69',sourceKey:'world-boss:qa-event:'+snapAccount+':donations_goal',accountId:snapAccount,
+ originalChest:{rulesVersion:'chest-settlement-v69',sourceKey:'world-boss:'+event95+':'+snapAccount+':donations_goal',accountId:snapAccount,
  recipientCharacterId:null,equipmentDeliveryMode:'account_unclaimed',proofVersion:'qa',tableId:table100.tableId,tableVersion:table100.version,
  guaranteed:chest100.guarantees,groups:chest100.groups,drops:chest100.drops,committed:true}};
 const equipped100={...activeSnapshotHero,character:{...activeSnapshotHero.character!,equipment:{...activeSnapshotHero.character!.equipment,[roll100.slot]:roll100.itemId},
@@ -525,5 +525,6 @@ for(const changed of [
  {...input100,mintRows:[{...mint100,originalChest:{...mint100.originalChest,tableVersion:'world_boss_v58_hollowroot_donations_goal'}}],verifyMintReadback:()=>true},
  {...input100,state:{...equipped100,bank:{...equipped100.bank,stacks:[{itemId:roll100.itemId,instanceId:mint100.instanceId,quantity:1}]}},verifyAccountReadback:()=>true},
  {...input100,verifyMintReadback:()=>false},
+ {...input100,state:{...equipped100,activity:{...equipped100.activity!,lastClaimAtMs:3000}},verifyAccountReadback:()=>true},
 ])rejectsGatheringSpeedReview(()=>reviewWorldBossGatheringSnapshotV100(changed));
 console.log('WORLD_BOSS_GATHERING_SNAPSHOT_V100: original chest receipt, full physical roster, exact equipped copy, frozen handoff; quarantined/stale/duplicate/foreign proof rejection');

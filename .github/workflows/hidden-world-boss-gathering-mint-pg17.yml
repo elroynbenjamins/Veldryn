@@ -3,6 +3,12 @@ on:
   pull_request:
     paths:
       - 'backend/src/server/loot/world-boss-gathering-mint-v102.ts'
+      - 'backend/src/server/loot/world-boss-chest-opening-v103.ts'
+      - 'backend/src/server/loot/world-boss-real-reward-ports-v103.ts'
+      - 'backend/src/server/loot/chest-postgres-store-v70.ts'
+      - 'backend/tests/world-boss-chest-opening-v103-pg.mjs'
+      - 'apps/mobile/tsconfig.world-boss-mint-review.json'
+      - 'docs/roadmap/party-events/hidden-migrations/20261127134000_world_boss_reward_v103_review_only.sql'
       - 'backend/src/server/combat/world-boss-gathering-*.ts'
       - 'backend/src/server/combat/world-boss-chest-policy-v96.ts'
       - 'backend/tests/world-boss-gathering-mint-v102-pg.mjs'
@@ -48,8 +54,7 @@ jobs:
       - run: pnpm --dir backend install --frozen-lockfile
       - name: Compile existing hidden World Boss suite and mint port
         working-directory: apps/mobile
-        run: pnpm exec tsc -p tsconfig.core.json --outDir .core-build
-        # The canonical V89 test imports V102; the narrower V12 config does not.
+        run: pnpm exec tsc -p tsconfig.world-boss-mint-review.json --outDir .core-build
       - name: Run disposable embedded PostgreSQL rollback and replay
         working-directory: backend
         run: node tests/world-boss-gathering-mint-v102-pg.mjs

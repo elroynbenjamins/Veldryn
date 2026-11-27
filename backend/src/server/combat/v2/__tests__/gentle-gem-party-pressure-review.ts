@@ -87,8 +87,8 @@ export function createGentleGemPartyPressureReviewV2(members:readonly Member[],p
    assert.throws(()=>simulateCombatWithServerAuthoritiesV2(input,{enemy,equipmentTrait,aiPolicy:'tactical',privateDamageGem}),/private_damage_gem_review_engine_scope/);
   }
   // Fresh private runtime probes, independent of the encounter's RNG.
-  if(privateDamageGem&&projection){
-   const group=projection.effectResonanceReview?.families[0];
+  if(privateDamageGem&&projection&&projection.effectResonanceReview?.families.length===1){
+   const group=projection.effectResonanceReview.families[0];
    const runtime=authorizePrivateDamageGemReviewV2(input,privateDamageGem,new Map(sources.map(s=>[s.actorId,s])))!;
    const original=result.players.find(p=>p.definition.id===projection.forgeEvidence.actorId)!;
    const owner={...original,alive:true,hp:original.definition.stats.maxHp};
@@ -363,7 +363,7 @@ export function createGentleGemPartyPressureReviewV2(members:readonly Member[],p
   }
   const party=(result:CombatResult)=>result.players.map((member,i)=>({id:member.definition.id,role:member.definition.role,...measure(result,i)}));
   const partyBefore=party(before),partyAfter=party(after);
-  assert.ok(partyAfter.every(x=>x.hpFraction>=0&&x.hpFraction<=1+1e-9));
+  assert.ok([...partyBefore,...partyAfter].every(x=>x.hpFraction>=0&&x.hpFraction<=1+1e-9&&Object.values(x).filter(v=>typeof v==='number').every(Number.isFinite)));
   return {before:a,after:b,partyBefore,partyAfter,hybridEvents:hybrid.length,rhythmActivations:rhythm.length,sustenanceKills:kills.length,supportEvents:supportEvents.length,lifecycleEvents:lifecycleEvents.length,terminalHeals:terminal.length,triggerCount:triggers.length,stackTriggers:stackTriggers.length,armed:armed.length,recoveryEvents:recoveryEvents.length,extensions:extensions.length,defenseEarned:defenseEarned.length,defenseUses:defenseEvents.length-defenseEarned.length,
    hasteUses:triggers.filter(e=>e.detail?.startsWith('private_qa_haste_gem:')).length,
    maxStacks:Math.max(0,...stackTriggers.map(e=>Number(e.detail!.split(':')[3]))),

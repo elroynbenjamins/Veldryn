@@ -54,14 +54,14 @@ export function PartyChatActionCardPreviewV113({card,labels,nowMs,qaPreview=fals
    <Text style={s.meta}>{labels.confirmations(card.members.filter(m=>m.accepted).length,card.members.length)}</Text>
   </>}
   {vote&&vote.options.map(option=><View key={option.id} style={s.option}>
-   <View style={s.header}>
-    <Text style={s.name}>{option.label}</Text>
-    <Text style={s.meta}>{labels.votes(option.votes,vote.eligibleCount)}</Text>
-   </View>
-   <View style={s.track}><View style={[s.fill,{width:partyChatPreviewVotePercentV113(option.votes,vote.eligibleCount)+'%' as `${number}%`}]}/></View>
-   {view.actions.includes('vote')&&<GameButton compact tone="secondary" title={labels.actions.vote}
+   {view.actions.includes('vote')?<GameButton compact tone="secondary" title={option.label+' · '+labels.votes(option.votes,vote.eligibleCount)}
     accessibilityLabel={labels.actions.vote+' — '+option.label} disabled={!enabled||!!vote.myVote}
-    selected={vote.myVote===option.id} onPress={()=>respond('vote',option.id)}/>}
+    selected={vote.myVote===option.id} onPress={()=>respond('vote',option.id)}/>:
+    <View style={s.header}>
+     <Text style={s.name}>{option.label}{vote.myVote===option.id?' ✓':''}</Text>
+     <Text style={s.meta}>{labels.votes(option.votes,vote.eligibleCount)}</Text>
+    </View>}
+   <View style={s.track}><View style={[s.fill,{width:partyChatPreviewVotePercentV113(option.votes,vote.eligibleCount)+'%' as `${number}%`}]}/></View>
   </View>)}
   {card.kind==='group_readiness'&&<>
    {card.members.map(member=><View key={member.id} style={s.memberRow}>

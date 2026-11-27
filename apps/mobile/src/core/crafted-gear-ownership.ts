@@ -1,3 +1,4 @@
+import {savedLoadoutProtection} from './activity-loadout-protection';
 import {itemVendorSellGold} from './equipment-vendor-value';
 import type {GameState,GearSlot,ItemStack,CraftedGearInstance} from './types';
 import {craftedGearInstances} from './crafted-gear-instances';
@@ -275,8 +276,7 @@ function protectedGear(state:GameState,record:CraftedGearInstance){
   if(workingTowardInventoryProtectionMap(state).has(record.itemId))
     throw new Error('Equipment needed for a Working Toward goal is protected');
   if(state.settings.favoriteItemIds?.includes(record.itemId))throw new Error('Favorite equipment cannot be sold or salvaged');
-  const characters=[state.character,...(state.otherCharacters??[]).map(entry=>entry.character)].filter(Boolean);
-  if(characters.some(character=>character?.savedLoadouts?.some(preset=>Object.values(preset.equipmentInstanceIds??{}).includes(record.id)||Object.entries(preset.equipment).some(([slot,id])=>id===record.itemId&&!preset.equipmentInstanceIds?.[slot as GearSlot]))))
+  if(savedLoadoutProtection(state,record.itemId,record.id).protected)
     throw new Error('A saved loadout protects this equipment copy');
   // Legacy itemId-only enchantments have no verified association with a
   // Forge receipt. They remain protected when disposing UNMARKED legacy gear

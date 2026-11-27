@@ -8,7 +8,7 @@ import type {GameState,RewardBundle} from '../../apps/mobile/src/core/types';
 export const STORY_JOURNAL_SERVER_RELEASED=false;
 type Source={id:string;itemId:string;skillId:string};
 type Identity={accountId:string;characterId:string};
-type Event=Identity&{receiptId:string;sequence:number;kind:'kill'|'gather';targetId:string;quantity:number;skillId?:string;status:'settled'};
+type Event=Identity&{receiptId:string;sequence:number;kind:'kill'|'gather';targetId:string;quantity:number;skillId?:string;status:'staged'|'settled'};
 type Packet=Identity&{requestId:string;previousRevision:number;nextRevision:number;events:Event[];legacyQuests:{id:string;status:string;progress:number}[];level:number;equippedCount:number;soloBossVictories:string[];legacyRoutes:string[];released:false;persisted:false;authorizesReward:false};
 const valid=(s:unknown):s is string=>typeof s==='string'&&s.length>0&&s.length<=160;
 const natural=(x:unknown):x is number=>Number.isSafeInteger(x)&&Number(x)>=0;
@@ -22,7 +22,7 @@ export function prepareJournalEvidenceReview(input:{identity:Identity;previousRe
  const push=(kind:Event['kind'],targetId:string,quantity:number,skillId?:string)=>{
   if(!valid(targetId)||!natural(quantity))throw Error('journal_invalid_quantity');
   if(quantity===0)return;
-  events.push({...identity,receiptId:requestId+':'+events.length,sequence:previousRevision+1,kind,targetId,quantity,...(skillId?{skillId}:{}),status:'settled'});
+  events.push({...identity,receiptId:requestId+':'+events.length,sequence:previousRevision+1,kind,targetId,quantity,...(skillId?{skillId}:{}),status:'staged'});
  };
  // Combat contribution units are already produced by the canonical resolver.
  for(const e of result.contributions)if(e.kind==='combat')push('kill',e.contentId,e.units);
@@ -30,6 +30,7 @@ export function prepareJournalEvidenceReview(input:{identity:Identity;previousRe
  // Queued segments must be examined separately, never combine aggregate + segments.
  const gather=(kind:string,targetId:string,reward:RewardBundle)=>{
   if(!['mining','woodcutting','fishing','herbalism'].includes(kind))return;
+  if(!result.contributions.some(e=>e.kind==='gathering'&&e.contentId===targetId&&e.units>0))return;
   const source=sourceMap.get(targetId);
   if(!source||source.skillId!==kind)throw Error('journal_unknown_gathering_source');
   let quantity=0;
@@ -49,9 +50,10 @@ export function prepareJournalEvidenceReview(input:{identity:Identity;previousRe
   released:false,persisted:false,authorizesReward:false};
 }
 /** In-memory review replay fence only. Durable receipt + revision must be committed with save. */
-export function appendJournalEvidenceReview(ledger:{accountId:string;characterId:string;revision:number;requestIds:readonly string[];events:readonly Event[]},packet:Packet){
+export function appendJournalEvidenceReview(ledger:{accountId:string;characterId:string;revision:number;requestIds:readonly string[];events:readonly Event[]},packet:Packet,commitReceipt:Identity&{requestId:string;committedRevision:number}){
  if(ledger.accountId!==packet.accountId||ledger.characterId!==packet.characterId)throw Error('journal_scope_mismatch');
+ if(commitReceipt.accountId!==packet.accountId||commitReceipt.characterId!==packet.characterId||commitReceipt.requestId!==packet.requestId||commitReceipt.committedRevision!==packet.nextRevision)throw Error('journal_commit_receipt_mismatch');
  if(ledger.requestIds.includes(packet.requestId))return {status:'replay' as const,ledger,persisted:false as const};
  if(ledger.revision!==packet.previousRevision||packet.nextRevision!==ledger.revision+1)throw Error('journal_revision_gap');
- return {status:'proposed' as const,ledger:{...ledger,revision:packet.nextRevision,requestIds:[...ledger.requestIds,packet.requestId],events:[...ledger.events,...packet.events]},persisted:false as const};
+ return {status:'proposed' as const,ledger:{...ledger,revision:packet.nextRevision,requestIds:[...ledger.requestIds,packet.requestId],events:[...ledger.events,...packet.events.map(e=>({...e,status:'settled' as const}))]},persisted:false as const};
 }

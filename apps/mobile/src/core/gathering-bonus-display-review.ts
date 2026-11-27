@@ -17,7 +17,7 @@ export function buildGatheringBonusDisplayReview(input:GatheringBonusDisplayInpu
   setSpeedPercent:pace.setRatingBps/100,rawSpeedPercent:percent(pace.rawRatingBps/100),
   effectiveSpeedPercent:percent(pace.effectiveRatingBps/100),
   actionTimeReductionPercent:percent(pace.relativeTimeReduction*100),
-  xpPercent:percent((channels.xpMultiplier-1)*100),yieldPercent:percent((channels.yieldMultiplier-1)*100),
+  xpPercent:percent((channels.xpMultiplier-1)*100),
   rareRelativePercent:percent((channels.rareChanceMultiplier-1)*100),rareConsumerAvailable:input.skill==='mining',
   unlockedThresholds:[2,4,6,8,10].filter(n=>n<=input.matchingSetPieces),
   nextThreshold:[2,4,6,8,10].find(n=>n>input.matchingSetPieces)??null,

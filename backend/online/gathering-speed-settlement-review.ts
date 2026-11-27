@@ -6,15 +6,8 @@ import {claimActivity,previewActivityReward,type GatheringRateReview} from '../.
 import {reviewGatheringSpeedV2,reviewGatheringRewardChannelsV2,type GatheringGearSkillV2} from '../../apps/mobile/src/core/gathering-speed-v2-review';
 import {activityLoadoutSnapshotDigest} from './activity-loadout-reservation-review';
 export const GATHERING_SETTLEMENT_REVIEW_LIVE=false as const;
-export type FrozenGatheringRateReview={
- readonly accountId:string;readonly characterId:string;
- readonly activityId:string;readonly skill:GatheringGearSkillV2;
- readonly targetId:string;readonly startedAtMs:number;
- readonly gearRatingBps:number;readonly matchingSetPieces:number;
- /** Optional opt-in: old speed-only review receipts retain their prior meaning. */
- readonly rewardChannels?:{readonly skillXpAffixBps:number;readonly rareChanceAffixBps:number};
- readonly exactCopyIds:readonly string[];readonly equippedReceiptDigest:string;
-};
+import type {FrozenGatheringRateReview} from '../../apps/mobile/src/core/gathering-activity-snapshot-review';
+export type {FrozenGatheringRateReview} from '../../apps/mobile/src/core/gathering-activity-snapshot-review';
 export function reviewGatheringSettlementV2(input:{
  readonly accountId:string;readonly state:GameState;readonly nowMs:number;readonly sourceRevision:number;
  readonly frozen:FrozenGatheringRateReview;

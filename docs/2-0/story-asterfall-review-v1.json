@@ -190,7 +190,8 @@
           "kind": "map",
           "targetId": "SCOUT_IRONWOOD",
           "required": 1,
-          "evidence": "verifiedFact"
+          "evidence": "verifiedFact",
+          "mapScope": "character"
         }
       ],
       "summary": "Send the free guide or a companion, collect the report, follow the wolf trail.",
@@ -522,6 +523,7 @@
     "No production reward grants or entitlement changes. Legacy quest mapping is migration input, not a reward receipt.",
     "QST_002 replaces mandatory profession training with combat for new V2 story only; legacy quest and unlock consumers require explicit adapter.",
     "Greenfields discovery explicitly precedes Silverbrook, matching Exploration 2.0 route prerequisite order. Guide remains optional and free; no companion requirement.",
-    "QST_005 retains a character level 10 review milestone before the companion unlock, subject to final V2 access gates."
+    "QST_005 retains a character level 10 review milestone before the companion unlock, subject to final V2 access gates.",
+    "Ironwood tutorial requires the active character's actual discovered route as well as account discovery. Shared map alone cannot satisfy that character's tutorial access; legacy continuation remains separate."
   ]
 }

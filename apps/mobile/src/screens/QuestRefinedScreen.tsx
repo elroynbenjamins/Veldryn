@@ -20,7 +20,8 @@ import {newlyConfirmedIds} from '../core/visual-feedback';
 import {useGameTheme} from '../theme/ThemeContext';
 import {type ThemeColors,spacing,touchTargetMin} from '../theme/theme';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
-import {progressionT,type ProgressionKey} from '../i18n/progression';
+import {progressionT,progressionText,type ProgressionKey} from '../i18n/progression';
+import {localizedItemName} from '../i18n/starter-item-names';
 import {questJournalText} from '../i18n/quest-journal-ui';
 import {weeklyOrderTitle,weeklyOrderBrief,weeklyOrderReward,weeklyOrderDestinationLabel} from '../i18n/weekly-order-copy';
 import {seasonalChallengeName,seasonalChallengeDescription,seasonalChallengeText} from '../i18n/seasonal-challenge-copy';
@@ -44,9 +45,20 @@ import {EmptyState} from '../components/EmptyState';
 
 export type {QuestMode} from '../components/QuestModeSwitch';
 type Selection={kind:'story'|'contract'|'challenge';id:string};
-type SheetStage='details'|'claiming'|'success';
 type Status='ready'|'active'|'locked'|'claimed'|'processing';
 type RewardMoment={id:string;source:'story'|'challenges';title:string;titleName?:string;gold:number;xp?:number;itemId?:string;quantity?:number;essence?:number;bondstones?:number;rarityColor?:string};
+
+/** Present each configured reward after the player's claimed state confirms it. */
+function questRewardReceipt(moment:RewardMoment,language:Language){
+ const rewards:string[]=[];
+ if(moment.gold>0)rewards.push('+'+moment.gold.toLocaleString(language)+' '+progressionT(language,'Gold'));
+ if((moment.xp??0)>0)rewards.push('+'+(moment.xp??0).toLocaleString(language)+' XP');
+ if(moment.itemId&&(moment.quantity??1)>0)rewards.push((moment.quantity??1).toLocaleString(language)+'× '+localizedItemName(language,moment.itemId));
+ if((moment.essence??0)>0)rewards.push('+'+(moment.essence??0).toLocaleString(language)+' '+progressionText(language,'Companion Essence'));
+ if((moment.bondstones??0)>0)rewards.push('+'+(moment.bondstones??0).toLocaleString(language)+' '+progressionText(language,'Bondstones'));
+ if(moment.titleName)rewards.push(progressionText(language,'Permanent title')+': '+moment.titleName);
+ return rewards.join(' · ');
+}
 
 function ProgressLine({current,max,C}:{current:number;max:number;C:ThemeColors}){
  const percentage=Math.max(0,Math.min(100,Math.round(current/Math.max(1,max)*100)));
@@ -64,10 +76,10 @@ function statusText(status:Status,language:Language){
 }
 
 /** A single large touch target, rather than 2-3 tiny actions inside each posting. */
-function CompactQuestRow({title,subtitle,eyebrow,status,current,max,art,reward,rarity,onPress,C,language}:{
- title:string;subtitle:string;eyebrow:string;status:Status;current:number;max:number;art:ReactNode;reward?:string;rarity?:string;onPress:()=>void;C:ThemeColors;language:Language;
+function CompactQuestRow({title,subtitle,eyebrow,status,current,max,art,reward,rarity,readyLabel,onPress,C,language}:{
+ title:string;subtitle:string;eyebrow:string;status:Status;current:number;max:number;art:ReactNode;reward?:string;rarity?:string;readyLabel?:string;onPress:()=>void;C:ThemeColors;language:Language;
 }){
- return <Pressable accessibilityRole="button" accessibilityLabel={questJournalText(language,'{title}, {status}, {current} of {max}',{title,status:statusText(status,language),current,max})}
+ return <Pressable accessibilityRole="button" accessibilityLabel={questJournalText(language,'{title}, {status}, {current} of {max}',{title,status:statusText(status,language),current,max})+(status==='ready'?' · '+(readyLabel??questJournalText(language,'Claim')):'')}
   onPress={onPress} style={({pressed})=>[styles.questRow,{backgroundColor:C.panelRaised,borderColor:status==='ready'?C.good:C.lineStrong},pressed&&styles.pressed,status==='locked'&&styles.locked]}>
   <View style={[styles.iconBox,{backgroundColor:C.panel2,borderColor:C.line}]}>{art}</View>
   <View style={styles.rowBody}>
@@ -77,7 +89,7 @@ function CompactQuestRow({title,subtitle,eyebrow,status,current,max,art,reward,r
    {status!=='locked'?<ProgressLine current={current} max={max} C={C}/>:null}
    {reward||rarity?<Text numberOfLines={1} style={[styles.rewardHint,{color:status==='ready'?C.good:C.accent}]}>{rarity?rarity.toLocaleUpperCase(language)+' · ':''}{reward??''}</Text>:null}
   </View>
-  <Text accessible={false} style={[styles.chevron,{color:C.accent}]}>›</Text>
+  <Text accessible={false} style={[styles.chevron,{color:status==='ready'?C.good:C.accent}]}>{status==='ready'?(readyLabel??questJournalText(language,'Claim')):status==='processing'?'…':'›'}</Text>
  </Pressable>;
 }
 function StoryArt({quest}:{quest:QuestDef}){return <QuestObjectiveArtwork quest={quest} size={42}/>;}
@@ -112,20 +124,25 @@ export function QuestRefinedScreen({state,nowMs,mode,onModeChange,focusedWeeklyO
  const p=(value:string)=>questJournalText(language,value),t=(key:ProgressionKey,params?:Record<string,string|number>)=>progressionT(language,key,params);
  const [filter,setFilter]=useState<JournalFilter>('current'),[query,setQuery]=useState('');
  const [challengePeriod,setChallengePeriod]=useState<'all'|'daily'|'weekly'|'monthly'>('all');
- const [selected,setSelected]=useState<Selection|null>(null),[sheetStage,setSheetStage]=useState<SheetStage>('details');
+ const [selected,setSelected]=useState<Selection|null>(null),[claimingKey,setClaimingKey]=useState<string|null>(null);
  const [storyExpanded,setStoryExpanded]=useState(false),[chronicleExpanded,setChronicleExpanded]=useState(false),[notice,setNotice]=useState('');
- const [moment,setMoment]=useState<RewardMoment|null>(null);
+ const [moment,setMoment]=useState<RewardMoment|null>(null),[milestoneReceipt,setMilestoneReceipt]=useState<string|null>(null);
  const [rewardChoiceByQuest,setRewardChoiceByQuest]=useState<Record<string,string>>({});
  const pendingClaim=useRef<{kind:'story'|'challenge';id:string}|null>(null);
- // The confirmed success receipt stays visible until the player closes it.
- useEffect(()=>{
-  if(!moment||(sheetStage==='success'&&selected?.id===moment.id))return;
-  const timeout=setTimeout(()=>setMoment(null),3000);
-  return ()=>clearTimeout(timeout);
- },[moment,sheetStage,selected?.id]);
- // The active quest tab can also change from navigation outside this screen.
- useEffect(()=>{setMoment(null);},[mode]);
- const previous=useRef({characterId:state.character?.id,story:state.quests.filter(q=>q.status==='claimed').map(q=>q.questId),challenges:state.account.seasonalContractClaimIds??[]});
+ // A short, non-blocking notification replaces the second claim screen.
+  useEffect(()=>{
+   if(!moment)return;
+   const timeout=setTimeout(()=>setMoment(null),4500);
+   return ()=>clearTimeout(timeout);
+  },[moment]);
+  useEffect(()=>{
+   if(!milestoneReceipt)return;
+   const timeout=setTimeout(()=>setMilestoneReceipt(null),4500);
+   return ()=>clearTimeout(timeout);
+  },[milestoneReceipt]);
+  // The active quest tab can also change from navigation outside this screen.
+ useEffect(()=>{setMoment(null);setMilestoneReceipt(null);},[mode]);
+ const previous=useRef({characterId:state.character?.id,story:state.quests.filter(q=>q.status==='claimed').map(q=>q.questId),challenges:state.character?.personalSeasonal?.claimIds??state.account.seasonalContractClaimIds??[]});
  const daily=seasonalQuestBoard(state,'daily'),weekly=seasonalQuestBoard(state,'weekly'),monthly=seasonalQuestBoard(state,'monthly');
  const allChallenges=[...daily,...weekly,...monthly];
  const challengeClaimed=new Set(state.character?.personalSeasonal?.claimIds??state.account.seasonalContractClaimIds??[]);
@@ -152,62 +169,59 @@ export function QuestRefinedScreen({state,nowMs,mode,onModeChange,focusedWeeklyO
  const selectedProgress=chosenStory?state.quests.find(q=>q.questId===chosenStory.id):undefined;
  const selectedLocked=chosenOrder?weeklyOrderLockReason(state,chosenOrder):undefined;
  const selectedStatus:Status=chosenStory?(selectedProgress?.status==='complete'?'ready':selectedProgress?.status==='claimed'?'claimed':selectedProgress?.status==='active'?'active':'locked'):chosenOrder?(selectedLocked?'locked':chosenOrder.claimed?'claimed':chosenOrder.progress>=chosenOrder.target?'processing':'active'):chosenChallenge?(challengeClaimed.has(chosenChallenge.id)?'claimed':chosenChallenge.progress>=chosenChallenge.required?'ready':'active'):'locked';
- const closeSheet=useCallback(()=>{
-  pendingClaim.current=null;
-  if(sheetStage==='success')setMoment(null);
-  setSelected(null);setSheetStage('details');setStoryExpanded(false);
- },[sheetStage]);
- function open(kind:Selection['kind'],id:string){setSelected({kind,id});setSheetStage('details');setStoryExpanded(false);setMoment(null);setNotice('');}
- function changeMode(next:QuestMode){closeSheet();setMoment(null);setNotice('');onModeChange(next);}
- useEffect(()=>{
-  if(focusedWeeklyOrderId&&mode==='contracts'&&board.orders.some(q=>q.id===focusedWeeklyOrderId)){setSelected({kind:'contract',id:focusedWeeklyOrderId});setSheetStage('details');}
- },[focusedWeeklyOrderId,mode]);
- // The local success state is only shown after the authoritative game state confirms a claim.
- useEffect(()=>{
-  const next={characterId:state.character?.id,story:state.quests.filter(q=>q.status==='claimed').map(q=>q.questId),challenges:state.account.seasonalContractClaimIds??[]};
-  const prior=previous.current;previous.current=next;
-  if(next.characterId!==prior.characterId){closeSheet();setMoment(null);return;}
-  const newStory=newlyConfirmedIds(prior.story,next.story),newChallenge=newlyConfirmedIds(prior.challenges,next.challenges);
-  if(newStory.length){
-   const def=QUESTS.find(q=>q.id===newStory[newStory.length-1]);
-   if(def){
-    setMoment({id:def.id,source:'story',title:localizedQuestStoryText(language,def,'name'),titleName:storyRewardTitle(def),gold:def.rewardGold,itemId:def.rewardItemId,quantity:def.rewardItemQty??1});
-    if((selected?.kind==='story'&&selected.id===def.id)||(pendingClaim.current?.kind==='story'&&pendingClaim.current.id===def.id)){pendingClaim.current=null;setSheetStage('success');}
-   }
-  }else if(newChallenge.length){
-   const def=allChallenges.find(q=>q.id===newChallenge[newChallenge.length-1]);
-   if(def){
-    const choice=def.rewardOptions.find(option=>option.id===(state.character?.personalSeasonal?.rewardChoices??state.account.seasonalContractRewardChoices)?.[def.id])??def.rewardOptions[0];
+ const closeSheet=useCallback(()=>{setSelected(null);setStoryExpanded(false);},[]);
+  function open(kind:Selection['kind'],id:string){setSelected({kind,id});setStoryExpanded(false);setMoment(null);setNotice('');}
+  function changeMode(next:QuestMode){closeSheet();setMoment(null);setMilestoneReceipt(null);setNotice('');onModeChange(next);}
+  useEffect(()=>{
+   if(focusedWeeklyOrderId&&mode==='contracts'&&board.orders.some(q=>q.id===focusedWeeklyOrderId)){setSelected({kind:'contract',id:focusedWeeklyOrderId});}
+  },[focusedWeeklyOrderId,mode]);
+  // Only confirmed claimed-state transitions may emit a reward notification.
+  useEffect(()=>{
+   const next={characterId:state.character?.id,story:state.quests.filter(q=>q.status==='claimed').map(q=>q.questId),challenges:state.character?.personalSeasonal?.claimIds??state.account.seasonalContractClaimIds??[]};
+   const prior=previous.current;previous.current=next;
+   if(next.characterId!==prior.characterId){pendingClaim.current=null;setClaimingKey(null);closeSheet();setMoment(null);return;}
+   const newStory=newlyConfirmedIds(prior.story,next.story),newChallenge=newlyConfirmedIds(prior.challenges,next.challenges);
+   if(newStory.length){
+    const def=QUESTS.find(q=>q.id===newStory[newStory.length-1]);
+    if(def){
+     setMoment({id:def.id,source:'story',title:localizedQuestStoryText(language,def,'name'),titleName:storyRewardTitle(def),gold:def.rewardGold,itemId:def.rewardItemId,quantity:def.rewardItemQty??1});
+     if(pendingClaim.current?.kind==='story'&&pendingClaim.current.id===def.id){pendingClaim.current=null;setClaimingKey(null);}
+    }
+   }else if(newChallenge.length){
+    const def=allChallenges.find(q=>q.id===newChallenge[newChallenge.length-1]);
+    if(def){
+     const choice=def.rewardOptions.find(option=>option.id===(state.character?.personalSeasonal?.rewardChoices??state.account.seasonalContractRewardChoices)?.[def.id])??def.rewardOptions[0];
      setMoment({id:def.id,source:'challenges',title:seasonalChallengeName(language,def),gold:def.rewardGold,xp:def.rewardXp,itemId:choice.rewardItemId,quantity:choice.rewardItemQty,essence:choice.rewardCompanionEssence,bondstones:choice.rewardBondstones,rarityColor:QUEST_RARITIES[def.rarity].color});
-    if((selected?.kind==='challenge'&&selected.id===def.id)||(pendingClaim.current?.kind==='challenge'&&pendingClaim.current.id===def.id)){pendingClaim.current=null;setSheetStage('success');}
+     if(pendingClaim.current?.kind==='challenge'&&pendingClaim.current.id===def.id){pendingClaim.current=null;setClaimingKey(null);}
+    }
+   }
+  },[state.quests,state.character?.personalSeasonal?.claimIds,state.account.seasonalContractClaimIds,state.character?.id]);
+  /** No extra confirmation or success modal; the server still owns the grant. */
+  async function submitClaimFor(kind:'story'|'challenge',id:string){
+   if(pendingClaim.current)return;
+   const chosenStory=kind==='story'?QUESTS.find(q=>q.id===id):undefined;
+   const chosenChallenge=kind==='challenge'?allChallenges.find(q=>q.id===id):undefined;
+   const isReady=chosenStory?state.quests.some(q=>q.questId===id&&q.status==='complete'):chosenChallenge?!challengeClaimed.has(id)&&chosenChallenge.progress>=chosenChallenge.required:false;
+   if(!isReady)return;
+   pendingClaim.current={kind,id};
+   setClaimingKey(kind+':'+id);
+   setSelected(null);setStoryExpanded(false);setMoment(null);setMilestoneReceipt(null);setNotice('');
+   try{
+    const confirmed=chosenStory?await onClaim(chosenStory.id):chosenChallenge?await onClaimContract(chosenChallenge.period,chosenChallenge.id,rewardChoiceByQuest[id]??chosenChallenge.rewardOptions[0].id):false;
+    if(confirmed===false)throw new Error(p('Could not claim reward. Please try again.'));
+    // A successful command is not itself a receipt; await claimed state.
+   }catch(err){
+    if(pendingClaim.current?.kind===kind&&pendingClaim.current.id===id){
+     pendingClaim.current=null;setClaimingKey(null);
+     setNotice(err instanceof Error?err.message:p('Could not claim reward. Please try again.'));
+    }
    }
   }
- },[state.quests,state.account.seasonalContractClaimIds,state.character?.id]);
- // One click claims the reward. Only server-confirmed state can show the receipt.
- async function submitClaimFor(kind:'story'|'challenge',id:string){
-  if(pendingClaim.current)return;
-  const chosenStory=kind==='story'?QUESTS.find(q=>q.id===id):undefined;
-  const chosenChallenge=kind==='challenge'?allChallenges.find(q=>q.id===id):undefined;
-  const isReady=chosenStory?state.quests.some(q=>q.questId===id&&q.status==='complete'):chosenChallenge?!challengeClaimed.has(id)&&chosenChallenge.progress>=chosenChallenge.required:false;
-  if(!isReady)return;
-  pendingClaim.current={kind,id};
-  setSelected({kind,id});setSheetStage('claiming');setStoryExpanded(false);setMoment(null);setNotice('');
-  try{
-   const confirmed=chosenStory?await onClaim(chosenStory.id):chosenChallenge?await onClaimContract(chosenChallenge.period,chosenChallenge.id,rewardChoiceByQuest[id]??chosenChallenge.rewardOptions[0].id):false;
-   if(confirmed===false)throw new Error(p('Could not claim reward. Please try again.'));
-   // Waiting ends when the authoritative character state confirms the claim.
-  }catch(err){
-   if(pendingClaim.current?.kind===kind&&pendingClaim.current.id===id){
-    pendingClaim.current=null;setSheetStage('details');
-    setNotice(err instanceof Error?err.message:p('Could not claim reward. Please try again.'));
-   }
+  function submitClaim(){
+   if(selectedStatus!=='ready'||!selected||selected.kind==='contract')return;
+   return submitClaimFor(selected.kind,selected.id);
   }
- }
- function submitClaim(){
-  if(selectedStatus!=='ready'||sheetStage!=='details'||!selected||selected.kind==='contract')return;
-  return submitClaimFor(selected.kind,selected.id);
- }
- const summaries={story:{title:p('Quest Journal'),subtitle:p('Your next chapter, story progress and rewards.')},contracts:{title:p('Weekly Contracts'),subtitle:p('Weekly assignments and automatic reward processing.')},challenges:{title:p('Class Challenges'),subtitle:p('Your daily, weekly and monthly class objectives.')}};
+  const summaries={story:{title:p('Quest Journal'),subtitle:p('Your next chapter, story progress and rewards.')},contracts:{title:p('Weekly Contracts'),subtitle:p('Weekly assignments and automatic reward processing.')},challenges:{title:p('Class Challenges'),subtitle:p('Your daily, weekly and monthly class objectives.')}};
  const summary=summaries[mode];
  const completeChallengeCount=allChallenges.filter(q=>q.progress>=q.required).length;
  const nextReward=challengeReady[0];
@@ -233,8 +247,6 @@ export function QuestRefinedScreen({state,nowMs,mode,onModeChange,focusedWeeklyO
     contractMeta={t('{current}/{total} complete',{current:boardCompleted,total:board.orders.length})}
     challengeMeta={challengeReady.length?t('{count} ready',{count:challengeReady.length}):t('{current}/{total} claimed',{current:currentChallengeClaimedCount,total:allChallenges.length})}
     storyAttention={storyReady} challengeAttention={challengeReady.length}/>
-   {notice?<ActionFeedback compact tone="error" message={notice} reduceMotion={state.settings.reduceMotion} actionLabel={p('Dismiss')} onAction={()=>setNotice('')}/>:null}
-   {moment?.source===mode&&!sheetOpen?<View style={[styles.moment,{borderColor:C.good,backgroundColor:C.goodSurface}]}><View style={styles.rowMeta}><Text style={[styles.eyebrow,{color:C.good}]}>{p('REWARDS SECURED')}</Text><StatusPill label={p('CLAIMED')} tone="good"/></View><Text style={[styles.rowTitle,{color:C.text}]}>{moment.title}</Text><QuestReward gold={moment.gold} xp={moment.xp} itemId={moment.itemId} quantity={moment.quantity} titleName={moment.titleName} essence={moment.essence} bondstones={moment.bondstones} rarityColor={moment.rarityColor} label={p('Rewards collected')}/></View>:null}
    {mode==='story'?<>
     <View style={[styles.hero,{backgroundColor:C.panelRaised,borderColor:C.lineStrong}]}>
      <View style={styles.rowMeta}><Text style={[styles.eyebrow,{color:C.accent}]}>{p('ACT')+' '+(act.act===1?'I':act.act===2?'II':'III')+' · '+localizedQuestActText(language,act,'name').toLocaleUpperCase(language)}</Text><Text style={[styles.mini,{color:C.muted}]}>{storyClaimed}/{QUESTS.length}</Text></View>
@@ -251,7 +263,7 @@ export function QuestRefinedScreen({state,nowMs,mode,onModeChange,focusedWeeklyO
       <Text style={[styles.subtitle,{color:C.muted}]}>{localizedQuestStoryText(language,nextChapter,'description')}</Text>
       <ProgressLine current={Math.min(nextChapter.required,chapterProgress?.progress??0)} max={nextChapter.required} C={C}/>
       <Text style={[styles.rewardHint,{color:C.accent}]}>{nextChapter.rewardGold} {t('Gold')}{nextChapter.rewardItemId?' · '+(nextChapter.rewardItemQty??1)+'× '+nextChapter.rewardItemId.replace(/_/g,' '):''}{nextChapter.rewardTitleId?' · '+(storyRewardTitle(nextChapter)??''):''}</Text>
-      <GameButton title={chapterProgress?.status==='complete'?p('Claim rewards'):p('View objective')} onPress={()=>chapterProgress?.status==='complete'?submitClaimFor('story',nextChapter.id):open('story',nextChapter.id)}/>
+      <GameButton title={chapterProgress?.status==='complete'?p('Claim rewards'):p('View objective')} loading={claimingKey==='story:'+nextChapter.id} disabled={claimingKey!==null} onPress={()=>chapterProgress?.status==='complete'?submitClaimFor('story',nextChapter.id):open('story',nextChapter.id)}/>
      </View>:null}
     <View style={[styles.chronicleCard,{backgroundColor:C.panel,borderColor:C.lineStrong}]}>
      <View style={styles.rowMeta}><Text style={[styles.eyebrow,{color:C.accent}]}>{p('THE CHRONICLE')}</Text><Text style={[styles.mini,{color:C.muted}]}>{p('Recovered clues')} · {recoveredPages.length}/{STORY_DISCOVERIES.length}</Text></View>
@@ -282,7 +294,7 @@ export function QuestRefinedScreen({state,nowMs,mode,onModeChange,focusedWeeklyO
     <View style={styles.sectionHead}><Text style={[styles.sectionTitle,{color:C.accent}]}>{p('STORY CHAPTERS')}</Text><Text style={[styles.mini,{color:C.muted}]}>{QUESTS.length} {p('total')}</Text></View>
     <Rail C={C} selected={filter} onChange={setFilter} items={[{id:'current',label:p('Current')+' · '+journalEntries(state,'current','').length},{id:'all',label:p('All')},{id:'claimed',label:p('Completed')},{id:'locked',label:p('Locked')} ]}/>
     <SearchField accessibilityLabel={t('Search quests')} placeholder={p('Search chapters…')} placeholderTextColor={C.muted} value={query} onChangeText={setQuery}/>
-    {storyRows.length?storyRows.map(({def,quest,chapter})=><CompactQuestRow key={def.id} C={C} title={localizedQuestStoryText(language,def,'name')} subtitle={def.location} eyebrow={p('CHAPTER')+' '+chapter} status={quest.status==='complete'?'ready':quest.status==='claimed'?'claimed':quest.status==='locked'?'locked':'active'} language={language} current={Math.min(def.required,quest.progress)} max={def.required} art={<StoryArt quest={def}/>} reward={def.rewardGold+' '+t('Gold')} onPress={()=>open('story',def.id)}/>):<View style={styles.empty}><EmptyState title={p('No matching chapters')} message={p('Change the filter or search to see more chapters.')} icon="quests"/><GameButton compact tone="secondary" title={p('Show all chapters')} onPress={()=>{setFilter('all');setQuery('')}}/></View>}
+    {storyRows.length?storyRows.map(({def,quest,chapter})=><CompactQuestRow key={def.id} C={C} title={localizedQuestStoryText(language,def,'name')} subtitle={def.location} eyebrow={p('CHAPTER')+' '+chapter} status={claimingKey==='story:'+def.id?'processing':quest.status==='complete'?'ready':quest.status==='claimed'?'claimed':quest.status==='locked'?'locked':'active'} language={language} current={Math.min(def.required,quest.progress)} max={def.required} art={<StoryArt quest={def}/>} reward={def.rewardGold+' '+t('Gold')} readyLabel={p('Claim')} onPress={()=>quest.status==='complete'?submitClaimFor('story',def.id):open('story',def.id)}/>):<View style={styles.empty}><EmptyState title={p('No matching chapters')} message={p('Change the filter or search to see more chapters.')} icon="quests"/><GameButton compact tone="secondary" title={p('Show all chapters')} onPress={()=>{setFilter('all');setQuery('')}}/></View>}
    </>:null}
    {mode==='contracts'?<>
     <View style={[styles.hero,{backgroundColor:C.panelRaised,borderColor:C.lineStrong}]}>
@@ -313,7 +325,7 @@ export function QuestRefinedScreen({state,nowMs,mode,onModeChange,focusedWeeklyO
     </View>:null}
    </>:null}
    {mode==='challenges'?<>
-    <MonthlyQuestMilestonesPanel state={state} nowMs={nowMs} onClaim={onClaimMilestone}/>
+    <MonthlyQuestMilestonesPanel state={state} nowMs={nowMs} onClaim={onClaimMilestone} onClaimed={({characterName,skillId,xp})=>{setMoment(null);setMilestoneReceipt(p('Rewards secured')+' · +'+xp.toLocaleString(language)+' '+p('Skill XP')+' · '+characterName+' · '+skillId.slice(0,1).toUpperCase()+skillId.slice(1));}}/>
     <View style={[styles.hero,{backgroundColor:C.panelRaised,borderColor:C.lineStrong}]}>
      <View style={styles.rowMeta}><Text style={[styles.eyebrow,{color:C.accent}]}>{p('CLASS OBJECTIVES')}</Text><StatusPill label={p('CLASS')} tone="special"/></View>
      <View style={styles.statRow}>
@@ -325,7 +337,7 @@ export function QuestRefinedScreen({state,nowMs,mode,onModeChange,focusedWeeklyO
      <View style={styles.rowMeta}><Text style={[styles.eyebrow,{color:C.good}]}>{p('REWARD READY')}</Text><StatusPill label={seasonalChallengeText(language,QUEST_RARITIES[nextReward.rarity].label).toLocaleUpperCase(language)} tone="special"/></View>
      <Text style={[styles.featuredTitle,{color:C.text}]}>{seasonalChallengeName(language,nextReward)}</Text>
      <Text style={[styles.subtitle,{color:C.muted}]}>{nextReward.period.toUpperCase()} · {seasonalChallengeText(language,QUEST_RARITIES[nextReward.rarity].cache)}</Text>
-     <GameButton title={p('Claim')+' '+seasonalChallengeText(language,QUEST_RARITIES[nextReward.rarity].cache)} onPress={()=>open('challenge',nextReward.id)}/>
+     <GameButton title={nextReward.rewardOptions.length>1?p('Choose reward'):p('Claim rewards')} loading={claimingKey==='challenge:'+nextReward.id} disabled={claimingKey!==null} onPress={()=>nextReward.rewardOptions.length>1?open('challenge',nextReward.id):submitClaimFor('challenge',nextReward.id)}/>
     </View>:null}
     <View style={styles.sectionHead}><Text style={[styles.sectionTitle,{color:C.accent}]}>{p('CHALLENGE LIST')}</Text><Text style={[styles.mini,{color:C.muted}]}>{daily.length} {p('daily')} · {weekly.length} {p('weekly')} · {monthly.length} {p('monthly')}</Text></View>
     <Rail C={C} selected={challengePeriod} onChange={setChallengePeriod} items={[{id:'all',label:p('All')},{id:'daily',label:p('Daily')},{id:'weekly',label:p('Weekly')},{id:'monthly',label:p('Monthly')}]}/>
@@ -333,29 +345,16 @@ export function QuestRefinedScreen({state,nowMs,mode,onModeChange,focusedWeeklyO
      const rows=(period==='daily'?daily:period==='weekly'?weekly:monthly).slice().sort((a,b)=>Number(challengeClaimed.has(a.id))-Number(challengeClaimed.has(b.id))||Number(b.progress>=b.required)-Number(a.progress>=a.required));
      return <View key={period} style={styles.challengeGroup}>
       {challengePeriod==='all'?<Text style={[styles.eyebrow,{color:C.accent}]}>{p(period.toUpperCase())}</Text>:null}
-      {rows.map(q=><CompactQuestRow key={q.id} C={C} language={language} title={seasonalChallengeName(language,q)} subtitle={seasonalChallengeDescription(language,q)} eyebrow={seasonalChallengeText(language,q.tag.toUpperCase())+' · '+p(period.toUpperCase())} status={challengeClaimed.has(q.id)?'claimed':q.progress>=q.required?'ready':'active'} current={Math.min(q.progress,q.required)} max={q.required} art={<ChallengeArt quest={q}/>} rarity={seasonalChallengeText(language,QUEST_RARITIES[q.rarity].label)} reward={seasonalChallengeText(language,QUEST_RARITIES[q.rarity].cache)} onPress={()=>open('challenge',q.id)}/>)}
+      {rows.map(q=><CompactQuestRow key={q.id} C={C} language={language} title={seasonalChallengeName(language,q)} subtitle={seasonalChallengeDescription(language,q)} eyebrow={seasonalChallengeText(language,q.tag.toUpperCase())+' · '+p(period.toUpperCase())} status={claimingKey==='challenge:'+q.id?'processing':challengeClaimed.has(q.id)?'claimed':q.progress>=q.required?'ready':'active'} current={Math.min(q.progress,q.required)} max={q.required} art={<ChallengeArt quest={q}/>} rarity={seasonalChallengeText(language,QUEST_RARITIES[q.rarity].label)} reward={seasonalChallengeText(language,QUEST_RARITIES[q.rarity].cache)} readyLabel={q.rewardOptions.length>1?p('Choose'):p('Claim')} onPress={()=>!challengeClaimed.has(q.id)&&q.progress>=q.required&&q.rewardOptions.length===1?submitClaimFor('challenge',q.id):open('challenge',q.id)}/>)}
      </View>;
     })}
    </>:null}
   </ScrollView>
   <GameModalSurface visible={sheetOpen} onClose={closeSheet} reduceMotion={state.settings.reduceMotion} surfaceStyle={styles.sheetSurface}>
-   <GameModalHeader eyebrow={sheetStage==='success'?p('REWARDS COLLECTED'):selected?.kind==='story'?p('STORY CHAPTER'):selected?.kind==='contract'?p('WEEKLY CONTRACT'):p('CLASS CHALLENGE')} title={selectedTitle} onClose={closeSheet}/>
+   <GameModalHeader eyebrow={selected?.kind==='story'?p('STORY CHAPTER'):selected?.kind==='contract'?p('WEEKLY CONTRACT'):p('CLASS CHALLENGE')} title={selectedTitle} onClose={closeSheet}/>
    <ScrollView style={styles.sheetScroll} contentContainerStyle={styles.sheetContent} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-    {sheetStage==='success'&&moment!==null&&moment.id===selected?.id?<View style={[styles.success,{backgroundColor:C.goodSurface,borderColor:C.good}]}>
-     <Text style={[styles.successMark,{color:C.good}]}>✦ ✓</Text><Text style={[styles.featuredTitle,{color:C.text}]}>{p('Rewards secured')}</Text>
-     <Text style={[styles.subtitle,{color:C.muted}]}>{p('Reward collected · the next objective is ready when unlocked.')}</Text>
-     <QuestReward gold={moment.gold} xp={moment.xp} itemId={moment.itemId} quantity={moment.quantity} titleName={moment.titleName} essence={moment.essence} bondstones={moment.bondstones} rarityColor={moment.rarityColor} label={p('Rewards collected')}/>
-     {moment.source==='story'&&storyDiscoveryText(language,moment.id)?<View style={[styles.storyText,{backgroundColor:C.panel2,borderColor:C.info}]}>
-      <Text style={[styles.eyebrow,{color:C.accent}]}>{p('NEW DISCOVERY')}</Text>
-      <Text style={[styles.detailText,{color:C.text}]}>{storyDiscoveryText(language,moment.id)}</Text>
-     </View>:null}
-    </View>:sheetStage==='claiming'?<View style={[styles.featured,{backgroundColor:C.panelRaised,borderColor:C.lineStrong}]}>
-     <Text style={[styles.rowTitle,{color:C.text}]}>{selectedTitle}</Text>
-     <Text style={[styles.subtitle,{color:C.muted}]}>{p('The server will verify your progress before granting this reward.')}</Text>
-     {selectedRewards?<QuestReward gold={selectedRewards.gold} xp={'xp' in selectedRewards?selectedRewards.xp:undefined} itemId={selectedRewards.itemId} quantity={selectedRewards.quantity} titleName={'titleName' in selectedRewards?selectedRewards.titleName:undefined} essence={selectedRewards.essence} bondstones={selectedRewards.bondstones} rarityColor={'color' in selectedRewards?selectedRewards.color:undefined} label={p('Rewards')}/>:null}
-     {sheetStage==='claiming'?<Text accessibilityLiveRegion="polite" style={[styles.footnote,{color:C.info}]}>{p('Claim submitted · waiting for confirmation…')}</Text>:null}
-    </View>:<>
-     <View style={[styles.detailIdentity,{backgroundColor:C.panelRaised,borderColor:C.line}]}>
+    <>
+      <View style={[styles.detailIdentity,{backgroundColor:C.panelRaised,borderColor:C.line}]}>
       <View style={[styles.detailArt,{backgroundColor:C.panel2,borderColor:C.line}]}>{chosenStory?<StoryArt quest={chosenStory}/>:chosenOrder?<OrderArt order={chosenOrder}/>:chosenChallenge?<ChallengeArt quest={chosenChallenge}/>:null}</View>
       <View style={styles.flex}><Text style={[styles.rowSubtitle,{color:C.muted}]}>{chosenStory?p(chosenStory.location):chosenOrder?p(chosenOrder.source.label):chosenChallenge?p(chosenChallenge.period.toUpperCase()):''}</Text><StatusPill label={statusText(selectedStatus,language)} tone={statusTone(selectedStatus)}/></View>
      </View>
@@ -401,7 +400,7 @@ export function QuestRefinedScreen({state,nowMs,mode,onModeChange,focusedWeeklyO
     </>}
    </ScrollView>
    <View style={[styles.sheetFooter,{borderColor:C.line}]}>
-    {sheetStage==='success'?<GameButton title={p('Continue')} onPress={closeSheet}/>:sheetStage==='claiming'?<GameButton title={p('Waiting for server confirmation…')} loading disabled onPress={()=>{}}/>:hasClaim?<GameButton title={p('Claim rewards')} onPress={submitClaim}/>:chosenStory&&selectedStatus==='active'?<GameButton title={localizedQuestDestinationText(language,chosenStory,'label')} onPress={()=>{const target=questDestination(chosenStory);closeSheet();onNavigate(target)}}/>:chosenChallenge&&selectedStatus==='active'&&challengeDestination?<GameButton title={p(challengeDestination.label)} onPress={()=>{closeSheet();onNavigate(challengeDestination)}}/>:chosenOrder&&selectedStatus==='active'?<>
+    {hasClaim?<GameButton title={p('Claim rewards')} disabled={claimingKey!==null} onPress={submitClaim}/>:chosenStory&&selectedStatus==='active'?<GameButton title={localizedQuestDestinationText(language,chosenStory,'label')} onPress={()=>{const target=questDestination(chosenStory);closeSheet();onNavigate(target)}}/>:chosenChallenge&&selectedStatus==='active'&&challengeDestination?<GameButton title={p(challengeDestination.label)} onPress={()=>{closeSheet();onNavigate(challengeDestination)}}/>:chosenOrder&&selectedStatus==='active'?<>
      <GameButton title={weeklyOrderDestinationLabel(language,chosenOrder,'button')} onPress={()=>{closeSheet();onOpenWeeklyOrder(chosenOrder)}}/>
      {chosenQueueable?<View style={styles.actionPair}>
       <View style={styles.flex}><GameButton compact tone="secondary" title={queueFull?p('Queue full'):p('Queue')} disabled={queueFull} onPress={()=>{onQueueWeeklyOrder(chosenOrder);closeSheet()}}/></View>
@@ -410,6 +409,7 @@ export function QuestRefinedScreen({state,nowMs,mode,onModeChange,focusedWeeklyO
     </>:<GameButton title={p('Close')} tone="secondary" onPress={closeSheet}/>}
    </View>
   </GameModalSurface>
+  {moment?.source===mode?<View pointerEvents="box-none" style={styles.toastLayer}><ActionFeedback compact tone="success" reduceMotion={state.settings.reduceMotion} message={p('Rewards secured')+' · '+moment.title+'\n'+questRewardReceipt(moment,language)}/></View>:milestoneReceipt?<View pointerEvents="box-none" style={styles.toastLayer}><ActionFeedback compact tone="success" reduceMotion={state.settings.reduceMotion} message={milestoneReceipt}/></View>:notice?<View style={styles.toastLayer}><ActionFeedback compact tone="error" reduceMotion={state.settings.reduceMotion} message={notice} actionLabel={p('Dismiss')} onAction={()=>setNotice('')}/></View>:null}
  </View>;
 }
 const styles=StyleSheet.create({
@@ -430,7 +430,7 @@ const styles=StyleSheet.create({
  openHint:{fontSize:11,lineHeight:16,fontWeight:'800'},footnote:{fontSize:11,lineHeight:17,fontWeight:'600'},
  statRow:{flexDirection:'row',gap:6},stat:{flex:1,minHeight:67,borderWidth:1,borderRadius:8,alignItems:'center',justifyContent:'center',gap:3},
  statNumber:{fontSize:22,lineHeight:27,fontWeight:'900'},challengeGroup:{gap:spacing.sm},
- empty:{gap:spacing.sm,paddingVertical:spacing.md},moment:{padding:spacing.md,borderRadius:12,borderWidth:1,gap:spacing.sm},
+ empty:{gap:spacing.sm,paddingVertical:spacing.md},toastLayer:{position:'absolute',left:spacing.md,right:spacing.md,top:8,zIndex:10,elevation:5},
  sheetSurface:{paddingHorizontal:spacing.md},sheetScroll:{flexShrink:1,minHeight:0},sheetContent:{gap:spacing.md,paddingVertical:spacing.sm,paddingBottom:spacing.md},
  detailIdentity:{padding:spacing.sm,borderWidth:1,borderRadius:10,flexDirection:'row',gap:12,alignItems:'center'},
  detailArt:{width:54,height:54,borderWidth:1,borderRadius:9,justifyContent:'center',alignItems:'center'},
@@ -441,6 +441,5 @@ const styles=StyleSheet.create({
  chronicleToggle:{minHeight:touchTargetMin,paddingHorizontal:12,paddingVertical:6,borderWidth:1,borderRadius:9,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},
  chronicleSections:{gap:12,paddingTop:3},chronicleSection:{gap:8},chroniclePage:{borderWidth:1,borderRadius:9,padding:10,gap:6},
  sheetFooter:{borderTopWidth:1,paddingTop:spacing.sm,paddingBottom:spacing.sm,gap:8},
- actionPair:{flexDirection:'row',gap:8},success:{padding:spacing.md,borderWidth:1,borderRadius:12,gap:spacing.md},
- successMark:{textAlign:'center',fontSize:29,lineHeight:35,fontWeight:'900'},
+ actionPair:{flexDirection:'row',gap:8},
 });

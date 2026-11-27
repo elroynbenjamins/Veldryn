@@ -1,5 +1,5 @@
 /** Nonpaying preview of exact equipped chest gear. No inventory or skill XP writer. */
-import {reviewGatheringSpeedV2,type GatheringGearSkillV2} from '../../../../apps/mobile/src/core/gathering-speed-v2-review';
+import {reviewGatheringSpeedV2,reviewGatheringRewardChannelsV2,type GatheringGearSkillV2} from '../../../../apps/mobile/src/core/gathering-speed-v2-review';
 import {WORLD_BOSS_GATHERING_PIECES_V64,WORLD_BOSS_GATHERING_RARITY_V65,previewWorldBossGatheringBonusV64} from './world-boss-gathering-loot-v64';
 import {WORLD_BOSS_CHEST_POLICY_V96,WORLD_BOSS_GATHERING_BONUS_RANGES_V96,previewWorldBossChestRollV96} from './world-boss-chest-policy-v96';
 type Roll=NonNullable<ReturnType<typeof previewWorldBossChestRollV96>['gear']>;
@@ -16,7 +16,7 @@ export function reviewWorldBossGatheringSpeedV99(input:{
   throw Error('gathering_speed_invalid_roster');
  const copies:readonly GatheringSpeedCopyV99[]=input.copies;
  const seen=new Set<string>(),slots=new Set<string>(),matchingIds:string[]=[];
- let gearRatingBps=0;
+ let gearRatingBps=0,skillXpAffixBps=0,rareChanceAffixBps=0;
  const before=JSON.stringify(copies);
  for(const copy of copies){
   if(!copy||copy.accountId!==accountId||copy.characterId!==characterId||typeof copy.instanceId!=='string'||
@@ -32,7 +32,7 @@ export function reviewWorldBossGatheringSpeedV99(input:{
   seen.add(copy.instanceId);slots.add(g.slot);
   const affixes:readonly Roll['bonusStats'][number][]=g.bonusStats;
   const stats=new Set<string>();
-  let extra=0;
+  let extra=0,xp=0,rare=0;
   for(const affix of affixes){
    if(!affix||!Object.prototype.hasOwnProperty.call(WORLD_BOSS_GATHERING_BONUS_RANGES_V96,affix.stat)||
     stats.has(affix.stat)||affix.skill!==piece.skill||!Number.isSafeInteger(affix.bonusBasisPoints))
@@ -42,12 +42,15 @@ export function reviewWorldBossGatheringSpeedV99(input:{
     throw Error('gathering_speed_invalid_affix');
    stats.add(affix.stat);
    if(affix.stat==='gathering_speed')extra+=affix.bonusBasisPoints;
+   if(affix.stat==='skill_xp')xp+=affix.bonusBasisPoints;
+   if(affix.stat==='gathering_rarity_chance')rare+=affix.bonusBasisPoints;
   }
   if(input.verifyEquippedCopy(copy)!==true||JSON.stringify(copies)!==before)throw Error('gathering_speed_unverified_copy');
-  if(piece.skill===skill){matchingIds.push(piece.itemId);gearRatingBps+=g.gatheringSpeedBasisPoints+extra;}
+  if(piece.skill===skill){matchingIds.push(piece.itemId);gearRatingBps+=g.gatheringSpeedBasisPoints+extra;skillXpAffixBps+=xp;rareChanceAffixBps+=rare;}
  }
  const set=previewWorldBossGatheringBonusV64(skill,matchingIds);
  const pace=reviewGatheringSpeedV2({baseActionSeconds:input.baseActionSeconds,toolTimeMultiplier:input.toolTimeMultiplier,
  existingRateMultiplier:input.existingRateMultiplier,gearRatingBps,setTimeMultiplier:set.pieces>=8?.96:1});
- return {...pace,skill,pieces:set.pieces,gearRatingBps,set,canApply:false as const,rewardGranted:false as const};
+ const channels=reviewGatheringRewardChannelsV2({matchingSetPieces:set.pieces,skillXpAffixBps,rareChanceAffixBps});
+ return {...pace,skill,pieces:set.pieces,gearRatingBps,set,channels,canApply:false as const,rewardGranted:false as const};
 }

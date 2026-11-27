@@ -1,3 +1,4 @@
+import {ASCENDANT_SURFACES} from './ascendant-showcase-surfaces';
 import {memo,useMemo,useState,type ReactNode} from 'react';
 import {Animated,Image,Pressable,StyleSheet,View,useWindowDimensions,type ImageSourcePropType} from 'react-native';
 import {useCosmeticMotionPolicy,useLoopProgress} from '../anim/motion';
@@ -94,7 +95,7 @@ export const ParadoxEternalPreview=memo(function ParadoxEternalPreview({assets,e
 });
 const s=StyleSheet.create({
  outer:{width:'100%',maxWidth:480,alignSelf:'center'},card:{width:'100%',position:'relative',overflow:'hidden',backgroundColor:'#100e21'},
- fill:{...StyleSheet.absoluteFill,width:'100%',height:'100%'},plate:{backgroundColor:'#151127',borderColor:'#8773af',borderWidth:1,borderRadius:6},
- portrait:{backgroundColor:'#151127',borderColor:'#bca3e5',borderWidth:1,borderRadius:5},protected:{overflow:'hidden'},
- badges:{justifyContent:'center',alignItems:'flex-start'},guild:{backgroundColor:'#211832',borderColor:'#8773af',borderWidth:1,borderRadius:4,justifyContent:'center'},
+ fill:{...StyleSheet.absoluteFill,width:'100%',height:'100%'},plate:ASCENDANT_SURFACES.paradox.identity,
+ portrait:ASCENDANT_SURFACES.paradox.portrait,protected:{overflow:'hidden'},
+ badges:{justifyContent:'center',alignItems:'flex-start'},guild:{...ASCENDANT_SURFACES.paradox.guild,justifyContent:'center'},
 });

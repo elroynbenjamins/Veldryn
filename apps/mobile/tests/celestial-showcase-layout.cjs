@@ -35,3 +35,15 @@ assert(I.identity.y+I.identity.height<=I.plate.height);
 assert(!celestialStageSupported(300,1.2),'use readable ordinary layout when text and featured badges cannot fit');
 assert(celestialStageSupported(340,1.2));
 assert(I.guild.y>I.plate.y+I.plate.height);
+
+// All four dedicated stages use the same legibility treatment; no hard outline.
+const surfacePath=path.join(__dirname,'../src/components/profile/ascendant-showcase-surfaces.ts');
+const surfaceMod={exports:{}};
+new Function('exports','module',ts.transpileModule(fs.readFileSync(surfacePath,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText)(surfaceMod.exports,surfaceMod);
+for(const [theme,file] of Object.entries({celestial:'CelestialSovereignPreview',draconic:'DraconicDominionPreview',abyssal:'AbyssalMajestyPreview',paradox:'ParadoxEternalPreview'})){
+ const treatment=surfaceMod.exports.ASCENDANT_SURFACES[theme];
+ assert.equal(treatment.identity.borderWidth,0);
+ assert.match(treatment.identity.backgroundColor,/^rgba\\(.*0\\.82\\)$/);
+ assert.equal(treatment.portrait.backgroundColor,'transparent');
+ assert(fs.readFileSync(path.join(__dirname,'../src/components/profile/'+file+'.tsx'),'utf8').includes('ASCENDANT_SURFACES.'+theme+'.identity'));
+}

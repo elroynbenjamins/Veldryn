@@ -53,6 +53,24 @@ begin
   p,start_at,1,'COPPER_ORE','required',3);
  wood:=private.freeze_party_event_supply_order_v16(
   p,start_at,1,'GREENWOOD_LOG','required',2);
+ -- Invalid nullable input must be rejected before attempting inventory writes.
+ begin
+  perform private.freeze_party_event_supply_order_v16(
+   p,start_at,1,'COPPER_ORE','required',null);
+  raise exception 'V16 null target accepted';
+ exception when others then
+  if sqlerrm<>'party_event_v16_invalid_order' then raise;end if;
+ end;
+ begin
+  perform private.donate_party_event_supply_v16(
+   p,start_at,ore,a[1],null,'v16-null-donation');
+  raise exception 'V16 null donation accepted';
+ exception when others then
+  if sqlerrm<>'party_event_v16_invalid_donation' then raise;end if;
+ end;
+ if (select revision from public.online_game_states where account_id=a[1])<>0
+  or exists(select 1 from private.party_event_supply_donations_v16 where party_id=p)
+ then raise exception 'V16 invalid quantity changed inventory or receipt';end if;
  if ore<>private.freeze_party_event_supply_order_v16(
    p,start_at,1,'COPPER_ORE','required',3)
  then raise exception 'V16 exact order replay changed ID';end if;

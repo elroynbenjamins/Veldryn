@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {inspectMarketForgeOrigin} from '../market-eq2-forge-origin-review';
+import {inspectMarketForgeOrigin,inspectMarketFirstForgeRegistration} from '../market-eq2-forge-origin-review';
 const make=()=>{
  const exactItem={pieceId:'EQ2_TEST',manifestVersion:'m1',rulesVersion:'r1',quality:77,baseStats:{attack:2.5,hp:3},affixes:[],gemSlots:[],enhancementRank:0};
  const outcome={pieceId:'EQ2_TEST',recipeId:'recipe',rulesVersion:'r1',quality:77};
@@ -70,4 +70,41 @@ const reordered=make();reordered.item.exactItem.baseStats={hp:3,attack:2.5};
 assert.equal(matchedDigest(inspectMarketForgeOrigin(reordered.input)),originalDigest);checks++;
 const pinned=make();pinned.input.expectedOriginalDigest=originalDigest;
 assert.equal(matchedDigest(inspectMarketForgeOrigin(pinned.input)),originalDigest);checks++;
+
+const first=()=>{
+ const x=make();
+ const empty=()=>({capacity:30,stacks:[] as {itemId:string;instanceId:string;quantity:number}[]});
+ const character=(id:string)=>({id,equipmentPouch:empty(),equipmentInstanceIds:{} as Record<string,string>,savedLoadouts:[]});
+ const state={version:11,account:{equipmentV2Hidden:x.ledger,craftedGearInstances:[] as {id:string}[]},
+  character:character('c1'),inventory:empty(),overflow:empty(),bank:empty(),
+  otherCharacters:[{character:character('c2'),inventory:empty(),overflow:empty()}],
+  settings:{lockedItemIds:[] as string[],favoriteItemIds:[] as string[]}};
+ state.inventory.stacks.push({itemId:x.input.itemId,instanceId:x.input.instanceId,quantity:1});
+ return {...x.input,expectedOriginalDigest:originalDigest,originalCharacterId:'c1',
+  row:{...x.input.row,character_id:'c1',state},ownedCharacterIds:['c1','c2'],
+  protectedInstanceIds:[] as string[],destination:'inventory' as 'inventory'|'pouch'};
+};
+function registration(name:string,mutate:(x:ReturnType<typeof first>)=>void,reason:string,receiptMatch:boolean,physicalMatch:boolean){
+ const x=first();mutate(x);const before=JSON.stringify(x);
+ assert.deepEqual(inspectMarketFirstForgeRegistration(x),{reason,receiptMatch,physicalMatch,marketAuthorized:false,canCommit:false},name);
+ assert.equal(JSON.stringify(x),before,'never mutate source');checks++;
+}
+registration('first physical delivery',()=>{},'matching_first_registration_requires_authoritative_commit',true,true);
+registration('first pouch delivery',x=>{x.row.state.character.equipmentPouch.stacks=x.row.state.inventory.stacks;x.row.state.inventory.stacks=[];x.destination='pouch'},'matching_first_registration_requires_authoritative_commit',true,true);
+registration('virtual-only claim',x=>{x.row.state.inventory.stacks=[]},'physical_copy_not_verified',true,false);
+registration('duplicate physical copy',x=>{x.row.state.bank.stacks.push({...x.row.state.inventory.stacks[0]})},'physical_copy_not_verified',true,false);
+registration('physical copy but corrupt receipt',x=>{x.row.state.account.equipmentV2Hidden.receipts.pop()},'original_receipt_not_verified',false,false);
+registration('wrong original crafter',x=>{x.originalCharacterId='c2'},'original_character_mismatch',true,false);
+registration('wrong destination',x=>{x.destination='pouch'},'physical_copy_not_verified',true,false);
+registration('stale online revision',x=>{x.row.revision++},'original_receipt_not_verified',false,false);
+registration('legacy collision',x=>{x.row.state.account.craftedGearInstances.push({id:x.instanceId})},'physical_copy_not_verified',true,false);
+registration('protected copy',x=>{x.protectedInstanceIds.push(x.instanceId)},'physical_copy_requires_protection_review',true,true);
+registration('missing digest',x=>{x.expectedOriginalDigest=''},'invalid_registration_evidence',false,false);
+registration('valid looking wrong digest',x=>{x.expectedOriginalDigest='f'.repeat(64)},'original_receipt_not_verified',false,false);
+registration('changed roster',x=>{x.ownedCharacterIds=['c1']},'physical_copy_not_verified',true,false);
+registration('different active character',x=>{
+ const state=x.row.state,old=state.character,inventory=state.inventory,overflow=state.overflow;
+ const alt=state.otherCharacters[0];state.character=alt.character;state.inventory=alt.inventory;state.overflow=alt.overflow;
+ state.otherCharacters=[{character:old,inventory,overflow}];x.row.character_id='c2';
+},'matching_first_registration_requires_authoritative_commit',true,true);
 console.log('Market Forge origin receipt review checks passed: '+checks);

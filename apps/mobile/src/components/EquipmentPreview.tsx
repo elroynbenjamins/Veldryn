@@ -1,5 +1,5 @@
 import {useEffect,useMemo,useState} from 'react';
-import {ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
+import {Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {itemDef} from '../content/items';
 import {displayPercent,displayStat} from '../core/stat-display';
 import {gearEnhancement,gemSocketState} from '../core/equipment-enhancement';
@@ -11,6 +11,7 @@ import {WEAPON_BONUS_LABELS,weaponBonusCompactLine} from '../core/weapon-bonus-r
 import {equipmentBonusCompactLine} from '../core/equipment-bonus-rolls';
 import {weaponBonusComparisonRows,weaponBonusDisplayPercent,weaponBonusDisplayDelta} from '../core/weapon-bonus-display';
 import {weaponBonusStatText,weaponBonusUiText} from '../i18n/weapon-bonus-ux';
+import {statHelpText,type StatHelpId} from '../i18n/stat-help';
 import type {GameState} from '../core/types';
 import {itemRarity,rarityMeta,rarityNameColor} from '../core/item-rarity';
 import {equipmentTheme,radii,spacing,typography,type ThemeColors} from '../theme/theme';
@@ -47,7 +48,8 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
  const C=useGameTheme(),E=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
  const {height,width,fontScale}=useWindowDimensions();
  const [busy,setBusy]=useState(false),[busyAction,setBusyAction]=useState<'equip'|'gear'|'bank'|'inventory'|null>(null),[error,setError]=useState('');
- useEffect(()=>{setBusy(false);setBusyAction(null);setError('');},[itemId,instanceId,source]);
+ const [statHelpOpen,setStatHelpOpen]=useState(false);
+ useEffect(()=>{setBusy(false);setBusyAction(null);setError('');setStatHelpOpen(false);},[itemId,instanceId,source]);
  if(!itemId)return null;
  async function moveToBank(){
   if(!onMoveToBank||busy)return;
@@ -190,7 +192,8 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
    </View>:null}
    <View style={s.extra}>
    <View style={s.statPanel}>
-    <View style={s.sectionHeader}><Text style={s.sectionTitle}>{gl('TOTAL LOADOUT')}</Text></View>
+    <Pressable accessibilityRole="button" accessibilityLabel={gl('TOTAL LOADOUT')} accessibilityState={{expanded:statHelpOpen}} onPress={()=>setStatHelpOpen(v=>!v)} style={[s.sectionHeader,{minHeight:44}]}><Text style={s.sectionTitle}>{gl('TOTAL LOADOUT')}</Text><Text accessible={false} style={s.statInfo}>ⓘ</Text></Pressable>
+    {statHelpOpen?<View style={s.statHelpList}>{([...stats.map(row=>({id:row.id as StatHelpId,label:row.label})),...([{id:'armor',stat:'armor'},{id:'critChance',stat:'critRate'},{id:'critDamage',stat:'critDamage'},{id:'accuracy',stat:'accuracy'},{id:'evasion',stat:'evasion'},{id:'haste',stat:'haste'}] as const).map(row=>({id:row.id,label:weaponBonusStatText(language,row.stat)}))]).map(row=><View key={row.id}><Text style={s.statHelpLabel}>{row.label}</Text><Text style={s.statHelpCopy}>{statHelpText(language,row.id)}</Text></View>)}</View>:null}
     <View style={s.statRow}><Text style={s.statLabel}>{gl('Stat')}</Text><Text style={s.statColumn}>{gl('Current')}</Text><Text style={s.statColumn}>{gl('New')}</Text><Text style={s.statColumn}>{gl('Change')}</Text></View>
     {stats.map(row=><View key={row.id} style={s.statRow}>
      <Text numberOfLines={1} style={s.statLabel}>{row.label}</Text>
@@ -273,6 +276,10 @@ function makeStyles(C:ThemeColors){
   statChip:{flex:1,minWidth:0,alignItems:'center',paddingVertical:8,paddingHorizontal:3,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel2},
   chipLabel:{...typography.caption,fontSize:10,color:C.muted},
   chipValue:{...typography.bodyStrong,fontSize:17,fontWeight:'900'},
+  statInfo:{color:C.accent,fontSize:18},
+  statHelpList:{padding:spacing.sm,gap:spacing.sm,backgroundColor:C.panel2},
+  statHelpLabel:{...typography.bodyStrong,color:C.text},
+  statHelpCopy:{...typography.body,color:C.muted},
   statColumn:{...typography.caption,color:C.muted,minWidth:46,textAlign:'right',fontSize:9},
   statPanel:{borderWidth:1,borderColor:C.line,borderRadius:radii.sm,overflow:'hidden',backgroundColor:E.panel},
   sectionHeader:{minHeight:33,flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingHorizontal:10,borderBottomWidth:1,borderBottomColor:C.line},

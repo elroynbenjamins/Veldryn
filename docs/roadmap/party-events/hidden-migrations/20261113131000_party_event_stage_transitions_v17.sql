@@ -162,7 +162,7 @@ declare
  v_now timestamptz:=clock_timestamp();
  v_choices text[];
 begin
- if p_party_id is null or p_event_starts_at is null or p_stage not in (2,3)
+ if p_party_id is null or p_event_starts_at is null or p_stage is null or p_stage not in (2,3)
   or p_account_id is null or p_choice is null
  then raise exception 'party_event_v17_invalid_ballot';end if;
  select * into w from private.party_event_weeks_v11
@@ -181,6 +181,11 @@ begin
  select * into s from private.party_event_stages_v11
   where party_id=p_party_id and event_starts_at=p_event_starts_at
   and stage=p_stage for update;
+ -- Re-read real time after waiting on the week and stage locks. Exact
+ -- already-recorded ballots replay above, but new votes cannot cross expiry.
+ v_now:=clock_timestamp();
+ if w.status<>'active' or v_now<w.event_starts_at or v_now>=w.event_ends_at
+ then raise exception 'party_event_v17_vote_closed';end if;
  if not found or s.vote_locked_at is not null or v_now<s.opened_at
   or v_now>=s.opened_at+interval '6 hours'
  then raise exception 'party_event_v17_ballot_window_closed';end if;

@@ -53,6 +53,59 @@ export function inspectMarketForgeOrigin(input:Input){
      digest(c.exactItem)!==digest(item.exactItem)||digest(c.outcome)!==digest(item.outcome))return deny('receipt_mismatch');
   const award=meta.skillAwards.find(x=>x.jobId===job.id);
   if(!obj(award)||award.characterId!==item.ownerCharacterId||award.profession!==c.profession||award.xp!==c.xpAwarded)return deny('award_mismatch');
+  // Mirror the relationship checks of the pinned Equipment 2.0 hidden ledger
+  // verifier. Its actual exact-template validator is still mandatory at the
+  // eventual issuer boundary; this structural pass cannot replace it.
+  const jobs=new Map(meta.jobs.map(x=>[x.id,x]));
+  const itemsByJob=new Map<string,Obj>(),awardsByJob=new Map<string,Obj>();
+  for(const entry of meta.items){
+   if(!obj(entry)||!id(entry.jobId)||entry.accountId!==input.originalAccountId||
+      itemsByJob.has(entry.jobId)||!jobs.has(entry.jobId))return deny('incoherent_account_ledger');
+   itemsByJob.set(entry.jobId,entry);
+  }
+  for(const entry of meta.skillAwards){
+   if(!obj(entry)||!id(entry.jobId)||!jobs.has(entry.jobId)||!count(entry.xp))
+    return deny('incoherent_account_ledger');
+   awardsByJob.set(entry.jobId,entry);
+  }
+  const starts=new Set<string>(),claims=new Set<string>();
+  for(const entry of meta.receipts){
+   if(!obj(entry)||!obj(entry.response)||!id(entry.response.jobId)||!count(entry.response.version))
+    return deny('incoherent_account_ledger');
+   const r=entry.response,j=jobs.get(r.jobId);
+   if(!obj(j))return deny('incoherent_account_ledger');
+   if(r.kind==='started'){
+    if(starts.has(r.jobId)||entry.commandFingerprint!=='start:'+j.recipeId||
+       r.recipeId!==j.recipeId||r.pieceId!==j.pieceId||r.finishesAtMs!==j.finishesAtMs||
+       r.goldCharged!==j.goldReserved)return deny('incoherent_account_ledger');
+    starts.add(r.jobId);
+   }else if(r.kind==='claimed'){
+    const linked=itemsByJob.get(r.jobId);
+    if(claims.has(r.jobId)||entry.commandFingerprint!=='claim:'+j.id||j.status!=='claimed'||
+       !linked||r.instanceId!==linked.id||!obj(j.craftContract)||
+       r.xpAwarded!==j.craftContract.xpAwarded||r.profession!==j.craftContract.profession||
+       digest(r.exactItem)!==digest(linked.exactItem)||digest(r.outcome)!==digest(linked.outcome))
+     return deny('incoherent_account_ledger');
+    claims.add(r.jobId);
+   }else return deny('incoherent_account_ledger');
+  }
+  for(const entry of meta.jobs){
+   if(!obj(entry)||!id(entry.id)||entry.accountId!==input.originalAccountId||
+      !id(entry.ownerCharacterId)||!obj(entry.craftContract)||!obj(entry.craftContract.piece)||
+      entry.craftContract.piece.id!==entry.pieceId||entry.craftContract.recipeId!==entry.recipeId||
+      !count(entry.goldReserved)||!count(entry.craftContract.xpAwarded)||!count(entry.finishesAtMs)||
+      !starts.has(entry.id))return deny('incoherent_account_ledger');
+   const linked=itemsByJob.get(entry.id),xp=awardsByJob.get(entry.id);
+   if(entry.status==='queued'){
+    if(entry.resultId||linked||xp||claims.has(entry.id))return deny('incoherent_account_ledger');
+   }else if(entry.status==='claimed'){
+    if(!linked||!xp||!claims.has(entry.id)||linked.id!==entry.resultId||
+       linked.ownerCharacterId!==entry.ownerCharacterId||!obj(linked.exactItem)||
+       linked.exactItem.pieceId!==entry.pieceId||xp.characterId!==entry.ownerCharacterId||
+       xp.profession!==entry.craftContract.profession||xp.xp!==entry.craftContract.xpAwarded)
+     return deny('incoherent_account_ledger');
+   }else return deny('incoherent_account_ledger');
+  }
   const originalDigest=digest({generation:'equipment-2.0',source:'forge',accountId:item.accountId,
     characterId:item.ownerCharacterId,instanceId:item.id,jobId:job.id,claimRequestId:claim.requestId,
     claimVersion:c.version,exactItem:item.exactItem,outcome:item.outcome});

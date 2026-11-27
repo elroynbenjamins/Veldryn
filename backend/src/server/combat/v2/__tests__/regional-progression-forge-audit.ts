@@ -77,6 +77,34 @@ export function runRegionalProgressionReviewV2(){
   SUNSCAR_DUNE_BINDER:'crafted_component',SUNSTONE_ORE:'gather',REINFORCED_STRAPS:'crafted_component',
   SUNSTONE_INGOT:'refine',ASTRAL_SCRIPT:'unresolved',GLASSBOUND_BINDER:'crafted_component',
  };
+ // Versioned prospective equip overlay only, no mutation of the pinned
+ // manifest, original item snapshots, existing equip authority or recipe gates.
+ const wearRows=V2_SERVER_RECIPES.map(recipe=>{
+  const stage=TIER_PREPARATION_V2.find(p=>p.tier===recipe.tier);
+  if(!stage)throw Error('missing_regional_tier');
+  const canWear=(level:number)=>Number.isSafeInteger(level)&&level>=stage.wearCandidate&&stage.launch;
+  assert.equal(canWear(stage.wearCandidate-1),false);
+  assert.equal(canWear(stage.wearCandidate),true);
+  assert.equal(canWear(stage.expectedFrom+1),true);
+  assert.ok(stage.prepareFrom<=stage.wearCandidate);
+  // Profession gate remains an independent input, not a combat level gate.
+  const canCraft=(professionLevel:number)=>Number.isSafeInteger(professionLevel)&&professionLevel>=recipe.professionLevel;
+  assert.equal(canCraft(recipe.professionLevel-1),false);assert.equal(canCraft(recipe.professionLevel),true);
+  return {recipeId:recipe.id,pieceId:recipe.pieceId,tier:recipe.tier,current:recipe.characterLevel,
+   candidate:stage.wearCandidate,professionLevel:recipe.professionLevel,changed:recipe.characterLevel!==stage.wearCandidate};
+ });
+ const demand=[...requirements].map(([itemId,r])=>{
+  const quantities=V2_SERVER_RECIPES.flatMap(recipe=>recipe.inputs.filter(i=>i.itemId===itemId).map(i=>i.quantity));
+  return {itemId,firstTier:r.firstTier,minimumPerRecipe:Math.min(...quantities),maximumPerRecipe:Math.max(...quantities),
+   tiers:[...r.tiers],sourceVerified:false};
+ });
+ const changed=wearRows.filter(r=>r.changed);
+ assert.equal(changed.length,178);
+ assert.ok(changed.every(r=>r.tier===3||r.tier===4));
+ console.log('REGIONAL_WEAR_PREPARATION_REVIEW '+JSON.stringify({recipes:wearRows.length,
+  changedRecipes:changed.length,changedPieces:new Set(changed.map(r=>r.pieceId)).size,
+  candidateWearLevels:TIER_PREPARATION_V2.map(p=>({tier:p.tier,level:p.wearCandidate,active:p.launch})),
+  demand,professionGatesUnchanged:true,releaseEnabled:false}));
  const materialRows=[...requirements].map(([itemId,r])=>({itemId,...r,tiers:[...r.tiers],
   routeCandidate:routing[itemId]??'unresolved',sourceStatus:'NEEDS_VERIFIED_GATHER_DROP_OR_COMPONENT_RECIPE',
   mustHavePreCheckpointNonBossPath:true,independentProfessionAccess:true}));

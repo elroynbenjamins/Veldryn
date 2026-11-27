@@ -9,7 +9,7 @@ function bell(t:number,start:number,peak:number,end:number){
  if(t<=start||t>=end)return 0;
  return t<peak?smooth((t-start)/(peak-start)):smooth((end-t)/(end-peak));
 }
-/** One distinctive, softly ramped accent per 24s cycle. No rapid/full-screen flash. */
+/** An early preview accent and a stronger staggered signature per 24s cycle. No rapid/full-screen flash. */
 export function nextPremiumSignatureEnvelope(theme:SignatureTheme,t:number,node:number,layer:Layer){
  if(!Number.isFinite(t)||t<0||t>1||!Number.isInteger(node)||node<0)return 0;
  const index=layer==='border'?node%8:node%6;

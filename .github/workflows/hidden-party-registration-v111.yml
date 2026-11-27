@@ -4,6 +4,7 @@ on:
     paths:
       - 'docs/roadmap/party-events/hidden-migrations/permanent-party-*-review.sql'
       - 'backend/tests/permanent-party-registration-v111-*.sql'
+      - 'backend/tests/permanent-party-registration-v121-concurrency.py'
       - '.github/workflows/hidden-party-registration-v111.yml'
   workflow_dispatch:
 permissions:
@@ -11,6 +12,7 @@ permissions:
 jobs:
   disposable-postgres:
     runs-on: ubuntu-latest
+    timeout-minutes: 8
     services:
       postgres:
         image: postgres:17.6
@@ -31,5 +33,8 @@ jobs:
             docs/roadmap/party-events/hidden-migrations/permanent-party-role-swap-storage-v108-review.sql \
             docs/roadmap/party-events/hidden-migrations/permanent-party-stable-registration-v110-review.sql \
             docs/roadmap/party-events/hidden-migrations/permanent-party-atomic-exchange-v111-review.sql \
+            docs/roadmap/party-events/hidden-migrations/permanent-party-action-receipts-v122-review.sql \
             backend/tests/permanent-party-registration-v111-regression.sql \
             | docker exec -i ${{ job.services.postgres.id }} psql -U postgres -d postgres -v ON_ERROR_STOP=1
+      - name: Verify independent PostgreSQL sessions and atomic action receipts
+        run: python3 backend/tests/permanent-party-registration-v121-concurrency.py ${{ job.services.postgres.id }}

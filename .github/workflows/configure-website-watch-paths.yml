@@ -1,0 +1,39 @@
+name: Configure website build watch paths
+on:
+  push:
+    branches: [ops/website-build-watch-paths]
+    paths: ['.github/workflows/configure-website-watch-paths.yml']
+permissions: {}
+jobs:
+  configure:
+    if: github.repository == 'elroynbenjamins/Veldryn' && github.ref == 'refs/heads/ops/website-build-watch-paths'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Configure and verify Cloudflare
+        env:
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          python3 - <<'PY'
+          import json, os, urllib.request
+          assert os.environ.get('CF_ACCOUNT') == '0d16b0202ec575917330354639d19f54' and os.environ.get('CF_TOKEN'), 'Cloudflare credentials unavailable or wrong account'
+          base = 'https://api.cloudflare.com/client/v4/accounts/' + os.environ['CF_ACCOUNT']
+          def call(path, method='GET', body=None):
+              req = urllib.request.Request(base+path, method=method, headers={'Authorization':'Bearer '+os.environ['CF_TOKEN'],'Content-Type':'application/json'}, data=json.dumps(body).encode() if body is not None else None)
+              with urllib.request.urlopen(req,timeout=30) as resp: result=json.load(resp)
+              assert result.get('success'), 'Cloudflare API failed'
+              return result['result']
+          matches=[s['tag'] for s in call('/workers/scripts') if s.get('id')=='veldryn' and s.get('tag')]
+          assert len(matches)==1, 'Worker identity not confirmed'
+          endpoint='/builds/workers/'+matches[0]+'/triggers'
+          triggers=call(endpoint)
+          assert triggers and all(str((t.get('repo_connection') or {}).get('repo_id'))=='1352666779' and t.get('trigger_uuid') and not t.get('deleted_on') for t in triggers), 'Unexpected trigger identity'
+          paths=["website/*","wrangler.jsonc","apps/mobile/assets/app-icon-v1/icon-1024.png","apps/mobile/assets/events-startup-v1/branding/veldryn_logo@2x.webp","apps/mobile/assets/card-backgrounds/kingdom_approach_wide_v2.webp","apps/mobile/assets/card-backgrounds/kingdom_approach_portrait.webp","apps/mobile/assets/world/chapters-v1/asterfall-heartlands-pixel-v1.webp","apps/mobile/assets/world/regions-v2/sunscar-pixel-v1.jpg","apps/mobile/assets/world/regions-v2/frostmarch-pixel-v1.jpg","apps/mobile/assets/card-backgrounds/guild_plaza_portrait.webp"]
+          for t in triggers:
+              if set(t.get('path_includes') or [])!=set(paths) or t.get('path_excludes'):
+                  call('/builds/triggers/'+t['trigger_uuid'],'PATCH',{'path_includes':paths,'path_excludes':[]})
+          verified=call(endpoint)
+          assert {t['trigger_uuid'] for t in verified}=={t['trigger_uuid'] for t in triggers} and all(set(t.get('path_includes') or [])==set(paths) and not t.get('path_excludes') for t in verified), 'Watch paths readback mismatch'
+          print('VERIFIED website build watch paths; no deployment requested.')
+          PY

@@ -13,18 +13,29 @@ ok(nextSeasonAt(spring)===Date.parse('2026-06-01T00:00:00Z')&&nextSeasonAt(winte
 ok(Object.keys(SEASON_DEFINITIONS).length===4&&Object.keys(WEATHER_DEFINITIONS).length===9,'Every season and weather type needs a player-facing definition');
 for(const season of Object.values(SEASON_DEFINITIONS))ok(season.weather.length===5&&season.weather.every(id=>!!WEATHER_DEFINITIONS[id]),`${season.name} needs a valid weighted weather pool`);
 for(const seasonId of Object.keys(SEASON_DEFINITIONS) as Array<keyof typeof SEASON_DEFINITIONS>){const total=weatherChancesForSeason(seasonId).reduce((sum,entry)=>sum+entry.chance,0);ok(Math.abs(total-1)<.000001,`${seasonId} weather chances must total 100%`)}
-ok(seasonEffect('mining','spring').itemMultiplier===1.08,'Bloomtide gathering yield bonus missing');
+ok(seasonEffect('mining','spring').actionTimeMultiplier===.92,'Bloomtide gathering speed bonus missing');
 ok(seasonEffect('combat','autumn').goldMultiplier===1.08,'Emberfall combat gold bonus missing');
-ok(weatherEffect('fishing','rain').actionTimeMultiplier===.88&&weatherEffect('fishing','rain').itemMultiplier===1.1,'Rain fishing bonuses missing');
+ok(weatherEffect('fishing','rain').actionTimeMultiplier===.8&&weatherEffect('fishing','rain').itemMultiplier===1,'Rain fishing bonuses missing');
 ok(weatherEffect('combat','mist').dropChanceMultiplier===1.12,'Mist loot bonus missing');
-ok(seasonEffect('herbalism','autumn').itemMultiplier===1.05,'Emberfall herb yield bonus missing');
+ok(seasonEffect('herbalism','autumn').actionTimeMultiplier===.95,'Emberfall herb speed bonus missing');
 ok(weatherEffect('herbalism','mist').dropChanceMultiplier===1.10,'Mist botanical bonus missing');
 ok(weatherEffect('herbalism','bloomwind').dropChanceMultiplier===1.25,'Bloomwind botanical bonus missing');
-ok(weatherEffect('herbalism','rain').itemMultiplier===1.08,'Rain herb yield bonus missing');
+ok(weatherEffect('herbalism','rain').actionTimeMultiplier===.92,'Rain herb speed bonus missing');
 const herbStack=environmentEffect('herbalism',{seasonId:'autumn',weatherId:'mist'});
-ok(herbStack.itemMultiplier===1.05&&herbStack.dropChanceMultiplier===1.10,'Herbalism season and weather must stack');
+ok(herbStack.itemMultiplier===1&&herbStack.actionTimeMultiplier===.95&&herbStack.dropChanceMultiplier===1.10,'Herbalism season and weather must stack');
 const stacked=environmentEffect('fishing',{seasonId:'spring',weatherId:'rain'});
-ok(stacked.itemMultiplier===1.08*1.1&&stacked.actionTimeMultiplier===.88,'Season and weather effects must stack multiplicatively');
+ok(stacked.itemMultiplier===1&&stacked.actionTimeMultiplier===.92*.8,'Season and weather effects must stack multiplicatively');
+ok(weatherEffect('mining','storm').actionTimeMultiplier===.88,'Storm mining speed missing');
+ok(weatherEffect('woodcutting','bloomwind').actionTimeMultiplier===.88,'Bloomwind woodcutting speed missing');
+ok(weatherEffect('mining','frost').actionTimeMultiplier===.9,'Frost mining speed missing');
+for(const kind of ['mining','woodcutting','fishing','herbalism'] as const){
+  for(const seasonId of Object.keys(SEASON_DEFINITIONS) as Array<keyof typeof SEASON_DEFINITIONS>){
+    for(const weatherId of Object.keys(WEATHER_DEFINITIONS) as Array<keyof typeof WEATHER_DEFINITIONS>){
+      const effect=environmentEffect(kind,{seasonId,weatherId});
+      ok(effect.itemMultiplier===1,`Environmental quantity modifier forbidden: ${kind}/${seasonId}/${weatherId}`);
+    }
+  }
+}
 let state=createCharacter(newGame(spring),'WAYFINDER','Weather Tester');
 state={...state,currentRegionId:'SILVERBROOK',character:{...state.character!,level:5}};
 state=startGathering(state,'SILVERBROOK_SHOAL',spring);

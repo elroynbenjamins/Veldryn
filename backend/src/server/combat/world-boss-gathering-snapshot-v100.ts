@@ -35,25 +35,25 @@ export function readWorldBossGatheringPhysicalV100(state:GameState,ownedCharacte
  if(new Set(roster.map(x=>x.id)).size!==roster.length||
  roster.length!==ownedCharacterIds.length||roster.some(x=>!ownedCharacterIds.includes(x.id)))
   throw Error('gathering_snapshot_incomplete_roster');
- const physical=new Map<string,{owner:string|null;itemId:string;slot?:string}[]>();
- const add=(instanceId:string,owner:string|null,itemId:string,slot?:string)=>{
+ const physical=new Map<string,{owner:string|null;itemId:string;location:'inventory'|'bank'|'pouch'|'overflow'|'equipped';slot?:string}[]>();
+ const add=(instanceId:string,owner:string|null,itemId:string,location:'inventory'|'bank'|'pouch'|'overflow'|'equipped',slot?:string)=>{
   if(!id(instanceId)||!id(itemId))throw Error('gathering_snapshot_invalid_physical_id');
-  const list=physical.get(instanceId)??[];list.push({owner,itemId,slot});physical.set(instanceId,list);
+  const list=physical.get(instanceId)??[];list.push({owner,itemId,location,slot});physical.set(instanceId,list);
  };
- const scan=(stacks:readonly {itemId:string;instanceId?:string;quantity:number}[],owner:string|null)=>{
+ const scan=(stacks:readonly {itemId:string;instanceId?:string;quantity:number}[],owner:string|null,location:'inventory'|'bank'|'pouch'|'overflow')=>{
   for(const stack of stacks){
-   if(stack.instanceId!==undefined){if(stack.quantity!==1)throw Error('gathering_snapshot_invalid_copy_quantity');add(stack.instanceId,owner,stack.itemId);}
+   if(stack.instanceId!==undefined){if(stack.quantity!==1)throw Error('gathering_snapshot_invalid_copy_quantity');add(stack.instanceId,owner,stack.itemId,location);}
    else if(isPiece(stack.itemId))throw Error('gathering_snapshot_untracked_world_gear');
   }
  };
- scan(state.bank.stacks,null);scan(state.inventory.stacks,c.id);scan(state.overflow.stacks,c.id);
- for(const alt of state.otherCharacters??[]){scan(alt.inventory.stacks,alt.character.id);scan(alt.overflow.stacks,alt.character.id);}
+ scan(state.bank.stacks,null,'bank');scan(state.inventory.stacks,c.id,'inventory');scan(state.overflow.stacks,c.id,'overflow');
+ for(const alt of state.otherCharacters??[]){scan(alt.inventory.stacks,alt.character.id,'inventory');scan(alt.overflow.stacks,alt.character.id,'overflow');}
  for(const hero of roster){
-  scan(hero.equipmentPouch?.stacks??[],hero.id);
+  scan(hero.equipmentPouch?.stacks??[],hero.id,'pouch');
   for(const [slot,itemId] of Object.entries(hero.equipment??{})){
    if(!itemId)continue;
    const instanceId=hero.equipmentInstanceIds?.[slot as GearSlot];
-   if(instanceId)add(instanceId,hero.id,itemId,slot);
+   if(instanceId)add(instanceId,hero.id,itemId,'equipped',slot);
    else if(isPiece(itemId))throw Error('gathering_snapshot_untracked_world_gear');
   }
   for(const [slot,instanceId] of Object.entries(hero.equipmentInstanceIds??{}))
@@ -66,7 +66,7 @@ export function readWorldBossGatheringPhysicalV100(state:GameState,ownedCharacte
 export function assertWorldBossGatheringOriginV100(accountId:string,mint:Pick<GatheringMintReadbackV100,'roll'|'rollDigest'|'originalChest'>){
  const g=mint.roll,receipt=mint.originalChest;
  const set=WORLD_BOSS_GATHERING_SETS_V64.find(x=>x.setId===g?.setId);
- if(!set||mint.rollDigest!==gatheringSnapshotDigestV100(g))throw Error('gathering_snapshot_invalid_roll_digest');
+ if(!UUID.test(accountId)||!set||mint.rollDigest!==gatheringSnapshotDigestV100(g))throw Error('gathering_snapshot_invalid_roll_digest');
   if(!receipt||receipt.accountId!==accountId||receipt.rulesVersion!=='chest-settlement-v69'||!receipt.committed||
    receipt.tableId!=='world_boss_chest'||receipt.tableVersion!=='world_boss_v98_unified_'+set.bossId||
    !receipt.proofVersion||receipt.recipientCharacterId!==null||receipt.equipmentDeliveryMode!=='account_unclaimed'||

@@ -4,6 +4,7 @@
  * This module is a nonpaying compatibility review, not a reward authority. */
 import {resolveWorldBossChestEvidenceV59,type WorldBossCanonicalChestReadV59} from './world-boss-chest-proof-v59';
 import {previewVerifiedWorldBossChestsV58} from './world-boss-chests-v58';
+import {worldBossChestLootTableV96,WORLD_BOSS_CHEST_POLICY_V96} from './world-boss-chest-policy-v96';
 export const WORLD_BOSS_V95_REWARD_HANDOFF_LIVE=false as const;
 const hash=(x:unknown):x is string=>typeof x==='string'&&/^[a-f0-9]{64}$/.test(x);
 export interface WorldBossV95SettledAttemptReview{
@@ -46,7 +47,10 @@ export function reviewWorldBossRewardHandoffV95(
    throw Error('world_boss_v95_unverified_settlement');
   requests.add(row.requestId);replays.add(row.replayDigest);settlements.add(row.settlementReceiptDigest);
  }
- const previews=previewVerifiedWorldBossChestsV58(evidence);
+ const previews=previewVerifiedWorldBossChestsV58(evidence).map(chest=>({
+  ...chest,gearChanceBps:WORLD_BOSS_CHEST_POLICY_V96.equipmentChanceBps,
+  lootTableVersion:worldBossChestLootTableV96(chest.bossId,chest.kind).version,
+ }));
  return {previews,verifiedAttempts:verified.length,
   sigilPolicy:'reuse_v28_ledger_only' as const,impactEnabled:false as const,
   rewardAuthorized:false as const,claimEnabled:false as const,

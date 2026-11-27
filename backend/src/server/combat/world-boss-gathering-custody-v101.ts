@@ -49,7 +49,7 @@ export function reviewWorldBossGatheringCustodyV101(input:{
   const found=physical.get(row.instanceId)?.[0];
   if(row.location==='unclaimed'){
    if(row.holderCharacterId!==null||found)throw Error('gathering_custody_unclaimed_has_physical_copy');
-  }else if(!found||found.itemId!==row.roll.itemId||
+  }else if(!found||found.itemId!==row.roll.itemId||found.location!==row.location||
     (row.location==='bank'?(found.owner!==null||row.holderCharacterId!==null||found.slot!==undefined):
      (!row.holderCharacterId||!input.ownedCharacterIds.includes(row.holderCharacterId)||found.owner!==row.holderCharacterId||
       (row.location==='equipped'?found.slot!==row.roll.slot:found.slot!==undefined))))
@@ -89,8 +89,15 @@ export function reviewWorldBossGatheringCustodyV101(input:{
   if(hero.equipment[slot]||hero.equipmentInstanceIds?.[slot])throw Error('gathering_custody_slot_occupied');
   // Until a canonical mixed weapon compiler is consolidated, fail closed on
   // any existing opposite hand (even one-handed legacy gear).
-  if((slot==='weapon'&&hero.equipment.offhand)||(slot==='offhand'&&hero.equipment.weapon))
-   throw Error('gathering_custody_hand_conflict');
+  const opposite=slot==='weapon'?'offhand':slot==='offhand'?'weapon':null;
+  if(opposite&&hero.equipment[opposite]){
+   const oppositeId=hero.equipmentInstanceIds?.[opposite];
+   const worn=oppositeId?byId.get(oppositeId):undefined;
+   // Authored gathering implement and focus occupy distinct one-slot
+   // positions; mixed legacy/combat weapon combinations remain blocked.
+   if(!worn||worn.location!=='equipped'||worn.holderCharacterId!==c.id||worn.roll.slot!==opposite)
+    throw Error('gathering_custody_hand_conflict');
+  }
   take(next.inventory);hero.equipment={...hero.equipment,[slot]:copy.roll.itemId};
   hero.equipmentInstanceIds={...hero.equipmentInstanceIds,[slot]:copy.instanceId};to='equipped';holder=c.id;
  }else{
@@ -99,10 +106,10 @@ export function reviewWorldBossGatheringCustodyV101(input:{
   put(next.inventory);hero.equipment={...hero.equipment};delete hero.equipment[slot];
   hero.equipmentInstanceIds={...hero.equipmentInstanceIds};delete hero.equipmentInstanceIds[slot];to='inventory';holder=c.id;
  }
- const nextCopy={...copy,location:to,holderCharacterId:holder};
+ const nextCopy={...structuredClone(copy),location:to,holderCharacterId:holder};
  const nextCopies=rows.map(row=>row.instanceId===copy.instanceId?nextCopy:structuredClone(row));
  const after=readWorldBossGatheringPhysicalV100(next,input.ownedCharacterIds).get(copy.instanceId)?.[0];
- if(!after||after.itemId!==copy.roll.itemId||after.owner!==holder||
+ if(!after||after.itemId!==copy.roll.itemId||after.owner!==holder||after.location!==to||
  (to==='equipped'?after.slot!==slot:after.slot!==undefined))throw Error('gathering_custody_candidate_mismatch');
  const receipt={accountId,requestId:intent.requestId,instanceId:copy.instanceId,sourceKey:copy.originalChest.sourceKey,
   from,to,oldHolder:copy.holderCharacterId,newHolder:holder,sourceRevision:revision,nextRevision:revision+1,sourceDigest,

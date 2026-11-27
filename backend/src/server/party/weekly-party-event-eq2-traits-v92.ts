@@ -93,6 +93,21 @@ const digest=(v:unknown)=>typeof v==='string'&&/^[a-f0-9]{64}$/.test(v);
 const num=(v:unknown):v is number=>typeof v==='number'&&Number.isSafeInteger(v);
 const unique=(xs:readonly string[])=>new Set(xs).size===xs.length;
 const fail=(why:string):never=>{throw Error('party_event_v92_'+why);};
+/** One physical equipped copy may not supply stats/traits to two party actors.
+ * Mirrors the newer unified encounter's cross-actor copy invariant, without
+ * using its dungeon role quota or issuing a persisted encounter authority.
+ */
+function assertDistinctPartyEquipmentCopies(sources:readonly VerifiedV2EquipmentEffectSource[]):void{
+ const seen=new Set<string>();
+ for(const source of sources){
+  if(!Array.isArray(source.ownedEquippedInstanceIds))fail('invalid_equipment_copy_scope');
+  for(const copy of source.ownedEquippedInstanceIds){
+   if(!id(copy))fail('invalid_equipment_copy_scope');
+   if(seen.has(copy))fail('duplicate_party_equipment_copy');
+   seen.add(copy);
+  }
+ }
+}
 function checkWitness(w:FrozenPartyEventV92Witness){
  if(!w||w.source!=='server-persisted-party-boss-v92'||
   w.ruleset!==PARTY_EVENT_EQ2_TRAIT_V92_VERSION||
@@ -239,6 +254,7 @@ export function prepareFullyEquippedPartyV92(
    !unique(sources.map(s=>s.characterId))||
    !unique(players.map(p=>p.id)))
   fail('duplicate_equipment_party_owner');
+ assertDistinctPartyEquipmentCopies(sources);
  const prepared:PreparedPartyV92Equipment={players,sources,evidence};
  compiledPartySeals.set(prepared,enemyV2SnapshotDigest(prepared));
  return prepared;
@@ -308,6 +324,7 @@ export function simulateFrozenPartyEventEquipmentV92(input:{
     s.revision!==witness.roster[i].receiptRevision||
     s.equipmentReceiptDigest!==witness.roster[i].equipmentReceiptDigest))
    fail('party_equipment_snapshot_mismatch');
+ assertDistinctPartyEquipmentCopies(sources);
  checkBoss(combat,witness);
  const witnessDigest=enemyV2SnapshotDigest({
   witness,combatDigest:enemyV2SnapshotDigest(combat),sources,

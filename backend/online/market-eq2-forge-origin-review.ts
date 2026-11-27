@@ -1,3 +1,4 @@
+import {inspectMarketPhysicalReadback} from './market-eq2-physical-readback-review';
 import {createHash} from 'node:crypto';
 /** Source-shaped original Forge receipt diagnostics. No issuer, authority,
  * writes or route. The source ledger must come from an independently locked
@@ -113,4 +114,50 @@ export function inspectMarketForgeOrigin(input:Input){
   return {reason:'receipt_match_requires_canonical_issuer_and_physical_commit',receiptMatch:true,
     originalDigest,claimRequestId:claim.requestId,marketAuthorized:false,canCommit:false};
  }catch{return deny('invalid_snapshot');}
+}
+
+/** First-registration diagnostic only, never a listing/resale authorization.
+ * One independently locked original account row feeds BOTH inspectors.
+ * An independently committed issuer digest is required; passing it here is
+ * not evidence that the caller or database is authoritative. */
+type FirstRegistrationInput={
+ originalAccountId:string;instanceId:string;itemId:string;expectedRevision:number;
+ row:unknown;expectedOriginalDigest:string;originalCharacterId:string;
+ ownedCharacterIds:readonly string[];protectedInstanceIds:readonly string[];
+ destination:'inventory'|'pouch';
+};
+export function inspectMarketFirstForgeRegistration(input:FirstRegistrationInput){
+ const result=(reason:string,receiptMatch=false,physicalMatch=false)=>({
+  reason,receiptMatch,physicalMatch,marketAuthorized:false as const,canCommit:false as const
+ });
+ try{
+  if(!input||typeof input.expectedOriginalDigest!=='string'||
+     !/^[0-9a-f]{64}$/.test(input.expectedOriginalDigest)||
+     !id(input.originalCharacterId)||!input.itemId?.startsWith('EQ2_')||
+     (input.destination!=='inventory'&&input.destination!=='pouch'))
+    return result('invalid_registration_evidence');
+  const origin=inspectMarketForgeOrigin(input);
+  if(!origin.receiptMatch)return result('original_receipt_not_verified');
+  // First registration must refer to the original crafter, not a current
+  // active character or a later owner. Resale uses a separate sale chain.
+  if(!obj(input.row)||!obj(input.row.state)||!obj(input.row.state.account))
+   return result('original_character_mismatch',true);
+  const meta=input.row.state.account.equipmentV2Hidden;
+  if(!obj(meta)||!Array.isArray(meta.items))return result('original_character_mismatch',true);
+  const minted=meta.items.find(x=>obj(x)&&x.id===input.instanceId);
+  if(!obj(minted)||minted.ownerCharacterId!==input.originalCharacterId)
+   return result('original_character_mismatch',true);
+  const custody=inspectMarketPhysicalReadback({
+   actorAccountId:input.originalAccountId,expectedRevision:input.expectedRevision,
+   row:input.row,ownedCharacterIds:input.ownedCharacterIds,instanceId:input.instanceId,
+   itemId:input.itemId,expectedLocation:input.destination,
+   expectedCharacterId:input.originalCharacterId,protectedInstanceIds:input.protectedInstanceIds,
+  });
+  if(!custody.physicalMatch)return result('physical_copy_not_verified',true);
+  // A protected copy can be registered as original evidence, but remains
+  // protected from listing. Never reuse this result as a trade permission.
+  if(custody.reason!=='physical_match_requires_original_mint_and_atomic_recheck')
+   return result('physical_copy_requires_protection_review',true,true);
+  return result('matching_first_registration_requires_authoritative_commit',true,true);
+ }catch{return result('invalid_registration_evidence');}
 }

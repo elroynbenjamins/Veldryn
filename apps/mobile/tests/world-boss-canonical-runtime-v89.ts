@@ -442,3 +442,22 @@ for(const bossId of bossIds){
  rejectsGatheringSpeedReview(()=>reviewWorldBossGatheringSpeedV99({...input,verifyEquippedCopy:()=>false}));
 }
 console.log('WORLD_BOSS_GATHERING_SPEED_V99: 30 actual roll previews, skill isolation, exact-copy and forged-roll rejection');
+
+for(const bossId of bossIds){
+ let drawIndex=0;
+ const gear=previewWorldBossChestRollV96({bossId,kind:'personal_damage',hitRoll:0,slotRoll:0,ownedSlots:[],
+  nextInt:()=>{const i=drawIndex++;return i===2||i===4?1:0;}}).gear!;
+ assert.equal(gear.rarity,'mythic');
+ assert.equal(gear.bonusStats.some(row=>row.stat==='skill_xp'),true);
+ assert.equal(gear.bonusStats.some(row=>row.stat==='gathering_rarity_chance'),true);
+ const input={accountId:'qa-account',characterId:'qa-character',skill:gear.skill,
+  copies:[{accountId:'qa-account',characterId:'qa-character',instanceId:'qa-channel-copy',roll:gear}],
+  baseActionSeconds:10,toolTimeMultiplier:1,existingRateMultiplier:1,verifyEquippedCopy:()=>true};
+ const result=reviewWorldBossGatheringSpeedV99(input);
+ assert.equal(result.channels.skillXpAffixBps,120);
+ assert.equal(result.channels.rareChanceAffixBps,300);
+ assert.equal(result.channels.setXpBps,0);
+ const off=reviewWorldBossGatheringSpeedV99({...input,skill:gear.skill==='mining'?'woodcutting':'mining'});
+ assert.equal(off.channels.xpMultiplier,1);assert.equal(off.channels.rareChanceMultiplier,1);
+}
+console.log('WORLD_BOSS_GATHERING_REWARD_CHANNELS: actual rolled XP/rarity affixes, off-skill exclusion');

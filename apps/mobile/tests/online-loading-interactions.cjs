@@ -243,9 +243,13 @@ function wiring(){
  assert.ok(/useEffect\(\(\)=>\{if\(serverGameplayEnabled\)return;\s*const subscription=AppState\.addEventListener\('change',nextStatus=>\{[^\n]*settlingRef\.current=true;setOfflineSettling\(true\)/.test(app),'Only local mode registers the foreground settlement listener');
  assert.ok(app.includes('{!serverGameplayEnabled&&offlineSettling&&<View style={s.offlineLoadingOverlay}>'),'Full-screen settlement is local-only');
  assert.ok(app.includes('{serverGameplayEnabled&&(offlineSettling||(online.busy&&!quietCraftSaving))?<View pointerEvents="none"'),'Online settlement status never intercepts touches');
- assert.ok(app.includes('online.loading||online.busy||online.pending||onlineStartupSettlementAccountRef.current===arrivalKey'),'Automatic settlement still waits for existing commands');
- assert.ok(app.includes('disabled={online.busy} onPress={()=>perform()}'),'Pending command stays explicitly retryable');
+ assert.ok(app.includes('if(onlineStartupSettlementAccountRef.current===arrivalKey)return;'),'Automatic settlement still waits for existing commands');
+ assert.ok(app.includes('loading={online.busy} onPress={()=>perform()}'),'Pending command stays explicitly retryable');
  assert.ok(app.includes('finally{if(welcomeBack)setOfflineSettling(false);}'),'Actual claim status clears on success or failure');
+ assert.ok(app.includes('if(online.pending){')&&app.includes('onlinePendingRecoveryArrivalRef.current!==arrivalKey')&&app.includes('onlinePendingRecoveryArrivalRef.current=arrivalKey;')&&app.includes('void perform();'),'Durable retry runs once on arrival without needing a tap');
+ assert.ok(app.includes('flexShrink:0,zIndex:31,elevation:2'),'Retry occupies a reserved and raised touch target');
+ assert.ok(app.includes('const startupOverlayVisible=startupBlocking;')&&app.includes('{startupBlocking&&<View style={s.startupOverlay}>')&&!app.includes('appEntranceY'),'Ready app has no splash overlay or transformed interactive root');
+ assert.ok(app.includes('const popupBlocked=(serverGameplayEnabled&&online.pending)||'),'Pending recovery cannot compete with automatic announcements');
 
 }
 (async()=>{await buttons();await commandBusy();await combatSwapOptimism();await socialBadgeParallelAndRecovery();await socialStartupPriority();rewardPreviewClock();foregroundTaskLifecycle();await foregroundHuntReplay();wiring();console.log('PASS: online loading indicators, duplicate suppression, rejection recovery, overlapping-command busy state and non-blocking app feedback');})().catch(error=>{console.error(error);process.exitCode=1});

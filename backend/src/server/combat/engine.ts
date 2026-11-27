@@ -445,6 +445,7 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
     target.hp=Math.max(0,target.hp-dealt); source.damageDone+=dealt; target.damageTaken+=dealt;
     const privateActualHpDamage=privateDamageGem?Math.max(0,privateHpBefore-target.hp):0;
     const privateOriginalLethal=!!privateDamageGem&&eventType==='damage'&&privateHpBefore>0&&target.hp===0;
+    if(eventType==='damage')privateDamageGem?.markRhythmShieldHit(now,source,target,abilityId,absorbed);
     if(privateDamageGem&&eventType==='damage')
       for(const row of privateDamageGem.afterIncomingDefense(now,source,target,abilityId,privateHpBefore))
         events.push({atMs:now,type:'gem_state',actorId:target.definition.id,targetId:source.definition.id,

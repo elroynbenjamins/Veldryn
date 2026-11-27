@@ -99,3 +99,26 @@ Measured CI results **before the shield correction** from the validated V3 depth
 The 61/75 first-checkpoint figure consists of Tier I 12, Tier II 12, Tier III 12, Tier IV 12 and Tier V 13 (each out of 15). Source: review workflow run `45271274464` at SHA `1dfb3fa913d05400dd323249a92a638d6d061e15`, whose **gameplay tests passed but overall workflow failed stale generated-Edge parity**. Newer shields and full-source CI are pending. Results are deterministic synthetic snapshots, not randomized production player outcomes; 1 deep seed/profile and missing real companions/potions are insufficient for release balancing.
 
 Pre-boss diagnostics frequently showed combined party health at 75–90% of maximum, Warmth at 99 and 3/3 hearths; deeper boss fights still wiped. Therefore simply increasing camp healing is not the right first response. Need genuine boss counterplay, multi-seed build variety, rank-specific time-to-clear, and a physical Android acceptance before final tuning. Do not merge/deploy/activate based on these partial tests.
+
+## November 27 — 1.0.13 integration evidence and remaining release gates
+
+Source: [PR #1924](https://github.com/elroynbenjamins/Veldryn/pull/1924), exact head `b2f3a410505936e3c6aa84534dd0ebf7547f771e`, [Frostfall review CI run 45975713566](https://github.com/elroynbenjamins/Veldryn/actions/runs/45975713566). Dedicated workflow passed including backend typecheck, seasonal service/online tests, 24-day gift and authored Shop validation, currency promotion and canonical gameplay/co-op bundle parity. Full mobile core was 450/451 (missing Frostfall localization), fixed on subsequent head `9c6bf46f9f65a05d6f70c92dc09778507244bf4a` with 16 labels in all seven non-English languages. Fresh CI is required; that fix does not imply overall green. Current catalogue test covers 27 offers (20 permanent/consumable and seven weekly crafting bundles), superseding the earlier 20-total count; not evidence that all purchases were executed against staging.
+
+| Normal rooms | Synthetic normalized clears / attempts |
+| ---: | ---: |
+| 7 | 63/75 |
+| 14 | 9/10 |
+| 21 | 9/10 |
+| 28 | 8/10 |
+| 35 | 4/10 |
+| 42 | 1/10 |
+
+At room 7, baseline 1x fixtures cleared 3/15; the four higher synthetic multipliers cleared 60/60. The separate simpler launch-player diagnostic only cleared 4/10 at room 7, 1/10 at room 14 and none deeper. Both are deterministic synthetic fixtures, not real player outcomes. The final-depth sample remains too small to lock balance. Expanded calibration now keeps all original seed-1 floors and tests three seeds per deep tier/profile/target (150 deep attempts; 225 total if all first-checkpoint profiles are eligible); these new results are pending. No gameplay tuning in this pass.
+
+### Go/no-go before December 3 00:00 UTC (01:00 Amsterdam)
+
+- Production was read back disabled in prior integration review, but automatic pg_cron activation and closure were already armed. Re-read schedule, modules, jobs, flags and migration history immediately before deployment; if not ready, obtain an explicit operational decision before activation. Do not silently change the approved calendar or assume the disabled flag remains disabled on launch day.
+- Winter Hearth #1794 and guild rewards #1767 are merged to main and main is an ancestor of this candidate. This is source integration only, not production schema or client acceptance. Validate 250-log/50-light actions, both weekly account caps, simultaneous members, milestone treasury/bonuses, permanent cosmetic, and post-event expiry against installed staging schema.
+- Review/apply only ordered, pinned missing production migrations after staging rehearsal and authorization; no broad db push. Verify old client/legacy seasonal run compatibility, deploy exact generated Edge bundles after schema readiness, verify server-owned expedition module and reward authority. Never grant or activate early solely to test.
+- Authenticated staging playthrough: six exits, failed attempt, practice with zero payout, reconnect, saved legacy run, multi-character cap, concurrent/duplicate settlement, UTC rollover, 27-offer wallet/ownership/bank behavior and claim-only closure. Prior rollback quota fixture proves helper isolation, not full concurrent end-to-end settlement.
+- Signed 1.0.13 Android candidate and owner small-screen/theme acceptance; verify event entry, practice labels, portraits, companion art, guild progress and shop. Require exact combined-head CI. Record go/no-go, rollback owner and production post-deploy readback separately; no event activation or production writes in this pass.

@@ -118,7 +118,7 @@ const deepTargets=[14,21,28,35,42] as const;
 for(let tier=1;tier<=5;tier++)
  for(const multiplier of [1.5,3] as const)
   for(const target of deepTargets)
-   rows.push(attempt(tier,multiplier,1,target));
+   for(let seed=1;seed<=3;seed++)rows.push(attempt(tier,multiplier,seed,target));
 const firstCheckpointRows=rows.filter(row=>row.target===7);
 
 const summary=[1,2,3,4,5].map(tier=>({
@@ -128,7 +128,7 @@ const summary=[1,2,3,4,5].map(tier=>({
   averageCp:firstCheckpointRows.find(x=>x.tier===tier&&x.multiplier===multiplier)?.averageCp??null,
  }))
 }));
-const deepSummary=deepTargets.map(target=>({target,attempts:rows.filter(row=>row.target===target).length,clears:rows.filter(row=>row.target===target&&row.clear).length,byTier:[1,2,3,4,5].map(tier=>({tier,clears:rows.filter(row=>row.target===target&&row.tier===tier&&row.clear).length}))}));
+const deepSummary=deepTargets.map(target=>({target,attempts:rows.filter(row=>row.target===target).length,clears:rows.filter(row=>row.target===target&&row.clear).length,byProfile:[1.5,3].map(multiplier=>({multiplier,attempts:rows.filter(row=>row.target===target&&row.multiplier===multiplier).length,clears:rows.filter(row=>row.target===target&&row.multiplier===multiplier&&row.clear).length})),byTier:[1,2,3,4,5].map(tier=>({tier,clears:rows.filter(row=>row.target===target&&row.tier===tier&&row.clear).length}))}));
 console.log('FROSTFALL_REAL_NORMALIZATION_BALANCE '+JSON.stringify({note:'synthetic fixture through production loadout pipeline, not measured player success',firstCheckpointSamples:firstCheckpointRows.length,deepSamples:rows.length-firstCheckpointRows.length,summary,deepSummary,rejected,rows}));
 /** Deliberately modest synthetic release guards: a diagnostic suite that allows
  * 0/75 starter clears or no route to the final exit must not report green.
@@ -140,8 +140,13 @@ for(const tier of [1,2,3,4,5]){
 }
 for(const [depth,minimumClears] of [[14,3],[21,2],[28,2],[35,1],[42,1]] as const){
  const subset=rows.filter(row=>row.target===depth);
- assert.equal(subset.length,10,'every deep exit requires two normalized builds across all tiers');
- assert.ok(subset.filter(row=>row.clear).length>=minimumClears,'Frostfall '+depth+'-room boss cannot be unreachable in synthetic calibrated co-op combat');
+ assert.equal(subset.length,30,'every deep exit requires two normalized builds across all tiers and three seeds');
+ for(const tier of [1,2,3,4,5])for(const multiplier of [1.5,3]){
+  const profile=subset.filter(row=>row.tier===tier&&row.multiplier===multiplier);
+  assert.deepEqual(profile.map(row=>row.seed).sort((a,b)=>a-b),[1,2,3],'missing deep calibration seed');
+ }
+ // Retain the original seed-1 floor; the larger sample cannot hide regressions in it.
+ assert.ok(subset.filter(row=>row.seed===1&&row.clear).length>=minimumClears,'Frostfall '+depth+'-room boss regressed below original seed-1 clear floor');
 }
 
 console.log('PASS five-tier Frostfall production normalization + combat diagnostic (no clear-rate approval implied)');

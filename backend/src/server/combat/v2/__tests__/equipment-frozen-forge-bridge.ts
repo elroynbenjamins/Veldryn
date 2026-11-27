@@ -165,17 +165,18 @@ const tierItems:Readonly<Record<1|2|3|4,Readonly<Record<'tank'|'damage'|'support
 const minByTier:Readonly<Record<1|2|3|4,number>>={1:2,2:12,3:26,4:40};
 function make(classId:ClassIdV2,specIndex:0|1,
  kind:'supported'|'unsupported'|'offslot'|'set'='supported',tier:1|2|3|4=1,
- originalPieceId?:string,uniqueTag?:string,forcedLevel?:number){
+ originalPieceId?:string,uniqueTag?:string,forcedLevel?:number,rollFilter:(roll:V2DraftRollOutcome)=>boolean=()=>true){
  const role=CLASS_ROLES_V2[classId];
  const pieceId=originalPieceId??(kind==='set'?
   (specIndex===0?'EQ2_FIELDBORN_GUARD_HELMET':'EQ2_FIELDBORN_GUARD_CHEST'):
   tierItems[tier][role]);
- const selection=generated(pieceId,kind==='supported'?eligible(pieceId):
+ const acceptance=kind==='supported'?eligible(pieceId):
   kind==='unsupported'?roll=>roll.affixes.length>0&&!EQ2_COMBAT_FROZEN_AFFIX_MAP_V2[roll.affixes[0].stat]:
   kind==='offslot'?roll=>roll.affixes.length>0&&
    Boolean(EQ2_COMBAT_FROZEN_AFFIX_MAP_V2[roll.affixes[0].stat])&&
    !EQUIPMENT_AFFIXES_V2[EQ2_COMBAT_FROZEN_AFFIX_MAP_V2[roll.affixes[0].stat]!]
-    .slots.includes(v2ServerPiece(pieceId)!.slot):()=>true);
+    .slots.includes(v2ServerPiece(pieceId)!.slot):()=>true;
+ const selection=generated(pieceId,roll=>acceptance(roll)&&rollFilter(roll));
  const {roll,exact,profession}=selection;
  const originalRecipe=V2_SERVER_RECIPES.find(r=>r.id===roll.recipeId);
  const originalPiece=v2ServerPiece(exact.pieceId);
@@ -1544,18 +1545,22 @@ function v19ApplyPermanentSensitivity(actor:CombatantDefinition,effect:V19Effect
 // V21: original Forge QA receipts only, no new catalogue items or grants.
 // Prefer the highest source-compatible tier at or below the intended tier;
 // gaps and downgrades are reported, not filled by invented pieces.
-function makeV21Loadout(classId:ClassIdV2,specIndex:0|1,targetTier:1|2|3|4,targetLevel:number){
+type SoloGearReviewProfile='pinned_reference'|'low_common'|'transition_common';
+function makeV21Loadout(classId:ClassIdV2,specIndex:0|1,targetTier:1|2|3|4,targetLevel:number,gearProfile:SoloGearReviewProfile='pinned_reference'){
+ const low=gearProfile!=='pinned_reference';
+ const rollFilter=(roll:V2DraftRollOutcome)=>!low||(roll.rarity==='common'&&roll.quality>=10&&roll.quality<=30);
  const role=CLASS_ROLES_V2[classId];
  const pinned:ReturnType<typeof make>[]=[];
  const missing:string[]=[];
  const slots=['weapon','offhand','helmet','chest','gloves','legs','boots','cape','amulet','ring'] as const;
  for(const slot of slots){
   if(slot==='offhand'&&pinned.some(p=>p.exact.slot==='weapon'&&p.exact.hands!=='one'))continue;
-  const choices=V2_SERVER_PIECES.filter(p=>p.role===role&&p.slot===slot&&!p.setId&&p.tier<=targetTier&&(!p.classRestriction||p.classRestriction===classId))
+  const slotTarget=gearProfile==='transition_common'&&['helmet','legs','cape','ring'].includes(slot)?Math.max(1,targetTier-1):targetTier;
+  const choices=V2_SERVER_PIECES.filter(p=>p.role===role&&p.slot===slot&&!p.setId&&p.tier<=slotTarget&&(!p.classRestriction||p.classRestriction===classId))
    .sort((a,b)=>b.tier-a.tier||a.id.localeCompare(b.id));
   let picked:ReturnType<typeof make>|undefined;
   for(const piece of choices){
-   try{picked=make(classId,specIndex,'supported',piece.tier as 1|2|3|4,piece.id,'V21_'+slot,targetLevel);break;}
+   try{picked=make(classId,specIndex,'supported',piece.tier as 1|2|3|4,piece.id,'V21_'+slot+(low?'_'+gearProfile:''),targetLevel,rollFilter);break;}
    catch(e){if(!String(e).includes('Could not locate a deterministic Forge QA roll'))throw e;}
   }
   if(picked)pinned.push(picked);else missing.push(slot);
@@ -1599,7 +1604,8 @@ function makeV21Loadout(classId:ClassIdV2,specIndex:0|1,targetTier:1|2|3|4,targe
 
  return {actor:originalActor,build,source:composedSource,ids,missing,
   tiers:pinned.map(p=>({slot:p.exact.slot,tier:p.exact.tier,pieceId:p.exact.pieceId,instanceId:p.mint.id})),
-  downgraded:pinned.filter(p=>p.exact.tier<targetTier).length};
+  downgraded:pinned.filter(p=>p.exact.tier<targetTier).length,
+  gearProfile,rolls:pinned.map(p=>({slot:p.exact.slot,tier:p.exact.tier,rarity:p.mint.outcome.rarity,quality:p.mint.outcome.quality}))};
 }
 
 // Full worn-loadout gem stacking on actual draft Forge source copies.

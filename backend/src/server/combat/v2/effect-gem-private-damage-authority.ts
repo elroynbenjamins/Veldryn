@@ -280,6 +280,10 @@ export function authorizePrivateDamageGemReviewV2(input:CombatInput,
     benediction:support&&b&&benediction.expiries.some(t=>t>now)?b.totalValue:0,shared:sharedFraction(now),rhythmCategory,rhythmBonus,rhythmSuccessful:false};
    return abilityId==='BASIC'?[]:advance('effect_flow',now,sequence,'ability',abilityId);
   },
+  markRhythmShieldHit(now:number,source:CombatantState,target:CombatantState,abilityId:string,absorbed:number){
+   if(absorbed>0&&isWearer(source)&&target.definition.team==='enemies'&&isAuthored(source,abilityId)&&
+    action?.id===abilityId&&action.now===now&&action.rhythmCategory==='offense')action.rhythmSuccessful=true;
+  },
   afterDirectHit(now:number,source:CombatantState,target:CombatantState,abilityId:string,critical:boolean,actualHpDamage:number):StackTrace[]{
    if(!isWearer(source)||target.definition.team!=='enemies'||actualHpDamage<=0||!action||
     action.id!==abilityId||action.now!==now)return [];

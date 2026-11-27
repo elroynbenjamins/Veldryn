@@ -9,6 +9,16 @@ import {useMemo} from 'react';
 // Every row is complete, in en/de/es/nl/it/fr order. English phrases are typed keys.
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
+ // Compact activity and Faith selection labels.
+ "CURRENT ACTIVITY":["CURRENT ACTIVITY","AKTUELLE AKTIVITÄT","ACTIVIDAD ACTUAL","HUIDIGE ACTIVITEIT","ATTIVITÀ ATTUALE","ACTIVITÉ EN COURS"],
+ "AFK FULL":["AFK FULL","AFK VOLL","AFK LLENO","AFK VOL","AFK PIENO","AFK PLEIN"],
+ "+{percent}% Damage":["+{percent}% Damage","+{percent}% Schaden","+{percent}% de daño","+{percent}% schade","+{percent}% danni","+{percent}% de dégâts"],
+ "{percent}% Damage reduction":["{percent}% Damage reduction","{percent}% Schadensreduktion","{percent}% de reducción de daño","{percent}% schadevermindering","{percent}% riduzione del danno","{percent}% de réduction des dégâts"],
+ "+{percent}% Maximum HP":["+{percent}% Maximum HP","+{percent}% maximale LP","+{percent}% de salud máxima","+{percent}% maximale HP","+{percent}% PV massimi","+{percent}% de PV max."],
+ "+{percent}% Combat speed":["+{percent}% Combat speed","+{percent}% Kampftempo","+{percent}% de velocidad de combate","+{percent}% gevechtssnelheid","+{percent}% velocità di combattimento","+{percent}% de vitesse de combat"],
+ "+{percent}% Gathering speed":["+{percent}% Gathering speed","+{percent}% Sammeltempo","+{percent}% de velocidad de recolección","+{percent}% verzamelsnelheid","+{percent}% velocità di raccolta","+{percent}% de vitesse de collecte"],
+ "+{percent}% Production speed":["+{percent}% Production speed","+{percent}% Produktionstempo","+{percent}% de velocidad de producción","+{percent}% productiesnelheid","+{percent}% velocità di produzione","+{percent}% de vitesse de production"],
+ "+{percent}% Combat & skill XP":["+{percent}% Combat & skill XP","+{percent}% Kampf- und Fertigkeits-EP","+{percent}% de EXP de combate y habilidades","+{percent}% gevechts- en vaardigheids-XP","+{percent}% PE di combattimento e abilità","+{percent}% d’XP de combat et de compétences"],
  "ACTION TIME":["ACTION TIME","AKTIONSZEIT","TIEMPO DE ACCIÓN","ACTIETIJD","TEMPO AZIONE","TEMPS D’ACTION"],
  "RARE FINDS":["RARE FINDS","SELTENE FUNDE","HALLAZGOS RAROS","ZELDZAME VONDSTEN","RITROVAMENTI RARI","TROUVAILLES RARES"],
  "Shorter gathering actions":["Shorter gathering actions","Kürzere Sammelaktionen","Recolección más rápida","Kortere verzamelacties","Raccolta più rapida","Actions de récolte plus courtes"],
@@ -1896,6 +1906,24 @@ const toolDetailsEarlyLocales={
  "Tier base · No bonus roll":["Базовый уровень · Без случайного бонуса","Kademe tabanı · Rastgele bonus yok"],
 } as const;
 for(const [english,pair] of Object.entries(toolDetailsEarlyLocales)){
+ gameplayCatalogs.ru[english as GameplayKey]=pair[0];
+ gameplayCatalogs.tr[english as GameplayKey]=pair[1];
+}
+// Current Activity shortcuts and Faith effects in the remaining supported locales.
+const activityShortcutLocales={
+ "CURRENT ACTIVITY":["ТЕКУЩЕЕ ЗАНЯТИЕ","MEVCUT ETKİNLİK"],
+ "AFK FULL":["АФК ЛИМИТ","AFK DOLU"],
+ "+{percent}% Damage":["+{percent}% урона","+%{percent} hasar"],
+ "{percent}% Damage reduction":["{percent}% снижения урона","%{percent} hasar azaltma"],
+ "+{percent}% Maximum HP":["+{percent}% макс. ОЗ","+%{percent} azami can"],
+ "+{percent}% Combat speed":["+{percent}% скорости боя","+%{percent} savaş hızı"],
+ "+{percent}% Gathering speed":["+{percent}% скорости сбора","+%{percent} toplama hızı"],
+ "+{percent}% Production speed":["+{percent}% скорости производства","+%{percent} üretim hızı"],
+ "+{percent}% Combat & skill XP":["+{percent}% опыта боя и навыков","+%{percent} savaş ve beceri XP"],
+ "Favorite {name}":["Добавить {name} в избранное","{name} favorilere ekle"],
+ "Remove {name} from favorites":["Убрать {name} из избранного","{name} favorilerden çıkar"],
+} as const;
+for(const [english,pair] of Object.entries(activityShortcutLocales)){
  gameplayCatalogs.ru[english as GameplayKey]=pair[0];
  gameplayCatalogs.tr[english as GameplayKey]=pair[1];
 }

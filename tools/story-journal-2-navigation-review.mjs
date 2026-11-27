@@ -80,7 +80,7 @@ export function journalNavigationReview({book,side,storyProgress,sideProgress,ca
  const filter=['current','all','completed','locked'].includes(saved.filter)?saved.filter:'current';
  const query=typeof saved.query==='string'?saved.query.trim().toLowerCase().slice(0,120):'';
  const visible=(tab==='story'?story:tab==='quests'?quests:[]).filter(q=>(filter==='all'||(filter==='current'&&['ready','active','available'].includes(q.status))||(filter==='completed'&&q.status==='claimed')||(filter==='locked'&&q.status==='locked'))&&(!query||q.title.toLowerCase().includes(query))).sort((a,b)=>priority[a.status]-priority[b.status]);
- return {...base,status:'review',tab,filter,pinned,featured,visible,storyComplete:story.filter(q=>q.status==='claimed').length,storyTotal:story.length,readyCount:all.filter(q=>q.status==='ready').length,tabs:JOURNAL_TABS};
+ return {...base,status:'review',tab,filter,query:typeof saved.query==='string'?saved.query.slice(0,120):'',pinned,featured,visible,storyComplete:story.filter(q=>q.status==='claimed').length,storyTotal:story.length,readyCount:all.filter(q=>q.status==='ready').length,tabs:JOURNAL_TABS};
 }
 export function journalReturnReview(returnTo,context,availableIds){
  if(returnTo?.screen!=='Journal'||returnTo.accountId!==context?.accountId||returnTo.characterId!==context?.characterId||!JOURNAL_TABS.includes(returnTo.tab)||!availableIds.includes(returnTo.questId))return {screen:'Journal',tab:'story'};

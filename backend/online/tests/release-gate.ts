@@ -23,6 +23,29 @@ async function main(){
   globalThis.fetch=async(input,init)=>{assert.equal(String(input),'https://test.invalid/rest/v1/app_release_policy?select=*');assert.equal(new Headers(init?.headers).get('apikey'),'public-read-key');assert.equal(new Headers(init?.headers).get('authorization'),null,'public policy read must not use service-role authorization');return new Response(JSON.stringify([row]));};
   assert.equal((await releasePolicyLoader('https://test.invalid','public-read-key')()).length,1);
   globalThis.fetch=async()=>new Response('{}',{status:403});await assert.rejects(releasePolicyLoader('https://test.invalid','public-read-key'));
+  // One loader instance shares overlapping reads only; later requests must
+  // observe new maintenance/minimum policy, and failed reads must be retried.
+  let fetches=0,resolveRead!:(response:Response)=>void;
+  globalThis.fetch=async()=>{fetches++;return new Promise<Response>(resolve=>{resolveRead=resolve;});};
+  const loader=releasePolicyLoader('https://test.invalid','public-read-key');
+  const first=loader(),second=loader();
+  assert.equal(first,second,'overlapping policy reads share one promise');
+  assert.equal(fetches,1);
+  resolveRead(new Response(JSON.stringify([{...row,maintenance_mode:false}])));
+  assert.equal((await first)[0].maintenance_mode,false);
+  const next=loader();
+  assert.equal(fetches,2,'no completed-result cache');
+  resolveRead(new Response(JSON.stringify([{...row,maintenance_mode:true}])));
+  assert.equal((await next)[0].maintenance_mode,true);
+  const failed=loader(),joined=loader();
+  assert.equal(failed,joined);
+  resolveRead(new Response('{}',{status:503}));
+  await assert.rejects(failed);
+  await assert.rejects(joined);
+  const recovered=loader();
+  assert.equal(fetches,4,'failed read must not poison future checks');
+  resolveRead(new Response(JSON.stringify([row])));
+  await recovered;
  }finally{globalThis.fetch=originalFetch;}
  console.log('release gate: legacy rollout, minimum, schedule, maintenance, fail-closed, preflight passed');
 }

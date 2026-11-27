@@ -44,16 +44,8 @@ export function createWorldBossChestSourceV104(deps:{
    const verified=await deps.readVerifiedCanonicalAttempts(tx,eventId,accountId);
    // Independent privileged readback defines exact receipt set; do not
    // turn a local combat rehearsal into a paid attack.
-   const rows=(await tx.query<{request_id:string;ordinal:number;engine_version:string;replay_digest:string;credited_hp:string}>(
-    "SELECT a.request_id,a.ordinal,a.engine_version,a.replay_digest,a.credited_hp::text AS credited_hp "+
-    "FROM private.world_boss_attempts_v17 a JOIN private.world_boss_replay_proofs_v28 p ON p.event_id=a.event_id "+
-    "AND p.account_id=a.account_id AND p.request_id=a.request_id AND p.replay_digest=a.replay_digest "+
-    "WHERE a.event_id=$1::uuid AND a.account_id=$2::uuid AND a.status='committed' ORDER BY a.ordinal",
-    [eventId,accountId])).rows;
-   if(rows.length!==verified.length)throw Error('world_boss_v104_attempt_readback_mismatch');
-   reviewWorldBossRewardHandoffV95(canonical,verified,row=>rows.some(p=>p.request_id===row.requestId&&
-    p.ordinal===row.ordinal&&p.engine_version===row.engineVersion&&p.replay_digest===row.replayDigest&&
-    Number(p.credited_hp)===row.committedGlobalHpDamage));
+   const verify=await readWorldBossAttemptVerifierV104(tx,eventId,accountId,verified);
+   reviewWorldBossRewardHandoffV95(canonical,verified,verify);
   }
   return {sourceKey:key,accountId,earned:true as const,proofVersion:'world-boss-v104-canonical-milestone',
    recipientCharacterId:null,equipmentDeliveryMode:'account_unclaimed' as const,lootTable:worldBossChestLootTableV96(earned.bossId,kind)};
@@ -80,4 +72,18 @@ export function createWorldBossChestSourceV104(deps:{
    gate();return (await tx.query('SELECT id FROM public.characters WHERE id=$1::uuid AND account_id=$2::uuid FOR KEY SHARE',[id,accountId])).rows.length===1;
   },
  };
+}
+
+/** Independently compare canonical receipts with committed V17/V28 SQL. */
+export async function readWorldBossAttemptVerifierV104(tx:ChestSqlV70,eventId:string,accountId:string,verified:readonly WorldBossV95SettledAttemptReview[]){
+   const rows=(await tx.query<{request_id:string;ordinal:number;engine_version:string;replay_digest:string;credited_hp:string}>(
+    "SELECT a.request_id,a.ordinal,a.engine_version,a.replay_digest,a.credited_hp::text AS credited_hp "+
+    "FROM private.world_boss_attempts_v17 a JOIN private.world_boss_replay_proofs_v28 p ON p.event_id=a.event_id "+
+    "AND p.account_id=a.account_id AND p.request_id=a.request_id AND p.replay_digest=a.replay_digest "+
+    "WHERE a.event_id=$1::uuid AND a.account_id=$2::uuid AND a.status='committed' ORDER BY a.ordinal",
+    [eventId,accountId])).rows;
+   if(rows.length!==verified.length)throw Error('world_boss_v104_attempt_readback_mismatch');
+   return (row:WorldBossV95SettledAttemptReview)=>rows.some(p=>p.request_id===row.requestId&&
+    p.ordinal===row.ordinal&&p.engine_version===row.engineVersion&&p.replay_digest===row.replayDigest&&
+    Number(p.credited_hp)===row.committedGlobalHpDamage);
 }

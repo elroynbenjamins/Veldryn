@@ -250,6 +250,7 @@ function wiring(){
  assert.ok(app.includes('flexShrink:0,zIndex:31,elevation:2'),'Retry occupies a reserved and raised touch target');
  assert.ok(app.includes('const startupOverlayVisible=startupBlocking;')&&app.includes('{startupBlocking&&<View style={s.startupOverlay}>')&&!app.includes('appEntranceY'),'Ready app has no splash overlay or transformed interactive root');
  assert.ok(app.includes('const popupBlocked=(serverGameplayEnabled&&online.pending)||'),'Pending recovery cannot compete with automatic announcements');
+ assert.ok(app.includes('const recoveryPreviewNow=serverGameplayEnabled&&(online.busy||online.pending)?online.snapshot?.serverNow??now:now;')&&app.includes('activityRewardPreviewClock(recoveryPreviewNow,'),'Pending writes reuse a stable reward preview checkpoint');
 
 }
 (async()=>{await buttons();await commandBusy();await combatSwapOptimism();await socialBadgeParallelAndRecovery();await socialStartupPriority();rewardPreviewClock();foregroundTaskLifecycle();await foregroundHuntReplay();wiring();console.log('PASS: online loading indicators, duplicate suppression, rejection recovery, overlapping-command busy state and non-blocking app feedback');})().catch(error=>{console.error(error);process.exitCode=1});

@@ -14,6 +14,10 @@ on:
       - 'backend/src/server/party/weekly-party-event-replay-v96.ts'
       - 'backend/src/server/party/weekly-party-event-review-ledger-v97.ts'
       - 'backend/src/server/party/__tests__/weekly-party-event-eq2-traits-v92.ts'
+      - 'backend/src/server/party/party-role-swap-*.ts'
+      - 'backend/src/server/party/party-chat-action-*.ts'
+      - 'backend/tests/party-role-swap-chat-session-v119.cjs'
+      - 'apps/mobile/src/core/party-chat-*-preview-v*.ts'
       - 'backend/src/server/party/__tests__/weekly-party-event-eq2-full-build-v92.ts'
       - 'backend/src/server/party/__tests__/weekly-party-event-eq2-class-spec-matrix-v93.ts'
       - '.github/workflows/combat-v2-hidden-equipment-trait-engine.yml'
@@ -43,6 +47,8 @@ jobs:
         run: node backend/dist/server/combat/v2/__tests__/equipment-trait-exact-copy-boss-matrix.js
       - name: V92 full-duration four-family Party boss with real V2 equipped trait hooks (QA only)
         run: node backend/dist/server/party/__tests__/weekly-party-event-eq2-traits-v92.js
+      - name: Verify role-swap chat session, mobile intent and atomic fixture receipt integration
+        run: node backend/tests/party-role-swap-chat-session-v119.cjs
       - name: V92 verified full Equipment+Skill 2.0 compiler for two Party members
         run: node backend/dist/server/party/__tests__/weekly-party-event-eq2-full-build-v92.js
       - name: V93 all 9 classes and 18 specs against four Party bosses, three difficulties and three sizes (full EQ2 item source)

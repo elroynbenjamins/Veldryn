@@ -8,6 +8,8 @@
  * PRODUCTION OFF: no router imports this module.
  */
 import {simulateCombat,simulateCombatWithServerAuthoritiesV2} from '../engine';
+import {reviewWorldBossProtectionV2,type ProtectionTraceV2} from './world-boss-protection-review';
+import {deriveWorldBossPreparationReviewV2,applyWorldBossStartingHpReviewV2,createWorldBossGuardRuntimeReviewV2,type WorldBossPreparationReviewV2} from './world-boss-preparation-review';
 import {compileDraftDungeonRewardCombatV2,type VerifiedDungeonRewardSnapshotV2} from './dungeon-rewards-v2';
 import {issueDungeonRewardEngineAuthorityV2} from './dungeon-reward-engine-v2';
 import {issueEquipmentV2TraitAuthority,issuePersistedPartyEquipmentV2TraitAuthority,
@@ -473,4 +475,165 @@ export function simulateUnifiedEquipmentPersistedPartyCombatV2(
   synchronizationRehearsal:{releaseEnabled:false,unsupported:[]},
   partyPersistenceReview:persistence,
  };
+}
+
+
+/** World Boss V90C/V91A — PRIVATE NONPAYING QA, not an event reservation.
+ * Current review limit is three owned characters. No dungeon ready-check,
+ * distinct-account rule, legacy fallback, or fabricated source authority.
+ * The World Boss V90 transaction/eligibility reader is a separate branch.
+ */
+export const WORLD_BOSS_SHARED_ENGINE_REVIEW_LIVE=false as const;
+export interface WorldBossSharedRosterReviewV2{
+ readonly accountId:string;
+ readonly eventId:string;
+ readonly reservationId:string;
+ readonly attempt:number;
+ readonly entitlementRevision:number;
+ readonly unlockedCharacterSlots:number;
+ readonly rosterDigest:string;
+ readonly contentVersion:string;
+ readonly balanceVersion:string;
+ readonly seed:string;
+ readonly bossId:'hollowroot'|'sunscar'|'frostmarch';
+ readonly phase:'armored'|'exposed'|'enraged';
+ readonly preparation?:WorldBossPreparationReviewV2;
+ readonly members:readonly {
+  readonly characterId:string;
+  readonly actorId:string;
+  readonly snapshotId:string;
+  readonly sourceRevision:number;
+  readonly sourceHash:string;
+  readonly equipmentReceiptRevision:number;
+  readonly equipmentReceiptDigest:string;
+ }[];
+}
+const wbReviewId=(x:unknown):x is string=>typeof x==='string'&&/^[A-Za-z0-9][A-Za-z0-9:_-]{0,127}$/.test(x);
+const wbReviewHash=(x:unknown):x is string=>typeof x==='string'&&/^[a-f0-9]{64}$/.test(x);
+function wbReviewFail(reason:string):never{throw Error('world_boss_shared_review_'+reason);}
+
+/** Use the exact same class/skill/base/set/affix compiler and exact-copy
+ * trait source compiler as the shared dungeon path. This is diagnostic only;
+ * the independent frozen source verifier is required before execution. */
+export function compileWorldBossRosterReviewV2(
+ input:CombatInput,
+ builds:readonly VerifiedSkillBuildV2[],
+ runtime:readonly TrustedEquipmentRuntimeV2[],
+ traitPorts:readonly TrustedEquipmentTraitReceiptPortV2[],
+ scope:WorldBossSharedRosterReviewV2,
+){
+ if(!scope||![scope.accountId,scope.eventId,scope.reservationId,scope.contentVersion,
+  scope.balanceVersion].every(wbReviewId)||!Number.isSafeInteger(scope.attempt)||
+  scope.attempt<1||scope.attempt>3||!Number.isSafeInteger(scope.entitlementRevision)||
+  scope.entitlementRevision<1||!wbReviewHash(scope.rosterDigest)||!Number.isSafeInteger(scope.unlockedCharacterSlots)||
+  scope.unlockedCharacterSlots<1||scope.unlockedCharacterSlots>3||
+  !['hollowroot','sunscar','frostmarch'].includes(scope.bossId)||
+  !['armored','exposed','enraged'].includes(scope.phase)||
+  typeof scope.seed!=='string'||scope.seed.length<1||scope.seed.length>256||
+  !input||input.seed!==scope.seed||input.initialPlayerState!==undefined||
+  input.enemyDamageProfile!==undefined||input.players.length<1||
+  input.players.length>scope.unlockedCharacterSlots||
+  !Array.isArray(scope.members)||scope.members.length!==input.players.length||
+  Array.from(scope.members).some(m=>!m||!wbReviewId(m.snapshotId)||
+   !Number.isSafeInteger(m.sourceRevision)||m.sourceRevision<1||!wbReviewHash(m.sourceHash))||
+  !Array.isArray(traitPorts)||traitPorts.length!==input.players.length||
+  Array.from(traitPorts).some(p=>!p||!wbReviewId(p.characterId)))
+  wbReviewFail('invalid_roster_scope');
+ const {players,evidence,byId,gearById}=compileEquippedEncounterActors(input,builds,runtime);
+ const memberByActor=new Map<string,WorldBossSharedRosterReviewV2['members'][number]>(
+  scope.members.map((m:WorldBossSharedRosterReviewV2['members'][number])=>[m.actorId,m]));
+ const portByCharacter=new Map<string,TrustedEquipmentTraitReceiptPortV2>(
+  traitPorts.map((p:TrustedEquipmentTraitReceiptPortV2)=>[p.characterId,p]));
+ const snapshots=new Set(scope.members.map((m:WorldBossSharedRosterReviewV2['members'][number])=>m.snapshotId));
+ if(snapshots.size!==players.length)wbReviewFail('duplicate_snapshot');
+ if(memberByActor.size!==players.length||portByCharacter.size!==players.length)
+  wbReviewFail('duplicate_member_or_port');
+ const characters=new Set<string>();
+ const sources=players.map(actor=>{
+  const member=memberByActor.get(actor.id),gear=gearById.get(actor.id)!;
+  const port=portByCharacter.get(gear.characterId);
+  if(!member||!port||actor.team!=='players'||actor.combatV2?.version!==2||
+   !wbReviewId(member.characterId)||!wbReviewId(member.actorId)||
+   member.characterId!==gear.characterId||characters.has(member.characterId)||
+   port.accountId!==scope.accountId||port.characterId!==member.characterId||
+   !Number.isSafeInteger(member.equipmentReceiptRevision)||member.equipmentReceiptRevision<1||
+   member.equipmentReceiptRevision!==port.receiptRevision||
+   !wbReviewHash(member.equipmentReceiptDigest)||
+   typeof port.verifyPersisted!=='function')
+   wbReviewFail('member_ownership_or_revision_mismatch');
+  const source=compileExactEquipmentTraitSourceV2(byId.get(actor.id)!,gear,port);
+  if(source.equipmentReceiptDigest!==member.equipmentReceiptDigest)
+   wbReviewFail('equipment_digest_mismatch');
+  characters.add(member.characterId);
+  return source;
+ });
+ return {players,evidence,sources,
+  compiledActorDigests:players.map(actor=>({actorId:actor.id,digest:enemyV2SnapshotDigest(actor)})),
+  releaseReady:false as const,canAuthorizeCombat:false as const,canGrantRewards:false as const};
+}
+export interface WorldBossSharedPreviewBindingV2 {
+ readonly scope:WorldBossSharedRosterReviewV2;
+ readonly bossDefinitionDigest:string;
+ readonly compiledInputDigest:string;
+ readonly equipmentSourcesDigest:string;
+}
+/**
+ * V91A invokes the real shared millisecond Combat 2.0 engine with fresh
+ * exact-copy trait authority and a pinned LOCAL authored boss definition.
+ * No global HP, Guard conversion, world settlement, enemy-kit authority,
+ * gems/alchemy migration, or synchronization is implied. The independent
+ * verifier must confirm the complete binding; synthetic fixtures are QA only.
+ */
+export function simulateWorldBossSharedEngineReviewV2(
+ input:CombatInput,
+ builds:readonly VerifiedSkillBuildV2[],
+ runtime:readonly TrustedEquipmentRuntimeV2[],
+ traitPorts:readonly TrustedEquipmentTraitReceiptPortV2[],
+ scope:WorldBossSharedRosterReviewV2,
+ verifyFrozen:(binding:WorldBossSharedPreviewBindingV2)=>boolean,
+ reviewEnabled=false,
+ collectProtection=true,
+){
+ if(!reviewEnabled||typeof verifyFrozen!=='function')wbReviewFail('disabled');
+ if(!input||!Array.isArray(input.enemies)||input.enemies.length!==1||
+  !input.enemies[0]||input.enemies[0].id!==scope?.bossId||
+  input.enemies[0].team!=='enemies'||input.enemies[0].role!=='enemy'||!input.enemies[0].boss||
+  !Number.isSafeInteger(input.tickMs)||input.tickMs!==100||
+  typeof input.maxDurationMs!=='number'||!Number.isSafeInteger(input.maxDurationMs)||
+  input.maxDurationMs<1000||input.maxDurationMs>180000)
+  wbReviewFail('invalid_local_boss_scope');
+ const compiled=compileWorldBossRosterReviewV2(input,builds,runtime,traitPorts,scope);
+ const preparation=scope.preparation===undefined?undefined:deriveWorldBossPreparationReviewV2(scope.preparation,scope);
+ const assembled:CombatInput={...input,players:compiled.players};
+ const finalInput:CombatInput=structuredClone(preparation?applyWorldBossStartingHpReviewV2(assembled,preparation):assembled);
+ const frozenScope=structuredClone(scope);
+ const binding:WorldBossSharedPreviewBindingV2={
+  scope:frozenScope,bossDefinitionDigest:enemyV2SnapshotDigest(finalInput.enemies[0]),
+  compiledInputDigest:enemyV2SnapshotDigest(finalInput),
+  equipmentSourcesDigest:enemyV2SnapshotDigest(compiled.sources),
+ };
+ const bindingDigest=enemyV2SnapshotDigest(binding);
+ const sourceByCharacter=new Map(traitPorts.map(p=>[p.characterId,p.verifyPersisted]));
+ const authority=issueEquipmentV2TraitAuthority(finalInput,compiled.sources,(rows,digest)=>{
+  if(digest!==binding.compiledInputDigest||enemyV2SnapshotDigest(rows)!==binding.equipmentSourcesDigest)
+   return false;
+  if(!rows.every(row=>sourceByCharacter.get(row.characterId)?.([row],digest)===true))
+   return false;
+  return verifyFrozen(binding)===true&&enemyV2SnapshotDigest(binding)===bindingDigest&&
+   enemyV2SnapshotDigest(scope)===enemyV2SnapshotDigest(frozenScope);
+ });
+ const trace:ProtectionTraceV2[]=[];
+ const guardRuntime=preparation?createWorldBossGuardRuntimeReviewV2(scope.bossId,preparation):undefined;
+ const combat=simulateCombatWithServerAuthoritiesV2(finalInput,{equipmentTrait:authority,aiPolicy:'tactical',
+  ...(guardRuntime?{worldBossGuardReview:guardRuntime.port}:{}),
+  ...(collectProtection?{protectionTrace:trace}:{})});
+ const protection=collectProtection?reviewWorldBossProtectionV2(trace,finalInput.players.map(p=>p.id),
+  Object.fromEntries([...combat.players,...combat.enemies].map(p=>[p.definition.id,p.shield]))):null;
+ const {players:_reviewPlayers,enemies:_reviewEnemies,...reviewRules}=finalInput;
+ return {combat,binding,reviewRulesDigest:enemyV2SnapshotDigest(reviewRules),protection,guardReview:guardRuntime?.read()??null,preparation:preparation??null,compiledActorDigests:compiled.compiledActorDigests,
+  equipmentEvidence:compiled.evidence,
+  localBossHpLoss:Math.max(0,finalInput.enemies[0].stats.maxHp-combat.enemies[0].hp),
+  globalHpCredited:0 as const,releaseReady:false as const,
+  persisted:false as const,rewardGranted:false as const,
+  enemyKitAuthority:false as const,guardSettlement:false as const};
 }

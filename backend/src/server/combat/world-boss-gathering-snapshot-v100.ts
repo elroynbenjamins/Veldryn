@@ -11,6 +11,7 @@ import {worldBossChestLootTableV96} from './world-boss-chest-policy-v96';
 import {reviewWorldBossGatheringSpeedV99,type GatheringSpeedCopyV99} from './world-boss-gathering-speed-v99';
 import type {FrozenChestReceiptV69} from '../loot/chest-reward-settlement-v69';
 export const WORLD_BOSS_GATHERING_SNAPSHOT_V100_LIVE=false as const;
+const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const id=(x:unknown):x is string=>typeof x==='string'&&/^[A-Za-z0-9:_-]{1,180}$/.test(x);
 function canonical(v:unknown):string{
  if(v===null||typeof v==='string'||typeof v==='boolean')return JSON.stringify(v);
@@ -35,9 +36,9 @@ export function reviewWorldBossGatheringSnapshotV100(input:{
 }){
  const {accountId,characterId,sourceRevision,activityId,state}=input;
  const a=state.activity,c=state.character;
- if(!id(accountId)||!id(characterId)||!id(activityId)||!Number.isSafeInteger(sourceRevision)||sourceRevision<1||
+ if(!id(accountId)||!UUID.test(accountId)||!id(characterId)||!id(activityId)||!Number.isSafeInteger(sourceRevision)||sourceRevision<1||
  !c||c.id!==characterId||!a||!Number.isSafeInteger(a.startedAtMs)||a.startedAtMs<0||
- !Number.isSafeInteger(a.lastClaimAtMs)||a.lastClaimAtMs<a.startedAtMs||
+ !Number.isSafeInteger(a.lastClaimAtMs)||a.lastClaimAtMs!==a.startedAtMs||(a.progressFraction??0)!==0||
  !Array.isArray(input.ownedCharacterIds)||!input.ownedCharacterIds.every(id)||
  new Set(input.ownedCharacterIds).size!==input.ownedCharacterIds.length||
  !Array.isArray(input.mintRows)||input.mintRows.length>10||
@@ -96,7 +97,7 @@ export function reviewWorldBossGatheringSnapshotV100(input:{
   if(!receipt||receipt.accountId!==accountId||receipt.rulesVersion!=='chest-settlement-v69'||!receipt.committed||
    receipt.tableId!=='world_boss_chest'||receipt.tableVersion!=='world_boss_v98_unified_'+set.bossId||
    !receipt.proofVersion||receipt.recipientCharacterId!==null||receipt.equipmentDeliveryMode!=='account_unclaimed'||
-   !receipt.sourceKey.startsWith('world-boss:')||receipt.sourceKey.split(':')[2]!==accountId||
+   !receipt.sourceKey.startsWith('world-boss:')||!UUID.test(receipt.sourceKey.split(':')[1]??'')||receipt.sourceKey.split(':')[2]!==accountId||
    !/^(donations_goal|three_attempts|community_damage_goal|damage:[1-9][0-9]*)$/.test(receipt.sourceKey.split(':').slice(3).join(':'))||
    seenSources.has(receipt.sourceKey)||receipt.groups.length!==1||receipt.drops.length!==1)
    throw Error('gathering_snapshot_invalid_chest_origin');

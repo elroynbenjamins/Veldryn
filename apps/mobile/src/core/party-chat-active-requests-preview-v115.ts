@@ -83,6 +83,22 @@ export class PartyActiveRequestsPreviewV115{
     !revision(row.sourceRevision)||ids.has(c.id)||messages.has(c.messageId)||
     c.status!=='pending'||c.kind==='shared_achievement'||
     !Array.isArray(c.allowedActions)||typeof c.expiresAtMs!=='number'||!Number.isSafeInteger(c.expiresAtMs))return false;
+   if(!['role_swap','contract_vote','event_vote','group_readiness','recruitment_request'].includes(c.kind)||
+    typeof c.title!=='string'||typeof c.summary!=='string'||
+    c.allowedActions.some(action=>!['accept','decline','ready','not_ready','vote'].includes(action)))return false;
+   if(c.kind==='role_swap'||c.kind==='group_readiness'){
+    if(!Array.isArray(c.members)||c.members.length<1||c.members.length>4||
+     c.members.some(m=>!m||!valid(m.id)||typeof m.name!=='string')||
+     new Set(c.members.map(m=>m.id)).size!==c.members.length)return false;
+   }
+   if(c.kind==='contract_vote'||c.kind==='event_vote'){
+    if(!Array.isArray(c.options)||c.options.length<2||c.options.length>5||
+     !Number.isSafeInteger(c.eligibleCount)||c.eligibleCount<1||c.eligibleCount>4||
+     c.options.some(o=>!o||!valid(o.id)||typeof o.label!=='string'||!Number.isSafeInteger(o.votes)||o.votes<0||o.votes>c.eligibleCount)||
+     new Set(c.options.map(o=>o.id)).size!==c.options.length||
+     c.options.reduce((sum,o)=>sum+o.votes,0)>c.eligibleCount||
+     (c.myVote!=null&&!c.options.some(o=>o.id===c.myVote)))return false;
+   }
    ids.add(c.id);messages.add(c.messageId);
   }
   // Upper bound on elapsed server time: charge the entire request duration

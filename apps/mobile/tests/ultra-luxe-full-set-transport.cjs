@@ -79,6 +79,16 @@ const sql=fs.readFileSync(path.join(repo,'docs/roadmap/ultra-luxe-full-set-commi
  assert(route.includes('privateGrants&&services.ultraLuxeFullSetAuthority===true'));
  assert(route.indexOf('executeUltraLuxeFullSetCommand({enabled:fullSetAuthority')<route.indexOf('command=validateGameCommand(body.command)'));
  assert(route.includes("if(body.requestId.startsWith(ULTRA_LUXE_REQUEST_PREFIX))throw new GameplayError('invalid_request')"));
+ const eas=JSON.parse(fs.readFileSync(path.join(repo,'apps/mobile/eas.json'),'utf8'));
+ for(const profile of ['staging','production'])assert.equal(eas.build[profile].env.EXPO_PUBLIC_ULTRA_LUXE_FULL_SET,'true',profile+' must compile the authenticated six-set UI');
+ for(const profile of ['preview','development'])assert.notEqual(eas.build[profile].env.EXPO_PUBLIC_ULTRA_LUXE_FULL_SET,'true',profile+' must not silently enable this release flag');
+ assert.equal(eas.build.staging.distribution,'internal');assert.equal(eas.build.staging.android.buildType,'apk');
+ assert.notEqual(eas.build.staging.env.EXPO_PUBLIC_SUPABASE_URL,eas.build.production.env.EXPO_PUBLIC_SUPABASE_URL);
+ assert.equal(eas.build.production.autoIncrement,true);
+ const flags=fs.readFileSync(path.join(repo,'apps/mobile/src/core/release-flags.ts'),'utf8');
+ assert(flags.includes('PROFILE_COSMETICS_STORE_RELEASED=false'));assert(flags.includes('ASCENDANT_PROGRESSION_BLESSINGS_RELEASED=false'));
+ const assembly=require('node:child_process').execFileSync(process.execPath,[path.join(repo,'tools/assemble-1.0.13-cosmetic-migration.mjs'),'--check'],{encoding:'utf8'});
+ assert(assembly.includes('PASS: four exact reviewed SQL blobs'));
  const edge=fs.readFileSync(path.join(repo,'backend/online/edge.ts'),'utf8');
  assert(edge.includes("Deno.env.get('ULTRA_LUXE_FULL_SET_AUTHORITY')==='true'"));
  console.log('Six combined equip route and durable recovery mocks passed; closed feature gate, verified name readback and root/route source checks.');

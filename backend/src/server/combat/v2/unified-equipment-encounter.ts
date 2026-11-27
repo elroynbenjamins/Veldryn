@@ -9,6 +9,7 @@
  */
 import {simulateCombat,simulateCombatWithServerAuthoritiesV2} from '../engine';
 import {reviewWorldBossProtectionV2,type ProtectionTraceV2} from './world-boss-protection-review';
+import {deriveWorldBossPreparationReviewV2,applyWorldBossStartingHpReviewV2,type WorldBossPreparationReviewV2} from './world-boss-preparation-review';
 import {compileDraftDungeonRewardCombatV2,type VerifiedDungeonRewardSnapshotV2} from './dungeon-rewards-v2';
 import {issueDungeonRewardEngineAuthorityV2} from './dungeon-reward-engine-v2';
 import {issueEquipmentV2TraitAuthority,issuePersistedPartyEquipmentV2TraitAuthority,
@@ -496,6 +497,7 @@ export interface WorldBossSharedRosterReviewV2{
  readonly seed:string;
  readonly bossId:'hollowroot'|'sunscar'|'frostmarch';
  readonly phase:'armored'|'exposed'|'enraged';
+ readonly preparation?:WorldBossPreparationReviewV2;
  readonly members:readonly {
   readonly characterId:string;
   readonly actorId:string;
@@ -601,7 +603,9 @@ export function simulateWorldBossSharedEngineReviewV2(
   input.maxDurationMs<1000||input.maxDurationMs>180000)
   wbReviewFail('invalid_local_boss_scope');
  const compiled=compileWorldBossRosterReviewV2(input,builds,runtime,traitPorts,scope);
- const finalInput:CombatInput=structuredClone({...input,players:compiled.players});
+ const preparation=scope.preparation===undefined?undefined:deriveWorldBossPreparationReviewV2(scope.preparation,scope);
+ const assembled:CombatInput={...input,players:compiled.players};
+ const finalInput:CombatInput=structuredClone(preparation?applyWorldBossStartingHpReviewV2(assembled,preparation):assembled);
  const frozenScope=structuredClone(scope);
  const binding:WorldBossSharedPreviewBindingV2={
   scope:frozenScope,bossDefinitionDigest:enemyV2SnapshotDigest(finalInput.enemies[0]),
@@ -623,7 +627,7 @@ export function simulateWorldBossSharedEngineReviewV2(
   ...(collectProtection?{protectionTrace:trace}:{})});
  const protection=collectProtection?reviewWorldBossProtectionV2(trace,finalInput.players.map(p=>p.id),
   Object.fromEntries([...combat.players,...combat.enemies].map(p=>[p.definition.id,p.shield]))):null;
- return {combat,binding,protection,compiledActorDigests:compiled.compiledActorDigests,
+ return {combat,binding,protection,preparation:preparation??null,compiledActorDigests:compiled.compiledActorDigests,
   equipmentEvidence:compiled.evidence,
   localBossHpLoss:Math.max(0,finalInput.enemies[0].stats.maxHp-combat.enemies[0].hp),
   globalHpCredited:0 as const,releaseReady:false as const,

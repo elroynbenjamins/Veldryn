@@ -53,10 +53,14 @@ export function projectStoryReview(book,s,expected) {
   try {
     validateStoryBook(book);
     if (!context(s,expected)) return denied('missing_or_foreign_snapshot');
+    if(book.entryRequirement){
+      const entry=s.bookAccess?.[book.regionId];
+      if(!entry||entry.accountId!==s.accountId||entry.characterId!==s.characterId||entry.previousFinale!==book.entryRequirement.previousFinale||entry.previousFinaleClaimed!==true||entry.characterAccess!==true)return denied('regional_entry_not_verified');
+    }
     const events=checkedEvents(s);
-    const claimed=new Set(book.quests.filter(q=>s.claimedLegacyIds.includes(q.legacyQuestId)||s.claimedStoryIds.includes(q.id)).map(q=>q.id));
+    const claimed=new Set(book.quests.filter(q=>(q.legacyQuestId!==undefined&&s.claimedLegacyIds.includes(q.legacyQuestId))||s.claimedStoryIds.includes(q.id)).map(q=>q.id));
     const quests=book.quests.map(q=>{
-      const migrated=s.claimedLegacyIds.includes(q.legacyQuestId);
+      const migrated=q.legacyQuestId!==undefined&&s.claimedLegacyIds.includes(q.legacyQuestId);
       const activation=Object.hasOwn(s.activationSequences,q.id)?s.activationSequences[q.id]:undefined;
       if(activation!==undefined&&(!natural(activation)||activation>s.sequence))throw Error('invalid_activation');
       const progress=q.objectives.map(o=>objective(s,events,activation,o));

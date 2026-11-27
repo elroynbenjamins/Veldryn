@@ -217,6 +217,29 @@ begin
  exception when others then
   if sqlerrm<>'party_event_v17_vote_unresolved' then raise;end if;
  end;
+ -- A 1–1 tie must not become a majority before the timeout. The
+ -- surrounding exception rolls the alternative ballot back for the next test.
+ begin
+  perform private.cast_party_event_ballot_v17(p,start_at,2,a[2],'fast_pass');
+  begin
+   perform private.resolve_party_event_ballot_v17(p,start_at,2);
+   raise exception 'v17 tied vote incorrectly resolved early';
+  exception when others then
+   if sqlerrm<>'party_event_v17_vote_unresolved' then raise;end if;
+  end;
+  raise exception 'v17_test_rollback_tied_ballot';
+ exception when others then
+  if sqlerrm<>'v17_test_rollback_tied_ballot' then raise;end if;
+ end;
+ if exists(select 1 from private.party_event_ballots_v17
+  where party_id=p and event_starts_at=start_at and stage=2 and account_id=a[2])
+ then raise exception 'v17 test tie ballot was not rolled back';end if;
+ begin
+  perform private.cast_party_event_ballot_v17(p,start_at,null,a[2],'safe_pass');
+  raise exception 'v17 null stage accepted';
+ exception when others then
+  if sqlerrm<>'party_event_v17_invalid_ballot' then raise;end if;
+ end;
  perform private.cast_party_event_ballot_v17(
   p,start_at,2,a[2],'safe_pass');
  v_result:=private.resolve_party_event_ballot_v17(p,start_at,2);

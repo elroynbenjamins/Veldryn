@@ -78,3 +78,39 @@ export function advanceWorldBossGuardReviewV2(state:WorldBossGuardStateReviewV2,
  return {state:next,guardDamage,localHpCandidate,restored,broken,
   globalHpCredited:0 as const,rewardGranted:false as const,releaseReady:false as const};
 }
+
+/** Nonpaying per-attempt runtime. Created after frozen-input verification;
+ * no function is serialized into CombatInput. Each hit resolves exactly once. */
+export interface WorldBossGuardHitReviewV2{
+ readonly atMs:number;readonly actorId:string;readonly abilityId:string;
+ readonly kind:'hit'|'restore';readonly inputAmount:number;
+ readonly guardDamage:number;readonly restored:number;readonly hpCandidate:number;readonly broken:boolean;
+}
+export interface WorldBossGuardPortReviewV2{
+ readonly bossId:WorldBossReviewId;
+ readonly bossIncomingMultiplier:number;
+ readonly healingMultiplier:number;
+ resolveHit(atMs:number,actorId:string,abilityId:string,amount:number):number;
+ restore(atMs:number,abilityId:string,amount:number):void;
+}
+export function createWorldBossGuardRuntimeReviewV2(bossId:WorldBossReviewId,effects:WorldBossPreparationEffectsReviewV2){
+ let state=initialWorldBossGuardReviewV2(effects);
+ const trace:WorldBossGuardHitReviewV2[]=[];
+ const port:WorldBossGuardPortReviewV2={
+  bossId,bossIncomingMultiplier:effects.bossIncomingMultiplier,healingMultiplier:effects.healingMultiplier,
+  resolveHit(atMs,actorId,abilityId,amount){
+   const next=advanceWorldBossGuardReviewV2(state,effects,{kind:'hit',atMs,amount});
+   state=next.state;
+   trace.push({atMs,actorId,abilityId,kind:'hit',inputAmount:amount,guardDamage:next.guardDamage,
+    restored:0,hpCandidate:next.localHpCandidate,broken:next.broken});
+   return next.localHpCandidate;
+  },
+  restore(atMs,abilityId,amount){
+   const next=advanceWorldBossGuardReviewV2(state,effects,{kind:'restore',atMs,amount});
+   state=next.state;
+   trace.push({atMs,actorId:bossId,abilityId,kind:'restore',inputAmount:amount,guardDamage:0,
+    restored:next.restored,hpCandidate:0,broken:false});
+  },
+ };
+ return {port,read:()=>({state:{...state},trace:trace.map(x=>({...x})),globalHpCredited:0 as const,releaseReady:false as const})};
+}

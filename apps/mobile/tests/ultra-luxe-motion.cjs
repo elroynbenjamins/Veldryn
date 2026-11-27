@@ -260,3 +260,25 @@ assert(!drLayer.includes('Animated.loop(')&&!drLayer.includes('setInterval('));
 assert(drLayer.includes('pointerEvents="none"')&&drLayer.includes('useMemo('));
 assert(dragonScene.includes('running?<DraconicBorderLight'));
 console.log('Draconic parity: rising embers, staggered molten ornament pulses, safe perimeter and equal native node budget passed.');
+
+// Celestial composition: stars orbit within the open top band and the
+// platform glow stays independent of the moving combined pet sprite.
+const {CELESTIAL_ORBIT_PHASE,CELESTIAL_ORBITS}=mod.exports;
+assert.equal(CELESTIAL_ORBIT_PHASE.length,97);
+for(const track of CELESTIAL_ORBITS){
+ assert.equal(track.length,CELESTIAL_ORBIT_PHASE.length);
+ assert.deepEqual(track[0],track.at(-1));
+ for(const point of track){
+  assert(Math.abs(point.x)<=43&&Math.abs(point.y)<=13);
+  assert(170+point.x-3.5>=119&&170+point.x+3.5<=221);
+  assert(51+point.y-3.5>=30&&51+point.y+3.5<74);
+ }
+}
+for(let i=0;i<CELESTIAL_ORBIT_PHASE.length;i++){
+ assert(Math.abs(CELESTIAL_ORBITS[0][i].x+CELESTIAL_ORBITS[1][i].x)<1e-8);
+ assert(Math.abs(CELESTIAL_ORBITS[0][i].y+CELESTIAL_ORBITS[1][i].y)<1e-8);
+}
+assert.equal(AWAKENING_PET_LIFT.celestial,3);
+assert(celScene.indexOf('pos(246,164,66,14)')<celScene.indexOf('translateY:bodyLift'));
+assert(celScene.includes('translateX:orbit.x')&&celScene.includes('translateY:orbit.y'));
+assert(celScene.includes('{running?orbits.map'));

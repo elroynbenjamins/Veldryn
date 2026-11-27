@@ -254,7 +254,7 @@ for(const b of cases)for(const phase of phases){
  const classes=['RAVAGER','BASTION','DAWNKEEPER'] as const;
  const fullF=fixture(b,phase,3,classes,1,1,0,4,60000);
  const full=simulateWorldBossSharedEngineReviewV2(fullF.input,fullF.builds,fullF.runtime,fullF.traitPorts,fullF.scope,fullF.verify,true);
- const subsets=[];
+ const subsets:ReturnType<typeof simulateWorldBossSharedEngineReviewV2>[]=[];
  for(let mask=1;mask<7;mask++){
   const indices=[0,1,2].filter(i=>Boolean(mask&(1<<i)));
   const sf=fixture(b,phase,indices.length,indices.map(i=>classes[i]),1,1,0,4,60000);

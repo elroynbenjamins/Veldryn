@@ -99,8 +99,9 @@ declare
  v_category text;v_id uuid;
 begin
  if p_party_id is null or p_event_starts_at is null or
-  p_stage not between 1 and 3 or p_kind not in ('required','optional')
-  or p_target_quantity not between 1 and 10000 or
+  p_stage is null or p_stage not between 1 and 3
+  or p_kind is null or p_kind not in ('required','optional')
+  or p_target_quantity is null or p_target_quantity not between 1 and 10000 or
   p_item_id is null
  then raise exception 'party_event_v16_invalid_order';end if;
  select * into w from private.party_event_weeks_v11
@@ -139,6 +140,8 @@ declare
  existing private.party_event_supply_donations_v16%rowtype;
  g public.online_game_states%rowtype;
  v_character_id uuid;
+ v_joined_at timestamptz;
+ v_opened_at timestamptz;
  v_stacks jsonb;
  v_stack jsonb;
  v_new_stacks jsonb:='[]'::jsonb;
@@ -150,7 +153,7 @@ declare
  v_donation_id uuid;
 begin
  if p_party_id is null or p_event_starts_at is null or p_order_id is null
-  or p_account_id is null or p_quantity not between 1 and 10000
+  or p_account_id is null or p_quantity is null or p_quantity not between 1 and 10000
   or p_request_id is null or length(p_request_id) not between 8 and 180
  then raise exception 'party_event_v16_invalid_donation';end if;
 
@@ -172,6 +175,7 @@ begin
    'itemsConsumed',0,'originalQuantity',existing.quantity);
  end if;
 
+ v_now:=clock_timestamp();
  if w.status<>'active' or v_now<w.event_starts_at
    or v_now>=w.event_ends_at
  then raise exception 'party_event_v16_donations_closed';end if;
@@ -187,15 +191,23 @@ begin
   where item_id=o.item_id and category=o.category and enabled=true)
  then raise exception 'party_event_v16_material_inactive';end if;
 
- select character_id into v_character_id
+ select character_id,joined_at into v_character_id,v_joined_at
  from private.party_event_roster_v11
  where party_id=p_party_id and event_starts_at=p_event_starts_at
   and account_id=p_account_id;
- if v_character_id is null then raise exception 'party_event_v16_not_enrolled';end if;
+ if v_character_id is null or v_joined_at>v_now
+ then raise exception 'party_event_v16_not_enrolled';end if;
+ select opened_at into v_opened_at from private.party_event_stages_v11
+ where party_id=p_party_id and event_starts_at=p_event_starts_at and stage=o.stage;
+ if v_opened_at is null or v_opened_at>v_now
+ then raise exception 'party_event_v16_wrong_stage';end if;
 
  select * into g from public.online_game_states
  where account_id=p_account_id and character_id=v_character_id for update;
  if not found or g.state is null then raise exception 'party_event_v16_online_inventory_required';end if;
+ -- A wait on the inventory lock must not extend an expired event.
+ v_now:=clock_timestamp();
+ if v_now>=w.event_ends_at then raise exception 'party_event_v16_donations_closed';end if;
 
  v_stacks:=coalesce(g.state#>'{inventory,stacks}','[]'::jsonb);
  v_locked_item_ids:=coalesce(g.state#>'{settings,lockedItemIds}','[]'::jsonb);

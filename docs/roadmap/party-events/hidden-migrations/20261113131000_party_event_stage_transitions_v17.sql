@@ -151,7 +151,7 @@ end;$$;
 
 -- One canonical options mapping for both native and chat projections.
 create or replace function private.party_event_ballot_choices_v112(p_family text,p_stage integer)
-returns text[] language sql immutable security invoker set search_path='' as $
+returns text[] language sql immutable security invoker set search_path='' as $$
 select case
   when p_family='broken_caravan' and p_stage=2 then array['safe_pass','fast_pass']
   when p_family='broken_caravan' and p_stage=3 then array['brace_wagons','disrupt_raiders']
@@ -162,7 +162,7 @@ select case
   when p_family='lost_reliquary' and p_stage=2 then array['quiet_passage','deep_passage']
   when p_family='lost_reliquary' and p_stage=3 then array['preserve_seals','break_seals']
  end;
-$;
+$$;
 revoke all on function private.party_event_ballot_choices_v112(text,integer)
  from public,anon,authenticated,service_role;
 

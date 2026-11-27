@@ -67,11 +67,10 @@ begin
   then raise exception 'party_recruit_v124_conflicting_application';end if;
   return a.id;
  end if;
- if s.activity_locked or not exists(select 1 from private.party_registration_members_v110
+ if s.lifecycle_status<>'active' or s.activity_locked or not exists(select 1 from private.party_registration_members_v110
   where party_id=p_party and account_id=s.leader_account_id)
  then raise exception 'party_recruit_v124_locked';end if;
- if exists(select 1 from private.party_registration_members_v110 where account_id=p_actor)
- or exists(select 1 from public.party_members where account_id=p_actor and left_at is null)
+ if not private.party_entry_account_available_v131(p_actor)
  then raise exception 'party_recruit_v124_already_in_party';end if;
  if (select count(*) from private.party_registration_members_v110 where party_id=p_party)>=4
  then raise exception 'party_recruit_v124_full';end if;
@@ -142,7 +141,7 @@ begin
    'committedRevision',a.committed_revision,'replayed',true);
  end if;
  if p_decision='accept' then
-  if s.activity_locked or s.roster_revision<>a.roster_revision then raise exception 'party_recruit_v124_stale_roster';end if;
+  if s.lifecycle_status<>'active' or s.activity_locked or s.roster_revision<>a.roster_revision then raise exception 'party_recruit_v124_stale_roster';end if;
   if not exists(select 1 from public.chat_messages where id=a.chat_message_id and account_id is null
    and is_system=true and channel_type='party' and channel_id=p_party::text)
   then raise exception 'party_recruit_v124_unverified_message';end if;
@@ -155,8 +154,7 @@ begin
   return jsonb_build_object('state','expired','registrationId',null,'committedRevision',null,'replayed',false);
  end if;
  if p_decision='accept' then
-  if exists(select 1 from private.party_registration_members_v110 where account_id=v_applicant)
-  or exists(select 1 from public.party_members where account_id=v_applicant and left_at is null)
+  if not private.party_entry_account_available_v131(v_applicant)
   then raise exception 'party_recruit_v124_already_in_party';end if;
   if (select count(*) from private.party_registration_members_v110 where party_id=p_party)>=4
   then raise exception 'party_recruit_v124_full';end if;

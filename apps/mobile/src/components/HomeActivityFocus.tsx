@@ -1,5 +1,5 @@
-import {useEffect,useMemo,useState} from 'react';
-import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {useEffect,useMemo,useRef,useState} from 'react';
+import {Image,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import type {ActiveActivity,ActivityKind,RewardBundle,GameState} from '../core/types';
 import type {IdleResourceRate} from '../core/idle-activity-insights';
 import type {LevelPaceProjection} from '../core/balance-projection';
@@ -20,6 +20,13 @@ import {GameModalHeader,GameModalSurface} from './GameModalSurface';
 import {GatheringScene} from './GatheringScene';
 import {HuntingPreview} from './HuntingPreview';
 import {isGatheringSceneKind} from '../core/gathering-scene';
+import type {GameCommand} from '../core/game-commands';
+import {FaithPanel} from './FaithPanel';
+import {earlyFeatureUnlocked} from '../core/feature-unlocks';
+import {collectibleJournal} from '../core/collectibles';
+import {COLLECTIBLE_TARGET_LABELS} from '../content/collectibles';
+import {petArtSource} from '../theme/pet-art';
+import {companionTranslator,companionLabel,companionContent} from '../i18n/companions';
 
 type Props={
  title:string;kind:ActivityKind;activity:ActiveActivity;cycleSeconds:number;capHours:number;
@@ -27,6 +34,7 @@ type Props={
  resourceRate?:IdleResourceRate;maxHp?:number;levelPace?:LevelPaceProjection;reduceMotion?:boolean;
  /** Only needed for the live combat scene; gathering panels stay unchanged. */
  gameState?:GameState;
+ onQuickCommand?:(command:GameCommand)=>Promise<void>;
  numberMode?:'exact'|'abbreviated';onClaim:()=>void;onStop:()=>void;
  /** Authoritative gathering action time; keeps the scene's completion cue on the settlement clock. */
  gatheringCycleSeconds?:number;
@@ -38,6 +46,23 @@ export function HomeActivityFocus(props:Props){
  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
  const [detailOpen,setDetailOpen]=useState(false),[stopOpen,setStopOpen]=useState(false),[stopFor,setStopFor]=useState<string|null>(null);
  const {kind,preview,activity,rates,resourceRate}=props;
+ const [quickOpen,setQuickOpen]=useState<'faith'|'pet'|null>(null),[petBusy,setPetBusy]=useState(false),[petError,setPetError]=useState('');
+ const petPending=useRef(false);
+ const state=props.gameState,command=props.onQuickCommand;
+ const canQuick=!!state?.character&&!!command;
+ const petsUnlocked=!!state&&earlyFeatureUnlocked(state,'pets');
+ const ownedPets=useMemo(()=>state&&petsUnlocked?collectibleJournal(state).filter(row=>row.kind==='pet'&&row.owned):[],[state,petsUnlocked]);
+ const activePet=ownedPets.find(row=>row.selected),activePetArt=activePet?petArtSource(activePet.id):undefined;
+ const pt=companionTranslator(language),pl=(value:string)=>companionLabel(language,value);
+ const closeQuick=()=>{if(!petPending.current){setQuickOpen(null);setPetError('')}};
+ const choosePet=async(id?:string)=>{
+  if(!command||!petsUnlocked||petPending.current||(id!==undefined&&!ownedPets.some(row=>row.id===id)))return;
+  if(id===activePet?.id){closeQuick();return;}
+  petPending.current=true;setPetBusy(true);setPetError('');
+  try{await command({type:'profile',args:{selectedCosmeticPetId:id??null}});setQuickOpen(null);}
+  catch(e){setPetError(e instanceof Error?e.message:gl('Action failed.'));}
+  finally{petPending.current=false;setPetBusy(false);}
+ };
  const activityKey=activity.kind+':'+activity.targetId+':'+activity.startedAtMs;
  useEffect(()=>{if(stopFor&&stopFor!==activityKey){setStopOpen(false);setStopFor(null)}},[stopFor,activityKey]);
  const requestStop=()=>{setStopFor(activityKey);setStopOpen(true)};
@@ -57,6 +82,10 @@ export function HomeActivityFocus(props:Props){
  return <>
   <View style={[s.card,stopped&&s.stopped]}>
    <View style={s.top}><Text style={s.eyebrow}>{gl('CURRENT ACTIVITY')}</Text>
+    {canQuick?<View style={s.quickActions}>
+     <Pressable accessibilityRole="button" accessibilityLabel={gl('ACTIVE BLESSINGS')} onPress={()=>setQuickOpen('faith')} style={({pressed})=>[s.quickButton,pressed&&s.pressed]}><ActivityArtwork id="faith" size={24}/></Pressable>
+     {petsUnlocked?<Pressable accessibilityRole="button" accessibilityLabel={pt('Choose Active Pet')+(activePet?': '+companionContent(language,activePet.name):'')} onPress={()=>{setPetError('');setQuickOpen('pet')}} style={({pressed})=>[s.quickButton,pressed&&s.pressed]}>{activePetArt?<Image accessible={false} source={activePetArt} resizeMode="contain" style={s.quickArt}/>:<Text style={s.quickGlyph}>🐾</Text>}</Pressable>:null}
+    </View>:null}
     <View style={[s.status,{borderColor:stopped?C.bad:capped?C.warning:C.good,backgroundColor:stopped?C.badSurface:capped?C.warningSurface:C.goodSurface}]}>
      <Text style={[s.statusLabel,{color:stopped?C.bad:capped?C.warning:C.good}]}>{stopped?gl('STOPPED'):capped?gl('AFK FULL'):gl('ACTIVE')}</Text>
     </View>
@@ -79,6 +108,21 @@ export function HomeActivityFocus(props:Props){
    <View style={s.bottom}><View style={s.flex}><Text style={s.reward}>{formatted(count)} {gl(unitNames[kind])} {gl('ready')}</Text><Text style={s.sub}>+{formatted(preview.xp)} XP{resourceRate?' · '+resourceRate.name:''}</Text></View><Pressable accessibilityRole="button" accessibilityLabel={gl('More activity details')} onPress={()=>setDetailOpen(true)} style={s.detailLink}><Text style={s.detailText}>{gl('Details')} ›</Text></Pressable></View>
    <View style={s.actions}><View style={s.flex}><GameButton title={canCollect?gl('Collect rewards'):gl('Rewards building…')} disabled={!canCollect} onPress={()=>{setDetailOpen(false);props.onClaim()}}/></View><View style={s.secondary}><GameButton title={gl('Stop')} tone="secondary" onPress={()=>requestStop()}/></View></View>
   </View>
+  {quickOpen&&state&&command?<GameModalSurface visible onClose={closeQuick} reduceMotion={props.reduceMotion} surfaceStyle={s.sheet}>
+   <GameModalHeader eyebrow={gl('CURRENT ACTIVITY')} title={quickOpen==='faith'?gl('ACTIVE BLESSINGS'):pt('Choose Active Pet')} onClose={closeQuick}/>
+   {quickOpen==='faith'?<ScrollView style={s.scroll} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}><FaithPanel state={state} onCommand={command} blessingsOnly/></ScrollView>:<>
+    <Text style={s.sub}>{pt('The pet remains owned account-wide; this only changes the stronger active bonus.')}</Text>
+    <ScrollView style={s.scroll} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+     {ownedPets.length?ownedPets.map(row=>{const art=petArtSource(row.id);return <Pressable key={row.id} accessibilityRole="radio" accessibilityState={{selected:row.selected,disabled:petBusy}} disabled={petBusy} onPress={()=>void choosePet(row.id)} style={({pressed})=>[s.petOption,row.selected&&s.petSelected,pressed&&s.pressed]}>
+      <View style={s.petArt}>{art?<Image accessible={false} source={art} resizeMode="contain" style={s.petImage}/>:<Text style={s.quickGlyph}>🐾</Text>}</View>
+      <View style={s.copy}><Text style={s.name}>{companionContent(language,row.name)}</Text><Text style={s.sub}>{pt('{value0} · +{value1} active',{value0:pl(COLLECTIBLE_TARGET_LABELS[row.target]),value1:(row.activeBps/100).toFixed(2)+'%'})}{row.rarity?' · '+pl(row.rarity):''}</Text></View>
+      {row.selected?<Text style={s.petCheck}>✓</Text>:null}
+     </Pressable>}):<Text style={s.sub}>{pt('Collect your first pet to begin building passive bonuses.')}</Text>}
+     {petError?<Text accessibilityRole="alert" style={[s.warning,{color:C.bad}]}>{petError}</Text>:null}
+    </ScrollView>
+    {activePet?<GameButton title={pt('Clear Active Pet')} tone="secondary" disabled={petBusy} onPress={()=>void choosePet()}/>:null}
+   </>}
+  </GameModalSurface>:null}
   {detailOpen?<GameModalSurface visible onClose={()=>setDetailOpen(false)} reduceMotion={props.reduceMotion} surfaceStyle={s.sheet}>
    <GameModalHeader eyebrow={gl('CURRENT ACTIVITY')} title={gl(props.title)} onClose={()=>setDetailOpen(false)}/>
    <ScrollView style={s.scroll} contentContainerStyle={s.content} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
@@ -98,9 +142,11 @@ export function HomeActivityFocus(props:Props){
 }
 function styles(C:ThemeColors){return StyleSheet.create({
  card:{padding:spacing.md,gap:spacing.sm,borderWidth:1,borderRadius:radii.lg,borderColor:C.good,backgroundColor:C.panelRaised},
- stopped:{borderColor:C.bad},top:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},
- eyebrow:{fontSize:10,lineHeight:14,fontWeight:'900',letterSpacing:.8,color:C.accent},
- status:{minHeight:24,paddingHorizontal:8,borderWidth:1,borderRadius:99,justifyContent:'center'},statusLabel:{fontSize:9,lineHeight:12,fontWeight:'900'},
+ stopped:{borderColor:C.bad},top:{flexDirection:'row',alignItems:'center',gap:4},
+ eyebrow:{flex:1,minWidth:0,fontSize:10,lineHeight:14,fontWeight:'900',letterSpacing:.6,color:C.accent},
+ quickActions:{flexDirection:'row',alignItems:'center',gap:3,flexShrink:0},quickButton:{width:44,minHeight:44,alignItems:'center',justifyContent:'center',borderRadius:8,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2},quickArt:{width:29,height:29},quickGlyph:{fontSize:19,color:C.accent},
+ petOption:{minHeight:60,flexDirection:'row',alignItems:'center',gap:8,padding:7,borderWidth:1,borderColor:C.line,borderRadius:8,backgroundColor:C.panel2},petSelected:{borderColor:C.good},petArt:{width:42,height:42,alignItems:'center',justifyContent:'center'},petImage:{width:42,height:42},petCheck:{fontSize:19,color:C.good,fontWeight:'900'},
+ status:{minHeight:24,maxWidth:'35%',flexShrink:1,paddingHorizontal:6,borderWidth:1,borderRadius:99,justifyContent:'center'},statusLabel:{fontSize:9,lineHeight:12,fontWeight:'900'},
  identity:{flexDirection:'row',gap:10,alignItems:'center'},art:{width:50,height:50,alignItems:'center',justifyContent:'center',backgroundColor:C.panel2,borderWidth:1,borderColor:C.line,borderRadius:10},
  copy:{flex:1,minWidth:0,gap:3},name:{fontSize:16,lineHeight:21,fontWeight:'900',color:C.text},sub:{fontSize:10,lineHeight:15,color:C.muted},info:{width:44,height:44,alignItems:'center',justifyContent:'center',borderRadius:9,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2},infoText:{fontSize:23,color:C.accent},
  progressHead:{flexDirection:'row',justifyContent:'space-between',gap:8},meta:{fontSize:10,fontWeight:'900',color:C.muted},time:{fontSize:11,fontWeight:'900',color:C.text,fontVariant:['tabular-nums']},

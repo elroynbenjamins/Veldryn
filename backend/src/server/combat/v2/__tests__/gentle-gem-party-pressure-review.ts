@@ -18,6 +18,7 @@ import type {reviewFrozenForgeSocketsV2} from '../frozen-forge-socket-review';
 import {gentleStatGemActorReviewV2} from './gentle-stat-gem-combat-review';
 import {reviewPotentAuthoredActorV2} from './potent-authored-output-combat-review';
 import {issuePrivateDamageGemAuthorityV2,authorizePrivateDamageGemReviewV2} from '../effect-gem-private-damage-authority';
+import {secondaryOffenseActorReviewV2,type SecondaryOffenseArm} from './secondary-offense-review';
 type Projection=ReturnType<typeof reviewFrozenForgeSocketsV2>;
 type Member={classId:ClassIdV2;accountId:string;characterId:string;revision:number;
  compiled:ReturnType<typeof compileRealFrozenForgeActorV2>;baseline:Projection};
@@ -269,7 +270,7 @@ export function createGentleGemPartyPressureReviewV2(members:readonly Member[],p
  const empty=members.map(m=>m.baseline);
  const before=run(empty,baseline);
  assert.deepEqual(run(empty,baseline),before);
- return (index:number,p:Projection,replay=false)=>{
+ const compareGem=(index:number,p:Projection,replay=false)=>{
   const m=members[index];
   assert.deepEqual(p.forgeEvidence,m.baseline.forgeEvidence);
   const effectOnly=p.deferredEffectSources.length>0;
@@ -369,4 +370,20 @@ export function createGentleGemPartyPressureReviewV2(members:readonly Member[],p
    maxStacks:Math.max(0,...stackTriggers.map(e=>Number(e.detail!.split(':')[3]))),
    maxFraction:Math.max(0,...triggers.map(e=>e.amount??0)),releaseEnabled:false as const};
  };
+ const compareSecondaryOffense=(arm:SecondaryOffenseArm)=>{
+  const candidates=baseline.map((actor,i)=>secondaryOffenseActorReviewV2(members[i].classId,actor,arm));
+  const players=candidates.map(x=>x.actor);
+  for(const [i,p] of players.entries()){
+   assert.deepEqual(p.stats,baseline[i].stats);
+   assert.deepEqual(p.combatV2,baseline[i].combatV2);
+   if(p.role==='damage')assert.deepEqual(p,baseline[i]);
+  }
+  const after=run(empty,players);
+  assert.equal(JSON.stringify(members),snapshots);
+  const measureParty=(r:CombatResult)=>r.players.map((m,i)=>({classId:members[i].classId,role:m.definition.role,...measure(r,i)}));
+  return {arm,before:measureParty(before),after:measureParty(after),
+   beforeReason:before.reason,afterReason:after.reason,scaling:candidates.map(x=>({ratio:x.ratio,additional:x.additional,skills:x.abilityIds.length})),
+   releaseEnabled:false as const};
+ };
+ return Object.assign(compareGem,{compareSecondaryOffense});
 }

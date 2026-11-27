@@ -44223,7 +44223,7 @@ var COMPANION_SANCTUARY_CONFIG = {
   expeditionPens: { maxLevel: 3, goldCosts: [17e3, 32e3, 56e3], essenceCosts: [350, 1150, 1900], materialId: "RUNEBOUND_CORE", materialCosts: [6, 12, 20], description: "Unlocks 1, 2, then 3 simultaneous Sanctuary Companion Expeditions." },
   masteryChamber: { maxLevel: 1, goldCosts: [36e3], essenceCosts: [1400], materialId: "OATHGLASS_FRAGMENT", materialCosts: [18], description: "Required for Prestige Mastery and highest companion progression." }
 };
-var COMPANION_SANCTUARY_TRAINING_XP_PER_DAY = [0, 40, 90, 150];
+var COMPANION_SANCTUARY_TRAINING_XP_PER_DAY = [0, 100, 150, 200];
 var COMPANION_SANCTUARY_WEEKLY_ESSENCE = [0, 20, 48, 80];
 var ability = (id, name, description, cooldownSeconds, target2, kind, baseValue, perLevel, extra = {}) => ({
   id,
@@ -61496,7 +61496,8 @@ function withReleaseGate(handler, loadPolicies, now = Date.now) {
   };
 }
 function releasePolicyLoader(url2, publicKey) {
-  return async () => {
+  let pending;
+  const load = async () => {
     const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 5e3);
     try {
       const response = await fetch(`${url2}/rest/v1/app_release_policy?select=*`, { headers: { apikey: publicKey }, signal: controller.signal });
@@ -61507,6 +61508,12 @@ function releasePolicyLoader(url2, publicKey) {
     } finally {
       clearTimeout(timer);
     }
+  };
+  return () => {
+    if (!pending) pending = load().finally(() => {
+      pending = void 0;
+    });
+    return pending;
   };
 }
 
@@ -62388,6 +62395,9 @@ function buildGuildShopCards(state) {
 }
 
 // online/guild-shop-read.ts
+function batchSection(section) {
+  return section?.ok === true ? { status: "fulfilled", value: section.value } : { status: "rejected", reason: "projection_unavailable" };
+}
 var responseHeaders = { "Content-Type": "application/json", "Cache-Control": "no-store" };
 var json4 = (value, status = 200) => new Response(JSON.stringify(value), { status, headers: responseHeaders });
 function guildShopReadHandler(services2) {
@@ -62400,7 +62410,7 @@ function guildShopReadHandler(services2) {
     try {
       const guildLevel = await services2.guildLevelForAccount(accountId);
       if (guildLevel === null) return json4({ error: "guild_membership_required" }, 403);
-      const [base, constructionResult, eventResult, enabledResult, weeklyResult, bankResult, perksResult, costsResult] = await Promise.allSettled([
+      const legacyRead = () => Promise.allSettled([
         services2.rpc("guild_shop_snapshot_server_v1", { p_account_id: accountId }),
         services2.rpc("guild_construction_snapshot_server_v1", { p_account_id: accountId }),
         services2.rpc("guild_shop_event_community_rewards_server_v1", { p_account_id: accountId }),
@@ -62410,6 +62420,21 @@ function guildShopReadHandler(services2) {
         services2.rpc("guild_construction_benefits_server_v1", { p_account_id: accountId }),
         services2.rpc("guild_construction_costs_server_v1", { p_account_id: accountId })
       ]);
+      const batchedRead = async () => {
+        const batch = await services2.rpc("guild_shop_batch_snapshot_server_v1", { p_account_id: accountId });
+        if (!batch || typeof batch !== "object" || !batch.base) throw new Error("invalid_batch_snapshot");
+        return [
+          { status: "fulfilled", value: batch.base },
+          batchSection(batch.construction),
+          batchSection(batch.eventBonuses),
+          batchSection(batch.constructionUnlocks),
+          batchSection(batch.weeklyRewards),
+          batchSection(batch.bank),
+          batchSection(batch.constructionBenefits),
+          batchSection(batch.constructionCosts)
+        ];
+      };
+      const [base, constructionResult, eventResult, enabledResult, weeklyResult, bankResult, perksResult, costsResult] = await (services2.batchSnapshotEnabled === true ? batchedRead() : legacyRead());
       if (base.status !== "fulfilled") throw new Error("guild_shop_wallet_snapshot_unavailable");
       const snapshot2 = base.value;
       if (!snapshot2 || !Number.isSafeInteger(snapshot2.balance) || !Array.isArray(snapshot2.ownedItemIds))
@@ -62811,6 +62836,7 @@ var regionalCombat = regionalCombatHandlerV1(services);
 var guildShopServices = {
   authenticate: services.authenticate,
   rpc: services.rpc,
+  batchSnapshotEnabled: Deno.env.get("GUILD_SHOP_BATCH_SNAPSHOT_V1") === "true",
   guildLevelForAccount: (accountId) => services.rpc("guild_shop_guild_level_server_v1", { p_account_id: accountId })
 };
 var guildShop = guildShopReadHandler(guildShopServices);

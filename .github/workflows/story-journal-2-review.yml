@@ -23,3 +23,4 @@ jobs:
       - run: node tools/story-journal-2-learning-review.test.mjs
       - run: node tools/story-journal-2-settlement-review.test.mjs
       - run: node tools/story-journal-2-claim-review.test.mjs
+      - run: node tools/story-journal-2-records-review.test.mjs

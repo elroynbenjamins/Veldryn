@@ -5,6 +5,7 @@ create table private.party_registration_state_v110 (
  roster_revision bigint not null check(roster_revision between 1 and 9007199254740990),
  leader_account_id uuid not null references auth.users(id) on delete cascade,
  minimum_level integer not null check(minimum_level between 0 and 2000),
+ lifecycle_status text not null default 'active' check(lifecycle_status in ('active','disbanded')),
  activity_locked boolean not null default true,
  -- Until every existing membership mutation/reader is reconciled, only
  -- disposable fixtures may mark this ready. NOT a production release flag.
@@ -57,3 +58,22 @@ returns jsonb language sql stable security invoker set search_path='' set timezo
  from private.party_registration_state_v110 s where s.party_id=p_party
 $$;
 revoke all on function private.party_registration_snapshot_v110(uuid) from public,anon,authenticated,service_role;
+
+create table private.party_registration_cutover_fence_v126(
+ party_id uuid primary key references private.party_registration_state_v110(party_id) on delete cascade,
+ legacy_snapshot jsonb not null,
+ seeded_at timestamptz not null default clock_timestamp()
+);
+alter table private.party_registration_cutover_fence_v126 enable row level security;
+revoke all on private.party_registration_cutover_fence_v126 from public,anon,authenticated,service_role;
+
+-- V131: seeded/fenced private roster is authoritative. Ignore frozen legacy
+-- rows ONLY for fenced Parties; unfenced active memberships still block entry.
+create function private.party_entry_account_available_v131(p_actor uuid)
+returns boolean language sql stable security invoker set search_path='' as $$
+ select not exists(select 1 from private.party_registration_members_v110 where account_id=p_actor)
+ and not exists(select 1 from public.party_members m where m.account_id=p_actor and m.left_at is null
+ and not exists(select 1 from private.party_registration_cutover_fence_v126 f where f.party_id=m.party_id))
+$$;
+revoke all on function private.party_entry_account_available_v131(uuid) from public,anon,authenticated,service_role;
+

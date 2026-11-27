@@ -58,7 +58,8 @@ for(const row of premium.slice(2)){
  assert.deepEqual(quickCosmeticSets(state),[]);
 }
 const ui=fs.readFileSync(path.join(__dirname,'../src/components/profile/ProfileLookPanel.tsx'),'utf8');
-assert(ui.includes("chip==='frame'&&quickSets.length>0"));
+assert(ui.includes("chip!=='title'&&quickSets.length>0"),'owned set picker is reachable across appearance tabs');
+assert(ui.includes('quickRowSingle')&&ui.includes('quickChoicesSingle'),'single-choice sets use compact rows');
 assert(ui.includes('quickSetSelection(stateRef.current,before,setId,choiceId)'));
 assert(ui.includes('accountRef.current!==next.accountId||!base.character||base.character.id!==next.characterId'));
 assert(ui.includes('...next.patch'));

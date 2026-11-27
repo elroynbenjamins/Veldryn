@@ -1,0 +1,422 @@
+{
+  "version": 1,
+  "released": false,
+  "paths": [
+    {
+      "id": "path2:mining",
+      "skillId": "mining",
+      "title": "Ore to ingots",
+      "steps": [
+        "Mine ore.",
+        "Review a smelting recipe."
+      ],
+      "milestones": [
+        {
+          "skillLevel": 2,
+          "label": "First steps"
+        },
+        {
+          "skillLevel": 5,
+          "label": "Growing experience"
+        }
+      ],
+      "regions": [
+        {
+          "regionId": "ASTERFALL",
+          "referenceTargetId": "COPPER_ORE",
+          "accessPolicy": "canonicalSkillAndActivityAccess"
+        },
+        {
+          "regionId": "SUNSCAR",
+          "referenceTargetId": "SUNSTONE_ORE",
+          "accessPolicy": "canonicalSkillAndActivityAccess"
+        },
+        {
+          "regionId": "FROSTMARCH",
+          "referenceTargetId": "FROSTIRON",
+          "accessPolicy": "canonicalSkillAndActivityAccess"
+        }
+      ],
+      "scope": "character",
+      "rewardPolicy": "none",
+      "released": false
+    },
+    {
+      "id": "path2:woodcutting",
+      "skillId": "woodcutting",
+      "title": "Timber for the workshop",
+      "steps": [
+        "Gather logs.",
+        "Review fuel and crafting uses."
+      ],
+      "milestones": [
+        {
+          "skillLevel": 2,
+          "label": "First steps"
+        },
+        {
+          "skillLevel": 5,
+          "label": "Growing experience"
+        }
+      ],
+      "regions": [
+        {
+          "regionId": "ASTERFALL",
+          "referenceTargetId": "GREENWOOD_LOG",
+          "accessPolicy": "canonicalSkillAndActivityAccess"
+        },
+        {
+          "regionId": "SUNSCAR",
+          "referenceTargetId": "DUNEWOOD",
+          "accessPolicy": "canonicalSkillAndActivityAccess"
+        },
+        {
+          "regionId": "FROSTMARCH",
+          "referenceTargetId": "WHITEPINE_LOG",
+          "accessPolicy": "canonicalSkillAndActivityAccess"
+        }
+      ],
+      "scope": "character",
+      "rewardPolicy": "none",
+      "released": false
+    },
+    {
+      "id": "path2:fishing",
+      "skillId": "fishing",
+      "title": "From river to table",
+      "steps": [
+        "Catch fish.",
+        "Review a cooking recipe."
+      ],
+      "milestones": [
+        {
+          "skillLevel": 2,
+          "label": "First steps"
+        },
+        {
+          "skillLevel": 5,
+          "label": "Growing experience"
+        }
+      ],
+      "regions": [
+        {
+          "regionId": "ASTERFALL",
+          "referenceTargetId": "MEADOW_PERCH",
+          "accessPolicy": "canonicalSkillAndActivityAccess"
+        },
+        {
+          "regionId": "SUNSCAR",
+          "referenceTargetId": "OASIS_CARP",
+          "accessPolicy": "canonicalSkillAndActivityAccess"
+        },
+        {
+          "regionId": "FROSTMARCH",
+          "referenceTargetId": "ICEFIN",
+          "accessPolicy": "canonicalSkillAndActivityAccess"
+        }
+      ],
+      "scope": "character",
+      "rewardPolicy": "none",
+      "released": false
+    },
+    {
+      "id": "path2:smithing",
+      "skillId": "smithing",
+      "title": "Ore to equipment",
+      "steps": [
+        "Inspect a smelting recipe.",
+        "Complete an eligible batch."
+      ],
+      "milestones": [
+        {
+          "skillLevel": 2,
+          "label": "First steps"
+        },
+        {
+          "skillLevel": 5,
+          "label": "Growing experience"
+        }
+      ],
+      "regions": [
+        {
+          "regionId": "ASTERFALL",
+          "referenceTargetId": "SMELT_COPPER_INGOT",
+          "accessPolicy": "canonicalSkillAndActivityAccess"
+        },
+        {
+          "regionId": "SUNSCAR",
+          "referenceTargetId": "SMELT_SUNSTONE_INGOT",
+          "accessPolicy": "canonicalSkillAndActivityAccess"
+        },
+        {
+          "regionId": "FROSTMARCH",
+          "referenceTargetId": "SMELT_FROSTIRON_INGOT",
+          "accessPolicy": "canonicalSkillAndActivityAccess"
+        }
+      ],
+      "scope": "character",
+      "rewardPolicy": "none",
+      "released": false
+    },
+    {
+      "id": "path2:cooking",
+      "skillId": "cooking",
+      "title": "Meals for the road",
+      "steps": [
+        "Inspect a food recipe.",
+        "Complete an eligible batch."
+      ],
+      "milestones": [
+        {
+          "skillLevel": 2,
+          "label": "First steps"
+        },
+        {
+          "skillLevel": 5,
+          "label": "Growing experience"
+        }
+      ],
+      "regions": [
+        {
+          "regionId": "ASTERFALL",
+          "referenceTargetId": "COOK_MEADOW_PERCH",
+          "accessPolicy": "canonicalSkillAndActivityAccess"
+        },
+        {
+          "regionId": "SUNSCAR",
+          "referenceTargetId": "COOK_OASIS_CARP",
+          "accessPolicy": "canonicalSkillAndActivityAccess"
+        },
+        {
+          "regionId": "FROSTMARCH",
+          "referenceTargetId": "COOK_ICEFISH",
+          "accessPolicy": "canonicalSkillAndActivityAccess"
+        }
+      ],
+      "scope": "character",
+      "rewardPolicy": "none",
+      "released": false
+    },
+    {
+      "id": "path2:tailoring",
+      "skillId": "tailoring",
+      "title": "Protection from materials",
+      "steps": [
+        "Inspect a suitable armor recipe.",
+        "Complete an eligible batch."
+      ],
+      "milestones": [
+        {
+          "skillLevel": 2,
+          "label": "First steps"
+        },
+        {
+          "skillLevel": 5,
+          "label": "Growing experience"
+        }
+      ],
+      "regions": [
+        {
+          "regionId": "ASTERFALL",
+          "accessPolicy": "canonicalSkillAndActivityAccess"
+        },
+        {
+          "regionId": "SUNSCAR",
+          "accessPolicy": "canonicalSkillAndActivityAccess"
+        },
+        {
+          "regionId": "FROSTMARCH",
+          "accessPolicy": "canonicalSkillAndActivityAccess"
+        }
+      ],
+      "scope": "character",
+      "rewardPolicy": "none",
+      "released": false
+    },
+    {
+      "id": "path2:herbalism",
+      "skillId": "herbalism",
+      "title": "Herbs for brews",
+      "steps": [
+        "Gather an available herb.",
+        "Review Alchemy ingredients."
+      ],
+      "milestones": [
+        {
+          "skillLevel": 2,
+          "label": "First steps"
+        },
+        {
+          "skillLevel": 5,
+          "label": "Growing experience"
+        }
+      ],
+      "regions": [
+        {
+          "regionId": "ASTERFALL",
+          "accessPolicy": "canonicalSkillAndActivityAccess"
+        },
+        {
+          "regionId": "SUNSCAR",
+          "accessPolicy": "canonicalSkillAndActivityAccess"
+        },
+        {
+          "regionId": "FROSTMARCH",
+          "accessPolicy": "canonicalSkillAndActivityAccess"
+        }
+      ],
+      "scope": "character",
+      "rewardPolicy": "none",
+      "released": false
+    },
+    {
+      "id": "path2:alchemy",
+      "skillId": "alchemy",
+      "title": "Ingredients into brews",
+      "steps": [
+        "Inspect a useful recipe.",
+        "Complete an eligible brew."
+      ],
+      "milestones": [
+        {
+          "skillLevel": 2,
+          "label": "First steps"
+        },
+        {
+          "skillLevel": 5,
+          "label": "Growing experience"
+        }
+      ],
+      "regions": [
+        {
+          "regionId": "ASTERFALL",
+          "accessPolicy": "canonicalSkillAndActivityAccess"
+        },
+        {
+          "regionId": "SUNSCAR",
+          "accessPolicy": "canonicalSkillAndActivityAccess"
+        },
+        {
+          "regionId": "FROSTMARCH",
+          "accessPolicy": "canonicalSkillAndActivityAccess"
+        }
+      ],
+      "scope": "character",
+      "rewardPolicy": "none",
+      "released": false
+    },
+    {
+      "id": "path2:enchanting",
+      "skillId": "enchanting",
+      "title": "Improve your equipment",
+      "steps": [
+        "Inspect an eligible improvement.",
+        "Review its costs."
+      ],
+      "milestones": [
+        {
+          "skillLevel": 2,
+          "label": "First steps"
+        },
+        {
+          "skillLevel": 5,
+          "label": "Growing experience"
+        }
+      ],
+      "regions": [
+        {
+          "regionId": "ASTERFALL",
+          "accessPolicy": "canonicalSkillAndActivityAccess"
+        },
+        {
+          "regionId": "SUNSCAR",
+          "accessPolicy": "canonicalSkillAndActivityAccess"
+        },
+        {
+          "regionId": "FROSTMARCH",
+          "accessPolicy": "canonicalSkillAndActivityAccess"
+        }
+      ],
+      "scope": "character",
+      "rewardPolicy": "none",
+      "released": false
+    },
+    {
+      "id": "path2:faith",
+      "skillId": "faith",
+      "title": "Choose a blessing",
+      "steps": [
+        "Inspect available blessings.",
+        "Review an eligible practice."
+      ],
+      "milestones": [
+        {
+          "skillLevel": 2,
+          "label": "First steps"
+        },
+        {
+          "skillLevel": 5,
+          "label": "Growing experience"
+        }
+      ],
+      "regions": [
+        {
+          "regionId": "ASTERFALL",
+          "accessPolicy": "canonicalSkillAndActivityAccess"
+        },
+        {
+          "regionId": "SUNSCAR",
+          "accessPolicy": "canonicalSkillAndActivityAccess"
+        },
+        {
+          "regionId": "FROSTMARCH",
+          "accessPolicy": "canonicalSkillAndActivityAccess"
+        }
+      ],
+      "scope": "character",
+      "rewardPolicy": "none",
+      "released": false
+    },
+    {
+      "id": "path2:exploration",
+      "skillId": "exploration",
+      "title": "Discover the realm",
+      "steps": [
+        "Dispatch a guide or companion.",
+        "Collect the report."
+      ],
+      "milestones": [
+        {
+          "skillLevel": 2,
+          "label": "First steps"
+        },
+        {
+          "skillLevel": 5,
+          "label": "Growing experience"
+        }
+      ],
+      "regions": [
+        {
+          "regionId": "ASTERFALL",
+          "accessPolicy": "canonicalSkillAndActivityAccess"
+        },
+        {
+          "regionId": "SUNSCAR",
+          "accessPolicy": "canonicalSkillAndActivityAccess"
+        },
+        {
+          "regionId": "FROSTMARCH",
+          "accessPolicy": "canonicalSkillAndActivityAccess"
+        }
+      ],
+      "scope": "account",
+      "rewardPolicy": "none",
+      "released": false
+    }
+  ],
+  "notes": [
+    "Read-only learning paths, not quests that grant rewards or access. No main-story prerequisites or hard combat level requirement.",
+    "Milestones 2 and 5 are retrospective learning indicators; no repeated milestone rewards. Later progression follows actual available canonical activities, not invented tier-specific recipe requirements.",
+    "Reference recipes are legacy identity candidates; final V2 recipe adapter must resolve aliases and availability. No exact inputs, prices, XP or output counts duplicated."
+  ]
+}

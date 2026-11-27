@@ -201,6 +201,21 @@ for(const family of families){
 // Every caller must be refused unless independently authenticated, versioned
 // and bound to the frozen account/character/item snapshot.
 const original=fixture('broken_caravan','standard',4,1);
+for(const extension of [
+ {synchronization:{mode:'party_event'}},
+ {aiPolicy:'tactical'},
+ {initialPlayerState:{}},
+ {enemyDamageProfile:'qmode-v1'},
+ {futureEngineAuthority:{enabled:true}},
+]){
+ let calls=0;
+ denied(()=>simulateFrozenPartyEventEquipmentV92({
+  ...original,combat:{...original.combat,...extension} as CombatInput,
+  ports:{verifyPersisted:()=>{calls++;return true;}},
+ },true),'party_equipment_snapshot_mismatch');
+ assert.equal(calls,0,'unsupported engine fields must fail before verifier');
+}
+
 denied(()=>simulateFrozenPartyEventEquipmentV92(original),
  'party_event_v92_unreleased');
 denied(()=>simulateFrozenPartyEventEquipmentV92({

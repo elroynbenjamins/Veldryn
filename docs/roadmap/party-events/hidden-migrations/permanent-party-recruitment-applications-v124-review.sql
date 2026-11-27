@@ -27,6 +27,21 @@ create unique index party_recruitment_one_pending_v124
 alter table private.party_recruitment_applications_v124 enable row level security;
 revoke all on private.party_recruitment_applications_v124 from public,anon,authenticated,service_role;
 
+-- Mirror the existing bidirectional player-block restriction over the
+-- authoritative private active roster. Recheck at approval, not just open.
+create function private.party_registration_block_guard_v126(p_party uuid,p_applicant uuid)
+returns void language plpgsql security invoker set search_path='' as $$
+begin
+ if exists(select 1 from private.party_registration_members_v110 m
+ join public.player_blocks b on
+ (b.blocker_id=p_applicant and b.blocked_id=m.account_id)
+ or (b.blocked_id=p_applicant and b.blocker_id=m.account_id)
+ where m.party_id=p_party)
+ then raise exception 'party_recruit_v124_player_unavailable';end if;
+end
+$$;
+revoke all on function private.party_registration_block_guard_v126(uuid,uuid) from public,anon,authenticated,service_role;
+
 -- The host supplies the authenticated applicant and a reserved canonical
 -- system message, created in the SAME transaction. No applicant impersonation.
 create function private.open_party_recruitment_application_v124(
@@ -60,6 +75,7 @@ begin
  then raise exception 'party_recruit_v124_already_in_party';end if;
  if (select count(*) from private.party_registration_members_v110 where party_id=p_party)>=4
  then raise exception 'party_recruit_v124_full';end if;
+ perform private.party_registration_block_guard_v126(p_party,p_actor);
  perform 1 from public.characters where account_id=p_actor order by id for update;
  select * into c from public.characters where id=p_character and account_id=p_actor;
  if not found then raise exception 'party_recruit_v124_not_owned';end if;
@@ -149,6 +165,7 @@ begin
    or c.level is null or c.level<greatest(1,s.minimum_level)
    or not exists(select 1 from public.characters where account_id=v_applicant and level>=10)
   then raise exception 'party_recruit_v124_ineligible';end if;
+  perform private.party_registration_block_guard_v126(p_party,v_applicant);
   insert into private.party_registration_members_v110(party_id,account_id,character_id,role,joined_at)
   values(p_party,v_applicant,a.character_id,a.role,v_now) returning registration_id into v_registration;
   v_revision:=s.roster_revision+1;

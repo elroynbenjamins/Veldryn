@@ -4,8 +4,11 @@ import {useEffect,useMemo,useState} from 'react';
 import {Animated,Modal,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {useGameTheme} from '../theme/ThemeContext';
 import {UiIcon} from './UiIcon';
+import {GatheringBonusReviewPanel} from './GatheringBonusReviewPanel';
 import {buildWorldBossChestOpeningReviewV97,type ChestOpenEntryReviewV97} from '../core/world-boss-chest-opening-review-v97';
 const DEMO_ACCOUNT='qa-chest-opening';
+// Fixed illustrative Epic/Q87 receipt, not a random mint or owned copy.
+const DEMO_INNATE_BPS=Math.round(1000*1.5*(.75+87*.005));
 const DEMO:readonly ChestOpenEntryReviewV97[]=[450,450,450,450,450,450].map((gold,i):ChestOpenEntryReviewV97=>{
  const sourceKey='qa-world-chest-'+i;
  const resources=[{itemId:'gold',name:'Gold',quantity:gold},
@@ -59,7 +62,8 @@ export function WorldBossChestOpeningPreview({reduceMotion=false}:{reduceMotion?
        <UiIcon name="rewards" size={32}/><View style={s.flex}>
         <Text style={[s.name,{color:rarityColor[g.rarity]}]}>{g.name}</Text>
         <Text style={{color:C.text,fontSize:12}}>{g.rarity[0].toUpperCase()+g.rarity.slice(1)} · Quality {g.quality}</Text>
-        <Text style={{color:C.muted,fontSize:11}}>{g.skill[0].toUpperCase()+g.skill.slice(1)} · +17.78% innate speed (example)</Text>
+        <Text style={{color:C.muted,fontSize:11}}>{g.skill[0].toUpperCase()+g.skill.slice(1)} · +{(DEMO_INNATE_BPS/100).toFixed(2)}% innate speed (example)</Text>
+        <GatheringBonusReviewPanel title="Piece bonus preview" input={{skill:g.skill,matchingSetPieces:1,gearRatingBps:DEMO_INNATE_BPS}}/>
        </View>
       </View>):<Text style={{color:C.muted,fontSize:12}}>No equipment in this example. Resources are still received.</Text>}
       <Text style={[s.kicker,{color:C.muted}]}>TOTAL RESOURCES</Text>

@@ -231,15 +231,15 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
 
  return <View style={s.root}>
   {chip==='badge'?<PlayerBadgeSettings/>:category?<>
-   {chip==='frame'&&quickSets.length>0?<View style={s.quickSets}>
+   {chip!=='title'&&quickSets.length>0?<View style={s.quickSets}>
     <Pressable accessibilityRole="button" accessibilityState={{expanded:quickOpen}} onPress={()=>setQuickOpen(v=>!v)} style={s.quickHeader}>
      <Text style={s.label}>{profileT(language,"Quick set equip")} · {quickSets.length}</Text><Text style={s.useMark}>{quickOpen?'⌃':'⌄'}</Text>
     </Pressable>
     {quickOpen?<><Text style={s.rowMeta}>{fullSetPort?'Ultra Luxe sets also equip their animated account name. Badges stay unchanged.':profileT(language,"Equip owned matching pieces on this character. Badges stay unchanged.")}</Text>
     {fullSetBusy||fullSetStatus?<Text accessibilityLiveRegion="polite" style={s.rowMeta}>{fullSetBusy?'Saving full set…':fullSetStatus}</Text>:null}
-    {quickSets.map(set=><View key={set.id} style={[s.quickRow,{borderColor:set.accent}]}>
-     <Text style={s.rowName}>{set.name}</Text>
-     <View style={s.quickChoices}>
+    {quickSets.map(set=><View key={set.id} style={[s.quickRow,set.choices.length===1&&s.quickRowSingle,{borderColor:set.accent}]}>
+     <Text style={[s.rowName,set.choices.length===1&&s.flex]}>{set.name}</Text>
+     <View style={[s.quickChoices,set.choices.length===1&&s.quickChoicesSingle]}>
       {set.choices.map(choice=>{
        const equipped=fullSetPort&&choice.namePresetId?ultraLuxeFullSetEquipped(selection,choice.patch,set.id,fullSetPort.names,{accountId,characterId:character.id}):quickSetEquipped(selection,choice);
        return <Pressable key={choice.id} accessibilityRole="button" accessibilityLabel={set.name+', '+choice.name+', '+profileT(language,equipped?"Equipped":"Equip set")}
@@ -337,7 +337,9 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  quickSets:{gap:7,padding:9,borderRadius:radii.md,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2},
  quickHeader:{minHeight:44,flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},
  quickRow:{gap:6,padding:8,borderRadius:radii.sm,borderWidth:1,backgroundColor:C.panel},
+ quickRowSingle:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'},
  quickChoices:{flexDirection:'row',flexWrap:'wrap',gap:6},
+ quickChoicesSingle:{flexShrink:0,maxWidth:'46%'},
  quickChoice:{flexGrow:1,minWidth:100,minHeight:44,padding:7,borderRadius:radii.sm,borderWidth:1,borderColor:C.line,justifyContent:'center',alignItems:'center',gap:3},
  quickChoiceName:{fontSize:11,lineHeight:15,color:C.text,fontWeight:'700',textAlign:'center'},
  root:{gap:10},flex:{flex:1,minWidth:0},pressed:{opacity:.74},

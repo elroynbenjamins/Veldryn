@@ -1,0 +1,220 @@
+{
+  "version": 1,
+  "released": false,
+  "regionId": "FROSTMARCH",
+  "quests": [
+    {
+      "id": "side2:frostmarch:gate-ore",
+      "regionId": "FROSTMARCH",
+      "narrativeZoneId": "ZONE_011",
+      "title": "Iron for the Gate",
+      "description": "Collect ore for the northern workshop.",
+      "scope": "character",
+      "prerequisites": [],
+      "objective": {
+        "kind": "gather",
+        "targetId": "FROSTIRON",
+        "required": 12,
+        "skillId": "mining",
+        "evidence": "sinceActivation"
+      },
+      "accessPolicy": "profession",
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "side2:frostmarch:gate-fish",
+      "regionId": "FROSTMARCH",
+      "narrativeZoneId": "ZONE_011",
+      "title": "Warm Meals",
+      "description": "Catch fish for the watch.",
+      "scope": "character",
+      "prerequisites": [],
+      "objective": {
+        "kind": "gather",
+        "targetId": "ICEFIN",
+        "required": 8,
+        "skillId": "fishing",
+        "evidence": "sinceActivation"
+      },
+      "accessPolicy": "profession",
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "side2:frostmarch:raiders",
+      "regionId": "FROSTMARCH",
+      "narrativeZoneId": "ZONE_011",
+      "title": "Guard the Pass",
+      "description": "Clear the pass of raiders.",
+      "scope": "character",
+      "prerequisites": [],
+      "objective": {
+        "kind": "kill",
+        "targetId": "ICEBOUND_RAIDER",
+        "required": 8,
+        "evidence": "sinceActivation"
+      },
+      "accessPolicy": "combat",
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "side2:frostmarch:timber",
+      "regionId": "FROSTMARCH",
+      "narrativeZoneId": "ZONE_012",
+      "title": "Shelter from the Snow",
+      "description": "Collect timber from an accessible grove.",
+      "scope": "character",
+      "prerequisites": [],
+      "objective": {
+        "kind": "gather",
+        "targetId": "WHITEPINE_LOG",
+        "required": 12,
+        "skillId": "woodcutting",
+        "evidence": "sinceActivation"
+      },
+      "accessPolicy": "profession",
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "side2:frostmarch:brood",
+      "regionId": "FROSTMARCH",
+      "narrativeZoneId": "ZONE_012",
+      "title": "Needles in the Pines",
+      "description": "Investigate the frozen brood.",
+      "scope": "character",
+      "prerequisites": [],
+      "objective": {
+        "kind": "kill",
+        "targetId": "FROSTNEEDLE_BROOD",
+        "required": 6,
+        "evidence": "sinceActivation"
+      },
+      "accessPolicy": "combat",
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "side2:frostmarch:lake-fish",
+      "regionId": "FROSTMARCH",
+      "narrativeZoneId": "ZONE_013",
+      "title": "Below the Ice",
+      "description": "Fish at an eligible frozen pool.",
+      "scope": "character",
+      "prerequisites": [],
+      "objective": {
+        "kind": "gather",
+        "targetId": "ICEFIN",
+        "required": 10,
+        "skillId": "fishing",
+        "evidence": "sinceActivation"
+      },
+      "accessPolicy": "profession",
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "side2:frostmarch:lake",
+      "regionId": "FROSTMARCH",
+      "narrativeZoneId": "ZONE_013",
+      "title": "A Resonant Haunting",
+      "description": "Clear the specters near the lake.",
+      "scope": "character",
+      "prerequisites": [],
+      "objective": {
+        "kind": "kill",
+        "targetId": "LAKEBOUND_SPECTER",
+        "required": 8,
+        "evidence": "sinceActivation"
+      },
+      "accessPolicy": "combat",
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "side2:frostmarch:high-ore",
+      "regionId": "FROSTMARCH",
+      "narrativeZoneId": "ZONE_015",
+      "title": "Highland Survey",
+      "description": "Collect ore for the workshop.",
+      "scope": "character",
+      "prerequisites": [],
+      "objective": {
+        "kind": "gather",
+        "targetId": "FROSTIRON",
+        "required": 15,
+        "skillId": "mining",
+        "evidence": "sinceActivation"
+      },
+      "accessPolicy": "profession",
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "side2:frostmarch:colossus",
+      "regionId": "FROSTMARCH",
+      "narrativeZoneId": "ZONE_015",
+      "title": "The Mountain's Trial",
+      "description": "Face an optional late-region challenge.",
+      "scope": "character",
+      "prerequisites": [],
+      "objective": {
+        "kind": "kill",
+        "targetId": "STORMGLASS_COLOSSUS",
+        "required": 4,
+        "evidence": "sinceActivation"
+      },
+      "accessPolicy": "combat",
+      "rewardPolicy": "unapproved",
+      "released": false
+    }
+  ],
+  "lore": [
+    {
+      "id": "lore2:frostmarch:SCOUT_FROSTMARCH",
+      "routeId": "SCOUT_FROSTMARCH",
+      "title": "The Northern Bell",
+      "text": "A distant bell rings although the gate is silent.",
+      "scope": "account",
+      "evidence": "actualSettledDiscovery",
+      "rewardPolicy": "none",
+      "released": false
+    },
+    {
+      "id": "lore2:frostmarch:SCOUT2_FROST_WHITEPINE",
+      "routeId": "SCOUT2_FROST_WHITEPINE",
+      "title": "Tracks in the Whiteout",
+      "text": "Old oath-marks appear beneath the snow.",
+      "scope": "account",
+      "evidence": "actualSettledDiscovery",
+      "rewardPolicy": "none",
+      "released": false
+    },
+    {
+      "id": "lore2:frostmarch:SCOUT2_FROST_SHIVERLAKE",
+      "routeId": "SCOUT2_FROST_SHIVERLAKE",
+      "title": "The Hollow Choir",
+      "text": "Voices echo beneath the ice.",
+      "scope": "account",
+      "evidence": "actualSettledDiscovery",
+      "rewardPolicy": "none",
+      "released": false
+    },
+    {
+      "id": "lore2:frostmarch:SCOUT2_FROST_WYRMSPINE",
+      "routeId": "SCOUT2_FROST_WYRMSPINE",
+      "title": "The Last Resonance",
+      "text": "The trail ends at the mountain's ancient lair.",
+      "scope": "account",
+      "evidence": "actualSettledDiscovery",
+      "rewardPolicy": "none",
+      "released": false
+    }
+  ],
+  "notes": [
+    "No mandatory story prerequisites for profession paths; actual skill and source access still required.",
+    "Gathering counts settled production, not purchases. Lore is account-wide and deterministic, no duplicate achievement payouts. Quantities are review candidates."
+  ]
+}

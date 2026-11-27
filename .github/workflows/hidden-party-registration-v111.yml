@@ -9,6 +9,7 @@ on:
       - 'backend/tests/permanent-party-registration-v125-outbox.sql'
       - 'backend/tests/permanent-party-registration-v126-compatibility.sql'
       - 'backend/tests/permanent-party-registration-v127-performance.sql'
+      - 'backend/tests/permanent-party-registration-v129-lifecycle.sql'
       - '.github/workflows/hidden-party-registration-v111.yml'
   workflow_dispatch:
 permissions:
@@ -65,4 +66,11 @@ jobs:
           set -euo pipefail
           cat docs/roadmap/party-events/hidden-migrations/permanent-party-query-performance-v127-review.sql \
             backend/tests/permanent-party-registration-v127-performance.sql \
+            | docker exec -i ${{ job.services.postgres.id }} psql -U postgres -d postgres -v ON_ERROR_STOP=1
+      - name: Verify private membership lifecycle and departure history
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat docs/roadmap/party-events/hidden-migrations/permanent-party-membership-lifecycle-v129-review.sql \
+            backend/tests/permanent-party-registration-v129-lifecycle.sql \
             | docker exec -i ${{ job.services.postgres.id }} psql -U postgres -d postgres -v ON_ERROR_STOP=1

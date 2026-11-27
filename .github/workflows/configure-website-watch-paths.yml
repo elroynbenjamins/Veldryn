@@ -24,9 +24,10 @@ jobs:
               with urllib.request.urlopen(req,timeout=30) as resp: result=json.load(resp)
               assert result.get('success'), 'Cloudflare API failed'
               return result['result']
-          matches=[s['tag'] for s in call('/workers/scripts') if s.get('id')=='veldryn' and s.get('tag')]
-          assert len(matches)==1, 'Worker identity not confirmed'
-          endpoint='/builds/workers/'+matches[0]+'/triggers'
+          build=call('/builds/builds/ae88d735-9b71-411e-84b8-55a72fc1113e')
+          trigger=build.get('trigger') or {}
+          assert str((trigger.get('repo_connection') or {}).get('repo_id'))=='1352666779' and trigger.get('external_script_id'), 'Known website build identity not confirmed'
+          endpoint='/builds/workers/'+trigger['external_script_id']+'/triggers'
           triggers=call(endpoint)
           assert triggers and all(str((t.get('repo_connection') or {}).get('repo_id'))=='1352666779' and t.get('trigger_uuid') and not t.get('deleted_on') for t in triggers), 'Unexpected trigger identity'
           paths=["website/*","wrangler.jsonc","apps/mobile/assets/app-icon-v1/icon-1024.png","apps/mobile/assets/events-startup-v1/branding/veldryn_logo@2x.webp","apps/mobile/assets/card-backgrounds/kingdom_approach_wide_v2.webp","apps/mobile/assets/card-backgrounds/kingdom_approach_portrait.webp","apps/mobile/assets/world/chapters-v1/asterfall-heartlands-pixel-v1.webp","apps/mobile/assets/world/regions-v2/sunscar-pixel-v1.jpg","apps/mobile/assets/world/regions-v2/frostmarch-pixel-v1.jpg","apps/mobile/assets/card-backgrounds/guild_plaza_portrait.webp"]

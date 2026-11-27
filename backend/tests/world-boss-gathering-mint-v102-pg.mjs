@@ -7,7 +7,7 @@ import {createRequire} from 'node:module';
 import {PGlite} from '@electric-sql/pglite';
 const require=createRequire(import.meta.url);
 const {issueWorldBossGatheringMintV102}=require('../../apps/mobile/.core-build/backend/src/server/loot/world-boss-gathering-mint-v102.js');
-const {worldBossChestLootTableV96,rollWorldBossGatheringSlotV96}=require('../.wb-mint-v102.cjs');
+const {worldBossChestLootTableV96,rollWorldBossGatheringSlotV96}=require('../../apps/mobile/.core-build/backend/src/server/combat/world-boss-chest-policy-v96.js');
 const account='11111111-1111-4111-8111-111111111111';
 const foreign='22222222-2222-4222-8222-222222222222';
 const event='33333333-3333-4333-8333-333333333333';

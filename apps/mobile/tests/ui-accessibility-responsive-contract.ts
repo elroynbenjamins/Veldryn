@@ -24,7 +24,7 @@ const modal=read('src/components/GameModalSurface.tsx');
 ok(modal.includes('KeyboardAvoidingView'),'Shared modals must protect focused fields from the iOS keyboard');
 ok(modal.includes('onAccessibilityEscape={onClose}'),'Shared modals must support the accessibility escape gesture');
 ok(modal.includes('accessible={false}')&&modal.includes('no-hide-descendants'),'Modal backdrops must not become redundant screen-reader focus targets');
-ok(modal.includes("behavior={Platform.OS==='ios'?'padding':undefined}")&&modal.includes("Keyboard.addListener('keyboardDidHide'")&&modal.includes('setAndroidKeyboardTop(null);return;')&&modal.includes('resolveModalBottomInset({')&&modal.includes('paddingBottom:bottomClearance')&&modal.includes("const bottomClearance=sheet?Math.max(safeBottom,keyboardOverlap)"),'Shared modals must preserve Android keyboard clearance and clear stale overlap on dismiss');
+ok(modal.includes("behavior={Platform.OS==='ios'?'padding':undefined}")&&modal.includes("Keyboard.addListener('keyboardDidHide'")&&modal.includes('setAndroidKeyboardTop(null);return;')&&modal.includes('resolveModalBottomInset({')&&modal.includes('resolveModalKeyboardOverlap({')&&modal.includes('paddingBottom:bottomClearance')&&modal.includes("const bottomClearance=sheet?Math.max(safeBottom,keyboardOverlap)"),'Shared modals must preserve Android keyboard clearance and clear stale overlap on dismiss');
 
 const reward=read('src/components/RewardPopup.tsx');
 ok(reward.includes('useSafeAreaInsets')&&reward.includes('statusBarTranslucent'),'Reward results must honor modal safe areas on edge-to-edge devices');

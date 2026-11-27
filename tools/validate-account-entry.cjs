@@ -41,7 +41,7 @@ function makeHarness({user = null, recovering = false} = {}) {
     Platform: {OS: 'android', select: values => values.android ?? values.default},
     StyleSheet: {create: styles => styles, flatten, absoluteFill: {}, absoluteFillObject: {}, hairlineWidth: 1},
     Modal: ({visible, children, ...props}) => visible ? React.createElement('NativeModal', {...props, visible}, children) : null,
-    Keyboard: {dismiss: () => {calls.keyboard++;}, addListener: (event, listener) => {assert.ok(['keyboardDidShow','keyboardDidHide','keyboardWillShow','keyboardWillHide'].includes(event)); assert.equal(typeof listener,'function'); return {remove: () => {}};}},
+    Keyboard: {metrics: () => undefined, dismiss: () => {calls.keyboard++;}, addListener: (event, listener) => {assert.ok(['keyboardDidShow','keyboardDidHide','keyboardWillShow','keyboardWillHide'].includes(event)); assert.equal(typeof listener,'function'); return {remove: () => {}};}},
     Alert: {alert: () => {throw new Error('Account-entry confirmation must use the visible in-game dialog.');}},
     Linking: {openURL: async () => {calls.external++;}, canOpenURL: async () => true},
     AccessibilityInfo: {announceForAccessibility: () => {}, setAccessibilityFocus: () => {}},

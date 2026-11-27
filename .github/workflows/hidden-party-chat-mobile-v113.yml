@@ -4,6 +4,8 @@ on:
     paths:
       - 'apps/mobile/src/core/party-chat-card-preview-v113.ts'
       - 'apps/mobile/src/core/party-chat-refresh-preview-v114.ts'
+      - 'apps/mobile/src/core/party-chat-active-requests-preview-v115.ts'
+      - 'apps/mobile/src/components/PartyActiveRequestsPanelPreviewV115.tsx'
       - 'apps/mobile/src/components/PartyChatActionCardPreviewV113.tsx'
       - 'apps/mobile/tests/party-chat-action-card-preview-v113.cjs'
       - '.github/workflows/hidden-party-chat-mobile-v113.yml'
@@ -27,5 +29,7 @@ jobs:
           cache: pnpm
           cache-dependency-path: apps/mobile/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
+      - name: Typecheck isolated preview models
+        run: pnpm exec tsc --strict --skipLibCheck --noEmit --target ES2020 --module commonjs src/core/party-chat-card-preview-v113.ts src/core/party-chat-refresh-preview-v114.ts src/core/party-chat-active-requests-preview-v115.ts
       - name: Test hidden preview action and layout fences
         run: node tests/party-chat-action-card-preview-v113.cjs

@@ -1,0 +1,433 @@
+{
+  "version": 1,
+  "released": false,
+  "regionId": "SUNSCAR",
+  "entryRequirement": {
+    "previousBook": "ASTERFALL",
+    "previousFinale": "story2:asterfall:15",
+    "authoritativeCharacterAccess": true
+  },
+  "suggestedLevels": [
+    26,
+    50
+  ],
+  "equipmentBands": [
+    {
+      "tier": 3,
+      "levels": [
+        26,
+        37
+      ]
+    },
+    {
+      "tier": 4,
+      "levels": [
+        38,
+        50
+      ]
+    }
+  ],
+  "zones": [
+    {
+      "zoneId": "ZONE_006",
+      "suggestedStoryBand": [
+        26,
+        31
+      ],
+      "routeId": "SCOUT_SUNSCAR"
+    },
+    {
+      "zoneId": "ZONE_007",
+      "suggestedStoryBand": [
+        32,
+        37
+      ],
+      "routeId": "SCOUT_SUNSCAR_SCORCHWIND"
+    },
+    {
+      "zoneId": "ZONE_008",
+      "suggestedStoryBand": [
+        38,
+        43
+      ],
+      "routeId": "SCOUT_SUNSCAR_MIRAGE"
+    },
+    {
+      "zoneId": "ZONE_010",
+      "suggestedStoryBand": [
+        44,
+        50
+      ],
+      "routeId": "SCOUT_SUNSCAR_CROWN"
+    }
+  ],
+  "quests": [
+    {
+      "id": "story2:sunscar:01",
+      "regionId": "SUNSCAR",
+      "narrativeZoneId": "ZONE_006",
+      "act": 1,
+      "suggestedLevel": 26,
+      "title": "Glasswind Crossing",
+      "summary": "Map the caravan road.",
+      "prerequisites": [],
+      "objectives": [
+        {
+          "id": "1",
+          "kind": "map",
+          "targetId": "SCOUT_SUNSCAR",
+          "required": 1,
+          "evidence": "verifiedFact"
+        }
+      ],
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "story2:sunscar:02",
+      "regionId": "SUNSCAR",
+      "narrativeZoneId": "ZONE_006",
+      "act": 1,
+      "suggestedLevel": 27,
+      "title": "Scorpions in the Sand",
+      "summary": "Clear the caravan route.",
+      "prerequisites": [
+        "story2:sunscar:01"
+      ],
+      "objectives": [
+        {
+          "id": "1",
+          "kind": "kill",
+          "targetId": "SUNSCAR_SCORPION",
+          "required": 8,
+          "evidence": "sinceActivation"
+        }
+      ],
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "story2:sunscar:03",
+      "regionId": "SUNSCAR",
+      "narrativeZoneId": "ZONE_006",
+      "act": 1,
+      "suggestedLevel": 29,
+      "title": "A Broken Caravan",
+      "summary": "Recover the road from raiders.",
+      "prerequisites": [
+        "story2:sunscar:02"
+      ],
+      "objectives": [
+        {
+          "id": "1",
+          "kind": "kill",
+          "targetId": "SAFFRON_MARAUDER",
+          "required": 6,
+          "evidence": "sinceActivation"
+        }
+      ],
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "story2:sunscar:04",
+      "regionId": "SUNSCAR",
+      "narrativeZoneId": "ZONE_006",
+      "act": 1,
+      "suggestedLevel": 31,
+      "title": "A Dustveil Warning",
+      "summary": "Follow the strange tracks.",
+      "prerequisites": [
+        "story2:sunscar:03"
+      ],
+      "objectives": [
+        {
+          "id": "1",
+          "kind": "kill",
+          "targetId": "DUSTVEIL_RUNNER",
+          "required": 6,
+          "evidence": "sinceActivation"
+        }
+      ],
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "story2:sunscar:05",
+      "regionId": "SUNSCAR",
+      "narrativeZoneId": "ZONE_007",
+      "act": 1,
+      "suggestedLevel": 32,
+      "title": "Across the Flats",
+      "summary": "Map the glass-sand plains.",
+      "prerequisites": [
+        "story2:sunscar:04"
+      ],
+      "objectives": [
+        {
+          "id": "1",
+          "kind": "map",
+          "targetId": "SCOUT_SUNSCAR_SCORCHWIND",
+          "required": 1,
+          "evidence": "verifiedFact"
+        }
+      ],
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "story2:sunscar:06",
+      "regionId": "SUNSCAR",
+      "narrativeZoneId": "ZONE_007",
+      "act": 2,
+      "suggestedLevel": 33,
+      "title": "Oracle in the Mirage",
+      "summary": "Investigate the false voices.",
+      "prerequisites": [
+        "story2:sunscar:05"
+      ],
+      "objectives": [
+        {
+          "id": "1",
+          "kind": "kill",
+          "targetId": "DUNE_ORACLE",
+          "required": 8,
+          "evidence": "sinceActivation"
+        }
+      ],
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "story2:sunscar:07",
+      "regionId": "SUNSCAR",
+      "narrativeZoneId": "ZONE_007",
+      "act": 2,
+      "suggestedLevel": 35,
+      "title": "Through the Glasswind",
+      "summary": "Clear the passage to the basin.",
+      "prerequisites": [
+        "story2:sunscar:06"
+      ],
+      "objectives": [
+        {
+          "id": "1",
+          "kind": "kill",
+          "targetId": "GLASS_DUNE_STRIDER",
+          "required": 6,
+          "evidence": "sinceActivation"
+        }
+      ],
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "story2:sunscar:08",
+      "regionId": "SUNSCAR",
+      "narrativeZoneId": "ZONE_008",
+      "act": 2,
+      "suggestedLevel": 38,
+      "title": "Paths of Reflection",
+      "summary": "Trace the source of the mirages.",
+      "prerequisites": [
+        "story2:sunscar:07"
+      ],
+      "objectives": [
+        {
+          "id": "1",
+          "kind": "map",
+          "targetId": "SCOUT_SUNSCAR_MIRAGE",
+          "required": 1,
+          "evidence": "verifiedFact"
+        },
+        {
+          "id": "2",
+          "kind": "kill",
+          "targetId": "MIRAGE_SHADE",
+          "required": 6,
+          "evidence": "sinceActivation"
+        }
+      ],
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "story2:sunscar:09",
+      "regionId": "SUNSCAR",
+      "narrativeZoneId": "ZONE_008",
+      "act": 2,
+      "suggestedLevel": 39,
+      "title": "The Glassbound Watch",
+      "summary": "Break the ancient watch.",
+      "prerequisites": [
+        "story2:sunscar:08"
+      ],
+      "objectives": [
+        {
+          "id": "1",
+          "kind": "kill",
+          "targetId": "GLASSBOUND_SENTINEL",
+          "required": 8,
+          "evidence": "sinceActivation"
+        }
+      ],
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "story2:sunscar:10",
+      "regionId": "SUNSCAR",
+      "narrativeZoneId": "ZONE_007",
+      "act": 2,
+      "suggestedLevel": 42,
+      "title": "Shatter the Bulwark",
+      "summary": "Test your build against a defensive foe.",
+      "prerequisites": [
+        "story2:sunscar:09"
+      ],
+      "objectives": [
+        {
+          "id": "1",
+          "kind": "kill",
+          "targetId": "SANDPLATE_JUGGERNAUT",
+          "required": 4,
+          "evidence": "sinceActivation"
+        }
+      ],
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "story2:sunscar:11",
+      "regionId": "SUNSCAR",
+      "narrativeZoneId": "ZONE_008",
+      "act": 3,
+      "suggestedLevel": 44,
+      "title": "A Fractured Prism",
+      "summary": "Follow the fractured echo.",
+      "prerequisites": [
+        "story2:sunscar:10"
+      ],
+      "objectives": [
+        {
+          "id": "1",
+          "kind": "kill",
+          "targetId": "PRISM_HEXER",
+          "required": 6,
+          "evidence": "sinceActivation"
+        }
+      ],
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "story2:sunscar:12",
+      "regionId": "SUNSCAR",
+      "narrativeZoneId": "ZONE_010",
+      "act": 3,
+      "suggestedLevel": 44,
+      "title": "The Crown Road",
+      "summary": "Chart the royal ruins.",
+      "prerequisites": [
+        "story2:sunscar:11"
+      ],
+      "objectives": [
+        {
+          "id": "1",
+          "kind": "map",
+          "targetId": "SCOUT_SUNSCAR_CROWN",
+          "required": 1,
+          "evidence": "verifiedFact"
+        }
+      ],
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "story2:sunscar:13",
+      "regionId": "SUNSCAR",
+      "narrativeZoneId": "ZONE_010",
+      "act": 3,
+      "suggestedLevel": 46,
+      "title": "The Buried Observatory",
+      "summary": "Uncover the old instruments.",
+      "prerequisites": [
+        "story2:sunscar:12"
+      ],
+      "objectives": [
+        {
+          "id": "1",
+          "kind": "kill",
+          "targetId": "OBSERVATORY_KEEPER",
+          "required": 6,
+          "evidence": "sinceActivation"
+        }
+      ],
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "story2:sunscar:14",
+      "regionId": "SUNSCAR",
+      "narrativeZoneId": "ZONE_010",
+      "act": 3,
+      "suggestedLevel": 48,
+      "title": "The Last Sandguard",
+      "summary": "Break the tyrant's watch.",
+      "prerequisites": [
+        "story2:sunscar:13"
+      ],
+      "objectives": [
+        {
+          "id": "1",
+          "kind": "kill",
+          "targetId": "ROYAL_SANDGUARD",
+          "required": 8,
+          "evidence": "sinceActivation"
+        }
+      ],
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "story2:sunscar:15",
+      "regionId": "SUNSCAR",
+      "narrativeZoneId": "ZONE_010",
+      "act": 3,
+      "suggestedLevel": 49,
+      "title": "The Crown's Executioner",
+      "summary": "Open the way to the regional guardian.",
+      "prerequisites": [
+        "story2:sunscar:14"
+      ],
+      "objectives": [
+        {
+          "id": "1",
+          "kind": "kill",
+          "targetId": "CROWN_EXECUTIONER",
+          "required": 3,
+          "evidence": "sinceActivation"
+        }
+      ],
+      "rewardPolicy": "unapproved",
+      "released": false
+    }
+  ],
+  "finale": {
+    "id": "story2:sunscar:16",
+    "title": "The Sand Tyrant",
+    "suggestedLevel": 50,
+    "narrativeZoneId": "ZONE_010",
+    "prerequisites": [
+      "story2:sunscar:15"
+    ],
+    "bindingStatus": "pending_authoritative_solo_boss_id",
+    "released": false,
+    "rewardPolicy": "unapproved"
+  },
+  "notes": [
+    "Finale is a placeholder for the authored regional solo encounter, not a dungeon boss or an executable objective. No chapter completion until bound and validated.",
+    "Returning to Scorchwind at 42 is deliberate because the current Sandplate Juggernaut unlocks at 42; proposed level band is narrative only.",
+    "Legacy regional mastery leads are historical evidence only, not claims. No hard gear set or rarity requirement."
+  ]
+}

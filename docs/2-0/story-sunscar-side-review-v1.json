@@ -1,0 +1,220 @@
+{
+  "version": 1,
+  "released": false,
+  "regionId": "SUNSCAR",
+  "quests": [
+    {
+      "id": "side2:sunscar:caravan",
+      "regionId": "SUNSCAR",
+      "narrativeZoneId": "ZONE_006",
+      "title": "Caravan Supplies",
+      "description": "Collect timber for caravan repairs.",
+      "scope": "character",
+      "prerequisites": [],
+      "objective": {
+        "kind": "gather",
+        "targetId": "DUNEWOOD",
+        "required": 12,
+        "skillId": "woodcutting",
+        "evidence": "sinceActivation"
+      },
+      "accessPolicy": "profession",
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "side2:sunscar:oasis",
+      "regionId": "SUNSCAR",
+      "narrativeZoneId": "ZONE_006",
+      "title": "Oasis provisions",
+      "description": "Catch fish for the caravan.",
+      "scope": "character",
+      "prerequisites": [],
+      "objective": {
+        "kind": "gather",
+        "targetId": "OASIS_CARP",
+        "required": 8,
+        "skillId": "fishing",
+        "evidence": "sinceActivation"
+      },
+      "accessPolicy": "profession",
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "side2:sunscar:venom",
+      "regionId": "SUNSCAR",
+      "narrativeZoneId": "ZONE_006",
+      "title": "Stings in the Sand",
+      "description": "Clear the caravan's hunting grounds.",
+      "scope": "character",
+      "prerequisites": [],
+      "objective": {
+        "kind": "kill",
+        "targetId": "SUNSCAR_SCORPION",
+        "required": 10,
+        "evidence": "sinceActivation"
+      },
+      "accessPolicy": "combat",
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "side2:sunscar:ore",
+      "regionId": "SUNSCAR",
+      "narrativeZoneId": "ZONE_007",
+      "title": "Glass-Sand Prospecting",
+      "description": "Collect Sunstone from an accessible vein.",
+      "scope": "character",
+      "prerequisites": [],
+      "objective": {
+        "kind": "gather",
+        "targetId": "SUNSTONE_ORE",
+        "required": 12,
+        "skillId": "mining",
+        "evidence": "sinceActivation"
+      },
+      "accessPolicy": "profession",
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "side2:sunscar:striders",
+      "regionId": "SUNSCAR",
+      "narrativeZoneId": "ZONE_007",
+      "title": "Across the Dunes",
+      "description": "Clear a safe passage through the flats.",
+      "scope": "character",
+      "prerequisites": [],
+      "objective": {
+        "kind": "kill",
+        "targetId": "GLASS_DUNE_STRIDER",
+        "required": 8,
+        "evidence": "sinceActivation"
+      },
+      "accessPolicy": "combat",
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "side2:sunscar:mirage-fish",
+      "regionId": "SUNSCAR",
+      "narrativeZoneId": "ZONE_008",
+      "title": "Reflections in the Water",
+      "description": "Catch Glassfin from an eligible pool.",
+      "scope": "character",
+      "prerequisites": [],
+      "objective": {
+        "kind": "gather",
+        "targetId": "GLASSFIN",
+        "required": 8,
+        "skillId": "fishing",
+        "evidence": "sinceActivation"
+      },
+      "accessPolicy": "profession",
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "side2:sunscar:hexer",
+      "regionId": "SUNSCAR",
+      "narrativeZoneId": "ZONE_008",
+      "title": "A False Reflection",
+      "description": "Practice countering harmful effects.",
+      "scope": "character",
+      "prerequisites": [],
+      "objective": {
+        "kind": "kill",
+        "targetId": "PRISM_HEXER",
+        "required": 6,
+        "evidence": "sinceActivation"
+      },
+      "accessPolicy": "combat",
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "side2:sunscar:crown-ore",
+      "regionId": "SUNSCAR",
+      "narrativeZoneId": "ZONE_010",
+      "title": "The Royal Survey",
+      "description": "Supply the workshop with Sunstone.",
+      "scope": "character",
+      "prerequisites": [],
+      "objective": {
+        "kind": "gather",
+        "targetId": "SUNSTONE_ORE",
+        "required": 15,
+        "skillId": "mining",
+        "evidence": "sinceActivation"
+      },
+      "accessPolicy": "profession",
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "side2:sunscar:crown",
+      "regionId": "SUNSCAR",
+      "narrativeZoneId": "ZONE_010",
+      "title": "The Last Watch",
+      "description": "Clear the ruins of the royal watch.",
+      "scope": "character",
+      "prerequisites": [],
+      "objective": {
+        "kind": "kill",
+        "targetId": "ROYAL_SANDGUARD",
+        "required": 10,
+        "evidence": "sinceActivation"
+      },
+      "accessPolicy": "combat",
+      "rewardPolicy": "unapproved",
+      "released": false
+    }
+  ],
+  "lore": [
+    {
+      "id": "lore2:sunscar:SCOUT_SUNSCAR",
+      "routeId": "SCOUT_SUNSCAR",
+      "title": "The Empty Caravan",
+      "text": "A caravan ledger names a road that no longer exists.",
+      "scope": "account",
+      "evidence": "actualSettledDiscovery",
+      "rewardPolicy": "none",
+      "released": false
+    },
+    {
+      "id": "lore2:sunscar:SCOUT_SUNSCAR_SCORCHWIND",
+      "routeId": "SCOUT_SUNSCAR_SCORCHWIND",
+      "title": "Glass in the Wind",
+      "text": "Glass fragments carry the same oath-mark found in Asterfall.",
+      "scope": "account",
+      "evidence": "actualSettledDiscovery",
+      "rewardPolicy": "none",
+      "released": false
+    },
+    {
+      "id": "lore2:sunscar:SCOUT_SUNSCAR_MIRAGE",
+      "routeId": "SCOUT_SUNSCAR_MIRAGE",
+      "title": "The False Oasis",
+      "text": "A reflection reveals an observatory hidden beyond the basin.",
+      "scope": "account",
+      "evidence": "actualSettledDiscovery",
+      "rewardPolicy": "none",
+      "released": false
+    },
+    {
+      "id": "lore2:sunscar:SCOUT_SUNSCAR_CROWN",
+      "routeId": "SCOUT_SUNSCAR_CROWN",
+      "title": "The Buried Lens",
+      "text": "The old observatory points toward the northern mountains.",
+      "scope": "account",
+      "evidence": "actualSettledDiscovery",
+      "rewardPolicy": "none",
+      "released": false
+    }
+  ],
+  "notes": [
+    "No mandatory story prerequisites for profession paths; actual skill and source access still required.",
+    "Gathering counts settled production, not purchases. Lore is account-wide and deterministic, no duplicate achievement payouts. Quantities are review candidates."
+  ]
+}

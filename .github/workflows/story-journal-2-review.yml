@@ -1,0 +1,39 @@
+name: Story Journal 2.0 review
+on:
+  pull_request:
+    paths:
+      - 'docs/2-0/story-*-review-*.json'
+      - 'tools/story-journal-2-*.mjs'
+      - 'apps/mobile/src/content/**'
+      - 'apps/mobile/src/components/Story*2Review.tsx'
+      - 'apps/mobile/src/core/story-journal-host-review.ts'
+      - 'apps/mobile/src/core/story-journal-preferences-review.ts'
+      - 'backend/online/story-journal-*-review.ts'
+      - 'apps/mobile/src/i18n/story-journal-2-review.ts'
+      - '.github/workflows/story-journal-2-review.yml'
+permissions:
+  contents: read
+jobs:
+  hidden-story-catalogue:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node tools/story-journal-2-review.test.mjs
+      - run: node tools/story-journal-2-evidence-review.test.mjs
+      - run: node tools/story-journal-2-navigation-review.test.mjs
+      - run: node tools/story-journal-2-regional-review.test.mjs
+      - run: node tools/story-journal-2-learning-review.test.mjs
+      - run: node tools/story-journal-2-settlement-review.test.mjs
+      - run: node tools/story-journal-2-claim-review.test.mjs
+      - run: node tools/story-journal-2-records-review.test.mjs
+      - run: node tools/story-journal-2-pacing-review.test.mjs
+      - run: node --experimental-strip-types tools/story-journal-2-host-review.test.mjs
+      - run: node --experimental-strip-types tools/story-journal-2-localization-review.test.mjs
+      - run: node --experimental-strip-types tools/story-journal-2-persistence-review.test.mjs
+      - run: node --experimental-strip-types tools/story-journal-2-atomic-review.test.mjs
+      - run: node tools/story-journal-2-compact-state-review.test.mjs
+      - run: node tools/story-journal-2-catalogue-integration-review.test.mjs
+      - run: node tools/story-journal-2-transaction-review.test.mjs

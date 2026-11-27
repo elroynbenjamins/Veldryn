@@ -1,0 +1,529 @@
+{
+  "version": 1,
+  "released": false,
+  "regionId": "ASTERFALL",
+  "suggestedLevels": [
+    1,
+    25
+  ],
+  "equipmentBands": [
+    {
+      "tier": 1,
+      "levels": [
+        1,
+        12
+      ]
+    },
+    {
+      "tier": 2,
+      "levels": [
+        13,
+        25
+      ]
+    }
+  ],
+  "zones": [
+    {
+      "zoneId": "GREENFIELDS",
+      "suggestedStoryBand": [
+        1,
+        4
+      ],
+      "gatheringExamples": [
+        "GREENFIELDS_COPPER_OUTCROP",
+        "GREENWOOD_TREE",
+        "MEADOW_PERCH_POOL"
+      ],
+      "routeId": "SCOUT_GREENFIELDS"
+    },
+    {
+      "zoneId": "SILVERBROOK",
+      "suggestedStoryBand": [
+        5,
+        6
+      ],
+      "gatheringExamples": [
+        "SILVERBROOK_SHOAL",
+        "RIVER_EEL_POOL"
+      ],
+      "routeId": "SCOUT_SILVERBROOK"
+    },
+    {
+      "zoneId": "IRONWOOD",
+      "suggestedStoryBand": [
+        7,
+        15
+      ],
+      "gatheringExamples": [
+        "IRONWOOD_TREE",
+        "ROOTSTREAM_TROUT_POOL",
+        "CROWNWOOD_TREE"
+      ],
+      "routeId": "SCOUT_IRONWOOD"
+    },
+    {
+      "zoneId": "OLD_MINES",
+      "suggestedStoryBand": [
+        16,
+        19
+      ],
+      "gatheringExamples": [
+        "COPPER_VEIN",
+        "ASTER_IRON_VEIN",
+        "OATHSTONE_SEAM",
+        "ECHO_QUARTZ_GEODE",
+        "CAVE_LOACH_POOL"
+      ],
+      "routeId": "SCOUT_OLD_MINES"
+    },
+    {
+      "zoneId": "KINGS_ROAD",
+      "suggestedStoryBand": [
+        20,
+        25
+      ],
+      "gatheringExamples": [
+        "CROWN_CARP_POOL"
+      ],
+      "routeId": "SCOUT_KINGS_ROAD"
+    }
+  ],
+  "quests": [
+    {
+      "id": "story2:asterfall:01",
+      "legacyQuestId": "QST_001",
+      "title": "A Name in the Ledger",
+      "regionId": "ASTERFALL",
+      "narrativeZoneId": "GREENFIELDS",
+      "act": 1,
+      "suggestedLevel": 1,
+      "prerequisites": [],
+      "objectives": [
+        {
+          "id": "1",
+          "kind": "kill",
+          "targetId": "MOSS_RAT",
+          "required": 5,
+          "evidence": "sinceActivation"
+        }
+      ],
+      "summary": "Prove the first road is safe.",
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "story2:asterfall:02",
+      "legacyQuestId": "QST_002",
+      "title": "First Blood, First Skill",
+      "regionId": "ASTERFALL",
+      "narrativeZoneId": "GREENFIELDS",
+      "act": 1,
+      "suggestedLevel": 2,
+      "prerequisites": [
+        "story2:asterfall:01"
+      ],
+      "objectives": [
+        {
+          "id": "1",
+          "kind": "kill",
+          "targetId": "ROADSIDE_BOAR",
+          "required": 3,
+          "evidence": "sinceActivation"
+        }
+      ],
+      "summary": "Learn to prepare for a tougher hunt; profession lesson offered separately.",
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "story2:asterfall:03",
+      "legacyQuestId": "QST_007",
+      "title": "Silver on the Water",
+      "regionId": "ASTERFALL",
+      "narrativeZoneId": "SILVERBROOK",
+      "act": 1,
+      "suggestedLevel": 5,
+      "prerequisites": [
+        "story2:asterfall:02"
+      ],
+      "objectives": [
+        {
+          "id": "map-home",
+          "kind": "map",
+          "targetId": "SCOUT_GREENFIELDS",
+          "required": 1,
+          "evidence": "verifiedFact"
+        },
+        {
+          "id": "1",
+          "kind": "map",
+          "targetId": "SCOUT_SILVERBROOK",
+          "required": 1,
+          "evidence": "verifiedFact"
+        },
+        {
+          "id": "2",
+          "kind": "kill",
+          "targetId": "SILVERFIN_SWARM",
+          "required": 6,
+          "evidence": "sinceActivation"
+        }
+      ],
+      "summary": "Map the first routes, then investigate the river debris.",
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "story2:asterfall:04",
+      "legacyQuestId": "QST_003",
+      "title": "A Hound's Trail",
+      "regionId": "ASTERFALL",
+      "narrativeZoneId": "IRONWOOD",
+      "act": 1,
+      "suggestedLevel": 7,
+      "prerequisites": [
+        "story2:asterfall:03"
+      ],
+      "objectives": [
+        {
+          "id": "1",
+          "kind": "map",
+          "targetId": "SCOUT_IRONWOOD",
+          "required": 1,
+          "evidence": "verifiedFact",
+          "mapScope": "character"
+        }
+      ],
+      "summary": "Send the free guide or a companion, collect the report, follow the wolf trail.",
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "story2:asterfall:05",
+      "legacyQuestId": "QST_004",
+      "title": "Tools of the Trade",
+      "regionId": "ASTERFALL",
+      "narrativeZoneId": "IRONWOOD",
+      "act": 1,
+      "suggestedLevel": 8,
+      "prerequisites": [
+        "story2:asterfall:04"
+      ],
+      "objectives": [
+        {
+          "id": "1",
+          "kind": "equipped",
+          "targetId": "equipment",
+          "required": 2,
+          "evidence": "verifiedFact"
+        }
+      ],
+      "summary": "Inspect equipment and prepare for the deeper forest. Any legal gear qualifies.",
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "story2:asterfall:06",
+      "legacyQuestId": "QST_005",
+      "title": "Into Ironwood",
+      "regionId": "ASTERFALL",
+      "narrativeZoneId": "IRONWOOD",
+      "act": 1,
+      "suggestedLevel": 10,
+      "prerequisites": [
+        "story2:asterfall:05"
+      ],
+      "objectives": [
+        {
+          "id": "1",
+          "kind": "kill",
+          "targetId": "IRONWOOD_WOLF",
+          "required": 8,
+          "evidence": "sinceActivation"
+        },
+        {
+          "id": "level",
+          "kind": "level",
+          "targetId": "character",
+          "required": 10,
+          "evidence": "verifiedFact"
+        }
+      ],
+      "summary": "Prove readiness at level 10; preserve companion unlock milestone.",
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "story2:asterfall:07",
+      "legacyQuestId": "QST_006",
+      "title": "Thorn Beneath",
+      "regionId": "ASTERFALL",
+      "narrativeZoneId": "IRONWOOD",
+      "act": 2,
+      "suggestedLevel": 11,
+      "prerequisites": [
+        "story2:asterfall:06"
+      ],
+      "objectives": [
+        {
+          "id": "1",
+          "kind": "kill",
+          "targetId": "THORNLING",
+          "required": 8,
+          "evidence": "sinceActivation"
+        }
+      ],
+      "summary": "Investigate the oath marks; reveal a deterministic clue.",
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "story2:asterfall:08",
+      "legacyQuestId": "QST_009",
+      "title": "Rootbound Vault",
+      "regionId": "ASTERFALL",
+      "narrativeZoneId": "IRONWOOD",
+      "act": 2,
+      "suggestedLevel": 13,
+      "prerequisites": [
+        "story2:asterfall:07"
+      ],
+      "objectives": [
+        {
+          "id": "1",
+          "kind": "kill",
+          "targetId": "ANCIENT_TREANT",
+          "required": 6,
+          "evidence": "sinceActivation"
+        }
+      ],
+      "summary": "Midpoint candidate: encounter a forest guardian and reveal the cracked lens; final encounter design pending.",
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "story2:asterfall:09",
+      "legacyQuestId": "QST_008",
+      "title": "Old Mine Bell",
+      "regionId": "ASTERFALL",
+      "narrativeZoneId": "OLD_MINES",
+      "act": 2,
+      "suggestedLevel": 16,
+      "prerequisites": [
+        "story2:asterfall:08"
+      ],
+      "objectives": [
+        {
+          "id": "1",
+          "kind": "map",
+          "targetId": "SCOUT_OLD_MINES",
+          "required": 1,
+          "evidence": "verifiedFact"
+        },
+        {
+          "id": "2",
+          "kind": "kill",
+          "targetId": "CAVE_SKITTER",
+          "required": 10,
+          "evidence": "sinceActivation"
+        }
+      ],
+      "summary": "Survey the shafts and trace the bell.",
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "story2:asterfall:10",
+      "legacyQuestId": "QST_011",
+      "title": "The Bound Miners",
+      "regionId": "ASTERFALL",
+      "narrativeZoneId": "OLD_MINES",
+      "act": 2,
+      "suggestedLevel": 19,
+      "prerequisites": [
+        "story2:asterfall:09"
+      ],
+      "objectives": [
+        {
+          "id": "1",
+          "kind": "kill",
+          "targetId": "RUNEBOUND_MINER",
+          "required": 6,
+          "evidence": "sinceActivation"
+        }
+      ],
+      "summary": "Learn why the miners are bound. Guild membership never required.",
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "story2:asterfall:11",
+      "legacyQuestId": "QST_010",
+      "title": "Lanterns in Fog",
+      "regionId": "ASTERFALL",
+      "narrativeZoneId": "KINGS_ROAD",
+      "act": 3,
+      "suggestedLevel": 20,
+      "prerequisites": [
+        "story2:asterfall:10"
+      ],
+      "objectives": [
+        {
+          "id": "1",
+          "kind": "map",
+          "targetId": "SCOUT_KINGS_ROAD",
+          "required": 1,
+          "evidence": "verifiedFact"
+        },
+        {
+          "id": "2",
+          "kind": "kill",
+          "targetId": "LANTERN_WRETCH",
+          "required": 10,
+          "evidence": "sinceActivation"
+        }
+      ],
+      "summary": "Find the royal road and follow the lights.",
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "story2:asterfall:12",
+      "legacyQuestId": "QST_012",
+      "title": "Fallen Procession",
+      "regionId": "ASTERFALL",
+      "narrativeZoneId": "KINGS_ROAD",
+      "act": 3,
+      "suggestedLevel": 21,
+      "prerequisites": [
+        "story2:asterfall:11"
+      ],
+      "objectives": [
+        {
+          "id": "1",
+          "kind": "kill",
+          "targetId": "OATHBOUND_SQUIRE",
+          "required": 8,
+          "evidence": "sinceActivation"
+        }
+      ],
+      "summary": "Break the oathbound procession.",
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "story2:asterfall:13",
+      "legacyQuestId": "QST_013",
+      "title": "Oathglass Road",
+      "regionId": "ASTERFALL",
+      "narrativeZoneId": "KINGS_ROAD",
+      "act": 3,
+      "suggestedLevel": 23,
+      "prerequisites": [
+        "story2:asterfall:12"
+      ],
+      "objectives": [
+        {
+          "id": "1",
+          "kind": "kill",
+          "targetId": "FALLEN_SENTINEL",
+          "required": 10,
+          "evidence": "sinceActivation"
+        }
+      ],
+      "summary": "Investigate the last command post.",
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "story2:asterfall:14",
+      "legacyQuestId": "QST_014",
+      "title": "Fallen Knight",
+      "regionId": "ASTERFALL",
+      "narrativeZoneId": "KINGS_ROAD",
+      "act": 3,
+      "suggestedLevel": 25,
+      "prerequisites": [
+        "story2:asterfall:13"
+      ],
+      "objectives": [
+        {
+          "id": "1",
+          "kind": "boss",
+          "targetId": "FALLEN_KNIGHT",
+          "required": 1,
+          "evidence": "verifiedFact"
+        }
+      ],
+      "summary": "Win the actual solo regional boss encounter.",
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "story2:asterfall:15",
+      "legacyQuestId": "QST_015",
+      "title": "Beyond the Green",
+      "regionId": "ASTERFALL",
+      "narrativeZoneId": "KINGS_ROAD",
+      "act": 3,
+      "suggestedLevel": 25,
+      "prerequisites": [
+        "story2:asterfall:14"
+      ],
+      "objectives": [
+        {
+          "id": "1",
+          "kind": "level",
+          "targetId": "character",
+          "required": 25,
+          "evidence": "verifiedFact"
+        },
+        {
+          "id": "2",
+          "kind": "boss",
+          "targetId": "FALLEN_KNIGHT",
+          "required": 1,
+          "evidence": "verifiedFact"
+        }
+      ],
+      "summary": "Conclude the book and reveal the next region. Oathbreaker title preserved.",
+      "rewardPolicy": "unapproved",
+      "released": false
+    }
+  ],
+  "optionalPaths": [
+    {
+      "id": "side2:asterfall:miner",
+      "kind": "gather",
+      "skillId": "mining",
+      "resourceId": "COPPER_ORE",
+      "suggestedZoneId": "GREENFIELDS",
+      "required": 10
+    },
+    {
+      "id": "side2:asterfall:woodkeeper",
+      "kind": "gather",
+      "skillId": "woodcutting",
+      "resourceId": "GREENWOOD_LOG",
+      "suggestedZoneId": "GREENFIELDS",
+      "required": 10
+    },
+    {
+      "id": "side2:asterfall:angler",
+      "kind": "gather",
+      "skillId": "fishing",
+      "resourceId": "SILVERFIN",
+      "suggestedZoneId": "SILVERBROOK",
+      "required": 6
+    }
+  ],
+  "notes": [
+    "Suggested levels are narrative pacing, not runtime access gates. Legacy authored monster levels are not automatically V2 levels.",
+    "Zone is narrative context, not a destination authorization. Resolve actual target through canonical V2 content.",
+    "No production reward grants or entitlement changes. Legacy quest mapping is migration input, not a reward receipt.",
+    "QST_002 replaces mandatory profession training with combat for new V2 story only; legacy quest and unlock consumers require explicit adapter.",
+    "Greenfields discovery explicitly precedes Silverbrook, matching Exploration 2.0 route prerequisite order. Guide remains optional and free; no companion requirement.",
+    "QST_005 retains a character level 10 review milestone before the companion unlock, subject to final V2 access gates.",
+    "Ironwood tutorial requires the active character's actual discovered route as well as account discovery. Shared map alone cannot satisfy that character's tutorial access; legacy continuation remains separate."
+  ]
+}

@@ -1,0 +1,37 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {discoveryRecordsReview,challengeJournalReview} from './story-journal-2-records-review.mjs';
+import {projectSideReview} from './story-journal-2-evidence-review.mjs';
+const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
+const books=['asterfall','sunscar','frostmarch'].map(n=>JSON.parse(read('docs/2-0/story-'+n+'-review-v1.json')));
+const side=JSON.parse(read('docs/2-0/story-asterfall-side-review-v1.json'));
+const policy=JSON.parse(read('docs/2-0/story-reward-milestones-review-v1.json'));
+const skills=read('apps/mobile/src/content/skills.ts'),items=read('apps/mobile/src/content/items.ts');
+for(const m of policy.materialCandidates){
+ const b=books.find(b=>b.regionId===m.regionId);
+ assert.ok(b.quests.some(q=>q.id===m.questId)||b.finale?.id===m.questId);
+ assert.ok((skills+items).includes("'"+m.itemId+"'"),m.itemId);
+ assert.ok(Number.isSafeInteger(m.quantity)&&m.quantity>0&&m.released===false);
+}
+const e={accountId:'a',characterId:'c'},snapshot={...e,actualAccountMaps:['SCOUT_GREENFIELDS'],explorationClaimedEntitlementIds:[],retainedCharacterRoutes:['SCOUT_IRONWOOD']};
+let d=discoveryRecordsReview(books,policy,snapshot,e);
+assert.deepEqual(d.regions.map(r=>r.total),[5,4,4]);
+assert.equal(d.regions[0].count,1);assert.equal(d.authorizesReward,false);
+snapshot.actualAccountMaps=books.flatMap(b=>b.zones.map(z=>z.routeId));
+snapshot.explorationClaimedEntitlementIds=[d.regions[0].entitlementId];
+d=discoveryRecordsReview(books,policy,snapshot,e);
+assert.equal(d.realm.count,3);assert.equal(d.regions[0].claimed,true);
+assert.equal(d.regions[0].authorizesReward,false);
+assert.equal(discoveryRecordsReview(books,policy,snapshot,{...e,characterId:'other'}).status,'unavailable');
+const state={...snapshot,sequence:1,level:1,equippedCount:1,soloBossVictories:[],claimedLegacyIds:[],claimedStoryIds:[],activationSequences:{},events:[]};
+const map=side.quests.find(q=>q.scope==='account');
+assert.equal(projectSideReview(side,state,e).quests.find(q=>q.id===map.id).completionMode,'evidence_only');
+assert.equal(projectSideReview(side,state,e).quests.find(q=>q.id===map.id).status,'claimed');
+const q={id:'legacy-daily-id',period:'daily',periodKey:'2026-11-27',title:'Field Patrol',progress:30,required:30,status:'ready'};
+const challenges={...e,challenges:[q,{...q,id:'weekly-id',period:'weekly',periodKey:'2026-W48',progress:3,required:150,status:'active'}],monthlyMilestones:[{key:'2026-11',points:60,claimed:[30],claimUntilMs:1796688000000}]};
+let c=challengeJournalReview(challenges,e);
+assert.equal(c.rows[0].id,q.id);assert.equal(c.rows[0].periodKey,q.periodKey);assert.equal(c.summary[0].ready,1);assert.deepEqual(c.monthlyMilestones[0].claimed,[30]);assert.equal(c.authorizesReward,false);
+assert.equal(challengeJournalReview(challenges,e,'weekly').rows[0].id,'weekly-id');
+assert.equal(challengeJournalReview({...challenges,challenges:[q,q]},e).status,'unavailable');
+assert.equal(challengeJournalReview({...challenges,challenges:[{...q,progress:1}]},e).status,'unavailable');
+console.log('Material candidates, shared discovery entitlement ownership and legacy challenge continuity: PASS');

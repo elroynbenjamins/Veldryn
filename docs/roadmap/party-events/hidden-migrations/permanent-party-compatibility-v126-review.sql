@@ -33,14 +33,6 @@ end
 $$;
 revoke all on function private.inspect_party_registration_cutover_v126(uuid) from public,anon,authenticated,service_role;
 
-create table private.party_registration_cutover_fence_v126(
- party_id uuid primary key references private.party_registration_state_v110(party_id) on delete cascade,
- legacy_snapshot jsonb not null,
- seeded_at timestamptz not null default clock_timestamp()
-);
-alter table private.party_registration_cutover_fence_v126 enable row level security;
-revoke all on private.party_registration_cutover_fence_v126 from public,anon,authenticated,service_role;
-
 -- Freeze the old storage for seeded fixture Parties. Actual production
 -- cutover must replace ALL old writers/readers first, not install this
 -- trigger as an isolated production migration. Active-character sync

@@ -1,11 +1,14 @@
 /** Unmounted Journal 2.0 tracker preview. Navigation only; no automatic claims. */
+import {useGameLanguage} from '../i18n/GameLanguageProvider';
+import {storyJournal2Text} from '../i18n/story-journal-2-review';
 import {useGameTheme} from '../theme/ThemeContext';
 import type {ThemeColors} from '../theme/theme';
 import React from 'react';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 type Objective={id:string;progress:number;required:number};
 type Props={model:{status:'visible';questId:string;title:string;objective:Objective|null;label:string}|{status:'hidden'};objectiveLabel:(o:Objective)=>string;t:(s:string)=>string;onOpen:(questId:string)=>void};
-export function StoryQuestTracker2Review({model,objectiveLabel,t,onOpen}:Props){
+export function StoryQuestTracker2Review({model,objectiveLabel,t:fallback,onOpen}:Props){
+ const language=useGameLanguage(),t=(key:string)=>storyJournal2Text(language,key,fallback);
  const styles=makeStyles(useGameTheme());
  if(model.status==='hidden')return null;
  const objective=model.objective;

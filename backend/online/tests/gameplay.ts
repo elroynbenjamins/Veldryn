@@ -110,7 +110,7 @@ async function grantAuthoritySurvivesFullSetPause(){
  let grants:unknown=[storm,sakura],commits=0;
  const services:GameplayServices={
   authenticate:async token=>token==='alice-token'?'alice':null,
-  randomId:()=>{throw Error('unexpected_random');},randomRoll:()=>{throw Error('unexpected_random');},
+  randomId:()=>{throw Error('unexpected_random');},randomRoll:()=>.25,
   ultraLuxeGrantAuthority:true,ultraLuxeFullSetAuthority:false,
   rpc:async<T>(name:string,args:Record<string,unknown>):Promise<T>=>{
    if(name==='record_player_activity_server_v1'||name==='record_online_command_outcome_server_v1')return null as T;
@@ -135,7 +135,7 @@ async function grantAuthoritySurvivesFullSetPause(){
  const read=await get();assert.equal(read.status,200);
  const snapshot=await read.json();assert.equal(snapshot.state.character.profileBackgroundId,scene);
  assert(snapshot.state.account.unlockedTitleIds.includes('ascendant-stormforged-title'));
- const saved=await post({type:'claim'},'grant-pause-claim-01');assert.equal(saved.status,200);assert.equal(commits,1);
+ const saved=await post({type:'claim'},'grant-pause-claim-01');assert.equal(saved.status,200,await saved.clone().text());assert.equal(commits,1);
  assert.equal((await post({type:'ultra_luxe_full_set',args:{collectionId:storm,characterId:cid,expectedNameId:null}},'luxe_full_set_pause_fixture_123456789')).status,403);
  for(const malformed of [undefined,{},[sakura,'unknown-grant'],[sakura,sakura],['sakura-enchantment']]){
   grants=malformed;assert.equal((await get()).status,503);

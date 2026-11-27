@@ -13,6 +13,7 @@ import {reviewExecutionDamageV2,reviewOpeningStrikeV2,reviewPredatorHitV2,
  reviewGuardianBarrierV2,reviewUnyieldingDamageV2,reviewLastStandV2,reviewBulwarkTriggerV2,
  reviewAegisBarrierV2,reviewMercyBarrierV2,reviewGemBarrierAbsorptionV2,reviewGemBarrierExpiryV2,
  reviewRenewalApplyV2,reviewRenewalTicksV2,emptyBenedictionReviewV2,reviewBenedictionActionV2,
+ reviewSustenanceKillV2,emptyBattleRhythmReviewV2,reviewBattleRhythmActionV2,
  type GemBarrierSegmentReviewV2,type RenewalReviewApplicationV2,
  type GuardianReductionReviewV2,type UnyieldingReviewStateV2,type LastStandReviewStateV2,
  type EffectStackReviewStateV2,type EffectTriggerReviewGroupV2,type OpeningStrikeReviewStateV2,type PredatorWindowReviewV2} from './effect-gem-trigger-review';
@@ -22,7 +23,7 @@ export const PRIVATE_DAMAGE_GEM_REVIEW_V2='private-damage-gem-review-v2-20261126
 type Projection=ReturnType<typeof reviewFrozenForgeSocketsV2>;
 type Row={actorId:string;digest:string;worn:readonly string[];groups:readonly EffectTriggerReviewGroupV2[]};
 const tokens=new WeakMap<object,{inputDigest:string;row:Row}>();
-const supported=new Set(['effect_execution','effect_opening_strike','effect_predator','effect_momentum','effect_critical_surge','effect_flow','effect_ruin','effect_opportunist','effect_retaliation','effect_guardians_gift','effect_unyielding','effect_last_stand','effect_bulwark','effect_aegis','effect_mercy','effect_renewal','effect_benediction','effect_shared_resolve']);
+const supported=new Set(['effect_execution','effect_opening_strike','effect_predator','effect_momentum','effect_critical_surge','effect_flow','effect_ruin','effect_opportunist','effect_retaliation','effect_guardians_gift','effect_unyielding','effect_last_stand','effect_bulwark','effect_aegis','effect_mercy','effect_renewal','effect_benediction','effect_shared_resolve','effect_sustenance','effect_battle_rhythm']);
 const fail=(why:string):never=>{throw Error('private_damage_gem_review_'+why);};
 export function issuePrivateDamageGemAuthorityV2(input:CombatInput,p:Projection,
  verifyPersisted:(projection:Projection,inputDigest:string)=>boolean):PrivateDamageGemAuthorityV2{
@@ -79,11 +80,14 @@ export function authorizePrivateDamageGemReviewV2(input:CombatInput,
  let lifecycleSequence=0;
  let benediction=emptyBenedictionReviewV2();
  let sharedResolve=emptyEffectStackReviewV2();
+ let rhythm=emptyBattleRhythmReviewV2();
+ let sustenanceReadyAt=0;
+ const claimedKills=new Set<string>();
  let recovery=0;
  let extension:{id:string;tag:string;priorExpiry:number;expiry:number}|undefined;
  const ownStatuses=(target:CombatantState,now:number)=>target.modifiers.filter(r=>r.kind==='debuff'&&
   r.sourceId===row.actorId&&r.expiresAt>now&&statusIds.has(r));
- let action:{id:string;sequence:number;now:number;momentum:number;support:boolean;qualifyingOutput:boolean;benediction:number;shared:number}|undefined;
+ let action:{id:string;sequence:number;now:number;momentum:number;support:boolean;qualifyingOutput:boolean;benediction:number;shared:number;rhythmCategory:'offense'|'support'|'neutral';rhythmBonus:number;rhythmSuccessful:boolean}|undefined;
  const isWearer=(a:CombatantState)=>a.definition.id===row.actorId&&a.definition.team==='players'&&a.alive;
  const isAuthored=(a:CombatantState,id:string)=>id.includes(':v2:')&&!id.startsWith('V2_')&&!id.startsWith('GEM_')&&
   a.definition.abilities.some(x=>x.id===id);
@@ -129,12 +133,17 @@ export function authorizePrivateDamageGemReviewV2(input:CombatInput,
   // block outcome. Never equate evasion, shield absorption or mitigation to block.
   supportMultiplier(now:number,source:CombatantState,target:CombatantState,abilityId:string,kind:'heal'|'shield'){
    if(!authoredEffect(now,source,target,abilityId,kind))return 1;
-   return 1+(action?.benediction??0)+(action?.shared??0);
+   return 1+(action?.benediction??0)+(action?.shared??0)+(action?.rhythmCategory==='support'?action.rhythmBonus:0);
   },
   markSupportOutput(now:number,source:CombatantState,target:CombatantState,abilityId:string,kind:'heal'|'shield',amount:number){
-   if(amount>0&&authoredEffect(now,source,target,abilityId,kind)&&action)action.qualifyingOutput=true;
+   if(amount>0&&authoredEffect(now,source,target,abilityId,kind)&&action){
+    action.qualifyingOutput=true;
+    if(action.rhythmCategory==='support')action.rhythmSuccessful=true;
+   }
   },
   onAllySupport(now:number,source:CombatantState,target:CombatantState,abilityId:string,kind:'buff'|'shield',amount:number){
+   if(amount>0&&authoredEffect(now,source,target,abilityId,kind)&&action?.rhythmCategory==='support')
+    action.rhythmSuccessful=true;
    const g=groups.get('effect_shared_resolve');
    if(!g||amount<=0||source.definition.id===target.definition.id||!authoredEffect(now,source,target,abilityId,kind)||!action)return undefined;
    const next=reviewEffectStackTransitionV2(g,sharedResolve,{now,actionSequence:action.sequence,kind:'ally_support',eligible:true,successful:true,abilityId});
@@ -145,10 +154,18 @@ export function authorizePrivateDamageGemReviewV2(input:CombatInput,
    if(!isWearer(actor)||!action||action.id!==abilityId||action.now!==now)return undefined;
    const g=groups.get('effect_benediction'),completed=action;
    action=undefined;
-   if(!g)return undefined;
+   const rhythmGroup=groups.get('effect_battle_rhythm');
+   let rhythmTrace:{fraction:number;sequence:number;category:string}|undefined;
+   if(rhythmGroup){
+    const next=reviewBattleRhythmActionV2(rhythmGroup,now,rhythm,completed.sequence,
+     completed.rhythmCategory,completed.rhythmCategory!=='neutral',completed.rhythmSuccessful);
+    rhythm=next.state;
+    if(next.empowered)rhythmTrace={fraction:next.bonus,sequence:completed.sequence,category:completed.rhythmCategory};
+   }
+   if(!g)return {rhythmTrace,charge:undefined};
    const next=reviewBenedictionActionV2(g,now,benediction,completed.sequence,completed.support,completed.qualifyingOutput);
    benediction=next.state;
-   return next.consumed||next.granted?{familyId:g.familyId,consumed:next.consumed,granted:next.granted,bonus:next.bonus,charges:next.state.expiries.length,sequence:completed.sequence}:undefined;
+   return {rhythmTrace,charge:next.consumed||next.granted?{familyId:g.familyId,consumed:next.consumed,granted:next.granted,bonus:next.bonus,charges:next.state.expiries.length,sequence:completed.sequence}:undefined};
   },
   // Own the complete authored barrier only where duration is explicit and
   // reflection absent. No guessed timer or ownership of an ordinary pool.
@@ -190,6 +207,21 @@ export function authorizePrivateDamageGemReviewV2(input:CombatInput,
    const expired=reviewGemBarrierExpiryV2(barriers,now),due=reviewRenewalTicksV2(renewals,now);
    barriers=expired.rows;renewals=due.rows;
    return {expired:expired.expired,expiryHeals:expired.heals,renewalHeals:due.heals};
+  },
+  // Terminal only: caller confirms original direct HP loss was lethal before
+  // any secondary/reflection path. No periodic, generated or companion kills.
+  onOriginalKill(now:number,source:CombatantState,target:CombatantState,abilityId:string,originalLethal:boolean){
+   const g=groups.get('effect_sustenance');
+   if(!g||!originalLethal||!isWearer(source)||source.hp<=0||target.definition.team!=='enemies'||
+    target.hp!==0||!target.alive||claimedKills.has(target.definition.id)||
+    action?.id!==abilityId||action.now!==now||
+    !(abilityId==='BASIC'||(isAuthored(source,abilityId)&&source.definition.abilities.some(a=>a.id===abilityId&&a.effects.some(e=>e.kind==='damage')))))return undefined;
+   claimedKills.add(target.definition.id);
+   if(now<sustenanceReadyAt)return undefined;
+   const elite=(target.definition.tags??[]).some(t=>t==='elite'||t==='champion');
+   const next=reviewSustenanceKillV2(g,now,sustenanceReadyAt,source.definition.stats.maxHp,source.hp,source.shield,elite);
+   sustenanceReadyAt=next.readyAt;
+   return {heal:next.heal,barrier:next.barrier,elite};
   },
   incomingReductions(now:number,target:CombatantState){
    if(!target.alive||target.definition.team!=='players')return [];
@@ -236,21 +268,35 @@ export function authorizePrivateDamageGemReviewV2(input:CombatInput,
    const ability=actor.definition.abilities.find(a=>a.id===abilityId);
    const support=abilityId!=='BASIC'&&!!ability?.effects.some(e=>['heal','shield','hot','buff','cleanse'].includes(e.kind));
    const b=groups.get('effect_benediction');
+   const offense=!!ability?.effects.some(e=>e.kind==='damage');
+   // Mixed offense/support techniques and periodic-only offense stay neutral
+   // until their authored category is explicit. No arbitrary classification.
+   const rhythmSupport=!!ability?.effects.some(e=>e.kind==='heal'||e.kind==='shield'||e.kind==='buff');
+   const rhythmCategory=abilityId==='BASIC'||(offense&&support)?'neutral':offense?'offense':rhythmSupport?'support':'neutral';
+   const g=groups.get('effect_battle_rhythm');
+   const rhythmBonus=g&&rhythmCategory!=='neutral'&&rhythm.previous!==null&&rhythm.previous!==rhythmCategory&&
+    now<rhythm.windowUntil&&now>=rhythm.readyAt?g.totalValue:0;
    action={id:abilityId,sequence:++sequence,now,momentum:read('effect_momentum',now),support,qualifyingOutput:false,
-    benediction:support&&b&&benediction.expiries.some(t=>t>now)?b.totalValue:0,shared:sharedFraction(now)};
+    benediction:support&&b&&benediction.expiries.some(t=>t>now)?b.totalValue:0,shared:sharedFraction(now),rhythmCategory,rhythmBonus,rhythmSuccessful:false};
    return abilityId==='BASIC'?[]:advance('effect_flow',now,sequence,'ability',abilityId);
+  },
+  markRhythmShieldHit(now:number,source:CombatantState,target:CombatantState,abilityId:string,absorbed:number){
+   if(absorbed>0&&isWearer(source)&&target.definition.team==='enemies'&&isAuthored(source,abilityId)&&
+    action?.id===abilityId&&action.now===now&&action.rhythmCategory==='offense')action.rhythmSuccessful=true;
   },
   afterDirectHit(now:number,source:CombatantState,target:CombatantState,abilityId:string,critical:boolean,actualHpDamage:number):StackTrace[]{
    if(!isWearer(source)||target.definition.team!=='enemies'||actualHpDamage<=0||!action||
     action.id!==abilityId||action.now!==now)return [];
    if(abilityId!=='BASIC'&&!isAuthored(source,abilityId))return [];
+   if(action.rhythmCategory==='offense')action.rhythmSuccessful=true;
    return [...advance('effect_momentum',now,action.sequence,'direct_hit',abilityId,critical),
     ...advance('effect_critical_surge',now,action.sequence,'direct_hit',abilityId,critical)];
   },
   haste(now:number,actor:CombatantState){
    if(!isWearer(actor))return [];
    return [...(['effect_critical_surge','effect_flow'] as const).map(familyId=>({familyId:familyId,fraction:read(familyId,now)})),
-    {familyId:'effect_benediction',fraction:benediction.hasteUntil>now?.02:0}].filter(x=>x.fraction>0);
+    {familyId:'effect_benediction',fraction:benediction.hasteUntil>now?.02:0},
+    {familyId:'effect_battle_rhythm',fraction:rhythm.hasteUntil>now?.02:0}].filter(x=>x.fraction>0);
   },
   // Bind identity only to exact modifier objects created by the original
   // authored engine path. Refresh, cleanse or replacement removes identity.
@@ -287,7 +333,10 @@ export function authorizePrivateDamageGemReviewV2(input:CombatInput,
    if(direct&&effect.kind!=='damage'||!direct&&effect.kind!=='dot')return [];
    const bonuses:{familyId:string;fraction:number}[]=[];
    const put=(familyId:string,fraction:number)=>{if(fraction>0)bonuses.push({familyId,fraction});};
-   if(direct&&action?.id===abilityId&&action.now===now)put('effect_momentum',action.momentum);
+   if(direct&&action?.id===abilityId&&action.now===now){
+    put('effect_momentum',action.momentum);
+    if(!basic&&action.rhythmCategory==='offense')put('effect_battle_rhythm',action.rhythmBonus);
+   }
    const ruin=groups.get('effect_ruin');
    const statuses=ownStatuses(target,now);
    if(ruin)put(ruin.familyId,reviewRuinDamageV2(ruin,row.actorId,target.definition.id,now,true,

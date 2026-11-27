@@ -87,8 +87,8 @@ export function createGentleGemPartyPressureReviewV2(members:readonly Member[],p
    assert.throws(()=>simulateCombatWithServerAuthoritiesV2(input,{enemy,equipmentTrait,aiPolicy:'tactical',privateDamageGem}),/private_damage_gem_review_engine_scope/);
   }
   // Fresh private runtime probes, independent of the encounter's RNG.
-  if(privateDamageGem&&projection){
-   const group=projection.effectResonanceReview?.families[0];
+  if(privateDamageGem&&projection&&projection.effectResonanceReview?.families.length===1){
+   const group=projection.effectResonanceReview.families[0];
    const runtime=authorizePrivateDamageGemReviewV2(input,privateDamageGem,new Map(sources.map(s=>[s.actorId,s])))!;
    const original=result.players.find(p=>p.definition.id===projection.forgeEvidence.actorId)!;
    const owner={...original,alive:true,hp:original.definition.stats.maxHp};
@@ -195,16 +195,56 @@ export function createGentleGemPartyPressureReviewV2(members:readonly Member[],p
     runtime.beginAction(100,owner,ability.id);
     assert.equal(runtime.supportMultiplier(100,owner,ally,ability.id,kind),1);
     runtime.markSupportOutput(100,owner,ally,ability.id,kind,10);
-    const first=runtime.finishAction(100,owner,ability.id)!;
+    const first=runtime.finishAction(100,owner,ability.id)!.charge!;
     assert.equal(first.consumed,false);assert.equal(first.granted,true);
     runtime.beginAction(200,owner,ability.id);
     assert.equal(runtime.supportMultiplier(200,owner,ally,ability.id,kind),1+group.totalValue);
     runtime.markSupportOutput(200,owner,ally,ability.id,kind,10);
     runtime.markSupportOutput(200,owner,owner,ability.id,kind,10);
-    const second=runtime.finishAction(200,owner,ability.id)!;
+    const second=runtime.finishAction(200,owner,ability.id)!.charge!;
     assert.equal(second.consumed,true);assert.equal(second.charges,1);
     assert.equal(runtime.finishAction(200,owner,ability.id),undefined);
     assert.equal(runtime.haste(201,owner).find(x=>x.familyId==='effect_benediction')?.fraction??0,group.resonance===3?.02:0);
+   }
+   if(group?.familyId==='effect_sustenance'){
+    const victim={...result.enemies[0],alive:true,hp:0};
+    owner.hp=owner.definition.stats.maxHp*.5;owner.shield=0;
+    runtime.beginAction(100,owner,'BASIC');
+    assert.equal(runtime.onOriginalKill(100,owner,victim,'V2_GENERATED',true),undefined);
+    assert.equal(runtime.onOriginalKill(100,owner,victim,'BASIC',false),undefined);
+    const earned=runtime.onOriginalKill(100,owner,victim,'BASIC',true)!;
+    const elite=(victim.definition.tags??[]).some(t=>t==='elite'||t==='champion');
+    assert.ok(Math.abs(earned.heal-owner.definition.stats.maxHp*group.totalValue*(elite&&group.resonance>=2?3:1))<1e-8);
+    assert.equal(earned.barrier,0);
+    assert.equal(runtime.onOriginalKill(100,owner,victim,'BASIC',true),undefined);
+    runtime.beginAction(200,owner,'BASIC');
+    assert.equal(runtime.onOriginalKill(200,owner,{...victim,definition:{...victim.definition,id:'QA_OTHER'}},'BASIC',true),undefined);
+    owner.hp=owner.definition.stats.maxHp;
+    runtime.beginAction(3100,owner,'BASIC');
+    const full=runtime.onOriginalKill(3100,owner,{...victim,definition:{...victim.definition,id:'QA_ELITE',tags:['elite']}},'BASIC',true)!;
+    assert.equal(full.heal,0);
+    assert.ok(Math.abs(full.barrier-(group.resonance===3?Math.min(owner.definition.stats.maxHp*.02,owner.definition.stats.maxHp*group.totalValue*3*.25):0))<1e-8);
+   }
+   if(group?.familyId==='effect_battle_rhythm'){
+    const offensive=owner.definition.abilities.find(a=>a.id.includes(':v2:')&&a.effects.some(e=>e.kind==='damage')&&!a.effects.some(e=>['heal','shield','hot','buff','cleanse'].includes(e.kind)));
+    const defensive=owner.definition.abilities.find(a=>a.id.includes(':v2:')&&!a.effects.some(e=>e.kind==='damage')&&a.effects.some(e=>e.kind==='heal'||e.kind==='shield'));
+    if(offensive&&defensive){
+     const kind=defensive.effects.some(e=>e.kind==='heal')?'heal':'shield';
+     runtime.beginAction(100,owner,offensive.id);
+     runtime.afterDirectHit(100,owner,enemy,offensive.id,false,1);
+     assert.equal(runtime.finishAction(100,owner,offensive.id)?.rhythmTrace,undefined);
+     runtime.beginAction(200,owner,'BASIC');runtime.finishAction(200,owner,'BASIC');
+     runtime.beginAction(300,owner,defensive.id);
+     assert.equal(runtime.supportMultiplier(300,owner,ally,defensive.id,kind),1+group.totalValue);
+     runtime.markSupportOutput(300,owner,ally,defensive.id,kind,10);
+     runtime.markSupportOutput(300,owner,owner,defensive.id,kind,10);
+     assert.equal(runtime.finishAction(300,owner,defensive.id)?.rhythmTrace?.fraction,group.totalValue);
+     assert.equal(runtime.finishAction(300,owner,defensive.id),undefined);
+     assert.equal(runtime.haste(301,owner).find(x=>x.familyId==='effect_battle_rhythm')?.fraction??0,group.resonance===3?.02:0);
+     runtime.beginAction(400,owner,offensive.id);
+     runtime.afterDirectHit(400,owner,enemy,offensive.id,false,1);
+     assert.equal(runtime.finishAction(400,owner,offensive.id)?.rhythmTrace,undefined);
+    }
    }
    if(group?.familyId==='effect_shared_resolve'){
     const ability=owner.definition.abilities.find(a=>a.id.includes(':v2:')&&a.effects.some(e=>e.kind==='shield'||e.kind==='buff'));
@@ -255,7 +295,7 @@ export function createGentleGemPartyPressureReviewV2(members:readonly Member[],p
    (e.abilityId==='BASIC'||actor.abilities.some(a=>a.id===e.abilityId))));
   if(effectOnly){
    const report=p.effectResonanceReview!;
-   assert.ok(triggers.every(e=>report.families.some(g=>e.detail!.split(':')[1]===g.familyId&&e.amount!<=g.peak.candidate+1e-9)));
+   assert.ok(triggers.every(e=>report.families.some(g=>e.detail!.split(':')[1]===g.familyId&&e.amount!<=(e.detail?.startsWith('private_qa_haste_gem:')&&['effect_battle_rhythm','effect_benediction'].includes(g.familyId)?(g.resonance===3?.02:0):g.peak.candidate)+1e-9)));
    const byFamily=new Map(report.families.map(g=>[g.familyId,g]));
    for(const event of stackTriggers){
     const [,family,,count]=event.detail!.split(':'),g=byFamily.get(family)!;
@@ -305,7 +345,26 @@ export function createGentleGemPartyPressureReviewV2(members:readonly Member[],p
   assert.ok(lifecycleEvents.every(e=>e.actorId===actor.id&&Number.isFinite(e.amount)&&e.amount!>0));
   const terminal=lifecycleEvents.filter(e=>e.detail==='private_qa_lifecycle_terminal');
   assert.ok(terminal.every(e=>e.type==='heal'&&['V2_QA_GEM_RENEWAL_TICK','V2_QA_GEM_AEGIS_EXPIRY'].includes(e.abilityId??'')));
-  return {before:a,after:b,supportEvents:supportEvents.length,lifecycleEvents:lifecycleEvents.length,terminalHeals:terminal.length,triggerCount:triggers.length,stackTriggers:stackTriggers.length,armed:armed.length,recoveryEvents:recoveryEvents.length,extensions:extensions.length,defenseEarned:defenseEarned.length,defenseUses:defenseEvents.length-defenseEarned.length,
+  const hybrid=after.events.filter(e=>e.detail?.startsWith('private_qa_rhythm:')||e.detail?.startsWith('private_qa_sustenance_'));
+  assert.ok(!before.events.some(e=>e.detail?.startsWith('private_qa_rhythm:')||e.detail?.startsWith('private_qa_sustenance_')));
+  const rhythm=hybrid.filter(e=>e.detail?.startsWith('private_qa_rhythm:'));
+  const rg=p.effectResonanceReview?.families.find(g=>g.familyId==='effect_battle_rhythm');
+  for(const event of rhythm)assert.ok(rg&&event.actorId===actor.id&&event.amount===rg.totalValue&&event.abilityId!=='BASIC');
+  assert.equal(new Set(rhythm.map(e=>e.detail!.split(':')[1])).size,rhythm.length);
+  for(let i=1;i<rhythm.length;i++)assert.ok(rhythm[i].atMs-rhythm[i-1].atMs>=6000);
+  const kills=hybrid.filter(e=>e.detail?.startsWith('private_qa_sustenance_kill:'));
+  assert.equal(new Set(kills.map(e=>e.targetId)).size,kills.length);
+  for(let i=1;i<kills.length;i++)assert.ok(kills[i].atMs-kills[i-1].atMs>=3000);
+  const sg=p.effectResonanceReview?.families.find(g=>g.familyId==='effect_sustenance');
+  for(const event of hybrid.filter(e=>e.abilityId==='V2_QA_GEM_SUSTENANCE')){
+   assert.ok(sg&&event.actorId===actor.id&&event.targetId===actor.id&&(event.amount??0)>0);
+   assert.ok(event.type==='heal'?(event.amount??0)<=actor.stats.maxHp*sg.totalValue*(sg.resonance>=2?3:1)+1e-9:
+    event.type==='shield'&&sg.resonance===3&&(event.amount??0)<=actor.stats.maxHp*.02+1e-9);
+  }
+  const party=(result:CombatResult)=>result.players.map((member,i)=>({id:member.definition.id,role:member.definition.role,...measure(result,i)}));
+  const partyBefore=party(before),partyAfter=party(after);
+  assert.ok([...partyBefore,...partyAfter].every(x=>x.hpFraction>=0&&x.hpFraction<=1+1e-9&&Object.values(x).filter(v=>typeof v==='number').every(Number.isFinite)));
+  return {before:a,after:b,partyBefore,partyAfter,hybridEvents:hybrid.length,rhythmActivations:rhythm.length,sustenanceKills:kills.length,supportEvents:supportEvents.length,lifecycleEvents:lifecycleEvents.length,terminalHeals:terminal.length,triggerCount:triggers.length,stackTriggers:stackTriggers.length,armed:armed.length,recoveryEvents:recoveryEvents.length,extensions:extensions.length,defenseEarned:defenseEarned.length,defenseUses:defenseEvents.length-defenseEarned.length,
    hasteUses:triggers.filter(e=>e.detail?.startsWith('private_qa_haste_gem:')).length,
    maxStacks:Math.max(0,...stackTriggers.map(e=>Number(e.detail!.split(':')[3]))),
    maxFraction:Math.max(0,...triggers.map(e=>e.amount??0)),releaseEnabled:false as const};

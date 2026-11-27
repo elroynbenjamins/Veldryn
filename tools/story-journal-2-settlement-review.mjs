@@ -11,7 +11,7 @@ export function rewardPacingReview(book,legacyRewards){
  // Only applicable to fresh V2 journeys; historical entitlements keep original quest identities.
  if(book.regionId!=='ASTERFALL')return {...flags,status:'unavailable',reason:'regional_economy_unapproved'};
  const sorted=[...old].sort((a,b)=>a-b);
- if(book.quests.length!==sorted.length||new Set(book.quests.map(q=>q.id)).size!==sorted.length)return {...flags,status:'unavailable'};
+ if(book.quests.length!==sorted.length||new Set(book.quests.map(q=>q.id)).size!==sorted.length||new Set(book.quests.map(q=>q.legacyQuestId)).size!==sorted.length||!book.quests.every(q=>legacyRewards.some(r=>r.id===q.legacyQuestId)))return {...flags,status:'unavailable'};
  const rows=book.quests.map((q,i)=>({questId:q.id,legacyQuestId:q.legacyQuestId,candidateGold:sorted[i],materialPolicy:'canonical_source_review',titleId:q.legacyQuestId==='QST_015'?'oathbreaker':null,...flags}));
  return {...flags,status:'review',legacyBudget:budget,candidateBudget:rows.reduce((n,r)=>n+r.candidateGold,0),rows};
 }
@@ -23,7 +23,7 @@ export function legacyStoryMigrationReview(book,snapshot,expected){
  if(book?.regionId!=='ASTERFALL'||book.released!==false||!snapshot||!expected||
    typeof expected.accountId!=='string'||!expected.accountId||typeof expected.characterId!=='string'||!expected.characterId||
    snapshot.accountId!==expected.accountId||snapshot.characterId!==expected.characterId||
-   !Array.isArray(snapshot.legacyQuests)||typeof snapshot.legacyStateComplete!=='boolean'||snapshot.legacyStateComplete!==true)return deny('unverified_legacy_state');
+   !Array.isArray(snapshot.legacyQuests)||typeof snapshot.legacyStateComplete!=='boolean'||snapshot.legacyStateComplete!==true||typeof snapshot.legacyJourneyStarted!=='boolean')return deny('unverified_legacy_state');
  const ids=book.quests.map(q=>q.legacyQuestId);
  if(ids.length!==15||new Set(ids).size!==15)return deny('invalid_mapping');
  const byId=new Map();

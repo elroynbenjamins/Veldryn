@@ -369,3 +369,30 @@ let duplicateRouteRejected=false;
 try{reviewActivityLoadoutRoute({...routeContext,bindings:[routeBindings[0],routeBindings[0]]});}catch{duplicateRouteRejected=true;}
 assert.equal(duplicateRouteRejected,true);
 console.log('ACTIVITY_LOADOUT_REVIEW: four release categories by unlocked slot count, manual/missing/locked states; no auto equip');
+
+import {reviewActivityLoadoutUnlocks,type RegionalLoadoutUnlockProof} from '../src/core/activity-loadout-unlocks-review';
+const regionalProof:RegionalLoadoutUnlockProof={accountId:'qa-account',characterId:'qa-character',
+ region:'sunscar',encounterId:'qa-sunscar-final',settlementId:'qa-victory-1',
+ outcome:'victory',encounterKind:'regional_final_boss',status:'committed'};
+const frostProof:RegionalLoadoutUnlockProof={...regionalProof,region:'frostmarch',
+ encounterId:'qa-frostmarch-final',settlementId:'qa-victory-2',characterId:'qa-other-character'};
+const unlockContext={accountId:'qa-account',premiumSlots:0,
+ finalBossIds:{sunscar:'qa-sunscar-final',frostmarch:'qa-frostmarch-final'},verifyPersisted:()=>true};
+for(let premiumSlots=0;premiumSlots<=2;premiumSlots++)for(const proofs of [[],[regionalProof],[regionalProof,frostProof]]){
+ const result=reviewActivityLoadoutUnlocks({...unlockContext,premiumSlots,proofs});
+ assert.equal(result.slotCount,1+premiumSlots+proofs.length);
+ assert.equal(result.canGrantSlots,false);
+}
+assert.equal(reviewActivityLoadoutUnlocks({...unlockContext,proofs:[regionalProof,regionalProof,
+ {...regionalProof,settlementId:'qa-victory-3'},frostProof]}).slotCount,3);
+for(const invalid of [
+ {...unlockContext,proofs:[{...regionalProof,accountId:'foreign'}]},
+ {...unlockContext,proofs:[{...regionalProof,encounterId:'qa-dungeon-boss'}]},
+ {...unlockContext,proofs:[regionalProof],finalBossIds:{sunscar:null,frostmarch:null}},
+ {...unlockContext,proofs:[regionalProof],verifyPersisted:()=>false},
+ {...unlockContext,proofs:[regionalProof,{...frostProof,settlementId:regionalProof.settlementId}]},
+]){
+ let rejected=false;try{reviewActivityLoadoutUnlocks(invalid);}catch{rejected=true;}
+ assert.equal(rejected,true);
+}
+console.log('ACTIVITY_LOADOUT_UNLOCK_REVIEW: 9 progression/entitlement cases, repeated victories, foreign and unverified proof rejected; no grants');

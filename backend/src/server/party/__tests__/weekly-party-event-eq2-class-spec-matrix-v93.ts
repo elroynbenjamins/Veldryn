@@ -247,6 +247,8 @@ const summarize=(rows:readonly string[])=>Object.fromEntries(
 let fights=0,replayed=0,sourceBuilt=0,triggered=0;
 const classesWithSource=new Set<string>();
 const specsWithSource=new Set<string>();
+const roleMixesBySize=new Map<number,Set<string>>();
+const rosterModeCounts:Record<string,number>={};
 for(let ci=0;ci<classIds.length;ci++){
  const classId=classIds[ci];
  for(const spec of [0,1] as const)
@@ -256,7 +258,19 @@ for(let ci=0;ci<classIds.length;ci++){
   const family=families[fi],difficulty=diffs[di];
   const tier=tierOptions[(ci+spec+fi+di)%tierOptions.length];
   const tierGear: 'T1'|'T4'=tier===1?'T1':'T4';
-  const heroClasses=[classId,'IRONWARDEN','DAWNKEEPER','WAYFINDER'] as ClassIdV2[];
+  // Preserve the original encounter count while widening roster shapes.
+  // Mode selection is deterministic across class, spec, family, difficulty.
+  const rosterMode=(ci+spec+fi+di)%4;
+  const sameRole=classIds.filter(id=>CLASS_ROLES_V2[id]===CLASS_ROLES_V2[classId]);
+  const heroClasses:ClassIdV2[]=rosterMode===0?
+   [classId,'IRONWARDEN','DAWNKEEPER','WAYFINDER']:
+   rosterMode===1?[classId,...[1,2,3].map(offset=>sameRole[(sameRole.indexOf(classId)+offset)%sameRole.length]!)]:
+   rosterMode===2?[classId,classId,classId,classId]:
+   [classId,...[1,2,3].map(offset=>classIds[(ci+offset)%classIds.length]!)];
+  rosterModeCounts[String(rosterMode)]=(rosterModeCounts[String(rosterMode)]??0)+1;
+  const roles=heroClasses.slice(0,size).map(id=>CLASS_ROLES_V2[id]).sort().join('+');
+  const roleMixes=roleMixesBySize.get(size)??new Set<string>();
+  roleMixes.add(roles);roleMixesBySize.set(size,roleMixes);
   const party=heroClasses.slice(0,size).map((id,i)=>member(
    id,i===0?spec:0,i,tierGear,true));
   const prepared=prepareFullyEquippedPartyV92(party,true);
@@ -354,6 +368,13 @@ assert.equal(classIds.length,9);
 assert.equal(classesWithSource.size,9);
 assert.equal(specsWithSource.size,18);
 assert.equal(fights,9*2*4*3*3);
+for(const size of [2,3,4]){
+ const mixes=roleMixesBySize.get(size);
+ assert.ok(mixes&&mixes.size>=3,'flexible roster composition diversity');
+ for(const role of ['tank','damage','support'])
+  assert.ok(mixes.has(Array(size).fill(role).join('+')),'homogeneous '+role+' size '+size);
+}
+assert.equal(Object.values(rosterModeCounts).reduce((a,b)=>a+b,0),fights);
 assert.equal(replayed,fights);
 assert.equal(metrics.size,9*2*4*3);
 assert.equal(tierOptions.reduce((sum,tier)=>sum+
@@ -365,6 +386,7 @@ const summary={version:'v93',releaseReady:false,
  caveat:'synthetic level25 class/item policies and fake storage, not certified balance',
  classes:classesWithSource.size,specializations:specsWithSource.size,
  encounters:fights,deterministicReplays:replayed,
+ rosterModeCounts,roleMixesBySize:Object.fromEntries([...roleMixesBySize].map(([size,mixes])=>[size,[...mixes].sort()])),
  fullyCompiledMemberSnapshots:sourceBuilt,traitTriggers:triggered,
  totals:[...metrics.values()].reduce((x,r)=>({
   victories:x.victories+r.victories,wipes:x.wipes+r.wipes,

@@ -52,7 +52,7 @@ export function DraconicDominionPreview({assets,equippedPetId,alternatePetSource
     <Animated.Image source={assets.fallbackGlow} fadeDuration={0} resizeMode="stretch" style={[box(B.ring),{opacity:ringGlow}]}/>
     <Animated.View style={[StyleSheet.absoluteFill,{transform:[{translateY:bodyLift}]}]}>
      {running&&assets.smoothPoseAtlas?<Animated.View style={[box(B.dragon),{transform:mirroredBody}]}><UltraLuxePetPoseSprite source={assets.smoothPoseAtlas} clock={clock} theme="draconic" width={B.dragon.w*k} height={B.dragon.h*k}/></Animated.View>:<Animated.Image source={assets.dragon} fadeDuration={0} resizeMode="contain" style={[box(B.dragon),{transform:mirroredBody}]}/>}
-     <Animated.Image source={assets.flames} fadeDuration={0} resizeMode="contain" style={[box(B.flames),{opacity:Animated.add(Animated.multiply(idle.glow,.24),Animated.multiply(Animated.add(Animated.multiply(pulse,.70),Animated.multiply(reaction,.14)),.90)),transform:mirroredBody}]}/>
+     <Animated.Image source={assets.flames} fadeDuration={0} resizeMode="contain" style={[box(B.flames),{opacity:Animated.add(.14,Animated.add(Animated.multiply(idle.glow,.15),Animated.add(Animated.multiply(pulse,.64),Animated.multiply(reaction,.12)))),transform:mirroredBody}]}/>
      {running?<UltraLuxePetAura clock={clock} scale={k} theme="draconic" particle={assets.ember}/>:null}
      {reactionEnabled?<UltraLuxePetReaction reaction={reaction} scale={k} theme="draconic" particle={assets.ember} glow={assets.fallbackGlow}/>:null}
     </Animated.View>

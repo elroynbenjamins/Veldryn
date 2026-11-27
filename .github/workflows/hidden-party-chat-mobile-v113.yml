@@ -2,6 +2,7 @@ name: Hidden Party Chat mobile preview
 on:
   pull_request:
     paths:
+      - 'apps/mobile/src/i18n/party-chat-preview-v117.ts'
       - 'apps/mobile/src/core/party-chat-card-preview-v113.ts'
       - 'apps/mobile/src/core/party-chat-refresh-preview-v114.ts'
       - 'apps/mobile/src/core/party-chat-active-requests-preview-v115.ts'

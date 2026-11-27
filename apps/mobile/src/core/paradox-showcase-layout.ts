@@ -17,7 +17,7 @@ export const PARADOX_BOXES={
 } as const;
 export const PARADOX_CYCLE_MS=24000;
 export const PARADOX_PHASE=[0,2/24,4/24,8/24,11/24,14/24,16/24,19/24,22/24,1] as const;
-export const PARADOX_ENERGY=[0,.22,.43,.18,.44,.78,1,.58,.15,0] as const;
+export const PARADOX_ENERGY=[0,.68,.85,.32,.58,.86,1,.66,.24,0] as const;
 export function paradoxAwakeningCurve(){
  const phase:number[]=[0],energy:number[]=[0];
  for(let i=1;i<PARADOX_PHASE.length;i++)for(let j=1;j<=4;j++){

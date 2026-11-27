@@ -13,7 +13,7 @@ const point=(x:number,y:number,opacity:number,scale:number):OrnamentFrame=>({x,y
 /** Closed vertical rail with invisible returns; samples are native interpolation targets.
  * All visible and invisible samples stay on the perimeter, including linear interpolation. */
 function rail(theme:NextPremiumTheme,right:boolean,t:number,full:boolean):OrnamentFrame{
- const p=cycle(t*(theme==='petal-waltz'?2:3)+(right?.5:0));
+ const p=cycle(t*(theme==='petal-waltz'?3:4)+(right?.5:0));
  const down=theme==='petal-waltz'?!right:right;
  const q=p<.5?smooth(p*2):1-smooth((p-.5)*2);
  const y=mix(31,174,down?q:1-q);
@@ -22,8 +22,8 @@ function rail(theme:NextPremiumTheme,right:boolean,t:number,full:boolean):Orname
  return point(right?326:14,y,pulse*strength,1+.08*pulse);
 }
 function fixed(theme:NextPremiumTheme,x:number,y:number,t:number,offset:number,full:boolean):OrnamentFrame{
- const w=wave(t*(theme==='petal-waltz'?2:3)+offset);
- return point(x,y,.08+(full?.76:.64)*w,1+.12*w);
+ const w=wave(t*(theme==='petal-waltz'?3:4)+offset);
+ return point(x,y,.16+(full?.68:.64)*w,1+.12*w);
 }
 export function nextPremiumOrnamentTracks(theme:NextPremiumTheme,showcase:boolean,fullSet:boolean):OrnamentTrack[]{
  const full=showcase&&fullSet;

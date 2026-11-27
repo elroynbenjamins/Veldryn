@@ -38,7 +38,7 @@ export function reviewSaveInactiveLoadout(state:GameState,index:number,draft:Act
    used.add(copyId);equipmentInstanceIds[slot]=copyId;
   }else{
    const has=character.equipment[slot]===itemId&&!character.equipmentInstanceIds?.[slot]||
-    [...state.inventory.stacks,...state.bank.stacks,...(character.equipmentPouch?.stacks??[])].some(row=>row.itemId===itemId&&!row.instanceId&&row.quantity>0);
+    [...state.inventory.stacks,...state.bank.stacks].some(row=>row.itemId===itemId&&!row.instanceId&&row.quantity>0);
    if(!has)throw Error('loadout_editor_missing_item');
   }
   equipment[slot]=def.id;

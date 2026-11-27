@@ -1,3 +1,4 @@
+import {reviewPartyCharacterSwapV103,type PartyCharacterV103} from '../party-roster-character-swap-review-v103';
 import {strict as assert} from 'node:assert';
 import type {CombatantDefinition,CombatInput,CombatV2Resource} from '../../combat/types';
 import {launchPlayer} from '../../combat/content/launch-combat';
@@ -132,6 +133,41 @@ function denied(fn:()=>unknown,needle:string){
  assert.ok(error!==undefined&&String(error).includes(needle),
   'expected '+needle+', got '+String(error));
 }
+const currentRoster:PartyCharacterV103[]=[
+ {accountId:'A',characterId:'A_tank',classId:'IRONWARDEN'},
+ {accountId:'B',characterId:'B_damage',classId:'RAVAGER'},
+ {accountId:'C',characterId:'C_damage',classId:'HEXWEAVER'},
+ {accountId:'D',characterId:'D_support',classId:'DAWNKEEPER'},
+];
+const alternateA:PartyCharacterV103={accountId:'A',characterId:'A_damage',classId:'WAYFINDER'};
+const alternateB:PartyCharacterV103={accountId:'B',characterId:'B_tank',classId:'BASTION'};
+const swapInput={
+ partyId:'QA_PARTY_SWAP',mode:'dungeon' as const,phase:'lobby' as const,
+ rosterRevision:7,expectedRevision:7,current:currentRoster,
+ proposed:[alternateB,alternateA,...currentRoster.slice(2)],
+ ownedCharacters:[...currentRoster,alternateA,alternateB],
+ consents:[{accountId:'A',characterId:'A_damage',rosterRevision:7},
+  {accountId:'B',characterId:'B_tank',rosterRevision:7}],
+};
+const swapped=reviewPartyCharacterSwapV103(swapInput,true);
+assert.deepEqual(swapped.roster.map(r=>r.accountId),['A','B','C','D']);
+assert.deepEqual(swapped.roster.map(r=>r.characterId),['A_damage','B_tank','C_damage','D_support']);
+assert.equal(swapped.proposedRevision,8);
+assert.equal(swapped.requiresFreshReadyCheck,true);
+assert.equal(swapped.canPersist,false);
+assert.equal(currentRoster[0]!.characterId,'A_tank');
+denied(()=>reviewPartyCharacterSwapV103({...swapInput,expectedRevision:6},true),'stale_or_invalid_revision');
+denied(()=>reviewPartyCharacterSwapV103({...swapInput,consents:swapInput.consents.slice(0,1)},true),'consent_missing_or_mismatched');
+for(const phase of ['ready_check','committed_run','event_frozen'] as const)
+ denied(()=>reviewPartyCharacterSwapV103({...swapInput,phase},true),'roster_locked');
+denied(()=>reviewPartyCharacterSwapV103({...swapInput,proposed:[alternateA,...currentRoster.slice(1)],
+ consents:swapInput.consents.slice(0,1)},true),'invalid_dungeon_roles');
+denied(()=>reviewPartyCharacterSwapV103({...swapInput,ownedCharacters:currentRoster},true),'character_not_owned');
+const flexible=reviewPartyCharacterSwapV103({...swapInput,mode:'party_event',current:currentRoster.slice(0,2),
+ proposed:[alternateA,currentRoster[1]!],consents:swapInput.consents.slice(0,1)},true);
+assert.equal(flexible.roster.length,2,'event lobby permits two damage characters');
+denied(()=>reviewPartyCharacterSwapV103(swapInput),'unreleased');
+console.log('PARTY_ROSTER_SWAP_V103_REVIEW_OK: account-stable role exchange and frozen encounter isolation');
 assert.equal(PARTY_EVENT_EQ2_TRAIT_V92_RELEASED,false);
 let scenarios=0,traitEvents=0,baselineEvents=0;
 let totalReflect=0,phases70=0,phases35=0,losses=0,timeouts=0;

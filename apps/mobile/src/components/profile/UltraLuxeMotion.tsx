@@ -25,7 +25,7 @@ export function petIdleMotion(clock:Clock,k:number,kind:PetIdleKind){
  return {lift:channel('lift',k),scaleX:channel('scaleX'),scaleY:channel('scaleY'),glow:channel('glow'),
  tilt:clock.interpolate({inputRange,outputRange:frames.map(p=>p.tilt+'deg')})};
 }
-function pulse(clock:Clock|ReturnType<typeof Animated.modulo>,index:number){
+function pulse(clock:ReturnType<typeof Animated.modulo>,index:number){
  return clock.interpolate({inputRange:[...LOOP_PHASE],outputRange:shiftClosed([.25,.65,.35,.9,.3,.65,.25,.45,.25],index)});
 }
 function Decorative({children}:{children:ReactNode}){

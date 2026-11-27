@@ -1783,6 +1783,7 @@ function makeV21Loadout(classId:ClassIdV2,specIndex:0|1,targetTier:1|2|3|4,targe
  const conditionalEffectFamilies=['effect_ruin','effect_opportunist','effect_retaliation'];
  const effectFamilies=[...originalEffectFamilies,...stackEffectFamilies,...conditionalEffectFamilies];
   const defensiveEffectFamilies=['effect_unyielding','effect_last_stand','effect_guardians_gift'];
+  const newSupportFamilies=['effect_aegis','effect_mercy','effect_renewal','effect_benediction','effect_shared_resolve'];
  const profiles=[{id:'BOSS_EXP_SPHINX',name:'The Veiled Sphinx',region:'sunscar' as const,tier:3 as const,level:40},
   {id:'BOSS_EXP_BELLBEAST',name:'The Bellbeast of Shiverlake',region:'frostmarch' as const,tier:4 as const,level:60}];
  const rows:{classId:ClassIdV2;spec:number;arm:string;boss:string;seed:number;result:ReturnType<ReturnType<typeof createGentleGemPartyPressureReviewV2>>}[]=[];
@@ -1823,7 +1824,7 @@ function makeV21Loadout(classId:ClassIdV2,specIndex:0|1,targetTier:1|2|3|4,targe
      return reviewFrozenForgeSocketsV2(qa.actor,build,source,sockets,policy);
     });
     const selectedEffectFamilies=CLASS_ROLES_V2[classId]==='damage'?effectFamilies.filter(f=>f!=='effect_retaliation'):
-     CLASS_ROLES_V2[classId]==='tank'?['effect_retaliation','effect_unyielding','effect_last_stand']:['effect_guardians_gift'];
+     CLASS_ROLES_V2[classId]==='tank'?['effect_retaliation','effect_unyielding','effect_last_stand','effect_bulwark']:['effect_guardians_gift',...newSupportFamilies];
     const effects=selectedEffectFamilies.flatMap(family=>[1,2,3].map(rank=>{
      const sockets:V2GemSidecarState={slots:[],receipts:[]};
      for(let i=0;i<rank;i++){
@@ -1855,7 +1856,7 @@ function makeV21Loadout(classId:ClassIdV2,specIndex:0|1,targetTier:1|2|3|4,targe
   }
  }
  assert.equal(baseEncounters,24);assert.equal(rows.length,384);
- assert.equal(effectRows.length,864);
+ assert.equal(effectRows.length,1296);
  assert.ok(effectRows.filter(r=>r.family==='effect_opening_strike'||r.family==='effect_predator').every(r=>r.result.triggerCount>0));
  console.log('PRIVATE_DAMAGE_GEM_COMBAT_REVIEW '+JSON.stringify({cases:effectRows.filter(r=>originalEffectFamilies.includes(r.family)).length,baseEncounters,
   scope:'THREE_EFFECT_FAMILY_EXECUTABLE_QA',byFamilyRank:originalEffectFamilies.flatMap(family=>[1,2,3].map(rank=>{
@@ -1892,6 +1893,17 @@ function makeV21Loadout(classId:ClassIdV2,specIndex:0|1,targetTier:1|2|3|4,targe
     earned:a.reduce((n,r)=>n+r.result.defenseEarned,0),uses:a.reduce((n,r)=>n+r.result.defenseUses,0),
     meanDamageTakenDelta:a.reduce((n,r)=>n+r.result.after.damageTaken-r.result.before.damageTaken,0)/a.length,
     meanHpFractionDelta:a.reduce((n,r)=>n+r.result.after.hpFraction-r.result.before.hpFraction,0)/a.length,
+    lostVictories:a.filter(r=>r.result.before.victory>r.result.after.victory).length};})),releaseEnabled:false,cpApproved:false}));
+ const supportRows=effectRows.filter(r=>r.family==='effect_bulwark'||newSupportFamilies.includes(r.family));
+ assert.equal(supportRows.length,432);
+ console.log('PRIVATE_SUPPORT_GEM_COMBAT_REVIEW '+JSON.stringify({cases:supportRows.length,baseEncounters,
+  scope:'SIX_FAMILY_PARTIAL_OR_EXECUTABLE_QA',byFamilyRank:['effect_bulwark',...newSupportFamilies].flatMap(family=>[1,2,3].map(rank=>{
+   const a=supportRows.filter(r=>r.family===family&&r.rank===rank);assert.equal(a.length,24);
+   return {family,rank,cases:a.length,activeEncounters:a.filter(r=>r.result.supportEvents+r.result.lifecycleEvents+r.result.defenseEarned>0).length,
+    supportEvents:a.reduce((n,r)=>n+r.result.supportEvents,0),lifecycleEvents:a.reduce((n,r)=>n+r.result.lifecycleEvents,0),
+    terminalHeals:a.reduce((n,r)=>n+r.result.terminalHeals,0),defenseEarned:a.reduce((n,r)=>n+r.result.defenseEarned,0),
+    meanHpsDelta:a.reduce((n,r)=>n+r.result.after.hps-r.result.before.hps,0)/a.length,
+    meanShieldDelta:a.reduce((n,r)=>n+r.result.after.shield-r.result.before.shield,0)/a.length,
     lostVictories:a.filter(r=>r.result.before.victory>r.result.after.victory).length};})),releaseEnabled:false,cpApproved:false}));
  const groups=new Map<string,typeof rows>();
  for(const r of rows){const k=CLASS_ROLES_V2[r.classId]+'|'+r.arm;groups.set(k,[...(groups.get(k)??[]),r]);}

@@ -10,7 +10,10 @@ import {reviewExecutionDamageV2,reviewOpeningStrikeV2,reviewPredatorHitV2,
  emptyEffectStackReviewV2,reviewEffectStackTransitionV2,
  reviewRuinDamageV2,reviewOpportunistApplicationV2,reviewOpportunistHitV2,
  emptyRetaliationReviewV2,reviewRetaliationTakenV2,reviewRetaliationHitV2,type OpportunistWindowReviewV2,
- reviewGuardianBarrierV2,reviewUnyieldingDamageV2,reviewLastStandV2,
+ reviewGuardianBarrierV2,reviewUnyieldingDamageV2,reviewLastStandV2,reviewBulwarkTriggerV2,
+ reviewAegisBarrierV2,reviewMercyBarrierV2,reviewGemBarrierAbsorptionV2,reviewGemBarrierExpiryV2,
+ reviewRenewalApplyV2,reviewRenewalTicksV2,emptyBenedictionReviewV2,reviewBenedictionActionV2,
+ type GemBarrierSegmentReviewV2,type RenewalReviewApplicationV2,
  type GuardianReductionReviewV2,type UnyieldingReviewStateV2,type LastStandReviewStateV2,
  type EffectStackReviewStateV2,type EffectTriggerReviewGroupV2,type OpeningStrikeReviewStateV2,type PredatorWindowReviewV2} from './effect-gem-trigger-review';
 const brand:unique symbol=Symbol('private-effect-gem-damage-review');
@@ -19,7 +22,7 @@ export const PRIVATE_DAMAGE_GEM_REVIEW_V2='private-damage-gem-review-v2-20261126
 type Projection=ReturnType<typeof reviewFrozenForgeSocketsV2>;
 type Row={actorId:string;digest:string;worn:readonly string[];groups:readonly EffectTriggerReviewGroupV2[]};
 const tokens=new WeakMap<object,{inputDigest:string;row:Row}>();
-const supported=new Set(['effect_execution','effect_opening_strike','effect_predator','effect_momentum','effect_critical_surge','effect_flow','effect_ruin','effect_opportunist','effect_retaliation','effect_guardians_gift','effect_unyielding','effect_last_stand']);
+const supported=new Set(['effect_execution','effect_opening_strike','effect_predator','effect_momentum','effect_critical_surge','effect_flow','effect_ruin','effect_opportunist','effect_retaliation','effect_guardians_gift','effect_unyielding','effect_last_stand','effect_bulwark','effect_aegis','effect_mercy','effect_renewal','effect_benediction','effect_shared_resolve']);
 const fail=(why:string):never=>{throw Error('private_damage_gem_review_'+why);};
 export function issuePrivateDamageGemAuthorityV2(input:CombatInput,p:Projection,
  verifyPersisted:(projection:Projection,inputDigest:string)=>boolean):PrivateDamageGemAuthorityV2{
@@ -70,11 +73,17 @@ export function authorizePrivateDamageGemReviewV2(input:CombatInput,
  let guardian:readonly GuardianReductionReviewV2[]=[];
  let unyielding:UnyieldingReviewStateV2={expiries:[],readyAt:0};
  let lastStand:LastStandReviewStateV2={used:false,expiresAt:0};
+ let bulwarkUntil=0;
+ let barriers:readonly GemBarrierSegmentReviewV2[]=[];
+ let renewals:readonly RenewalReviewApplicationV2[]=[];
+ let lifecycleSequence=0;
+ let benediction=emptyBenedictionReviewV2();
+ let sharedResolve=emptyEffectStackReviewV2();
  let recovery=0;
  let extension:{id:string;tag:string;priorExpiry:number;expiry:number}|undefined;
  const ownStatuses=(target:CombatantState,now:number)=>target.modifiers.filter(r=>r.kind==='debuff'&&
   r.sourceId===row.actorId&&r.expiresAt>now&&statusIds.has(r));
- let action:{id:string;sequence:number;now:number;momentum:number}|undefined;
+ let action:{id:string;sequence:number;now:number;momentum:number;support:boolean;qualifyingOutput:boolean;benediction:number;shared:number}|undefined;
  const isWearer=(a:CombatantState)=>a.definition.id===row.actorId&&a.definition.team==='players'&&a.alive;
  const isAuthored=(a:CombatantState,id:string)=>id.includes(':v2:')&&!id.startsWith('V2_')&&!id.startsWith('GEM_')&&
   a.definition.abilities.some(x=>x.id===id);
@@ -92,16 +101,104 @@ export function authorizePrivateDamageGemReviewV2(input:CombatInput,
   !abilityId.startsWith('V2_')&&!abilityId.startsWith('GEM_')&&
   !(source.definition.phases??[]).some(p=>p.id===abilityId)&&
   (abilityId==='BASIC'||source.definition.abilities.some(a=>a.id===abilityId&&a.effects.some(e=>e.kind==='damage')));
+ const authoredEffect=(now:number,source:CombatantState,target:CombatantState,id:string,kind:AbilityEffect['kind'])=>
+  isWearer(source)&&target.alive&&target.definition.team==='players'&&isAuthored(source,id)&&
+  action?.id===id&&action.now===now&&source.definition.abilities.some(a=>a.id===id&&a.effects.some(e=>e.kind===kind));
+ const ownBarrier=(id:string)=>barriers.filter(x=>x.recipientId===id).reduce((n,x)=>n+x.remaining,0);
+ const externalBarrier=(target:CombatantState)=>{
+  const external=target.shield-ownBarrier(target.definition.id);
+  if(external< -1e-7)fail('barrier_pool_invariant');
+  return Math.max(0,external);
+ };
+ const sharedFraction=(now:number)=>(groups.get('effect_shared_resolve')?.totalValue??0)*sharedResolve.expiries.filter(t=>t>now).length;
  const defenseFraction=(now:number,target:CombatantState)=>isWearer(target)?
   (groups.get('effect_unyielding')?.totalValue??0)*unyielding.expiries.filter(t=>t>now).length:0;
  return {
   defenseFraction,
+  onDefensiveAction(now:number,actor:CombatantState,abilityId:string){
+   const g=groups.get('effect_bulwark');
+   const ability=actor.definition.abilities.find(x=>x.id===abilityId);
+   if(!g||!isWearer(actor)||!isAuthored(actor,abilityId)||action?.id!==abilityId||action.now!==now||
+    !ability?.effects.some(e=>e.kind==='shield'||(e.kind==='buff'&&
+     ((e.tag==='damage_taken'&&(e.value??0)<0)||(e.tag==='defense_pct'&&(e.value??0)>0)))))return undefined;
+   const next=reviewBulwarkTriggerV2(g,now,bulwarkUntil,'defensive_ability');
+   bulwarkUntil=next.expiresAt;
+   return next.refreshed?{familyId:g.familyId,fraction:next.reduction,expiresAt:next.expiresAt}:undefined;
+  },
+  // No successful-block hook: shared engine has no independently resolved
+  // block outcome. Never equate evasion, shield absorption or mitigation to block.
+  supportMultiplier(now:number,source:CombatantState,target:CombatantState,abilityId:string,kind:'heal'|'shield'){
+   if(!authoredEffect(now,source,target,abilityId,kind))return 1;
+   return 1+(action?.benediction??0)+(action?.shared??0);
+  },
+  markSupportOutput(now:number,source:CombatantState,target:CombatantState,abilityId:string,kind:'heal'|'shield',amount:number){
+   if(amount>0&&authoredEffect(now,source,target,abilityId,kind)&&action)action.qualifyingOutput=true;
+  },
+  onAllySupport(now:number,source:CombatantState,target:CombatantState,abilityId:string,kind:'buff'|'shield',amount:number){
+   const g=groups.get('effect_shared_resolve');
+   if(!g||amount<=0||source.definition.id===target.definition.id||!authoredEffect(now,source,target,abilityId,kind)||!action)return undefined;
+   const next=reviewEffectStackTransitionV2(g,sharedResolve,{now,actionSequence:action.sequence,kind:'ally_support',eligible:true,successful:true,abilityId});
+   sharedResolve=next.state;
+   return next.triggered?{familyId:g.familyId,fraction:next.bonus,stacks:next.stacks,sequence:action.sequence}:undefined;
+  },
+  finishAction(now:number,actor:CombatantState,abilityId:string){
+   if(!isWearer(actor)||!action||action.id!==abilityId||action.now!==now)return undefined;
+   const g=groups.get('effect_benediction'),completed=action;
+   action=undefined;
+   if(!g)return undefined;
+   const next=reviewBenedictionActionV2(g,now,benediction,completed.sequence,completed.support,completed.qualifyingOutput);
+   benediction=next.state;
+   return next.consumed||next.granted?{familyId:g.familyId,consumed:next.consumed,granted:next.granted,bonus:next.bonus,charges:next.state.expiries.length,sequence:completed.sequence}:undefined;
+  },
+  // Own the complete authored barrier only where duration is explicit and
+  // reflection absent. No guessed timer or ownership of an ordinary pool.
+  // Untimed original nonreflective barriers get magnitude only; no invented expiry.
+  // MaxHP capacity is a private QA candidate, not an approved global cap.
+  aegisBarrier(now:number,source:CombatantState,target:CombatantState,abilityId:string,amount:number,effect:AbilityEffect){
+   const g=groups.get('effect_aegis');
+   if(!g||!authoredEffect(now,source,target,abilityId,'shield')||effect.shieldReflectPct)return undefined;
+   if(!effect.durationMs||effect.durationMs<=0)return {amount:amount*(1+g.totalValue),owned:false};
+   const next=reviewAegisBarrierV2(g,{id:'QA_BARRIER_'+(++lifecycleSequence),casterId:row.actorId,recipientId:target.definition.id,now,
+    authoredAmount:amount,baseCapacity:target.definition.stats.maxHp,durationMs:effect.durationMs,externalShield:externalBarrier(target),rows:barriers,authored:true});
+   barriers=next.rows;
+   return {amount:next.granted,owned:true};
+  },
+  afterHeal(now:number,source:CombatantState,target:CombatantState,abilityId:string,attempted:number,actual:number){
+   if(!authoredEffect(now,source,target,abilityId,'heal'))return {mercy:0,renewal:0};
+   let mercy=0,renewal=0;
+   const m=groups.get('effect_mercy');
+   if(m){
+    const next=reviewMercyBarrierV2(m,{id:'QA_BARRIER_'+(++lifecycleSequence),casterId:row.actorId,recipientId:target.definition.id,now,
+     attempted,actual,maxHp:target.definition.stats.maxHp,externalShield:externalBarrier(target),rows:barriers,authoredDirect:true});
+    barriers=next.rows;mercy=next.granted;
+   }
+   const n=groups.get('effect_renewal');
+   if(n){
+    const next=reviewRenewalApplyV2(n,{id:'QA_RENEWAL_'+(++lifecycleSequence),casterId:row.actorId,targetId:target.definition.id,now,actualHeal:actual,authoredDirect:true,rows:renewals});
+    renewals=next.rows;renewal=next.total;
+   }
+   return {mercy,renewal};
+  },
+  absorbOwned(now:number,target:CombatantState,totalAbsorbed:number){
+   if(totalAbsorbed<=0||!barriers.length)return 0;
+   const residual=Math.max(0,totalAbsorbed-externalBarrier(target));
+   if(residual===0)return 0;
+   const next=reviewGemBarrierAbsorptionV2(barriers,target.definition.id,now,residual);
+   barriers=next.rows;return next.absorbed;
+  },
+  tickLifecycle(now:number){
+   const expired=reviewGemBarrierExpiryV2(barriers,now),due=reviewRenewalTicksV2(renewals,now);
+   barriers=expired.rows;renewals=due.rows;
+   return {expired:expired.expired,expiryHeals:expired.heals,renewalHeals:due.heals};
+  },
   incomingReductions(now:number,target:CombatantState){
    if(!target.alive||target.definition.team!=='players')return [];
    const rows=guardian.filter(x=>x.recipientId===target.definition.id&&x.expiresAt>now)
     .map(x=>({familyId:'effect_guardians_gift',fraction:x.value}));
    const last=groups.get('effect_last_stand');
    if(last&&isWearer(target)&&lastStand.expiresAt>now)rows.push({familyId:last.familyId,fraction:last.totalValue});
+   const b=groups.get('effect_bulwark');
+   if(b&&isWearer(target)&&bulwarkUntil>now)rows.push({familyId:b.familyId,fraction:b.totalValue});
    return rows;
   },
   afterIncomingDefense(now:number,source:CombatantState,target:CombatantState,abilityId:string,beforeHp:number){
@@ -136,7 +233,11 @@ export function authorizePrivateDamageGemReviewV2(input:CombatInput,
   // and once for each basic. No proc or periodic action can register.
   beginAction(now:number,actor:CombatantState,abilityId:string):StackTrace[]{
    if(!isWearer(actor)||!(abilityId==='BASIC'||isAuthored(actor,abilityId)))return [];
-   action={id:abilityId,sequence:++sequence,now,momentum:read('effect_momentum',now)};
+   const ability=actor.definition.abilities.find(a=>a.id===abilityId);
+   const support=abilityId!=='BASIC'&&!!ability?.effects.some(e=>['heal','shield','hot','buff','cleanse'].includes(e.kind));
+   const b=groups.get('effect_benediction');
+   action={id:abilityId,sequence:++sequence,now,momentum:read('effect_momentum',now),support,qualifyingOutput:false,
+    benediction:support&&b&&benediction.expiries.some(t=>t>now)?b.totalValue:0,shared:sharedFraction(now)};
    return abilityId==='BASIC'?[]:advance('effect_flow',now,sequence,'ability',abilityId);
   },
   afterDirectHit(now:number,source:CombatantState,target:CombatantState,abilityId:string,critical:boolean,actualHpDamage:number):StackTrace[]{
@@ -148,8 +249,8 @@ export function authorizePrivateDamageGemReviewV2(input:CombatInput,
   },
   haste(now:number,actor:CombatantState){
    if(!isWearer(actor))return [];
-   return (['effect_critical_surge','effect_flow'] as const).map(familyId=>({familyId,fraction:read(familyId,now)}))
-    .filter(x=>x.fraction>0);
+   return [...(['effect_critical_surge','effect_flow'] as const).map(familyId=>({familyId:familyId,fraction:read(familyId,now)})),
+    {familyId:'effect_benediction',fraction:benediction.hasteUntil>now?.02:0}].filter(x=>x.fraction>0);
   },
   // Bind identity only to exact modifier objects created by the original
   // authored engine path. Refresh, cleanse or replacement removes identity.

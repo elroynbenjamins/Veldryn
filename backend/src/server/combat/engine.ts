@@ -130,7 +130,22 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
       amount:row.fraction,detail:'private_qa_stack_gem:'+row.familyId+':'+row.sequence+':'+row.stacks});
   };
   const beginPrivateGemAction=(now:number,actor:CombatantState,abilityId:string)=>{
-    if(privateDamageGem)emitPrivateStack(now,actor,abilityId,privateDamageGem.beginAction(now,actor,abilityId));
+    if(privateDamageGem){
+      emitPrivateStack(now,actor,abilityId,privateDamageGem.beginAction(now,actor,abilityId));
+      const earned=privateDamageGem.onDefensiveAction(now,actor,abilityId);
+      if(earned)events.push({atMs:now,type:'gem_state',actorId:actor.definition.id,abilityId,amount:earned.fraction,
+        expiresAtMs:earned.expiresAt,detail:'private_qa_defense_earned:'+earned.familyId});
+    }
+  };
+  const finishPrivateGemAction=(now:number,actor:CombatantState,abilityId:string)=>{
+    const row=privateDamageGem?.finishAction(now,actor,abilityId);
+    if(row)events.push({atMs:now,type:'gem_state',actorId:actor.definition.id,abilityId,amount:row.bonus,
+      detail:'private_qa_support_charge:'+row.familyId+':'+row.sequence+':'+Number(row.consumed)+':'+row.charges});
+  };
+  const emitPrivateAllySupport=(now:number,source:CombatantState,target:CombatantState,abilityId:string,kind:'shield'|'buff',amount:number)=>{
+    const row=privateDamageGem?.onAllySupport(now,source,target,abilityId,kind,amount);
+    if(row)events.push({atMs:now,type:'gem_state',actorId:source.definition.id,targetId:target.definition.id,abilityId,
+      amount:row.fraction,detail:'private_qa_support_stack:'+row.familyId+':'+row.sequence+':'+row.stacks});
   };
   const privateGemHaste=(now:number,actor:CombatantState,abilityId:string)=>{
     if(!privateDamageGem)return 0;
@@ -410,7 +425,9 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
     // Poison applied as a true-damage DoT attacks HP directly, regardless of shields.
     // Direct true damage retains its legacy shield interaction.
     const bypassShield=eventType==='dot_tick'&&effect.damageType==='true';
-    const absorbed=bypassShield?0:Math.min(target.shield,raw); target.shield-=absorbed;
+    const absorbed=bypassShield?0:Math.min(target.shield,raw);
+    const privateAbsorbed=privateDamageGem?.absorbOwned(now,target,absorbed)??0;
+    target.shield-=absorbed;
     // The ordinary shield pool/reflect ledger is untouched by equipment
     // shield consumption. Only residual nontrue original enemy damage qualifies.
     const eq2Absorption=eq2PrivateHit&&eq2Incoming?eq2PrivateHit.absorbShield(eq2Incoming,Math.max(0,raw-absorbed)):undefined;
@@ -565,7 +582,7 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
     }
     // Reflect only damage absorbed by the shield that granted this effect. Direct
     // reflection cannot trigger another shield reflection or recurse indefinitely.
-    let reflectable=absorbed;
+    let reflectable=absorbed-privateAbsorbed;
     for(const shield of target.reflectiveShields??[]){
       const used=Math.min(reflectable,shield.remaining);shield.remaining-=used;reflectable-=used;
       const owner=all.find(a=>a.definition.id===shield.sourceId);if(!used||!owner||!source.alive||source===target)continue;
@@ -621,7 +638,7 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
     const hpBeforeHeal=target.hp;
     const amount=Math.max(0,(source.definition.stats.healingPower*(effect.coeff??0)+(effect.flat??0))*sourceMult*receivedMult*(source.definition.alchemyModifiers?.healing??1)*v2HealBonus*
       (direct&&source.combatV2?reactiveHealingMultiplierV2(source,target,now):1)*
-      forgeHealMultiplier*
+      forgeHealMultiplier*(direct?(privateDamageGem?.supportMultiplier(now,source,target,abilityId,'heal')??1):1)*
       // Derived Renewal and Restorative Bloom already include original heal multipliers.
       (eventType==='hot_tick'&&(abilityId==='GEM_RENEWAL'||abilityId==='V2_EQUIPMENT_TRAIT:restorative_bloom')
         ?1:(1+sync(source,'healing_done_pct'))*(1+sync(target,'healing_received_pct')))); const actual=Math.min(amount,target.definition.stats.maxHp-target.hp); target.hp+=actual; source.healingDone+=actual;
@@ -682,6 +699,13 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
         }
       }
     }
+    if(direct&&privateDamageGem){
+      privateDamageGem.markSupportOutput(now,source,target,abilityId,'heal',amount);
+      const post=privateDamageGem.afterHeal(now,source,target,abilityId,amount,actual);
+      if(post.mercy>0){target.shield+=post.mercy;
+        events.push({atMs:now,type:'shield',actorId:source.definition.id,targetId:target.definition.id,abilityId:'V2_QA_GEM_MERCY',amount:post.mercy,detail:'private_qa_lifecycle_mercy'});}
+      if(post.renewal>0)events.push({atMs:now,type:'gem_state',actorId:source.definition.id,targetId:target.definition.id,abilityId,amount:post.renewal,detail:'private_qa_lifecycle_renewal_grant'});
+    }
     if(direct){const post=gemOnDirectHealV1(now,source,target,amount,actual);if(post.mercyBarrier>0){target.shield+=post.mercyBarrier;events.push({atMs:now,type:'shield',actorId:source.definition.id,targetId:target.definition.id,abilityId:'GEM_MERCY',amount:Number(post.mercyBarrier.toFixed(2))});}if(post.renewalTotal>0){const existing=target.periodic.filter(p=>p.effectId==='GEM_RENEWAL'&&p.sourceId===source.definition.id).sort((a,b)=>a.expiresAt-b.expiresAt);while(existing.length>=post.renewalMax){const remove=existing.shift();if(remove)target.periodic=target.periodic.filter(p=>p!==remove);}const tickMs=2000,ticks=Math.max(1,Math.floor(post.renewalDuration/tickMs));target.periodic.push({sourceId:source.definition.id,effectId:'GEM_RENEWAL',kind:'hot',coeff:0,flat:post.renewalTotal/ticks,nextTickAt:now+tickMs,expiresAt:now+post.renewalDuration,tickMs});}gemConsumeSupportChargeV1(now,source);emitGemState(now);}
     enemies.forEach(e=>{if(e.alive)addThreat(e,source,actual*.5*(effect.threatMultiplier??1));}); };
   // Forge Tenacity modifies only ordinary hostile abilities on Combat 2.0
@@ -703,10 +727,15 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
       thresholdSupportMultiplier(source,target,abilityId,effect.shieldBelowHpPct,effect.shieldBonus)*
       (source.combatV2?reactiveShieldMultiplierV2(source,target,now):1)*
       (v2Encounter?1+clamp(source.definition.combatV2?.equipmentEffects?.shieldStrengthPct??0,0,1):1)*
-      (1+sync(source,'shield_strength_pct')));
-      const amt=enemyV2Effects&&target.definition.team==='enemies'
-        ?enemyV2AllowedShieldAmount(target.definition.stats.maxHp,target.shield,requested):requested;
+      (1+sync(source,'shield_strength_pct'))*(privateDamageGem?.supportMultiplier(now,source,target,abilityId,'shield')??1));
+      const privateAegis=privateDamageGem?.aegisBarrier(now,source,target,abilityId,requested,effect);
+      const amt=privateAegis?.amount??(enemyV2Effects&&target.definition.team==='enemies'
+        ?enemyV2AllowedShieldAmount(target.definition.stats.maxHp,target.shield,requested):requested);
       target.shield+=amt;
+      if(privateAegis&&privateAegis.amount>0)events.push({atMs:now,type:'gem_state',actorId:source.definition.id,targetId:target.definition.id,abilityId,
+        amount:privateAegis.amount,detail:privateAegis.owned?'private_qa_lifecycle_aegis_grant':'private_qa_lifecycle_aegis_magnitude_only'});
+      privateDamageGem?.markSupportOutput(now,source,target,abilityId,'shield',amt);
+      emitPrivateAllySupport(now,source,target,abilityId,'shield',amt);
       if(privateDamageGem)for(const row of privateDamageGem.onBarrier(now,source,target,abilityId,amt))
         events.push({atMs:now,type:'gem_state',actorId:source.definition.id,targetId:row.recipientId,
           abilityId,amount:row.fraction,expiresAtMs:row.expiresAt,detail:'private_qa_defense_earned:'+row.familyId});
@@ -802,6 +831,8 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
       if(enemyV2Effects&&source.definition.team==='enemies')
         target.modifiers=applyEnemyV2Modifier(target.modifiers,modifierEntry).entries;
       else target.modifiers.push(modifierEntry);
+      if(effect.kind==='buff'&&target.modifiers.includes(modifierEntry))
+        emitPrivateAllySupport(now,source,target,abilityId,'buff',Math.abs(modifierEntry.value));
       if(privateDamageGem&&effect.kind==='debuff')privateDamageGem.onDebuff(now,source,target,abilityId,modifierEntry,!!privateFreshDebuff);
       events.push({atMs:now,type:'status_apply',actorId:source.definition.id,targetId:target.definition.id,abilityId,statusKind:effect.kind,statusTag:tag,expiresAtMs:expiresAt});if(effect.kind==='debuff')gemOnDebuffAppliedV1(now,source,target);else gemOnBuffAppliedV1(now,source,target);emitGemState(now);return;}
   };
@@ -854,6 +885,26 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
     return active.pct/100;
   };
   for(let now=0; now<=maxMs; now+=tick){
+    if(privateDamageGem){
+      const life=privateDamageGem.tickLifecycle(now);
+      for(const row of life.expired){
+        const recipient=players.find(p=>p.definition.id===row.recipientId);
+        if(!recipient||recipient.shield+1e-7<row.remaining)throw Error('private_gem_barrier_expiry_pool');
+        recipient.shield=Math.max(0,recipient.shield-row.remaining);
+        events.push({atMs:now,type:'gem_state',actorId:row.casterId,targetId:row.recipientId,amount:row.remaining,
+          detail:'private_qa_lifecycle_barrier_expired:'+row.id});
+      }
+      const terminal=(casterId:string,targetId:string,requested:number,abilityId:string)=>{
+        const src=players.find(p=>p.definition.id===casterId),dest=players.find(p=>p.definition.id===targetId);
+        if(!src?.alive||!dest?.alive||dest.hp<=0)return;
+        const actual=Math.min(requested,Math.max(0,dest.definition.stats.maxHp-dest.hp));
+        if(actual<=0)return;
+        dest.hp+=actual;src.healingDone+=actual;
+        events.push({atMs:now,type:'heal',actorId:casterId,targetId,abilityId,amount:actual,detail:'private_qa_lifecycle_terminal'});
+      };
+      for(const row of life.expiryHeals)terminal(row.casterId,row.recipientId,row.amount,'V2_QA_GEM_AEGIS_EXPIRY');
+      for(const row of life.renewalHeals)terminal(row.casterId,row.targetId,row.amount,'V2_QA_GEM_RENEWAL_TICK');
+    }
     for(let expired=eq2PrivateHit?.expireShield(now);expired;expired=eq2PrivateHit?.expireShield(now))
       events.push({atMs:now,type:'equipment_trait_trigger',actorId:expired.ownerId,
         abilityId:'V2_QA_SHIELD:'+expired.id,amount:expired.remaining,detail:'private_qa_shield_expired'});
@@ -930,7 +981,7 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
         const resolvedTarget=target?.alive?target:emergencyReplacement;
         if(ab&&resolvedTarget?.alive){events.push({atMs:now,type:'cast_complete',actorId:actor.definition.id,targetId:resolvedTarget.definition.id,abilityId:ab.id});gemOnAbilityUsedV1(now,actor,ab);emitGemState(now); const executed=spend(actor,ab,now);for(const fx of executed.effects){ for(const t of (tacticalAi&&pureSingleHealV2(actor,ab)&&resolvedTarget.hp<resolvedTarget.definition.stats.maxHp&&
           (hpPct(resolvedTarget)<CRITICAL_SUPPORT_HP_V2||!allies.some(a=>a.alive&&hpPct(a)<CRITICAL_SUPPORT_HP_V2))
-          ?[resolvedTarget]:tacticalAi?supportTargetsV2(fx.target??ab.target,actor,allies,foes,rng,`${now}:${ab.id}:target`,ab,fx):targetsFor(fx.target??ab.target,actor,allies,foes,rng,`${now}:${ab.id}:target`)))applyEffect(now,actor,t,fx,ab.id); }} }
+          ?[resolvedTarget]:tacticalAi?supportTargetsV2(fx.target??ab.target,actor,allies,foes,rng,`${now}:${ab.id}:target`,ab,fx):targetsFor(fx.target??ab.target,actor,allies,foes,rng,`${now}:${ab.id}:target`)))applyEffect(now,actor,t,fx,ab.id); }finishPrivateGemAction(now,actor,ab.id); } }
       if(actor.casting)continue;
       // A summoned V2 Thunder Totem must finish its 2/4/6s pulse train.
       // Otherwise base haste shortens its 6s cooldown to ~5.6s, AI
@@ -999,8 +1050,8 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
         else if(ab)ab=sequenceDamageActionV2(actor,ab,ordered,foes,now,available,sequenceHoldsV2);
       }
       if(ab){ const coordinated=healPlanFor(ab);
-        const ts=predictiveTargets??(coordinated?.target?[coordinated.target]:tacticalAi?supportTargetsV2(ab.target,actor,allies,foes,rng,`${now}:${ab.id}:select`,ab):targetsFor(ab.target,actor,allies,foes,rng,`${now}:${ab.id}:select`)); const t=ts[0]; if(t){ sequenceHoldsV2.delete(actor.definition.id+':'+ab.id); actor.cooldownReadyAt[ab.id]=now+Math.round(ab.cooldownMs/(Math.max(.25,1+gemEffectiveHasteV1(actor,now)+eq2Haste(actor,now)+privateGemHaste(now,actor,ab.id)+(v2Encounter?Math.max(-.2,Math.min(.2,modifier(actor,'haste',now)+reactiveHasteV2(actor))):0))*(1+sync(actor,'haste_pct')))); if(ab.castTimeMs>0){actor.casting={abilityId:ab.id,completesAt:now+ab.castTimeMs,targetId:t.definition.id};events.push({atMs:now,type:'cast_start',actorId:actor.definition.id,targetId:t.definition.id,abilityId:ab.id});}else{gemOnAbilityUsedV1(now,actor,ab);emitGemState(now);const executed=spend(actor,ab,now);for(const fx of executed.effects){for(const x of (fx.target&&!(((tacticalAi&&(tankV2(actor)||damageV2(actor)))&&predictiveTargets||coordinated?.target)&&fx.target===ab.target)?(tacticalAi?supportTargetsV2(fx.target,actor,allies,foes,rng,`${now}:${ab.id}:effect`,ab,fx):targetsFor(fx.target,actor,allies,foes,rng,`${now}:${ab.id}:effect`)):ts)){if(x.alive)applyEffect(now,actor,x,fx,ab.id);}}} continue; } }
-      if(actor.nextBasicAt<=now){ const t=chooseEnemy(actor,foes,rng,`${now}:${actor.definition.id}:basic`); if(t){beginPrivateGemAction(now,actor,'BASIC');applyDamage(now,actor,t,{kind:'damage',coeff:actor.definition.basicAttackCoeff,damageType:'physical',threatMultiplier:actor.definition.role==='tank'?2.5:1},'BASIC');actor.nextBasicAt=now+Math.round(actor.definition.basicAttackMs/(Math.max(.25,1+gemEffectiveHasteV1(actor,now)+eq2Haste(actor,now)+privateGemHaste(now,actor,'BASIC')+(v2Encounter?Math.max(-.2,Math.min(.2,modifier(actor,'haste',now)+reactiveHasteV2(actor))):0))*(1+sync(actor,'haste_pct'))));} }
+        const ts=predictiveTargets??(coordinated?.target?[coordinated.target]:tacticalAi?supportTargetsV2(ab.target,actor,allies,foes,rng,`${now}:${ab.id}:select`,ab):targetsFor(ab.target,actor,allies,foes,rng,`${now}:${ab.id}:select`)); const t=ts[0]; if(t){ sequenceHoldsV2.delete(actor.definition.id+':'+ab.id); actor.cooldownReadyAt[ab.id]=now+Math.round(ab.cooldownMs/(Math.max(.25,1+gemEffectiveHasteV1(actor,now)+eq2Haste(actor,now)+privateGemHaste(now,actor,ab.id)+(v2Encounter?Math.max(-.2,Math.min(.2,modifier(actor,'haste',now)+reactiveHasteV2(actor))):0))*(1+sync(actor,'haste_pct')))); if(ab.castTimeMs>0){actor.casting={abilityId:ab.id,completesAt:now+ab.castTimeMs,targetId:t.definition.id};events.push({atMs:now,type:'cast_start',actorId:actor.definition.id,targetId:t.definition.id,abilityId:ab.id});}else{gemOnAbilityUsedV1(now,actor,ab);emitGemState(now);const executed=spend(actor,ab,now);for(const fx of executed.effects){for(const x of (fx.target&&!(((tacticalAi&&(tankV2(actor)||damageV2(actor)))&&predictiveTargets||coordinated?.target)&&fx.target===ab.target)?(tacticalAi?supportTargetsV2(fx.target,actor,allies,foes,rng,`${now}:${ab.id}:effect`,ab,fx):targetsFor(fx.target,actor,allies,foes,rng,`${now}:${ab.id}:effect`)):ts)){if(x.alive)applyEffect(now,actor,x,fx,ab.id);}}finishPrivateGemAction(now,actor,ab.id);} continue; } }
+      if(actor.nextBasicAt<=now){ const t=chooseEnemy(actor,foes,rng,`${now}:${actor.definition.id}:basic`); if(t){beginPrivateGemAction(now,actor,'BASIC');applyDamage(now,actor,t,{kind:'damage',coeff:actor.definition.basicAttackCoeff,damageType:'physical',threatMultiplier:actor.definition.role==='tank'?2.5:1},'BASIC');finishPrivateGemAction(now,actor,'BASIC');actor.nextBasicAt=now+Math.round(actor.definition.basicAttackMs/(Math.max(.25,1+gemEffectiveHasteV1(actor,now)+eq2Haste(actor,now)+privateGemHaste(now,actor,'BASIC')+(v2Encounter?Math.max(-.2,Math.min(.2,modifier(actor,'haste',now)+reactiveHasteV2(actor))):0))*(1+sync(actor,'haste_pct'))));} }
     }
   }
   events.push({atMs:maxMs,type:'combat_end',detail:'timeout'}); return {victory:false,durationMs:maxMs,reason:'timeout',events,players,enemies};

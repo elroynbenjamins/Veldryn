@@ -11,7 +11,7 @@ declare
  v_actions jsonb:='[]'::jsonb;
 begin
  select * into s from private.party_registration_state_v110 where party_id=p_party;
- if not found or not s.qa_fixture_ready or s.leader_account_id is distinct from p_actor
+ if not found or not s.qa_fixture_ready or s.lifecycle_status<>'active' or s.leader_account_id is distinct from p_actor
  or not exists(select 1 from public.parties where id=p_party and status<>'disbanded')
  or not exists(select 1 from private.party_registration_members_v110 where party_id=p_party and account_id=p_actor)
  then return null;end if;
@@ -29,8 +29,7 @@ begin
    or private.party_registration_role_v111(c.class_id) is distinct from a.role
    or c.level is null or c.level<greatest(1,s.minimum_level)
    or not exists(select 1 from public.characters where account_id=a.applicant_account_id and level>=10)
-   or exists(select 1 from private.party_registration_members_v110 where account_id=a.applicant_account_id)
-   or exists(select 1 from public.party_members where account_id=a.applicant_account_id and left_at is null)
+   or not private.party_entry_account_available_v131(a.applicant_account_id)
    or (select count(*) from private.party_registration_members_v110 where party_id=p_party)>=4
    or exists(select 1 from private.party_registration_members_v110 m join public.player_blocks b on
     (b.blocker_id=a.applicant_account_id and b.blocked_id=m.account_id)

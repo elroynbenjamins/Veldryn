@@ -116,3 +116,86 @@ DO $$ BEGIN
  THEN RAISE EXCEPTION 'mirror_settlement_failed'; END IF;
 END $$;
 ROLLBACK;
+
+-- Independent original issuance registration rehearsal, in a fresh rollback.
+-- Source rows stand in for an independently persisted Forge claim; they are
+-- synthetic fixtures, NOT authority or a canonical digest implementation.
+BEGIN;
+CREATE TABLE market_review.original_forge_claim(
+ receipt text PRIMARY KEY, job text UNIQUE NOT NULL, instance text UNIQUE NOT NULL,
+ owner text NOT NULL, character_id text NOT NULL,
+ generation text NOT NULL CHECK(generation='equipment-2.0'),
+ digest text NOT NULL CHECK(digest ~ '^[0-9a-f]{64}$'),
+ snapshot jsonb NOT NULL CHECK(jsonb_typeof(snapshot)='object'),
+ FOREIGN KEY(character_id,owner) REFERENCES market_review.character(id,owner)
+);
+CREATE TRIGGER original_forge_claim_immutable BEFORE UPDATE OR DELETE
+ ON market_review.original_forge_claim FOR EACH ROW EXECUTE FUNCTION market_review.immutable();
+CREATE FUNCTION market_review.register_original_forge(
+ p_receipt text,p_instance text,p_owner text,p_character text,p_digest text,p_abort boolean DEFAULT false
+) RETURNS jsonb LANGUAGE plpgsql SECURITY INVOKER SET search_path='' AS $$
+DECLARE s market_review.original_forge_claim%ROWTYPE;
+ m market_review.mint%ROWTYPE; cap int; used int;
+BEGIN
+ -- No caller-supplied snapshot or generation. Read the independent claim.
+ SELECT * INTO s FROM market_review.original_forge_claim WHERE receipt=p_receipt FOR UPDATE;
+ IF NOT FOUND OR s.instance IS DISTINCT FROM p_instance OR s.owner IS DISTINCT FROM p_owner
+  OR s.character_id IS DISTINCT FROM p_character OR s.digest IS DISTINCT FROM p_digest
+ THEN RAISE EXCEPTION 'original_claim_mismatch'; END IF;
+ SELECT inventory_cap INTO STRICT cap FROM market_review.wallet WHERE id=s.owner FOR UPDATE;
+ -- A replay is about original mint identity, not current mutable custody.
+ SELECT * INTO m FROM market_review.mint WHERE id=s.instance;
+ IF FOUND THEN
+  IF m.receipt IS DISTINCT FROM s.receipt OR m.original_owner IS DISTINCT FROM s.owner
+    OR m.generation IS DISTINCT FROM s.generation OR m.snapshot IS DISTINCT FROM s.snapshot
+    OR NOT EXISTS(SELECT 1 FROM market_review.custody WHERE id=s.instance)
+    OR NOT EXISTS(SELECT 1 FROM market_review.policy WHERE id=s.instance)
+  THEN RAISE EXCEPTION 'original_registration_conflict'; END IF;
+ ELSE
+  SELECT count(*) INTO used FROM market_review.custody WHERE owner=s.owner AND state='inventory';
+  IF used>=cap THEN RAISE EXCEPTION 'original_inventory_full'; END IF;
+  INSERT INTO market_review.mint VALUES(s.instance,s.owner,s.receipt,s.generation,s.snapshot);
+  -- Registration is never approval. Even successful new copies remain untradeable.
+  INSERT INTO market_review.policy VALUES(s.instance,false);
+  IF p_abort THEN RAISE EXCEPTION 'injected_after_mint_registration'; END IF;
+  INSERT INTO market_review.custody(id,owner,state,holder) VALUES(s.instance,s.owner,'inventory',s.character_id);
+ END IF;
+ RETURN jsonb_build_object('instance',s.instance,'receipt',s.receipt,'marketAuthorized',false);
+END $$;
+REVOKE ALL ON market_review.original_forge_claim FROM PUBLIC;
+REVOKE ALL ON FUNCTION market_review.register_original_forge(text,text,text,text,text,boolean) FROM PUBLIC;
+INSERT INTO market_review.original_forge_claim VALUES
+ ('forge-original-1','forge-job-1','new-eq2-copy','b','b1','equipment-2.0',repeat('a',64),'{"quality":77,"rarity":"rare"}'),
+ ('forge-original-2','forge-job-2','new-eq2-copy-2','b','b1','equipment-2.0',repeat('b',64),'{"quality":50,"rarity":"common"}'),
+ ('forge-collision','forge-job-3','x','a','a1','equipment-2.0',repeat('c',64),'{"quality":77,"rarity":"rare"}');
+SELECT market_review.expect_error($q$SELECT market_review.register_original_forge('missing','fake','b','b1',repeat('a',64))$q$,'original_claim_mismatch');
+SELECT market_review.expect_error($q$SELECT market_review.register_original_forge('forge-original-1','new-eq2-copy','a','a1',repeat('a',64))$q$,'original_claim_mismatch');
+SELECT market_review.expect_error($q$SELECT market_review.register_original_forge('forge-original-1','new-eq2-copy','b','b2',repeat('a',64))$q$,'original_claim_mismatch');
+SELECT market_review.expect_error($q$SELECT market_review.register_original_forge('forge-original-1','new-eq2-copy','b','b1',repeat('f',64))$q$,'original_claim_mismatch');
+SELECT market_review.expect_error($q$SELECT market_review.register_original_forge('forge-original-1','fake','b','b1',repeat('a',64))$q$,'original_claim_mismatch');
+SELECT market_review.expect_error($q$SELECT market_review.register_original_forge('forge-collision','x','a','a1',repeat('c',64))$q$,'original_registration_conflict');
+SELECT market_review.expect_error($q$SELECT market_review.register_original_forge('forge-original-1','new-eq2-copy','b','b1',repeat('a',64),true)$q$,'injected_after_mint_registration');
+DO $$ BEGIN
+ IF EXISTS(SELECT 1 FROM market_review.mint WHERE id='new-eq2-copy')
+ OR EXISTS(SELECT 1 FROM market_review.custody WHERE id='new-eq2-copy')
+ OR EXISTS(SELECT 1 FROM market_review.policy WHERE id='new-eq2-copy')
+ THEN RAISE EXCEPTION 'original_partial_registration'; END IF;
+END $$;
+SELECT market_review.register_original_forge('forge-original-1','new-eq2-copy','b','b1',repeat('a',64));
+SELECT market_review.register_original_forge('forge-original-1','new-eq2-copy','b','b1',repeat('a',64));
+SELECT market_review.expect_error($q$SELECT market_review.act('list','b','mint-list','new-eq2-copy',0,'mint-offer',100,1)$q$,'not_listable');
+UPDATE market_review.wallet SET inventory_cap=1 WHERE id='b';
+SELECT market_review.expect_error($q$SELECT market_review.register_original_forge('forge-original-2','new-eq2-copy-2','b','b1',repeat('b',64))$q$,'original_inventory_full');
+SELECT market_review.act('deposit','b','mint-bank','new-eq2-copy',0);
+SELECT market_review.register_original_forge('forge-original-1','new-eq2-copy','b','b1',repeat('a',64));
+SELECT market_review.expect_error($q$UPDATE market_review.original_forge_claim SET digest=repeat('d',64) WHERE receipt='forge-original-1'$q$,'immutable_history');
+DO $$ BEGIN
+ IF (SELECT count(*) FROM market_review.mint WHERE receipt='forge-original-1')<>1
+ OR NOT EXISTS(SELECT 1 FROM market_review.custody WHERE id='new-eq2-copy' AND owner='b' AND state='bank' AND revision=1)
+ OR NOT EXISTS(SELECT 1 FROM market_review.policy WHERE id='new-eq2-copy' AND NOT approved)
+ OR EXISTS(SELECT 1 FROM market_review.mint WHERE id='new-eq2-copy-2')
+ OR (SELECT sum(gold) FROM market_review.wallet)<>3000
+ OR EXISTS(SELECT 1 FROM market_review.sale)
+ THEN RAISE EXCEPTION 'original_registration_invariant'; END IF;
+END $$;
+ROLLBACK;

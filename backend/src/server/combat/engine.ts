@@ -279,9 +279,9 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
         raw*=incomingReactiveMultiplierV2(target,source,now);
         raw=Math.max(0,raw-reactiveDamageFlatReductionV2(target,raw));
         if(protectionTrace&&source.definition.team==='enemies'&&target.definition.team==='players'){
-          const shield=eventType==='dot_tick'&&effect.damageType==='true'?0:target.shield;
-          const saved=Math.max(0,Math.min(target.hp,Math.max(0,beforeReactive-shield))-
-            Math.min(target.hp,Math.max(0,raw-shield)));
+          // Conservative ordered marginal: mitigation before shield. Do not
+          // double-count the shield's subsequent HP-saving contribution.
+          const saved=Math.max(0,Math.min(target.hp,beforeReactive)-Math.min(target.hp,raw));
           if(saved>0)protectionTrace.push({kind:'reactive_reduction',atMs:now,targetId:target.definition.id,amount:saved});
         }
       }

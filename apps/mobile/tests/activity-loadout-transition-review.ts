@@ -1,10 +1,9 @@
 import assert from 'node:assert/strict';
 import {createCharacter,newGame,claimActivity} from '../src/core/game';
-import {saveCharacterLoadout} from '../src/core/character-loadouts';
 import {unlockCollectible,selectCollectible,collectionBonusBreakdown} from '../src/core/collectibles';
 import {updateFaithPreference} from '../src/core/faith';
 import {totalXpAtLevel} from '../src/core/progression';
-import {captureActivityLoadoutSelections,applyActivityLoadoutSelectionsReview,reviewActivityLoadoutTransition} from '../src/core/activity-loadout-transition-review';
+import {captureActivityLoadoutSelections,saveActivityLoadoutReview,applyActivityLoadoutSelectionsReview,reviewActivityLoadoutTransition} from '../src/core/activity-loadout-transition-review';
 let state=createCharacter(newGame(1000),'IRONWARDEN','Loadout QA');
 state={...state,quests:state.quests.map(q=>q.questId==='QST_003'?{...q,status:'claimed' as const}:q),
  character:{...state.character!,faith:{favoriteBlessingIds:['EMBER_VOW'],hideWeakerBlessings:false,xp:totalXpAtLevel(40)}},
@@ -12,14 +11,16 @@ state={...state,quests:state.quests.map(q=>q.questId==='QST_003'?{...q,status:'c
 state=unlockCollectible(unlockCollectible(state,'PET_001'),'PET_018');
 state=selectCollectible(state,'pet','PET_001');
 state=updateFaithPreference(updateFaithPreference(state,'blessing','EMBER_VOW'),'blessing','VERDANT_WHISPER');
-state=saveCharacterLoadout(state,0,'Woodcutting',1000);
+state=saveActivityLoadoutReview(state,0,'Woodcutting',1000);
 const first=captureActivityLoadoutSelections(state);
 assert.equal(first.petId,'PET_001');assert.equal(first.faithSelections?.combat,'EMBER_VOW');
 assert.equal(first.faithSelections?.gathering,'VERDANT_WHISPER');
 state=selectCollectible(state,'pet','PET_018');
 state=updateFaithPreference(state,'blessing','SUNFIRE_VOW');
-state=saveCharacterLoadout(state,1,'Combat',1000);
+state=saveActivityLoadoutReview(state,1,'Combat',1000);
 const second=captureActivityLoadoutSelections(state);
+assert.equal(state.character?.savedLoadouts?.[0].petId,first.petId);
+assert.deepEqual(state.character?.savedLoadouts?.[1].faithSelections,second.faithSelections);
 const before=JSON.stringify(state);
 const selection=applyActivityLoadoutSelectionsReview(state,first,1000);
 assert.equal(selection.character?.selectedCosmeticPetId,'PET_001');
@@ -39,7 +40,7 @@ assert.throws(()=>applyActivityLoadoutSelectionsReview(state,{faithSelections:{g
 assert.throws(()=>applyActivityLoadoutSelectionsReview(state,{faithSelections:{combat:'DAWN_COVENANT'}},1000));
 const bindings=[{category:'woodcutting' as const,slotIndex:0,presetId:'loadout-1'},
  {category:'combat' as const,slotIndex:1,presetId:'loadout-2'}];
-const config={autoSwitch:true,bindings,selectionsByPreset:{'loadout-1':first,'loadout-2':second},
+const config={autoSwitch:true,bindings,
  verifyNoFrozenEncounter:()=>true};
 const wood=reviewActivityLoadoutTransition({...config,state,nowMs:2000,target:{kind:'gathering',id:'GREENWOOD_TREE'}});
 assert.equal(wood.state.activity?.kind,'woodcutting');
@@ -55,7 +56,8 @@ assert.deepEqual(combat.reward,expected.reward);
 assert.equal(combat.state.activity?.startedAtMs,62000);
 const snapshot=JSON.stringify(wood.state);
 assert.throws(()=>reviewActivityLoadoutTransition({...config,state:wood.state,nowMs:62000,target:{kind:'combat',id:'MOSS_RAT'},verifyNoFrozenEncounter:()=>false}));
-assert.throws(()=>reviewActivityLoadoutTransition({...config,state:wood.state,nowMs:62000,target:{kind:'combat',id:'MOSS_RAT'},selectionsByPreset:{'loadout-2':{petId:'PET_042'}}}));
+const invalidSaved={...wood.state,character:{...wood.state.character!,savedLoadouts:wood.state.character!.savedLoadouts?.map(row=>row.id==='loadout-2'?{...row,petId:'PET_042'}:row)}};
+assert.throws(()=>reviewActivityLoadoutTransition({...config,state:invalidSaved,nowMs:62000,target:{kind:'combat',id:'MOSS_RAT'}}));
 assert.equal(JSON.stringify(wood.state),snapshot);
 assert.throws(()=>reviewActivityLoadoutTransition({...config,state:wood.state,nowMs:62000,target:{kind:'combat',id:'MOSS_RAT'},bindings:[bindings[0]]}));
 assert.equal(JSON.stringify(state),before);

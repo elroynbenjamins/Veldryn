@@ -35,3 +35,41 @@ export function winterHearthCraftSettlementWindow(input:{lastClaimAtMs:number;no
  const settledAtMs=!released?lastClaimAtMs:Math.max(lastClaimAtMs,Math.min(nowMs,endsAtMs-1));
  return {expired,elapsedSeconds:Math.max(0,Math.min(offlineCapSeconds,(settledAtMs-lastClaimAtMs)/1000))};
 }
+
+/** Weekly craft allowance is shared across the account and both seasonal recipes.
+ * A reservation belongs to its UTC start week; unfinished work stops at that
+ * week's reset and is refunded. Inactive characters' reservations still count. */
+export const WINTER_HEARTH_WEEKLY_LIGHT_CRAFT_CAP=250;
+export const WINTER_HEARTH_LIGHTS_PER_BATCH=5;
+const WEEK_MS=7*86400000;
+const BATCH_CAP=WINTER_HEARTH_WEEKLY_LIGHT_CRAFT_CAP/WINTER_HEARTH_LIGHTS_PER_BATCH;
+export function winterHearthCraftWeekStartMs(nowMs:number):number{
+ const day=Math.floor(nowMs/86400000);
+ return (day-((day+3)%7+7)%7)*86400000;
+}
+export function winterHearthCraftWeekEndMs(nowMs:number):number{return winterHearthCraftWeekStartMs(nowMs)+WEEK_MS;}
+export function normalizeWinterHearthCraftLedger(value:unknown):Record<string,number>{
+ const result:Record<string,number>={};
+ if(!value||typeof value!=='object'||Array.isArray(value))return result;
+ for(let week=winterHearthCraftWeekStartMs(WINTER_HEARTH_2026_START_MS);week<WINTER_HEARTH_2026_END_MS;week+=WEEK_MS){
+  const count=(value as Record<string,unknown>)[String(week)];
+  if(typeof count==='number'&&Number.isSafeInteger(count)&&count>0)result[String(week)]=Math.min(BATCH_CAP,count);
+ }
+ return result;
+}
+export function winterHearthCompletedBatchAllowance(state:GameState,startedAtMs:number):number{
+ const key=String(winterHearthCraftWeekStartMs(startedAtMs));
+ return BATCH_CAP-(normalizeWinterHearthCraftLedger(state.account.winterHearthCraftedBatchesByWeek)[key]??0);
+}
+export function winterHearthRemainingCraftBatches(state:GameState,nowMs:number):number{
+ const week=winterHearthCraftWeekStartMs(nowMs);
+ const activities=[state.activity,...(state.otherCharacters??[]).map(row=>row.activity)];
+ const reserved=activities.reduce((count,activity)=>count+(activity?.kind==='processing'&&activity.processing&&isWinterHearthLightRecipe(activity.processing.recipeId)&&winterHearthCraftWeekStartMs(activity.startedAtMs)===week?activity.processing.remainingBatches:0),0);
+ return Math.max(0,winterHearthCompletedBatchAllowance(state,nowMs)-reserved);
+}
+export function recordWinterHearthCompletedBatches(state:GameState,startedAtMs:number,batches:number):GameState{
+ if(!batches)return state;
+ const key=String(winterHearthCraftWeekStartMs(startedAtMs)),ledger=normalizeWinterHearthCraftLedger(state.account.winterHearthCraftedBatchesByWeek);
+ if(!Number.isSafeInteger(batches)||batches<0||batches>winterHearthCompletedBatchAllowance(state,startedAtMs))throw new Error('Winter Hearth weekly crafting allowance exceeded.');
+ return {...state,account:{...state.account,winterHearthCraftedBatchesByWeek:{...ledger,[key]:(ledger[key]??0)+batches}}};
+}

@@ -653,6 +653,23 @@ export const socialEarlyRows={
   "Total Marks from this run": ["Всего знаков за этот поход","Bu seferin toplam Nişanı"],
   "Combat Marks are already in your wallet. Completion Marks are added only when claimed.": ["Боевые знаки уже на вашем счёте. Знаки за завершение начисляются только после получения награды.","Savaş Nişanları bakiyene zaten eklendi. Tamamlama Nişanları yalnızca ödülü aldığında eklenir."],
   "Total is estimated until the claim is complete.": ["Сумма приблизительная, пока награда не получена.","Ödül alınana kadar toplam tahminidir."],
+  // Frostfall Aurora Hollow: depth, daily allowance and practice-only state.
+  "{cleared}/{total} rooms cleared": ["Пройдено комнат: {cleared}/{total}","{cleared}/{total} oda tamamlandı"],
+  "Practice only — no currency payout.": ["Только тренировка — без награды в валюте.","Yalnızca antrenman — para birimi ödülü yok."],
+  "Boss exit every 7 rooms": ["Выход через босса каждые 7 комнат","Her 7 odada bir boss çıkışı"],
+  "PRACTICE": ["ТРЕНИРОВКА","ANTRENMAN"],
+  "Daily reward status unavailable. Return to the dungeon list and refresh.": ["Статус ежедневных наград недоступен. Вернитесь к списку подземелий и обновите его.","Günlük ödül durumu kullanılamıyor. Zindan listesine dön ve yenile."],
+  "Launch practice expedition": ["Начать тренировочную экспедицию","Antrenman seferini başlat"],
+  "{rooms} rooms": ["Комнат: {rooms}","{rooms} oda"],
+  "{remaining}/2 rewarded clears left": ["Осталось прохождений с наградой: {remaining}/2","{remaining}/2 ödüllü tamamlama hakkı kaldı"],
+  "Boss exit every 7 rooms. Campfire or Boon to continue; final boss after room 42.": ["Выход через босса каждые 7 комнат. Костёр или благословение для продолжения; финальный босс после комнаты 42.","Her 7 odada bir boss çıkışı. Devam etmek için kamp ateşi veya kutsama; 42. odadan sonra son boss."],
+  "Reward allowance resets at 00:00 UTC. Failed attempts do not consume a clear.": ["Лимит наград сбрасывается в 00:00 UTC. Неудачные попытки не расходуют право на прохождение.","Ödül hakkı 00:00 UTC'de sıfırlanır. Başarısız denemeler tamamlama hakkını tüketmez."],
+  "Practice — no rewards": ["Тренировка — без наград","Antrenman — ödül yok"],
+  "Both daily rewarded clears have been used.": ["Оба ежедневных прохождения с наградой использованы.","Günlük iki ödüllü tamamlama hakkı da kullanıldı."],
+  "Base reward; deeper boss exits increase the completion base up to 1.52×.": ["Базовая награда; выходы через боссов на большей глубине увеличивают её до 1,52×.","Temel ödül; daha derindeki boss çıkışları temel tamamlama ödülünü 1,52 kata kadar artırır."],
+  "Practice only": ["Только тренировка","Yalnızca antrenman"],
+  "42 rooms · 6 boss exits · 7-room checkpoints": ["42 комнаты · 6 выходов через босса · контрольные точки каждые 7 комнат","42 oda · 6 boss çıkışı · her 7 odada kontrol noktası"],
+  "Practice clear — no currency payout.": ["Тренировка завершена — без награды в валюте.","Antrenman tamamlandı — para birimi ödülü yok."],
 } as const satisfies Partial<Record<SocialMessageKey,readonly [string,string]>>;
 
 export function socialEarlyText(language:'ru'|'tr',key:string):string|undefined{

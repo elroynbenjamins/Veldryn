@@ -83,3 +83,30 @@ for(const name of abilityNames){
 }
 assert.equal(abilityHashes.size,9,'All nine ability icons are distinct');
 console.log('PASS: Frostfall ability icons are registered, transparent, compact and distinct');
+
+// The event catalogue must use the same actual art as the wardrobe and companion gallery.
+const visualSource=fs.readFileSync(path.resolve(__dirname,'../src/ui/live-event-visuals-active.ts'),'utf8');
+const frostfallBlock=visualSource.slice(visualSource.indexOf('const FROSTFALL:'),visualSource.indexOf('const GENERIC:'));
+const dedicatedRewardArt={
+ EVT_UNIT_009:'event_collectibles/frostfall_festival/companions/EVT_UNIT_009_Frostbell_Herald.png',
+ EVT_UNIT_012:'event_collectibles/frostfall_festival/companions/EVT_UNIT_012_Rimeshard_Wolverine.png',
+ EVT_UNIT_013:'event_collectibles/frostfall_festival/companions/EVT_UNIT_013_Hearthguard_Ram.png',
+ EVT_PET_015:'event_collectibles/frostfall_festival/pets/EVT_PET_015_Snowbell_Pup.png',
+ EVT_PET_017:'event_collectibles/frostfall_festival/pets/EVT_PET_017_Aurora_Fox.png',
+ frame_frostfall_aurora_bellframe:'profile-borders/frame_frostfall_aurora_bellframe.webp',
+ bg_frostfall:'profile-backgrounds/bg_frostfall.webp',
+ 'event:frostfall-2026-snowbell':'profile-icons-v1/frostfall-2026-snowman.webp',
+ 'event:frostfall-2026-maiden':'profile-icons-v1/frostfall-2026-maiden.webp',
+ 'event:frostfall-2026-adventurer':'profile-icons-v1/frostfall-2026-adventurer.webp',
+ 'EVT_ANNUAL_012_2026:candy:skill':'events/frostfall/candy_frostmint.png',
+ 'EVT_ANNUAL_012_2026:candy:combat':'events/frostfall/candy_frostmint.png',
+ 'EVT_ANNUAL_012_2026:candy:companion':'events/frostfall/candy_frostmint.png',
+};
+for(const [id,asset] of Object.entries(dedicatedRewardArt)){
+ const entry=id.includes(':')?"'"+id+"'":id;
+ assert.ok(frostfallBlock.includes(entry+":require('../../assets/"+asset+"')"),'Correct Frostfall catalogue image for '+id);
+ assert.ok(fs.statSync(path.resolve(__dirname,'../assets',asset)).size>100,'Dedicated reward file present for '+id);
+}
+assert.ok(frostfallBlock.includes("commonCurrencyIcon:require('../../assets/events/frostfall/currency_frostbell_token.png')"));
+assert.ok(frostfallBlock.includes("prestigeCurrencyIcon:require('../../assets/events/frostfall/currency_aurora_chime.png')"));
+console.log('PASS Frostfall catalogue artwork, both currency icons and real reward asset paths');

@@ -1,0 +1,71 @@
+# Review-branch only. No secrets, deployment, event activation, or production mutations.
+name: Frostfall review validation
+
+on:
+  push:
+    branches:
+      - feat/frostfall-endurance-review-20261122
+      - integration/1.0.13-frostfall-aurora-hollow
+  pull_request:
+    paths:
+      - 'apps/mobile/src/core/coop-event-expeditions.ts'
+      - 'apps/mobile/src/components/coop/CoopDungeonBrowser.tsx'
+      - 'apps/mobile/src/components/coop/CoopRunOverview.tsx'
+      - 'apps/mobile/src/screens/CoopExpeditionScreen.tsx'
+      - 'apps/mobile/tests/live-events.ts'
+      - 'backend/src/server/expeditions/**'
+      - 'backend/online/event-expedition-runtime.ts'
+      - 'backend/online/tests/event-expedition-runtime.ts'
+      - 'backend/supabase/functions/coop/index.ts'
+      - '.github/workflows/frostfall-review-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  frostfall-backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Install backend lockfile dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: backend
+      - name: Install shared mobile workspace dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: apps/mobile
+      - name: Validate Frostfall mobile Shop purchases, 24-day gifts and reward ownership
+        run: node tools/run-mobile-core-tests.mjs --match live-events
+      - name: Build and typecheck the backend
+        run: pnpm build
+        working-directory: backend
+      - name: Verify all seasonal route, tier, rewards and claim tests
+        run: pnpm event-expeditions
+        working-directory: backend
+      - name: Profile five tiers and six boss exits with synthetic launch-player loadouts
+        run: node dist/server/expeditions/__tests__/frostfall-balance-probe.js
+        working-directory: backend
+      - name: Verify server-owned online expedition lifecycle, quotas and practice
+        run: pnpm test:event-expedition-online
+        working-directory: backend
+      - name: Calibrate seasonal clear chances using production frozen-loadout normalization
+        run: node dist/online/backend/online/tests/frostfall-calibrated-loadouts.js
+        working-directory: backend
+      - name: Verify common-currency promotion rules
+        run: pnpm test:event-currency-promotion
+        working-directory: backend
+      - name: Regenerate both bundled Edge function entrypoints
+        run: pnpm build:online
+        working-directory: backend
+      - name: Require source/build parity before any staging deploy
+        run: |
+          git diff --exit-code -- backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts

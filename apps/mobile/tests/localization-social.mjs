@@ -71,6 +71,34 @@ for(const key of sourceAdditions){
  assert.ok(Object.prototype.hasOwnProperty.call(socialEarlyRows,key),'Missing RU/TR Dungeon display string: '+key);
 }
 
+// Aurora Hollow browse, active run and terminal-state copy must stay localized.
+for (const key of [
+  "{cleared}/{total} rooms cleared",
+  "Practice only — no currency payout.",
+  "Boss exit every 7 rooms",
+  "PRACTICE",
+  "Daily reward status unavailable. Return to the dungeon list and refresh.",
+  "Launch practice expedition",
+  "{rooms} rooms",
+  "{remaining}/2 rewarded clears left",
+  "Boss exit every 7 rooms. Campfire or Boon to continue; final boss after room 42.",
+  "Reward allowance resets at 00:00 UTC. Failed attempts do not consume a clear.",
+  "Practice — no rewards",
+  "Both daily rewarded clears have been used.",
+  "Base reward; deeper boss exits increase the completion base up to 1.52×.",
+  "Practice only",
+  "42 rooms · 6 boss exits · 7-room checkpoints",
+  "Practice clear — no currency payout."
+]) {
+ assert.ok(Object.hasOwn(socialTranslationRows,key),'Missing Frostfall base label: '+key);
+ assert.ok(Object.hasOwn(socialEarlyRows,key),'Missing Frostfall RU/TR label: '+key);
+ for (const language of SUPPORTED_LANGUAGES.filter(lang=>lang!=='en')) {
+  const translated=socialCatalogs[language][key];
+  assert.ok(translated?.trim()&&translated!==key,'Untranslated Frostfall '+language+': '+key);
+  assert.deepEqual(placeholders(translated),placeholders(key),'Frostfall '+language+' placeholders: '+key);
+ }
+}
+
 const dungeonFlowRuTrScreens=[
   'DungeonRoomResolution.tsx','DungeonRoomOutcomeBanner.tsx','DungeonMerchantPanel.tsx',
   'CoopRunOverview.tsx','SeasonalBossTelegraphPanel.tsx',

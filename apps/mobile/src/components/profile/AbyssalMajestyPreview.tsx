@@ -69,15 +69,15 @@ const AbyssalPetReaction=memo(function AbyssalPetReaction({reaction,k,assets}:{r
   {effects.bubbles.map((p,i)=><Animated.Image key={i} source={assets.mote} fadeDuration={0} resizeMode="contain" style={[pos(k,center.x+p.x-r,center.y+p.y-r,2*r,2*r),{opacity:reaction,transform:[{translateX:p.xMotion},{translateY:p.yMotion}]}]}/>)}
  </Decorative>;
 });
-const AbyssalPet=memo(function AbyssalPet({clock,k,assets,running,mode,alternatePetSource}:{clock:Animated.Value;k:number;assets:AbyssalSceneAssets;running:boolean;mode:'matching'|'alternate'|'none';alternatePetSource?:ImageSourcePropType}){
+const AbyssalPet=memo(function AbyssalPet({clock,reaction,k,assets,running,mode,alternatePetSource}:{clock:Animated.Value;reaction:Animated.Value;k:number;assets:AbyssalSceneAssets;running:boolean;mode:'matching'|'alternate'|'none';alternatePetSource?:ImageSourcePropType}){
  const motion=useMemo(()=>{
   if(!running||mode!=='matching')return null;
   const lift=clock.interpolate({inputRange:IDLE_PHASE,outputRange:IDLE_LIFT.map(v=>v*k)});
   const tideLift=clock.interpolate({inputRange:CURVE.phase,outputRange:CURVE.energy.map(e=>-1.5*e*k)});
   const tilt=clock.interpolate({inputRange:IDLE_PHASE,outputRange:IDLE_TILT});
   const aura=clock.interpolate({inputRange:CURVE.phase,outputRange:CURVE.energy.map(e=>.28+.66*e)});
-  return {lift:Animated.add(lift,tideLift),tilt,aura};
- },[running,clock,k,mode]);
+  return {lift:Animated.add(Animated.add(lift,tideLift),Animated.multiply(reaction,-3*k)),tilt,aura};
+ },[running,clock,reaction,k,mode]);
  if(mode==='none')return null;
  if(mode==='alternate'&&alternatePetSource)return <Image source={alternatePetSource} fadeDuration={0} resizeMode="contain" style={box(k,B.alternate)}/>;
  if(mode!=='matching')return null;
@@ -100,7 +100,7 @@ export const AbyssalMajestyPreview=memo(function AbyssalMajestyPreview({assets,e
    <Decorative>
     <Image source={assets.background} fadeDuration={0} resizeMode="cover" style={s.fill}/>
     {running?<AbyssalTide clock={clock} k={k} assets={assets}/>:null}
-    <AbyssalPet clock={clock} k={k} assets={assets} running={running} mode={mode} alternatePetSource={alternatePetSource}/>
+    <AbyssalPet clock={clock} reaction={reaction} k={k} assets={assets} running={running} mode={mode} alternatePetSource={alternatePetSource}/>
     {reactionEnabled?<AbyssalPetReaction reaction={reaction} k={k} assets={assets}/>:null}
    </Decorative>
    {reactionEnabled?<Pressable accessibilityRole="button" accessibilityLabel={petAccessibilityLabel??"Nhal'Zuun, the Abyssborn"} onPress={trigger} style={box(k,B.leviathan)}/>:mode!=='none'&&petAccessibilityLabel?<View accessible accessibilityLabel={petAccessibilityLabel} pointerEvents="none" style={box(k,mode==='matching'?B.leviathan:B.alternate)}/>:null}

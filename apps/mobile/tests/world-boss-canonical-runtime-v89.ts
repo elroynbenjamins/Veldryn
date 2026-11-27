@@ -348,3 +348,23 @@ let duplicateRejected97=false;
 try{buildWorldBossChestOpeningReviewV97(account95,[opened97[0],opened97[0]]);}catch{duplicateRejected97=true;}
 assert.equal(duplicateRejected97,true);
 console.log('WORLD_BOSS_V97: damage chest cap, deterministic replay, threshold remainder, bulk receipt presentation');
+
+import {reviewActivityLoadoutRoute,type ActivityLoadoutCategory} from '../src/core/activity-loadout-routing-review';
+const activityCategories:ActivityLoadoutCategory[]=['combat','mining','woodcutting','fishing','herbalism'];
+const routeBindings=activityCategories.map((category,slotIndex)=>({category,slotIndex,presetId:'loadout-'+slotIndex}));
+const routePresets=routeBindings.map(({slotIndex,presetId})=>({slotIndex,id:presetId}));
+for(let slotCount=1;slotCount<=5;slotCount++)for(const [index,activity] of activityCategories.entries()){
+ const result=reviewActivityLoadoutRoute({slotCount,autoSwitch:true,activity,bindings:routeBindings,availablePresets:routePresets});
+ assert.equal(result.decision,index<slotCount?'candidate':'locked');
+ assert.equal(result.presetId,index<slotCount?'loadout-'+index:null);
+ assert.equal(result.mayEquip,false);
+}
+const routeContext={slotCount:3,autoSwitch:true,activity:'mining',bindings:routeBindings,availablePresets:routePresets};
+assert.equal(reviewActivityLoadoutRoute({...routeContext,autoSwitch:false}).decision,'manual');
+assert.equal(reviewActivityLoadoutRoute({...routeContext,activity:'faith'}).decision,'manual');
+assert.equal(reviewActivityLoadoutRoute({...routeContext,availablePresets:[]}).decision,'missing');
+assert.equal(reviewActivityLoadoutRoute({...routeContext,bindings:[]}).decision,'unassigned');
+let duplicateRouteRejected=false;
+try{reviewActivityLoadoutRoute({...routeContext,bindings:[routeBindings[0],routeBindings[0]]});}catch{duplicateRouteRejected=true;}
+assert.equal(duplicateRouteRejected,true);
+console.log('ACTIVITY_LOADOUT_REVIEW: all five categories by unlocked slot count, manual/missing/locked states; no auto equip');

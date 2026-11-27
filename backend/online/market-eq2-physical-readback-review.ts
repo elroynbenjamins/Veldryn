@@ -45,9 +45,19 @@ export function inspectMarketPhysicalReadback(input:Input):MarketPhysicalReadbac
    }
   };
   const owners=new Set<string>();
+  let savedLoadoutProtected=false;
   const character=(c:unknown,inventory:unknown,overflow:unknown)=>{
    if(!obj(c)||!id(c.id)||owners.has(c.id))throw Error('invalid_character');
    owners.add(c.id);
+   if(c.savedLoadouts!==undefined){
+    if(!Array.isArray(c.savedLoadouts)||c.savedLoadouts.length>5)throw Error('invalid_saved_loadouts');
+    for(const preset of c.savedLoadouts){
+     if(!obj(preset)||!obj(preset.equipment)||(preset.equipmentInstanceIds!==undefined&&!obj(preset.equipmentInstanceIds)))throw Error('invalid_saved_loadout');
+     const exact=obj(preset.equipmentInstanceIds)?preset.equipmentInstanceIds:{};
+     if(Object.values(exact).some(value=>!id(value))||Object.values(preset.equipment).some(value=>!id(value)))throw Error('invalid_saved_loadout_item');
+     if(Object.values(exact).includes(input.instanceId)||Object.entries(preset.equipment).some(([slot,value])=>value===input.itemId&&!exact[slot]))savedLoadoutProtected=true;
+    }
+   }
    scan(inventory,'inventory',c.id);
    scan(overflow,'overflow',c.id);
    // Missing optional legacy pouch is ambiguous for an authoritative EQ2
@@ -78,6 +88,7 @@ export function inspectMarketPhysicalReadback(input:Input):MarketPhysicalReadbac
      (copy.itemId!==null&&copy.itemId!==input.itemId))return result('physical_location_mismatch');
   if(copy.location==='equipped'||copy.location==='overflow'||copy.location==='bank')return result('location_not_listable',true);
   const protectedIds=[...state.settings.lockedItemIds,...state.settings.favoriteItemIds,...input.protectedInstanceIds];
+  if(savedLoadoutProtected)return result('saved_loadout_protected',true);
   if(protectedIds.includes(input.instanceId)||protectedIds.includes(input.itemId))return result('protected_copy',true);
   return result('physical_match_requires_original_mint_and_atomic_recheck',true);
  }catch(error){return result(error instanceof Error?error.message:'invalid_snapshot');}

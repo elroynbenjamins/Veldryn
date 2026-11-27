@@ -1,3 +1,4 @@
+import type {WorldBossGuardPortReviewV2} from './v2/world-boss-preparation-review';
 import type {ProtectionTraceV2} from './v2/world-boss-protection-review';
 import { clamp, defenseMitigation, damageAfterMitigation, hitChance, roleAdjustedAttackPower } from './calculations';
 import { CombatRng } from './deterministic-rng';
@@ -48,25 +49,34 @@ export interface ServerCombatAuthoritiesV2 {
  readonly aiPolicy?:'tactical'|'authored-priority';
  /** Private QA trace; no gameplay authority and no public input field. */
  readonly protectionTrace?:ProtectionTraceV2[];
+ readonly worldBossGuardReview?:WorldBossGuardPortReviewV2;
 }
 export function simulateCombatWithServerAuthoritiesV2(
  input:CombatInput,authorities:ServerCombatAuthoritiesV2,
 ):CombatResult{
  if(!authorities||typeof authorities!=='object'||Array.isArray(authorities)||
-   Object.keys(authorities).some(key=>!['enemy','equipmentTrait','dungeonReward','privateHit','partySync','aiPolicy','protectionTrace'].includes(key)))
+   Object.keys(authorities).some(key=>!['enemy','equipmentTrait','dungeonReward','privateHit','partySync','aiPolicy','protectionTrace','worldBossGuardReview'].includes(key)))
   throw Error('combat_v2_unknown_authority_channel');
  if(authorities.aiPolicy!==undefined&&authorities.aiPolicy!=='tactical'&&authorities.aiPolicy!=='authored-priority')
   throw Error('combat_v2_unknown_ai_policy');
  return simulateCombat(input,authorities.enemy,authorities.equipmentTrait,
-  authorities.dungeonReward,authorities.privateHit,authorities.partySync,authorities.aiPolicy,authorities.protectionTrace);
+  authorities.dungeonReward,authorities.privateHit,authorities.partySync,authorities.aiPolicy,authorities.protectionTrace,authorities.worldBossGuardReview);
 }
 
 /** Optional server-issued second parameter is never parsed from CombatInput JSON. */
-export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2EngineAuthority, equipmentTraitAuthority?:EquipmentV2TraitEngineAuthority, dungeonRewardAuthority?:DungeonRewardEngineAuthorityV2, eq2PrivateHitAuthority?:Eq2PrivateHitAuthorityV22, partySyncAuthority?:PartySyncAuthorityV2, reviewAiPolicy?:'tactical'|'authored-priority', protectionTrace?:ProtectionTraceV2[]): CombatResult {
+export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2EngineAuthority, equipmentTraitAuthority?:EquipmentV2TraitEngineAuthority, dungeonRewardAuthority?:DungeonRewardEngineAuthorityV2, eq2PrivateHitAuthority?:Eq2PrivateHitAuthorityV22, partySyncAuthority?:PartySyncAuthorityV2, reviewAiPolicy?:'tactical'|'authored-priority', protectionTrace?:ProtectionTraceV2[], worldBossGuardReview?:WorldBossGuardPortReviewV2): CombatResult {
   if (!input.players.length || !input.enemies.length) throw new Error('combat_requires_both_teams');
   if(protectionTrace!==undefined&&(!Array.isArray(protectionTrace)||protectionTrace.length!==0||
     !equipmentTraitAuthority||input.initialPlayerState!==undefined||input.enemyDamageProfile!==undefined||
     dungeonRewardAuthority||eq2PrivateHitAuthority||partySyncAuthority))throw Error('combat_v2_invalid_protection_review_scope');
+  if(worldBossGuardReview!==undefined&&(!equipmentTraitAuthority||enemyV2Authority||dungeonRewardAuthority||
+    eq2PrivateHitAuthority||partySyncAuthority||input.initialPlayerState!==undefined||input.enemyDamageProfile!==undefined||
+    input.enemies.length!==1||input.enemies[0].id!==worldBossGuardReview.bossId||!input.enemies[0].boss||
+    input.players.some(p=>!p.combatV2||p.effectGems?.length||p.alchemyModifiers)||
+    typeof worldBossGuardReview.resolveHit!=='function'||typeof worldBossGuardReview.restore!=='function'||
+    !Number.isFinite(worldBossGuardReview.bossIncomingMultiplier)||worldBossGuardReview.bossIncomingMultiplier<.8||worldBossGuardReview.bossIncomingMultiplier>1||
+    !Number.isFinite(worldBossGuardReview.healingMultiplier)||worldBossGuardReview.healingMultiplier<1||worldBossGuardReview.healingMultiplier>1.05))
+    throw Error('combat_v2_invalid_world_boss_review_scope');
   const enemyV2Effects=authorizeEnemyV2EngineExecution(input,enemyV2Authority);
   // No token -> no equipment trait runtime actions, preserving every legacy
   // and previously compiled V2 run. Exact-token validation is server-owned.
@@ -81,6 +91,9 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
   const sync=(a:CombatantState,k:SyncStatV2)=>(syncSources.get(a.definition.id)?.[k]??0)/10000;
   const maxMs=input.maxDurationMs ?? 180_000; const tick=input.tickMs ?? 100; const mitigationConstant=input.mitigationConstant ?? 1200; const accuracyScale=input.accuracyScale ?? 1400;
   const players=input.players.map(def=>init(def,input.initialPlayerState?.[def.id])), enemies=input.enemies.map(def=>init(def)), all=[...players,...enemies];
+  const guardHit=(now:number,source:CombatantState,target:CombatantState,abilityId:string,amount:number)=>
+    worldBossGuardReview&&source.definition.team==='players'&&target.definition.id===worldBossGuardReview.bossId
+      ?worldBossGuardReview.resolveHit(now,source.definition.id,abilityId,amount):amount;
   const v2Encounter=players.some(player=>Boolean(player.definition.combatV2));
   const tacticalAi=v2Encounter&&reviewAiPolicy==='tactical';
   const sequenceHoldsV2=new Map<string,number>();
@@ -362,12 +375,17 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
     // Poison applied as a true-damage DoT attacks HP directly, regardless of shields.
     // Direct true damage retains its legacy shield interaction.
     const bypassShield=eventType==='dot_tick'&&effect.damageType==='true';
+    if(worldBossGuardReview&&source.definition.id===worldBossGuardReview.bossId&&target.definition.team==='players'){
+      raw*=worldBossGuardReview.bossIncomingMultiplier;
+      if(reviewPreReactive!==undefined)reviewPreReactive*=worldBossGuardReview.bossIncomingMultiplier;
+    }
     if(protectionTrace&&reviewPreReactive!==undefined){
       // Ordered marginal after Ward, before shields; not a general tank
       // mitigation claim. Keep the two protection lanes non-overlapping.
       const saved=Math.max(0,Math.min(target.hp,reviewPreReactive)-Math.min(target.hp,raw));
       if(saved>0)protectionTrace.push({kind:'reactive_reduction',atMs:now,targetId:target.definition.id,amount:saved});
     }
+    raw=guardHit(now,source,target,abilityId,raw);
     const absorbed=bypassShield?0:Math.min(target.shield,raw); const shieldBefore=target.shield; target.shield-=absorbed;
     if(protectionTrace&&absorbed>0)protectionTrace.push({kind:'absorb',atMs:now,sourceId:source.definition.id,
       targetId:target.definition.id,amount:absorbed,before:shieldBefore,after:target.shield,hpBefore:target.hp,raw});
@@ -381,7 +399,7 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
         abilityId:'V2_QA_SHIELD:'+eq2Absorption.id,detail:'private_qa_shield_depleted'});
     }
     const residual=raw-absorbed-(eq2Absorption?.amount??0);
-    const dealt=Math.max(0,source.combatV2&&eventType==='damage'
+    const dealt=Math.max(0,(source.combatV2&&eventType==='damage'||worldBossGuardReview)
       ?Math.min(target.hp,residual):residual);
     target.hp=Math.max(0,target.hp-dealt); source.damageDone+=dealt; target.damageTaken+=dealt;
     if(eq2PrivateHit&&eq2Incoming){
@@ -409,7 +427,7 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
       const echo=equipmentTraitRuntime.afterDirectSkillHit(now,source.definition.id,
         target.definition.id,abilityId,dealt,source.definition.stats.attackPower);
       if(echo){
-        const bonus=Math.min(target.hp,echo.amount);
+        const bonus=Math.min(target.hp,guardHit(now,source,target,'V2_EQUIPMENT_TRAIT:echoing_strike',echo.amount));
         if(bonus>0){target.hp-=bonus;source.damageDone+=bonus;target.damageTaken+=bonus;
           events.push({atMs:now,type:'equipment_trait_trigger',actorId:source.definition.id,
             targetId:target.definition.id,abilityId:'V2_EQUIPMENT_TRAIT:echoing_strike',
@@ -494,7 +512,7 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
         source.definition.id,dealt,target.definition.stats.maxHp,
         source.definition.stats.maxHp,Boolean(source.definition.boss));
       if(outcome){
-        const bonus=Math.min(source.hp,outcome.amount);
+        const bonus=Math.min(source.hp,guardHit(now,target,source,'V2_EQUIPMENT_TRAIT:'+outcome.traitId,outcome.amount));
         if(bonus>0){source.hp-=bonus;source.damageTaken+=bonus;target.damageDone+=bonus;
           events.push({atMs:now,type:'equipment_trait_trigger',actorId:target.definition.id,
             targetId:source.definition.id,abilityId:'V2_EQUIPMENT_TRAIT:'+outcome.traitId,
@@ -511,7 +529,7 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
     for(const shield of target.reflectiveShields??[]){
       const used=Math.min(reflectable,shield.remaining);shield.remaining-=used;reflectable-=used;
       const owner=all.find(a=>a.definition.id===shield.sourceId);if(!used||!owner||!source.alive||source===target)continue;
-      const reflected=Math.min(source.hp,used*shield.rate);source.hp-=reflected;source.damageTaken+=reflected;owner.damageDone+=reflected;
+      const reflected=Math.min(source.hp,guardHit(now,owner,source,'COMPANION_REFLECT',used*shield.rate));source.hp-=reflected;source.damageTaken+=reflected;owner.damageDone+=reflected;
       events.push({atMs:now,type:'damage',actorId:owner.definition.id,targetId:source.definition.id,abilityId:'COMPANION_REFLECT',amount:Number(reflected.toFixed(2))});
       if(source.hp<=0){source.alive=false;source.downed=source.definition.team==='players';events.push({atMs:now,type:source.downed?'down':'death',targetId:source.definition.id,actorId:owner.definition.id,abilityId:'COMPANION_REFLECT'});}
     }
@@ -561,7 +579,9 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
     const forgeHealMultiplier=authoredClassHeal?
       1+clamp(source.definition.combatV2?.equipmentEffects?.forgeHealingPowerPct??0,0,1):1;
     const hpBeforeHeal=target.hp;
-    const amount=Math.max(0,(source.definition.stats.healingPower*(effect.coeff??0)+(effect.flat??0))*sourceMult*receivedMult*(source.definition.alchemyModifiers?.healing??1)*v2HealBonus*
+    const campHeal=worldBossGuardReview&&source.definition.team==='players'&&target.definition.team==='players'&&
+      abilityId!=='V2_EQUIPMENT_TRAIT:restorative_bloom'&&abilityId!=='GEM_RENEWAL'?worldBossGuardReview.healingMultiplier:1;
+    const amount=Math.max(0,campHeal*(source.definition.stats.healingPower*(effect.coeff??0)+(effect.flat??0))*sourceMult*receivedMult*(source.definition.alchemyModifiers?.healing??1)*v2HealBonus*
       (direct&&source.combatV2?reactiveHealingMultiplierV2(source,target,now):1)*
       forgeHealMultiplier*
       // Derived Renewal and Restorative Bloom already include original heal multipliers.
@@ -641,7 +661,10 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
   const applyEffect=(now:number, source:CombatantState,target:CombatantState,effect:AbilityEffect,abilityId:string)=>{
     if(effect.kind==='damage')return applyDamage(now,source,target,effect,abilityId);
     if(effect.kind==='heal')return applyHeal(now,source,target,effect,abilityId);
-    if(effect.kind==='shield'){if(v2Encounter&&!target.alive)return;const requested=Math.max(0,(source.definition.stats.healingPower*(effect.coeff??0)+(effect.flat??0))*gemShieldMultiplierV1(source,now)*(source.definition.alchemyModifiers?.shielding??1)*
+    if(effect.kind==='shield'){if(v2Encounter&&!target.alive)return;
+      if(worldBossGuardReview&&source===target&&target.definition.id===worldBossGuardReview.bossId&&abilityId.startsWith('WB2_')){
+        worldBossGuardReview.restore(now,abilityId,Math.max(0,effect.flat??0));return;
+      }const requested=Math.max(0,(source.definition.stats.healingPower*(effect.coeff??0)+(effect.flat??0))*gemShieldMultiplierV1(source,now)*(source.definition.alchemyModifiers?.shielding??1)*
       thresholdSupportMultiplier(source,target,abilityId,effect.shieldBelowHpPct,effect.shieldBonus)*
       (source.combatV2?reactiveShieldMultiplierV2(source,target,now):1)*
       (v2Encounter?1+clamp(source.definition.combatV2?.equipmentEffects?.shieldStrengthPct??0,0,1):1)*

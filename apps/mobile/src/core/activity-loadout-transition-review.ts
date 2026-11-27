@@ -106,11 +106,11 @@ export function reviewActivityLoadoutTransition(input:{
  return {state:started,reward:claimed.reward,route,category,persisted:false as const,releaseReady:false as const};
 }
 
-type ReviewConfig={
+export type ReviewConfig={
  readonly autoSwitch:boolean;readonly bindings:readonly ActivityLoadoutBinding[];
  readonly verifyNoFrozenEncounter:(characterId:string)=>boolean;
 };
-function prepareSettledActivityLoadoutReview(state:GameState,category:string,nowMs:number,input:ReviewConfig,previousKind?:ActiveActivity['kind']){
+export function prepareSettledActivityLoadoutReview(state:GameState,category:string,nowMs:number,input:ReviewConfig,previousKind?:ActiveActivity['kind']){
  if(!state.character||state.activity||state.character.classTraining||
   !Number.isSafeInteger(nowMs)||nowMs<0||
   typeof input.verifyNoFrozenEncounter!=='function'||input.verifyNoFrozenEncounter(state.character.id)!==true)

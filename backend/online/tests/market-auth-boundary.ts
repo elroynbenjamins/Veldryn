@@ -116,6 +116,30 @@ async function main(){
     method:'POST',headers:{authorization:'Bearer valid','content-type':'application/json'},
     body:JSON.stringify({pad:'€'.repeat(1000)}),
   }),'market_request_too_large');
+  // A chunked body without Content-Length must stop reading once over cap.
+  let produced=0,cancelled=false;
+  const stream=new ReadableStream<Uint8Array>({
+    pull(controller){
+      produced++;
+      controller.enqueue(new Uint8Array(1024).fill(120));
+      if(produced===100)controller.close();
+    },
+    cancel(){cancelled=true;},
+  });
+  const streamed=new Request(path+'&action=buy',{
+    method:'POST',headers:{authorization:'Bearer valid'},body:stream,
+    duplex:'half',
+  } as RequestInit & {duplex:'half'});
+  await denied(()=>streamed,'market_request_too_large');
+  assert(cancelled,'oversized stream must be cancelled');
+  assert(produced<100,'oversized body must not be fully buffered');
+  await denied(()=>new Request(path+'&action=buy',{
+    method:'POST',headers:{authorization:'Bearer valid'},
+    body:new Uint8Array([0x7b,0xff,0x7d]),
+  }),'market_invalid_json');
+  await denied(()=>new Request(path+'&action=buy',{
+    method:'POST',headers:{authorization:'Bearer valid','content-length':'2049'},body:'{}',
+  }),'market_request_too_large');
   assert(authenticationCalls>=10);
   console.log('PASS: hidden market auth boundary never mounts or calls RPC; strict request binding rejects actor spoofing');
 }

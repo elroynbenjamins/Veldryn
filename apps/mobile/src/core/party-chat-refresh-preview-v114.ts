@@ -24,6 +24,7 @@ export class PartyChatRefreshPreviewV114{
   if(scope?.accountId===this.scope?.accountId&&scope?.partyId===this.scope?.partyId)return;
   this.generation++;this.pending=null;this.seen.clear();this.dirtyFeed=false;this.dirtyParty=false;
   this.scope=scope&&valid(scope.accountId)&&valid(scope.partyId)?Object.freeze({...scope}):null;
+  if(this.scope&&this.active){this.dirtyFeed=true;this.dirtyParty=true;}
  }
  setActive(active:boolean){
   if(active&&!this.active&&this.scope){this.dirtyFeed=true;this.dirtyParty=true;}
@@ -51,7 +52,8 @@ export class PartyChatRefreshPreviewV114{
   const targets={feed:this.dirtyFeed,party:this.dirtyParty};
   this.dirtyFeed=false;this.dirtyParty=false;
   const request=Promise.resolve().then(()=>{
-   if(generation!==this.generation||!this.active)return;
+   if(generation!==this.generation)return;
+   if(!this.active){this.dirtyFeed||=targets.feed;this.dirtyParty||=targets.party;return;}
    return this.read(scope,targets);
   }).catch(error=>{
    if(generation===this.generation){this.dirtyFeed||=targets.feed;this.dirtyParty||=targets.party;}

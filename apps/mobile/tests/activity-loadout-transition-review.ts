@@ -114,3 +114,33 @@ assert.throws(()=>reviewSaveInactiveLoadout(wood.state,1,{name:'Bad',equipment:{
 assert.throws(()=>reviewSaveInactiveLoadout(wood.state,4,{name:'Locked',equipment:{},equipmentInstanceIds:{}},3000));
 assert.throws(()=>reviewSaveInactiveLoadout(wood.state,1,{name:'Bad',equipment:{},equipmentInstanceIds:{},petId:'PET_042'},3000));
 console.log('ACTIVITY_LOADOUT_EDITOR_REVIEW: inactive save only, current activity/gear/pet/Faith/inventory unchanged, invalid selection rejected');
+
+import {reviewCombatLoadoutReservation,activityLoadoutSnapshotDigest,type LoadoutEncounterKind} from '../../../backend/online/activity-loadout-reservation-review';
+const reservationKinds:LoadoutEncounterKind[]=['dungeon','guild_boss','world_boss','party_event','regional_final_boss'];
+const reserveState=selection;
+const reserveOriginal=JSON.stringify(reserveState);
+const sourceDigest=activityLoadoutSnapshotDigest(reserveState);
+const scope={accountId:'qa-account',characterId:reserveState.character!.id,sourceRevision:7,reservationId:'qa-reservation',encounterKind:'dungeon' as LoadoutEncounterKind};
+const reserveInput={state:reserveState,nowMs:1000,scope,config,
+ verifyPersistedState:(s:typeof scope,d:string)=>s.accountId===scope.accountId&&s.sourceRevision===7&&d===sourceDigest,
+ verifyReservationCustody:()=>true};
+for(const encounterKind of reservationKinds){
+ const request={...reserveInput,scope:{...scope,encounterKind}};
+ const prepared=reviewCombatLoadoutReservation(request);
+ assert.equal(prepared.projection.presetId,'loadout-2');
+ assert.equal(prepared.projection.petId,'PET_018');
+ assert.equal(prepared.projection.faithSelections.combat,'SUNFIRE_VOW');
+ assert.equal(prepared.canReserve,false);
+ assert.equal(prepared.canAuthorizeCombat,false);
+ assert.equal(prepared.persisted,false);
+ assert.equal(prepared.digest,reviewCombatLoadoutReservation(request).digest);
+ assert.equal(Boolean(prepared.dungeonRecord),encounterKind==='dungeon');
+ assert.equal(JSON.stringify(reserveState),reserveOriginal);
+}
+assert.throws(()=>reviewCombatLoadoutReservation({...reserveInput,scope:{...scope,sourceRevision:8}}));
+assert.throws(()=>reviewCombatLoadoutReservation({...reserveInput,scope:{...scope,accountId:'foreign'}}));
+assert.throws(()=>reviewCombatLoadoutReservation({...reserveInput,verifyReservationCustody:()=>false}));
+assert.throws(()=>reviewCombatLoadoutReservation({...reserveInput,config:{...config,verifyNoFrozenEncounter:()=>false}}));
+assert.throws(()=>reviewCombatLoadoutReservation({...reserveInput,config:{...config,bindings:[bindings[0]]}}));
+assert.throws(()=>reviewCombatLoadoutReservation({...reserveInput,state:wood.state}));
+console.log('ACTIVITY_LOADOUT_RESERVATION_REVIEW: all five encounter scopes, actual dungeon record, exact copy custody guard, no mutation or authorization');

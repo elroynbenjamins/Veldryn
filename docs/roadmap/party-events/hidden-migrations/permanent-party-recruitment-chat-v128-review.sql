@@ -39,7 +39,7 @@ begin
   else v_actions:='["accept","decline"]'::jsonb;end if;
  end if;
  return jsonb_build_object('id',a.id,'kind','recruitment_request','partyId',a.party_id,'messageId',a.chat_message_id,
-  'status',v_status,'expiresAtMs',floor(extract(epoch from a.expires_at)*1000)::bigint,
+  'viewerAccountId',p_actor,'status',v_status,'expiresAtMs',floor(extract(epoch from a.expires_at)*1000)::bigint,
   'rosterRevision',s.roster_revision,'sourceRevision',1,'allowedActions',v_actions,
   'applicantAccountId',a.applicant_account_id,'classId',c.class_id,'role',a.role,'combatLevel',c.level,
   'releaseEnabled',false);

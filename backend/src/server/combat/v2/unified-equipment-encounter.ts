@@ -9,7 +9,7 @@
  */
 import {simulateCombat,simulateCombatWithServerAuthoritiesV2} from '../engine';
 import {reviewWorldBossProtectionV2,type ProtectionTraceV2} from './world-boss-protection-review';
-import {deriveWorldBossPreparationReviewV2,applyWorldBossStartingHpReviewV2,type WorldBossPreparationReviewV2} from './world-boss-preparation-review';
+import {deriveWorldBossPreparationReviewV2,applyWorldBossStartingHpReviewV2,createWorldBossGuardRuntimeReviewV2,type WorldBossPreparationReviewV2} from './world-boss-preparation-review';
 import {compileDraftDungeonRewardCombatV2,type VerifiedDungeonRewardSnapshotV2} from './dungeon-rewards-v2';
 import {issueDungeonRewardEngineAuthorityV2} from './dungeon-reward-engine-v2';
 import {issueEquipmentV2TraitAuthority,issuePersistedPartyEquipmentV2TraitAuthority,
@@ -623,11 +623,13 @@ export function simulateWorldBossSharedEngineReviewV2(
    enemyV2SnapshotDigest(scope)===enemyV2SnapshotDigest(frozenScope);
  });
  const trace:ProtectionTraceV2[]=[];
+ const guardRuntime=preparation?createWorldBossGuardRuntimeReviewV2(scope.bossId,preparation):undefined;
  const combat=simulateCombatWithServerAuthoritiesV2(finalInput,{equipmentTrait:authority,aiPolicy:'tactical',
+  ...(guardRuntime?{worldBossGuardReview:guardRuntime.port}:{}),
   ...(collectProtection?{protectionTrace:trace}:{})});
  const protection=collectProtection?reviewWorldBossProtectionV2(trace,finalInput.players.map(p=>p.id),
   Object.fromEntries([...combat.players,...combat.enemies].map(p=>[p.definition.id,p.shield]))):null;
- return {combat,binding,protection,preparation:preparation??null,compiledActorDigests:compiled.compiledActorDigests,
+ return {combat,binding,protection,guardReview:guardRuntime?.read()??null,preparation:preparation??null,compiledActorDigests:compiled.compiledActorDigests,
   equipmentEvidence:compiled.evidence,
   localBossHpLoss:Math.max(0,finalInput.enemies[0].stats.maxHp-combat.enemies[0].hp),
   globalHpCredited:0 as const,releaseReady:false as const,

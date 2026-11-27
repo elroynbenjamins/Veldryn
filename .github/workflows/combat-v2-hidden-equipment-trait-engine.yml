@@ -20,6 +20,10 @@ on:
       - 'backend/src/server/party/party-social-action-session-review-v123.ts'
       - 'backend/src/server/party/party-recruitment-chat-session-review-v128.ts'
       - 'backend/tests/party-social-action-session-v123.cjs'
+      - 'backend/tests/party-event-chat-ballot-v112.mjs'
+      - 'docs/roadmap/party-events/hidden-migrations/20261113041500_party_event_receipt_ledger_v11.sql'
+      - 'docs/roadmap/party-events/hidden-migrations/20261113131000_party_event_stage_transitions_v17.sql'
+      - 'docs/roadmap/party-events/hidden-migrations/party-event-chat-ballot-v112-review.sql'
       - 'apps/mobile/src/core/party-chat-*-preview-v*.ts'
       - 'backend/src/server/party/__tests__/weekly-party-event-eq2-full-build-v92.ts'
       - 'backend/src/server/party/__tests__/weekly-party-event-eq2-class-spec-matrix-v93.ts'
@@ -54,6 +58,8 @@ jobs:
         run: node backend/tests/party-role-swap-chat-session-v119.cjs
       - name: Verify contract focus and social readiness owner workflows through chat receipts
         run: node backend/tests/party-social-action-session-v123.cjs
+      - name: Verify native and chat Party Event votes share canonical SQL ballots
+        run: node backend/tests/party-event-chat-ballot-v112.mjs
       - name: V92 verified full Equipment+Skill 2.0 compiler for two Party members
         run: node backend/dist/server/party/__tests__/weekly-party-event-eq2-full-build-v92.js
       - name: V93 all 9 classes and 18 specs against four Party bosses, three difficulties and three sizes (full EQ2 item source)

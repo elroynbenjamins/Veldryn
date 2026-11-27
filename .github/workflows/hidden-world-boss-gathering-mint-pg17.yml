@@ -3,6 +3,8 @@ on:
   pull_request:
     paths:
       - 'backend/src/server/loot/world-boss-gathering-mint-v102.ts'
+      - 'backend/src/server/loot/world-boss-gathering-moves-v107.ts'
+      - 'docs/roadmap/party-events/hidden-migrations/20261127140000_world_boss_gathering_moves_v107_review_only.sql'
       - 'backend/src/server/loot/world-boss-chest-opening-v103.ts'
       - 'backend/src/server/loot/world-boss-chest-source-v104.ts'
       - 'backend/src/server/loot/world-boss-chest-source-v106.ts'

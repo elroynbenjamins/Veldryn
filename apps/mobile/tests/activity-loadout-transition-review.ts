@@ -377,3 +377,40 @@ assert.equal(Object.prototype.hasOwnProperty.call(fullDisplay,'yieldPercent'),fa
 assert.equal(fullDisplay.rareRelativePercent,10);
 assert.throws(()=>buildGatheringBonusDisplayReview({skill:'mining',matchingSetPieces:1,gearRatingBps:3000}));
 console.log('GATHERING_BONUS_DISPLAY: 33 skill/set profiles use same review engine; raw/effective duration and rare-consumer clarity');
+
+import {WORLD_BOSS_GATHERING_PIECES_V64 as catalogPieces108,WORLD_BOSS_GATHERING_SETS_V64 as catalogSets108,gatheringEquipmentDefinitionReview as catalogDef108} from '../src/content/world-boss-gathering-catalog-review';
+import {reviewGatheringLoadoutCatalogV2 as catalogLoadout108,type GatheringLoadoutCopyReview} from '../src/core/gathering-loadout-catalog-review';
+assert.equal(catalogPieces108.length,30);
+assert.equal(new Set(catalogPieces108.map(x=>x.itemId)).size,30);
+for(const set of catalogSets108){
+ const pieces=catalogPieces108.filter(x=>x.setId===set.setId);
+ assert.equal(pieces.length,10);
+ const equipment=Object.fromEntries(pieces.map(p=>[p.slot,p.itemId]));
+ const equipmentInstanceIds=Object.fromEntries(pieces.map(p=>[p.slot,'copy-'+p.slot]));
+ const copies:GatheringLoadoutCopyReview[]=pieces.map(p=>({instanceId:'copy-'+p.slot,itemId:p.itemId,accountId:'catalog-owner',
+ holderCharacterId:p.slot==='weapon'?null:'catalog-hero',location:p.slot==='weapon'?'bank':'inventory'}));
+ const input={accountId:'catalog-owner',characterId:'catalog-hero',category:set.skill,equipment,equipmentInstanceIds,copies};
+ const ready=catalogLoadout108(input);
+ assert.equal(ready.matchingPieces,10);assert.equal(ready.offSkillPieces,0);assert.equal(ready.mayEquip,false);
+ assert.equal(ready.requiresMixedEquipmentValidation,false);
+ const offSkill=catalogLoadout108({...input,category:set.skill==='mining'?'fishing':'mining'});
+ assert.equal(offSkill.matchingPieces,0);assert.equal(offSkill.offSkillPieces,10);
+ for(const p of pieces){
+  const def=catalogDef108(p.itemId)!;
+  assert.equal(def.rollVersion,96);assert.equal(def.releaseReady,false);
+  assert.deepEqual(def.combatStats,{attack:0,defense:0,hp:0});
+  assert.equal(def.combatPowerBonus,0);
+  assert.equal(def.equipRequirementsFinalized,false);
+ }
+ let rejected=0;
+ for(const invalid of [
+  {...input,category:'combat' as const},
+  {...input,copies:copies.slice(1)},
+  {...input,equipmentInstanceIds:{...equipmentInstanceIds,weapon:equipmentInstanceIds.offhand}},
+  {...input,copies:copies.map(x=>x.instanceId==='copy-helmet'?{...x,holderCharacterId:'other-hero'}:x)},
+  {...input,copies:copies.map(x=>x.instanceId==='copy-helmet'?{...x,location:'unclaimed' as const,holderCharacterId:null}:x)},
+  {...input,equipment:{...equipment,helmet:'WB64_UNKNOWN'}},
+ ]){try{catalogLoadout108(invalid);}catch{rejected++;}}
+ assert.equal(rejected,6);
+}
+console.log('GATHERING_LOADOUT_CATALOG_V108: 30 gathering-only identities, same-skill/off-skill, exact bank/inventory copy, combat/foreign/unclaimed/duplicate/missing rejection');

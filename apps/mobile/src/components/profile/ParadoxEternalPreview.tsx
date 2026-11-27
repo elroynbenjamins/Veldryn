@@ -15,7 +15,8 @@ const Decorative=({children}:{children:ReactNode})=><View pointerEvents="none" a
 const ParadoxAmbient=memo(function ParadoxAmbient({clock,k,source}:{clock:Animated.Value;k:number;source:ImageSourcePropType}){
  const tracks=useMemo(()=>PARADOX_AMBIENT_PATHS.map((p,i)=>{
   const inputRange=p.map((_,j)=>j/(p.length-1));
-  return {x:clock.interpolate({inputRange,outputRange:p.map(([x])=>x*k)}),y:clock.interpolate({inputRange,outputRange:p.map(([,y])=>y*k)}),opacity:clock.interpolate({inputRange:CURVE.phase,outputRange:CURVE.energy.map(e=>.38+(.53-i*.06)*e)})};
+  const fold=Animated.modulo(Animated.add(Animated.multiply(clock,2),i/3),1);
+  return {x:fold.interpolate({inputRange,outputRange:p.map(([x])=>x*k)}),y:fold.interpolate({inputRange,outputRange:p.map(([,y])=>y*k)}),opacity:clock.interpolate({inputRange:CURVE.phase,outputRange:CURVE.energy.map(e=>.38+(.53-i*.06)*e)})};
  }),[clock,k]);
  return <Decorative>{tracks.map((t,i)=><Animated.Image key={i} source={source} fadeDuration={0} resizeMode="contain" style={[pos(k,-4,-4,8,8),{opacity:t.opacity,transform:[{translateX:t.x},{translateY:t.y}]}]}/>)}</Decorative>;
 });

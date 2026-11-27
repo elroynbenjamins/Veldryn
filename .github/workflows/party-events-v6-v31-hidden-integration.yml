@@ -32,6 +32,8 @@ jobs:
           cache: pnpm
           cache-dependency-path: backend/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
+      - name: Verify native and chat Party Event votes share one authoritative ballot
+        run: node tests/party-event-chat-ballot-v112.mjs
       - name: Test V45 canonical receipt atomicity without app dependency
         run: node tests/party-event-canonical-source-writer-v45.mjs
       - name: Test V46 and V47 outbox, expiry takeover, retry and rollback

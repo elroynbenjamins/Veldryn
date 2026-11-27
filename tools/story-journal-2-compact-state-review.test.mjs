@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {activateQuestStateReview,applyQuestEvidenceReview,compactQuestCountersReview} from './story-journal-2-compact-state-review.mjs';
+import {activateQuestStateReview,applyQuestEvidenceReview,compactQuestCountersReview,projectCompactQuestReview,prepareCompactQuestClaimReview} from './story-journal-2-compact-state-review.mjs';
 const expected={accountId:'a',characterId:'hero'},alt={...expected,characterId:'alt'};
 const catalogue={version:'review1',released:false,quests:[{id:'q1',kind:'story',regionId:'ASTERFALL',scope:'character',released:false,prerequisites:[],objectives:[{id:'kill',kind:'kill',targetId:'rat',required:5},{id:'map',kind:'map',targetId:'SCOUT_GREENFIELDS',required:1}]},{id:'q2',kind:'story',regionId:'ASTERFALL',scope:'character',released:false,prerequisites:['q1'],objectives:[{id:'gather',kind:'gather',skillId:'fishing',targetId:'fish',required:6}]}]};
 const state={accountId:'a',catalogueVersion:'review1',revision:7,characters:[{characterId:'hero',migrationLane:'fresh_v2_candidate',quests:[]},{characterId:'alt',migrationLane:'legacy_continuation',quests:[]}]};
@@ -25,3 +25,15 @@ assert.equal(compactQuestCountersReview({state:c.state,catalogue,expected:{...ex
 assert.equal(Object.hasOwn(c.state,'events'),false);
 assert.equal(c.authorizesReward,false);
 console.log('Bounded quest activation, settled counters, replay and character scope: PASS');
+
+const facts={...expected,revision:10,level:5,equippedCount:1,actualAccountMaps:[],characterDiscoveredRoutes:[],soloBossVictories:[]};
+assert.equal(projectCompactQuestReview({state:c.state,catalogue,expected,facts}).rows[0].status,'active');
+facts.actualAccountMaps.push('SCOUT_GREENFIELDS');
+assert.equal(projectCompactQuestReview({state:c.state,catalogue,expected,facts}).rows[0].status,'ready');
+const claim={state:c.state,catalogue,expected,facts,questId:'q1',expectedRevision:10,policy:{mode:'synthetic_review',released:false,version:'v1',rewards:[{questId:'q1',gold:40}]}};
+const paid=prepareCompactQuestClaimReview(claim);
+assert.equal(paid.status,'proposed');assert.equal(paid.candidateGold,40);assert.equal(paid.authorizesReward,false);
+assert.equal(c.state.characters[0].quests[0].status,'active');
+assert.equal(prepareCompactQuestClaimReview({...claim,state:paid.state,facts:{...facts,revision:11},expectedRevision:11}).reason,'already_claimed');
+assert.equal(prepareCompactQuestClaimReview({...claim,facts:{...facts,revision:9}}).reason,'unverified_facts');
+console.log('Compact fact projection and single-use claim proposal: PASS');

@@ -30,6 +30,7 @@ export function EquipmentPouchPanel({state,busy=false,onAction,onNavigate}:{stat
  const {width,fontScale}=useWindowDimensions();
  // Narrow-phone Option A only: preserve the existing S24+ action layout.
  const compactActions=width<380||fontScale>=1.25;
+ const stackDetailActions=width<345||fontScale>=1.25;
  const language=useGameLanguage();
  const p=(text:string,params?:Record<string,string|number>)=>equipmentPouchText(language,text,params);
  const pouch=equipmentPouch(state),upgrade=equipmentPouchUpgradePreview(state);
@@ -288,15 +289,15 @@ export function EquipmentPouchPanel({state,busy=false,onAction,onNavigate}:{stat
    quickActions={selected?<View style={s.detailFooter}>
     {!!transferError?<Text accessibilityRole="alert" style={s.saleWarning}>{p(transferError)}</Text>:null}
     <GameButton title={p('Compare & Equip')} disabled={!onAction||busy} onPress={()=>{setPreviewStack(selected);setSelectedIndex(null);setTransferError('')}}/>
-    <View style={s.transferRow}>
-     <View style={s.transferAction}><GameButton compact title={p('To Inventory')} tone="secondary" disabled={!onAction||busy} loading={busy} onPress={()=>move('inventory')}/></View>
-     <View style={s.transferAction}><GameButton compact title={p('To Bank')} tone="secondary" disabled={!onAction||busy} loading={busy} onPress={()=>move('bank')}/></View>
+    <View style={[s.transferRow,stackDetailActions&&s.transferRowStacked]}>
+     <View style={[s.transferAction,stackDetailActions&&s.transferActionStacked]}><GameButton compact title={p('To Inventory')} tone="secondary" disabled={!onAction||busy} loading={busy} onPress={()=>move('inventory')}/></View>
+     <View style={[s.transferAction,stackDetailActions&&s.transferActionStacked]}><GameButton compact title={p('To Bank')} tone="secondary" disabled={!onAction||busy} loading={busy} onPress={()=>move('bank')}/></View>
     </View>
    </View>:undefined}
    disposalActions={selected?<View style={s.detailActions}>
-    <View style={s.transferRow}>
-     <View style={s.transferAction}><GameButton compact title={p('Sell copy')} tone="secondary" disabled={!onAction||busy||!saleCandidate?.eligible} onPress={()=>{if(saleCandidate)startSale([saleCandidate.id])}}/></View>
-     <View style={s.transferAction}><GameButton compact title={p('Salvage copy')} tone="danger" disabled={!onAction||busy||!salvageCandidate?.eligible} onPress={()=>{if(salvageCandidate)startSalvage([salvageCandidate.id])}}/></View>
+    <View style={[s.transferRow,stackDetailActions&&s.transferRowStacked]}>
+     <View style={[s.transferAction,stackDetailActions&&s.transferActionStacked]}><GameButton compact title={p('Sell copy')} tone="secondary" disabled={!onAction||busy||!saleCandidate?.eligible} onPress={()=>{if(saleCandidate)startSale([saleCandidate.id])}}/></View>
+     <View style={[s.transferAction,stackDetailActions&&s.transferActionStacked]}><GameButton compact title={p('Salvage copy')} tone="danger" disabled={!onAction||busy||!salvageCandidate?.eligible} onPress={()=>{if(salvageCandidate)startSalvage([salvageCandidate.id])}}/></View>
     </View>
     <EquipmentDisposalStatus compact sellAllowed={!!saleCandidate?.eligible} salvageAllowed={!!salvageCandidate?.eligible}
      sellReason={saleCandidate?.reason} salvageReason={salvageCandidate?.reason}/>
@@ -326,6 +327,7 @@ function styles(C:ThemeColors){return StyleSheet.create({
  modal:{maxHeight:'90%'},details:{gap:spacing.md,paddingBottom:spacing.md},
  detailFooter:{gap:spacing.xs},detailActions:{gap:spacing.sm},
  transferRow:{flexDirection:'row',gap:spacing.sm},transferAction:{flex:1,minWidth:0},
+ transferRowStacked:{flexDirection:'column'},transferActionStacked:{flex:0,flexShrink:0,width:'100%'},
  itemName:{...typography.bodyStrong,color:C.text},
  actions:{flexDirection:'row',flexWrap:'wrap',gap:8},
  });}

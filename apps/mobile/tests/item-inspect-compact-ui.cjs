@@ -22,7 +22,7 @@ assert(modal.includes('const rootInsets=useSafeAreaInsets()')&&modal.includes('f
 const ts=require('typescript');
 const safeAreaExports={};
 new Function('exports',ts.transpileModule(source('src/components/modal-safe-area.ts'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText)(safeAreaExports);
-const {resolveModalBottomInset}=safeAreaExports;
+const {resolveModalBottomInset,resolveModalKeyboardOverlap}=safeAreaExports;
 const geometry={android:true,modalBottom:0,modalTop:24,rootBottom:0,rootTop:24,screenHeight:800,frameHeight:800};
 const clearance=overrides=>resolveModalBottomInset({...geometry,...overrides});
 assert.equal(clearance({}),48,'Zero insets on a full-screen Android window must reserve the three-button fallback');
@@ -36,6 +36,20 @@ assert.equal(clearance({frameHeight:752}),24,'Partially excluded space reduces t
 assert.equal(clearance({frameHeight:728,modalBottom:24}),24,'A positive native modal inset still applies inside its own window');
 assert.equal(clearance({android:false,modalBottom:34}),34,'Non-Android layout continues to use the native modal inset');
 assert.equal(clearance({android:false}),0,'No Android fallback on iOS or web');
+assert.equal(clearance({modalBottom:NaN,rootBottom:48}),48,'Invalid modal inset must not suppress a reliable root inset');
+assert.equal(clearance({frameHeight:NaN}),48,'Invalid frame height keeps conservative protection');
+assert.equal(clearance({rootBottom:-10,modalBottom:-1}),48,'Negative native values cannot remove the Android fallback');
+const keyboard=overrides=>resolveModalKeyboardOverlap({android:true,keyboardTop:500,frameY:0,frameHeight:800,windowHeight:752,screenHeight:800,...overrides});
+assert.equal(keyboard({}),300,'Keyboard overlap follows modal rather than underlying app height');
+assert.equal(keyboard({frameY:24,frameHeight:476}),0,'A resized modal entirely above the keyboard needs no extra padding');
+assert.equal(keyboard({frameY:24,frameHeight:600}),124,'Partially resized modal reserves only the remaining overlap');
+assert.equal(keyboard({frameY:24,frameHeight:800}),300,'Modal frame bottom is capped to screen height');
+assert.equal(keyboard({frameHeight:0,frameY:24}),252,'Unmeasured modal falls back to app window');
+assert.equal(keyboard({keyboardTop:null}),0,'Hidden keyboard requires no extra padding');
+assert.equal(keyboard({keyboardTop:NaN}),0,'Invalid keyboard coordinates do not affect layout');
+assert.equal(keyboard({android:false}),0,'iOS retains its own keyboard avoidance');
+assert(modal.includes('Keyboard.metrics()?.screenY??null')&&modal.includes('frameY:frame.y,frameHeight:frame.height'),'Modal opened above an existing keyboard must use actual window geometry');
+
 assert(modal.includes('paddingBottom:bottomClearance'),'Sheet clearance must apply to the backdrop outside action controls');
 assert(modal.includes('sheet&&{paddingBottom:spacing.lg}'),'Keep a constant touch-safe gap inside the sheet, not a duplicate safe-area inset');
 assert(!modal.includes('sheet&&{paddingBottom:Math.max(spacing.lg,insets.bottom+spacing.sm)}'),'Do not consume the native bar inset twice');
@@ -56,6 +70,7 @@ assert(sheet.includes('keyboardShouldPersistTaps="handled"'),'Action buttons rem
 assert(inventory.includes("inspectQuickButtonStacked:{flex:0,flexShrink:0,width:'100%'}"),'Stacked buttons must use intrinsic heights, not divide the available column space');
 assert((inventory.match(/stackInspectorActions&&s\.inspectQuickButtonStacked/g)||[]).length===4,'Material and gear disposal buttons must all use the non-shrinking stacked style');
 assert(inventory.includes("inspectAmountLabelStacked:{flexBasis:'100%'}")&&inventory.includes("maxWidth:'100%',flexShrink:1,flexWrap:'wrap'"),'Long amount labels and scaled steppers must wrap within the available width');
+assert(pouch.includes("transferActionStacked:{flex:0,flexShrink:0,width:'100%'}")&&(pouch.match(/stackDetailActions&&s\.transferActionStacked/g)||[]).length===4,'All four gear pouch action cells must use intrinsic heights when stacked');
 
 // Stackable resources must inherit the toolbar amount and use one clamped value for both actions.
 assert(inventory.includes('setInspectQuantity(stack.instanceId?1:transferAmount(stack.quantity,quantity))'),'Opening a stack must inherit the selected amount, including All, without changing exact-copy actions');

@@ -1,6 +1,6 @@
 import {useGameplayText} from '../i18n/gameplay';
-import React,{useMemo,useState} from 'react';
-import {Pressable,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
+import React,{useMemo,useRef,useState} from 'react';
+import {ActivityIndicator,Pressable,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import type {GameState} from '../core/types';
 import type {GameCommand} from '../core/game-commands';
 import {FAITH_TIERS,FAITH_BLESSINGS,FAITH_BLESSING_GROUPS,faithBlessingDef,faithBlessingEffectLabel} from '../content/faith';
@@ -15,6 +15,7 @@ export function FaithPanel({state,onCommand,blessingsOnly=false}:{state:GameStat
  const {gt,language}=useGameplayText();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions();
  const [busy,setBusy]=useState(false),[error,setError]=useState('');
+ const pending=useRef(false);
  const c=state.character;if(!c)return null;
  const faith=activeFaithPreferences(state),level=faithLevel(state),water=holyWaterAvailable(state),progress=progressWithinLevel(Math.max(faith.xp,state.skills.find(row=>row.skillId==='faith')?.xp??0),level);
  const progressRatio=level>=100?1:Math.min(1,progress.current/Math.max(1,progress.need));
@@ -24,8 +25,8 @@ export function FaithPanel({state,onCommand,blessingsOnly=false}:{state:GameStat
  const switchWater=water+(reservation?faithPracticeRefund(reservation):0);
  const activeTier=FAITH_TIERS.find(row=>row.id===activeTierId),active=!!activeTier&&activeRemaining>0;
  const selectedCount=Object.keys(faith.selectedBlessingIds).length;
- const visibleBlessings=blessingRows(state),stackActions=width<370||fontScale>=1.2;
- const run=async(command:GameCommand)=>{if(busy)return;setBusy(true);setError('');try{await onCommand(command);}catch(e){setError(e instanceof Error?e.message:gt("Action failed."));}finally{setBusy(false);}};
+ const visibleBlessings=blessingRows(state),stackActions=width<370||Math.max(fontScale,state.settings.textScale)>=1.2;
+ const run=async(command:GameCommand)=>{if(pending.current)return;pending.current=true;setBusy(true);setError('');try{await onCommand(command);}catch(e){setError(e instanceof Error?e.message:gt("Action failed."));}finally{pending.current=false;setBusy(false);}};
  return <>
   {!blessingsOnly?<><Panel accentColor={C.special}>
    <View style={s.heroRow}><View style={s.flex}><Text style={s.eyebrow}>{gt("FAITH PRACTICE")}</Text><Text style={s.title}>{gt("Devotion")}</Text><Text style={s.body}>{gt("Holy Water is reserved when a practice starts. Unused Water is refunded when you stop or mastery ends the session.")}</Text></View><View style={s.waterBadge}><Text style={s.waterValue}>{water.toLocaleString()}</Text><Text style={s.waterLabel}>{gt("HOLY WATER")}</Text></View></View>
@@ -40,6 +41,8 @@ export function FaithPanel({state,onCommand,blessingsOnly=false}:{state:GameStat
    </Pressable>})}
   </View></>:null}
   <Panel>
+   {error?<Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={s.error}>{error}</Text>:null}
+   {busy?<ActivityIndicator accessibilityLabel={gt("Saving...")} color={C.accent} size="small"/>:null}
    <View style={s.sectionHeading}><View style={s.flex}><Text style={s.sectionLabel}>{gt("ACTIVE BLESSINGS")}</Text><Text style={s.selectedBlessing}>{`${selectedCount}/${FAITH_BLESSING_GROUPS.length}`}</Text></View><View style={s.hideButton}><GameButton compact title={faith.hideWeakerBlessings?gt("Show all"):gt("Hide weaker")} tone="secondary" disabled={busy} onPress={()=>run({type:'faith_hide',args:{enabled:!faith.hideWeakerBlessings}})}/></View></View>
    <Text style={s.body}>{gt("Equip one blessing per category. Star useful alternatives to keep them visible.")}</Text>
    {FAITH_BLESSING_GROUPS.map(group=>{
@@ -56,12 +59,11 @@ export function FaithPanel({state,onCommand,blessingsOnly=false}:{state:GameStat
      {blessings.map(blessing=>{const locked=blessing.level>level,favorite=faith.favoriteBlessingIds.includes(blessing.id),equipped=faith.selectedBlessingIds[group.id]===blessing.id;return <View key={blessing.id} style={[s.blessingRow,equipped&&s.blessingEquipped,locked&&s.blessingLocked]}>
       <Pressable accessibilityRole="button" accessibilityLabel={favorite?`Remove ${blessing.name} from favorites`:`Favorite ${blessing.name}`} accessibilityState={{selected:favorite,disabled:busy}} disabled={busy} onPress={()=>void run({type:'faith_favorite',args:{id:blessing.id,enabled:!favorite}})} style={({pressed})=>[s.starButton,pressed&&s.pressed]}><Text style={[s.star,favorite&&s.starActive]}>{favorite?'★':'☆'}</Text></Pressable>
       <View style={s.flex}><View style={s.inline}><Text style={s.blessingName}>{blessing.name}</Text>{equipped?<Text style={s.activeTag}>{gt("Equipped").toLocaleUpperCase(language)}</Text>:locked?<Text style={s.lockTag}>LV {blessing.level}</Text>:null}</View><Text style={s.blessingMeta}>{faithBlessingEffectLabel(blessing)} · {gt("Faith")} {blessing.level}</Text></View>
-      <View style={[s.blessingAction,stackActions&&s.blessingActionStack]}><GameButton compact title={equipped?'Active':locked?`Lv ${blessing.level}`:gt("Equip")} selected={equipped} disabled={busy||locked||equipped} tone={equipped?'primary':'secondary'} onPress={()=>run({type:'faith_blessing',args:{id:blessing.id}})}/></View>
+      <View style={[s.blessingAction,stackActions&&s.blessingActionStack]}><GameButton compact title={equipped?gt("Equipped"):locked?`Lv ${blessing.level}`:gt("Equip")} selected={equipped} disabled={busy||locked||equipped} tone={equipped?'primary':'secondary'} onPress={()=>run({type:'faith_blessing',args:{id:blessing.id}})}/></View>
      </View>})}
     </View>;
    })}
   </Panel>
-  {error?<Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={s.error}>{error}</Text>:null}
  </>;
 }
 function makeStyles(C:ThemeColors){return StyleSheet.create({
@@ -70,5 +72,5 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  activeCard:{gap:6,padding:spacing.sm,borderWidth:1,borderColor:C.special,borderRadius:10,backgroundColor:C.specialSurface},activeLabel:{...typography.caption,color:C.special,fontWeight:'900',letterSpacing:.8},activeName:{...typography.bodyStrong,color:C.text},activeCount:{...typography.title,color:C.special},
  sectionHeading:{flexDirection:'row',alignItems:'center',gap:spacing.sm},sectionLabel:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.9},pressed:{opacity:.72},
  practiceList:{gap:8},practiceInstruction:{fontSize:13,lineHeight:19,color:C.muted,textAlign:'center',fontWeight:'600',paddingBottom:2},practiceCard:{minHeight:64,flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8,paddingHorizontal:12,paddingVertical:10,borderWidth:1,borderColor:C.line,borderRadius:12,backgroundColor:C.panel},practiceCardActive:{borderColor:C.good,backgroundColor:C.goodSurface},practiceCardLocked:{opacity:.6},between:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},inline:{flexDirection:'row',alignItems:'center',flexWrap:'wrap',gap:6},practiceName:{...typography.bodyStrong,color:C.text},practiceMeta:{...typography.caption,color:C.muted},practiceActiveMeta:{...typography.caption,color:C.good,fontWeight:'800'},practiceXp:{...typography.caption,color:C.accentSoft,fontWeight:'900'},lockTag:{fontSize:9,color:C.warning,fontWeight:'900',letterSpacing:.7},activeTag:{fontSize:9,color:C.good,fontWeight:'900',letterSpacing:.7},
- blessingGroup:{gap:2,marginTop:8},blessingGroupHeader:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:8,borderBottomWidth:1,borderBottomColor:C.line,paddingBottom:6},blessingGroupTitle:{...typography.bodyStrong,color:C.special},blessingGroupMeta:{...typography.caption,color:C.muted},blessingGroupSelected:{color:C.good},selectedBlessing:{...typography.bodyStrong,color:C.text},hideButton:{maxWidth:132},blessingRow:{flexDirection:'row',alignItems:'center',gap:8,paddingVertical:8,borderTopWidth:1,borderTopColor:C.line},blessingEquipped:{paddingHorizontal:8,borderWidth:1,borderColor:C.special,borderRadius:10,backgroundColor:C.specialSurface},blessingLocked:{opacity:.72},starButton:{width:40,height:40,alignItems:'center',justifyContent:'center'},star:{fontSize:24,color:C.muted},starActive:{color:C.accent},blessingName:{...typography.bodyStrong,color:C.text},blessingMeta:{...typography.caption,color:C.muted},blessingAction:{width:94},blessingActionStack:{width:86},error:{...typography.body,color:C.bad}
+ blessingGroup:{gap:2,marginTop:8},blessingGroupHeader:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:8,borderBottomWidth:1,borderBottomColor:C.line,paddingBottom:6},blessingGroupTitle:{...typography.bodyStrong,color:C.special},blessingGroupMeta:{...typography.caption,color:C.muted},blessingGroupSelected:{color:C.good},selectedBlessing:{...typography.bodyStrong,color:C.text},hideButton:{maxWidth:132},blessingRow:{flexDirection:'row',alignItems:'center',gap:8,paddingVertical:8,borderTopWidth:1,borderTopColor:C.line},blessingEquipped:{paddingHorizontal:8,borderWidth:1,borderColor:C.special,borderRadius:10,backgroundColor:C.specialSurface},blessingLocked:{opacity:.72},starButton:{width:44,height:44,alignItems:'center',justifyContent:'center'},star:{fontSize:24,color:C.muted},starActive:{color:C.accent},blessingName:{...typography.bodyStrong,color:C.text},blessingMeta:{...typography.caption,color:C.muted},blessingAction:{width:94},blessingActionStack:{width:86},error:{...typography.body,color:C.bad}
 });}

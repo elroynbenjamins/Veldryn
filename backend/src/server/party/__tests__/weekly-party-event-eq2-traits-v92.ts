@@ -1,3 +1,4 @@
+import {projectPartySwapChatV104,type PartySwapChatProposalV104} from '../party-role-swap-chat-review-v104';
 import {reviewPartyCharacterSwapV103,type PartyCharacterV103} from '../party-roster-character-swap-review-v103';
 import {strict as assert} from 'node:assert';
 import type {CombatantDefinition,CombatInput,CombatV2Resource} from '../../combat/types';
@@ -201,6 +202,46 @@ denied(()=>reviewPartyCharacterSwapV103({...permanent,proposed:[alternateA,third
  ownedCharacters:[...permanent.ownedCharacters,third],
  consents:permanent.consents.map(row=>row.accountId==='B'?{...row,characterId:third.characterId}:row)},true),'party_role_distribution_changed');
 console.log('PARTY_PERMANENT_ROLE_SWAP_REVIEW_OK: paired/three-way consent, stable role counts, owned hero and minimum level');
+const chatProposal:PartySwapChatProposalV104={
+ proposalId:'QA_SWAP_1',partyId:'QA_PARTY_SWAP',messageId:'QA_SYSTEM_MSG',
+ rosterRevision:7,createdAtMs:1000,state:'pending',
+ members:[
+  {accountId:'A',fromRole:'tank',toRole:'damage',fromCharacterId:'A_tank',toCharacterId:'A_damage',accepted:true},
+  {accountId:'B',fromRole:'damage',toRole:'tank',fromCharacterId:'B_damage',toCharacterId:'B_tank',accepted:false},
+ ],
+};
+const chatInput={
+ proposal:chatProposal,message:{id:'QA_SYSTEM_MSG',partyId:'QA_PARTY_SWAP',accountId:null,isSystem:true},
+ viewerAccountId:'B',activePartyId:'QA_PARTY_SWAP',activeAccountIds:['A','B','C','D'],
+ rosterRevision:7,serverNowMs:300999,
+};
+const chatCard=projectPartySwapChatV104(chatInput,true);
+assert.equal(chatCard.status,'pending');
+assert.equal(chatCard.showAccept,true);
+assert.equal(chatCard.showDecline,true);
+assert.equal(chatCard.acceptedCount,1);
+assert.equal(chatCard.canExecute,false);
+for(const viewerAccountId of ['A','C','D'])
+ assert.equal(projectPartySwapChatV104({...chatInput,viewerAccountId},true).showAccept,false);
+const expiredChat=projectPartySwapChatV104({...chatInput,serverNowMs:301000},true);
+assert.equal(expiredChat.status,'expired');
+assert.equal(expiredChat.showAccept,false);
+assert.equal(projectPartySwapChatV104({...chatInput,rosterRevision:8},true).status,'stale');
+assert.equal(projectPartySwapChatV104({...chatInput,viewerAccountId:'A',activeAccountIds:['A','C','D']},true).status,'stale');
+for(const state of ['declined','cancelled','expired'] as const)
+ assert.equal(projectPartySwapChatV104({...chatInput,proposal:{...chatProposal,state}},true).showAccept,false);
+const completedChat=projectPartySwapChatV104({...chatInput,rosterRevision:9,serverNowMs:400000,
+ proposal:{...chatProposal,state:'completed',committedRevision:8,members:chatProposal.members.map(m=>({...m,accepted:true}))}},true);
+assert.equal(completedChat.status,'completed');
+assert.equal(completedChat.showAccept,false);
+denied(()=>projectPartySwapChatV104({...chatInput,proposal:{...chatProposal,state:'completed',committedRevision:8}},true),'missing_completion_evidence');
+denied(()=>projectPartySwapChatV104({...chatInput,message:{...chatInput.message,accountId:'B',isSystem:false}},true),'chat_scope_mismatch');
+denied(()=>projectPartySwapChatV104({...chatInput,message:{...chatInput.message,id:'FORGED'}},true),'chat_scope_mismatch');
+denied(()=>projectPartySwapChatV104({...chatInput,viewerAccountId:'OUTSIDER'},true),'chat_scope_mismatch');
+denied(()=>projectPartySwapChatV104({...chatInput,activePartyId:'OTHER_PARTY'},true),'chat_scope_mismatch');
+denied(()=>projectPartySwapChatV104(chatInput),'unreleased');
+console.log('PARTY_ROLE_SWAP_CHAT_V104_REVIEW_OK');
+
 console.log('PARTY_ROSTER_SWAP_V103_REVIEW_OK: account-stable role exchange and frozen encounter isolation');
 assert.equal(PARTY_EVENT_EQ2_TRAIT_V92_RELEASED,false);
 let scenarios=0,traitEvents=0,baselineEvents=0;

@@ -1,6 +1,8 @@
 /** Unmounted Journal 2.0 presentation review. No gameplay commands or live routing.
  * Host supplies reviewed rows and handles navigation/detail selection only.
  */
+import {useGameLanguage} from '../i18n/GameLanguageProvider';
+import {storyJournal2Text} from '../i18n/story-journal-2-review';
 import {useGameTheme} from '../theme/ThemeContext';
 import type {ThemeColors} from '../theme/theme';
 import React,{useState} from 'react';
@@ -17,7 +19,8 @@ const tabs:Tab[]=['story','quests','challenges','records'];
 const labels:Record<Tab,string>={story:'Story',quests:'Quests',challenges:'Challenges',records:'Records'};
 const statusLabels:Record<Status,string>={ready:'Ready',active:'In progress',available:'Available',locked:'Locked',claimed:'Completed'};
 const filters=[['current','Current'],['all','All'],['completed','Completed'],['locked','Locked']];
-export function StoryJournal2Review({model,onChallengePeriod,onChallenge,onMilestones,onDiscoveries,onLore,onExistingRecords,onRegion,regionName,onTab,onDetail,onPrimary,onFilter,onSearch,onZone,onPin,zoneName,objectiveName,t}:Props){
+export function StoryJournal2Review({model,onChallengePeriod,onChallenge,onMilestones,onDiscoveries,onLore,onExistingRecords,onRegion,regionName,onTab,onDetail,onPrimary,onFilter,onSearch,onZone,onPin,zoneName,objectiveName,t:fallback}:Props){
+ const language=useGameLanguage(),t=(key:string)=>storyJournal2Text(language,key,fallback);
  const C=useGameTheme(),styles=makeStyles(C);
  const {width,fontScale}=useWindowDimensions(),stack=width<355||fontScale>=1.3;
  const [showFilters,setShowFilters]=useState(false);

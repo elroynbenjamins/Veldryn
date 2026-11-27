@@ -19,7 +19,8 @@ export function rehearseQuestClaim({book,side,snapshot,expected,ledger,request,p
   if(old.questId!==request.questId||old.policyVersion!==request.policyVersion)return deny('request_conflict');
   return {...flags,status:'replay',receipt:{...old}};
  }
- if(ledger.revision!==request.expectedRevision)return deny('stale_revision');
+ if(ledger.revision!==request.expectedRevision||snapshot.revision!==ledger.revision)return deny('stale_revision');
+ if(!Array.isArray(snapshot.claimedStoryIds)||ledger.claimedQuestIds.some(id=>!snapshot.claimedStoryIds.includes(id))||snapshot.claimedStoryIds.some(id=>!ledger.claimedQuestIds.includes(id)))return deny('claim_state_mismatch');
  if(!book||book.released!==false||!side||side.released!==false||book.regionId!==side.regionId)return deny('invalid_catalogue');
  const main=book.quests.find(q=>q.id===request.questId),optional=side.quests.find(q=>q.id===request.questId);
  if((main&&optional)||(!main&&!optional))return deny('unknown_or_pending_quest');

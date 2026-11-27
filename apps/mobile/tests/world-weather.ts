@@ -17,6 +17,12 @@ ok(seasonEffect('mining','spring').itemMultiplier===1.08,'Bloomtide gathering yi
 ok(seasonEffect('combat','autumn').goldMultiplier===1.08,'Emberfall combat gold bonus missing');
 ok(weatherEffect('fishing','rain').actionTimeMultiplier===.88&&weatherEffect('fishing','rain').itemMultiplier===1.1,'Rain fishing bonuses missing');
 ok(weatherEffect('combat','mist').dropChanceMultiplier===1.12,'Mist loot bonus missing');
+ok(seasonEffect('herbalism','autumn').itemMultiplier===1.05,'Emberfall herb yield bonus missing');
+ok(weatherEffect('herbalism','mist').dropChanceMultiplier===1.10,'Mist botanical bonus missing');
+ok(weatherEffect('herbalism','bloomwind').dropChanceMultiplier===1.25,'Bloomwind botanical bonus missing');
+ok(weatherEffect('herbalism','rain').itemMultiplier===1.08,'Rain herb yield bonus missing');
+const herbStack=environmentEffect('herbalism',{seasonId:'autumn',weatherId:'mist'});
+ok(herbStack.itemMultiplier===1.05&&herbStack.dropChanceMultiplier===1.10,'Herbalism season and weather must stack');
 const stacked=environmentEffect('fishing',{seasonId:'spring',weatherId:'rain'});
 ok(stacked.itemMultiplier===1.08*1.1&&stacked.actionTimeMultiplier===.88,'Season and weather effects must stack multiplicatively');
 let state=createCharacter(newGame(spring),'WAYFINDER','Weather Tester');

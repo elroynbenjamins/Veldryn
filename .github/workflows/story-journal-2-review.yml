@@ -8,7 +8,7 @@ on:
       - 'apps/mobile/src/components/Story*2Review.tsx'
       - 'apps/mobile/src/core/story-journal-host-review.ts'
       - 'apps/mobile/src/core/story-journal-preferences-review.ts'
-      - 'backend/online/story-journal-evidence-review.ts'
+      - 'backend/online/story-journal-*-review.ts'
       - 'apps/mobile/src/i18n/story-journal-2-review.ts'
       - '.github/workflows/story-journal-2-review.yml'
 permissions:
@@ -33,3 +33,4 @@ jobs:
       - run: node --experimental-strip-types tools/story-journal-2-host-review.test.mjs
       - run: node --experimental-strip-types tools/story-journal-2-localization-review.test.mjs
       - run: node --experimental-strip-types tools/story-journal-2-persistence-review.test.mjs
+      - run: node --experimental-strip-types tools/story-journal-2-atomic-review.test.mjs

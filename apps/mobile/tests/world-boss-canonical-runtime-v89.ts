@@ -435,6 +435,9 @@ for(const bossId of bossIds){
  const full=reviewWorldBossGatheringSpeedV99(input);
  assert.equal(full.pieces,10);assert.equal(full.gearRatingBps,10340);assert.equal(full.setRatingBps,417);
  assert.equal(full.canApply,false);
+ assert.equal(full.channels.setXpBps,1500);
+ assert.equal(full.set.xpBonusFraction,.15);
+ assert.equal(Object.prototype.hasOwnProperty.call(full.set,'yieldBonusFraction'),false);
  const offSkill=reviewWorldBossGatheringSpeedV99({...input,skill:input.skill==='mining'?'woodcutting':'mining'});
  assert.equal(offSkill.gearRatingBps,0);assert.equal(offSkill.actionSeconds,offSkill.existingSeconds);
  rejectsGatheringSpeedReview(()=>reviewWorldBossGatheringSpeedV99({...input,copies:[copies[0],copies[0]]}));
@@ -476,8 +479,8 @@ const fullDisplay=buildGatheringBonusDisplayReview({skill:'mining',matchingSetPi
 assert.equal(fullDisplay.rawSpeedPercent,104.17);
 assert.equal(fullDisplay.effectiveSpeedPercent,103.13);
 assert.equal(fullDisplay.actionTimeReductionPercent,50.77);
-assert.equal(fullDisplay.xpPercent,8);
-assert.equal(fullDisplay.yieldPercent,7);
+assert.equal(fullDisplay.xpPercent,15);
+assert.equal(Object.prototype.hasOwnProperty.call(fullDisplay,'yieldPercent'),false);
 assert.equal(fullDisplay.rareRelativePercent,10);
 rejectsGatheringSpeedReview(()=>buildGatheringBonusDisplayReview({skill:'mining',matchingSetPieces:1,gearRatingBps:3000}));
 console.log('GATHERING_BONUS_DISPLAY: 33 skill/set profiles use same review engine; raw/effective duration and rare-consumer clarity');

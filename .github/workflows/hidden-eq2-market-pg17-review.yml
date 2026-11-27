@@ -8,6 +8,10 @@ permissions:
   contents: read
 jobs:
   disposable-settlement:
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [settlement, resource-claims]
     runs-on: ubuntu-latest
     timeout-minutes: 8
     services:
@@ -41,21 +45,31 @@ jobs:
           test "$(psql -XAt -v ON_ERROR_STOP=1 -c "select current_database()")" = eq2_market_review
           psql -X -v ON_ERROR_STOP=1 -f tools/market-review/pg17/00_disposable_settlement.sql
       - name: Run rollback settlement and bank tests
+        if: matrix.suite == 'settlement'
         run: psql -X -v ON_ERROR_STOP=1 -f tools/market-review/pg17/01_settlement_regression.sql
-      - name: Extend disposable schema and run bulk regressions
-        run: |
-          psql -X -v ON_ERROR_STOP=1 -f tools/market-review/pg17/03_bulk_resources.sql
-          psql -X -v ON_ERROR_STOP=1 -f tools/market-review/pg17/04_bulk_regressions.sql
+      - name: Extend disposable resource schema
+        run: psql -X -v ON_ERROR_STOP=1 -f tools/market-review/pg17/03_bulk_resources.sql
+      - name: Run bulk rollback regressions
+        if: matrix.suite == 'settlement'
+        run: psql -X -v ON_ERROR_STOP=1 -f tools/market-review/pg17/04_bulk_regressions.sql
       - name: Rehearse atomic wallet and inventory mirror rollback
+        if: matrix.suite == 'settlement'
         run: psql -X -v ON_ERROR_STOP=1 -f tools/market-review/pg17/06_atomic_mirror_review.sql
       - name: Rehearse resource delivery claims and safe returns
+        if: matrix.suite == 'settlement'
         run: psql -X -v ON_ERROR_STOP=1 -f tools/market-review/pg17/09_resource_delivery_claim_review.sql
       - name: Run concurrent purchase and cancellation tests
+        if: matrix.suite == 'settlement'
         run: bash tools/market-review/pg17/02_concurrency.sh
       - name: Run concurrent bulk fills and account cap tests
+        if: matrix.suite == 'settlement'
         run: bash tools/market-review/pg17/05_bulk_concurrency.sh
       - name: Run original mint replay and inventory capacity races
+        if: matrix.suite == 'settlement'
         run: bash tools/market-review/pg17/08_original_registration_concurrency.sh
+      - name: Run resource claim and source-lot races on fresh fixture
+        if: matrix.suite == 'resource-claims'
+        run: bash tools/market-review/pg17/12_resource_claim_concurrency.sh
       - name: Verify absence of live schema
         run: |
           test "$(psql -XAt -v ON_ERROR_STOP=1 -c "select count(*) from information_schema.tables where table_schema='public'")" = 0

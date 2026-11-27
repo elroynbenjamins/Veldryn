@@ -18,6 +18,7 @@ on:
       - 'backend/src/server/party/party-chat-action-*.ts'
       - 'backend/tests/party-role-swap-chat-session-v119.cjs'
       - 'backend/src/server/party/party-social-action-session-review-v123.ts'
+      - 'backend/src/server/party/party-recruitment-chat-session-review-v128.ts'
       - 'backend/tests/party-social-action-session-v123.cjs'
       - 'apps/mobile/src/core/party-chat-*-preview-v*.ts'
       - 'backend/src/server/party/__tests__/weekly-party-event-eq2-full-build-v92.ts'

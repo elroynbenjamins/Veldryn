@@ -49,6 +49,20 @@ begin
  if private.open_party_recruitment_application_v124(app_a,a,party,ca,ma)<>app_a then raise exception 'missing application';end if;
  if private.open_party_recruitment_application_v124(app_a,a,party,ca,ma)<>app_a then raise exception 'missing replay';end if;
  perform private.open_party_recruitment_application_v124(app_b,b,party,cb,mb);
+ result:=private.read_party_recruitment_chat_v128(leader,party,ma);
+ if result is null or result->>'applicantAccountId'<>a::text or result->>'classId'<>'DAWNKEEPER'
+ or result->>'role'<>'support' or result->>'status'<>'pending'
+ or result->'allowedActions'<>'["accept","decline"]'::jsonb then raise exception 'invalid recruitment card';end if;
+ if private.read_party_recruitment_chat_v128(member,party,ma) is not null
+ or private.read_party_recruitment_chat_v128(a,party,ma) is not null
+ or private.read_party_recruitment_chat_v128(leader,other_party,ma) is not null
+ then raise exception 'application details leaked';end if;
+ begin
+  perform private.respond_party_recruitment_chat_v128(member,'V128_NONLEADER',party,app_a,ma,rev,1,'accept');
+  raise exception 'expected chat leader denial';
+ exception when raise_exception then
+  if sqlerrm<>'party_recruit_chat_v128_not_leader' then raise;end if;
+ end;
  if private.party_registration_snapshot_v110(party) is distinct from before_roster then raise exception 'application changed membership';end if;
  begin
   perform private.respond_party_recruitment_application_v124(member,party,app_a,'accept');
@@ -106,8 +120,38 @@ begin
  if private.respond_party_recruitment_application_v124(b,party,app_b,'withdraw')->>'state'<>'withdrawn'
  then raise exception 'withdrawal failed';end if;
  perform private.open_party_recruitment_application_v124(app_b2,b,party,cb,mb2);
- if private.respond_party_recruitment_application_v124(leader,party,app_b2,'accept')->>'state'<>'accepted'
- then raise exception 'reapplication failed';end if;
+ if private.read_party_recruitment_chat_v128(leader,party,mb)->>'status'<>'cancelled'
+ then raise exception 'withdrawn card not closed';end if;
+ begin
+  perform private.respond_party_recruitment_chat_v128(leader,'V128_BAD_MESSAGE',party,app_b2,ma,rev+1,1,'accept');
+  raise exception 'expected stale message denial';
+ exception when raise_exception then
+  if sqlerrm<>'party_recruit_chat_v128_stale_scope' then raise;end if;
+ end;
+ begin
+  perform private.respond_party_recruitment_chat_v128(leader,'V128_JOIN',party,app_b2,mb2,rev+1,1,'accept');
+  raise exception 'forced_v128_receipt_rollback';
+ exception when raise_exception then
+  if sqlerrm<>'forced_v128_receipt_rollback' then raise;end if;
+ end;
+ if exists(select 1 from private.party_registration_members_v110 where account_id=b)
+ or exists(select 1 from private.party_chat_action_receipts_v108 where account_id=leader and request_id='V128_JOIN')
+ then raise exception 'chat receipt rollback failed';end if;
+ result:=private.respond_party_recruitment_chat_v128(leader,'V128_JOIN',party,app_b2,mb2,rev+1,1,'accept');
+ if result->'response'->>'state'<>'accepted' or result->>'newlyRecorded'<>'true'
+ then raise exception 'chat reapplication failed';end if;
+ if private.respond_party_recruitment_chat_v128(leader,'V128_JOIN',party,app_b2,mb2,rev+1,1,'accept')
+ is distinct from jsonb_set(result,'{newlyRecorded}','false'::jsonb)
+ then raise exception 'historical chat receipt replay failed';end if;
+ begin
+  perform private.respond_party_recruitment_chat_v128(leader,'V128_JOIN',party,app_b2,mb2,rev+1,1,'decline');
+  raise exception 'expected conflicting replay';
+ exception when raise_exception then
+  if sqlerrm<>'party_recruit_chat_v128_conflicting_replay' then raise;end if;
+ end;
+ if private.read_party_recruitment_chat_v128(leader,party,mb2)->>'status'<>'completed'
+ or private.read_party_recruitment_chat_v128(leader,party,mb2)->'allowedActions'<>'[]'::jsonb
+ then raise exception 'accepted card not closed';end if;
  if (select count(*) from private.party_registration_members_v110 where party_id=party)<>4
  then raise exception 'membership count incorrect';end if;
  update public.chat_messages set account_id=null,is_system=true where id=mc;

@@ -19,6 +19,7 @@ export type MarketOperation =
      limit:number;offset:number}
   | {kind:'inbox';history:boolean;offset:number}
   | {kind:'my_offers';history:boolean;offset:number}
+  | {kind:'receipt_status';requestKey:string}
   | {kind:'publish';holdId:string;unitPrice:number;quantity:number;requestKey:string}
   | {kind:'cancel';offerId:string;requestKey:string}
   | {kind:'buy';offerId:string;unitPrice:number;quantity:number;buyerRevision:number;sellerRevision:number;requestKey:string}
@@ -92,6 +93,10 @@ function validate(operation:string,method:string,query:URLSearchParams,body:unkn
   if(method!=='POST'||!object(body))bad();
   const fields=body as Record<string,unknown>;
   if(params.some(k=>k!=='view'&&k!=='action'))bad();
+  if(operation==='receipt_status'){
+    if(!only(fields,['requestKey'])||!requestKey(fields.requestKey))bad();
+    return {kind:'receipt_status',requestKey:fields.requestKey as string};
+  }
   if(operation==='publish'){
     if(!only(fields,['holdId','unitPrice','quantity','requestKey'])
       ||!id(fields.holdId)||!int(fields.unitPrice,1,1000000000000)
@@ -177,7 +182,7 @@ export async function bindAuthenticatedMarketRequest(
     ||url.searchParams.get('view')!=='market'
     ||url.searchParams.getAll('action').length!==1)bad();
   const action=url.searchParams.get('action')??'';
-  if(!['browse','inbox','my_offers','publish','cancel','buy','claim'].includes(action))bad();
+  if(!['browse','inbox','my_offers','publish','cancel','buy','claim','receipt_status'].includes(action))bad();
   let body:unknown=null;
   if(request.method==='POST'){
     const raw=await readMarketBody(request);

@@ -48,7 +48,9 @@ export function reviewWorldBossRewardHandoffV95(
   requests.add(row.requestId);replays.add(row.replayDigest);settlements.add(row.settlementReceiptDigest);
  }
  const previews=previewVerifiedWorldBossChestsV58(evidence).map(chest=>({
-  ...chest,gearChanceBps:WORLD_BOSS_CHEST_POLICY_V96.equipmentChanceBps,
+  ...chest,name:'World Boss Chest',guaranteed:{gold:450,companionEssence:6,gemDust:2,temperingDust:2},
+  guaranteedRewards:worldBossChestLootTableV96(chest.bossId,chest.kind).guarantees,
+  gearChanceBps:WORLD_BOSS_CHEST_POLICY_V96.equipmentChanceBps,
   lootTableVersion:worldBossChestLootTableV96(chest.bossId,chest.kind).version,
  }));
  return {previews,verifiedAttempts:verified.length,

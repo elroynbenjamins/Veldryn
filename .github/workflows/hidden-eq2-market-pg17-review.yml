@@ -52,6 +52,8 @@ jobs:
         run: bash tools/market-review/pg17/02_concurrency.sh
       - name: Run concurrent bulk fills and account cap tests
         run: bash tools/market-review/pg17/05_bulk_concurrency.sh
+      - name: Run original mint replay and inventory capacity races
+        run: bash tools/market-review/pg17/08_original_registration_concurrency.sh
       - name: Verify absence of live schema
         run: |
           test "$(psql -XAt -v ON_ERROR_STOP=1 -c "select count(*) from information_schema.tables where table_schema='public'")" = 0

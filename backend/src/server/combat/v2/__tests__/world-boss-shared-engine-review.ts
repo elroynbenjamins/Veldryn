@@ -2,6 +2,7 @@ import {strict as assert} from 'node:assert';
 import type {CombatInput} from '../../types';
 import {makeWorldBossWarCampSnapshotV11} from '../../world-boss-war-camp-v11';
 import {deriveWorldBossPreparationReviewV2,applyWorldBossStartingHpReviewV2,initialWorldBossGuardReviewV2,advanceWorldBossGuardReviewV2} from '../world-boss-preparation-review';
+import {reviewWorldBossAccountFairnessV2} from '../world-boss-account-fairness-review';
 import {CLASS_ROLES_V2,type ClassIdV2} from '../build-contract';
 import {reviewWorldBossProtectionV2} from '../world-boss-protection-review';
 import {bosses,profiles,setup} from './ten-slot-boss-fixture';
@@ -246,3 +247,35 @@ assert.equal(maxGuard.localBossHpLoss,0);
 assert.ok(maxGuard.guardReview&&maxGuard.guardReview.state.totalGuardDamage>0);
 assert.equal(maxGuard.globalHpCredited,0);
 console.log('WORLD_BOSS_V94B_GUARD_ENGINE_REVIEW: actual local guard routing, replay parity, fully guarded HP exclusion');
+
+let fairnessCases=0;
+const fairnessRows:{boss:string;phase:string;full:number;candidate:number;delta:number}[]=[];
+for(const b of cases)for(const phase of phases){
+ const classes=['RAVAGER','BASTION','DAWNKEEPER'] as const;
+ const fullF=fixture(b,phase,3,classes,1,1,0,4,60000);
+ const full=simulateWorldBossSharedEngineReviewV2(fullF.input,fullF.builds,fullF.runtime,fullF.traitPorts,fullF.scope,fullF.verify,true);
+ const subsets=[];
+ for(let mask=1;mask<7;mask++){
+  const indices=[0,1,2].filter(i=>Boolean(mask&(1<<i)));
+  const sf=fixture(b,phase,indices.length,indices.map(i=>classes[i]),1,1,0,4,60000);
+  const scope={...sf.scope,members:indices.map(i=>fullF.scope.members[i])};
+  const binding={scope,bossDefinitionDigest:enemyV2SnapshotDigest(sf.input.enemies[0]),
+   compiledInputDigest:enemyV2SnapshotDigest({...sf.input,players:sf.compiled.players}),
+   equipmentSourcesDigest:enemyV2SnapshotDigest(sf.compiled.sources)};
+  subsets.push(simulateWorldBossSharedEngineReviewV2(sf.input,sf.builds,sf.runtime,sf.traitPorts,scope,
+   row=>enemyV2SnapshotDigest(row)===enemyV2SnapshotDigest(binding),true));
+ }
+ const result=reviewWorldBossAccountFairnessV2(full,subsets);
+ assert.equal(result.comparisons.length,7);
+ assert.equal(result.policyApproved,false);
+ assert.equal(result.extraAttemptsGranted,0);
+ assert.ok(result.matchedSubsetMaximum>=full.localBossHpLoss);
+ assert.equal(result.rewardGranted,false);
+ assert.throws(()=>reviewWorldBossAccountFairnessV2(full,subsets.slice(1)),/incomplete_subsets/);
+ assert.throws(()=>reviewWorldBossAccountFairnessV2(full,[subsets[0],...subsets.slice(0,5)]),/member_mismatch/);
+ assert.throws(()=>reviewWorldBossAccountFairnessV2(full,[{...subsets[0],reviewRulesDigest:'f'.repeat(64)},...subsets.slice(1)]),/scope_mismatch/);
+ fairnessRows.push({boss:b.id,phase,full:result.fullRosterLocalHpLoss,candidate:result.matchedSubsetMaximum,delta:result.possibleFloorDelta});
+ fairnessCases+=7;
+}
+assert.equal(fairnessCases,63);
+console.log(JSON.stringify({kind:'WORLD_BOSS_V94C_SUBSET_FAIRNESS_REVIEW',fairnessCases,fairnessRows}));

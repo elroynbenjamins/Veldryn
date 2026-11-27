@@ -240,7 +240,7 @@ for(const bossId of bossIds){
  const result95=reviewWorldBossRewardHandoffV95(canonical95,receipts95,()=>true);
  assert.equal(result95.previews.length,3);assert.equal(result95.verifiedAttempts,3);
  assert.equal(result95.rewardAuthorized,false);assert.equal(result95.impactEnabled,false);
- assert.equal(result95.previews.every(c=>c.gearChanceBps===100&&c.gearPiecesInSet===10&&!c.claimable),true);
+ assert.equal(result95.previews.every(c=>c.gearChanceBps===1000&&c.gearPiecesInSet===10&&!c.claimable),true);
  assert.equal(result95.previews.reduce((sum,c)=>sum+c.guaranteed.gold,0),2000);
  const rejects=(rows:readonly WorldBossV95SettledAttemptReview[],verify:(r:WorldBossV95SettledAttemptReview)=>boolean=()=>true)=>{
   let rejected=false;try{reviewWorldBossRewardHandoffV95(canonical95,rows,verify);}catch{rejected=true;}
@@ -256,3 +256,33 @@ for(const bossId of bossIds){
  assert.equal(campOnly.previews.length,1);assert.equal(campOnly.previews[0].kind,'donations_goal');
 }
 console.log('WORLD_BOSS_V95A_REWARD_HANDOFF: existing chest rules, canonical-only settlement review, no payout');
+
+import {WORLD_BOSS_CHEST_POLICY_V96,worldBossChestLootTableV96,previewWorldBossChestRollV96} from '../../../backend/src/server/combat/world-boss-chest-policy-v96';
+import {worldBossChestLootTableV68} from '../../../backend/src/server/combat/world-boss-chests-v58';
+assert.equal(WORLD_BOSS_CHEST_POLICY_V96.sigilGearExchange,false);
+assert.equal(WORLD_BOSS_CHEST_POLICY_V96.luckModifiersAllowed,false);
+assert.equal(WORLD_BOSS_CHEST_POLICY_V96.maxDamageChests,3);
+for(const bossId of bossIds)for(const kind of ['donations_goal','three_attempts','community_damage_goal','personal_damage'] as const){
+ const table=worldBossChestLootTableV96(bossId,kind);
+ assert.equal(table.groups[0].chanceBps,1000);
+ assert.equal(table.groups[0].entries.length,10);
+ const input={bossId,kind,slotRoll:0,ownedSlots:[] as const};
+ const miss=previewWorldBossChestRollV96({...input,hitRoll:1000,nextInt:()=>{throw Error('unexpected entropy');}});
+ assert.equal(miss.gear,null);
+ const low=previewWorldBossChestRollV96({...input,hitRoll:999,nextInt:max=>max===1_000_000?999999:0});
+ assert.equal(low.gear?.rarity,'common');assert.equal(low.gear?.quality,100);
+ const high=previewWorldBossChestRollV96({...input,hitRoll:0,nextInt:()=>0});
+ assert.equal(high.gear?.rarity,'mythic');assert.equal(high.gear?.quality,0);
+ assert.equal(high.gear?.primaryStat,'gathering_speed');
+ assert.equal(high.gear?.combatPowerBonus,0);
+ assert.equal(high.gear?.bonusStats.length,2);
+ assert.equal(high.gear?.bonusStats.every(b=>b.skill===high.gear?.skill),true);
+ assert.equal(new Set(high.gear?.bonusStats.map(b=>b.stat)).size,2);
+ assert.equal(high.gearGranted,false);
+ if(kind!=='personal_damage'){
+  const legacy=worldBossChestLootTableV68({bossId,kind});
+  assert.equal(legacy.groups[0].chanceBps,100);
+  assert.ok(legacy.version!==table.version);
+ }
+}
+console.log('WORLD_BOSS_V96: 10% versioned chest boundary, random rarity/quality and skill-exclusive affixes; no gear grant');

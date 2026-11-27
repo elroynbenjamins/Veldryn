@@ -40,14 +40,14 @@ CREATE TRIGGER mirror_receipt_immutable BEFORE UPDATE OR DELETE ON market_review
 -- Read committed evidence only. A missing row is UNKNOWN, never a failed buy.
 -- The caller here is a fixture identity; real gateway must bind verified Auth.
 CREATE FUNCTION market_review.mirror_receipt_status(p_actor text,p_request text)
- RETURNS jsonb LANGUAGE sql STABLE SECURITY INVOKER SET search_path='' AS $
+ RETURNS jsonb LANGUAGE sql STABLE SECURITY INVOKER SET search_path='' AS $$
  SELECT coalesce((SELECT jsonb_build_object('status','committed','requestKey',r.request_id,
   'operation',CASE r.args->>0 WHEN 'list' THEN 'publish' ELSE r.args->>0 END,
   'revision',r.actor_revision,'receiptId',r.receipt_id)
   FROM market_review.mirror_receipt r WHERE r.actor=p_actor AND r.request_id=p_request
     AND r.args->>0 IN ('list','buy','cancel','claim')),
   jsonb_build_object('status','unknown','requestKey',p_request))
-$;
+$$;
 CREATE FUNCTION market_review.mirror_act(
  p_op text,p_actor text,p_request text,p_instance text,p_copy_revision bigint,
  p_actor_revision bigint,p_owner_revision bigint,p_offer text DEFAULT NULL,
@@ -123,7 +123,7 @@ END $$;
 SELECT market_review.mirror_act('buy','b','mirror-buy','x',1,0,1,'mirror-offer',125,101,'b1');
 -- Simulate loss of the successful buy response: use a read-only status lookup.
 CREATE TEMP TABLE saved_buy_status AS SELECT market_review.mirror_receipt_status('b','mirror-buy') AS status;
-DO $ DECLARE s jsonb; BEGIN
+DO $$ DECLARE s jsonb; BEGIN
  SELECT status INTO STRICT s FROM pg_temp.saved_buy_status;
  IF s IS DISTINCT FROM jsonb_build_object('status','committed','requestKey','mirror-buy','operation','buy','revision',1,
    'receiptId',(SELECT receipt_id FROM market_review.mirror_receipt WHERE actor='b' AND request_id='mirror-buy'))
@@ -131,19 +131,19 @@ DO $ DECLARE s jsonb; BEGIN
  OR market_review.mirror_receipt_status('a','mirror-buy')->>'status' IS DISTINCT FROM 'unknown'
  OR market_review.mirror_receipt_status('c','mirror-buy')->>'status' IS DISTINCT FROM 'unknown'
  THEN RAISE EXCEPTION 'receipt_projection_failed'; END IF;
-END $;
+END $$;
 SELECT market_review.expect_error($q$UPDATE market_review.mirror_receipt SET actor_revision=999 WHERE actor='b' AND request_id='mirror-buy'$q$,'immutable_history');
 -- Replaying after revision changes returns the same committed receipt.
 SELECT market_review.mirror_act('buy','b','mirror-buy','x',1,0,1,'mirror-offer',125,101,'b1');
 SELECT market_review.expect_error($q$SELECT market_review.mirror_act('buy','b','mirror-buy','x',1,0,1,'mirror-offer',126,101,'b1')$q$,'mirror_request_conflict');
 UPDATE market_review.wallet SET inventory_cap=0 WHERE id='b';
 SELECT market_review.expect_error($q$SELECT market_review.mirror_act('claim','b','mirror-claim','x',2,1,1,p_recipient=>'b1')$q$,'inventory_full');
-DO $ BEGIN
+DO $$ BEGIN
  IF market_review.mirror_receipt_status('b','mirror-claim')->>'status' IS DISTINCT FROM 'unknown'
  OR NOT EXISTS(SELECT 1 FROM market_review.custody WHERE id='x' AND owner='b' AND state='pending_delivery')
  OR market_review.mirror_receipt_status('b','mirror-buy') IS DISTINCT FROM (SELECT status FROM pg_temp.saved_buy_status)
  THEN RAISE EXCEPTION 'blocked_delivery_lost_receipt'; END IF;
-END $;
+END $$;
 UPDATE market_review.wallet SET inventory_cap=2 WHERE id='b';
 SELECT market_review.mirror_act('claim','b','mirror-claim','x',2,1,1,p_recipient=>'b1');
 SELECT market_review.mirror_act('deposit','b','mirror-deposit','x',3,2,2);

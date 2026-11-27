@@ -1784,11 +1784,13 @@ function makeV21Loadout(classId:ClassIdV2,specIndex:0|1,targetTier:1|2|3|4,targe
  const effectFamilies=[...originalEffectFamilies,...stackEffectFamilies,...conditionalEffectFamilies];
   const defensiveEffectFamilies=['effect_unyielding','effect_last_stand','effect_guardians_gift'];
   const newSupportFamilies=['effect_aegis','effect_mercy','effect_renewal','effect_benediction','effect_shared_resolve'];
+  const hybridFamilies=['effect_sustenance','effect_battle_rhythm'];
  const profiles=[{id:'BOSS_EXP_SPHINX',name:'The Veiled Sphinx',region:'sunscar' as const,tier:3 as const,level:40},
   {id:'BOSS_EXP_BELLBEAST',name:'The Bellbeast of Shiverlake',region:'frostmarch' as const,tier:4 as const,level:60}];
  const rows:{classId:ClassIdV2;spec:number;arm:string;boss:string;seed:number;result:ReturnType<ReturnType<typeof createGentleGemPartyPressureReviewV2>>}[]=[];
  const effectRows:{family:string;rank:number;classId:ClassIdV2;spec:number;boss:string;seed:number;result:ReturnType<ReturnType<typeof createGentleGemPartyPressureReviewV2>>}[]=[];
  let baseEncounters=0;
+ const mixedRows:{classId:ClassIdV2;spec:number;boss:string;seed:number;mix:string;pressure:string;result:ReturnType<ReturnType<typeof createGentleGemPartyPressureReviewV2>>}[]=[];
  for(const profile of profiles){
   const level=profile.level;
   const fixtures=new Map<ClassIdV2,ReturnType<typeof makeV21Loadout>[]>();
@@ -1823,7 +1825,7 @@ function makeV21Loadout(classId:ClassIdV2,specIndex:0|1,targetTier:1|2|3|4,targe
      }
      return reviewFrozenForgeSocketsV2(qa.actor,build,source,sockets,policy);
     });
-    const selectedEffectFamilies=CLASS_ROLES_V2[classId]==='damage'?effectFamilies.filter(f=>f!=='effect_retaliation'):
+    const selectedEffectFamilies=CLASS_ROLES_V2[classId]==='damage'?[...effectFamilies.filter(f=>f!=='effect_retaliation'),...hybridFamilies]:
      CLASS_ROLES_V2[classId]==='tank'?['effect_retaliation','effect_unyielding','effect_last_stand','effect_bulwark']:['effect_guardians_gift',...newSupportFamilies];
     const effects=selectedEffectFamilies.flatMap(family=>[1,2,3].map(rank=>{
      const sockets:V2GemSidecarState={slots:[],receipts:[]};
@@ -1835,7 +1837,26 @@ function makeV21Loadout(classId:ClassIdV2,specIndex:0|1,targetTier:1|2|3|4,targe
      }
      return {family,rank,projection:reviewFrozenForgeSocketsV2(qa.actor,build,source,sockets,policy)};
     }));
-    return {classId,accountId:source.accountId,characterId:source.characterId,revision,compiled,baseline,variants,effects};
+    const role=CLASS_ROLES_V2[classId];
+    const mixes=role==='tank'?
+     [['effect_unyielding','effect_last_stand','effect_bulwark'],['effect_retaliation','effect_bulwark','effect_sustenance']]:
+     role==='damage'?[['effect_execution','effect_momentum','effect_predator'],['effect_flow','effect_battle_rhythm','effect_opportunist']]:
+     [['effect_aegis','effect_mercy','effect_renewal'],['effect_benediction','effect_shared_resolve','effect_guardians_gift']];
+    const mixed=mixes.flatMap(families=>[1,2,3].filter(rank=>families.length*rank<=qa.ids.length).map(rank=>{
+     const sockets:V2GemSidecarState={slots:[],receipts:[]};
+     for(const [i,family] of families.flatMap(f=>Array.from({length:rank},()=>f)).entries()){
+      const instanceId=qa.ids[i],gemId=gemItemId(family,5);
+      sockets.slots.push({instanceId,effect:{gemId,rollPercent:120}});
+      sockets.receipts.push({requestId:'QA_PARTY_MIX_'+i,fingerprint:'gem:'+instanceId+':'+gemId,instanceId,
+       socket:'effect',gemId,source:'gem_pouch',rollPercent:120,burnedGemId:null,version:qa.source.ledgerRevision+i+1});
+     }
+     const projection=reviewFrozenForgeSocketsV2(qa.actor,build,source,sockets,policy);
+     assert.equal(projection.effectResonanceReview!.families.length,3);
+     assert.equal(projection.effectResonanceReview!.copyCount,rank*3);
+     return {mix:families.join('+')+'@'+rank,rank,projection};
+    }));
+    assert.ok(mixed.length>=4);
+    return {classId,accountId:source.accountId,characterId:source.characterId,revision,compiled,baseline,variants,effects,mixed};
    });
    for(const seed of [0,1]){
     const fight=createGentleGemPartyPressureReviewV2(members,{region:profile.region,tier:profile.tier,enemy},
@@ -1852,11 +1873,24 @@ function makeV21Loadout(classId:ClassIdV2,specIndex:0|1,targetTier:1|2|3|4,targe
      boss:profile.id,seed,result:fight(0,arm.projection,seed===0&&arm.rank===3)});
     for(const arm of members[3].effects)effectRows.push({family:arm.family,rank:arm.rank,classId:members[3].classId,spec,
      boss:profile.id,seed,result:fight(3,arm.projection,seed===0&&arm.rank===3)});
+    for(const [i,member] of members.entries())for(const arm of member.mixed)
+     mixedRows.push({classId:member.classId,spec,boss:profile.id,seed,mix:arm.mix,pressure:'standard',result:fight(i,arm.projection,seed===0&&arm.rank===3)});
+    // Fixed pressure across compared socket builds. Reuse identical authored
+    // enemy and seed; only attack changes for this distinct pressure band.
+    for(const [pressure,factor] of [['low',.8],['high',1.25]] as const){
+     const pressured={...enemy,stats:{...enemy.stats,attackPower:Math.round(enemy.stats.attackPower*factor)}};
+     const pressureFight=createGentleGemPartyPressureReviewV2(members,{region:profile.region,tier:profile.tier,enemy:pressured},
+      [profile.id,partyIndex,spec,seed].join('_'));
+     for(const [i,member] of members.entries()){
+      const arm=member.mixed.find(x=>x.rank===2)!;
+      mixedRows.push({classId:member.classId,spec,boss:profile.id,seed,mix:arm.mix,pressure,result:pressureFight(i,arm.projection,seed===0)});
+     }
+    }
    }
   }
  }
  assert.equal(baseEncounters,24);assert.equal(rows.length,384);
- assert.equal(effectRows.length,1296);
+ assert.equal(effectRows.length,1440);
  assert.ok(effectRows.filter(r=>r.family==='effect_opening_strike'||r.family==='effect_predator').every(r=>r.result.triggerCount>0));
  console.log('PRIVATE_DAMAGE_GEM_COMBAT_REVIEW '+JSON.stringify({cases:effectRows.filter(r=>originalEffectFamilies.includes(r.family)).length,baseEncounters,
   scope:'THREE_EFFECT_FAMILY_EXECUTABLE_QA',byFamilyRank:originalEffectFamilies.flatMap(family=>[1,2,3].map(rank=>{
@@ -1905,6 +1939,34 @@ function makeV21Loadout(classId:ClassIdV2,specIndex:0|1,targetTier:1|2|3|4,targe
     meanHpsDelta:a.reduce((n,r)=>n+r.result.after.hps-r.result.before.hps,0)/a.length,
     meanShieldDelta:a.reduce((n,r)=>n+r.result.after.shield-r.result.before.shield,0)/a.length,
     lostVictories:a.filter(r=>r.result.before.victory>r.result.after.victory).length};})),releaseEnabled:false,cpApproved:false}));
+ const hybridRows=effectRows.filter(r=>hybridFamilies.includes(r.family));
+ assert.equal(hybridRows.length,144);
+ console.log('PRIVATE_HYBRID_GEM_COMBAT_REVIEW '+JSON.stringify({cases:hybridRows.length,byFamilyRank:hybridFamilies.flatMap(family=>[1,2,3].map(rank=>{
+  const a=hybridRows.filter(r=>r.family===family&&r.rank===rank);assert.equal(a.length,24);
+  return {family,rank,cases:a.length,activeEncounters:a.filter(r=>r.result.hybridEvents>0).length,
+   rhythmActivations:a.reduce((n,r)=>n+r.result.rhythmActivations,0),sustenanceKills:a.reduce((n,r)=>n+r.result.sustenanceKills,0),
+   lostVictories:a.filter(r=>r.result.before.victory>r.result.after.victory).length};})),releaseEnabled:false,cpApproved:false}));
+ const standard=mixedRows.filter(r=>r.pressure==='standard');
+ const pressureRows=mixedRows.filter(r=>r.pressure!=='standard');
+ assert.ok(standard.length>=384&&standard.length<=576);assert.equal(pressureRows.length,192);
+ const classKeys=[...new Set(mixedRows.map(r=>r.classId+'|'+r.spec+'|'+r.pressure))].sort();
+ assert.equal(new Set(mixedRows.map(r=>r.classId)).size,9);
+ assert.equal(classKeys.length,54);
+ const mean=(values:number[])=>values.reduce((n,v)=>n+v,0)/values.length;
+ console.log('PRIVATE_MIXED_GEM_ROLE_PRESSURE_REVIEW '+JSON.stringify({cases:mixedRows.length,standard:standard.length,pressure:pressureRows.length,
+  classSpecPressure:classKeys.map(key=>{
+   const a=mixedRows.filter(r=>r.classId+'|'+r.spec+'|'+r.pressure===key);
+   return {key,role:CLASS_ROLES_V2[a[0].classId],cases:a.length,
+    baselineDps:mean(a.map(r=>r.result.before.dps)),candidateDps:mean(a.map(r=>r.result.after.dps)),
+    baselineHps:mean(a.map(r=>r.result.before.hps)),candidateHps:mean(a.map(r=>r.result.after.hps)),
+    meanShieldDelta:mean(a.map(r=>r.result.after.shield-r.result.before.shield)),
+    meanHpFractionDelta:mean(a.map(r=>r.result.after.hpFraction-r.result.before.hpFraction)),
+    meanDamageTakenDelta:mean(a.map(r=>r.result.after.damageTaken-r.result.before.damageTaken)),
+    lostVictories:a.filter(r=>r.result.before.victory>r.result.after.victory).length,
+    gainedVictories:a.filter(r=>r.result.before.victory<r.result.after.victory).length,
+    wearerDowns:a.filter(r=>!r.result.after.alive).length,
+    partyDownDelta:a.reduce((n,r)=>n+r.result.before.partyAlive-r.result.after.partyAlive,0)};}),
+  releaseEnabled:false,cpApproved:false}));
  const groups=new Map<string,typeof rows>();
  for(const r of rows){const k=CLASS_ROLES_V2[r.classId]+'|'+r.arm;groups.set(k,[...(groups.get(k)??[]),r]);}
  console.log('GENTLE_GEM_PARTY_PRESSURE_REVIEW '+JSON.stringify({cases:rows.length,baseEncounters,seedCount:2,

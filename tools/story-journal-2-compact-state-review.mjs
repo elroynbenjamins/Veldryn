@@ -86,3 +86,45 @@ export function compactQuestCountersReview({state,catalogue,expected}){
   return {...flags,status:'review',accountId:expected.accountId,characterId:expected.characterId,sequence:state.revision,rows:c.quests.map(r=>({...r,counters:{...r.counters}}))};
  }catch(e){return reject(e.message);}
 }
+
+/** Verified fact objectives are supplied by their authoritative owners at the same
+ * locked account revision. Retained access cannot be substituted for discovery. */
+export function projectCompactQuestReview({state,catalogue,expected,facts}){
+ try{
+  const defs=definitions(catalogue);validateState(state,defs,catalogue,expected);
+  const c=state.characters.find(c=>c.characterId===expected.characterId);
+  if(!c||facts?.accountId!==expected.accountId||facts?.characterId!==expected.characterId||facts?.revision!==state.revision||!natural(facts.level)||!natural(facts.equippedCount)||!['actualAccountMaps','characterDiscoveredRoutes','soloBossVictories'].every(k=>Array.isArray(facts[k])&&facts[k].every(id)))return reject('unverified_facts');
+  const rows=c.quests.map(row=>{
+   const def=defs.get(row.questId);
+   const objectives=def.objectives.map(o=>{
+    let n=0;
+    if(supported.has(o.kind))n=row.counters[o.id];
+    else if(o.kind==='map')n=facts.actualAccountMaps.includes(o.targetId)&&(o.mapScope!=='character'||facts.characterDiscoveredRoutes.includes(o.targetId))?1:0;
+    else if(o.kind==='boss')n=facts.soloBossVictories.includes(o.targetId)?1:0;
+    else if(o.kind==='level')n=facts.level;
+    else if(o.kind==='equipped')n=facts.equippedCount;
+    return {id:o.id,kind:o.kind,targetId:o.targetId,required:o.required,progress:Math.min(n,o.required),complete:n>=o.required};
+   });
+   return {id:row.questId,status:row.status==='claimed'?'claimed':objectives.every(o=>o.complete)?'ready':'active',objectives};
+  });
+  return {...flags,status:'review',accountId:expected.accountId,characterId:expected.characterId,sequence:state.revision,rows};
+ }catch(e){return reject(e.message);}
+}
+/** A state/entitlement proposal only. The caller must commit it with the reward
+ * bundle, wallet/inventory and existing account request receipt in one transaction. */
+export function prepareCompactQuestClaimReview({state,catalogue,expected,facts,questId,expectedRevision,policy}){
+ const projection=projectCompactQuestReview({state,catalogue,expected,facts});
+ if(projection.status!=='review')return projection;
+ if(expectedRevision!==state.revision||!natural(state.revision+1))return reject('stale_revision');
+ const c=state.characters.find(c=>c.characterId===expected.characterId),q=catalogue.quests.find(q=>q.id===questId);
+ if(!q||q.pendingBinding||q.scope!=='character')return reject('unavailable_quest');
+ if(q.regionId==='ASTERFALL'&&q.kind==='story'&&c.migrationLane!=='fresh_v2_candidate')return reject('legacy_lane');
+ const row=projection.rows.find(r=>r.id===questId);
+ if(row?.status==='claimed')return reject('already_claimed');
+ if(row?.status!=='ready'||q.prerequisites.some(p=>!c.quests.some(r=>r.questId===p&&r.status==='claimed')))return reject('not_ready');
+ if(policy?.mode!=='synthetic_review'||policy.released!==false||!id(policy.version)||!Array.isArray(policy.rewards))return reject('reward_policy_unavailable');
+ const matches=policy.rewards.filter(r=>r.questId===questId);
+ if(matches.length!==1||!natural(matches[0].gold))return reject('reward_policy_unavailable');
+ const revision=state.revision+1,proposed=nextState(state,c.characterId,c.quests.map(r=>r.questId===questId?{...r,status:'claimed'}:r),revision);
+ return {...flags,status:'proposed',state:proposed,entitlement:{accountId:expected.accountId,characterId:expected.characterId,questId,policyVersion:policy.version,revision},candidateGold:matches[0].gold};
+}

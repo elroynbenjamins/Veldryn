@@ -36,3 +36,4 @@ jobs:
       - run: node --experimental-strip-types tools/story-journal-2-atomic-review.test.mjs
       - run: node tools/story-journal-2-compact-state-review.test.mjs
       - run: node tools/story-journal-2-catalogue-integration-review.test.mjs
+      - run: node tools/story-journal-2-transaction-review.test.mjs

@@ -194,3 +194,24 @@ assert.equal(savedLoadoutProtection(exactRef,gearId,'copy-qa').protected,true);
 assert.equal(savedLoadoutProtection(exactRef,gearId,'copy-other').protected,false);
 assert.equal(savedLoadoutProtection(exactRef,gearId).protected,false);
 console.log('ACTIVITY_LOADOUT_PROTECTION: locked slots retained, legacy references protected, unrelated exact copies remain independent');
+
+import {reviewGatheringSpeedV2,gatheringSpeedEffectiveRatingV2} from '../src/core/gathering-speed-v2-review';
+for(const [raw,effective] of [[0,0],[10000,10000],[15000,13750],[20000,17500],[25000,20000]]){
+ assert.equal(gatheringSpeedEffectiveRatingV2(raw),effective);
+}
+for(const toolTimeMultiplier of [1.15,1,.8,.5,.2])for(const existingRateMultiplier of [1,1.1,1.5,2]){
+ let previous=Infinity;
+ for(let gearRatingBps=0;gearRatingBps<=30000;gearRatingBps+=100){
+  const result=reviewGatheringSpeedV2({baseActionSeconds:10,toolTimeMultiplier,existingRateMultiplier,gearRatingBps,setTimeMultiplier:1});
+  assert.ok(result.actionSeconds<previous&&result.actionSeconds>0);
+  assert.equal(result.releaseReady,false);
+  if(gearRatingBps===0)assert.equal(result.actionSeconds,10*toolTimeMultiplier/existingRateMultiplier);
+  previous=result.actionSeconds;
+ }
+}
+const gearPace=reviewGatheringSpeedV2({baseActionSeconds:10,toolTimeMultiplier:.2,existingRateMultiplier:1,gearRatingBps:10000,setTimeMultiplier:.96});
+assert.equal(gearPace.setRatingBps,417);
+assert.ok(gearPace.actionSeconds<1&&gearPace.actionSeconds>0);
+assert.throws(()=>gatheringSpeedEffectiveRatingV2(-1));
+assert.throws(()=>reviewGatheringSpeedV2({baseActionSeconds:10,toolTimeMultiplier:0,existingRateMultiplier:1,gearRatingBps:0,setTimeMultiplier:1}));
+console.log('GATHERING_SPEED_V2_REVIEW: 6020 monotonic pace cases; preserve legacy tool/buff baseline and positive action times');

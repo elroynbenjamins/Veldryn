@@ -113,7 +113,7 @@ export function ItemQuickInspect({state,itemId,instanceId,source='inventory',onC
   return <GameModalSurface visible={true} reduceMotion={state.settings.reduceMotion} onClose={onClose}
     backdropLabel={gt("Close item quick inspect")} surfaceStyle={s.sheet}>
         {!scrollWholeSheet?header:null}
-        <ScrollView style={[s.scroll,scrollWholeSheet&&s.wholeScroll]} keyboardShouldPersistTaps="handled" contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={scrollWholeSheet} showsHorizontalScrollIndicator={false}>
+        <ScrollView style={[s.scroll,scrollWholeSheet&&s.wholeScroll]} keyboardShouldPersistTaps="handled" contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
           {scrollWholeSheet?header:null}
           <View style={s.content}>
           {item.type==='gear'&&model.stats&&(model.stats.attack!==0||model.stats.defense!==0||model.stats.hp!==0)?<View style={s.statGroup}>

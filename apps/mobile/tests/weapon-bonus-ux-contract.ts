@@ -24,7 +24,7 @@ check(preview.includes('weaponBonusDisplayDelta(change.deltaBps)')&&preview.incl
   'Comparison must show positive/negative bonus percentage differences');
 check(bonusFormat.includes("(Math.abs(bps)/100).toFixed(1)+'%'")&&!bonusFormat.includes("+' pp'"),'Bonus comparison changes must render % rather than pp');
 check(preview.includes('stats.map(row=>')&&!preview.includes('setMore(')&&!preview.includes('actionsOpen'),'All base/loadout stats and bonus comparisons must be visible without an expander');
-check(preview.includes('hasDisposalActions?<View style={s.footerDisposal}')&&preview.includes('hasStorageActions?<View style={s.footerActionRow}'),'Compare sheet must show separate storage and disposal rows');
+check(preview.indexOf('hasStorageActions?<View style={[s.footerActionRow,stackFooterActions&&s.footerActionRowStacked]}>')>=0&&preview.indexOf('hasDisposalActions?<View style={s.footerDisposal}')>preview.indexOf('hasStorageActions?<View style={[s.footerActionRow,stackFooterActions&&s.footerActionRowStacked]}>')&&preview.includes('{scrollWithActions?footer:null}')&&preview.includes('{!scrollWithActions?footer:null}'),'Compare sheet must show separate storage and disposal rows');
 check(pool.includes('accessible accessibilityLabel={weaponBonusStatText(language,stat'),
   'Every tier-specific roll range should have a usable screen-reader label');
 check(preview.includes("accessibilityLabel={weaponBonusStatText(language,change.stat)"),

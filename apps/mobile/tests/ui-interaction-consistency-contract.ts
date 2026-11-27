@@ -8,9 +8,9 @@ ok(shell.includes('useSafeAreaInsets'),'Shared modal shell must honor native saf
 ok(shell.includes('backgroundColor:C.overlay'),'Shared modal shell must use the active theme overlay');
 ok(shell.includes("width:44,height:44"),'Shared modal close target must remain at least 44px');
 ok(shell.includes("presentation='sheet'")&&shell.includes("presentation?:Presentation"),'Shared modal shell must support sheet and dialog presentations');
-ok(shell.includes("behavior={Platform.OS==='ios'?'padding':undefined}")&&shell.includes("Keyboard.addListener('keyboardDidShow'")&&shell.includes("const bottomClearance=sheet?Math.max(insets.bottom,keyboardOverlap)")&&shell.includes('paddingBottom:bottomClearance')&&shell.includes("navigationBarTranslucent={Platform.OS==='android'}"),'Shared modal shell must measure keyboard overlap and reserve one Android navigation/keyboard inset without double-resizing');
+ok(shell.includes("behavior={Platform.OS==='ios'?'padding':undefined}")&&shell.includes("Keyboard.addListener('keyboardDidShow'")&&shell.includes("const bottomClearance=sheet?Math.max(safeBottom,keyboardOverlap)")&&shell.includes('resolveModalBottomInset({')&&shell.includes('resolveModalKeyboardOverlap({')&&shell.includes('paddingBottom:bottomClearance')&&shell.includes("navigationBarTranslucent={Platform.OS==='android'}"),'Shared modal shell must measure keyboard overlap and reserve one Android navigation/keyboard inset without double-resizing');
 ok(shell.includes('dismissOnBackdrop=true')&&shell.includes('dismissOnBackdrop?'),'Shared modal shell must allow critical flows to disable accidental backdrop dismissal');
-ok(shell.includes('paddingTop:fullscreen?0:Math.max(spacing.sm,insets.top)')&&shell.includes('sheet&&{paddingBottom:spacing.lg}')&&shell.includes(':fullscreen?keyboardOverlap:Math.max(spacing.lg,insets.bottom+spacing.sm,keyboardOverlap)'),'Shared dialog/sheet layout must honor top and bottom safe areas without doubling the sheet inset');
+ok(shell.includes('paddingTop:fullscreen?0:Math.max(spacing.sm,insets.top)')&&shell.includes('sheet&&{paddingBottom:spacing.lg}')&&shell.includes(':fullscreen?keyboardOverlap:Math.max(spacing.lg,safeBottom+spacing.sm,keyboardOverlap)'),'Shared dialog/sheet layout must honor top and bottom safe areas without doubling the sheet inset');
 
 for(const path of [
  'src/components/ConfirmModal.tsx',

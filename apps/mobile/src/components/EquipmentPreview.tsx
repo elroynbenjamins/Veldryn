@@ -159,7 +159,7 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
     <View style={s.headerCopy}><Text style={s.headerEyebrow}>{gl('EQUIPMENT PREVIEW')}</Text><Text numberOfLines={1} style={[s.headerTitle,(width<355||fontScale>=1.25)&&{fontSize:16}]}>{gl('Compare & Swap')}</Text></View>
     <InventoryItemHeaderControls favorite={favorite} locked={locked} onFavorite={onToggleFavorite} onLock={onToggleLock} onClose={onClose} disabled={busy} closeLabel={gl('Close equipment comparison')}/>
    </View>
-  <ScrollView style={s.scroll} contentContainerStyle={s.body} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={scrollWithActions} showsHorizontalScrollIndicator={false}>
+  <ScrollView style={s.scroll} contentContainerStyle={s.body} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
    <View style={s.pair}>
     <View style={s.gearCard}>
      <Text style={s.kicker}>{gl('CURRENTLY EQUIPPED')}</Text>

@@ -1,3 +1,4 @@
+import {reviewPartyChatActionTransactionV106,type PartyChatStoreV106,type PartyChatTransactionV106,type PartyChatRequestV106,type PartyChatReceiptV106,type PartyChatEffectV106,type PartyChatWorkflowV106} from '../party-chat-action-transaction-review-v106';
 import {projectPartyChatCardV105,type VoteCardV105,type ReadyCardV105,type RecruitmentCardV105,type AchievementCardV105} from '../party-chat-action-cards-review-v105';
 import {projectPartySwapChatV104,type PartySwapChatProposalV104} from '../party-role-swap-chat-review-v104';
 import {reviewPartyCharacterSwapV103,type PartyCharacterV103} from '../party-roster-character-swap-review-v103';
@@ -301,6 +302,72 @@ denied(()=>projectPartyChatCardV105({...cardScope,card:achievement,message:{...c
 denied(()=>projectPartyChatCardV105({...cardScope,card:achievement,viewerAccountId:'OUTSIDER'},true),'chat_scope_mismatch');
 denied(()=>projectPartyChatCardV105({...cardScope,card:achievement}), 'unreleased');
 console.log('PARTY_CHAT_ACTION_CARDS_V105_REVIEW_OK');
+async function testPartyChatTransactionsV106(){
+ const vote:VoteCardV105={...workflowBase,kind:'contract_vote',options,ballots:[]};
+ const scope:PartyChatWorkflowV106={...cardScope,kind:'contract_vote',card:vote};
+ let workflow=structuredClone(scope) as PartyChatWorkflowV106;
+ let receipts=new Map<string,PartyChatReceiptV106>(),effects=new Map<string,PartyChatEffectV106>();
+ let dispatches=0,tail:Promise<unknown>=Promise.resolve(),fault:'none'|'effect'|'receipt'='none';
+ const store:PartyChatStoreV106={
+  transact:<T>(_scope:{partyId:string;requestKey:string},fn:(tx:PartyChatTransactionV106)=>Promise<T>)=>{
+   const run=tail.then(async()=>{
+    const savedReceipts=structuredClone(receipts),savedEffects=structuredClone(effects),savedWorkflow=structuredClone(workflow);
+    const tx:PartyChatTransactionV106={
+     readReceipt:async key=>fault==='receipt'?null:receipts.get(key)??null,
+     loadWorkflow:async()=>structuredClone(workflow),
+     dispatch:async input=>{
+      dispatches++;
+      const effect:PartyChatEffectV106={sourceId:input.request.sourceId,actorAccountId:input.actorAccountId,
+       requestDigest:enemyV2SnapshotDigest({actor:input.actorAccountId,request:input.request}),
+       status:'response_recorded',effectId:'QA_EFFECT_'+dispatches};
+      if(workflow.kind!=='contract_vote'||workflow.card.kind!=='contract_vote')throw Error('wrong fixture workflow');
+      workflow={...workflow,card:{...workflow.card,ballots:[...workflow.card.ballots,
+       {accountId:input.actorAccountId,optionId:input.request.optionId!}]}};
+      effects.set(effect.effectId,effect);
+      return effect;
+     },
+     readEffect:async key=>fault==='effect'?null:effects.get(key)??null,
+     insertReceipt:async receipt=>{receipts.set(receipt.key,structuredClone(receipt));},
+    };
+    try{return await fn(tx);}catch(e){receipts=savedReceipts;effects=savedEffects;workflow=savedWorkflow;throw e;}
+   });
+   tail=run.catch(()=>undefined);return run;
+  },
+ };
+ const request:PartyChatRequestV106={requestId:'QA_REQUEST',partyId:workflowBase.partyId,
+  sourceId:workflowBase.sourceId,messageId:workflowBase.messageId,
+  rosterRevision:7,sourceRevision:2,kind:'contract_vote',action:'vote',optionId:'hunt'};
+ const execute=(req:PartyChatRequestV106=request,actorAccountId='B')=>
+  reviewPartyChatActionTransactionV106({actorAccountId,request:req,store},true);
+ for(const mode of ['effect','receipt'] as const){
+  fault=mode;
+  await assert.rejects(execute(),mode==='effect'?/missing_effect_readback/:/missing_receipt_readback/);
+  assert.equal(receipts.size,0);assert.equal(effects.size,0);
+  assert.deepEqual(workflow,scope,'both owner action and receipt roll back');
+ }
+ fault='none';
+ await assert.rejects(execute({...request,optionId:'FORGED'}),/invalid_option/);
+ await assert.rejects(execute({...request,rosterRevision:6}),/stale_scope/);
+ await assert.rejects(execute(request,'OUTSIDER'),/chat_scope_mismatch/);
+ const callsBefore=dispatches;
+ const results=await Promise.all([execute(),execute()]);
+ assert.equal(results.filter(x=>x.newlyRecorded).length,1);
+ assert.deepEqual(results[0]!.receipt,results[1]!.receipt);
+ assert.equal(dispatches,callsBefore+1);
+ assert.equal(receipts.size,1);assert.equal(effects.size,1);
+ await assert.rejects(execute({...request,optionId:'gather'}),/conflicting_replay/);
+ await assert.rejects(execute({...request,requestId:'ANOTHER_REQUEST'}),/action_not_allowed/);
+ workflow={...workflow,serverNowMs:301000,rosterRevision:8};
+ const recovered=await execute();
+ assert.equal(recovered.newlyRecorded,false,'lost acknowledgement replays after deadline/revision');
+ assert.equal(dispatches,callsBefore+1);
+ effects.clear();
+ await assert.rejects(execute(),/missing_replay_evidence/);
+ await assert.rejects(reviewPartyChatActionTransactionV106({actorAccountId:'B',request,store}),/unreleased/);
+ console.log('PARTY_CHAT_ACTION_TRANSACTION_V106_REVIEW_OK');
+}
+void testPartyChatTransactionsV106().catch(error=>{console.error(error);process.exitCode=1;});
+
 
 
 console.log('PARTY_ROSTER_SWAP_V103_REVIEW_OK: account-stable role exchange and frozen encounter isolation');

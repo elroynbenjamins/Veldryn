@@ -103,7 +103,7 @@ function exactSet(label:string,items:unknown,required:readonly string[],issues:s
   issues.push(label+'_missing');
   return;
  }
- const values=items as unknown[];
+ const values=Array.from(items) as unknown[];
  if(values.length!==required.length||
     new Set(values).size!==values.length||
     values.some(value=>typeof value!=='string'||!required.includes(value)))
@@ -139,7 +139,7 @@ export function auditWorldBossCanonicalRuntimeV89(
   issues.push('subsecond_or_1s_timing_required');
  if(!Array.isArray(evidence.restorativeBloomOffsetsMs)||
    evidence.restorativeBloomOffsetsMs.length!==BLOOM_TICKS.length||
-   evidence.restorativeBloomOffsetsMs.some((n,i)=>n!==BLOOM_TICKS[i]))
+   Array.from(evidence.restorativeBloomOffsetsMs).some((n,i)=>n!==BLOOM_TICKS[i]))
   issues.push('restorative_bloom_four_real_ticks_required');
  if(!Array.isArray(evidence.phaseThresholdsPct)||
    evidence.phaseThresholdsPct.length!==2||
@@ -162,7 +162,7 @@ export function auditWorldBossCanonicalRuntimeV89(
    }
    actors.add(row.actorId);characters.add(row.characterId);
    if(!Array.isArray(row.equippedCopyIds)||row.equippedCopyIds.length>10||
-      row.equippedCopyIds.some(copy=>!id(copy))){
+      Array.from(row.equippedCopyIds).some((copy:unknown)=>!id(copy))){
     issues.push('invalid_equipped_copies');
     continue;
    }

@@ -142,6 +142,8 @@ function expectedLegs(receipt:FrozenChestReceiptV69):readonly
 }
 export function createChestPostgresStoreV70(
  pool:ChestPoolV70,ports:ChestPhysicalPortsV70,qaEnabled=false,
+ /** Explicit isolated V102 review port; old callers remain fail-closed. */
+ gatheringMintReview?:{grant:(tx:ChestSqlV70,receipt:FrozenChestReceiptV69)=>Promise<ChestPhysicalGrantV70>},
 ):ChestGrantStoreV69{
  return {
   async withLockedAccountSource<T>(accountId:string,sourceKey:string,
@@ -245,6 +247,13 @@ export function createChestPostgresStoreV70(
       // registered, verified EQ2 item writer. Never commit a simulated
       // Equipment 2.0 item or use the old character v24 instance table.
       if(drop.type==='equipment'){
+       if(gatheringMintReview&&isWorldBoss&&index===0&&receipt.drops.length===1&&
+        receipt.tableId==='world_boss_chest'&&/^world_boss_v98_unified_(hollowroot|sunscar|frostmarch)$/.test(receipt.tableVersion)&&
+        receipt.equipmentDeliveryMode==='account_unclaimed'&&receipt.recipientCharacterId===null){
+        const grant=await gatheringMintReview.grant(conn,receipt);
+        await writeLeg('drop',index,drop.entryId,drop.quantity,grant,true);
+        granted.add(index);return;
+       }
        const context=await ports.readApprovedEquipmentContext(
         conn,receipt,index,
        );

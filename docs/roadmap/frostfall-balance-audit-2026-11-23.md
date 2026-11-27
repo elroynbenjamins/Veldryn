@@ -122,3 +122,18 @@ At room 7, baseline 1x fixtures cleared 3/15; the four higher synthetic multipli
 - Review/apply only ordered, pinned missing production migrations after staging rehearsal and authorization; no broad db push. Verify old client/legacy seasonal run compatibility, deploy exact generated Edge bundles after schema readiness, verify server-owned expedition module and reward authority. Never grant or activate early solely to test.
 - Authenticated staging playthrough: six exits, failed attempt, practice with zero payout, reconnect, saved legacy run, multi-character cap, concurrent/duplicate settlement, UTC rollover, 27-offer wallet/ownership/bank behavior and claim-only closure. Prior rollback quota fixture proves helper isolation, not full concurrent end-to-end settlement.
 - Signed 1.0.13 Android candidate and owner small-screen/theme acceptance; verify event entry, practice labels, portraits, companion art, guild progress and shop. Require exact combined-head CI. Record go/no-go, rollback owner and production post-deploy readback separately; no event activation or production writes in this pass.
+
+## November 27 — expanded calibration and localization follow-up
+
+Exact head `7d8f4e36b08588042f113e717ae2d4a09bc4c87e`: 14/15 reported PR workflows passed, including full Mobile Core and [Frostfall review run 45978214346](https://github.com/elroynbenjamins/Veldryn/actions/runs/45978214346); the focused Russian coverage check separately failed at 98.8% with 93 missing shared-source keys. The Aurora Hollow labels were already translated in the social overlay, but the wider source catalog did not count that overlay. This follow-up promotes the reviewed translations and fills the remaining authored UI gaps, preserving the five intentional technical/canonical fallbacks and the unchanged 99% test threshold. Fresh exact-head CI required.
+
+| Normal rooms | Synthetic normalized clears / attempts |
+| ---: | ---: |
+| 7 | 63/75 |
+| 14 | 29/30 |
+| 21 | 26/30 |
+| 28 | 23/30 |
+| 35 | 13/30 |
+| 42 | 5/30 |
+
+All original seed-1 floors passed. At 35 rooms, the 1.5x and 3x synthetic profiles cleared 4/15 and 9/15 respectively; at 42 rooms, 1/15 and 4/15. Tiers II and III had 0/6 at both deep exits; Tier IV also had 0/6 at room 42. These samples are not production odds; no silent difficulty or reward adjustment was made. Early exits remain available, and the final balance acceptance requires realistic loadouts and actual staging/device play. Do not equate green synthetic tests with production readiness.

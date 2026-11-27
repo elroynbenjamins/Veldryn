@@ -36,7 +36,7 @@ const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]
 const key=/^[A-Za-z0-9_-]{8,128}$/;
 const int=(v:unknown,min:number,max:number):v is number=>
   typeof v==='number'&&Number.isSafeInteger(v)&&v>=min&&v<=max;
-const object=(v:unknown):v is Record<string,unknown>=>!!v&&typeof v==='object'&&!Array.isArray(v);
+const object=(v:unknown):v is Record<string,unknown>=>!!v&&typeof v==='object'&&!Array.isArray(v)&&Object.getPrototypeOf(v)===Object.prototype;
 const only=(body:Record<string,unknown>,fields:string[])=>{
   const keys=Object.keys(body);
   return keys.length===fields.length&&keys.every(k=>fields.includes(k));
@@ -131,6 +131,37 @@ function validate(operation:string,method:string,query:URLSearchParams,body:unkn
   return bad();
 }
 
+/** Bound UTF-8 bytes while streaming, not after buffering an arbitrary body. */
+async function readMarketBody(request:Request):Promise<string>{
+  const maximum=2048;
+  const length=request.headers.get('content-length');
+  if(length!==null&&(!/^[0-9]+$/.test(length)||Number(length)>maximum))
+    throw new MarketRequestError('market_request_too_large',413);
+  if(!request.body)return '';
+  const reader=request.body.getReader();
+  const decoder=new TextDecoder('utf-8',{fatal:true});
+  let bytes=0,raw='';
+  try{
+    while(true){
+      const next=await reader.read();
+      if(next.done)break;
+      bytes+=next.value.byteLength;
+      if(bytes>maximum){
+        // Do not wait for a hostile stream's cancel promise.
+        void reader.cancel().catch(()=>{});
+        throw new MarketRequestError('market_request_too_large',413);
+      }
+      raw+=decoder.decode(next.value,{stream:true});
+    }
+    raw+=decoder.decode();
+    return raw;
+  }catch(error){
+    if(error instanceof MarketRequestError)throw error;
+    void reader.cancel().catch(()=>{});
+    throw new MarketRequestError('market_invalid_json',400);
+  }finally{reader.releaseLock();}
+}
+
 /** Testable validation only. No database access and no route registration. */
 export async function bindAuthenticatedMarketRequest(
   request:Request,
@@ -149,13 +180,7 @@ export async function bindAuthenticatedMarketRequest(
   if(!['browse','inbox','my_offers','publish','cancel','buy','claim'].includes(action))bad();
   let body:unknown=null;
   if(request.method==='POST'){
-    const length=request.headers.get('content-length');
-    if(length!==null&&(!/^[0-9]+$/.test(length)||Number(length)>2048))
-      throw new MarketRequestError('market_request_too_large',413);
-    const raw=await request.text();
-    // Measure UTF-8 bytes, not UTF-16 code units: a 2,048-character body of
-    // multibyte text could otherwise be up to 6 KiB when Content-Length is absent.
-    if(new TextEncoder().encode(raw).byteLength>2048)throw new MarketRequestError('market_request_too_large',413);
+    const raw=await readMarketBody(request);
     try{body=JSON.parse(raw);}catch{throw new MarketRequestError('market_invalid_json',400);}
   }
   return {actorAccountId:actor,operation:validate(action,request.method,url.searchParams,body)};

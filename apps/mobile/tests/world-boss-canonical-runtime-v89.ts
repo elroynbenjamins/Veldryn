@@ -294,3 +294,48 @@ for(const bossId of bossIds)for(const kind of ['donations_goal','three_attempts'
  }
 }
 console.log('WORLD_BOSS_V96: 10% versioned chest boundary, random rarity/quality and skill-exclusive affixes; no gear grant');
+
+import {reviewWorldBossDamageChestsV97,type DamageChestPolicyV97} from '../../../backend/src/server/combat/world-boss-damage-chest-review-v97';
+import {buildWorldBossChestOpeningReviewV97,type ChestOpenEntryReviewV97} from '../src/core/world-boss-chest-opening-review-v97';
+const damageCanonical97:WorldBossCanonicalChestReadV59={eventId:event95,accountId:account95,
+ event:{bossId:'hollowroot',initialHp:100000,remainingHp:20000},
+ warCamp:{eventId:event95,trackTiers:{fortifications:0,fieldProvisions:0,siegecraft:0},ownDonationReceipts:[]},
+ attacks:[1,2,3].map(ordinal=>({eventId:event95,accountId:account95,ordinal,
+ requestId:'attack_00'+ordinal,status:'committed' as const,replayProof:'verified' as const}))};
+const damageReceipts97:WorldBossV95SettledAttemptReview[]=damageCanonical97.attacks.map(a=>({
+ eventId:a.eventId,accountId:a.accountId,requestId:a.requestId,ordinal:a.ordinal,bossId:'hollowroot',
+ engineVersion:'canonical-combat-v2',settlementStatus:'committed',bindingDigest:'a'.repeat(64),
+ replayDigest:a.ordinal.toString(16).repeat(64),settlementReceiptDigest:(a.ordinal+4).toString(16).repeat(64),
+ localHpDamage:11000,committedGlobalHpDamage:10000,
+}));
+const damagePolicy97:DamageChestPolicyV97={eventId:event95,accountId:account95,bossId:'hollowroot',
+ bracketId:'qa',revision:1,damagePerRoll:100,entropyVersion:'qa'};
+const damageInput97={canonical:damageCanonical97,receipts:damageReceipts97,policy:damagePolicy97,
+ previous:[],secret:new Uint8Array(32).fill(17),verifyPersistedAttempt:()=>true,verifyFrozenPolicy:()=>true};
+const damageFull97=reviewWorldBossDamageChestsV97(damageInput97);
+assert.equal(damageFull97.earnedChestCount,3);
+assert.equal(damageFull97.capReached,true);
+assert.equal(damageFull97.rewardGranted,false);
+const damageRetry97=reviewWorldBossDamageChestsV97({...damageInput97,previous:damageFull97.rolls});
+assert.equal(damageRetry97.newRolls.length,0);
+const damagePartial97=reviewWorldBossDamageChestsV97({...damageInput97,policy:{...damagePolicy97,damagePerRoll:30001}});
+assert.equal(damagePartial97.rolls.length,0);assert.equal(damagePartial97.damageToNextRoll,1);
+let historyRejected97=false;
+try{reviewWorldBossDamageChestsV97({...damageInput97,previous:[{...damageFull97.rolls[0],roll:10000}]});}
+catch{historyRejected97=true;}
+assert.equal(historyRejected97,true);
+const opened97:ChestOpenEntryReviewV97[]=[
+ {sourceKey:'chest-a',state:'committed',receipt:{sourceKey:'chest-a',accountId:account95,status:'committed',
+ resources:[{itemId:'gold',name:'Gold',quantity:450}],gear:null}},
+ {sourceKey:'chest-b',state:'committed',receipt:{sourceKey:'chest-b',accountId:account95,status:'committed',
+ resources:[{itemId:'gold',name:'Gold',quantity:650}],gear:{instanceId:'exact-b',name:'Rootbound Grips',rarity:'epic',quality:87,skill:'woodcutting'}}},
+ {sourceKey:'chest-c',state:'unknown'},{sourceKey:'chest-d',state:'failed'},
+];
+const opening97=buildWorldBossChestOpeningReviewV97(account95,opened97);
+assert.equal(opening97.opened,2);assert.equal(opening97.resources[0].quantity,1100);
+assert.equal(opening97.gear.length,1);assert.equal(opening97.pending.length,1);assert.equal(opening97.retry.length,1);
+assert.equal(opening97.complete,false);assert.equal(opening97.claimEnabled,false);
+let duplicateRejected97=false;
+try{buildWorldBossChestOpeningReviewV97(account95,[opened97[0],opened97[0]]);}catch{duplicateRejected97=true;}
+assert.equal(duplicateRejected97,true);
+console.log('WORLD_BOSS_V97: damage chest cap, deterministic replay, threshold remainder, bulk receipt presentation');

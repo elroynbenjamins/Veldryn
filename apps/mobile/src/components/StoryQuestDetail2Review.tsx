@@ -1,4 +1,6 @@
 /** Unmounted, theme-aware detail sheet. All actions are delegated to the review host. */
+import {useGameLanguage} from '../i18n/GameLanguageProvider';
+import {storyJournal2Text} from '../i18n/story-journal-2-review';
 import React,{useState} from 'react';
 import {ScrollView,StyleSheet,Text,View,Pressable} from 'react-native';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -8,7 +10,8 @@ type Objective={id:string;label:string;progress:number;required:number;complete:
 type Reward={label:string;quantity?:number};
 export type QuestDetailReviewModel={id:string;title:string;zoneName:string;status:'active'|'available'|'ready'|'locked'|'claimed';objectives:Objective[];summary?:string;lore?:string;requirement?:string;rewards?:Reward[];primaryLabel:string};
 type Props={model:QuestDetailReviewModel;onClose:()=>void;onPrimary:(id:string)=>void;onPin:(id:string)=>void;pinned:boolean;reduceMotion?:boolean;t:(s:string)=>string};
-export function StoryQuestDetail2Review({model,onClose,onPrimary,onPin,pinned,reduceMotion,t}:Props){
+export function StoryQuestDetail2Review({model,onClose,onPrimary,onPin,pinned,reduceMotion,t:fallback}:Props){
+ const language=useGameLanguage(),t=(key:string)=>storyJournal2Text(language,key,fallback);
  const C=useGameTheme(),[expanded,setExpanded]=useState(false);
  const canPin=['active','ready','available'].includes(model.status);
  return <GameModalSurface visible onClose={onClose} reduceMotion={reduceMotion} presentation="sheet">

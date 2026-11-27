@@ -87,3 +87,78 @@ DO $$ BEGIN
 END $$;
 SQL
 echo "PASS: same-key replay, competing claim keys, destination capacity and safe recovery with preserved origins"
+
+# The same account has 100 collected ore (60 in b2, 40 in Bank).
+# Both Market listing and crafting must serialize against that stock.
+"${p[@]}" -1 -f tools/market-review/pg17/13_material_consumption_schema.sql
+"${p[@]}" -c "update market_review.resource_policy set approved=true where item='ore'"
+(
+ PGAPPNAME=craft-before-list "${p[@]}" -c "begin; select market_review.consume_material('b','race-craft-60','b2','fixture-ore-consumption',20); select pg_sleep(3); commit;"
+) >"$tmp/craft-first.log" 2>&1 &
+first=$!
+wait_sleep craft-before-list
+(
+ "${p[@]}" -c "select market_review.resource_act('list','b','race-list-lose','race-list-lose',0,'ore',50,2,200)"
+) >"$tmp/list-lose.log" 2>&1 &
+loser=$!
+wait "$first" || { cat "$tmp/craft-first.log"; exit 1; }
+if wait "$loser"; then echo "listing spent materials unexpectedly succeeded" >&2; exit 1; fi
+grep -q insufficient_stock "$tmp/list-lose.log" || { cat "$tmp/list-lose.log"; exit 1; }
+"${p[@]}" -c "select market_review.assert_material_conservation()"
+# Reverse order: listing escrows 30 of the remaining 40. Crafting must not
+# draw from escrow. Even a partially attempted debit rolls back completely.
+(
+ PGAPPNAME=list-before-craft "${p[@]}" -c "begin; select market_review.resource_act('list','b','race-list-30','race-list-30',0,'ore',30,2,200); select pg_sleep(3); commit;"
+) >"$tmp/list-first.log" 2>&1 &
+first=$!
+wait_sleep list-before-craft
+(
+ "${p[@]}" -c "select market_review.consume_material('b','race-craft-lose','b2','fixture-ore-consumption',4)"
+) >"$tmp/craft-lose.log" 2>&1 &
+loser=$!
+wait "$first" || { cat "$tmp/list-first.log"; exit 1; }
+if wait "$loser"; then echo "craft consumed escrowed materials" >&2; exit 1; fi
+grep -q insufficient_claimed_materials "$tmp/craft-lose.log" || { cat "$tmp/craft-lose.log"; exit 1; }
+"${p[@]}" -c "select market_review.assert_material_conservation()"
+# Two different craft requests compete for the last ten available units.
+# Exact replay of the winning command still returns the original receipt.
+(
+ PGAPPNAME=craft-before-craft "${p[@]}" -c "begin; select market_review.consume_material('b','race-craft-6','b2','fixture-ore-consumption',2); select pg_sleep(3); commit;"
+) >"$tmp/craft-win.log" 2>&1 &
+winner=$!
+wait_sleep craft-before-craft
+(
+ "${p[@]}" -c "select market_review.consume_material('b','race-craft-6-lose','b2','fixture-ore-consumption',2)"
+) >"$tmp/craft-6-lose.log" 2>&1 &
+loser=$!
+(
+ "${p[@]}" -c "select market_review.consume_material('b','race-craft-6','b2','fixture-ore-consumption',2)"
+) >"$tmp/craft-replay.log" 2>&1 &
+replay=$!
+wait "$winner" || { cat "$tmp/craft-win.log"; exit 1; }
+if wait "$loser"; then echo "competing craft unexpectedly consumed unavailable stock" >&2; exit 1; fi
+grep -q insufficient_claimed_materials "$tmp/craft-6-lose.log" || { cat "$tmp/craft-6-lose.log"; exit 1; }
+wait "$replay" || { cat "$tmp/craft-replay.log"; exit 1; }
+grep -q '"status": "consumed"' "$tmp/craft-replay.log"
+"${p[@]}" <<'SQL'
+SELECT market_review.assert_material_conservation();
+DO $$ BEGIN
+ IF (SELECT count(*) FROM market_review.material_spend WHERE owner='b')<>2
+ OR (SELECT sum(quantity) FROM market_review.material_spent_lot WHERE owner='b') IS DISTINCT FROM 66::numeric
+ OR (SELECT sum(quantity) FROM market_review.material_spent_lot WHERE owner='b' AND origin='origin-01') IS DISTINCT FROM 20::numeric
+ OR (SELECT sum(quantity) FROM market_review.material_spent_lot WHERE owner='b' AND origin='origin-02') IS DISTINCT FROM 46::numeric
+ OR (SELECT quantity FROM market_review.resource_stock WHERE owner='b' AND item='ore') IS DISTINCT FROM 4::bigint
+ OR (SELECT quantity FROM market_review.resource_claim_projection WHERE owner='b' AND destination='inventory:b2' AND item='ore') IS DISTINCT FROM 0::bigint
+ OR (SELECT quantity FROM market_review.resource_claim_projection WHERE owner='b' AND destination='bank' AND item='ore') IS DISTINCT FROM 4::bigint
+ OR (SELECT remaining FROM market_review.resource_offer WHERE id='race-list-30') IS DISTINCT FROM 30
+ OR (SELECT remaining FROM market_review.material_escrow_lot WHERE offer='race-list-30' AND origin='origin-02') IS DISTINCT FROM 30::bigint
+ OR EXISTS(SELECT 1 FROM market_review.resource_offer WHERE id='race-list-lose')
+ OR EXISTS(SELECT 1 FROM market_review.request WHERE actor='b' AND request_id IN ('race-list-lose','race-craft-lose','race-craft-6-lose'))
+ OR EXISTS(SELECT 1 FROM market_review.material_spend WHERE owner='b' AND request_id IN ('race-craft-lose','race-craft-6-lose'))
+ OR (SELECT gold FROM market_review.wallet WHERE id='b')<>800
+ OR (SELECT gold FROM market_review.wallet WHERE id='a')<>1190
+ OR (SELECT sum(gold) FROM market_review.wallet)+(SELECT sum(fee) FROM market_review.resource_delivery)<>3000
+ THEN RAISE EXCEPTION 'craft_market_race_invariant_failed'; END IF;
+END $$;
+SQL
+echo "PASS: craft versus listing in both orders, competing crafts, exact replay and no partial debit"

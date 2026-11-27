@@ -19,7 +19,7 @@ export async function executeMarketReceiptReview(request:Request,services:Market
   const row=await services.readCommittedReceipt(actorAccountId,operation.requestKey);
   if(row===null)return response({status:'unknown',requestKey:operation.requestKey});
   if(!obj(row)||row.actorAccountId!==actorAccountId||row.requestKey!==operation.requestKey||
-     row.status!=='committed'||!['publish','buy','cancel','claim'].includes(String(row.operation))||
+     row.status!=='committed'||(typeof row.operation!=='string'||!['publish','buy','cancel','claim'].includes(row.operation))||
      !safe(row.revision)||typeof row.receiptId!=='string'||!uuid.test(row.receiptId))
    return response({error:'market_unavailable'},503);
   // Never expose arbitrary payload, account IDs, SQL errors or private mint.

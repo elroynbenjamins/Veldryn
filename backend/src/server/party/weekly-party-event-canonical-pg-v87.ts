@@ -24,6 +24,8 @@ const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]
 const SOURCE=/^party-event:(\d{13}):([0-9a-f-]{36}):(participation|preparation|finale)$/;
 
 /**
+ * Preparation uses Stage 2, matching the V2 planner. Preserve the existing
+ * personal donation + all frozen optional orders complete policy for review.
  * Source PK is the V11 roster+week, not any client claim payload. The
  * account/week conditions and ALL joins use exact account/party/week identity.
  * The V87 worker certificates are the missing independent victory/tier
@@ -99,18 +101,19 @@ export const PARTY_EVENT_CANONICAL_SOURCE_SQL_V87=[
  ' FROM private.party_event_supply_donations_v16 d',
  ' JOIN private.party_event_supply_orders_v16 o ON o.id=d.order_id',
  ' WHERE d.party_id=r.party_id AND d.event_starts_at=r.event_starts_at',
- ' AND d.account_id=r.account_id AND o.stage=3',
+ ' AND d.account_id=r.account_id AND o.stage=2',
  ' AND o.party_id=r.party_id AND o.event_starts_at=r.event_starts_at',
+ ' AND d.created_at>=w.event_starts_at AND d.created_at<w.event_ends_at',
  ' ORDER BY d.created_at,d.id LIMIT 1) donation ON TRUE',
  'LEFT JOIN LATERAL (SELECT min(o.id::text)::uuid AS goal_id,',
  ' count(*)::integer AS goal_count,',
  ' coalesce(bool_and(o.donated_quantity=o.target_quantity),false) AS all_complete',
  ' FROM private.party_event_supply_orders_v16 o',
  ' WHERE o.party_id=r.party_id AND o.event_starts_at=r.event_starts_at',
- " AND o.stage=3 AND o.kind='optional') optional ON TRUE",
+ " AND o.stage=2 AND o.kind='optional') optional ON TRUE",
  'LEFT JOIN private.party_event_stage_seals_v17 seal',
  ' ON seal.party_id=w.party_id AND seal.event_starts_at=w.event_starts_at',
- ' AND seal.stage=3 AND seal.sealed_at<=w.event_ends_at',
+ ' AND seal.stage=2 AND seal.sealed_at>=w.event_starts_at AND seal.sealed_at<w.event_ends_at',
  'WHERE r.account_id=$1::uuid',
  ' AND w.event_starts_at=to_timestamp($2::double precision/1000)',
  " AND w.status='settled' AND w.active_stage=3",

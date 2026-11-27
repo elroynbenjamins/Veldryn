@@ -28,7 +28,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if grep -R -E 'compileWorldBossRosterReviewV2|simulateWorldBossSharedEngineReviewV2|buildWorldBossAuthoredReviewV2|reviewWorldBossContributionV2|reviewWorldBossFixedLedgerWeightV2' backend/online backend/supabase/functions apps/mobile/src --include='*.ts' --include='*.tsx'; then
+          if grep -R -E 'compileWorldBossRosterReviewV2|simulateWorldBossSharedEngineReviewV2|buildWorldBossAuthoredReviewV2|reviewWorldBossContributionV2|reviewWorldBossFixedLedgerWeightV2|createWorldBossGuardRuntimeReviewV2|deriveWorldBossPreparationReviewV2|reviewWorldBossAccountFairnessV2' backend/online backend/supabase/functions apps/mobile/src --include='*.ts' --include='*.tsx'; then
             echo 'Unreleased World Boss review referenced by public runtime'
             exit 1
           fi

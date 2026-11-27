@@ -38,8 +38,12 @@ async function run(){
  assert(!PARTY_EVENT_CLAIM_RETRY_V89_RELEASED,'production_flag_off');
  assert(PARTY_EVENT_CLAIM_MAX_ATTEMPTS_V89===3,'bounded');
  let attempts=0;
+ let firstRequest:ChestOpenRequestV69|undefined;
  const transient=createPartyEventClaimRetryV89(async request=>{
-  assert(request===valid,'same_immutable_request');
+  assert(request!==valid&&Object.isFrozen(request)&&
+   request.authenticatedAccountId===owner&&request.sourceKey===source,'same_immutable_request');
+  if(firstRequest)assert(request===firstRequest,'stable_snapshot_across_attempts');
+  else firstRequest=request;
   attempts++;
   if(attempts<3)throw pg(attempts===1?'40001':'40P01');
   return result;
@@ -47,6 +51,22 @@ async function run(){
  const actual=await transient(valid);
  assert(actual===result&&attempts===3,
   'transaction_retry_then_one_frozen_result');
+
+ // A mutable caller cannot redirect a retry to a different earned chest.
+ const mutable={...valid};
+ let mutationAttempts=0;
+ const mutation=createPartyEventClaimRetryV89(async request=>{
+  mutationAttempts++;
+  assert(request.sourceKey===source&&request.authenticatedAccountId===owner,
+   'original_authenticated_identity_preserved');
+  if(mutationAttempts===1){
+   mutable.sourceKey=source.replace(':participation',':finale');
+   mutable.authenticatedAccountId='22222222-2222-4222-8222-222222222222';
+   throw pg('40001');
+  }
+  return result;
+ },true);
+ assert(await mutation(mutable)===result&&mutationAttempts===2,'caller_mutation_isolated');
 
  let noRetry=0;
  const unsupported=createPartyEventClaimRetryV89(async()=>{

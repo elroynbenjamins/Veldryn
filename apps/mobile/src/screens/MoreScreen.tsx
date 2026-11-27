@@ -1,3 +1,4 @@
+import type {ReleaseNoteMode} from '../core/release-notes';
 import {RANKINGS_RELEASED} from '../core/release-flags';
 import {RateAppCard} from '../components/RateAppCard';
 import {DiscordButton} from '../components/DiscordButton';
@@ -78,7 +79,7 @@ function itemMeta(language:GameState['settings']['language'],id:MoreDestination)
   }
 }
 
-export function MoreScreen({language,character,accountStatus='local',onNavigate,onOpenAdminQa,onOpenUpdates,onOpenRoadmap,onOpenGuildProjects,onOpenFeaturePreview,newReleaseAvailable=false,companionAttention=false,companionUnlocked=true,lockedDestinations={},dailySuppliesAttention=false,friendRequestCount=0,guildAttentionCount=0,guildProjectRewardCount=0,socialAttentionCount=0,newUnlockCount=0,questRewardCount=0}:{language:GameState['settings']['language'];character?:GameState['character'];accountStatus?:'guest'|'pending'|'linked'|'local';onNavigate:(destination:MoreDestination)=>void;onOpenAdminQa?:()=>void;onOpenUpdates?:()=>void;onOpenRoadmap?:()=>void;onOpenGuildProjects?:()=>void;onOpenFeaturePreview?:(route:FeatureHubPreviewRoute)=>void;newReleaseAvailable?:boolean;companionAttention?:boolean;companionUnlocked?:boolean;lockedDestinations?:Partial<Record<MoreDestination,string>>;dailySuppliesAttention?:boolean;friendRequestCount?:number;guildAttentionCount?:number;guildProjectRewardCount?:number;socialAttentionCount?:number;newUnlockCount?:number;questRewardCount?:number}){
+export function MoreScreen({language,character,accountStatus='local',onNavigate,onOpenAdminQa,onOpenUpdates,onOpenRoadmap,onOpenGuildProjects,onOpenFeaturePreview,newReleaseAvailable=false,companionAttention=false,companionUnlocked=true,lockedDestinations={},dailySuppliesAttention=false,friendRequestCount=0,guildAttentionCount=0,guildProjectRewardCount=0,socialAttentionCount=0,newUnlockCount=0,questRewardCount=0}:{language:GameState['settings']['language'];character?:GameState['character'];accountStatus?:'guest'|'pending'|'linked'|'local';onNavigate:(destination:MoreDestination)=>void;onOpenAdminQa?:()=>void;onOpenUpdates?:(mode:ReleaseNoteMode)=>void;onOpenRoadmap?:()=>void;onOpenGuildProjects?:()=>void;onOpenFeaturePreview?:(route:FeatureHubPreviewRoute)=>void;newReleaseAvailable?:boolean;companionAttention?:boolean;companionUnlocked?:boolean;lockedDestinations?:Partial<Record<MoreDestination,string>>;dailySuppliesAttention?:boolean;friendRequestCount?:number;guildAttentionCount?:number;guildProjectRewardCount?:number;socialAttentionCount?:number;newUnlockCount?:number;questRewardCount?:number}){
  const a=(text:string,params?:Record<string,string|number>)=>accountText(language,text,params);
 
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions(),singleColumn=width<350||fontScale>=1.25;
@@ -132,9 +133,15 @@ export function MoreScreen({language,character,accountStatus='local',onNavigate,
     {onOpenRoadmap?<Pressable accessibilityRole="button" accessibilityLabel={a('Community Roadmap')} accessibilityHint={a('Vote on upcoming features and improvements')} onPress={onOpenRoadmap} style={({pressed})=>[s.releaseRow,pressed&&s.pressed]}>
       <UiIcon name="world" size={22}/><Text style={s.releaseTitle}>{a('Community Roadmap')}</Text><UiIcon name="next" size={18}/>
     </Pressable>:null}
-    {onOpenUpdates?<Pressable accessibilityRole="button" accessibilityLabel={a("What's New & Updates")} accessibilityHint={newReleaseAvailable?a("New release information available"):a("Release notes and app versions")} onPress={onOpenUpdates} style={({pressed})=>[s.releaseRow,pressed&&s.pressed]}>
-      <UiIcon name="events" size={22}/><Text style={s.releaseTitle}>{a("What's New & Updates")}</Text>{newReleaseAvailable?<AttentionDot label={a("New update available")}/>:null}<UiIcon name="next" size={18}/>
-    </Pressable>:null}
+    {onOpenUpdates?<View style={s.releaseGroup}>
+      <Text accessibilityRole="header" style={s.releaseGroupTitle}>{a("What's New & Updates")}</Text>
+      <Pressable accessibilityRole="button" accessibilityHint={a("New features and major improvements")} onPress={()=>onOpenUpdates('highlights')} style={({pressed})=>[s.releaseLink,pressed&&s.pressed]}>
+        <UiIcon name="events" size={22}/><Text style={s.releaseTitle}>{a("Update Highlights")}</Text>{newReleaseAvailable?<AttentionDot label={a("New update available")}/>:null}<UiIcon name="next" size={18}/>
+      </Pressable>
+      <Pressable accessibilityRole="button" accessibilityHint={a("Full changes, balancing and fixes")} onPress={()=>onOpenUpdates('details')} style={({pressed})=>[s.releaseLink,s.releaseLinkDivider,pressed&&s.pressed]}>
+        <Text style={s.releaseNotesIcon}>≡</Text><Text style={s.releaseTitle}>{a("Detailed Patch Notes")}</Text><UiIcon name="next" size={18}/>
+      </Pressable>
+    </View>:null}
     {FEATURE_HUB_QA_ENABLED&&onOpenFeaturePreview?<View style={s.quickSection}>
        <Text style={s.sectionLabel}>FEATURE HUB QA · DEVELOPER ONLY</Text>
        {([
@@ -201,6 +208,11 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
   headerAttention:{minWidth:28,height:28,alignItems:'center',justifyContent:'center',paddingHorizontal:7,borderWidth:1,borderColor:C.notification,borderRadius:14,backgroundColor:C.badSurface},
   headerAttentionValue:{fontSize:12,color:C.notification,fontWeight:'900'},
   releaseRow:{minHeight:48,flexDirection:'row',alignItems:'center',gap:10,paddingHorizontal:10,borderRadius:radii.md,borderWidth:StyleSheet.hairlineWidth,borderColor:C.line,backgroundColor:C.panel},
+  releaseGroup:{borderRadius:radii.md,borderWidth:StyleSheet.hairlineWidth,borderColor:C.line,backgroundColor:C.panel,paddingHorizontal:10,paddingTop:10},
+  releaseGroupTitle:{fontSize:11,fontWeight:'700',color:C.muted},
+  releaseLink:{minHeight:48,flexDirection:'row',alignItems:'center',gap:10,paddingVertical:8},
+  releaseLinkDivider:{borderTopWidth:StyleSheet.hairlineWidth,borderTopColor:C.line},
+  releaseNotesIcon:{width:22,textAlign:'center',fontSize:24,color:C.text},
   releaseTitle:{...typography.bodyStrong,color:C.text,flex:1},
   section:{gap:6,marginTop:4},
   sectionLabel:{...typography.caption,color:C.accentSoft,fontWeight:'900',letterSpacing:.7},

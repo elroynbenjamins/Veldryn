@@ -2536,6 +2536,22 @@ runRegionalProgressionReviewV2();
  const killsPerMinute=(a:readonly {win:number;duration:number}[])=>60000*a.reduce((n,r)=>n+r.win,0)/a.reduce((n,r)=>n+r.duration,0);
  const keys=[...new Set(rows.map(r=>r.level+'|'+r.classId+'|'+r.profile+'|'+r.kind+'|'+r.arm))].sort();
  assert.equal(keys.length,594);
+ // Concise decision summary kept separately from full per-band diagnostics.
+ const summaryKeys=[...new Set(rows.map(r=>r.classId+'|'+r.profile+'|'+r.arm))].sort();
+ console.log('SOLO_EQUIPMENT_ROBUSTNESS_SUMMARY '+JSON.stringify({matchedSets:rows.length/3,executions:rows.length,groups:summaryKeys.map(key=>{
+  const a=rows.filter(r=>r.classId+'|'+r.profile+'|'+r.arm===key);
+  const bands=[...new Set(a.map(r=>r.level+'|'+r.kind))];
+  const relative=bands.map(band=>{
+   const subset=a.filter(r=>r.level+'|'+r.kind===band),s=subset[0];
+   const reference=rows.filter(r=>r.level===s.level&&r.kind===s.kind&&r.profile===s.profile&&r.arm===s.arm&&CLASS_ROLES_V2[r.classId]==='damage');
+   const rate=killsPerMinute(reference);
+   return rate>0?killsPerMinute(subset)/rate:null;
+  }).filter((r):r is number=>r!==null);
+  return {key,cases:a.length,wins:a.reduce((n,r)=>n+r.win,0),timeouts:a.filter(r=>r.reason==='timeout').length,wipes:a.filter(r=>r.reason==='wipe').length,
+   meanRelative:relative.length?mean(relative):null,minRelative:relative.length?Math.min(...relative):null,maxRelative:relative.length?Math.max(...relative):null,
+   below75:relative.filter(r=>r<.75).length,withinTarget:relative.filter(r=>r>=.75&&r<=.85).length,above85:relative.filter(r=>r>.85).length,
+   bandsWithoutDamageReference:bands.length-relative.length};
+ }),releaseEnabled:false}));
  console.log('SOLO_EQUIPMENT_ROBUSTNESS_REVIEW '+JSON.stringify({matchedSets:rows.length/3,executions:rows.length,
   gearProfiles:gearRows.map(({rolls,...r})=>({...r,minQuality:Math.min(...rolls.map(x=>x.quality)),maxQuality:Math.max(...rolls.map(x=>x.quality))})),
   groups:keys.map(key=>{

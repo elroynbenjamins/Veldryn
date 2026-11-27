@@ -134,6 +134,30 @@ async function run(){
  }),'party_event_v89_invalid_authenticated_source');
  assert(attempts===0,'never_start_sql_for_foreign_or_wrong_family');
 
+ // A gate change between attempts must stop the entire settlement retry.
+ const savedEnv=process.env.NODE_ENV;
+ let gateAttempts=0;
+ const gatedRetry=createPartyEventClaimRetryV89(async()=>{
+  gateAttempts++;
+  process.env.NODE_ENV='production';
+  throw pg('40001');
+ },true);
+ try{
+  await rejected(()=>gatedRetry(valid),'party_event_v89_unreleased');
+  assert(gateAttempts===1,'production gate rechecked before second transaction');
+ }finally{
+  if(savedEnv===undefined)delete process.env.NODE_ENV;
+  else process.env.NODE_ENV=savedEnv;
+ }
+ // Preserve the actual last driver error; never manufacture a payout result.
+ const terminal=pg('40P01');
+ let deadlocks=0;
+ const deadlockRetry=createPartyEventClaimRetryV89(async()=>{
+  deadlocks++;throw terminal;
+ },true);
+ const deadlockError=await rejected(()=>deadlockRetry(valid),'private postgres driver error');
+ assert(deadlocks===3&&deadlockError===terminal,'bounded deadlock recovery preserves error identity');
+
  let disabled=false;
  try{createPartyEventClaimRetryV89(async()=>result)}catch(e){
   disabled=String(e).includes('party_event_v89_unreleased');
@@ -148,7 +172,7 @@ async function run(){
   }
   assert(disabled,'production_creation_closed');
   await rejected(()=>invalid(valid),'party_event_v89_unreleased');
- }finally{process.env.NODE_ENV=original}
+ }finally{if(original===undefined)delete process.env.NODE_ENV;else process.env.NODE_ENV=original}
  console.log('PARTY_EVENT_V89_RETRY_OK: bounded whole-transaction 40001/40P01 replay, safe one-time payouts, no policy/identity retries');
 }
 run().catch(error=>{console.error(error);throw error});

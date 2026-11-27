@@ -1,4 +1,4 @@
-import {useMemo} from 'react';
+import {useMemo,useState} from 'react';
 import {StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {GameButton} from './GameButton';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -17,6 +17,7 @@ export interface PartyChatCardLabelsV113{
  readonly expiresIn:(seconds:number)=>string;
  readonly votes:(votes:number,eligible:number)=>string;
  readonly confirmations:(accepted:number,total:number)=>string;
+ readonly readiness:(ready:number,total:number)=>string;
 }
 export function PartyChatActionCardPreviewV113({card,labels,nowMs,qaPreview=false,onPreviewIntent,busy=false}:{
  card:PartyChatPreviewCardV113;labels:PartyChatCardLabelsV113;nowMs:number;
@@ -24,7 +25,9 @@ export function PartyChatActionCardPreviewV113({card,labels,nowMs,qaPreview=fals
 }){
  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
  const {width,fontScale}=useWindowDimensions();
- const narrow=width<360||fontScale>1.2;
+ const [measuredWidth,setMeasuredWidth]=useState(0);
+ const availableWidth=measuredWidth>0?Math.min(measuredWidth,width):width;
+ const narrow=availableWidth<360||fontScale>1.2;
  const view=partyChatPreviewPresentationV113(card,nowMs,qaPreview);
  const enabled=view.canPreviewRespond&&!!onPreviewIntent&&!busy;
  const respond=(action:PartyChatPreviewAction,optionId?:string)=>{
@@ -37,7 +40,7 @@ export function PartyChatActionCardPreviewV113({card,labels,nowMs,qaPreview=fals
   {view.status!=='announcement'&&<Text style={s.meta}>{labels.statuses[view.status]}</Text>}
  </View>;
  const vote=card.kind==='contract_vote'||card.kind==='event_vote'?card:null;
- return <View style={s.card}>
+ return <View style={s.card} onLayout={event=>{const next=event.nativeEvent.layout.width;setMeasuredWidth(previous=>Math.abs(previous-next)>=1?next:previous);}}>
   <View style={s.header}>
    <Text style={s.title}>✦ {card.title}</Text>
    <Text style={s.meta}>{labels.expiresIn(view.remainingSeconds)}</Text>
@@ -70,7 +73,7 @@ export function PartyChatActionCardPreviewV113({card,labels,nowMs,qaPreview=fals
      {member.ready===true?labels.ready:member.ready===false?labels.notReady:labels.awaiting}
     </Text>
    </View>)}
-   <Text style={s.meta}>{labels.confirmations(card.members.filter(m=>m.ready===true).length,card.members.length)}</Text>
+   <Text style={s.meta}>{labels.readiness(card.members.filter(m=>m.ready===true).length,card.members.length)}</Text>
   </>}
   {card.kind==='recruitment_request'&&!!card.applicantName&&<Text style={s.name}>{card.applicantName}</Text>}
   {!vote&&view.actions.length>0&&<View style={[s.actions,narrow&&s.stacked]}>
@@ -85,13 +88,13 @@ function styles(C:ThemeColors){return StyleSheet.create({
   borderRadius:radii.sm,padding:spacing.sm,gap:spacing.xs,minWidth:0,marginVertical:2},
  collapsed:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',gap:spacing.sm},
  header:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',gap:spacing.xs},
- title:{...typography.bodyStrong,color:C.warning,flexGrow:1,flexShrink:1,minWidth:100},
+ title:{...typography.bodyStrong,color:C.warning,flexGrow:1,flexShrink:1,minWidth:0},
  summary:{...typography.caption,color:C.text,flexShrink:1},
  meta:{...typography.caption,color:C.muted,flexShrink:1},
  memberRow:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',gap:spacing.xs},
- memberText:{flex:1,minWidth:90},
+ memberText:{flex:1,minWidth:0},
  name:{...typography.bodyStrong,color:C.text,flexShrink:1,flexGrow:1},
- status:{...typography.caption,flexShrink:1},
+ status:{...typography.caption,flexShrink:1,maxWidth:'100%'},
  option:{borderWidth:1,borderColor:C.line,borderRadius:radii.sm,padding:spacing.xs,gap:spacing.xs},
  track:{height:4,backgroundColor:C.line,borderRadius:2,overflow:'hidden'},
  fill:{height:4,backgroundColor:C.warning,borderRadius:2},

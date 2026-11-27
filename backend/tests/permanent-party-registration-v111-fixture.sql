@@ -7,7 +7,7 @@ create table auth.users(id uuid primary key);
 create table public.parties(id uuid primary key,status text not null);
 create table public.characters(id uuid primary key,account_id uuid not null references auth.users(id),
  class_id text not null,level integer not null,unique(id,account_id));
-create table public.chat_messages(id uuid primary key);
+create table public.chat_messages(id uuid primary key,account_id uuid,channel_type text not null,channel_id text not null,is_system boolean not null);
 create table public.party_members(party_id uuid not null references public.parties(id),
  character_id uuid not null references public.characters(id),account_id uuid not null,
  role text not null,joined_at timestamptz not null,left_at timestamptz,

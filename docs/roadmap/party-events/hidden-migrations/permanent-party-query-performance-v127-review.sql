@@ -17,7 +17,7 @@ begin
    exists(select 1 from private.party_registration_members_v110 m
     where m.party_id=s.party_id and m.account_id=p_actor) as is_member
   from private.party_registration_state_v110 s join public.parties p on p.id=s.party_id
-  where s.party_id=p_party and s.qa_fixture_ready and p.status<>'disbanded'
+  where s.party_id=p_party and s.qa_fixture_ready and s.lifecycle_status='active' and p.status<>'disbanded'
  ), candidates as materialized (
   select q.id,q.party_id,q.kind,q.source_id,q.terminal,q.roster_changed,q.created_at,
    s.roster_revision,s.activity_locked,s.leader_account_id

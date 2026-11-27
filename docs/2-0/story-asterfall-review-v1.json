@@ -148,6 +148,13 @@
       ],
       "objectives": [
         {
+          "id": "map-home",
+          "kind": "map",
+          "targetId": "SCOUT_GREENFIELDS",
+          "required": 1,
+          "evidence": "verifiedFact"
+        },
+        {
           "id": "1",
           "kind": "map",
           "targetId": "SCOUT_SILVERBROOK",
@@ -162,7 +169,7 @@
           "evidence": "sinceActivation"
         }
       ],
-      "summary": "Find the echo-touched river debris. Optional fishing path, no mandatory skill level.",
+      "summary": "Map the first routes, then investigate the river debris.",
       "rewardPolicy": "unapproved",
       "released": false
     },
@@ -232,9 +239,16 @@
           "targetId": "IRONWOOD_WOLF",
           "required": 8,
           "evidence": "sinceActivation"
+        },
+        {
+          "id": "level",
+          "kind": "level",
+          "targetId": "character",
+          "required": 10,
+          "evidence": "verifiedFact"
         }
       ],
-      "summary": "Prove readiness and retain the companion unlock mapping.",
+      "summary": "Prove readiness at level 10; preserve companion unlock milestone.",
       "rewardPolicy": "unapproved",
       "released": false
     },
@@ -320,7 +334,7 @@
     {
       "id": "story2:asterfall:10",
       "legacyQuestId": "QST_011",
-      "title": "Place Among Guilds",
+      "title": "The Bound Miners",
       "regionId": "ASTERFALL",
       "narrativeZoneId": "OLD_MINES",
       "act": 2,
@@ -506,6 +520,8 @@
     "Suggested levels are narrative pacing, not runtime access gates. Legacy authored monster levels are not automatically V2 levels.",
     "Zone is narrative context, not a destination authorization. Resolve actual target through canonical V2 content.",
     "No production reward grants or entitlement changes. Legacy quest mapping is migration input, not a reward receipt.",
-    "QST_002 replaces mandatory profession training with combat for new V2 story only; legacy quest and unlock consumers require explicit adapter."
+    "QST_002 replaces mandatory profession training with combat for new V2 story only; legacy quest and unlock consumers require explicit adapter.",
+    "Greenfields discovery explicitly precedes Silverbrook, matching Exploration 2.0 route prerequisite order. Guide remains optional and free; no companion requirement.",
+    "QST_005 retains a character level 10 review milestone before the companion unlock, subject to final V2 access gates."
   ]
 }

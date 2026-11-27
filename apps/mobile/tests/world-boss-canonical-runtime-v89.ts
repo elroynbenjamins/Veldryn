@@ -397,6 +397,7 @@ for(const invalid of [
 }
 console.log('ACTIVITY_LOADOUT_UNLOCK_REVIEW: 9 progression/entitlement cases, repeated victories, foreign and unverified proof rejected; no grants');
 
+function rejectsGatheringSpeedReview(fn:()=>unknown){let rejected=false;try{fn();}catch{rejected=true;}assert.equal(rejected,true);}
 import {reviewGatheringSpeedV2,gatheringSpeedEffectiveRatingV2} from '../src/core/gathering-speed-v2-review';
 for(const [raw,effective] of [[0,0],[10000,10000],[15000,13750],[20000,17500],[25000,20000]]){
  assert.equal(gatheringSpeedEffectiveRatingV2(raw),effective);
@@ -414,8 +415,8 @@ for(const toolTimeMultiplier of [1.15,1,.8,.5,.2])for(const existingRateMultipli
 const gearPace=reviewGatheringSpeedV2({baseActionSeconds:10,toolTimeMultiplier:.2,existingRateMultiplier:1,gearRatingBps:10000,setTimeMultiplier:.96});
 assert.equal(gearPace.setRatingBps,417);
 assert.ok(gearPace.actionSeconds<1&&gearPace.actionSeconds>0);
-assert.throws(()=>gatheringSpeedEffectiveRatingV2(-1));
-assert.throws(()=>reviewGatheringSpeedV2({baseActionSeconds:10,toolTimeMultiplier:0,existingRateMultiplier:1,gearRatingBps:0,setTimeMultiplier:1}));
+rejectsGatheringSpeedReview(()=>gatheringSpeedEffectiveRatingV2(-1));
+rejectsGatheringSpeedReview(()=>reviewGatheringSpeedV2({baseActionSeconds:10,toolTimeMultiplier:0,existingRateMultiplier:1,gearRatingBps:0,setTimeMultiplier:1}));
 console.log('GATHERING_SPEED_V2_REVIEW: 6020 monotonic pace cases; preserve legacy tool/buff baseline and positive action times');
 
 import {reviewWorldBossGatheringSpeedV99,type GatheringSpeedCopyV99} from '../../../backend/src/server/combat/world-boss-gathering-speed-v99';
@@ -436,8 +437,8 @@ for(const bossId of bossIds){
  assert.equal(full.canApply,false);
  const offSkill=reviewWorldBossGatheringSpeedV99({...input,skill:input.skill==='mining'?'woodcutting':'mining'});
  assert.equal(offSkill.gearRatingBps,0);assert.equal(offSkill.actionSeconds,offSkill.existingSeconds);
- assert.throws(()=>reviewWorldBossGatheringSpeedV99({...input,copies:[copies[0],copies[0]]}));
- assert.throws(()=>reviewWorldBossGatheringSpeedV99({...input,copies:[{...copies[0],roll:{...copies[0].roll,gatheringSpeedBasisPoints:9000}}]}));
- assert.throws(()=>reviewWorldBossGatheringSpeedV99({...input,verifyEquippedCopy:()=>false}));
+ rejectsGatheringSpeedReview(()=>reviewWorldBossGatheringSpeedV99({...input,copies:[copies[0],copies[0]]}));
+ rejectsGatheringSpeedReview(()=>reviewWorldBossGatheringSpeedV99({...input,copies:[{...copies[0],roll:{...copies[0].roll,gatheringSpeedBasisPoints:9000}}]}));
+ rejectsGatheringSpeedReview(()=>reviewWorldBossGatheringSpeedV99({...input,verifyEquippedCopy:()=>false}));
 }
 console.log('WORLD_BOSS_GATHERING_SPEED_V99: 30 actual roll previews, skill isolation, exact-copy and forged-roll rejection');

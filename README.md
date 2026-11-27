@@ -130,6 +130,8 @@ npx eas build --platform android --profile production
 
 EAS manages the Android build code remotely; the user-facing version is maintained separately in app.json. Respect the lockfile and dependency supply-chain policy.
 
+From 1.0.14 onward, follow the [release-note writing standard](marketing/release-notes/WRITING-STANDARD.md) for all in-game highlights, detailed patch notes and Google Play release notes.
+
 Before publication, verify the exact release commit, applicable CI checks, database migration/deployment compatibility, Android bundle, real-device behavior, account linking, chat, multiplayer reconnect and reward settlement, purchases/restores and seasonal availability. Confirm Google Play rollout separately.
 
 ## Repository maintenance

@@ -286,20 +286,24 @@ function regionalEquippedTierGap(state:GameState,expectedTier:number){
   return (gap+Math.max(0,10-items.length)*expectedTier)/10;
 }
 
-function tryStartNextQueuedActivity(state:GameState,nowMs:number,throwOnFailure=false,index=0,allowAutoTravel=true):GameState{
+/** Explicit, nonpersisted review hook. Production callers omit it. */
+export type QueueBoundaryReview=(settled:GameState,entry:import('./types').QueuedActivity,nowMs:number,previousKind?:ActiveActivity['kind'])=>GameState;
+function tryStartNextQueuedActivity(state:GameState,nowMs:number,throwOnFailure=false,index=0,allowAutoTravel=true,boundaryReview?:QueueBoundaryReview,previousKind?:ActiveActivity['kind']):GameState{
  if(!state.character)throw new Error('Create a character first.');
  if(state.activity)throw new Error('Stop the current activity before starting the queue.');
  const queue=normalizeActivityQueue(state.character.activityQueue,activityQueueCapacity(state)),next=queue[index];
  if(!next)throw new Error('Action queue is empty.');
  try{
-  const readiness=queuedActivityReadiness(state,next,allowAutoTravel);
+  const prepared=boundaryReview?boundaryReview(state,next,nowMs,previousKind):state;
+  if(prepared.activity||prepared.character?.id!==state.character.id)throw Error('queue_boundary_invalid_candidate');
+  const readiness=queuedActivityReadiness(prepared,next,allowAutoTravel);
   if(!readiness.ready)throw new Error(readiness.blocker);
   const destination=activityQueueRegion(next);
   // The previous activity has already been settled before this call. Travel
   // changes location only at the actual handoff boundary, never earns extra
   // offline time, and never bypasses travel, content or entitlement gates.
   const launch=allowAutoTravel&&destination&&destination.id!==state.currentRegionId
-   ?{...state,currentRegionId:destination.id}:state;
+   ?{...prepared,currentRegionId:destination.id}:prepared;
   const started=next.kind==='combat'
    ?startCombat(launch,next.targetId,nowMs,next.combatTacticId??'balanced',next.huntGoalId??'open')
    :next.kind==='faith'
@@ -322,41 +326,41 @@ function tryStartNextQueuedActivity(state:GameState,nowMs:number,throwOnFailure=
   return {...state,character:{...state.character,activityQueue:queue,activityQueuePausedReason:reason}};
  }
 }
-export function startNextQueuedActivity(state:GameState,nowMs:number){
+export function startNextQueuedActivity(state:GameState,nowMs:number,boundaryReview?:QueueBoundaryReview){
  if(state.activity?.queueGoalCompletedAtMs!==undefined&&state.activity.kind!=='combat'&&state.character?.activityQueueCombatRecovery){
-  state=claimActivity(state,nowMs).state;
+  state=claimActivity(state,nowMs,boundaryReview).state;
   state={...state,activity:null};
  }
- return tryStartNextQueuedActivity(state,nowMs,true);
+ return tryStartNextQueuedActivity(state,nowMs,true,0,true,boundaryReview);
 }
 function continueCompletedQueueActivity(state:GameState,nowMs:number,source:ActiveActivity,reward:RewardBundle){
  return {...state,outOfCombatSinceMs:undefined,activity:{...source,lastClaimAtMs:nowMs,queueGoalCompletedAtMs:source.queueGoalCompletedAtMs??nowMs,progressFraction:reward.nextProgressFraction,sessionKills:(source.sessionKills??0)+(source.kind==='combat'?reward.kills:0),sessionChampions:(source.sessionChampions??0)+(reward.championEncounters?.count??0)}};
 }
-function autoAdvanceActivityQueue(state:GameState,nowMs:number,source:ActiveActivity,reward:RewardBundle){
+function autoAdvanceActivityQueue(state:GameState,nowMs:number,source:ActiveActivity,reward:RewardBundle,boundaryReview?:QueueBoundaryReview){
  if(!state.character)return state;
  if(!normalizeActivityQueue(state.character.activityQueue,activityQueueCapacity(state)).length){
   if(!source.queueManaged)return state;
   return continueCompletedQueueActivity(state,nowMs,source,reward);
  }
- const next=tryStartNextQueuedActivity(state,nowMs,false);
+ const next=tryStartNextQueuedActivity(state,nowMs,false,0,true,boundaryReview,source.kind);
  if(next.activity||!state.character.activityQueueCombatRecovery)return next;
  const safeIndex=state.character.activityQueue?.findIndex(entry=>entry.kind!=='combat'&&queuedActivityReadiness(state,entry,false).ready)??-1;
- if(safeIndex>=0)return tryStartNextQueuedActivity(state,nowMs,false,safeIndex,false);
+ if(safeIndex>=0)return tryStartNextQueuedActivity(state,nowMs,false,safeIndex,false,boundaryReview,source.kind);
  return source.kind!=='combat'?continueCompletedQueueActivity(next,nowMs,source,reward):next;
 }
 /** Timed, finite queue entries end cleanly when their work is spent. */
-function startFinishedQueuedActivity(state:GameState,nowMs:number){
+function startFinishedQueuedActivity(state:GameState,nowMs:number,boundaryReview?:QueueBoundaryReview,previousKind?:ActiveActivity['kind']){
  if(!state.character?.activityQueue?.length)return state;
- return tryStartNextQueuedActivity(state,nowMs,false);
+ return tryStartNextQueuedActivity(state,nowMs,false,0,true,boundaryReview,previousKind);
 }
-function recoverCombatQueue(state:GameState,nowMs:number,reason:string){
+function recoverCombatQueue(state:GameState,nowMs:number,reason:string,boundaryReview?:QueueBoundaryReview){
  if(!state.character)return state;
  const rule=activeIdleRuleForState(state);
  const minimumFood=Math.max(state.settings.stopCombatWhenOutOfFood||rule?.stopIfOutOfFood?1:0,...(rule?.conditions.filter(row=>row.enabled&&row.kind==='food_below').map(row=>row.value+1)??[]));
  state={...state,character:{...state.character,activityQueueCombatRecovery:{needsHealing:reason.toLowerCase().includes('injured'),minimumFood}}};
  const queue=normalizeActivityQueue(state.character!.activityQueue,activityQueueCapacity(state));
  const safeIndex=queue.findIndex(entry=>entry.kind!=='combat'&&queuedActivityReadiness(state,entry,false).ready);
- return safeIndex>=0?tryStartNextQueuedActivity(state,nowMs,false,safeIndex,false):pauseActivityQueue(state,reason);
+ return safeIndex>=0?tryStartNextQueuedActivity(state,nowMs,false,safeIndex,false,boundaryReview,'combat'):pauseActivityQueue(state,reason);
 }
 function pauseActivityQueue(state:GameState,reason:string){
  if(!state.character||!normalizeActivityQueue(state.character.activityQueue,activityQueueCapacity(state)).length)return state;
@@ -1201,15 +1205,15 @@ function queuedReservationEnd(state:GameState):number|undefined{
  return undefined;
 }
 
-export function claimActivity(state:GameState,nowMs:number):{state:GameState;reward:RewardBundle}{
+export function claimActivity(state:GameState,nowMs:number,boundaryReview?:QueueBoundaryReview):{state:GameState;reward:RewardBundle}{
  const source=state.activity;
- if(!source||(!source.queueManaged&&!state.character?.activityQueue?.length))return claimActivitySegment(state,nowMs);
+ if(!source||(!source.queueManaged&&!state.character?.activityQueue?.length))return claimActivitySegment(state,nowMs,boundaryReview);
  // All handoffs share the original offline allowance, even if progression increases it.
  const until=Math.max(source.lastClaimAtMs,Math.min(nowMs,source.lastClaimAtMs+offlineCapSeconds(state)*1000));
  const results:NonNullable<RewardBundle['activityResults']>=[];
  const limit=(state.character?.activityQueue?.length??0)+2;
  for(let index=0;index<limit&&state.activity;index++){
-  const activity=state.activity,completion=queuedReservationEnd(state),segmentUntil=completion===undefined?until:Math.min(until,Math.max(activity.lastClaimAtMs,completion)),result=claimActivitySegment(state,segmentUntil);
+  const activity=state.activity,completion=queuedReservationEnd(state),segmentUntil=completion===undefined?until:Math.min(until,Math.max(activity.lastClaimAtMs,completion)),result=claimActivitySegment(state,segmentUntil,boundaryReview);
   if(completion!==undefined&&completion<=until&&result.state.activity!==activity&&!(result.state.activity?.kind===activity.kind&&result.state.activity.startedAtMs===activity.startedAtMs))result.reward.goalReached=true;
   results.push({activity,reward:result.reward,goalReached:!!result.reward.goalReached});
   state=result.state;
@@ -1234,7 +1238,7 @@ export function claimActivity(state:GameState,nowMs:number):{state:GameState;rew
 /** Respect meal duration even if an entire AFK window is claimed at once.
  * Each side of the expiry is settled with the correct bonuses and no duplicate rewards.
  */
-function claimActivitySegment(state:GameState,nowMs:number):{state:GameState;reward:RewardBundle}{
+function claimActivitySegment(state:GameState,nowMs:number,boundaryReview?:QueueBoundaryReview):{state:GameState;reward:RewardBundle}{
  // Class drills have a timer but no ActiveActivity; treat their interval as eligible
  // without inventing a persisted activity or changing the class-drill save shape.
  const drill=state.character?.classTraining;
@@ -1244,13 +1248,13 @@ function claimActivitySegment(state:GameState,nowMs:number):{state:GameState;rew
   const cappedEnd=Math.min(nowMs,source.lastClaimAtMs+offlineCapSeconds(state)*1000);
   const cut=source.lastClaimAtMs+buff.remainingSeconds*1000;
   if(cut>source.lastClaimAtMs&&cut<cappedEnd){
-   const first=claimActivitySegmentRaw(state,cut);
+   const first=claimActivitySegmentRaw(state,cut,boundaryReview);
    const elapsedState=commitMealActivityTime(first.state,source,first.reward);
    const updated=retimeReservedMealCraft(elapsedState,state.character);
    if(!updated.activity&&!updated.character?.classTraining)return {state:updated,reward:first.reward};
    const nextDrill=updated.character?.classTraining;
    const nextSource=updated.activity??(nextDrill?{kind:'training' as const,targetId:'class_drills',startedAtMs:nextDrill.lastClaimAtMs,lastClaimAtMs:nextDrill.lastClaimAtMs}:source);
-   const second=claimActivitySegment(updated,cappedEnd);
+   const second=claimActivitySegment(updated,cappedEnd,boundaryReview);
    const combined=combineActivityRewards([
     {activity:source,reward:first.reward,goalReached:!!first.reward.goalReached},
     {activity:nextSource,reward:second.reward,goalReached:!!second.reward.goalReached},
@@ -1261,10 +1265,10 @@ function claimActivitySegment(state:GameState,nowMs:number):{state:GameState;rew
    return {state:final,reward:{...combined,offlineCapReached:hasCappedRemainder||combined.offlineCapReached}};
   }
  }
- const result=claimActivitySegmentRaw(state,nowMs);
+ const result=claimActivitySegmentRaw(state,nowMs,boundaryReview);
  return {state:commitMealActivityTime(result.state,source,result.reward),reward:result.reward};
 }
-function claimActivitySegmentRaw(state:GameState,nowMs:number){
+function claimActivitySegmentRaw(state:GameState,nowMs:number,boundaryReview?:QueueBoundaryReview){
 
   state=reconcileWeeklyOrderRollover(state,nowMs).state;
   if(state.character?.classTraining){const r=settleClassDrills(state,nowMs,offlineCapSeconds(state)),next=reconcileCombatCompanionUnlocks(r.state,nowMs);return {state:next,reward:withCompanionUnlocks(r.reward,state,next)};}
@@ -1282,7 +1286,7 @@ function claimActivitySegmentRaw(state:GameState,nowMs:number){
     const next=commitDailySupplyTimedBoost(nextBase,boost),reconciled=reconcileCombatCompanionUnlocks(next,nowMs);
     // Only actually completed and settled Faith practices advance repeatable contracts.
     const credited=recordSeasonalActivity(reconciled,'faith',reward.faithActions??0,nowMs);
-    const queuedState=!faith.practice&&(source.queueManaged||state.character?.activityQueue?.length)?startFinishedQueuedActivity(credited,nowMs):credited;
+    const queuedState=!faith.practice&&(source.queueManaged||state.character?.activityQueue?.length)?startFinishedQueuedActivity(credited,nowMs,boundaryReview,source.kind):credited;
     return {state:queuedState,reward:withCompanionUnlocks(reward,state,queuedState)};
   }
   if(state.activity?.kind==='alchemy'){
@@ -1295,7 +1299,7 @@ function claimActivitySegmentRaw(state:GameState,nowMs:number){
     const next=commitDailySupplyTimedBoost(nextBase,boost),actions=reward.craftingActions??0;
     const progressed=actions>0?applyTrustedLongTermProgression(next,[{kind:'crafting',contentId:brew.recipeId,units:actions,skillId:'alchemy',startedAtMs:state.activity.lastClaimAtMs}],reward,nowMs,{accountId:longTermAccountScope(state),eventId:`alchemy:${state.character?.id??'unknown'}:${brew.recipeId}:${state.activity.lastClaimAtMs}:${nowMs}`}).state:next;
     const eventApplied=applyEventDiscoveries(applyEventDrops(progressed,reward.eventDrops??[]),reward.eventDiscoveries??[]);
-    const queuedState=!reward.nextBrewRemaining&&(source.queueManaged||state.character?.activityQueue?.length)?startFinishedQueuedActivity(eventApplied,nowMs):eventApplied;
+    const queuedState=!reward.nextBrewRemaining&&(source.queueManaged||state.character?.activityQueue?.length)?startFinishedQueuedActivity(eventApplied,nowMs,boundaryReview,source.kind):eventApplied;
     return {state:queuedState,reward};
   }
   if(state.activity?.kind==='processing'){
@@ -1311,7 +1315,7 @@ function claimActivitySegmentRaw(state:GameState,nowMs:number){
     progressed=applyEventDiscoveries(applyEventDrops(progressed,reward.eventDrops??[]),reward.eventDiscoveries??[]);
     progressed=refreshQuests(progressed);
     const finalState=reconcileCombatCompanionUnlocks(progressed,nowMs);
-    const queuedState=(!reward.nextProcessingRemaining||window.expired)&&(source.queueManaged||state.character?.activityQueue?.length)?startFinishedQueuedActivity(finalState,nowMs):finalState;
+    const queuedState=(!reward.nextProcessingRemaining||window.expired)&&(source.queueManaged||state.character?.activityQueue?.length)?startFinishedQueuedActivity(finalState,nowMs,boundaryReview,source.kind):finalState;
     return {state:queuedState,reward:withCompanionUnlocks(reward,state,queuedState)};
   }
   if(!state.character||!state.activity){const recovered=settleOutOfCombatRecovery(state,nowMs);return {state:recovered,reward:previewActivityReward(state,nowMs)};}
@@ -1329,7 +1333,7 @@ function claimActivitySegmentRaw(state:GameState,nowMs:number){
     const petResult=applyCorePetActivityDrops(eventApplied,petSourceType,state.activity.targetId,reward.kills,`${state.character.id}:${state.activity.lastClaimAtMs}:${settledAtMs}`,undefined,(()=>{const candy=eventCandyWindow(state,'pet');return candy?{startsAtMs:candy.startsAtMs,endsAtMs:candy.endsAtMs,settlementStartsAtMs:state.activity.lastClaimAtMs,settlementEndsAtMs:settledAtMs}:undefined;})());
     const petReward:RewardBundle=petResult.drops.length?{...reward,petDrops:[...(reward.petDrops??[]),...petResult.drops]}:reward;
     const finalState=recordCompanionActivity(petResult.state,'gathering',state.activity.targetId,reward.kills,settledAtMs);
-    const queuedState=idleWindow.shouldStop&&!idleWindow.safety?autoAdvanceActivityQueue(finalState,settledAtMs,state.activity,reward):idleWindow.shouldStop?pauseActivityQueue(finalState,reward.stoppedReason??idleStopReason??'Safety stop reached.'):finalState;
+    const queuedState=idleWindow.shouldStop&&!idleWindow.safety?autoAdvanceActivityQueue(finalState,settledAtMs,state.activity,reward,boundaryReview):idleWindow.shouldStop?pauseActivityQueue(finalState,reward.stoppedReason??idleStopReason??'Safety stop reached.'):finalState;
     return {state:queuedState,reward:withCompanionUnlocks(petReward,state,queuedState)};
   }
   const xp=state.character.xp+reward.xp,level=characterLevelFromXp(xp);
@@ -1360,7 +1364,7 @@ function claimActivitySegmentRaw(state:GameState,nowMs:number){
   const petReward:RewardBundle=petResult.drops.length?{...reward,petDrops:petResult.drops}:reward;
   const finalState=recordCompanionActivity(progressed,'combat',state.activity.targetId,reward.kills,settledAtMs);
   const plannedQueueAdvance=idleWindow.shouldStop&&!idleWindow.safety&&!reward.stoppedReason?.includes('injured')&&!reward.stoppedReason?.includes('Out of food');
-  const queuedState=plannedQueueAdvance?autoAdvanceActivityQueue(finalState,settledAtMs,state.activity,reward):shouldStop?(idleWindow.combatRecovery?recoverCombatQueue(finalState,combatStoppedAtMs,reward.stoppedReason??idleStopReason??'Combat recovery required.'):pauseActivityQueue(finalState,reward.stoppedReason??idleStopReason??'Safety stop reached.')):finalState;
+  const queuedState=plannedQueueAdvance?autoAdvanceActivityQueue(finalState,settledAtMs,state.activity,reward,boundaryReview):shouldStop?(idleWindow.combatRecovery?recoverCombatQueue(finalState,combatStoppedAtMs,reward.stoppedReason??idleStopReason??'Combat recovery required.',boundaryReview):pauseActivityQueue(finalState,reward.stoppedReason??idleStopReason??'Safety stop reached.')):finalState;
   // A combat stop can occur well before the player returns. Apply the recovery
   // window from that exact stop time now, rather than requiring a second claim
   // or a new foreground action before offline healing becomes visible.

@@ -11,7 +11,7 @@ import {GameButton} from './GameButton';
 import {spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 
-export function FaithPanel({state,onCommand}:{state:GameState;onCommand:(c:GameCommand)=>Promise<void>}){
+export function FaithPanel({state,onCommand,blessingsOnly=false}:{state:GameState;onCommand:(c:GameCommand)=>Promise<void>;blessingsOnly?:boolean}){
  const {gt,language}=useGameplayText();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions();
  const [busy,setBusy]=useState(false),[error,setError]=useState('');
@@ -27,7 +27,7 @@ export function FaithPanel({state,onCommand}:{state:GameState;onCommand:(c:GameC
  const visibleBlessings=blessingRows(state),stackActions=width<370||fontScale>=1.2;
  const run=async(command:GameCommand)=>{if(busy)return;setBusy(true);setError('');try{await onCommand(command);}catch(e){setError(e instanceof Error?e.message:gt("Action failed."));}finally{setBusy(false);}};
  return <>
-  <Panel accentColor={C.special}>
+  {!blessingsOnly?<><Panel accentColor={C.special}>
    <View style={s.heroRow}><View style={s.flex}><Text style={s.eyebrow}>{gt("FAITH PRACTICE")}</Text><Text style={s.title}>{gt("Devotion")}</Text><Text style={s.body}>{gt("Holy Water is reserved when a practice starts. Unused Water is refunded when you stop or mastery ends the session.")}</Text></View><View style={s.waterBadge}><Text style={s.waterValue}>{water.toLocaleString()}</Text><Text style={s.waterLabel}>{gt("HOLY WATER")}</Text></View></View>
    <View style={s.progressMeta}><Text style={s.progressText}>{level>=100?gt("Faith mastered"):`${progress.current.toLocaleString()} / ${progress.need.toLocaleString()} XP to next level`}</Text><Text style={s.level}>Lv {level}</Text></View>
    <View style={s.track}><View style={[s.fill,{width:`${Math.max(level>=100?100:3,progressRatio*100)}%`}]}/></View>
@@ -38,8 +38,7 @@ export function FaithPanel({state,onCommand}:{state:GameState;onCommand:(c:GameC
    {FAITH_TIERS.map(tier=>{const locked=tier.level>level,availability=faithPracticeAvailability(state,tier.id,1),selectedTier=activeTierId===tier.id,planned=active&&!selectedTier?Math.min(MAX_FAITH_PRACTICES,Math.floor(switchWater/tier.water)):affordableFaithPracticeCount(state,tier.id),canStart=availability.ready||(active&&!selectedTier&&switchWater>=tier.water),disabled=busy||(active&&selectedTier)||locked||!canStart||level>=100;return <Pressable key={tier.id} accessibilityRole="button" accessibilityLabel={active&&selectedTier?`${tier.name} practice in progress`:locked?`${tier.name} requires Faith level ${tier.level}`:canStart?`Practice ${tier.name} for up to ${planned} rounds`:`Need ${tier.water} Holy Water for ${tier.name}`} accessibilityState={{disabled,selected:selectedTier}} disabled={disabled} onPress={()=>void run({type:'faith_practice',args:{tierId:tier.id,count:1}})} style={({pressed})=>[s.practiceCard,selectedTier&&s.practiceCardActive,(locked||!canStart)&&s.practiceCardLocked,pressed&&!disabled&&s.pressed]}>
     <View style={s.flex}><View style={s.inline}><Text style={s.practiceName}>{tier.name}</Text>{selectedTier?<Text style={s.activeTag}>{gt("ACTIVE")}</Text>:locked?<Text style={s.lockTag}>LV {tier.level}</Text>:null}</View><Text style={selectedTier?s.practiceActiveMeta:s.practiceMeta}>{selectedTier?gt("Practice in progress"):locked?`Unlocks at Faith level ${tier.level}`:`${planned.toLocaleString()} practices · ${tier.water} Holy Water each · ${tier.seconds}s each`}</Text></View><Text style={s.practiceXp}>+{tier.xp.toLocaleString()} XP</Text>
    </Pressable>})}
-   {error?<Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={s.error}>{error}</Text>:null}
-  </View>
+  </View></>:null}
   <Panel>
    <View style={s.sectionHeading}><View style={s.flex}><Text style={s.sectionLabel}>{gt("ACTIVE BLESSINGS")}</Text><Text style={s.selectedBlessing}>{`${selectedCount}/${FAITH_BLESSING_GROUPS.length}`}</Text></View><View style={s.hideButton}><GameButton compact title={faith.hideWeakerBlessings?gt("Show all"):gt("Hide weaker")} tone="secondary" disabled={busy} onPress={()=>run({type:'faith_hide',args:{enabled:!faith.hideWeakerBlessings}})}/></View></View>
    <Text style={s.body}>{gt("Equip one blessing per category. Star useful alternatives to keep them visible.")}</Text>
@@ -62,6 +61,7 @@ export function FaithPanel({state,onCommand}:{state:GameState;onCommand:(c:GameC
     </View>;
    })}
   </Panel>
+  {error?<Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={s.error}>{error}</Text>:null}
  </>;
 }
 function makeStyles(C:ThemeColors){return StyleSheet.create({

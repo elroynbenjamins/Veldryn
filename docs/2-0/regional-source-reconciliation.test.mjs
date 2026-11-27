@@ -25,6 +25,23 @@ function audit(read){
  function traverse(id,path=[]){if(path.includes(id))throw Error('cycle '+[...path,id]);if(graph.has(id))return;const x=direct(id);graph.set(id,x);for(const r of x.recipes)for(const i of r.inputs)traverse(i.itemId,[...path,id]);}
  ids.forEach(id=>traverse(id));
  const roots=ids.map(id=>({id,tiers:[...new Set(pinned.filter(r=>r.inputs.some(i=>i.itemId===id)).map(r=>r.tier))],...graph.get(id)}));
+ // A declarative path is not a verified server grant or accessibility
+ // proof. Require at least one acyclic nonboss route through every input
+ // of a candidate processing recipe, not just a recipe output name.
+ const reachable=(id,path=[])=>{
+  if(path.includes(id))return false;
+  const x=graph.get(id);if(!x)return false;
+  if(x.drops.length||x.nodes.length||x.rareGathering.length)return true;
+  return x.recipes.some(r=>r.inputs.every(i=>reachable(i.itemId,[...path,id])));
+ };
+ const preparation=[{tier:1,prepare:1,wear:2,need:1},{tier:2,prepare:8,wear:12,need:13},
+  {tier:3,prepare:32,wear:37,need:38},{tier:4,prepare:57,wear:62,need:63}];
+ const preparationAudit=preparation.map(p=>{
+  const relevant=roots.filter(x=>x.tiers.includes(p.tier));
+  return {...p,ingredients:relevant.length,missingDeclaredPath:relevant.filter(x=>!reachable(x.id)).map(x=>x.id),
+   actualAccessVerified:false,professionIndependentAccessVerified:false,
+   sourceTimingStatus:'REQUIRES_REGION_TRAVEL_AND_SKILL_GATE_REVIEW'};
+ });
  const t5=JSON.parse(read('docs/2-0/eq2-t1-t5-canonical-membership-reconciliation-v2.json'));
  const five=t5.entries.filter(x=>x.tier===5),sourceCounts={};for(const e of five)sourceCounts[e.reconciliation.sourceStatus]=(sourceCounts[e.reconciliation.sourceStatus]||0)+1;
  const t5Production=JSON.parse(read('docs/2-0/eq2-t5-material-production-review-v11.json'));
@@ -49,12 +66,14 @@ function audit(read){
  // expected actions only, one essence per hit assumed; no bonus, pity,
  // multi-yield or trade, and not an observed completion time.
  const earlyBinderIllustration={baseChance:essence?.baseChance,expectedActionsPerSingleEssence:1/(essence?.baseChance??NaN),node:dewleaf?.id,assumesOneEssencePerSuccess:true};
- return {pinnedRecipeCount:pinned.length,roots,graph:[...graph].map(([id,x])=>({id,...x})),monsters:mapped,t5:{count:five.length,sourceCounts,closed:five.every(e=>!e.mayMint&&!e.mayEquip&&!e.mayTrade&&!e.mayDrop),raw:t5Production.existingRaw,processing:t5Production.processing.length,productionClosed:t5Production.releaseActivation===false&&t5Production.mayMint===false},gateEvidence:{asterfall:monsters.find(x=>x.id==='FALLEN_KNIGHT'),sunscar:{...gate(sandServer,'BOSS_002',50),mobileCatalogueMatched:Boolean(sand)},frostmarch:gate(frostServer,'BOSS_003',75)},earlyBinderIllustration};
+ return {pinnedRecipeCount:pinned.length,roots,preparationAudit,graph:[...graph].map(([id,x])=>({id,...x})),monsters:mapped,t5:{count:five.length,sourceCounts,closed:five.every(e=>!e.mayMint&&!e.mayEquip&&!e.mayTrade&&!e.mayDrop),raw:t5Production.existingRaw,processing:t5Production.processing.length,productionClosed:t5Production.releaseActivation===false&&t5Production.mayMint===false},gateEvidence:{asterfall:monsters.find(x=>x.id==='FALLEN_KNIGHT'),sunscar:{...gate(sandServer,'BOSS_002',50),mobileCatalogueMatched:Boolean(sand)},frostmarch:gate(frostServer,'BOSS_003',75)},earlyBinderIllustration};
 }
 const read=p=>readFileSync(new URL('../../'+p,import.meta.url),'utf8');
 test('canonical source declarations, preparation requirements and closed T5 design',()=>{
  const a=audit(read);
  assert.equal(a.pinnedRecipeCount,338);assert.equal(a.roots.length,22);
+ assert.ok(a.preparationAudit.every(x=>x.missingDeclaredPath.length===0));
+ assert.ok(a.preparationAudit.every(x=>x.actualAccessVerified===false&&x.professionIndependentAccessVerified===false));
  assert.equal(a.t5.count,125);assert.ok(a.t5.closed&&a.t5.productionClosed);
  assert.ok(a.roots.find(x=>x.id==='THORN_SAP').drops.some(x=>x.id==='VENOM_WEAVER'));
  assert.ok(a.roots.find(x=>x.id==='ASTRAL_SCRIPT').drops.some(x=>x.id==='DUNE_ORACLE'&&x.unlock===32));

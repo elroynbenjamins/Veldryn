@@ -40,7 +40,8 @@ begin
       'settings',jsonb_build_object('lockedItemIds','[]'::jsonb,
         'favoriteItemIds','[]'::jsonb))),
     (v_buyer,v_bc,7,jsonb_build_object(
-      'version',11,'character',jsonb_build_object('id',v_bc::text,'gold',500),
+      'version',11,'character',jsonb_build_object('id',v_bc::text,'gold',500,
+        'xp',0,'classId','BASTION'),
       'inventory',jsonb_build_object('capacity',30,'stacks','[]'::jsonb),
       'bank',jsonb_build_object('capacity',50,'stacks','[]'::jsonb),
       'settings',jsonb_build_object('lockedItemIds','[]'::jsonb,
@@ -68,6 +69,10 @@ begin
   update private.market_runtime_guard_v1 set trading_enabled=true,snapshot_bridge_ready=true;
   insert into private.market_item_policy_v1(item_id,asset_kind,tradable,binding_policy)
     values('COPPER_ORE','resource',true,'unbound');
+  execute 'alter table private.market_acquisition_policy_v18 drop constraint market_acquisition_v18_approved_check';
+  insert into private.market_acquisition_policy_v18(
+    item_id,asset_kind,source_tier,item_required_level,approved)
+    values('COPPER_ORE','resource','T1',1,true);
 
   -- CI-only policy approval; all changes and accounts roll back.
   update private.market_price_bands_v10
@@ -175,6 +180,22 @@ begin
   v_published:=private.market_publish_sale_offer_v5(
     v_seller,v_second,30,4,'publish-v5-two',repeat('4',64));
   v_old_offer:=(v_published->>'offerId')::uuid;
+  -- V18: a policy raised after listing must reject sale atomically.
+  update private.market_acquisition_policy_v18 set item_required_level=20
+    where item_id='COPPER_ORE';
+  begin
+    perform private.market_purchase_stack_offer_v3(
+      v_buyer,v_old_offer,30,4,7,7,'buy-v18-resource-level',repeat('6',64));
+    raise exception 'under-level resource purchase succeeded';
+  exception when raise_exception then
+    if sqlerrm<>'market_level_required' then raise;end if;
+  end;
+  if (select gold from public.character_wallets where character_id=v_bc)<>500
+    or (select count(*) from private.market_purchase_receipts_v3)<>0
+    or (select status from private.market_sale_offers_v3 where offer_id=v_old_offer)<>'active'
+  then raise exception 'rejected resource purchase mutated settlement';end if;
+  update private.market_acquisition_policy_v18 set item_required_level=1
+    where item_id='COPPER_ORE';
   v_buy:=private.market_purchase_stack_offer_v3(
     v_buyer,v_old_offer,30,4,7,7,'buy-v5-two',repeat('5',64));
   if (select count(*) from private.market_completed_sale_history_v13)<>1

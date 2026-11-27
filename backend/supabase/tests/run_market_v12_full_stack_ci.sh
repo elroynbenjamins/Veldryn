@@ -33,13 +33,41 @@ for migration in \
   20261110104500_market_completed_sale_gold_tax_private_v11.sql \
   20261110105000_market_verified_sale_review_private_v11.sql \
   20261110110000_market_verified_browse_private_v12.sql \
-  20261110112000_market_completed_sale_history_v13.sql
+  20261110112000_market_completed_sale_history_v13.sql \
+  20261113043000_market_purchase_acquisition_guard_private_v18.sql \
+  20261113050000_market_equipment_provenance_private_v19.sql \
+  20261113063000_market_direct_recipient_transfer_private_v20.sql \
+  20261113073000_market_purchased_gear_bank_vault_private_v21.sql \
+  20261113083000_market_resale_chain_guard_private_v22.sql \
+  20261113100000_market_resale_custody_private_v23.sql \
+  20261113103000_market_resale_settlement_private_v23.sql \
+  20261113110000_market_unified_browse_private_v24.sql \
+  20261113111000_market_unified_inbox_private_v24.sql \
+  20261113112000_market_resale_expiry_private_v24.sql \
+  20261113112500_market_v12_browser_reconciliation_private_v24.sql \
+  20261115210000_market_authenticated_read_bridge_private_v26.sql \
+  20261115220000_market_read_rate_retention_private_v27.sql \
+  20261115224000_market_expiry_worker_internal_v28.sql \
+  20261119100000_market_bulk_partial_resource_fills_private_v17.sql \
+  20261119103000_market_mixed_listing_expiry_private_v17b.sql
 do
   psql -X -v ON_ERROR_STOP=1 -q -f "$MIGRATIONS/$migration"
 done
-echo "PASS: all 24 dependency-ordered private Market migrations compile on clean PG17"
+echo "PASS: all 40 dependency-ordered private Market migrations compile on clean PG17"
+psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_acquisition_v18.sql"
+psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_provenance_v19.sql"
+psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_recipient_transfer_v20.sql"
+psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_bank_vault_v21.sql"
+psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_resale_chain_v22.sql"
+psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_resale_lifecycle_v23.sql"
+psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_visibility_expiry_v24.sql"
+psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_authenticated_read_v26.sql"
+psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_rate_retention_v27.sql"
+psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_expiry_worker_v28.sql"
 psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_v12_resource_tax_lifecycle.sql"
 psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_v12_equipment_tax_lifecycle.sql"
+psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_v17_bulk_partial_account_expiry.sql"
+psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_v17_equipment_expiry.sql"
 psql -X -v ON_ERROR_STOP=1 -q <<'SQL'
 do $check$
 begin
@@ -54,11 +82,62 @@ begin
  or exists(select 1 from private.market_gold_intents_v2)
  or exists(select 1 from private.market_sale_offers_v3)
  or exists(select 1 from private.market_completed_sale_history_v13)
+ or exists(select 1 from private.market_partial_fills_v17)
+ or exists(select 1 from private.market_partial_custody_lineage_v17)
+ or exists(select 1 from private.market_acquisition_policy_v18 where approved)
+ or exists(select 1 from private.market_equipment_provenance_v19)
+ or exists(select 1 from private.market_equipment_recipient_transfers_v20)
+ or exists(select 1 from private.market_equipment_bank_actions_v21)
+ or exists(select 1 from private.market_equipment_sale_chain_v22)
+ or exists(select 1 from private.market_equipment_resale_offers_v23)
+ or exists(select 1 from private.market_equipment_resale_chain_v23)
+ or exists(select 1 from private.market_equipment_resale_deliveries_v23)
+ or exists(select 1 from private.market_resale_gold_intents_v23)
+ or exists(select 1 from private.market_resale_action_receipts_v23)
  or has_function_privilege('authenticated','private.market_sale_tax_quote_v11(bigint)','EXECUTE')
  or has_function_privilege('anon','private.market_verified_completed_sales_v11(text,text,timestamptz)','EXECUTE')
  or has_function_privilege('authenticated','private.market_completed_price_chart_v13(text,text,integer,text)','EXECUTE')
+ or has_function_privilege('authenticated','private.market_purchase_resource_quantity_v17(uuid,uuid,bigint,integer,bigint,bigint,text,text)','EXECUTE')
+ or has_function_privilege('authenticated','private.market_queue_due_returns_v17(integer)','EXECUTE')
+ or has_table_privilege('authenticated','private.market_acquisition_policy_v18','SELECT')
+ or has_table_privilege('authenticated','private.market_equipment_provenance_v19','SELECT')
+ or has_table_privilege('authenticated','private.market_equipment_recipient_transfers_v20','SELECT')
+ or has_table_privilege('authenticated','private.market_equipment_bank_actions_v21','SELECT')
+ or has_table_privilege('authenticated','private.market_equipment_sale_chain_v22','SELECT')
+ or has_table_privilege('authenticated','private.market_equipment_resale_offers_v23','SELECT')
+ or has_table_privilege('authenticated','private.market_equipment_resale_chain_v23','SELECT')
+ or has_function_privilege('authenticated','private.market_purchase_equipment_resale_v23(uuid,uuid,bigint,bigint,bigint,text,text)','EXECUTE')
+ or has_function_privilege('anon','public.market_read_gateway_v26(text,boolean,integer,text,text,text,text,bigint,bigint,integer)','EXECUTE')
+ or has_function_privilege('service_role','public.market_read_gateway_v26(text,boolean,integer,text,text,text,text,bigint,bigint,integer)','EXECUTE')
+ or has_function_privilege('authenticated','private.market_browse_combined_v24(text,text,text,text,bigint,bigint,integer,integer)','EXECUTE')
+ or has_function_privilege('authenticated','private.market_inbox_unified_v24(uuid,boolean,integer)','EXECUTE')
+ or has_function_privilege('service_role','private.market_due_resales_v24(integer)','EXECUTE')
+ or has_function_privilege('service_role','private.market_expire_resale_v24(uuid,text,text)','EXECUTE')
+ or has_function_privilege('authenticated','private.market_resale_preflight_v22(uuid,text,text,text,integer)','EXECUTE')
+ or has_function_privilege('authenticated','private.market_move_purchased_equipment_bank_v21(uuid,text,text,text,text,integer,integer,bigint,text,text)','EXECUTE')
+ or has_function_privilege('authenticated','private.market_transfer_purchased_equipment_v20(uuid,text,text,text,integer,text,text,bigint,text,text)','EXECUTE')
+ or has_function_privilege('service_role','private.market_owned_copy_valid_v19(jsonb,text,text,text,jsonb)','EXECUTE')
  then raise exception 'private_market_v12_post_rollback_release_gate_failure';end if;
 end
 $check$;
 SQL
 echo "PASS: no synthetic trades survive rollback; all launch flags, asset policies, prices, lot approvals and public access remain OFF"
+# The multi-session race requires a committed fixture visible to concurrent
+# PostgreSQL sessions; it runs LAST in this disposable CI-only database.
+# No fixture is ever created in staging, production, or a persistent DB.
+bash -n "$ROOT/backend/supabase/tests/player_market_resale_buy_race_v24_ci.sh"
+bash "$ROOT/backend/supabase/tests/player_market_resale_buy_race_v24_ci.sh"
+# Dedicated concurrent read-rate test runs LAST because it temporarily
+# opens the V24 browse guard exclusively inside the disposable CI database.
+bash -n "$ROOT/backend/supabase/tests/player_market_read_quota_race_v27_ci.sh"
+bash "$ROOT/backend/supabase/tests/player_market_read_quota_race_v27_ci.sh"
+
+# Apply the V30 Equipment 2.0-only fence AFTER historical V9/V23 lifecycle and
+# race compatibility fixtures. Those old tests intentionally demonstrate the
+# original V33 model; V30 now intentionally forbids EVERY such old equipment
+# entrypoint. In the final schema the old Market equipment routes stay disabled
+# until a separate source-authenticated EQ2 exact-copy adapter exists.
+# This late-phase test is only in the already-guarded disposable PG17 job.
+psql -X -v ON_ERROR_STOP=1 -q -f "$MIGRATIONS/20261122230000_market_eq2_only_legacy_fence_private_v30.sql"
+psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_eq2_only_generation_fence_v30.sql"
+echo "PASS: Market V30 final schema rejects legacy equipment reservation, sale, delivery and resale; resources unaffected"

@@ -20,7 +20,8 @@ export function reviewWorldBossAccountFairnessV2(full:Raid,subsets:readonly Raid
   throw Error('world_boss_fairness_duplicate_full_member');
  const baseDigest=enemyV2SnapshotDigest(base(full));
  const seen=new Set<string>();
- const rows=[full,...subsets].map(r=>{
+ const raids:readonly Raid[]=[full,...subsets];
+ const rows=raids.map(r=>{
   if(!r||r.persisted!==false||r.rewardGranted!==false||r.globalHpCredited!==0||
    r.releaseReady!==false||enemyV2SnapshotDigest(base(r))!==baseDigest||
    !Number.isFinite(r.localBossHpLoss)||r.localBossHpLoss<0||

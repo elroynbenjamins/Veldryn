@@ -105,7 +105,7 @@ create function private.party_chat_outbox_visible_v125(n private.party_chat_outb
 returns boolean language sql stable security invoker set search_path='' as $$
  select n.recipient_account_id=p_actor and exists(
   select 1 from private.party_registration_state_v110 s join public.parties p on p.id=s.party_id
-  where s.party_id=n.party_id and s.qa_fixture_ready and p.status<>'disbanded'
+  where s.party_id=n.party_id and s.qa_fixture_ready and s.lifecycle_status='active' and p.status<>'disbanded'
   and (case n.audience
    when 'member' then exists(select 1 from private.party_registration_members_v110 m where m.party_id=n.party_id and m.account_id=p_actor)
    when 'leader' then s.leader_account_id=p_actor and exists(select 1 from private.party_registration_members_v110 m where m.party_id=n.party_id and m.account_id=p_actor)

@@ -244,3 +244,81 @@ for(const gearRatingBps of [0,5000,10000,15000,20000,25000,30000]){
  assert.throws(()=>reviewGatheringSettlementV2({...input,verifyPersisted:()=>false}));
 }
 console.log('GATHERING_SETTLEMENT_REVIEW: actual 10-minute reward engine, unchanged elapsed time, preview/settlement action and XP parity, independent frozen receipt fence');
+
+import {GATHERING,RECIPES} from '../src/content/skills';
+import {GATHERING_TOOLS} from '../src/content/gathering-tools';
+import {startGathering} from '../src/core/game';
+import {gatheringToolEffects} from '../src/core/gathering-tools';
+import type {GatheringGearSkillV2} from '../src/core/gathering-speed-v2-review';
+// Representative resource bands, NOT final EQ2 equip requirements.
+// The existing catalogue has four tool tiers, not five.
+const bands=[
+ {tier:1,level:3,nodes:['GREENFIELDS_COPPER_OUTCROP','GREENWOOD_TREE','MEADOW_PERCH_POOL'],recipe:'SMELT_COPPER_INGOT'},
+ {tier:2,level:10,nodes:['ASTER_IRON_VEIN','IRONWOOD_TREE','ROOTSTREAM_TROUT_POOL'],recipe:'SMELT_ASTER_IRON_INGOT'},
+ {tier:3,level:20,nodes:['OATHSTONE_SEAM','CROWNWOOD_TREE','OATHSCALE_POOL'],recipe:'SMELT_OATHSTONE_INGOT'},
+ {tier:4,level:35,nodes:['SUNSTONE_OUTCROP','DUNEWOOD_TREE','OASIS_CARP_POOL'],recipe:'SMELT_SUNSTONE_INGOT'},
+ {tier:5,level:50,nodes:['FROSTIRON_VEIN','WHITEPINE_TREE','ICEFISH_POOL'],recipe:'SMELT_FROSTIRON_INGOT'},
+] as const;
+const gearArms=[
+ {name:'none',pieces:0,perPiece:0},
+ {name:'common_1',pieces:1,perPiece:1000},
+ {name:'common_3',pieces:3,perPiece:1000},
+ {name:'common_5',pieces:5,perPiece:1000},
+ {name:'common_8',pieces:8,perPiece:1000},
+ {name:'common_10',pieces:10,perPiece:1000},
+ {name:'rare_10',pieces:10,perPiece:1280},
+ {name:'epic_10',pieces:10,perPiece:1500},
+ {name:'mythic_10',pieces:10,perPiece:2000},
+ {name:'mythic_q100_10',pieces:10,perPiece:2500},
+] as const;
+const matrixRows:{tier:number;skill:string;toolMode:string;arm:string;primaryItem:string;primaryQuantity:number;actions:number;xp:number;rate:number;baselineActions:number}[]=[];
+const startMs=Date.UTC(2026,10,27,10);
+for(const band of bands)for(const targetId of band.nodes)for(const toolMode of ['none','eligible_tiers'] as const){
+ const node=GATHERING.find(x=>x.id===targetId)!;
+ assert.ok(node&&node.skillId!=='herbalism');
+ const skill=node.skillId as GatheringGearSkillV2;
+ let base=createCharacter(newGame(startMs),'IRONWARDEN','Gathering QA');
+ const equipped=toolMode==='eligible_tiers'?GATHERING_TOOLS.filter(t=>t.skillId===skill&&t.unlockLevel<=band.level&&t.requiredCharacterLevel<=band.level):[];
+ base={...base,currentRegionId:node.zoneId,skills:base.skills.map(row=>row.skillId===skill?{...row,level:band.level,xp:totalXpAtLevel(band.level)}:row),
+  character:{...base.character!,level:band.level,equippedToolIdsByTier:{[skill]:Object.fromEntries(equipped.map(t=>[t.tier,t.id]))}}};
+ const started=startGathering(base,targetId,startMs);
+ const source=activityLoadoutSnapshotDigest(started);
+ const tool=gatheringToolEffects(started,skill);
+ let previous=-1;
+ for(const arm of gearArms){
+  const frozen:FrozenGatheringRateReview={accountId:'matrix-account',characterId:started.character!.id,
+   activityId:'matrix-'+targetId,skill,targetId,startedAtMs:startMs,gearRatingBps:arm.pieces*arm.perPiece,
+   matchingSetPieces:arm.pieces,exactCopyIds:Array.from({length:arm.pieces},(_,i)=>'synthetic-'+i),equippedReceiptDigest:'b'.repeat(64)};
+  const digest=activityLoadoutSnapshotDigest(frozen);
+  const review=reviewGatheringSettlementV2({accountId:'matrix-account',state:started,nowMs:startMs+3600000,sourceRevision:1,frozen,
+   verifyPersisted:(a,rev,s,g)=>a==='matrix-account'&&rev===1&&s===source&&g===digest});
+  const reward=review.candidateReward;
+  assert.equal(review.preview.kills,reward.kills);
+  assert.equal(review.preview.xp,reward.xp);
+  assert.equal(reward.elapsedSeconds,3600);
+  assert.ok(reward.kills>=previous);
+  assert.ok(reward.kills>=review.baselineReward.kills);
+  assert.equal(activityLoadoutSnapshotDigest(started),source);
+  if(!arm.pieces)assert.deepEqual(reward,review.baselineReward);
+  previous=reward.kills;
+  matrixRows.push({tier:band.tier,skill,toolMode,arm:arm.name,primaryItem:node.itemId,
+   primaryQuantity:reward.items.filter(row=>row.itemId===node.itemId).reduce((s,row)=>s+row.quantity,0),
+   actions:reward.kills,xp:reward.xp,rate:review.pace.gearRateMultiplier,baselineActions:review.baselineReward.kills});
+ }
+ console.log('GATHERING_MATRIX_PROFILE',JSON.stringify({tier:band.tier,skill,toolMode,toolCount:tool.count,toolTimeMultiplier:tool.timeMultiplier,
+  rows:matrixRows.slice(-gearArms.length).map(x=>({arm:x.arm,actions:x.actions,quantity:x.primaryQuantity,xp:x.xp,rate:x.rate}))}));
+}
+assert.equal(matrixRows.length,300);
+// Raw-material opportunity cost for actual existing smelting recipes only;
+// excludes crafting duration, gold, rare inputs, gear affixes and set yield/XP.
+for(const band of bands)for(const arm of ['none','common_10','mythic_q100_10']){
+ const recipe=RECIPES.find(row=>row.id===band.recipe)!;
+ assert.ok(recipe);
+ const ingredients=recipe.inputs.map(input=>{
+  const row=matrixRows.find(x=>x.tier===band.tier&&x.toolMode==='eligible_tiers'&&x.arm===arm&&x.primaryItem===input.itemId);
+  assert.ok(row&&row.primaryQuantity>0);
+  return {itemId:input.itemId,quantity:input.quantity,minutes:60*input.quantity/row.primaryQuantity};
+ });
+ console.log('GATHERING_MATRIX_SMELT',JSON.stringify({tier:band.tier,arm,recipe:recipe.id,output:recipe.output,ingredients,rawMinutes:ingredients.reduce((s,x)=>s+x.minutes,0)}));
+}
+console.log('GATHERING_MATRIX_REVIEW: 300 actual one-hour reward rehearsals; 15 raw-material cost comparisons; no economy or live changes');

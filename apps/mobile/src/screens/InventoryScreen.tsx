@@ -356,7 +356,7 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
   };
   const inspectQuickActions=inspected?.type==='material'&&inspectStock>0?<View style={s.inspectQuickActions}>
     <View style={s.inspectAmountRow}>
-      <Text style={s.inspectAmountLabel}>{gt('Amount')} · {formatGameNumber(inspectStock,state.settings.numberMode,language)} {gl('available')}</Text>
+      <Text style={[s.inspectAmountLabel,stackInspectorActions&&s.inspectAmountLabelStacked]}>{gt('Amount')} · {formatGameNumber(inspectStock,state.settings.numberMode,language)} {gl('available')}</Text>
       <View style={s.inspectStepper}>
         <Pressable accessibilityRole="button" accessibilityLabel={gl('Decrease amount')} accessibilityState={{disabled:inspectAmount<=1}} disabled={inspectAmount<=1} onPress={()=>setInspectQuantity(Math.max(1,inspectAmount-1))} style={[s.inspectStep,compactInspector&&s.inspectStepCompact,inspectAmount<=1&&s.inspectStepDisabled]}><Text style={s.inspectStepText}>−</Text></Pressable>
         <TextInput accessibilityLabel={gt("Custom move or sell amount")} keyboardType="number-pad" selectTextOnFocus value={inspectQuantity===null?'':String(inspectAmount)} onChangeText={value=>{const digits=value.replace(/\D/g,'');setInspectQuantity(digits?transferAmount(inspectStock,Number(digits)):null)}} style={[s.inspectAmountValue,compactInspector&&s.inspectAmountValueCompact]}/>
@@ -365,12 +365,12 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
       </View>
     </View>
     <View style={[s.inspectQuickButtons,stackInspectorActions&&s.inspectQuickButtonsStacked]}>
-      <View style={s.inspectQuickButton}><GameButton compact title={(carried?gt('Deposit {count}',{count:formatGameNumber(inspectAmount,state.settings.numberMode,language)}):gt('Withdraw {count}',{count:formatGameNumber(inspectAmount,state.settings.numberMode,language)}))+(carried&&gemDepositDestination(state,inspected.id)==='gem_pouch'?' · Gem Pouch':'')} tone="secondary" loading={inventoryBusyLabel!==null} disabled={inventoryBusyLabel!==null||!inspectAmountValid} onPress={()=>{const id=inspected.id,amount=inspectAmount;
+      <View style={[s.inspectQuickButton,stackInspectorActions&&s.inspectQuickButtonStacked]}><GameButton compact title={(carried?gt('Deposit {count}',{count:formatGameNumber(inspectAmount,state.settings.numberMode,language)}):gt('Withdraw {count}',{count:formatGameNumber(inspectAmount,state.settings.numberMode,language)}))+(carried&&gemDepositDestination(state,inspected.id)==='gem_pouch'?' · Gem Pouch':'')} tone="secondary" loading={inventoryBusyLabel!==null} disabled={inventoryBusyLabel!==null||!inspectAmountValid} onPress={()=>{const id=inspected.id,amount=inspectAmount;
         if(carried)runInventory({kind:'deposit',itemId:id,quantity:amount},()=>onDeposit(id,amount));
         else runInventory({kind:'withdraw',itemId:id,quantity:amount},()=>onWithdraw(id,amount));
         closeInspect();
       }}/></View>
-      {inspected.value>0?<View style={s.inspectQuickButton}><GameButton compact title={gt('Sell {count} · {gold}g',{count:formatGameNumber(inspectAmount,state.settings.numberMode,language),gold:formatGameNumber(itemVendorSellGold(inspected)*inspectAmount,state.settings.numberMode,language)})} tone="secondary" disabled={inventoryBusyLabel!==null||!inspectAmountValid||inspectLocked||inspectFavorite||goalProtection.has(inspected.id)} onPress={()=>{setPending({kind:carried?'sell':'bank_sell',item:inspected,quantity:inspectAmount});closeInspect()}}/></View>:null}
+      {inspected.value>0?<View style={[s.inspectQuickButton,stackInspectorActions&&s.inspectQuickButtonStacked]}><GameButton compact title={gt('Sell {count} · {gold}g',{count:formatGameNumber(inspectAmount,state.settings.numberMode,language),gold:formatGameNumber(itemVendorSellGold(inspected)*inspectAmount,state.settings.numberMode,language)})} tone="secondary" disabled={inventoryBusyLabel!==null||!inspectAmountValid||inspectLocked||inspectFavorite||goalProtection.has(inspected.id)} onPress={()=>{setPending({kind:carried?'sell':'bank_sell',item:inspected,quantity:inspectAmount});closeInspect()}}/></View>:null}
     </View>
   </View>:inspected?.type==='gear'?<View style={s.inspectQuickActions}>
     {carried?<GameButton title={gl('Compare & Equip')} disabled={inventoryBusyLabel!==null||(!!selectedCopy&&!onCommand)} onPress={()=>{setPreviewInstanceId(selectedCopy?.id??null);setPreviewId(inspected.id);closeInspect()}}/>
@@ -389,8 +389,8 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
   const legacyGearSaleAllowed=!!inspected&&hasLegacyStack&&inspected.value>0&&!inspectLocked&&!inspectFavorite&&!goalProtection.has(inspected.id);
   const legacyGearSalvageAllowed=!!inspected&&hasLegacyStack&&!!equipmentSalvageReward(inspected.id)&&!inspectLocked&&!inspectFavorite&&!goalProtection.has(inspected.id)&&(!carried?!!onCommand:true);
   const inspectDisposalActions=inspected?.type==='gear'?<View style={s.inspectQuickActions}>
-    <View style={s.inspectQuickButtons}>
-      <View style={s.inspectQuickButton}>
+    <View style={[s.inspectQuickButtons,stackInspectorActions&&s.inspectQuickButtonsStacked]}>
+      <View style={[s.inspectQuickButton,stackInspectorActions&&s.inspectQuickButtonStacked]}>
         <GameButton compact title={gl('Sell copy')} tone="secondary" disabled={inventoryBusyLabel!==null||(selectedCopy?!onCommand||!inspectedCopySell?.allowed:!legacyGearSaleAllowed)}
           onPress={()=>{
             if(selectedCopy){setCopyPending({instanceId:selectedCopy.id,method:'sell',name:inspected.name});closeInspect();return;}
@@ -399,7 +399,7 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
             closeInspect();
           }}/>
       </View>
-      <View style={s.inspectQuickButton}>
+      <View style={[s.inspectQuickButton,stackInspectorActions&&s.inspectQuickButtonStacked]}>
         <GameButton compact title={gl('Salvage copy')} tone="danger" disabled={inventoryBusyLabel!==null||(selectedCopy?!onCommand||!inspectedCopySalvage?.allowed:!legacyGearSalvageAllowed)}
           onPress={()=>{
             if(selectedCopy){setCopyPending({instanceId:selectedCopy.id,method:'salvage',name:inspected.name});closeInspect();return;}
@@ -805,13 +805,13 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
   toolLegacyStats:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:10,padding:12,borderWidth:1,borderColor:C.line,borderRadius:12,backgroundColor:C.panel2},
   inspectQuickActions:{gap:8},
   inspectAmountRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:7,flexWrap:'wrap'},
-  inspectAmountLabel:{...typography.caption,color:C.muted,flexShrink:1},
-  inspectStepper:{flexDirection:'row',alignItems:'center',gap:5},
+  inspectAmountLabel:{...typography.caption,color:C.muted,flexShrink:1},inspectAmountLabelStacked:{flexBasis:'100%'},
+  inspectStepper:{flexDirection:'row',alignItems:'center',gap:5,maxWidth:'100%',flexShrink:1,flexWrap:'wrap'},
   inspectStep:{minWidth:36,minHeight:38,paddingHorizontal:7,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:8,backgroundColor:C.panel2},
   inspectStepCompact:{minWidth:44,minHeight:44},
   inspectStepDisabled:{opacity:.35},inspectStepText:{fontSize:20,fontWeight:'900',color:C.text},inspectStepAll:{...typography.caption,color:C.accent,fontWeight:'900'},
   inspectAmountValue:{width:76,minHeight:38,paddingHorizontal:4,paddingVertical:0,textAlign:'center',...typography.bodyStrong,color:C.text,borderWidth:1,borderColor:C.line,borderRadius:8,backgroundColor:C.panel2},inspectAmountValueCompact:{minHeight:44},
-  inspectQuickButtons:{flexDirection:'row',gap:8},inspectQuickButtonsStacked:{flexDirection:'column'},inspectQuickButton:{flex:1,minWidth:0},
+  inspectQuickButtons:{flexDirection:'row',gap:8},inspectQuickButtonsStacked:{flexDirection:'column'},inspectQuickButton:{flex:1,minWidth:0},inspectQuickButtonStacked:{flex:0,flexShrink:0,width:'100%'},
   utilityChip:{minWidth:0,minHeight:44,alignItems:'center',justifyContent:'center',paddingHorizontal:8,borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.panel2},
   utilityChipActive:{borderColor:C.selectionLine,backgroundColor:C.selection},
   utilityChipText:{fontSize:11,color:C.text,fontWeight:'800'},

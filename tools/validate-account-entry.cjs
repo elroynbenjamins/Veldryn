@@ -41,10 +41,11 @@ function makeHarness({user = null, recovering = false} = {}) {
     Platform: {OS: 'android', select: values => values.android ?? values.default},
     StyleSheet: {create: styles => styles, flatten, absoluteFill: {}, absoluteFillObject: {}, hairlineWidth: 1},
     Modal: ({visible, children, ...props}) => visible ? React.createElement('NativeModal', {...props, visible}, children) : null,
-    Keyboard: {dismiss: () => {calls.keyboard++;}, addListener: (event, listener) => {assert.ok(['keyboardDidShow','keyboardDidHide','keyboardWillShow','keyboardWillHide'].includes(event)); assert.equal(typeof listener,'function'); return {remove: () => {}};}},
+    Keyboard: {metrics: () => undefined, dismiss: () => {calls.keyboard++;}, addListener: (event, listener) => {assert.ok(['keyboardDidShow','keyboardDidHide','keyboardWillShow','keyboardWillHide'].includes(event)); assert.equal(typeof listener,'function'); return {remove: () => {}};}},
     Alert: {alert: () => {throw new Error('Account-entry confirmation must use the visible in-game dialog.');}},
     Linking: {openURL: async () => {calls.external++;}, canOpenURL: async () => true},
     AccessibilityInfo: {announceForAccessibility: () => {}, setAccessibilityFocus: () => {}},
+    Dimensions: {get: () => ({width: 390, height: 844, scale: 1, fontScale: 1})},
     useWindowDimensions: () => ({width: 390, height: 844, fontScale: 1}),
   };
   const api = {
@@ -72,7 +73,7 @@ function makeHarness({user = null, recovering = false} = {}) {
     // Audio playback has its own tests; this offline UI harness must not load native audio or binary MP3 assets.
     [path.join(app, 'src/storage/audio'), {playSound: () => {}, useMusicOverride: () => {}, useRarityRevealSound: () => {}, useAudioPreferences: () => [{music:2,effects:2,musicContexts:{}}, () => {}], toggleAudioMute: () => 0, playMusicPreview: () => {}, stopMusicPreview: () => {}}],
     ['react', React], ['react-native', native],
-    ['react-native-safe-area-context', {SafeAreaProvider: ({children}) => React.createElement(React.Fragment, null, children),useSafeAreaInsets: () => ({top: 0, right: 0, bottom: 0, left: 0})}],
+    ['react-native-safe-area-context', {SafeAreaProvider: ({children}) => React.createElement(React.Fragment, null, children),useSafeAreaFrame: () => ({x: 0, y: 0, width: 390, height: 844}),useSafeAreaInsets: () => ({top: 0, right: 0, bottom: 0, left: 0})}],
     [path.join(app, 'src/online/AuthSessionProvider'), {useAuthSession: () => ({...auth})}],
     [path.join(app, 'src/online/account'), api],
     // Native Google modules are tested separately; this offline UI harness must not load Expo.

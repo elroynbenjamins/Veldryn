@@ -34,7 +34,12 @@ test('Option A shows selection-first Gear controls only on narrow screens',()=>{
 });
 
 test('approved comparison exposes transfers and disposal at all sizes',()=>{
- assert.ok(compare.includes('hasStorageActions?<View style={s.footerActionRow}'),'storage stays visible above the divider');
+ const storage=compare.indexOf('hasStorageActions?<View style={[s.footerActionRow,stackFooterActions&&s.footerActionRowStacked]}>');
+ const disposal=compare.indexOf('hasDisposalActions?<View style={s.footerDisposal}>');
+ assert.ok(storage>=0&&disposal>storage,'storage stays visible above the disposal divider in both layouts');
+ assert.ok(compare.includes('{scrollWithActions?footer:null}')&&compare.includes('{!scrollWithActions?footer:null}'),'one shared action footer is reachable in both scroll and fixed layouts');
+ assert.ok(compare.includes("footerActionCellStacked:{flex:0,flexShrink:0,width:'100%'}"),'stacked controls keep intrinsic heights');
+ assert.equal((compare.match(/stackFooterActions&&s\.footerActionCellStacked/g)||[]).length,5,'all storage and disposal controls use the stacked height rule');
  assert.ok(compare.includes('hasDisposalActions?<View style={s.footerDisposal}'),'Sell and Salvage stay visible below the divider');
  assert.ok(!compare.includes('compactPinnedBank')&&!compare.includes('actionsOpen'),'comparison has no hidden action drawer at any width');
  assert.ok(compare.includes("if(!onMoveToBank||busy)return;"),'Bank transfer retains pending guard');

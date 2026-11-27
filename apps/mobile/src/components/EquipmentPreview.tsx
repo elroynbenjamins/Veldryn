@@ -126,12 +126,32 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
  }
  const shortScreen=height<690||fontScale>=1.3;
  const compactBonusRows=width<380||fontScale>=1.2;
+ const scrollWithActions=width<355||shortScreen||fontScale>=1.25;
+ const stackFooterActions=width<355||fontScale>=1.25;
  // Storage and disposal remain visible instead of being hidden in a disclosure.
  const hasStorageActions=Boolean(onStoreInGear||onMoveToInventory||onMoveToBank);
  const hasDisposalActions=Boolean(onSell||onSalvage);
  const disposalBlocked=Boolean((onSell&&!canSell)||(onSalvage&&!canSalvage));
  const bonusChangeCount=slot==='weapon'?weaponChanges.filter(row=>row.deltaBps!==0).length:bonusChanges.filter(row=>row.before!==row.after).length;
  const gearSize=width<355?54:shortScreen?56:66;
+ const footer=<View style={s.footer}>
+   {!!error?<Text accessibilityRole="alert" style={s.error}>{gl(error)}</Text>:null}
+   {!!blocked?<Text style={s.warning}>{blocked}</Text>:null}
+   {onEquip?<GameButton title={alreadyEquipped?gl('Currently equipped'):busy&&busyAction==='equip'?gl('Equipping…'):old?gl('Swap Equipment'):gt('Equip {slot}',{slot:gl(slot)})}
+    loading={busy&&busyAction==='equip'} disabled={alreadyEquipped||!!blocked||busy} onPress={()=>void submit()}/>:null}
+   {hasStorageActions?<View style={[s.footerActionRow,stackFooterActions&&s.footerActionRowStacked]}>
+    {onMoveToInventory?<View style={[s.footerActionCell,stackFooterActions&&s.footerActionCellStacked]}><GameButton compact title={gearText('To Inventory')} tone="secondary" loading={busy&&busyAction==='inventory'} disabled={busy} onPress={()=>void moveToInventory()}/></View>:null}
+    {onMoveToBank?<View style={[s.footerActionCell,stackFooterActions&&s.footerActionCellStacked]}><GameButton compact title={gearText('Move to Bank')} tone="secondary" loading={busy&&busyAction==='bank'} disabled={busy} onPress={()=>void moveToBank()}/></View>:null}
+    {onStoreInGear?<View style={[s.footerActionCell,stackFooterActions&&s.footerActionCellStacked]}><GameButton compact title={canStoreInGear?gearText('Store in Gear'):gearText('Gear storage full')} tone="secondary" disabled={!canStoreInGear||busy} loading={busy&&busyAction==='gear'} onPress={()=>void storeInGear()}/></View>:null}
+   </View>:null}
+   {hasDisposalActions?<View style={s.footerDisposal}>
+    <View style={[s.footerActionRow,stackFooterActions&&s.footerActionRowStacked]}>
+     {onSell?<View style={[s.footerActionCell,stackFooterActions&&s.footerActionCellStacked]}><GameButton compact title={gl('Sell copy')} tone="secondary" disabled={busy||!canSell} onPress={()=>onSell?.()}/></View>:null}
+     {onSalvage?<View style={[s.footerActionCell,stackFooterActions&&s.footerActionCellStacked]}><GameButton compact title={gl('Salvage copy')} tone="danger" disabled={busy||!canSalvage} onPress={()=>onSalvage?.()}/></View>:null}
+    </View>
+    {disposalBlocked?<EquipmentDisposalStatus compact sellAllowed={canSell} salvageAllowed={canSalvage} sellReason={sellBlockReason} salvageReason={salvageBlockReason}/>:null}
+   </View>:null}
+  </View>;
  return <GameModalSurface visible onClose={busy?()=>{}:onClose} dismissOnBackdrop={!busy} reduceMotion={state.settings.reduceMotion}
   backdropLabel={gl('Close equipment comparison')}
   surfaceStyle={[s.surface,{height:Math.min(height*.89,shortScreen?620:710)}]}>
@@ -139,7 +159,7 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
     <View style={s.headerCopy}><Text style={s.headerEyebrow}>{gl('EQUIPMENT PREVIEW')}</Text><Text numberOfLines={1} style={[s.headerTitle,(width<355||fontScale>=1.25)&&{fontSize:16}]}>{gl('Compare & Swap')}</Text></View>
     <InventoryItemHeaderControls favorite={favorite} locked={locked} onFavorite={onToggleFavorite} onLock={onToggleLock} onClose={onClose} disabled={busy} closeLabel={gl('Close equipment comparison')}/>
    </View>
-  <ScrollView style={s.scroll} contentContainerStyle={s.body} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
+  <ScrollView style={s.scroll} contentContainerStyle={s.body} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
    <View style={s.pair}>
     <View style={s.gearCard}>
      <Text style={s.kicker}>{gl('CURRENTLY EQUIPPED')}</Text>
@@ -219,25 +239,9 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
     {onInspect?<GameButton compact tone="secondary" title={gl('Sources & crafting uses')} onPress={onInspect}/>:null}
    </View>
 
+   {scrollWithActions?footer:null}
   </ScrollView>
-  <View style={s.footer}>
-   {!!error?<Text accessibilityRole="alert" style={s.error}>{gl(error)}</Text>:null}
-   {!!blocked?<Text style={s.warning}>{blocked}</Text>:null}
-   {onEquip?<GameButton title={alreadyEquipped?gl('Currently equipped'):busy&&busyAction==='equip'?gl('Equipping…'):old?gl('Swap Equipment'):gt('Equip {slot}',{slot:gl(slot)})}
-    loading={busy&&busyAction==='equip'} disabled={alreadyEquipped||!!blocked||busy} onPress={()=>void submit()}/>:null}
-   {hasStorageActions?<View style={s.footerActionRow}>
-    {onMoveToInventory?<View style={s.footerActionCell}><GameButton compact title={gearText('To Inventory')} tone="secondary" loading={busy&&busyAction==='inventory'} disabled={busy} onPress={()=>void moveToInventory()}/></View>:null}
-    {onMoveToBank?<View style={s.footerActionCell}><GameButton compact title={gearText('Move to Bank')} tone="secondary" loading={busy&&busyAction==='bank'} disabled={busy} onPress={()=>void moveToBank()}/></View>:null}
-    {onStoreInGear?<View style={s.footerActionCell}><GameButton compact title={canStoreInGear?gearText('Store in Gear'):gearText('Gear storage full')} tone="secondary" disabled={!canStoreInGear||busy} loading={busy&&busyAction==='gear'} onPress={()=>void storeInGear()}/></View>:null}
-   </View>:null}
-   {hasDisposalActions?<View style={s.footerDisposal}>
-    <View style={s.footerActionRow}>
-     {onSell?<View style={s.footerActionCell}><GameButton compact title={gl('Sell copy')} tone="secondary" disabled={busy||!canSell} onPress={()=>onSell?.()}/></View>:null}
-     {onSalvage?<View style={s.footerActionCell}><GameButton compact title={gl('Salvage copy')} tone="danger" disabled={busy||!canSalvage} onPress={()=>onSalvage?.()}/></View>:null}
-    </View>
-    {disposalBlocked?<EquipmentDisposalStatus compact sellAllowed={canSell} salvageAllowed={canSalvage} sellReason={sellBlockReason} salvageReason={salvageBlockReason}/>:null}
-   </View>:null}
-  </View>
+  {!scrollWithActions?footer:null}
  </GameModalSurface>;
 }
 
@@ -307,8 +311,9 @@ function makeStyles(C:ThemeColors){
   extra:{padding:10,gap:9,borderWidth:1,borderColor:C.line,borderRadius:radii.sm},
   note:{...typography.caption,color:C.muted,lineHeight:17},
   detail:{...typography.caption,color:C.text,lineHeight:18},
-  footer:{borderTopWidth:1,borderTopColor:C.lineStrong,paddingTop:8,paddingBottom:3,gap:7,backgroundColor:E.panel},
+  footer:{flexShrink:0,borderTopWidth:1,borderTopColor:C.lineStrong,paddingTop:8,paddingBottom:3,gap:7,backgroundColor:E.panel},
   footerActionRow:{flexDirection:'row',gap:8,flexWrap:'wrap'},footerActionCell:{flex:1,minWidth:0},
+  footerActionRowStacked:{flexDirection:'column',flexWrap:'nowrap'},footerActionCellStacked:{flex:0,flexShrink:0,width:'100%'},
   footerDisposal:{gap:6,borderTopWidth:StyleSheet.hairlineWidth,borderTopColor:C.lineStrong,paddingTop:8},
 
   errorBox:{paddingVertical:12,gap:12},

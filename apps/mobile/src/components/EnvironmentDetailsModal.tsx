@@ -9,7 +9,7 @@ import {useGameTheme} from '../theme/ThemeContext';
 import {GameModalHeader,GameModalSurface} from './GameModalSurface';
 import {EnvironmentArtwork} from './EnvironmentArtwork';
 
-const activities:Array<{kind:ActivityKind;label:string}>=[{kind:'combat',label:'Combat'},{kind:'mining',label:'Mining'},{kind:'woodcutting',label:'Woodcutting'},{kind:'fishing',label:'Fishing'}];
+const activities:Array<{kind:ActivityKind;label:string}>=[{kind:'combat',label:'Combat'},{kind:'mining',label:'Mining'},{kind:'woodcutting',label:'Woodcutting'},{kind:'fishing',label:'Fishing'},{kind:'herbalism',label:'Herbalism'}];
 function remaining(changesAtMs:number,nowMs:number,t:(key:ProgressionKey,params?:Record<string,string|number>)=>string){const minutes=Math.max(0,Math.ceil((changesAtMs-nowMs)/60000)),hours=Math.floor(minutes/60),rest=minutes%60;return hours?t("{hours}h {minutes}m",{hours,minutes:rest}):t("{minutes}m",{minutes:rest});}
 function seasonRemaining(changesAtMs:number,nowMs:number,t:(key:ProgressionKey,params?:Record<string,string|number>)=>string){const hours=Math.max(0,Math.ceil((changesAtMs-nowMs)/3600000)),days=Math.floor(hours/24),rest=hours%24;return days?t("{days}d {hours}h",{days,hours:rest}):t("{hours}h",{hours:rest});}
 function notes(value:string[]){return value.length?value.join(' · '):'No modifier';}

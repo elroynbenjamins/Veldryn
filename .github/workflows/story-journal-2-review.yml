@@ -3,7 +3,7 @@ on:
   pull_request:
     paths:
       - 'docs/2-0/story-*-review-*.json'
-      - 'tools/story-journal-2-review*.mjs'
+      - 'tools/story-journal-2-*.mjs'
       - 'apps/mobile/src/content/**'
       - '.github/workflows/story-journal-2-review.yml'
 permissions:
@@ -17,3 +17,4 @@ jobs:
         with:
           node-version: '24'
       - run: node tools/story-journal-2-review.test.mjs
+      - run: node tools/story-journal-2-evidence-review.test.mjs

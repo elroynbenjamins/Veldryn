@@ -10,7 +10,7 @@ import {MONSTERS} from '../content/monsters';
 import {faithBlessingDef,faithBlessingGroup,FAITH_BLESSING_GROUPS,type FaithBlessingGroup} from '../content/faith';
 import {activeFaithPreferences,faithLevel} from './faith';
 import {collectibleCatalogForState,selectCollectible} from './collectibles';
-import {characterLoadoutSlotCount,normalizeCharacterLoadouts,applyCharacterLoadout} from './character-loadouts';
+import {characterLoadoutSlotCount,normalizeCharacterLoadouts,applyCharacterLoadout,saveCharacterLoadout} from './character-loadouts';
 import {claimActivity,stopActivity,startCombat,startGathering,effectiveStats} from './game';
 import {reviewActivityLoadoutRoute,type ActivityLoadoutBinding} from './activity-loadout-routing-review';
 export const ACTIVITY_LOADOUT_TRANSITION_LIVE=false as const;
@@ -24,6 +24,14 @@ export function captureActivityLoadoutSelections(state:GameState):ActivityLoadou
  if(!state.character)throw Error('character_required');
  return {petId:state.character.selectedCosmeticPetId??null,
   faithSelections:{...activeFaithPreferences(state).selectedBlessingIds}};
+}
+export function saveActivityLoadoutReview(state:GameState,slotIndex:number,name:string,nowMs:number):GameState{
+ if(!state.character||!Number.isInteger(slotIndex)||!Number.isSafeInteger(nowMs)||nowMs<0)
+  throw Error('loadout_invalid_save');
+ const selections=captureActivityLoadoutSelections(state);
+ const saved=saveCharacterLoadout(copy(state),slotIndex,name,nowMs);
+ return {...saved,character:{...saved.character!,savedLoadouts:saved.character!.savedLoadouts?.map(row=>
+  row.slotIndex===slotIndex?{...row,...selections}:row)}};
 }
 export function applyActivityLoadoutSelectionsReview(state:GameState,selections:ActivityLoadoutSelections,nowMs:number):GameState{
  if(!state.character||state.activity||state.character.classTraining)
@@ -67,13 +75,12 @@ function categoryForTarget(target:StartTarget){
  return node.skillId;
 }
 /** Uses current entitlement source only until regional milestone storage exists.
- * No arbitrary supplied slot count. Extra selections are supplied by future
- * persisted preset reader, scoped to this character and exact preset ID.
+ * No arbitrary supplied slot count. Extra selections come from the saved
+ * preset on this character; no external pet or Faith override at start.
  */
 export function reviewActivityLoadoutTransition(input:{
  state:GameState;nowMs:number;target:StartTarget;autoSwitch:boolean;
  bindings:readonly ActivityLoadoutBinding[];
- selectionsByPreset:Readonly<Record<string,ActivityLoadoutSelections>>;
  /** Independent server reservation guard; missing/false rejects. */
  verifyNoFrozenEncounter:(characterId:string)=>boolean;
 }){
@@ -113,7 +120,7 @@ export function reviewActivityLoadoutTransition(input:{
   next=applyCharacterLoadout(next,preset.id);
   if(gathering)next={...next,character:{...next.character!,savedLoadouts:originalPresets,
    equippedFoodId:oldFood,equippedCombatCompanionId:oldCompanion,currentHp:settledHp}};
-  const selections=Object.prototype.hasOwnProperty.call(input.selectionsByPreset,preset.id)?input.selectionsByPreset[preset.id]:{};
+  const selections:ActivityLoadoutSelections={petId:preset.petId,faithSelections:preset.faithSelections};
   // Clamp once against final combined equipment, pet and Faith selection.
   next={...next,character:{...next.character!,currentHp:settledHp}};
   next=applyActivityLoadoutSelectionsReview(next,selections,nowMs);

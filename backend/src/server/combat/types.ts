@@ -149,6 +149,18 @@ export interface CombatEvent {
   detail?: string;
 }
 
+/** Hidden Guild PvE V19 test input; server-authored only, never a client payload. */
+export interface GuildPvePhasePlan {
+ enemyId:string;
+ initialHp:number;
+ initialPhaseId:string;
+ transitions:readonly {
+  phaseId:string;
+  hpPct:number;
+  definition:CombatantDefinition;
+ }[];
+}
+
 export interface CombatInput {
   seed: string;
   players: CombatantDefinition[];
@@ -158,6 +170,8 @@ export interface CombatInput {
   mitigationConstant?: number;
   accuracyScale?: number;
   initialPlayerState?: Record<string, PersistentActorState>;
+  /** Unmounted Guild PvE V19 QA only; legacy encounters omit this. */
+  guildPvePhasePlan?:GuildPvePhasePlan;
   /** Only set by server-owned Q-Mode runs; Live and legacy combat retain baseline rolls. */
   enemyDamageProfile?:'qmode-v1';
 }

@@ -42,3 +42,9 @@ Security: private non-exposed schema; RLS defense in depth; no direct `anon`/`au
 - Evidence digest now binds full receipt contents via canonical key ordering for JSONB round-trips; this is a change detector, **not** a cryptographic signature or proof of authentic database ownership. Run revision, required-node HP/clear consistency and stale zero-credit state are checked.
 - Settlement rejects corrupted run Pressure/revision and mismatched HP/clear flags before computing combat; frozen roster lookup requires an own property.
 - Added synthetic regression cases for receipt edits, canonical reordering, Seal reconciliation and rollback-free rejection. Exact-head CI is required; all existing release fences and future authenticated PostgreSQL, phase, objective, balance and UI gates remain in force.
+
+## November 27 — V19 continuous guardian combat QA
+
+- An explicit opt-in server-authored phase plan starts one real-engine attempt at shared HP, changes the guardian's authored ability kit/basic attack profile on a nonlethal HP crossing, cancels the previous phase cast without manufacturing a resolve, and retains actor HP, status, shield, threat and cooldown clocks. Legacy callers omit the plan. No production runtime imports or enablement.
+- V19 isolated preview uses the three existing guardian thresholds and partitions real cast events by ordered phase events. A lethal hit does not manufacture intermediate casts; settlement completion markers are separate. Deterministic evidence and multi-crossing/resume tests are included in V18 focused CI.
+- Still **not** wired to V18 settlement: carry V17 stance/boon/Pressure effects into each phase, verify charge use and precise rounding, validate against legacy and Edge engine parity, and test all nine classes. No claim of production readiness or real balance.

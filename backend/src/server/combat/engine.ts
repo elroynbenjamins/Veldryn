@@ -89,6 +89,33 @@ export function simulateCombat(input: CombatInput): CombatResult {
   const bosses=enemies.filter(actor=>actor.definition.boss);
   const phasesByBoss=new Map(bosses.map(boss=>[boss,[...(boss.definition.phases??[])].sort((a,b)=>b.hpPct-a.hpPct)] as const));
 
+  // Opt-in V19 plan: preserve one actor identity, HP, statuses, threat and
+  // cooldown clocks. Replace only the authored boss definition on a crossing.
+  const plan=input.guildPvePhasePlan;
+  const phaseBoss=plan?enemies.find(e=>e.definition.id===plan.enemyId):undefined;
+  let nextProfile=0;
+  if(plan){
+    if(!phaseBoss?.definition.boss||enemies.length!==1||
+     phaseBoss.definition.phases?.length||
+     !Number.isFinite(plan.initialHp)||plan.initialHp<=0||
+     plan.initialHp>phaseBoss.definition.stats.maxHp||
+     !plan.initialPhaseId||plan.transitions.length>2)
+      throw Error('guild_pve_phase_plan_invalid');
+    let prior=plan.initialHp/phaseBoss.definition.stats.maxHp;
+    const ids=new Set([plan.initialPhaseId]);
+    for(const step of plan.transitions){
+      if(!step.phaseId||ids.has(step.phaseId)||!Number.isFinite(step.hpPct)||
+       step.hpPct<=0||step.hpPct>=prior||
+       step.definition.id!==plan.enemyId||step.definition.team!=='enemies'||
+       step.definition.role!=='enemy'||!step.definition.boss||
+       step.definition.phases?.length||
+       step.definition.stats.maxHp!==phaseBoss.definition.stats.maxHp)
+        throw Error('guild_pve_phase_profile_invalid');
+      ids.add(step.phaseId);prior=step.hpPct;
+    }
+    phaseBoss.hp=plan.initialHp;
+  }
+
   let lastGemStateKey='[]';
   const visibleGemStates=(now:number):CombatGemStateSnapshot[]=>{
     const rows:CombatGemStateSnapshot[]=[];
@@ -106,6 +133,24 @@ export function simulateCombat(input: CombatInput): CombatResult {
     const gemStates=visibleGemStates(now),key=JSON.stringify(gemStates);
     if(key===lastGemStateKey)return;
     lastGemStateKey=key;events.push({atMs:now,type:'gem_state',gemStates});
+  };
+
+  const advanceGuildPhase=(now:number)=>{
+    if(!plan||!phaseBoss?.alive||phaseBoss.hp<=0)return;
+    while(nextProfile<plan.transitions.length&&
+      hpPct(phaseBoss)<=plan.transitions[nextProfile].hpPct){
+      const step=plan.transitions[nextProfile++];
+      // A cast abandoned by a transition has no cast_complete or fake hit.
+      // Its existing cooldown stays spent, even if a later phase reuses it.
+      phaseBoss.casting=undefined;
+      phaseBoss.definition=structuredClone(step.definition);
+      abilitiesByActor.set(phaseBoss,[...phaseBoss.definition.abilities]
+       .sort((a,b)=>b.priority-a.priority));
+      phaseBoss.triggeredPhases.push(step.phaseId);
+      events.push({atMs:now,type:'phase',actorId:phaseBoss.definition.id,
+       abilityId:step.phaseId,detail:'guild_pve_hp_threshold'});
+      gemOnBossPhaseV1(now,players);emitGemState(now);
+    }
   };
 
   const addThreat=(target:CombatantState, source:CombatantState, amount:number)=>{ if(target.definition.team==='enemies') target.threat[source.definition.id]=(target.threat[source.definition.id]||0)+amount; };
@@ -151,6 +196,7 @@ export function simulateCombat(input: CombatInput): CombatResult {
     }
     if(target.reflectiveShields)target.reflectiveShields=target.reflectiveShields.filter(s=>s.remaining>0);
     if(target.hp<=0&&target.alive){gemOnKillV1(now,source,target);emitGemState(now);target.alive=false;target.downed=target.definition.team==='players';events.push({atMs:now,type:target.downed?'down':'death',targetId:target.definition.id,actorId:source.definition.id,abilityId});}
+    if(plan&&(target===phaseBoss||source===phaseBoss))advanceGuildPhase(now);
   };
   const applyHeal=(now:number, source:CombatantState,target:CombatantState,effect:AbilityEffect,abilityId:string,eventType:'heal'|'hot_tick'='heal')=>{ if(!target.alive)return; const direct=eventType==='heal',sourceMult=direct?gemHealingMultiplierV1(source,now):1,receivedMult=Math.max(0,1+modifier(target,'healing_received',now)); const amount=Math.max(0,(source.definition.stats.healingPower*(effect.coeff??0)+(effect.flat??0))*sourceMult*receivedMult*(source.definition.alchemyModifiers?.healing??1)); const actual=Math.min(amount,target.definition.stats.maxHp-target.hp); target.hp+=actual; source.healingDone+=actual; events.push({atMs:now,type:eventType,actorId:source.definition.id,targetId:target.definition.id,abilityId,amount:Number(actual.toFixed(2))});
     if(direct){const post=gemOnDirectHealV1(now,source,target,amount,actual);if(post.mercyBarrier>0){target.shield+=post.mercyBarrier;events.push({atMs:now,type:'shield',actorId:source.definition.id,targetId:target.definition.id,abilityId:'GEM_MERCY',amount:Number(post.mercyBarrier.toFixed(2))});}if(post.renewalTotal>0){const existing=target.periodic.filter(p=>p.effectId==='GEM_RENEWAL'&&p.sourceId===source.definition.id).sort((a,b)=>a.expiresAt-b.expiresAt);while(existing.length>=post.renewalMax){const remove=existing.shift();if(remove)target.periodic=target.periodic.filter(p=>p!==remove);}const tickMs=2000,ticks=Math.max(1,Math.floor(post.renewalDuration/tickMs));target.periodic.push({sourceId:source.definition.id,effectId:'GEM_RENEWAL',kind:'hot',coeff:0,flat:post.renewalTotal/ticks,nextTickAt:now+tickMs,expiresAt:now+post.renewalDuration,tickMs});}gemConsumeSupportChargeV1(now,source);emitGemState(now);}

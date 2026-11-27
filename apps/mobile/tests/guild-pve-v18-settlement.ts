@@ -9,6 +9,7 @@ import {InMemoryGuildPveV18Port,GuildPveV18SettlementService,
  type GuildPveV18StoreState,type GuildPveV18Charges,type GuildPveV18TrustedAuthority}
  from '../../../backend/src/server/combat/guild-pve-settlement-v18';
 import {reviewGuildPveV18Reward} from '../../../backend/src/server/combat/guild-pve-reward-review-v18';
+import {previewGuildPveV19CrossPhase} from '../../../backend/src/server/combat/guild-pve-cross-phase-v19';
 const ACCOUNT_A='GX_V18_ACC_A',ACCOUNT_B='GX_V18_ACC_B',
  CHAR_A='GX_V18_CHAR_A',CHAR_B='GX_V18_CHAR_B',
  GUILD='GX_V18_GUILD',OTHER='GX_V18_OTHER_GUILD',CYCLE='GX_V18_CYCLE';
@@ -224,6 +225,35 @@ async function main(){
  assert.equal(boss.port.inspect().charges[JSON.stringify([CYCLE,GUILD])].protection,0);
  assert.deepEqual(await boss.hit(ACCOUNT_A,CHAR_A,'GX_BOSS','C3-06',15,'Guard'),attempt);
  assert.equal(boss.port.inspect().charges[JSON.stringify([CYCLE,GUILD])].protection,0);
+ // V19 uses one continuous real-engine simulation on actual shared HP.
+ const source=await authority.verifyOwnedGuildActor({
+  principalAccountId:ACCOUNT_A,guildId:GUILD,characterId:CHAR_A,cycleId:CYCLE,
+ });
+ const powerful=structuredClone(source.actor);
+ powerful.stats.maxHp=1_000_000;
+ powerful.stats.attackPower=1;
+ powerful.stats.accuracy=100000;
+ powerful.basicAttackCoeff=1;
+ powerful.abilities=[{
+  id:'GX_V19_TEST_HIT',name:'Test hit',priority:999,cooldownMs:1000,
+  castTimeMs:0,target:'current_target',effects:[{kind:'damage',flat:230,damageType:'true'}],
+ }];
+ const crossInput={player:powerful,boss:'gatekeeper' as const,difficulty:'Scout' as const,
+  reference,sharedHp:1000,sharedMaxHp:1000,seed:'GX_V19_TEST_SEED'};
+ const crossed=previewGuildPveV19CrossPhase(crossInput);
+ assert.deepEqual(crossed.transitions,['gate_collapse','open_gate']);
+ assert.deepEqual(previewGuildPveV19CrossPhase(crossInput),crossed);
+ assert.equal(crossed.afterHp,0);
+ assert.equal(crossed.bossHpRemoved,1000);
+ assert.equal(crossed.rewardGranted,false);
+ assert.equal(crossed.serverPersisted,false);
+ assert.ok(crossed.observedCues.some(c=>c.phase==='gate_collapse'&&c.kind==='warning'));
+ assert.ok(crossed.events.filter(e=>e.type==='combat_start').length===1);
+ const resumed=previewGuildPveV19CrossPhase({...crossInput,sharedHp:200});
+ assert.equal(resumed.startPhase,'open_gate');
+ assert.deepEqual(resumed.transitions,[]);
+ assert.equal(resumed.bossHpRemoved,200);
+ assert.equal(resumed.afterHp,0);
  console.log('V18: authoritative-reader contract, stale races, quota, replay, rollback, finite charge, nonpaying reward reviews PASSED');
 }
 main().catch(e=>{console.error(e);process.exitCode=1});

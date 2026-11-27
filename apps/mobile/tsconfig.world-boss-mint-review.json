@@ -3,7 +3,8 @@
   "include": [
     "../../backend/src/server/loot/world-boss-chest-opening-v103.ts",
     "../../backend/src/server/loot/world-boss-gathering-mint-v102.ts",
-    "../../backend/src/server/loot/world-boss-chest-source-v104.ts"
+    "../../backend/src/server/loot/world-boss-chest-source-v104.ts",
+    "../../backend/src/server/loot/world-boss-damage-chest-store-v105.ts"
   ],
   "exclude": []
 }

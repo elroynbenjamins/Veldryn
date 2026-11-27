@@ -53587,7 +53587,8 @@ function withReleaseGate(handler, loadPolicies, now = Date.now) {
   };
 }
 function releasePolicyLoader(url2, publicKey) {
-  return async () => {
+  let pending;
+  const load = async () => {
     const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 5e3);
     try {
       const response = await fetch(`${url2}/rest/v1/app_release_policy?select=*`, { headers: { apikey: publicKey }, signal: controller.signal });
@@ -53598,6 +53599,12 @@ function releasePolicyLoader(url2, publicKey) {
     } finally {
       clearTimeout(timer);
     }
+  };
+  return () => {
+    if (!pending) pending = load().finally(() => {
+      pending = void 0;
+    });
+    return pending;
   };
 }
 

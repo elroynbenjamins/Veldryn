@@ -44,7 +44,7 @@ export function reviewGatheringSettlementV2(input:{
  gearRatingBps:frozen.gearRatingBps,setTimeMultiplier:frozen.matchingSetPieces>=8?.96:1});
  // The hook can never follow another activity or character. The ordinary
  // reward engine retains all tool, weather, meal, mastery and XP effects.
- const channels=frozen.rewardChannels===undefined?null:reviewGatheringRewardChannelsV2({matchingSetPieces:frozen.matchingSetPieces,...frozen.rewardChannels});
+ const channels=frozen.rewardChannels===undefined?null:reviewGatheringRewardChannelsV2({matchingSetPieces:frozen.matchingSetPieces,skillXpAffixBps:frozen.rewardChannels.skillXpAffixBps,rareChanceAffixBps:frozen.rewardChannels.rareChanceAffixBps});
  const rateReview:GatheringRateReview=segment=>{
   if(segment.character?.id!==c.id||segment.activity?.kind!==frozen.skill||
    segment.activity.targetId!==frozen.targetId||segment.activity.startedAtMs!==frozen.startedAtMs)

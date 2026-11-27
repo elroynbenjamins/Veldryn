@@ -84,7 +84,9 @@ export function projectSideReview(content,s,expected) {
       const activation=Object.hasOwn(s.activationSequences,q.id)?s.activationSequences[q.id]:undefined;
       if(activation!==undefined&&(!natural(activation)||activation>s.sequence))throw Error('invalid_activation');
       const progress=objective(s,events,activation,q.objective);
-      return {id:q.id,scope:q.scope,status:activation===undefined?'available':progress.complete?'ready':'active',objective:progress,authorizesReward:false};
+      const evidenceOnly=q.scope==='account'&&q.objective.kind==='map';
+      const claimed=!evidenceOnly&&s.claimedStoryIds.includes(q.id);
+      return {id:q.id,scope:q.scope,status:claimed||evidenceOnly&&progress.complete?'claimed':activation===undefined?'available':progress.complete?'ready':'active',...(evidenceOnly?{completionMode:'evidence_only'}:{}),objective:progress,authorizesReward:false};
     });
     const lore=content.lore.filter(l=>l.released===false&&l.rewardPolicy==='none'&&s.actualAccountMaps.includes(l.routeId)).map(l=>({id:l.id,title:l.title,text:l.text}));
     return {status:'review',quests,lore,released:false,authorizesReward:false,authorizesAccess:false};

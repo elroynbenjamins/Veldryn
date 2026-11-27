@@ -41,7 +41,7 @@ function objective(s,events,activation,o) {
   let n=0;
   switch(o.kind){
     case 'kill':case 'gather':n=count(events,activation,o);break;
-    case 'map':n=s.actualAccountMaps.includes(o.targetId)?1:0;break;
+    case 'map':n=s.actualAccountMaps.includes(o.targetId)&&(o.mapScope!=='character'||(unique(s.characterDiscoveredRoutes)&&s.characterDiscoveredRoutes.includes(o.targetId)))?1:0;break;
     case 'boss':n=s.soloBossVictories.includes(o.targetId)?1:0;break;
     case 'equipped':n=s.equippedCount;break;
     case 'level':n=s.level;break;

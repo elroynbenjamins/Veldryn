@@ -87,9 +87,14 @@ export class PartyActiveRequestsPreviewV115{
     typeof c.title!=='string'||typeof c.summary!=='string'||
     c.allowedActions.some(action=>!['accept','decline','ready','not_ready','vote'].includes(action)))return false;
    if(c.kind==='role_swap'||c.kind==='group_readiness'){
-    if(!Array.isArray(c.members)||c.members.length<1||c.members.length>4||
-     c.members.some(m=>!m||!valid(m.id)||typeof m.name!=='string')||
-     new Set(c.members.map(m=>m.id)).size!==c.members.length)return false;
+    const members:readonly {id:string;name:string}[]=c.members;
+    if(!Array.isArray(members)||members.length<1||members.length>4||
+     members.some(m=>!m||!valid(m.id)||typeof m.name!=='string')||
+     new Set(members.map(m=>m.id)).size!==members.length)return false;
+    if(c.kind==='role_swap'&&(c.members.length<2||c.members.some(m=>
+     typeof m.accepted!=='boolean'||!['tank','damage','support'].includes(m.fromRole)||
+     !['tank','damage','support'].includes(m.toRole)||m.fromRole===m.toRole)))return false;
+    if(c.kind==='group_readiness'&&c.members.some(m=>m.ready!==null&&typeof m.ready!=='boolean'))return false;
    }
    if(c.kind==='contract_vote'||c.kind==='event_vote'){
     if(!Array.isArray(c.options)||c.options.length<2||c.options.length>5||

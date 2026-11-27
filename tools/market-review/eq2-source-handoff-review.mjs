@@ -10,7 +10,7 @@ function auditSourceCrosswalk(snapshot) {
   for(const row of snapshot.equipment){
     if(!row||!validId(row.itemId)||!Number.isInteger(row.tier)||row.tier<1||row.tier>5||
        !knownTypes.has(row.sourceType)||typeof row.sourceGroup!=="string"||row.mayTrade!==false||ids.has(row.itemId))fail("bad_equipment");
-    ids.set(row.itemId,{kind:"equipment",type:row.sourceType});
+    ids.set(row.itemId,{kind:"equipment",type:row.sourceType,group:row.sourceGroup});
   }
   for(const row of snapshot.materials){
     if(!row||!validId(row.itemId)||!Number.isInteger(row.tier)||row.tier<1||row.tier>4||
@@ -30,6 +30,7 @@ function reviewSource(ids, request) {
   if(!known)return result(request.source==="world-boss"||request.source==="party-event"?"event_source_not_registered":"unknown_identity");
   if(request.kind!==known.kind)return result("asset_kind_mismatch");
   if(request.source==="world-boss"||request.source==="party-event")return result("event_source_not_registered");
+  if(known.group==="t5_bellwake_4")return result("conflicting_bellwake_source_quarantined");
   if(known.kind==="resource"){
     const types=known.type==="either"?["monster","gathering"]:[known.type];
     return result(types.includes(request.source)?"unregistered_material_origin":"source_mismatch");
@@ -71,6 +72,10 @@ function sourceTests(snapshot) {
   check(go("EQ2_FAKE","equipment","forge").reason==="unknown_identity","unknown");
   check(go("EQ2_FAKE","equipment","world-boss").reason==="event_source_not_registered","unknown event");
   check(go(boss,"equipment","dungeon",{fixture:"runtime"}).reason==="review_only","runtime");
+  for(const row of snapshot.equipment.filter(e=>e.sourceGroup==="t5_bellwake_4")){
+    check(go(row.itemId,"equipment","forge").reason==="conflicting_bellwake_source_quarantined","Bellwake forge conflict");
+    check(go(row.itemId,"equipment","dungeon").reason==="conflicting_bellwake_source_quarantined","Bellwake boss conflict");
+  }
   const raw=snapshot.materials.find(e=>e.source==="gathering").itemId;
   check(go(raw,"resource","processing").reason==="source_mismatch","wrong material origin");
   const blueprint=snapshot.equipment.find(e=>e.sourceType==="elite_or_zone_boss_blueprint_craft_proposal").itemId;

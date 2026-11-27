@@ -46,6 +46,42 @@ async function run() {
  assert(body.cards.find(x=>x.id==="guild_companion_01")?.status==="guild_level_locked","guild level lock");
  assert(calls.length===8 && calls[0].name==="guild_shop_snapshot_server_v1" && calls[1].name==="guild_construction_snapshot_server_v1" && calls[2].name==="guild_shop_event_community_rewards_server_v1" && calls[3].name==="guild_construction_enabled_server_v1" && calls[4].name==="guild_shop_weekly_rewards_server_v1" && calls[5].name==="guild_bank_snapshot_server_v1" && calls[6].name==="guild_construction_benefits_server_v1" && calls[7].name==="guild_construction_costs_server_v1","all authenticated read-only RPCs called");
  assert(calls[0].args.p_account_id==="11111111-1111-4111-8111-111111111111","verified identity forwarded");
+ // Batch path uses the same validated projection and optional degradation rules.
+ const batchCalls:string[]=[];
+ const buildBatch=async(args:Record<string,unknown>)=>({
+  base:await services.rpc("guild_shop_snapshot_server_v1",args),
+  construction:{ok:true,value:await services.rpc("guild_construction_snapshot_server_v1",args)},
+  eventBonuses:{ok:true,value:await services.rpc("guild_shop_event_community_rewards_server_v1",args)},
+  constructionUnlocks:{ok:true,value:await services.rpc("guild_construction_enabled_server_v1",args)},
+  weeklyRewards:{ok:true,value:await services.rpc("guild_shop_weekly_rewards_server_v1",args)},
+  bank:{ok:true,value:await services.rpc("guild_bank_snapshot_server_v1",args)},
+  constructionBenefits:{ok:true,value:await services.rpc("guild_construction_benefits_server_v1",args)},
+  constructionCosts:{ok:true,value:await services.rpc("guild_construction_costs_server_v1",args)},
+ });
+ const batchRequest=()=>new Request("https://example.test/guild/shop",{headers:{authorization:"Bearer valid"}});
+ const batchServices:GuildShopReadServices={...services,batchSnapshotEnabled:true,rpc:async<T>(name:string,args:Record<string,unknown>)=>{
+  batchCalls.push(name);
+  assert(name==="guild_shop_batch_snapshot_server_v1","only batch RPC is called");
+  assert(args.p_account_id==="11111111-1111-4111-8111-111111111111","batch account comes from verified session");
+  return await buildBatch(args) as T;
+ }};
+ const batchResponse=await guildShopReadHandler(batchServices)(batchRequest());
+ assert(batchResponse.status===200,"batched read succeeds");
+ assert(JSON.stringify(await batchResponse.json())===JSON.stringify(body),"batch response matches legacy response");
+ assert(batchCalls.length===1,"8 projections reduced to 1 batch request");
+ const partial=guildShopReadHandler({...batchServices,rpc:async<T>(_name:string,args:Record<string,unknown>)=>{
+  const batch=await buildBatch(args);
+  return {...batch,constructionCosts:{ok:false},bank:{ok:false}} as T;
+ }});
+ const partialResult=await partial(batchRequest());
+ assert(partialResult.status===200,"optional batch failures preserve wallet");
+ const partialBody=await partialResult.json() as {unavailableSections:string[];bank:unknown;constructionTemplates:Array<{enabled:boolean}>};
+ assert(partialBody.unavailableSections.includes("bank")&&partialBody.unavailableSections.includes("constructionCosts")&&partialBody.bank===null&&partialBody.constructionTemplates.every(t=>!t.enabled),"missing batch sections fail closed");
+ const failedBatch=guildShopReadHandler({...batchServices,rpc:async<T>():Promise<T>=>{throw new Error("unavailable");}});
+ assert((await failedBatch(batchRequest())).status===503,"batch transport failure must not return fake wallet");
+ const blockedBatch=guildShopReadHandler({...batchServices,guildLevelForAccount:async()=>null});
+ const priorBatchCalls=batchCalls.length;
+ assert((await blockedBatch(batchRequest())).status===403&&batchCalls.length===priorBatchCalls,"nonmembers cannot invoke batch");
  const optionalFailure=guildShopReadHandler({...services,rpc:async<T>(name:string,args:Record<string,unknown>)=>{
   if(name==='guild_construction_snapshot_server_v1'||name==='guild_shop_event_community_rewards_server_v1')throw new Error('unavailable_optional_projection');
   return services.rpc<T>(name,args);

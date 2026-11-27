@@ -1,7 +1,7 @@
 /** Unmounted Journal 2.0 presentation review. No gameplay commands or live routing.
  * Host supplies reviewed rows and handles navigation/detail selection only.
  */
-import React from 'react';
+import React,{useState} from 'react';
 import {Pressable,ScrollView,StyleSheet,Text,TextInput,View,useWindowDimensions} from 'react-native';
 type Tab='story'|'quests'|'challenges'|'records';
 type Status='ready'|'active'|'available'|'locked'|'claimed';
@@ -15,15 +15,17 @@ const statusLabels:Record<Status,string>={ready:'Ready',active:'In progress',ava
 const filters=[['current','Current'],['all','All'],['completed','Completed'],['locked','Locked']];
 export function StoryJournal2Review({model,onTab,onDetail,onPrimary,onFilter,onSearch,onZone,onPin,zoneName,objectiveName,t}:Props){
  const {width,fontScale}=useWindowDimensions(),stack=width<355||fontScale>=1.3;
+ const [showFilters,setShowFilters]=useState(false);
+ const hasFilters=!!model.query?.trim()||!!model.zoneId||model.filter!=='current';
  const featured=!model.query?.trim()&&!model.zoneId&&['current','all'].includes(model.filter)?(model.tab==='story'?model.featured:model.tab==='quests'&&model.pinned?.tab==='quests'?model.pinned:undefined):undefined;
  const progress=model.storyTotal?Math.round(model.storyComplete/model.storyTotal*100):0;
  const row=(item:Row,expanded=false)=><View key={item.id} style={styles.card}>
   <Pressable accessibilityRole="button" accessibilityLabel={item.title+', '+t(statusLabels[item.status])} onPress={()=>onDetail(item.id)} style={styles.header}>
    <View style={styles.grow}><Text style={styles.title}>{item.title}</Text><Text style={styles.muted}>{zoneName(item.zoneId)} · {t(statusLabels[item.status])}</Text></View>
-   <Text style={styles.muted}>{item.status==='claimed'?t('Completed'):item.completeCount+'/'+item.objectiveCount}</Text>
+   <Text style={styles.muted}>{item.status==='claimed'?'✓':item.completeCount+'/'+item.objectiveCount}</Text>
   </Pressable>
   {expanded&&item.status!=='claimed'?item.objectives.map(o=><View key={o.id} style={styles.objective}><Text style={styles.growText}>{objectiveName(o)}</Text><Text style={styles.muted}>{o.progress}/{o.required}</Text></View>):null}
-  {expanded?<Text style={styles.muted}>{item.primary.detail}</Text>:null}
+  {expanded&&['View requirements','View prerequisite','View scouting','View report','Choose scout','Choose gathering spot'].includes(item.primary.label)?<Text style={styles.muted}>{t(item.primary.detail)}</Text>:null}
   {expanded?<View style={[styles.actions,stack&&styles.stack]}><Pressable accessibilityRole="button" onPress={()=>onPrimary(item.id)} style={styles.primary}><Text style={styles.primaryText}>{t(item.primary.label)}</Text></Pressable>{['active','available','ready'].includes(item.status)?<Pressable accessibilityRole="button" accessibilityLabel={t(model.pinned?.id===item.id?'Unpin quest':'Pin quest')} onPress={()=>onPin(item.id)} style={styles.secondary}><Text style={styles.muted}>{t(model.pinned?.id===item.id?'Unpin':'Pin')}</Text></Pressable>:null}</View>:null}
  </View>;
  return <ScrollView contentContainerStyle={styles.container}>
@@ -31,7 +33,7 @@ export function StoryJournal2Review({model,onTab,onDetail,onPrimary,onFilter,onS
   <View accessibilityRole="tablist" style={[styles.tabs,stack&&styles.wrap]}>{tabs.map(tab=><Pressable key={tab} accessibilityRole="tab" accessibilityState={{selected:model.tab===tab}} onPress={()=>onTab(tab)} style={[styles.tab,stack&&styles.tabHalf,model.tab===tab&&styles.selected]}><Text style={styles.tabText}>{t(labels[tab])}</Text></Pressable>)}</View>
   {model.tab==='story'?<View style={styles.card}><View style={styles.header}><Text style={styles.title}>{t('Campaign progress')}</Text><Text style={styles.muted}>{model.storyComplete}/{model.storyTotal}</Text></View><View accessibilityRole="progressbar" accessibilityValue={{min:0,max:100,now:progress}} style={styles.track}><View style={[styles.fill,{width:(progress+'%') as `${number}%`}]}/></View></View>:null}
   {featured?row(featured,true):null}
-  {model.tab==='story'||model.tab==='quests'?<><TextInput accessibilityLabel={t('Search quests')} placeholder={t('Search quests')} placeholderTextColor='#a9b5c3' value={model.query??''} onChangeText={onSearch} maxLength={120} style={styles.search}/><View style={styles.wrap}>{filters.map(([id,label])=><Pressable key={id} accessibilityRole="button" accessibilityState={{selected:model.filter===id}} onPress={()=>onFilter(id)} style={[styles.filter,model.filter===id&&styles.selected]}><Text style={styles.muted}>{t(label)}</Text></Pressable>)}</View><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.zoneRail}>{[undefined,...(model.zones??[])].map(zone=><Pressable key={zone??'all'} accessibilityRole="button" accessibilityState={{selected:model.zoneId===zone}} onPress={()=>onZone(zone)} style={[styles.filter,model.zoneId===zone&&styles.selected]}><Text style={styles.muted}>{zone?zoneName(zone):t('All zones')}</Text></Pressable>)}</ScrollView>{model.visible.filter(q=>q.id!==featured?.id).map(q=>row(q))}{!model.visible.length&&!featured?<Text style={styles.muted}>{t('No matching quests.')}</Text>:null}</>:<Text style={styles.muted}>{t('Existing challenge and record panels will be integrated here.')}</Text>}
+  {model.tab==='story'||model.tab==='quests'?<><Pressable accessibilityRole="button" accessibilityState={{expanded:showFilters||hasFilters}} onPress={()=>setShowFilters(v=>!v)} style={styles.filter}><Text style={styles.muted}>{t(showFilters||hasFilters?'Quest filters':'Search & filters')}{hasFilters?' · '+t('Active'):''}</Text></Pressable>{showFilters||hasFilters?<><TextInput accessibilityLabel={t('Search quests')} placeholder={t('Search quests')} placeholderTextColor='#a9b5c3' value={model.query??''} onChangeText={onSearch} maxLength={120} style={styles.search}/><View style={styles.wrap}>{filters.map(([id,label])=><Pressable key={id} accessibilityRole="button" accessibilityState={{selected:model.filter===id}} onPress={()=>onFilter(id)} style={[styles.filter,model.filter===id&&styles.selected]}><Text style={styles.muted}>{t(label)}</Text></Pressable>)}</View><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.zoneRail}>{[undefined,...(model.zones??[])].map(zone=><Pressable key={zone??'all'} accessibilityRole="button" accessibilityState={{selected:model.zoneId===zone}} onPress={()=>onZone(zone)} style={[styles.filter,model.zoneId===zone&&styles.selected]}><Text style={styles.muted}>{zone?zoneName(zone):t('All zones')}</Text></Pressable>)}</ScrollView></>:null}{model.visible.filter(q=>q.id!==featured?.id).map(q=>row(q))}{!model.visible.length&&!featured?<Text style={styles.muted}>{t('No matching quests.')}</Text>:null}</>:<Text style={styles.muted}>{t('Existing challenge and record panels will be integrated here.')}</Text>}
  </ScrollView>;
 }
 const styles=StyleSheet.create({

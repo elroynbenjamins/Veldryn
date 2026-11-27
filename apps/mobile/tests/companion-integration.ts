@@ -68,7 +68,7 @@ ok(xpBankApplied.ascensionTier===1&&xpBankApplied.level>10,'successful ascension
 ok((xpBankApplied.bankedXp??0)===0,'stored XP does not get applied twice after ascension');
 const xpBankUnchanged=command(xpBankAfter,'companion_equip',{id:'UNIT_001'});
 ok(xpBankUnchanged.account.combatCompanionProgress!.UNIT_001.level===xpBankApplied.level,'unrelated commands do not replay banked XP');
-ok(JSON.stringify(COMPANION_SANCTUARY_TRAINING_XP_PER_DAY)==='[0,40,90,150]','Training Grounds have the increased tier 1–3 daily XP rewards');
+ok(JSON.stringify(COMPANION_SANCTUARY_TRAINING_XP_PER_DAY)==='[0,100,150,200]','Training Grounds have the increased tier 1–3 daily XP rewards');
 ok(JSON.stringify(COMPANION_SANCTUARY_WEEKLY_ESSENCE)==='[0,20,48,80]','Weekly Essence reward amounts remain unchanged');
 for(const level of [1,2,3] as const){
  const before=fixture();
@@ -78,6 +78,13 @@ for(const level of [1,2,3] as const){
  const claim=sanctuaryClaimReceipt(before,after,'companion_training');
  ok(claim?.status==='claimed'&&claim.companionCount===ids.length&&claim.companions.every(row=>row.xp===COMPANION_SANCTUARY_TRAINING_XP_PER_DAY[level]),'Every eligible companion receives the configured XP at Training Grounds level '+level);
 }
+const sevenDayTraining=fixture();
+sevenDayTraining.account.companionHousingTiers=Object.fromEntries(ids.map(id=>[id,0]));
+sevenDayTraining.account.companionSanctuary={...sevenDayTraining.account.companionSanctuary!,trainingGroundLevel:3,lastTrainingClaimAtMs:now-10*86400000};
+const sevenDayTrainingAfter=command(sevenDayTraining,'companion_training');
+const sevenDayReceipt=sanctuaryClaimReceipt(sevenDayTraining,sevenDayTrainingAfter,'companion_training');
+ok(sevenDayReceipt?.companionCount===ids.length&&sevenDayReceipt.companions.every(row=>row.xp===1400),'Training catch-up awards at most seven days of level 3 XP per companion');
+ok(sanctuaryClaimReceipt(sevenDayTrainingAfter,command(sevenDayTrainingAfter,'companion_training'),'companion_training')===undefined,'Training catch-up cannot be claimed again immediately');
 let receiptDailyBefore=fixture();
 receiptDailyBefore.account.companionSanctuary={...receiptDailyBefore.account.companionSanctuary!,trainingGroundLevel:1,lastTrainingClaimAtMs:now-86400000};
 const receiptDailyAfter=command(receiptDailyBefore,'companion_training');

@@ -96,8 +96,8 @@ const gatherAcquisition=acquisitionProjectionForDestination(state,'GREENWOOD_LOG
 ok(gatherAcquisition?.sourceKind==='gathering'&&gatherAcquisition.basis==='current'&&(gatherAcquisition.etaSeconds??0)>0,'Material acquisition projection must use current player gathering pace');
 const combatAcquisition=acquisitionProjectionForDestination(state,'MOSS_FIBER',10,{kind:'combat',monsterId:'MOSS_RAT',zoneName:'Greenfields',regionId:'GREENFIELDS',button:'Hunt',detail:''});
 ok(combatAcquisition?.sourceKind==='combat'&&combatAcquisition.basis==='base'&&(combatAcquisition.chance??0)>0,'Monster material projection must use authored drop odds and baseline hunt pace');
-const dungeonAcquisition=acquisitionProjectionForDestination(state,'REGIONAL_CATALYST',1,{kind:'dungeon',dungeonId:'COP_004',button:'Open dungeon',detail:''});
-close(dungeonAcquisition?.etaSeconds??0,2*3600,1,'Caravan of Glass catalyst estimate must combine its 18-minute authored run duration with the canonical 15% boss reward chance');
+const dungeonAcquisition=acquisitionProjectionForDestination(state,'REGIONAL_CATALYST',1,{kind:'dungeon',dungeonId:'COP_006',button:'Open dungeon',detail:''});
+close(dungeonAcquisition?.etaSeconds??0,23*60/.03,1,'Buried Observatory catalyst estimate must combine its 23-minute run duration with its 3% boss reward chance');
 ok(acquisitionEstimateLabel(dungeonAcquisition!).includes('average clears'),'Dungeon source estimates must clearly identify their average-clear basis');
 
 const chainBase=createCharacter(newGame(2),'IRONWARDEN','Chain Planner');
@@ -105,30 +105,30 @@ const chainState={...chainBase,exploredRouteIds:['SCOUT_IRONWOOD'],character:{..
 const fittingDestination={kind:'skills' as const,skillId:'smithing' as const,mode:'crafting' as const,recipeId:'FORGE_REINFORCED_FITTING',button:'Craft Reinforced Fitting',detail:''};
 const fittingPlan=materialAcquisitionPlanForDestination(chainState,'REINFORCED_FITTING',1,fittingDestination),fittingChain=materialAcquisitionChainLabel(fittingPlan),fittingSummary=materialAcquisitionPlanSummary(fittingPlan);
 ok(fittingPlan.complete&&fittingPlan.craftSteps===2&&fittingPlan.depth===2&&(fittingPlan.etaSeconds??0)>0,'Recursive planner must resolve Reinforced Fitting through its crafted ingot dependency to direct raw sources');
-ok(fittingChain?.includes('8× Aster-Iron Ore')&&fittingChain.includes('4× Ironwood Log'),'Recursive chain summary must expose the actual remaining raw requirements');
-ok(fittingPlan.totalGold===120&&fittingSummary.estimate?.includes('total chain'),'Recursive plan must include both processing craft costs and only publish a total ETA when the full chain is modeled');
+ok(fittingChain?.includes('13× Aster-Iron Ore')&&fittingChain.includes('7× Ironwood Log'),'Recursive chain summary must expose the actual remaining raw requirements');
+ok(fittingPlan.totalGold===110&&fittingSummary.estimate?.includes('total chain'),'Recursive plan must include both processing craft costs and only publish a total ETA when the full chain is modeled');
 const stockedChain={...chainState,inventory:{...chainState.inventory,stacks:[...chainState.inventory.stacks,{itemId:'ASTER_IRON_INGOT',quantity:2},{itemId:'IRONWOOD_LOG',quantity:2}]}};
 const stockedPlan=materialAcquisitionPlanForDestination(stockedChain,'REINFORCED_FITTING',1,fittingDestination);
 ok(stockedPlan.complete&&stockedPlan.craftSteps===1&&stockedPlan.totalGold===60&&materialAcquisitionChainLabel(stockedPlan)?.includes('ingredients already owned'),'Recursive planner must consume owned intermediate/raw stock once before expanding deeper recipe steps');
 
 const poorChain={...chainState,character:{...chainState.character!,gold:0}},poorPlan=materialAcquisitionPlanForDestination(poorChain,'REINFORCED_FITTING',1,fittingDestination);
-ok(!poorPlan.complete&&poorPlan.etaSeconds===undefined&&poorPlan.goldShortfall===120,'A known material chain must withhold its total ETA when the required crafting Gold is unavailable');
+ok(!poorPlan.complete&&poorPlan.etaSeconds===undefined&&poorPlan.goldShortfall===110,'A known material chain must withhold its total ETA when the required crafting Gold is unavailable');
 
 const fittingRecipe=RECIPES.find(row=>row.id==='FORGE_REINFORCED_FITTING')!,prepareRoute=recipePreparationRoute(chainState,fittingRecipe);
 ok(prepareRoute.steps.length===5,'Prepare Materials must show fuel for ingot smelting and the final fitting separately');
-ok(prepareRoute.steps.map(step=>step.label).join(' > ')==='Gather 8× Aster-Iron Ore > Gather 2× Ironwood Log > Smelt Aster-Iron Ingot ×1 > Gather 2× Ironwood Log > Forge Reinforced Fitting','Prepare Materials must keep leaf acquisition before dependent processing and the final craft');
+ok(prepareRoute.steps.map(step=>step.label).join(' > ')==='Gather 13× Aster-Iron Ore > Gather 5× Ironwood Log > Smelt Aster-Iron Ingot ×1 > Gather 2× Ironwood Log > Forge Reinforced Fitting','Prepare Materials must keep leaf acquisition before dependent processing and the final craft');
 ok(prepareRoute.steps[0].kind==='gathering'&&prepareRoute.steps[0].destination?.kind==='skills'&&prepareRoute.steps[2].kind==='crafting'&&prepareRoute.steps[2].state==='after'&&prepareRoute.steps[4].kind==='final_craft'&&prepareRoute.steps[4].stateLabel==='FINAL','Prepare Materials steps must carry exact navigation types and dependency-aware states');
-ok(prepareRoute.complete&&prepareRoute.totalGold===120&&(prepareRoute.etaSeconds??0)>0&&recipePreparationRouteLabel(prepareRoute).includes('5 steps'),'Fully modeled preparation routes must expose total Gold, total ETA and compact step count');
+ok(prepareRoute.complete&&prepareRoute.totalGold===110&&(prepareRoute.etaSeconds??0)>0&&recipePreparationRouteLabel(prepareRoute).includes('5 steps'),'Fully modeled preparation routes must expose total Gold, total ETA and compact step count');
 ok(prepareRoute.chainLabel.includes('Aster-Iron Ore → Aster-Iron Ingot → Reinforced Fitting')&&prepareRoute.chainLabel.includes('+1 other input'),'Collapsed preparation summary must show the deepest crafted source chain without hiding parallel inputs');
 ok((prepareRoute.preparationEtaSeconds??0)>0&&prepareRoute.knownPreparationEtaSeconds===prepareRoute.preparationEtaSeconds,'Preparation ETA must cover the prerequisite route before the final craft when every source is modeled');
 ok(!!prepareRoute.bottleneck&&prepareRoute.bottleneck.stepId!==prepareRoute.steps[prepareRoute.steps.length-1].id&&(prepareRoute.bottleneck.etaSeconds??0)>0,'Preparation bottleneck must point at the slowest modeled prerequisite rather than the final equipment craft');
 ok(recipePreparationRouteLabel(prepareRoute).includes('prep ~')&&recipePreparationRouteLabel(prepareRoute).includes('bottleneck'),'Collapsed route meta must surface preparation time and bottleneck without expanding the recipe card');
 
 const batchRoute=recipePreparationRoute(chainState,fittingRecipe,2);
-ok(batchRoute.steps[0].label.includes('8× Aster-Iron Ore')&&batchRoute.steps[1].label.includes('2× Ironwood Log')&&batchRoute.steps[2].label.includes('×1')&&batchRoute.steps[3].label.includes('4× Ironwood Log')&&batchRoute.steps[4].label.endsWith('×2'),'Prepare Materials must scale the shared dependency route with the selected batch size while respecting intermediate recipe batch output');
+ok(batchRoute.steps[0].label.includes('13× Aster-Iron Ore')&&batchRoute.steps[1].label.includes('5× Ironwood Log')&&batchRoute.steps[2].label.includes('×1')&&batchRoute.steps[3].label.includes('4× Ironwood Log')&&batchRoute.steps[4].label.endsWith('×2'),'Prepare Materials must scale the shared dependency route with the selected batch size while respecting intermediate recipe batch output');
 
 const poorRoute=recipePreparationRoute(poorChain,fittingRecipe);
-ok(!poorRoute.complete&&poorRoute.etaSeconds===undefined&&(poorRoute.preparationEtaSeconds??0)>0&&poorRoute.goldShortfall===120,'A Gold shortfall may block the full route while trustworthy prerequisite preparation ETA remains visible');
+ok(!poorRoute.complete&&poorRoute.etaSeconds===undefined&&(poorRoute.preparationEtaSeconds??0)>0&&poorRoute.goldShortfall===110,'A Gold shortfall may block the full route while trustworthy prerequisite preparation ETA remains visible');
 
 const stockedRoute=recipePreparationRoute(stockedChain,fittingRecipe);
 ok(stockedRoute.steps.length===1&&stockedRoute.steps[0].kind==='final_craft','Prepare Materials must hide redundant acquisition steps when all final-recipe ingredients are already owned');

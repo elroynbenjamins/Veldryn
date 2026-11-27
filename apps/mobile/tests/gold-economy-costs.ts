@@ -53,7 +53,7 @@ ok(JSON.stringify(sanctuaryPoor)===sanctuaryPoorBefore,'Rejected Sanctuary upgra
 
 ok(increasedCraftingGoldCost(4)===5&&increasedCraftingGoldCost(18)===22&&increasedCraftingGoldCost(75)===90,'Craft prices round upward to whole Gold');
 for(const [id,expected] of [
- ['SMELT_COPPER_INGOT',36],['COOK_MEADOW_PERCH',42],
+ ['SMELT_COPPER_INGOT',30],['COOK_MEADOW_PERCH',30],
  ['ENCHANT_REGIONAL_CATALYST',14400],['FORGE_REINFORCED_FITTING',60],
  ['BREW_DEWLEAF_DRAUGHT',25],['BREW_VERDANT_BINDING_RESIN',22],
  ['GUILD_FORGE_TIMBER',180],['CRAFT_COPPER_PICKAXE',400],
@@ -67,5 +67,5 @@ ok(NOVICE_RECIPES.every(recipe=>RECIPES.find(entry=>entry.id===recipe.id)?.gold=
 ok(V33_EQUIPMENT_RECIPES.every(recipe=>RECIPES.find(entry=>entry.id===recipe.id)?.gold===recipe.gold),'Regional equipment must not be charged twice');
 ok(EQUIPMENT_FORGE_GOLD_MULTIPLIER===3,'The base triple forge multiplier remains intact');
 ok(GEM_REFINE_COSTS_V1[1].gold===90&&GEM_REFINE_COSTS_V1[5].gold===9600,'Gem refinement fees increase 20%');
-ok(GEM_COMBINE_COSTS_V1[1].gold===1800&&GEM_COMBINE_COSTS_V1[4].gold===72000,'Gem combination fees increase 20%');
+ok(GEM_COMBINE_COSTS_V1[1].gold===600&&GEM_COMBINE_COSTS_V1[4].gold===24000&&GEM_COMBINE_COSTS_V1[1].binding===1&&GEM_COMBINE_COSTS_V1[4].binding===8,'Gem combination trades Gold for binding compounds');
 console.log('PASS: 2× Inventory/Sanctuary, +20% base craft fees plus 5× healing draught costs, exact previews, bank unchanged, atomic charges');

@@ -48,12 +48,12 @@ for(const recipe of V33_EQUIPMENT_RECIPES.filter(r=>r.v33EquipmentTier in baseXp
   const existingXp=['T2','T3','T4'].includes(tier)?Math.round(tierBaseXp*T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER):tierBaseXp;
   const expectedXp=tier==='T2'?Math.round(existingXp*T2_ADDITIONAL_EQUIPMENT_CRAFT_XP_MULTIPLIER)
     :['T3','T4'].includes(tier)?Math.round(existingXp*T3_T4_ADDITIONAL_EQUIPMENT_CRAFT_XP_MULTIPLIER):existingXp;
-  near(recipe.xp,expectedXp,recipe.id+' tier-specific crafting XP');
-  near(RECIPES.find(r=>r.id===recipe.id)!.xp,expectedXp,recipe.id+' skill recipe XP');
+  near(recipe.xp,expectedXp+5,recipe.id+' tier-specific crafting XP');
+  near(RECIPES.find(r=>r.id===recipe.id)!.xp,expectedXp+5,recipe.id+' skill recipe XP');
 }
 check(NOVICE_RECIPES.every(r=>r.xp>=50),'novice Smithing/Tailoring crafts award boosted XP');
-near(RECIPES.find(r=>r.id==='SMELT_COPPER_INGOT')!.xp,100,'starter Smithing training XP');
-near(RECIPES.find(r=>r.id==='SMELT_ASTER_IRON_INGOT')!.xp,165,'intermediate Smithing training XP');
+near(RECIPES.find(r=>r.id==='SMELT_COPPER_INGOT')!.xp,135,'starter Smithing training XP');
+near(RECIPES.find(r=>r.id==='SMELT_ASTER_IRON_INGOT')!.xp,195,'intermediate Smithing training XP');
 for(const fixture of REGIONAL_COMBAT_FIXTURES)
   check((TIER_CHARACTER_LEVEL_FLOOR[fixture.tier]??101)<=fixture.level,
     fixture.regionName+' fixture must use obtainable gear');

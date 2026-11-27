@@ -741,6 +741,18 @@ function reducedEquipmentCraftingGoldCost(roundedGold) {
   if (!Number.isSafeInteger(roundedGold) || roundedGold < 0) throw new Error("invalid_crafting_gold");
   return roundedGold === 0 ? 0 : Math.max(100, roundedGold - EQUIPMENT_CRAFT_GOLD_REDUCTION);
 }
+function reducedCookingGoldCost(chargedGold) {
+  if (!Number.isSafeInteger(chargedGold) || chargedGold < 0) throw new Error("invalid_cooking_gold");
+  return chargedGold === 0 ? 0 : Math.max(10, Math.floor(chargedGold * 3 / 40) * 10);
+}
+function reducedFishCookingGoldCost(chargedGold) {
+  if (!Number.isSafeInteger(chargedGold) || chargedGold < 0) throw new Error("invalid_fish_cooking_gold");
+  return chargedGold === 0 ? 0 : Math.max(10, Math.round(chargedGold * 3 / 50) * 10);
+}
+function reducedIngotSmeltingGoldCost(chargedGold) {
+  if (!Number.isSafeInteger(chargedGold) || chargedGold < 0) throw new Error("invalid_ingot_smelting_gold");
+  return chargedGold === 0 ? 0 : Math.max(10, Math.round(chargedGold * 17 / 200) * 10);
+}
 
 // ../apps/mobile/src/content/equipment-recipes-v33.ts
 init_progression();
@@ -42451,7 +42463,8 @@ var V33_EQUIPMENT_RECIPES = equipment_catalog_t1_t9_v33_default.pieces.map((piec
     name: String(piece["Item Name"]),
     skillId,
     level,
-    xp: boostedCraftXp,
+    xp: boostedCraftXp + 5,
+    // Additional per-piece XP for all T1–T9 equipment crafting.
     gold: reducedEquipmentCraftingGoldCost(roundEquipmentCraftingGoldCost(increasedCraftingGoldCost(q(tierGold[tier] ?? 120, multiplier) * EQUIPMENT_FORGE_GOLD_MULTIPLIER) * (["T3", "T4"].includes(tier) ? 2 : 1))),
     seconds: baseSeconds,
     inputs: mergeInputs([...reducePrimaryEquipmentMaterial(ingredients(tier, String(piece.Path), multiplier, skillId)), ...crossProfessionAssemblyInput(tier, skillId, multiplier, String(piece.Path)), infusionByTier[tier]]),
@@ -42517,7 +42530,7 @@ var NOVICE_RECIPES = NOVICE_SETS.flatMap((set) => set.slots.map((slot) => {
     requiresCraftedItemId: prerequisite[slot] ? noviceItemId(set.classId, prerequisite[slot]) : void 0,
     // Keep the existing novice-set baseline and apply the same equipment-only
     // forge Gold adjustment used by the regional T1–T9 equipment recipes.
-    xp: stage * 50,
+    xp: stage * 50 + 5,
     gold: reducedEquipmentCraftingGoldCost(roundEquipmentCraftingGoldCost(increasedCraftingGoldCost((slot === "weapon" || slot === "amulet" || slot === "ring" ? 20 : stage === 4 ? 15 : 10) * 2 * EQUIPMENT_FORGE_GOLD_MULTIPLIER))),
     seconds: 0,
     inputs: [{ itemId: "COPPER_ORE", quantity: (stage >= 4 ? 16 : slot === "chest" || slot === "weapon" ? 16 : 8) * 2 }, { itemId: "GREENWOOD_LOG", quantity: (stage >= 4 ? 16 : slot === "chest" || slot === "weapon" ? 16 : 8) * 2 }, { itemId: "MOSS_FIBER", quantity: (stage >= 5 ? 8 : 4) * 2 }],
@@ -42561,8 +42574,8 @@ var CROSS_PROFESSION_COMPONENT_RECIPES = [
   { id: "FORGE_METAL_CLASPS", name: "Forge Metal Clasps", skillId: "smithing", level: 1, xp: 75, gold: 30, seconds: 42, repeatableTraining: true, inputs: [{ itemId: "COPPER_INGOT", quantity: 1 }], output: { itemId: "METAL_CLASPS", quantity: 1 } },
   { id: "FORGE_REINFORCED_BUCKLES", name: "Forge Reinforced Buckles", skillId: "smithing", level: 8, xp: 210, gold: 85, seconds: 75, repeatableTraining: true, inputs: [{ itemId: "ASTER_IRON_INGOT", quantity: 2 }], output: { itemId: "REINFORCED_BUCKLES", quantity: 1 } },
   { id: "FORGE_ARMOR_RIVETS", name: "Forge Armor Rivets", skillId: "smithing", level: 20, xp: 480, gold: 260, seconds: 150, repeatableTraining: true, inputs: [{ itemId: "SUNSTONE_ORE", quantity: 3 }, { itemId: "ASTER_IRON_INGOT", quantity: 1 }], output: { itemId: "ARMOR_RIVETS", quantity: 1 } },
-  { id: "WEAVE_CLOTH_BINDINGS", name: "Weave Cloth Bindings", skillId: "tailoring", level: 1, xp: 75, gold: 30, seconds: 42, repeatableTraining: true, inputs: [{ itemId: "MOSS_FIBER", quantity: 5 }, { itemId: "BOAR_HIDE", quantity: 1 }], output: { itemId: "CLOTH_BINDINGS", quantity: 1 } },
-  { id: "STITCH_PADDED_LININGS", name: "Stitch Padded Linings", skillId: "tailoring", level: 8, xp: 210, gold: 85, seconds: 75, repeatableTraining: true, inputs: [{ itemId: "WOLF_PELT", quantity: 5 }, { itemId: "MOSS_FIBER", quantity: 6 }], output: { itemId: "PADDED_LININGS", quantity: 1 } },
+  { id: "WEAVE_CLOTH_BINDINGS", name: "Weave Cloth Bindings", skillId: "tailoring", level: 1, xp: 75, gold: 25, seconds: 42, repeatableTraining: true, inputs: [{ itemId: "MOSS_FIBER", quantity: 7 }, { itemId: "BOAR_HIDE", quantity: 2 }], output: { itemId: "CLOTH_BINDINGS", quantity: 1 } },
+  { id: "STITCH_PADDED_LININGS", name: "Stitch Padded Linings", skillId: "tailoring", level: 8, xp: 210, gold: 66, seconds: 75, repeatableTraining: true, inputs: [{ itemId: "WOLF_PELT", quantity: 5 }, { itemId: "MOSS_FIBER", quantity: 6 }], output: { itemId: "PADDED_LININGS", quantity: 1 } },
   { id: "STITCH_REINFORCED_STRAPS", name: "Stitch Reinforced Straps", skillId: "tailoring", level: 20, xp: 480, gold: 260, seconds: 150, repeatableTraining: true, inputs: [{ itemId: "SUNSCALE", quantity: 3 }, { itemId: "DUNEWOOD", quantity: 4 }], output: { itemId: "REINFORCED_STRAPS", quantity: 1 } },
   // Optional reclamation routes: never force Asterfall monster trophies into Sunscar equipment.
   { id: "FORGE_RECLAIMED_ARMOR_RIVETS", name: "Forge Reclaimed Armor Rivets", skillId: "smithing", level: 20, xp: 480, gold: 260, seconds: 150, repeatableTraining: true, inputs: [{ itemId: "FALLEN_RIVET", quantity: 1 }, { itemId: "SUNSTONE_ORE", quantity: 2 }, { itemId: "ASTER_IRON_INGOT", quantity: 1 }], output: { itemId: "ARMOR_RIVETS", quantity: 1 } },
@@ -42701,6 +42714,7 @@ var POTIONS = [
   { id: "GREATER_HARMONY_TONIC", name: "Greater Harmony Tonic", tier: 2, effect: { kind: "preparation", attackFraction: 0, damageDealtFraction: 0.04, damageReductionFraction: 0, healingStrengthFraction: 0.1, shieldStrengthFraction: 0.1, encounters: 45 }, description: "+4% damage and +10% healing/shielding throughout one dungeon run. One tonic per run, consumed even on failure." },
   { id: "OATH_HARMONY_TONIC", name: "Oath Harmony Tonic", tier: 3, effect: { kind: "preparation", attackFraction: 0, damageDealtFraction: 0.06, damageReductionFraction: 0, healingStrengthFraction: 0.15, shieldStrengthFraction: 0.15, encounters: 60 }, description: "+6% damage and +15% healing/shielding throughout one dungeon run. One tonic per run, consumed even on failure." }
 ];
+var GEM_BINDING_COMPOUND_ITEM = { id: "GEM_BINDING_COMPOUND", name: "Gem Binding Compound", type: "material", value: 18, rarity: "uncommon", passive: "Alchemical binder crafted from common wood, ore and fish; consumed when merging gems." };
 var ALCHEMY_EQUIPMENT_INFUSIONS = Object.freeze([
   { id: "VERDANT_BINDING_RESIN", name: "Verdant Binding Resin", rarity: "rare", value: 70, description: "A dewleaf resin that binds first-tier gear." },
   { id: "IRONWOOD_BINDING_RESIN", name: "Ironwood Binding Resin", rarity: "rare", value: 115, description: "A thorn-infused resin made with Ironwood resources for second-tier gear." },
@@ -42739,6 +42753,8 @@ var ALCHEMY_RECIPES = [
   recipe("GREATER_VIGOR_TONIC", 25, 132, 550, 32, [{ itemId: "SUNSCALE", quantity: 2 }, { itemId: "RIVER_MINT", quantity: 2 }], "_SUNSCAR"),
   recipe("OATH_VIGOR_TONIC", 60, 174, 1700, 98, [{ itemId: "WINTERMINT", quantity: 2 }, { itemId: "OATHBLOSSOM", quantity: 2 }], "_FROSTMARCH"),
   recipe("OATH_WARD_TONIC", 60, 190, 2150, 128, [{ itemId: "ASHEN_MYRRH", quantity: 2 }, { itemId: "FROSTBLOOM", quantity: 2 }], "_ASHLANDS"),
+  // An accessible profession recipe: gem merging substitutes materials for most of the Gold fee.
+  { id: "BREW_GEM_BINDING_COMPOUND", name: "Gem Binding Compound", skillId: "alchemy", level: 1, seconds: 60, xp: 85, gold: 30, inputs: [{ itemId: "GREENWOOD_LOG", quantity: 12 }, { itemId: "COPPER_ORE", quantity: 8 }, { itemId: "MEADOW_PERCH", quantity: 5 }], output: { itemId: "GEM_BINDING_COMPOUND", quantity: 1 } },
   { id: "BREW_VERDANT_BINDING_RESIN", name: "Verdant Binding Resin", skillId: "alchemy", level: 1, seconds: 90, xp: 95, gold: 18, inputs: [{ itemId: "DEWLEAF", quantity: 5 }, { itemId: "MOSS_FIBER", quantity: 12 }, { itemId: "WISP_DUST", quantity: 3 }, { itemId: "ASTERFALL_BOTANICAL_ESSENCE", quantity: 1 }], output: { itemId: "VERDANT_BINDING_RESIN", quantity: 1 } },
   // Five-resin optional batch: 20% less rare Essence, modestly more common supplies; no XP or time shortcut.
   { id: "BREW_VERDANT_BINDING_RESIN_BULK", name: "Bulk Verdant Binding Resin", skillId: "alchemy", level: 1, seconds: 450, xp: 475, gold: 91, inputs: [{ itemId: "DEWLEAF", quantity: 35 }, { itemId: "MOSS_FIBER", quantity: 60 }, { itemId: "WISP_DUST", quantity: 20 }, { itemId: "ASTERFALL_BOTANICAL_ESSENCE", quantity: 4 }], output: { itemId: "VERDANT_BINDING_RESIN", quantity: 5 } },
@@ -42870,6 +42886,7 @@ var BASE_ITEMS = [
   ...HERB_ITEMS,
   ...POTION_ITEMS,
   ...ALCHEMY_EQUIPMENT_INFUSION_ITEMS,
+  GEM_BINDING_COMPOUND_ITEM,
   // Enhancement economy. Gems are intentionally scarce drops; tempering materials are universal.
   { id: "GEM_DUST", name: "Gem Dust", type: "material", value: 18, rarity: "uncommon" },
   { id: "REGIONAL_CATALYST", name: "Regional Catalyst", type: "material", value: 650, rarity: "epic" },
@@ -43502,6 +43519,37 @@ var GATHERING = [
   return { ...activity, seconds: Math.ceil(activity.seconds * 2), xp: Math.round(activity.xp * xpMultiplier), difficultyMultiplier, recommendedToolTier };
 });
 var REBASED_CHARACTER_LEVEL_RECIPES = new Set([...TOOL_RECIPES, ...V33_EQUIPMENT_RECIPES].map((recipe2) => recipe2.id));
+var INGOT_SMELTING_RECIPE_IDS = /* @__PURE__ */ new Set([
+  "SMELT_COPPER_INGOT",
+  "SMELT_ASTER_IRON_INGOT",
+  "SMELT_OATHSTONE_INGOT",
+  "SMELT_SUNSTONE_INGOT",
+  "SMELT_FROSTIRON_INGOT",
+  "SMELT_BLACKGLASS_INGOT"
+]);
+var FISH_COOKING_RECIPE_IDS = /* @__PURE__ */ new Set([
+  "COOK_MEADOW_PERCH",
+  "COOK_SILVERFIN",
+  "COOK_ROOTSTREAM_TROUT",
+  "COOK_RIVER_EEL",
+  "COOK_OATHSCALE",
+  "COOK_CAVE_LOACH",
+  "COOK_CROWN_CARP",
+  "COOK_IRONWOOD_STEW",
+  "COOK_OASIS_CARP",
+  "COOK_SUNSCAR_SPICED_PLATTER",
+  "COOK_GLASSFIN_FEAST",
+  "COOK_ICEFISH",
+  "COOK_EMBERFIN"
+]);
+var COOKING_FIREWOOD_ITEM_IDS = /* @__PURE__ */ new Set([
+  "GREENWOOD_LOG",
+  "IRONWOOD_LOG",
+  "CROWNWOOD_LOG",
+  "DUNEWOOD",
+  "WHITEPINE_LOG",
+  "CINDERWOOD_LOG"
+]);
 var RECIPES = [
   ...GUILD_COMPONENT_CRAFTING_RELEASED ? GUILD_COMPONENT_RECIPES : [],
   ...CROSS_PROFESSION_COMPONENT_RECIPES,
@@ -43537,13 +43585,13 @@ var RECIPES = [
   ...V33_EQUIPMENT_RECIPES,
   ...TOOL_RECIPES,
   ...[
-    { id: "SMELT_COPPER_INGOT", name: "Smelt Copper Ingot", skillId: "smithing", level: 1, xp: 100, gold: 30, seconds: 36, repeatableTraining: true, inputs: [{ itemId: "COPPER_ORE", quantity: 10 }, { itemId: "GREENWOOD_LOG", quantity: 2 }], output: { itemId: "COPPER_INGOT", quantity: 5 } },
-    { id: "SMELT_ASTER_IRON_INGOT", name: "Smelt Aster-Iron Ingot", skillId: "smithing", level: 8, xp: 165, gold: 50, seconds: 42, repeatableTraining: true, inputs: [{ itemId: "ASTER_IRON_ORE", quantity: 8 }, { itemId: "IRONWOOD_LOG", quantity: 2 }], output: { itemId: "ASTER_IRON_INGOT", quantity: 4 } },
+    { id: "SMELT_COPPER_INGOT", name: "Smelt Copper Ingot", skillId: "smithing", level: 1, xp: 135, gold: 25, seconds: 36, repeatableTraining: true, inputs: [{ itemId: "COPPER_ORE", quantity: 15 }, { itemId: "GREENWOOD_LOG", quantity: 5 }], output: { itemId: "COPPER_INGOT", quantity: 5 } },
+    { id: "SMELT_ASTER_IRON_INGOT", name: "Smelt Aster-Iron Ingot", skillId: "smithing", level: 8, xp: 195, gold: 50, seconds: 42, repeatableTraining: true, inputs: [{ itemId: "ASTER_IRON_ORE", quantity: 13 }, { itemId: "IRONWOOD_LOG", quantity: 5 }], output: { itemId: "ASTER_IRON_INGOT", quantity: 4 } },
     { id: "FORGE_REINFORCED_FITTING", name: "Forge Reinforced Fitting", skillId: "smithing", level: 12, xp: 180, gold: 50, seconds: 48, repeatableTraining: true, inputs: [{ itemId: "ASTER_IRON_INGOT", quantity: 2 }, { itemId: "IRONWOOD_LOG", quantity: 2 }], output: { itemId: "REINFORCED_FITTING", quantity: 1 } },
-    { id: "SMELT_OATHSTONE_INGOT", name: "Smelt Oathstone Ingot", skillId: "smithing", level: 16, xp: 230, gold: 80, seconds: 54, repeatableTraining: true, inputs: [{ itemId: "OATHSTONE_ORE", quantity: 6 }, { itemId: "CROWNWOOD_LOG", quantity: 3 }], output: { itemId: "OATHSTONE_INGOT", quantity: 3 } },
-    { id: "SMELT_SUNSTONE_INGOT", name: "Smelt Sunstone Ingot", skillId: "smithing", level: 26, xp: 520, gold: 280, seconds: 180, repeatableTraining: true, inputs: [{ itemId: "SUNSTONE_ORE", quantity: 6 }, { itemId: "DUNEWOOD", quantity: 4 }], output: { itemId: "SUNSTONE_INGOT", quantity: 3 } },
-    { id: "SMELT_FROSTIRON_INGOT", name: "Smelt Frostiron Ingot", skillId: "smithing", level: 46, xp: 980, gold: 720, seconds: 420, repeatableTraining: true, inputs: [{ itemId: "FROSTIRON", quantity: 6 }, { itemId: "WHITEPINE_LOG", quantity: 4 }], output: { itemId: "FROSTIRON_INGOT", quantity: 3 } },
-    { id: "SMELT_BLACKGLASS_INGOT", name: "Smelt Blackglass Ingot", skillId: "smithing", level: 68, xp: 1850, gold: 1800, seconds: 900, repeatableTraining: true, inputs: [{ itemId: "BLACKGLASS_ORE", quantity: 6 }, { itemId: "CINDERWOOD_LOG", quantity: 4 }], output: { itemId: "BLACKGLASS_INGOT", quantity: 3 } },
+    { id: "SMELT_OATHSTONE_INGOT", name: "Smelt Oathstone Ingot", skillId: "smithing", level: 16, xp: 260, gold: 80, seconds: 54, repeatableTraining: true, inputs: [{ itemId: "OATHSTONE_ORE", quantity: 11 }, { itemId: "CROWNWOOD_LOG", quantity: 6 }], output: { itemId: "OATHSTONE_INGOT", quantity: 3 } },
+    { id: "SMELT_SUNSTONE_INGOT", name: "Smelt Sunstone Ingot", skillId: "smithing", level: 26, xp: 550, gold: 280, seconds: 180, repeatableTraining: true, inputs: [{ itemId: "SUNSTONE_ORE", quantity: 11 }, { itemId: "DUNEWOOD", quantity: 7 }], output: { itemId: "SUNSTONE_INGOT", quantity: 3 } },
+    { id: "SMELT_FROSTIRON_INGOT", name: "Smelt Frostiron Ingot", skillId: "smithing", level: 46, xp: 1010, gold: 720, seconds: 420, repeatableTraining: true, inputs: [{ itemId: "FROSTIRON", quantity: 11 }, { itemId: "WHITEPINE_LOG", quantity: 7 }], output: { itemId: "FROSTIRON_INGOT", quantity: 3 } },
+    { id: "SMELT_BLACKGLASS_INGOT", name: "Smelt Blackglass Ingot", skillId: "smithing", level: 68, xp: 1880, gold: 1800, seconds: 900, repeatableTraining: true, inputs: [{ itemId: "BLACKGLASS_ORE", quantity: 11 }, { itemId: "CINDERWOOD_LOG", quantity: 7 }], output: { itemId: "BLACKGLASS_INGOT", quantity: 3 } },
     { id: "ENCHANT_REGIONAL_CATALYST", name: "Synthesize Regional Catalyst", skillId: "enchanting", level: 70, xp: 2400, gold: 12e3, seconds: 1800, repeatableTraining: true, inputs: [{ itemId: "GEM_DUST", quantity: 25 }, { itemId: "FROSTMARCH_BOTANICAL_ESSENCE", quantity: 2 }], output: { itemId: "REGIONAL_CATALYST", quantity: 1 } },
     { id: "ENCHANT_RADIANT_CATALYST", name: "Synthesize Radiant Catalyst", skillId: "enchanting", level: 90, xp: 5600, gold: 5e4, seconds: 5400, repeatableTraining: true, inputs: [{ itemId: "REGIONAL_CATALYST", quantity: 3 }, { itemId: "GEM_DUST", quantity: 80 }, { itemId: "ASHLANDS_BOTANICAL_ESSENCE", quantity: 2 }], output: { itemId: "RADIANT_CATALYST", quantity: 1 } },
     { id: "COOK_MEADOW_PERCH", name: "Cook Meadow Perch", skillId: "cooking", level: 1, xp: 80, gold: 35, seconds: 34, repeatableTraining: true, inputs: [{ itemId: "MEADOW_PERCH", quantity: 5 }, { itemId: "GREENWOOD_LOG", quantity: 1 }], output: { itemId: "COOKED_MEADOW_PERCH", quantity: 5 } },
@@ -43560,7 +43608,23 @@ var RECIPES = [
     { id: "COOK_GLASSFIN_FEAST", name: "Amberglass Glassfin Feast", skillId: "cooking", level: 38, xp: 720, gold: 520, seconds: 210, repeatableTraining: true, inputs: [{ itemId: "GLASSFIN", quantity: 9 }, { itemId: "AMBERGLASS", quantity: 3 }, { itemId: "DUNEWOOD", quantity: 3 }], output: { itemId: "GLASSFIN_FEAST", quantity: 1 } },
     { id: "COOK_ICEFISH", name: "Frosted Icefin", skillId: "cooking", level: 48, xp: 1100, gold: 900, seconds: 300, repeatableTraining: true, inputs: [{ itemId: "ICEFIN", quantity: 9 }, { itemId: "WINTERMINT", quantity: 3 }, { itemId: "WHITEPINE_LOG", quantity: 3 }], output: { itemId: "FROSTED_ICEFIN", quantity: 1 } },
     { id: "COOK_EMBERFIN", name: "Char Emberfin", skillId: "cooking", level: 74, xp: 1650, gold: 1200, seconds: 420, repeatableTraining: true, inputs: [{ itemId: "EMBERFIN", quantity: 9 }, { itemId: "ASHEN_MYRRH", quantity: 3 }, { itemId: "CINDERWOOD_LOG", quantity: 3 }], output: { itemId: "CHARRED_EMBERFIN", quantity: 1 } }
-  ].map((recipe2) => ({ ...recipe2, gold: increasedCraftingGoldCost(recipe2.gold) }))
+  ].map((recipe2) => {
+    const chargedGold = increasedCraftingGoldCost(recipe2.gold);
+    if (INGOT_SMELTING_RECIPE_IDS.has(recipe2.id)) return { ...recipe2, gold: reducedIngotSmeltingGoldCost(chargedGold) };
+    if (FISH_COOKING_RECIPE_IDS.has(recipe2.id)) return {
+      ...recipe2,
+      xp: recipe2.xp + 10,
+      gold: reducedFishCookingGoldCost(chargedGold),
+      inputs: recipe2.inputs.map((input) => COOKING_FIREWOOD_ITEM_IDS.has(input.itemId) ? { ...input, quantity: 5 } : input)
+    };
+    if (recipe2.id === "COOK_ASHLANDS_EMBER_STEW") return {
+      ...recipe2,
+      xp: recipe2.xp * 3,
+      inputs: recipe2.inputs.map((input) => ({ ...input, quantity: input.itemId === "ASHEN_MYRRH" ? 10 : input.itemId === "CINDER_HEART" || input.itemId === "CINDERWOOD_LOG" ? 5 : input.quantity })),
+      gold: reducedCookingGoldCost(chargedGold)
+    };
+    return { ...recipe2, gold: recipe2.skillId === "cooking" ? reducedCookingGoldCost(chargedGold) : chargedGold };
+  })
 ].map((recipe2) => recipe2.characterLevel === void 0 || REBASED_CHARACTER_LEVEL_RECIPES.has(recipe2.id) ? recipe2 : { ...recipe2, characterLevel: rebasedCombatLevelFromLegacyLevel(recipe2.characterLevel) });
 var recipesById = new Map(RECIPES.map((recipe2) => [recipe2.id, recipe2]));
 if (recipesById.size !== RECIPES.length) throw new Error("Duplicate recipe IDs in the recipe catalog");
@@ -46898,10 +46962,10 @@ function effectiveOwnedGearRarity(state, itemId, ownerCharacterId = state.charac
 // ../apps/mobile/src/core/gem-progression-v1.ts
 init_progression();
 var GEM_COMBINE_COSTS_V1 = {
-  1: { to: 2, copies: 3, dust: 0, gold: 1800, seconds: 5 * 60, level: 8, xp: 140 },
-  2: { to: 3, copies: 3, dust: 5, gold: 6e3, seconds: 15 * 60, level: 20, xp: 420 },
-  3: { to: 4, copies: 3, dust: 15, gold: 21600, seconds: 45 * 60, level: 40, xp: 1200, catalystId: "REGIONAL_CATALYST" },
-  4: { to: 5, copies: 3, dust: 40, gold: 72e3, seconds: 2 * 60 * 60, level: 60, xp: 3200, catalystId: "RADIANT_CATALYST" }
+  1: { to: 2, copies: 3, dust: 0, binding: 1, gold: 600, seconds: 5 * 60, level: 8, xp: 140 },
+  2: { to: 3, copies: 3, dust: 5, binding: 2, gold: 2e3, seconds: 15 * 60, level: 20, xp: 420 },
+  3: { to: 4, copies: 3, dust: 15, binding: 4, gold: 7200, seconds: 45 * 60, level: 40, xp: 1200, catalystId: "REGIONAL_CATALYST" },
+  4: { to: 5, copies: 3, dust: 40, binding: 8, gold: 24e3, seconds: 2 * 60 * 60, level: 60, xp: 3200, catalystId: "RADIANT_CATALYST" }
 };
 function canonicalGemMetaV1(itemId) {
   let item;

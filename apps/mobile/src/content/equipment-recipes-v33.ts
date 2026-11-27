@@ -194,7 +194,7 @@ export const V33_EQUIPMENT_RECIPES:V33EquipmentRecipeDef[]=(catalog.pieces as Ar
     name:String(piece['Item Name']),
     skillId,
     level,
-    xp:boostedCraftXp,
+    xp:boostedCraftXp+5, // Additional per-piece XP for all T1–T9 equipment crafting.
     gold:reducedEquipmentCraftingGoldCost(roundEquipmentCraftingGoldCost(increasedCraftingGoldCost(q(tierGold[tier]??120,multiplier)*EQUIPMENT_FORGE_GOLD_MULTIPLIER)*(['T3','T4'].includes(tier)?2:1))),
     seconds:baseSeconds,
     inputs:mergeInputs([...reducePrimaryEquipmentMaterial(ingredients(tier,String(piece.Path),multiplier,skillId)),...crossProfessionAssemblyInput(tier,skillId,multiplier,String(piece.Path)),infusionByTier[tier]]),

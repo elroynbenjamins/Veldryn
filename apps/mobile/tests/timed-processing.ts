@@ -16,7 +16,7 @@ function ok(value:unknown,message:string){if(!value)fail(message)}
 function equal(actual:unknown,expected:unknown,message:string){if(actual!==expected)fail(message+': expected '+String(expected)+', got '+String(actual))}
 function throws(fn:()=>unknown,message:string){let threw=false;try{fn()}catch{threw=true}ok(threw,message)}
 const now=Date.UTC(2026,8,23);
-const fresh=(ore=100,wood=Math.ceil(ore/5))=>{let state=createCharacter(newGame(now),'IRONWARDEN','Processor');state={...state,character:{...state.character!,gold:10000},inventory:{...state.inventory,stacks:[{itemId:'COPPER_ORE',quantity:ore},...(wood?[{itemId:'GREENWOOD_LOG',quantity:wood}]:[])]}};return state;};
+const fresh=(ore=150,wood=Math.ceil(ore/3))=>{let state=createCharacter(newGame(now),'IRONWARDEN','Processor');state={...state,character:{...state.character!,gold:10000},inventory:{...state.inventory,stacks:[{itemId:'COPPER_ORE',quantity:ore},...(wood?[{itemId:'GREENWOOD_LOG',quantity:wood}]:[])]}};return state;};
 const qty=(state:GameState,id:string)=>(state.inventory.stacks.find(row=>row.itemId===id)?.quantity??0)+(state.bank.stacks.find(row=>row.itemId===id)?.quantity??0)+(state.overflow.stacks.find(row=>row.itemId===id)?.quantity??0);
 
 const v33GearRecipe=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T1')!;
@@ -25,7 +25,7 @@ ok(processingRecipeDef('COOK_SILVERFIN'),'repeatable cooking is timed');
 ok(!processingRecipeDef(v33GearRecipe.id),'Equipment 2.0 gear uses the Forge instead of stackable processing');
 
 let cooking=createCharacter(newGame(now),'IRONWARDEN','Cook');
-cooking={...cooking,character:{...cooking.character!,gold:10000},inventory:{...cooking.inventory,stacks:[{itemId:'SILVERFIN',quantity:5},{itemId:'GREENWOOD_LOG',quantity:1}]}};
+cooking={...cooking,character:{...cooking.character!,gold:10000},inventory:{...cooking.inventory,stacks:[{itemId:'SILVERFIN',quantity:5},{itemId:'GREENWOOD_LOG',quantity:5}]}};
 const cookingReady=processingAvailability(cooking,'COOK_SILVERFIN',1);
 ok(cookingReady.ready,'regional fish Cooking batch is ready with fish and wood fuel');
 cooking=executeGameCommand(cooking,{type:'processing_start',args:{id:'COOK_SILVERFIN',batches:1}},now).state;
@@ -33,12 +33,12 @@ equal(qty(cooking,'SILVERFIN'),0,'Cooking reserves the fish ingredient');
 equal(qty(cooking,'GREENWOOD_LOG'),0,'Cooking reserves its wood fuel');
 const cooked=claimActivity(cooking,now+36_000);
 equal(qty(cooked.state,'COOKED_SILVERFIN'),5,'completed Cooking batch produces edible fish');
-equal(cooked.state.skills.find(row=>row.skillId==='cooking')?.xp,100,'non-affinity Cooking retains base XP');
+equal(cooked.state.skills.find(row=>row.skillId==='cooking')?.xp,110,'non-affinity Cooking retains base XP');
 
 // A meal tap must work while Fishing is active: the server settles Fishing
 // and begins Cooking in the same command without a separate Stop action.
 let fishingToCooking=createCharacter(newGame(now),'IRONWARDEN','Fish to Cook');
-fishingToCooking={...fishingToCooking,character:{...fishingToCooking.character!,gold:10000},inventory:{...fishingToCooking.inventory,stacks:[{itemId:'SILVERFIN',quantity:5},{itemId:'GREENWOOD_LOG',quantity:1}]}};
+fishingToCooking={...fishingToCooking,character:{...fishingToCooking.character!,gold:10000},inventory:{...fishingToCooking.inventory,stacks:[{itemId:'SILVERFIN',quantity:5},{itemId:'GREENWOOD_LOG',quantity:5}]}};
 fishingToCooking=executeGameCommand(fishingToCooking,{type:'start',args:{kind:'gathering',id:'MEADOW_PERCH_POOL'}},now).state;
 equal(fishingToCooking.activity?.kind,'fishing','a Fishing session is active before selecting a meal');
 const cookingAfterFishing=executeGameCommand(fishingToCooking,{type:'processing_start',args:{id:'COOK_SILVERFIN'}},now+60_000).state;
@@ -49,31 +49,31 @@ ok(qty(cookingAfterFishing,'MEADOW_PERCH')>0,'earned Fishing resources are settl
 
 let stackedFish=createCharacter(newGame(now),'IRONWARDEN','Stacked Fish');
 stackedFish={...stackedFish,character:{...stackedFish.character!,gold:10000},
-  inventory:{...stackedFish.inventory,stacks:[{itemId:'SILVERFIN',quantity:6},{itemId:'GREENWOOD_LOG',quantity:1}]},
-  bank:{...stackedFish.bank,stacks:[{itemId:'SILVERFIN',quantity:100},{itemId:'SILVERFIN',quantity:100},{itemId:'GREENWOOD_LOG',quantity:40}]}};
+  inventory:{...stackedFish.inventory,stacks:[{itemId:'SILVERFIN',quantity:6},{itemId:'GREENWOOD_LOG',quantity:5}]},
+  bank:{...stackedFish.bank,stacks:[{itemId:'SILVERFIN',quantity:100},{itemId:'SILVERFIN',quantity:100},{itemId:'GREENWOOD_LOG',quantity:100},{itemId:'GREENWOOD_LOG',quantity:100}]}};
 const fishCapacity=processingRunCapacity(stackedFish,'COOK_SILVERFIN',offlineCapSeconds(stackedFish),true);
 equal(fishCapacity.inputs.find(row=>row.itemId==='SILVERFIN')?.inventory,6,'recipe capacity sees the six fish in Inventory');
 equal(fishCapacity.inputs.find(row=>row.itemId==='SILVERFIN')?.bank,200,'recipe capacity totals multiple full Bank stacks');
-equal(fishCapacity.maxBatches,41,'206 Silverfin and 41 logs fund 41 five-fish cooking batches');
+equal(fishCapacity.maxBatches,41,'206 Silverfin and 205 logs fund 41 five-fish cooking batches');
 equal(fishCapacity.availableBatches,41,'preview reports exactly the batches automatic cooking will reserve');
 equal(processingRunCapacity(stackedFish,'COOK_SILVERFIN',70,true).availableBatches,1,'shorter AFK window limits displayed available batches');
-const goldLimited={...stackedFish,character:{...stackedFish.character!,gold:120}};
+const goldLimited={...stackedFish,character:{...stackedFish.character!,gold:100}};
 equal(processingRunCapacity(goldLimited,'COOK_SILVERFIN',offlineCapSeconds(goldLimited),true).availableBatches,2,'displayed batches obey Gold limits');
 const startedFish=executeGameCommand(stackedFish,{type:'processing_start',args:{id:'COOK_SILVERFIN'}},now).state;
 equal(startedFish.activity?.processing?.totalBatches,41,'server reserves exactly the displayed 41 batches');
 equal(qty(startedFish,'SILVERFIN'),1,'only one raw fish remains after the reservation');
-equal(qty(startedFish,'GREENWOOD_LOG'),0,'all 41 required fuel logs are reserved');
+equal(qty(startedFish,'GREENWOOD_LOG'),0,'all 205 required fuel logs are reserved');
 equal(processingRunCapacity(startedFish,'COOK_SILVERFIN',offlineCapSeconds(startedFish),true).availableBatches,0,'reserved fish are no longer counted as available for a second run');
 equal(startedFish.activity?.processing?.remainingBatches,41,'existing reserved batches remain visible to the recipe card');
 
 // Every bar batch needs its region's timber, with fuel rising by ore tier.
 for(const [id,ore,wood,qtyFuel] of [
- ['SMELT_COPPER_INGOT','COPPER_ORE','GREENWOOD_LOG',2],
- ['SMELT_ASTER_IRON_INGOT','ASTER_IRON_ORE','IRONWOOD_LOG',2],
- ['SMELT_OATHSTONE_INGOT','OATHSTONE_ORE','CROWNWOOD_LOG',3],
- ['SMELT_SUNSTONE_INGOT','SUNSTONE_ORE','DUNEWOOD',4],
- ['SMELT_FROSTIRON_INGOT','FROSTIRON','WHITEPINE_LOG',4],
- ['SMELT_BLACKGLASS_INGOT','BLACKGLASS_ORE','CINDERWOOD_LOG',4],
+ ['SMELT_COPPER_INGOT','COPPER_ORE','GREENWOOD_LOG',5],
+ ['SMELT_ASTER_IRON_INGOT','ASTER_IRON_ORE','IRONWOOD_LOG',5],
+ ['SMELT_OATHSTONE_INGOT','OATHSTONE_ORE','CROWNWOOD_LOG',6],
+ ['SMELT_SUNSTONE_INGOT','SUNSTONE_ORE','DUNEWOOD',7],
+ ['SMELT_FROSTIRON_INGOT','FROSTIRON','WHITEPINE_LOG',7],
+ ['SMELT_BLACKGLASS_INGOT','BLACKGLASS_ORE','CINDERWOOD_LOG',7],
 ] as const){
  const recipe=RECIPES.find(row=>row.id===id);
  ok(recipe?.inputs.some(input=>input.itemId===ore),'ore remains a smelting ingredient: '+id);
@@ -81,16 +81,16 @@ for(const [id,ore,wood,qtyFuel] of [
 }
 const noFuel=processingAvailability(fresh(100,0),'SMELT_COPPER_INGOT',1);
 ok(!noFuel.ready&&noFuel.maxBatches===0,'copper ore alone cannot smelt without Greenwood fuel');
-equal(processingRunCapacity(fresh(100,19),'SMELT_COPPER_INGOT',offlineCapSeconds(fresh(100,19)),true).availableBatches,9,'wood is an authoritative batch limit');
+equal(processingRunCapacity(fresh(100,19),'SMELT_COPPER_INGOT',offlineCapSeconds(fresh(100,19)),true).availableBatches,3,'wood is an authoritative batch limit');
 let state=fresh();
 const availability=processingAvailability(state,'SMELT_COPPER_INGOT',1);
 ok(availability.ready&&availability.maxBatches===10,'processing exposes all resource-limited crafts');
 const selected=executeGameCommand(state,{type:'processing_start',args:{id:'SMELT_COPPER_INGOT',batches:5,batchMode:'selected'}},now).state;
 equal(selected.activity?.processing?.remainingBatches,5,'selected processing count is reserved exactly');
-equal(qty(selected,'GREENWOOD_LOG'),10,'only the selected five processing batches consume fuel');
+equal(qty(selected,'GREENWOOD_LOG'),25,'only the selected five processing batches consume fuel');
 const automatic=executeGameCommand(state,{type:'processing_start',args:{id:'SMELT_COPPER_INGOT'}},now).state;
 equal(automatic.activity?.processing?.remainingBatches,10,'processing start reserves every affordable material batch');
-equal(qty(automatic,'GREENWOOD_LOG'),0,'automatic smelting reserves all 20 Greenwood logs for ten batches');
+equal(qty(automatic,'GREENWOOD_LOG'),0,'automatic smelting reserves all 50 Greenwood logs for ten batches');
 const longRun={...fresh(100_000),character:{...fresh(100_000).character!,gold:1_000_000}};
 const afkLimited=executeGameCommand(longRun,{type:'processing_start',args:{id:'SMELT_COPPER_INGOT'}},now).state;
 equal(afkLimited.activity?.processing?.remainingBatches,Math.floor(offlineCapSeconds(longRun)/afkLimited.activity!.processing!.cycleSeconds),'processing reservation stops at the normal AFK time allowance');
@@ -110,9 +110,9 @@ equal(hourly.actionsPerHour,Math.floor(3600/savedCycle),'Home crafts/hour respec
 equal(hourly.xpPerHour,Math.floor(hourly.actionsPerHour*savedXpPerCraft),'Home XP/hour uses the reserved processing XP');
 ok(hourly.xpPerHour>0,'Smithing displays a positive hourly XP rate before the skill cap');
 equal(activeActivityLevelPace(state,hourly.xpPerHour)?.label,'Smithing','Home skill XP progress is shown for processing');
-equal(qty(state,'COPPER_ORE'),50,'inputs are reserved up front');
-equal(qty(state,'GREENWOOD_LOG'),10,'ten Greenwood logs are reserved for five copper batches');
-equal(state.character!.gold,beforeGold-180,'Gold is reserved up front');
+equal(qty(state,'COPPER_ORE'),75,'inputs are reserved up front');
+equal(qty(state,'GREENWOOD_LOG'),25,'twenty-five Greenwood logs are reserved for five copper batches');
+equal(state.character!.gold,beforeGold-150,'Gold is reserved up front');
 equal(qty(state,'COPPER_INGOT'),0,'processing does not grant output immediately');
 const cycleMs=36_000/1.03;
 const at=(cycles:number)=>now+Math.ceil(cycleMs*cycles);
@@ -123,7 +123,7 @@ ok((preview.nextProgressFraction??0)>.49&&(preview.nextProgressFraction??0)<.51,
 let claimed=claimActivity(state,at(1));
 equal(claimed.reward.craftingActions,1,'one effective cycle completes one batch');
 equal(qty(claimed.state,'COPPER_INGOT'),5,'completed batch grants its output');
-equal(claimed.state.skills.find(row=>row.skillId==='smithing')?.xp,105,'Ironwarden earns the boosted 100-XP Copper recipe plus 5% Smithing affinity');
+equal(claimed.state.skills.find(row=>row.skillId==='smithing')?.xp,141,'Ironwarden earns the 135-XP Copper recipe plus 5% Smithing affinity, retaining the fractional remainder');
 equal(claimed.state.activity?.processing?.remainingBatches,4,'remaining reservation persists');
 const partial=claimActivity(claimed.state,at(1.5));
 equal(partial.reward.craftingActions,0,'claiming midway does not lose or invent a batch');
@@ -133,14 +133,14 @@ equal(resumed.reward.craftingActions,1,'saved partial progress finishes on the n
 equal(qty(resumed.state,'COPPER_INGOT'),10,'second completed cycle grants the second output batch');
 const refundable=stopActivity(partial.state);
 equal(refundable.activity,null,'stopping processing clears the activity');
-equal(qty(refundable,'COPPER_ORE'),90,'only four unprocessed batches are refunded after one completed batch');
-equal(qty(refundable,'GREENWOOD_LOG'),18,'eight Greenwood logs refund when four unfinished batches are stopped');
-equal(refundable.character!.gold,beforeGold-36,'only the completed batch keeps its Gold cost');
+equal(qty(refundable,'COPPER_ORE'),135,'only four unprocessed batches are refunded after one completed batch');
+equal(qty(refundable,'GREENWOOD_LOG'),45,'twenty Greenwood logs refund when four unfinished batches are stopped');
+equal(refundable.character!.gold,beforeGold-30,'only the completed batch keeps its Gold cost');
 const switched=transitionActivity(partial.state,at(1.5),{kind:'gathering',id:'GREENWOOD_TREE'}).state;
 equal(switched.activity?.kind,'woodcutting','switching replaces processing with gathering');
-equal(qty(switched,'COPPER_ORE'),90,'switching refunds every unfinished reserved batch');
-equal(qty(switched,'GREENWOOD_LOG'),18,'changing activity refunds unused smelting fuel');
-equal(switched.character!.gold,beforeGold-36,'switching refunds unfinished crafting Gold');
+equal(qty(switched,'COPPER_ORE'),135,'switching refunds every unfinished reserved batch');
+equal(qty(switched,'GREENWOOD_LOG'),45,'changing activity refunds unused smelting fuel');
+equal(switched.character!.gold,beforeGold-30,'switching refunds unfinished crafting Gold');
 let drills=startClassTraining(fresh(),now);
 drills=executeGameCommand(drills,{type:'processing_start',args:{id:'SMELT_COPPER_INGOT',batches:1}},now+60000).state;
 ok(!drills.character!.classTraining&&drills.activity?.kind==='processing','starting processing cleanly replaces safe class drills');
@@ -154,14 +154,27 @@ equal(normalized.activity?.kind,'processing','save normalization preserves proce
 equal(normalized.activity?.processing?.remainingBatches,5,'save normalization preserves reserved batch count');
 // Pre-fuel saved reservations had only ore. They must remain claimable/refundable
 // without charging fuel retroactively or inventing a free wood refund.
-const preFuelState={...state,inventory:{...state.inventory,stacks:state.inventory.stacks.map(row=>
- row.itemId==='GREENWOOD_LOG'?{...row,quantity:row.quantity+10}:row)},
- activity:{...state.activity!,processing:{...state.activity!.processing!,inputsPerBatch:[{itemId:'COPPER_ORE',quantity:10}]}}};
+const preFuelState={...state,character:{...state.character!,gold:beforeGold-5*36},inventory:{...state.inventory,stacks:[{itemId:'COPPER_ORE',quantity:50},{itemId:'GREENWOOD_LOG',quantity:20}]},
+ activity:{...state.activity!,processing:{...state.activity!.processing!,goldPerBatch:36,xpPerBatch:105,inputsPerBatch:[{itemId:'COPPER_ORE',quantity:10}]}}};
 const preFuelRestored=normalizeSave(structuredClone(preFuelState));
 equal(preFuelRestored.activity?.processing?.inputsPerBatch.length,1,'old ore-only reservation survives normalization');
 const preFuelCancelled=stopActivity(preFuelRestored);
 equal(qty(preFuelCancelled,'COPPER_ORE'),100,'old processing returns reserved unspent ore');
 equal(qty(preFuelCancelled,'GREENWOOD_LOG'),20,'old ore-only reservation neither consumes nor refunds unreserved wood');
+equal(preFuelCancelled.character!.gold,beforeGold,'old reservation refunds its original Gold, not the new fee');
+equal(preFuelRestored.activity!.processing!.xpPerBatch,105,'old reserved XP is unchanged');
+// Immediately preceding recipe version reserved both ore and fuel at the old prices.
+const previousRecipeState={...state,character:{...state.character!,gold:beforeGold-5*36},inventory:{...state.inventory,stacks:[{itemId:'COPPER_ORE',quantity:100},{itemId:'GREENWOOD_LOG',quantity:40}]},
+ activity:{...state.activity!,processing:{...state.activity!.processing!,goldPerBatch:36,xpPerBatch:105,inputsPerBatch:[{itemId:'COPPER_ORE',quantity:10},{itemId:'GREENWOOD_LOG',quantity:2}]}}};
+const previousRestored=normalizeSave(structuredClone(previousRecipeState));
+const previousClaim=claimActivity(previousRestored,at(1));
+equal(previousClaim.reward.craftingActions,1,'old two-input reservation can settle one original batch');
+equal(qty(previousClaim.state,'COPPER_INGOT'),5,'old two-input reservation keeps its original output');
+equal(previousClaim.state.skills.find(row=>row.skillId==='smithing')?.xp,105,'old two-input reservation keeps its original XP');
+const previousCancelled=stopActivity(previousClaim.state);
+equal(qty(previousCancelled,'COPPER_ORE'),140,'old two-input reservation refunds four original ore batches');
+equal(qty(previousCancelled,'GREENWOOD_LOG'),48,'old two-input reservation refunds four original fuel batches');
+equal(previousCancelled.character!.gold,beforeGold-36,'old two-input reservation charges only the original completed fee');
 const malformedLegacy=structuredClone(preFuelState);
 malformedLegacy.activity!.processing!.inputsPerBatch[0].quantity=1;
 throws(()=>normalizeSave(malformedLegacy),'only exact pre-fuel ore-only ingredient snapshots may be restored');

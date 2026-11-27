@@ -10,7 +10,7 @@ const state=createCharacter(newGame(1000),'IRONWARDEN','Blueprint Link Test');
 const copper=itemInspectModel(state,'COPPER_ORE');
 const smelt=copper.usedIn.find(row=>row.recipeId==='SMELT_COPPER_INGOT');
 ok(!!smelt,'Copper Ore still lists its smelting recipe');
-ok(!smelt.isRecipeUnlock&&smelt.quantity===10,'Normal ingredients retain their required quantity and ordinary row presentation');
+ok(!smelt.isRecipeUnlock&&smelt.quantity===15,'Normal ingredients retain their required quantity and ordinary row presentation');
 ok(prioritizeItemUses(copper.usedIn).some(row=>row.recipeId===smelt.recipeId),'Existing ingredient use ordering is preserved');
 
 // Actual learnable blueprints are quest/knowledge items, not crafting ingredients.

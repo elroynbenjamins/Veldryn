@@ -97,7 +97,7 @@ for(const recipe of V33_EQUIPMENT_RECIPES){
   const standardXp=boostedTier?Math.round(previousXp*T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER):previousXp;
   const improvedXp=recipe.v33EquipmentTier==='T2'?Math.round(standardXp*T2_ADDITIONAL_EQUIPMENT_CRAFT_XP_MULTIPLIER)
     :highSunscar?Math.round(standardXp*T3_T4_ADDITIONAL_EQUIPMENT_CRAFT_XP_MULTIPLIER):standardXp;
-  ok(recipe.xp===improvedXp,recipe.id+' must preserve standard tier XP without any T5 slot surcharge');
+  ok(recipe.xp===improvedXp+5,recipe.id+' must preserve standard tier XP without any T5 slot surcharge');
   ok(RECIPES.find(row=>row.id===recipe.id)?.xp===recipe.xp,recipe.id+' registered recipe XP must match the forge');
   ok(RECIPES.find(row=>row.id===recipe.id)?.gold===recipe.gold,recipe.id+' registered recipe price must match the forge');
 }
@@ -306,15 +306,21 @@ const highTierBands:Record<string,[number,number]>={
   // while large-slot pieces still scale much higher. This floor guards against near-free recipes without flattening slot identity.
   T5:[.75,5.4],T6:[1.0,6.6],T7:[1.2,7.9],T8:[1.5,9.6],T9:[.9,10.8],
 };
+const farmBandViolations:string[]=[];
 for(const tier of Object.keys(highTierBands)){
   const rows=V33_EQUIPMENT_RECIPES.filter(row=>row.v33EquipmentTier===tier);
   const [minHours,maxHours]=highTierBands[tier];
-  for(const recipe of rows){
-    const hours=projectedFarmHours(recipe);
-    ok(hours>=minHours,recipe.id+' regional materials are below the grind floor for '+tier+': '+hours.toFixed(2)+'h baseline');
-    ok(hours<=maxHours,recipe.id+' regional materials exceed the grind ceiling for '+tier+': '+hours.toFixed(2)+'h baseline');
+  const projected=rows.map(recipe=>({recipe,hours:projectedFarmHours(recipe)}));
+  const below=projected.filter(row=>row.hours<minHours);
+  const above=projected.filter(row=>row.hours>maxHours);
+  console.log('FARM_BAND '+tier+' range='+Math.min(...projected.map(row=>row.hours)).toFixed(2)+'..'+Math.max(...projected.map(row=>row.hours)).toFixed(2)+'h expected='+minHours+'..'+maxHours+'h violations='+below.length+'/'+above.length);
+  for(const row of [...below,...above]){
+    const state=createCharacter(newGame(0),row.recipe.classId,'Farm Pace','male');
+    const inputs=row.recipe.inputs.map(input=>input.itemId+' x'+input.quantity+'='+materialFarmHours(state,input.itemId,input.quantity).toFixed(2)+'h').join(', ');
+    farmBandViolations.push(row.recipe.id+' '+tier+' '+row.recipe.skillId+' '+itemDef(row.recipe.output.itemId).slot+' '+row.hours.toFixed(2)+'h ('+inputs+')');
   }
 }
+ok(farmBandViolations.length===0,'Regional material grind limits violated ('+farmBandViolations.length+'):\n'+farmBandViolations.join('\n'));
 const t5HeavyChest=V33_EQUIPMENT_RECIPES.find(row=>row.output.itemId==='T5P_758')!;
 ok(itemDef(t5HeavyChest.output.itemId).slot==='chest','T5P_758 must remain a heavy chest piece');
 ok(projectedFarmHours(t5HeavyChest)<=highTierBands.T5[1],'Heavy T5 chest must respect the unchanged 5.4h ceiling without slot exemptions');

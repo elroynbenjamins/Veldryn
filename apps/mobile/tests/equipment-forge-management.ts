@@ -38,13 +38,13 @@ const batches=Math.ceil(ingotNeed/smelt.output.quantity);
 let prereqState=createCharacter(newGame(0),t4.classId,'Prereq Tester','male');
 const externalInputs=t4.inputs.filter(input=>input.itemId!=='SUNSTONE_INGOT');
 const smithingLevel=Math.max(t4.level,smelt.level,30);
-prereqState={...prereqState,character:{...prereqState.character!,level:t4.characterLevel,gold:500000},skills:prereqState.skills.map(row=>row.skillId==='smithing'?{...row,level:smithingLevel,xp:totalXpAtLevel(smithingLevel)}:row),inventory:{...prereqState.inventory,capacity:100,stacks:[{itemId:'SUNSTONE_ORE',quantity:batches*6},{itemId:'DUNEWOOD',quantity:batches*4+(externalInputs.find(input=>input.itemId==='DUNEWOOD')?.quantity??0)},...externalInputs.filter(input=>input.itemId!=='DUNEWOOD').map(input=>({...input}))]},bank:{...prereqState.bank,capacity:200,stacks:[]}};
+prereqState={...prereqState,character:{...prereqState.character!,level:t4.characterLevel,gold:500000},skills:prereqState.skills.map(row=>row.skillId==='smithing'?{...row,level:smithingLevel,xp:totalXpAtLevel(smithingLevel)}:row),inventory:{...prereqState.inventory,capacity:100,stacks:[{itemId:'SUNSTONE_ORE',quantity:batches*(smelt.inputs.find(input=>input.itemId==='SUNSTONE_ORE')?.quantity??0)},{itemId:'DUNEWOOD',quantity:batches*(smelt.inputs.find(input=>input.itemId==='DUNEWOOD')?.quantity??0)+(externalInputs.find(input=>input.itemId==='DUNEWOOD')?.quantity??0)},...externalInputs.filter(input=>input.itemId!=='DUNEWOOD').map(input=>({...input}))]},bank:{...prereqState.bank,capacity:200,stacks:[]}};
 const craftability=equipmentPrerequisiteCraftability(prereqState,t4.id);
 ok(craftability.available&&craftability.processableMissing>=1,'Missing processed equipment inputs must expose Craft prerequisites');
 const processed=craftEquipmentPrerequisites(prereqState,t4.id,5000);
 ok(qty(processed.state,'SUNSTONE_INGOT')>=ingotNeed,'Craft prerequisites must create enough processed material for the equipment recipe');
 ok(processed.crafted.some(row=>row.recipeId===smelt.id&&row.batches===batches),'Prerequisite processing must use the exact registered processing recipe and required batch count');
-ok(processed.state.inventory.stacks.some(row=>row.itemId==='SUNSTONE_ORE')===false||qty(processed.state,'SUNSTONE_ORE')<batches*6,'Prerequisite processing must consume owned raw material');
+ok(processed.state.inventory.stacks.some(row=>row.itemId==='SUNSTONE_ORE')===false||qty(processed.state,'SUNSTONE_ORE')<batches*(smelt.inputs.find(input=>input.itemId==='SUNSTONE_ORE')?.quantity??0),'Prerequisite processing must consume owned raw material');
 
 const noRaw={...prereqState,inventory:{...prereqState.inventory,stacks:externalInputs.map(input=>({...input}))}};
 const before=JSON.stringify(noRaw);

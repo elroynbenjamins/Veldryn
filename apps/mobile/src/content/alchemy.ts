@@ -36,6 +36,8 @@ export const POTIONS:readonly PotionDefinition[]=[
 /** Regional infusion reagents turn Alchemy into a deliberate part of the gear
  * loop. They are consumed for initial assembly and naturally reappear in the
  * existing regional-upgrade costs through the equipment recipe itself. */
+/** Tradeable, low-cost sink for overstocked starter gathering resources. */
+export const GEM_BINDING_COMPOUND_ITEM:ItemDef={id:'GEM_BINDING_COMPOUND',name:'Gem Binding Compound',type:'material',value:18,rarity:'uncommon',passive:'Alchemical binder crafted from common wood, ore and fish; consumed when merging gems.'};
 export const ALCHEMY_EQUIPMENT_INFUSIONS=Object.freeze([
   {id:'VERDANT_BINDING_RESIN',name:'Verdant Binding Resin',rarity:'rare' as const,value:70,description:'A dewleaf resin that binds first-tier gear.'},
   {id:'IRONWOOD_BINDING_RESIN',name:'Ironwood Binding Resin',rarity:'rare' as const,value:115,description:'A thorn-infused resin made with Ironwood resources for second-tier gear.'},
@@ -66,7 +68,9 @@ export const ALCHEMY_RECIPES:readonly AlchemyRecipe[]=([
   recipe('GREATER_VIGOR_TONIC',25,132,550,32,[{itemId:'SUNSCALE',quantity:2},{itemId:'RIVER_MINT',quantity:2}],'_SUNSCAR'),
   recipe('OATH_VIGOR_TONIC',60,174,1700,98,[{itemId:'WINTERMINT',quantity:2},{itemId:'OATHBLOSSOM',quantity:2}],'_FROSTMARCH'),
   recipe('OATH_WARD_TONIC',60,190,2150,128,[{itemId:'ASHEN_MYRRH',quantity:2},{itemId:'FROSTBLOOM',quantity:2}],'_ASHLANDS'),
-  {id:'BREW_VERDANT_BINDING_RESIN',name:'Verdant Binding Resin',skillId:'alchemy',level:1,seconds:90,xp:95,gold:18,inputs:[{itemId:'DEWLEAF',quantity:5},{itemId:'MOSS_FIBER',quantity:12},{itemId:'WISP_DUST',quantity:3},{itemId:'ASTERFALL_BOTANICAL_ESSENCE',quantity:1}],output:{itemId:'VERDANT_BINDING_RESIN',quantity:1}},
+  // An accessible profession recipe: gem merging substitutes materials for most of the Gold fee.
+   {id:'BREW_GEM_BINDING_COMPOUND',name:'Gem Binding Compound',skillId:'alchemy',level:1,seconds:60,xp:85,gold:30,inputs:[{itemId:'GREENWOOD_LOG',quantity:12},{itemId:'COPPER_ORE',quantity:8},{itemId:'MEADOW_PERCH',quantity:5}],output:{itemId:'GEM_BINDING_COMPOUND',quantity:1}},
+   {id:'BREW_VERDANT_BINDING_RESIN',name:'Verdant Binding Resin',skillId:'alchemy',level:1,seconds:90,xp:95,gold:18,inputs:[{itemId:'DEWLEAF',quantity:5},{itemId:'MOSS_FIBER',quantity:12},{itemId:'WISP_DUST',quantity:3},{itemId:'ASTERFALL_BOTANICAL_ESSENCE',quantity:1}],output:{itemId:'VERDANT_BINDING_RESIN',quantity:1}},
   // Five-resin optional batch: 20% less rare Essence, modestly more common supplies; no XP or time shortcut.
   {id:'BREW_VERDANT_BINDING_RESIN_BULK',name:'Bulk Verdant Binding Resin',skillId:'alchemy',level:1,seconds:450,xp:475,gold:91,inputs:[{itemId:'DEWLEAF',quantity:35},{itemId:'MOSS_FIBER',quantity:60},{itemId:'WISP_DUST',quantity:20},{itemId:'ASTERFALL_BOTANICAL_ESSENCE',quantity:4}],output:{itemId:'VERDANT_BINDING_RESIN',quantity:5}},
   // Available at the start of T2: all inputs come from Ironwood hunts or woodcutting, without backtracking to Greenfields.

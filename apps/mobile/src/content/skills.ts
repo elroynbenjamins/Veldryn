@@ -6,7 +6,7 @@ import {CROSS_PROFESSION_COMPONENT_RECIPES} from './cross-profession-components'
 import {TOOL_RECIPES} from './gathering-tools';
 import {ALCHEMY_RECIPES} from './alchemy';
 import {V33_EQUIPMENT_RECIPES} from './equipment-recipes-v33';
-import {increasedCraftingGoldCost} from './crafting-gold-cost';
+import {increasedCraftingGoldCost,reducedCookingGoldCost,reducedFishCookingGoldCost,reducedIngotSmeltingGoldCost} from './crafting-gold-cost';
 export interface GatherDef{id:string;skillId:'mining'|'woodcutting'|'fishing'|'herbalism';name:string;unlockLevel:number;seconds:number;xp:number;itemId:string;min:number;max:number;zoneId:string;areaId?:string;difficultyMultiplier:number;recommendedToolTier:number;}
 export const GATHERING:GatherDef[]=([
 // Starting-region mining keeps early enchanting materials accessible before Old Mines unlocks at rebased Character Level 13.
@@ -59,6 +59,23 @@ export const GATHERING:GatherDef[]=([
 export interface Recipe{id:string;name:string;skillId:'smithing'|'cooking'|'alchemy'|'tailoring'|'enchanting';level:number;xp:number;gold:number;seconds:number;repeatableTraining?:boolean;inputs:{itemId:string;quantity:number}[];output:{itemId:string;quantity:number};classId?:ClassId;noviceSetId?:string;characterLevel?:number;requiresCraftedItemId?:string;requiredKnowledgeId?:string;knowledgeItemId?:string;v33EquipmentTier?:string;v33Region?:string;v33SetId?:string;v33Path?:string;}
 /** Tool and forge catalogs already convert their character levels at source. */
 const REBASED_CHARACTER_LEVEL_RECIPES=new Set([...TOOL_RECIPES,...V33_EQUIPMENT_RECIPES].map(recipe=>recipe.id));
+/** Fish dishes keep their original fish and specialty ingredient quantities.
+ * Increase only firewood to five per batch; the non-fish Ashlands stew remains
+ * on its existing separate cooking-economy settings. */
+/** Applies the 15% charged-Gold discount to the six currently supported
+ * ingot-smelting batches (Copper's 30 Gold rounds back to 30). */
+export const INGOT_SMELTING_RECIPE_IDS=new Set([
+ 'SMELT_COPPER_INGOT','SMELT_ASTER_IRON_INGOT','SMELT_OATHSTONE_INGOT',
+ 'SMELT_SUNSTONE_INGOT','SMELT_FROSTIRON_INGOT','SMELT_BLACKGLASS_INGOT',
+]);
+export const FISH_COOKING_RECIPE_IDS=new Set([
+ 'COOK_MEADOW_PERCH','COOK_SILVERFIN','COOK_ROOTSTREAM_TROUT','COOK_RIVER_EEL',
+ 'COOK_OATHSCALE','COOK_CAVE_LOACH','COOK_CROWN_CARP','COOK_IRONWOOD_STEW',
+ 'COOK_OASIS_CARP','COOK_SUNSCAR_SPICED_PLATTER','COOK_GLASSFIN_FEAST','COOK_ICEFISH','COOK_EMBERFIN',
+]);
+const COOKING_FIREWOOD_ITEM_IDS=new Set([
+ 'GREENWOOD_LOG','IRONWOOD_LOG','CROWNWOOD_LOG','DUNEWOOD','WHITEPINE_LOG','CINDERWOOD_LOG',
+]);
 export const RECIPES:Recipe[]=[
 ...(GUILD_COMPONENT_CRAFTING_RELEASED?GUILD_COMPONENT_RECIPES:[]),
 ...CROSS_PROFESSION_COMPONENT_RECIPES,
@@ -74,13 +91,13 @@ export const RECIPES:Recipe[]=[
 ...(V33_EQUIPMENT_RECIPES as Recipe[]),
 ...(TOOL_RECIPES as Recipe[]),
 ...([
-{id:'SMELT_COPPER_INGOT',name:'Smelt Copper Ingot',skillId:'smithing',level:1,xp:100,gold:30,seconds:36,repeatableTraining:true,inputs:[{itemId:'COPPER_ORE',quantity:10},{itemId:'GREENWOOD_LOG',quantity:2}],output:{itemId:'COPPER_INGOT',quantity:5}},
-{id:'SMELT_ASTER_IRON_INGOT',name:'Smelt Aster-Iron Ingot',skillId:'smithing',level:8,xp:165,gold:50,seconds:42,repeatableTraining:true,inputs:[{itemId:'ASTER_IRON_ORE',quantity:8},{itemId:'IRONWOOD_LOG',quantity:2}],output:{itemId:'ASTER_IRON_INGOT',quantity:4}},
+{id:'SMELT_COPPER_INGOT',name:'Smelt Copper Ingot',skillId:'smithing',level:1,xp:135,gold:25,seconds:36,repeatableTraining:true,inputs:[{itemId:'COPPER_ORE',quantity:15},{itemId:'GREENWOOD_LOG',quantity:5}],output:{itemId:'COPPER_INGOT',quantity:5}},
+{id:'SMELT_ASTER_IRON_INGOT',name:'Smelt Aster-Iron Ingot',skillId:'smithing',level:8,xp:195,gold:50,seconds:42,repeatableTraining:true,inputs:[{itemId:'ASTER_IRON_ORE',quantity:13},{itemId:'IRONWOOD_LOG',quantity:5}],output:{itemId:'ASTER_IRON_INGOT',quantity:4}},
 {id:'FORGE_REINFORCED_FITTING',name:'Forge Reinforced Fitting',skillId:'smithing',level:12,xp:180,gold:50,seconds:48,repeatableTraining:true,inputs:[{itemId:'ASTER_IRON_INGOT',quantity:2},{itemId:'IRONWOOD_LOG',quantity:2}],output:{itemId:'REINFORCED_FITTING',quantity:1}},
-{id:'SMELT_OATHSTONE_INGOT',name:'Smelt Oathstone Ingot',skillId:'smithing',level:16,xp:230,gold:80,seconds:54,repeatableTraining:true,inputs:[{itemId:'OATHSTONE_ORE',quantity:6},{itemId:'CROWNWOOD_LOG',quantity:3}],output:{itemId:'OATHSTONE_INGOT',quantity:3}},
-{id:'SMELT_SUNSTONE_INGOT',name:'Smelt Sunstone Ingot',skillId:'smithing',level:26,xp:520,gold:280,seconds:180,repeatableTraining:true,inputs:[{itemId:'SUNSTONE_ORE',quantity:6},{itemId:'DUNEWOOD',quantity:4}],output:{itemId:'SUNSTONE_INGOT',quantity:3}},
-{id:'SMELT_FROSTIRON_INGOT',name:'Smelt Frostiron Ingot',skillId:'smithing',level:46,xp:980,gold:720,seconds:420,repeatableTraining:true,inputs:[{itemId:'FROSTIRON',quantity:6},{itemId:'WHITEPINE_LOG',quantity:4}],output:{itemId:'FROSTIRON_INGOT',quantity:3}},
-{id:'SMELT_BLACKGLASS_INGOT',name:'Smelt Blackglass Ingot',skillId:'smithing',level:68,xp:1850,gold:1800,seconds:900,repeatableTraining:true,inputs:[{itemId:'BLACKGLASS_ORE',quantity:6},{itemId:'CINDERWOOD_LOG',quantity:4}],output:{itemId:'BLACKGLASS_INGOT',quantity:3}},
+{id:'SMELT_OATHSTONE_INGOT',name:'Smelt Oathstone Ingot',skillId:'smithing',level:16,xp:260,gold:80,seconds:54,repeatableTraining:true,inputs:[{itemId:'OATHSTONE_ORE',quantity:11},{itemId:'CROWNWOOD_LOG',quantity:6}],output:{itemId:'OATHSTONE_INGOT',quantity:3}},
+{id:'SMELT_SUNSTONE_INGOT',name:'Smelt Sunstone Ingot',skillId:'smithing',level:26,xp:550,gold:280,seconds:180,repeatableTraining:true,inputs:[{itemId:'SUNSTONE_ORE',quantity:11},{itemId:'DUNEWOOD',quantity:7}],output:{itemId:'SUNSTONE_INGOT',quantity:3}},
+{id:'SMELT_FROSTIRON_INGOT',name:'Smelt Frostiron Ingot',skillId:'smithing',level:46,xp:1010,gold:720,seconds:420,repeatableTraining:true,inputs:[{itemId:'FROSTIRON',quantity:11},{itemId:'WHITEPINE_LOG',quantity:7}],output:{itemId:'FROSTIRON_INGOT',quantity:3}},
+{id:'SMELT_BLACKGLASS_INGOT',name:'Smelt Blackglass Ingot',skillId:'smithing',level:68,xp:1880,gold:1800,seconds:900,repeatableTraining:true,inputs:[{itemId:'BLACKGLASS_ORE',quantity:11},{itemId:'CINDERWOOD_LOG',quantity:7}],output:{itemId:'BLACKGLASS_INGOT',quantity:3}},
 
 
 {id:'ENCHANT_REGIONAL_CATALYST',name:'Synthesize Regional Catalyst',skillId:'enchanting',level:70,xp:2400,gold:12000,seconds:1800,repeatableTraining:true,inputs:[{itemId:'GEM_DUST',quantity:25},{itemId:'FROSTMARCH_BOTANICAL_ESSENCE',quantity:2}],output:{itemId:'REGIONAL_CATALYST',quantity:1}},
@@ -100,7 +117,24 @@ export const RECIPES:Recipe[]=[
 {id:'COOK_GLASSFIN_FEAST',name:'Amberglass Glassfin Feast',skillId:'cooking',level:38,xp:720,gold:520,seconds:210,repeatableTraining:true,inputs:[{itemId:'GLASSFIN',quantity:9},{itemId:'AMBERGLASS',quantity:3},{itemId:'DUNEWOOD',quantity:3}],output:{itemId:'GLASSFIN_FEAST',quantity:1}},
 {id:'COOK_ICEFISH',name:'Frosted Icefin',skillId:'cooking',level:48,xp:1100,gold:900,seconds:300,repeatableTraining:true,inputs:[{itemId:'ICEFIN',quantity:9},{itemId:'WINTERMINT',quantity:3},{itemId:'WHITEPINE_LOG',quantity:3}],output:{itemId:'FROSTED_ICEFIN',quantity:1}},
 {id:'COOK_EMBERFIN',name:'Char Emberfin',skillId:'cooking',level:74,xp:1650,gold:1200,seconds:420,repeatableTraining:true,inputs:[{itemId:'EMBERFIN',quantity:9},{itemId:'ASHEN_MYRRH',quantity:3},{itemId:'CINDERWOOD_LOG',quantity:3}],output:{itemId:'CHARRED_EMBERFIN',quantity:1}},
-] as Recipe[]).map(recipe=>({...recipe,gold:increasedCraftingGoldCost(recipe.gold)})),
+] as Recipe[]).map(recipe=>{
+ const chargedGold=increasedCraftingGoldCost(recipe.gold);
+ if(INGOT_SMELTING_RECIPE_IDS.has(recipe.id))return {...recipe,gold:reducedIngotSmeltingGoldCost(chargedGold)};
+ if(FISH_COOKING_RECIPE_IDS.has(recipe.id))return {...recipe,
+  xp:recipe.xp+10,
+  gold:reducedFishCookingGoldCost(chargedGold),
+  inputs:recipe.inputs.map(input=>COOKING_FIREWOOD_ITEM_IDS.has(input.itemId)
+   ?{...input,quantity:5}:input),
+ };
+ // The only non-fish Cooking dish keeps the previously agreed 5× ingredient
+ // and 3× XP economy. Do not apply those multipliers to fish dishes.
+ if(recipe.id==='COOK_ASHLANDS_EMBER_STEW')return {...recipe,
+  xp:recipe.xp*3,
+  inputs:recipe.inputs.map(input=>({...input,quantity:input.itemId==='ASHEN_MYRRH'?10:input.itemId==='CINDER_HEART'||input.itemId==='CINDERWOOD_LOG'?5:input.quantity})),
+  gold:reducedCookingGoldCost(chargedGold),
+ };
+ return {...recipe,gold:recipe.skillId==='cooking'?reducedCookingGoldCost(chargedGold):chargedGold};
+}),
 ].map(recipe=>recipe.characterLevel===undefined||REBASED_CHARACTER_LEVEL_RECIPES.has(recipe.id)?recipe:{...recipe,characterLevel:rebaseLevel(recipe.characterLevel)});
 const recipesById=new Map(RECIPES.map(recipe=>[recipe.id,recipe]));
 if(recipesById.size!==RECIPES.length)throw new Error('Duplicate recipe IDs in the recipe catalog');

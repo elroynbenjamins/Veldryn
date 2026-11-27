@@ -6,7 +6,7 @@ import {GUILD_COMPONENT_ITEMS} from './guild-components';
 import {CROSS_PROFESSION_COMPONENT_ITEMS} from './cross-profession-components';
 import {TOOL_BLUEPRINT_ITEMS,TOOL_ITEMS} from './gathering-tools';
 import {HERB_ITEMS} from './herbalism';
-import {ALCHEMY_EQUIPMENT_INFUSION_ITEMS,POTION_ITEMS} from './alchemy';
+import {ALCHEMY_EQUIPMENT_INFUSION_ITEMS,GEM_BINDING_COMPOUND_ITEM,POTION_ITEMS} from './alchemy';
 import {EQUIPMENT_ITEMS_V33} from './equipment-items-v33';
 import {GEM_ITEMS_V1,RAW_GEM_ITEMS_V1,type MobileGemGradeV1} from './gems-v1';
 export interface ItemDef {
@@ -29,6 +29,7 @@ const BASE_ITEMS:ItemDef[]=[
 ...HERB_ITEMS,
 ...POTION_ITEMS,
 ...ALCHEMY_EQUIPMENT_INFUSION_ITEMS,
+GEM_BINDING_COMPOUND_ITEM,
 // Enhancement economy. Gems are intentionally scarce drops; tempering materials are universal.
 {id:'GEM_DUST',name:'Gem Dust',type:'material',value:18,rarity:'uncommon'},
 {id:'REGIONAL_CATALYST',name:'Regional Catalyst',type:'material',value:650,rarity:'epic'},

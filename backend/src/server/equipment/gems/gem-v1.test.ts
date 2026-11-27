@@ -28,6 +28,9 @@ for (const [sourceId,chance,pityAt] of [
 }
 assert.equal(gemPoolForSourceV1('LIVE_COOP_RESONANCE_CACHE')?.chance,1,'Earned Live weekly cache stays guaranteed');
 assert.ok(gemPoolForSourceV1('COP_004'));
+for(const [source,chance] of Object.entries({COP_004:0,COP_005:0,COP_006:.03,COP_007:.03,COP_008:.04,COP_009:.05})){
+ assert.equal(gemPoolForSourceV1(source)?.catalystChance??0,chance,'Regional Catalyst source progression: '+source);
+}
 assert.ok(buildGemDropsForSourceV1('COP_004').length>0);
 const forcedPity=settleGemSourceV1('COP_004','forced-pity',{pityBySource:{COP_004:31},unlockedRecipeIds:[]});
 assert.ok(forcedPity.gem,'Dungeon pity must settle one unrefined gem');
@@ -62,18 +65,21 @@ for(const family of STAT_GEMS_V1){
 const maxAttackFromTenPerfectG5=10*STAT_GEMS_V1.find(g=>g.familyId==='stat_might')!.values[5]*1.2;
 assert.ok(maxAttackFromTenPerfectG5<=.45,'Ten perfected G5 ATK gems exceed the preview budget');
 
-const wallet:GemWallet={gold:100000,dust:100,regionalCatalysts:2,radiantCatalysts:1,gems:[{familyId:'stat_might',grade:1,quantity:3}]};
+const wallet:GemWallet={gold:100000,dust:100,bindingCompounds:10,regionalCatalysts:2,radiantCatalysts:1,gems:[{familyId:'stat_might',grade:1,quantity:3}]};
 assert.deepEqual([1,2,3,4,5,6,7].map(gemCombineSuccessPercentV1),[90,80,70,60,55,50,45]);
 const combined=combineGemV1(wallet,'stat_might',1,.1);
 assert.equal(combined.gems.find(v=>v.grade===2)?.quantity,1);
 const failed=combineGemV1(wallet,'stat_might',1,.99);
 assert.equal(failed.gems.find(v=>v.grade===1)?.quantity,2,'Failed merges lose just one gem');
 assert.equal(failed.gems.some(v=>v.grade===2),false,'Failed merges never mint a higher gem');
-assert.equal(failed.gold,wallet.gold-1800,'Failed merges still pay the current Forge Gold cost');
+assert.equal(failed.gold,wallet.gold-600,'Failed merges still pay the discounted Forge Gold fee');
+assert.equal(failed.bindingCompounds,wallet.bindingCompounds-1,'Failed G1 merges consume one crafted binding compound');
+assert.throws(()=>combineGemV1({...wallet,bindingCompounds:0},'stat_might',1,.1),/missing_binding_compound/,'Missing binder must block combining');
 const radiantWallet:GemWallet={...wallet,gems:[{familyId:'stat_might',grade:4,quantity:3}]};
 const radiantFailure=combineGemV1(radiantWallet,'stat_might',4,.99);
 assert.equal(radiantFailure.gems.find(v=>v.grade===4)?.quantity,2,'A failed G4 merge must return 2 Flawless gems');
-assert.equal(radiantFailure.gold,radiantWallet.gold-72000,'G4 merge must use the same 20%-increased Forge Gold cost');
+assert.equal(radiantFailure.gold,radiantWallet.gold-24000,'G4 merge must charge 24,000 Gold');
+assert.equal(radiantFailure.bindingCompounds,radiantWallet.bindingCompounds-8,'G4 merge consumes eight binders');
 assert.equal(radiantFailure.dust,radiantWallet.dust-40,'Failed G4 merge spends Gem Dust');
 assert.equal(radiantFailure.radiantCatalysts,0,'Failed G4 merge consumes its Radiant Catalyst');
 const radiantSuccess=combineGemV1(radiantWallet,'stat_might',4,.1);

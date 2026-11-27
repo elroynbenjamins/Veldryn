@@ -1,4 +1,6 @@
-import {memo,useMemo,type ReactNode} from 'react';
+import {useCosmeticMotionPolicy,useLoopProgress} from '../anim/motion';
+import {nextPremiumStandardBorderTracks} from '../../core/next-premium-standard-border';
+import {memo,useMemo,useState,type ReactNode} from 'react';
 import {Animated,Image,StyleSheet,View,type ImageSourcePropType} from 'react-native';
 import {NEXT_PREMIUM_SETS,NEXT_PREMIUM_STAGE,nextPremiumBoxes,nextPremiumStageSupported,nextPremiumPetMode,type NextPremiumSet} from '../../core/next-premium-set-review';
 import {ORNAMENT_PHASE,sakuraV2OrnamentTracks,stormforgedV2OrnamentTracks} from '../../core/next-premium-motion-review';
@@ -83,6 +85,19 @@ export const NextPremiumShowcaseReview=memo(function NextPremiumShowcaseReview(p
  if(!background||!border||!pet||!art)return <>{props.fallback}</>;
  return <Stage set={set} props={props} background={background} border={border} pet={pet} art={art}/>;
 });
+/** Ordinary profile frame: only six native nodes, mapped to the same
+ * segmented artwork and safe rails as ProfileFrameOverlay. */
+export function NextPremiumStandardBorderEffects({set,active,reduceMotion=false}:{set:NextPremiumSet;active:boolean;reduceMotion?:boolean}){
+ const [size,setSize]=useState({width:0,height:0});
+ const tracks=useMemo(()=>nextPremiumStandardBorderTracks(set.motion,size.width,size.height),[set.motion,size.width,size.height]);
+ const art=getNextPremiumReviewDecoration(set.id);
+ const {running}=useCosmeticMotionPolicy(active&&!!art&&tracks.length>0,reduceMotion);
+ const clock=useLoopProgress(NEXT_PREMIUM_STAGE.loopMs,running);
+ return <View pointerEvents="none" accessible={false} importantForAccessibility="no-hide-descendants" style={[StyleSheet.absoluteFill,{zIndex:11}]}
+  onLayout={e=>{const {width,height}=e.nativeEvent.layout;setSize(old=>Math.abs(old.width-width)<.5&&Math.abs(old.height-height)<.5?old:{width,height});}}>
+  {running&&art?tracks.map(track=><FxNode key={track.kind+':'+track.frames[0].x+':'+track.frames[0].y} clock={clock} track={track} phase={ORNAMENT_PHASE} ratio={1} source={track.kind==='rail'?art.particle:art.glow}/>):null}
+ </View>;
+}
 const s=StyleSheet.create({
  stage:{position:'relative',overflow:'hidden'},
  cover:{position:'absolute',top:0,left:0,width:'100%',height:'100%'},

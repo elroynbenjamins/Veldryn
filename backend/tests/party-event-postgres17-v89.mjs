@@ -35,8 +35,9 @@ const party='55555555-5555-4555-8555-555555555555';
 const reservation='66666666-6666-4666-8666-666666666666';
 const order='77777777-7777-4777-8777-777777777777';
 const donation='88888888-8888-4888-8888-888888888888';
+const optionalOrders=[order,'77777777-7777-4777-8777-777777777778','77777777-7777-4777-8777-777777777779'];
 const digest='a'.repeat(64),snapshot='b'.repeat(64);
-const week=Date.UTC(2026,10,2),end=week+604800000,
+const week=Date.UTC(2026,10,9),end=week+604800000,
  attested=end+3600000,issued=end+7200000;
 const key=k=>'party-event:'+week+':'+account+':'+k;
 const identity={partyId:party,accountId:account,eventStartsAtUtcMs:week};
@@ -219,15 +220,17 @@ try{
   [party,week,account,hero,foreign,foreignHero]);
  await pool.query('INSERT INTO private.party_event_member_progress_v14 VALUES('+
   '$1,to_timestamp($2::double precision/1000),$3,25)',[party,week,account]);
- await pool.query('INSERT INTO private.party_event_supply_orders_v16 VALUES'+
-  "($1,$2,to_timestamp($3::double precision/1000),3,'optional',10,10)",
-  [order,party,week]);
+ for(const optionalOrder of optionalOrders){
+  await pool.query('INSERT INTO private.party_event_supply_orders_v16 VALUES'+
+   "($1,$2,to_timestamp($3::double precision/1000),2,'optional',10,10)",
+   [optionalOrder,party,week]);
+ }
  await pool.query('INSERT INTO private.party_event_supply_donations_v16 VALUES'+
   '($1,$2,$3,to_timestamp($4::double precision/1000),$5,'+
   'to_timestamp($6::double precision/1000))',
-  [donation,order,party,week,account,week+3600000]);
+  [donation,order,party,week,account,week+172800000+3600000]);
  await pool.query('INSERT INTO private.party_event_stage_seals_v17 VALUES'+
-  '($1,to_timestamp($2::double precision/1000),3,'+
+  '($1,to_timestamp($2::double precision/1000),2,'+
   'to_timestamp($3::double precision/1000))',
   [party,week,week+172800000]);
  await pool.query('INSERT INTO private.party_event_boss_loadouts_v18 VALUES'+

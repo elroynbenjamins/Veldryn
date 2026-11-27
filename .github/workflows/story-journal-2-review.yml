@@ -5,6 +5,8 @@ on:
       - 'docs/2-0/story-*-review-*.json'
       - 'tools/story-journal-2-*.mjs'
       - 'apps/mobile/src/content/**'
+      - 'apps/mobile/src/components/Story*2Review.tsx'
+      - 'apps/mobile/src/core/story-journal-host-review.ts'
       - '.github/workflows/story-journal-2-review.yml'
 permissions:
   contents: read
@@ -25,3 +27,4 @@ jobs:
       - run: node tools/story-journal-2-claim-review.test.mjs
       - run: node tools/story-journal-2-records-review.test.mjs
       - run: node tools/story-journal-2-pacing-review.test.mjs
+      - run: node --experimental-strip-types tools/story-journal-2-host-review.test.mjs

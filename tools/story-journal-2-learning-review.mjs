@@ -24,14 +24,22 @@ export function professionPathsReview(catalogue,snapshot,expected,regionId){
  * A trusted host supplies observed usage and quest facts; missing facts suppress guidance. */
 export function onboardingTipReview(guide,snapshot,expected){
  if(guide?.released!==false||!scoped(snapshot,expected)||!Array.isArray(guide.steps)||!snapshot.questStates||!Array.isArray(snapshot.accountSeen)||!Array.isArray(snapshot.characterSeen)||!Array.isArray(snapshot.dismissed))return null;
- if(snapshot.modalOpen||snapshot.activityChanging||snapshot.storyRewardReady)return null;
+ if(snapshot.modalOpen||snapshot.activityChanging||snapshot.storyRewardReady||snapshot.inDungeon||snapshot.inBossFight||snapshot.suppressTutorials)return null;
  const completed=new Set([...snapshot.accountSeen,...snapshot.characterSeen,...snapshot.dismissed]);
+ // Already-used systems should not repeat on another character. Collection and report prompts are event-specific.
+ const used=new Set(Array.isArray(snapshot.usedSystems)?snapshot.usedSystems:[]);
+ for(const t of guide.steps)if(!['collection','scouting-report'].includes(t.system)&&used.has(t.system))completed.add(t.id);
  const bySystem=s=>guide.steps.find(t=>t.system===s&&!completed.has(t.id));
  const quest=t=>snapshot.questStates[t.legacyQuestId];
  const stepEligible=t=>t&&t.released===false&&t.optional===true&&t.body.trim().split(/\s+/).length<=guide.policy.maxBodyWords;
  const activity=snapshot.activity;
  let tip;
  if(activity?.kind==='combat'&&activity.targetId==='MOSS_RAT'&&activity.rewardReady===true&&quest(bySystem('collection')??{})==='active')tip=bySystem('collection');
+ if(!tip&&activity?.rewardReady===true)return null;
+ if(!tip){
+  const report=bySystem('scouting-report');
+  if(report&&quest(report)==='active'&&snapshot.ironwoodReportReady===true)tip=report;
+ }
  if(!tip){
   for(const t of guide.steps){
    if(completed.has(t.id))continue;

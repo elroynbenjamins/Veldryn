@@ -6,7 +6,7 @@ import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import {PGlite} from '@electric-sql/pglite';
 const require=createRequire(import.meta.url);
-const {issueWorldBossGatheringMintV102}=require('../.wb-mint-v102.cjs');
+const {issueWorldBossGatheringMintV102}=require('../../apps/mobile/.core-build/backend/src/server/loot/world-boss-gathering-mint-v102.js');
 const {worldBossChestLootTableV96,rollWorldBossGatheringSlotV96}=require('../.wb-mint-v102.cjs');
 const account='11111111-1111-4111-8111-111111111111';
 const foreign='22222222-2222-4222-8222-222222222222';
@@ -27,7 +27,18 @@ const ddl=name=>{
  const s=readFileSync(new URL('../../docs/roadmap/party-events/hidden-migrations/'+name,import.meta.url),'utf8');
  return s.slice(s.indexOf('BEGIN;')+6,s.lastIndexOf('COMMIT;'));
 };
-const db=await PGlite.create();
+// The same test can also run against a disposable native PG17 service.
+const native=process.env.WB_MINT_NATIVE_PG==='1';
+let client,Client;
+if(native){
+ if(process.env.PGHOST!=='127.0.0.1'||process.env.PGDATABASE!=='wb_mint_review'||!process.env.WB_MINT_PG_MODULE)
+  throw Error('Refusing non-disposable database');
+ ({Client}=require(process.env.WB_MINT_PG_MODULE));
+ client=new Client();await client.connect();
+ const check=await client.query("SELECT current_database() AS db,current_setting('server_version_num')::int AS version");
+ assert.equal(check.rows[0].db,'wb_mint_review');assert.ok(check.rows[0].version>=170000&&check.rows[0].version<180000);
+}
+const db=native?{query:(s,p)=>client.query(s,p),exec:s=>client.query(s),close:()=>client.end()}:await PGlite.create();
 try{
  await db.exec('CREATE SCHEMA auth;CREATE SCHEMA private;CREATE ROLE anon;CREATE ROLE authenticated;CREATE ROLE service_role;CREATE TABLE auth.users(id uuid PRIMARY KEY);');
  await db.query('INSERT INTO auth.users VALUES($1),($2)',[account,foreign]);
@@ -97,6 +108,29 @@ try{
   for(const privilege of ['SELECT','INSERT','UPDATE','DELETE']){
    assert.equal((await db.query('SELECT has_table_privilege($1,$2,$3) AS yes',[role,'private.'+name,privilege])).rows[0].yes,false);
   }
+ }
+ if(native){
+  // Separate transactions against the same committed chest: both must see
+  // the same copy. Verify a concurrent fresh issue as well, after a fixture
+  // receipt is persisted (no reward claim is exposed by this test).
+  await insertReceipt(makeReceipt(source2));
+  const connections=await Promise.all([0,1].map(async()=>{const conn=new Client();await conn.connect();return conn;}));
+  try{
+   const concurrent=async conn=>{
+    await conn.query('BEGIN ISOLATION LEVEL READ COMMITTED');
+    try{
+     const result=await issueWorldBossGatheringMintV102({query:(s,p)=>conn.query(s,p),release(){}},args(source2),true);
+     await conn.query('COMMIT');return result;
+    }catch(error){await conn.query('ROLLBACK');throw error;}
+   };
+   const results=await Promise.all(connections.map(concurrent));
+   assert.equal(results.filter(x=>!x.replayed).length,1);
+   assert.equal(results.filter(x=>x.replayed).length,1);
+   assert.equal(results[0].itemInstanceId,results[1].itemInstanceId);
+   assert.deepEqual(results[0].copy.roll,results[1].copy.roll);
+   assert.deepEqual(await counts(source2),[1,1,0,1]);
+  }finally{await Promise.all(connections.map(conn=>conn.end()));}
+  console.log('WB_GATHERING_MINT_V102_PG17_CONCURRENT: two independent transactions, exactly one physical mint');
  }
  console.log('WB_GATHERING_MINT_V102_PG: real DDL/port, rollback and lost-ACK replay, immutable mint, unique source, bad inbox rollback, no-hit/foreign/private grants');
 }finally{await db.close();}

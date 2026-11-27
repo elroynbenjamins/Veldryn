@@ -65,7 +65,7 @@ const extraExamples=[
 for(const [tier,rarity,minimum] of extraExamples){
  const offer=equip(tier,rarity);
  const floor=MARKET_EQUIPMENT_LEVEL_FLOORS_V17[tier];
- const required=Math.max(floor,itemDef(offer.itemId).requiredLevel??0)
+ const required:number=Math.max(floor,itemDef(offer.itemId).requiredLevel??0)
   +MARKET_RARITY_LEVEL_PREMIUM_V17[rarity];
  assert(required>=minimum,'Exact item requirements can exceed Market floor but not lower it');
  const under=previewMarketAcquisitionV17(withLevel(required-1),offer,'purchase');

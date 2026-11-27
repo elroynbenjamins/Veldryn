@@ -267,6 +267,13 @@ for(const bossId of bossIds)for(const kind of ['donations_goal','three_attempts'
  const table=worldBossChestLootTableV96(bossId,kind);
  assert.equal(table.groups[0].chanceBps,1000);
  assert.equal(table.groups[0].entries.length,10);
+ if(kind==='personal_damage'){
+  const expectedMaterial={hollowroot:'IRONWOOD_LOG',sunscar:'SUNSTONE_ORE',frostmarch:'ICEFIN'}[bossId];
+  const amounts=new Map(table.guarantees.map(g=>[g.id,g.quantity]));
+  assert.equal(amounts.size,5);assert.equal(amounts.get('gold'),450);
+  assert.equal(amounts.get('companion_essence'),6);assert.equal(amounts.get('gem_dust'),2);
+  assert.equal(amounts.get('tempering_dust'),2);assert.equal(amounts.get(expectedMaterial),8);
+ }
  const input={bossId,kind,slotRoll:0,ownedSlots:[] as const};
  const miss=previewWorldBossChestRollV96({...input,hitRoll:1000,nextInt:()=>{throw Error('unexpected entropy');}});
  assert.equal(miss.gear,null);

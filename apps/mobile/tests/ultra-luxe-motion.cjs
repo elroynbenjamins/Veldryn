@@ -218,7 +218,9 @@ for(const showcase of [false,true]){
     assert(t.opacity[i]>=0&&t.opacity[i]<=1);
    }
   }
-  assert(tracks.find(t=>t.key==='upper-rail').x[0]<tracks.find(t=>t.key==='upper-rail').x[Math.floor(bp.length/2)]);
+  const upper=tracks.find(t=>t.key==='upper-rail');
+  assert(upper.x[0]<upper.x[Math.floor(bp.length/4)]);
+  assert(Math.max(...upper.x.slice(0,4))-upper.x[0]>0,'rail starts moving immediately');
  }
 }
 const borderLayer=read('components/profile/CelestialBorderLight.tsx');

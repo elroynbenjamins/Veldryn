@@ -108,6 +108,33 @@ assert(!partial.completedOptionalPreparations.includes('specialist'),
 rejects(()=>deriveVerifiedPartyBossPreparation([{...allOrders[0]!,donatedQuantity:allOrders[0]!.quantity+1}]),
   'party_boss_invalid_supply_receipt');
 
+// Matched supply-only sensitivity: hold each budget fixed while varying all
+// eight optional completion combinations. No assertion of final EQ2 balance.
+let preparationCases=0;
+for(const family of ['broken_caravan','nightfall_hunt','broken_wards','lost_reliquary'] as const)
+ for(const difficulty of ['standard','veteran','heroic'] as const)
+ for(const size of [2,3,4]){
+  const planned=buildWeeklyPartySupplyOrders(family,weeklyPartyBudget(size,difficulty),items,7);
+  const optional=planned.filter(o=>o.kind==='optional');
+  assert(optional.length===3&&optional.every(o=>o.stage===2),'canonical stage two preparations');
+  for(let mask=0;mask<8;mask++){
+   const completed=optional.filter((_,index)=>(mask&(1<<index))!==0);
+   const progress=planned.map(order=>({...order,donatedQuantity:
+    order.kind==='required'||completed.includes(order)?order.quantity:order.quantity-1}));
+   const before=deriveVerifiedPartyBossPreparation(progress,1);
+   const after=deriveVerifiedPartyBossPreparation(progress,3);
+   assert(before.completedOptionalPreparations.length===0,'no early preparation');
+   assert(after.completedOptionalPreparations.length===completed.length,'exact optional completion');
+   assert(after.completedRequiredStages===3,'optional order cannot change required completion');
+   assert(after.outgoingBonus<=.125+1e-9&&after.damageReduction<=.125+1e-9&&
+    after.healingBonus<=.165+1e-9&&after.shieldingBonus<=.225+1e-9&&after.maxHpBonus<=.04,
+    'existing preparation budget stays bounded');
+   preparationCases++;
+  }
+ }
+assert(preparationCases===288,'all family/difficulty/size/optional combinations covered');
+console.log('PARTY_PREPARATION_SENSITIVITY: '+preparationCases+' matched supply cases; provisional coefficients only');
+
 const battleInput={
   eventId:'hidden-party-123',family:'broken_caravan' as const,
   difficulty:'standard' as const,seed:11,

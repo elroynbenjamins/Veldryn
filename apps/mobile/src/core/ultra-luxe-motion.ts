@@ -65,9 +65,9 @@ export const PET_IDLE_POSES=Object.fromEntries((['celestial','draconic','alterna
 export const AWAKENING_PHASE=[0,2/24,4/24,7/24,10/24,13/24,16/24,18/24,21/24,1] as const;
 export const AWAKENING_ENERGY={
  celestial:[0,.18,.42,.20,.40,.76,1,.80,.24,0],
- draconic:[0,.34,.64,.26,.52,.88,1,.65,.18,0],
+ draconic:[0,.82,.95,.45,.68,.94,1,.75,.32,0],
 } as const;
-export const AWAKENING_PET_LIFT={celestial:7,draconic:2.5} as const;
+export const AWAKENING_PET_LIFT={celestial:7,draconic:4.5} as const;
 export function awakeningCurve(theme:keyof typeof AWAKENING_ENERGY){
  const values=AWAKENING_ENERGY[theme],phase:number[]=[0],energy:number[]=[0];
  for(let i=1;i<AWAKENING_PHASE.length;i++){

@@ -1,3 +1,4 @@
+import {savedLoadoutProtection} from './activity-loadout-protection';
 import {itemDef} from '../content/items';
 import {itemRarity,ItemRarity} from './item-rarity';
 import {effectiveOwnedGearRarity,craftedGearInstances,craftedGearQualityMultiplier} from './crafted-gear-instances';
@@ -80,6 +81,7 @@ export function hasEnhancement(state:GameState,itemId:string){const enhancement=
  */
 export function canDisposeLegacyEquipment(state:GameState,itemId:string,location:'inventory'|'bank'|'equipment_pouch',quantity:number):boolean{
   if(!Number.isSafeInteger(quantity)||quantity<=0)return false;
+  if(savedLoadoutProtection(state,itemId).protected)return false;
   const unmarked=(stacks:readonly ItemStack[])=>stacks.reduce((sum,row)=>
     sum+(row.itemId===itemId&&row.instanceId===undefined&&Number.isSafeInteger(row.quantity)&&row.quantity>0?row.quantity:0),0);
   if(unmarked(location==='equipment_pouch'?state.character?.equipmentPouch?.stacks??[]:state[location].stacks)<quantity)return false;

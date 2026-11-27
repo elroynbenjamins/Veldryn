@@ -375,12 +375,12 @@ function BossContents({s,accent,tab,onTab,status}:Shared&{tab:string;onTab:(valu
    <Action label="Claim rewards · Not available" s={s} disabled/>
   </Card>
   <Card s={s}>
-   <SectionHeading s={s} kicker="FUTURE MILESTONE CHESTS" title="Three chests per account" sub="Design preview only. Earning a milestone chest does not guarantee gathering equipment."/>
+   <SectionHeading s={s} kicker="FUTURE WORLD BOSS CHESTS" title="Up to six chests per account" sub="Design preview only. Three milestones and up to three personal damage chests."/>
    {bossChestDesign.map(chest=><View key={chest.name} style={s.detailRow}>
     <View style={s.flex}>
      <Text style={s.choiceTitle}>{chest.name}</Text>
      <Text style={s.choiceSub}>{chest.condition}</Text>
-     <Text style={s.finePrint}>{chest.guaranteed} · 1% gathering gear chance</Text>
+     <Text style={s.finePrint}>{chest.guaranteed} · 10% gathering gear chance</Text>
     </View>
     <Tag s={s} label="PREVIEW"/>
    </View>)}
@@ -388,10 +388,10 @@ function BossContents({s,accent,tab,onTab,status}:Shared&{tab:string;onTab:(valu
     <UiIcon name="rewards" size={24}/>
     <View style={s.flex}>
      <Text style={s.choiceTitle}>{active?bossGatheringSetLabel[active.bossId]:'Boss-specific gathering set'}</Text>
-     <Text style={s.choiceSub}>10 unique pieces · rarity, quality and gathering-only bonus rolls</Text>
+     <Text style={s.choiceSub}>10 chest-exclusive pieces · randomized rarity, quality and skill-specific rolls</Text>
     </View>
    </View>
-   <Text style={s.finePrint}>No authenticated chest entitlement, collected-piece count or reward claim is available in this design QA screen. Drop odds are per earned chest, not per attack.</Text>
+   <Text style={s.finePrint}>Personal damage: 10% chance per server-configured damage threshold, up to 3 extra chests. Each earned chest independently has a 10% gear chance. No authenticated entitlement or opening is available in this design QA screen.</Text>
    <Action label="Open chest · Not available" s={s} disabled/>
   </Card>
  </>;

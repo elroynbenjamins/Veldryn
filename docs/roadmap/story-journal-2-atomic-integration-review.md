@@ -24,3 +24,13 @@ Account creditedDiscoveryIds and character discoveredRouteIds are distinct. Iron
 ## Gate
 
 Actual transactional store and rollback/retry/concurrency integration tests; authoritative source-character binding including character creation/deletion; final boss definitions and economy policy; finalized Exploration settlement; bounded persistence and retention strategy; verified mobile and backend CI. No public activation or deployment until all are met.
+
+## Consolidated review path (passes 32–33)
+
+Use `compileJournalCatalogueReview` for the three books plus side catalogues, `activateCatalogueQuestReview` / `applyQuestEvidenceReview` / `claimCatalogueQuestReview` for bounded state transitions, and `journalCompactViewReview` for the Journal host. Keep previous raw-event projections as independent regression references only, not a second production quest engine.
+
+The compiled catalogue contains 45 executable story definitions and 31 side definitions, including one evidence-only account map objective. Two pending regional solo finales remain non-executable and included in displayed totals. Frostmarch story entry is deliberately blocked in this review path until Sunscar's finale is bound. Independent profession access remains with canonical skill/activity eligibility, not combat chapter completion.
+
+The end-to-end source fixture rehearses real Asterfall content through activation, settled kill evidence, ready state, claim proposal and next objective. It also tests legacy-completed Sunscar entry, pending Frostmarch gate, and character-scoped navigation. This is not a production integration test.
+
+Outstanding: version/hash pinning of catalogue and policy, persisted eligibility, canonical server facts across separate Exploration revisions, atomic wallet/inventory and receipt storage, full regional combat/equipment gates, mounted UI and complete CI.

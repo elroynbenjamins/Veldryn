@@ -94,6 +94,23 @@ BEGIN
 END $$;
 CREATE TRIGGER partition_material_claim AFTER INSERT ON market_review.resource_claim
  FOR EACH ROW EXECUTE FUNCTION market_review.partition_material_claim();
+-- Spent lots are irreversible historical consumption, not available stock.
+CREATE TABLE market_review.material_spend(
+ owner text NOT NULL REFERENCES market_review.wallet,request_id text NOT NULL,
+ character_id text NOT NULL,recipe text NOT NULL,batches int NOT NULL CHECK(batches>0),
+ PRIMARY KEY(owner,request_id),
+ FOREIGN KEY(character_id,owner) REFERENCES market_review.character(id,owner)
+);
+CREATE TABLE market_review.material_spent_lot(
+ owner text NOT NULL,request_id text NOT NULL,origin text NOT NULL REFERENCES market_review.material_origin,
+ destination text NOT NULL,quantity bigint NOT NULL CHECK(quantity>0),
+ PRIMARY KEY(owner,request_id,origin,destination),
+ FOREIGN KEY(owner,request_id) REFERENCES market_review.material_spend(owner,request_id)
+);
+CREATE TRIGGER material_spend_immutable BEFORE UPDATE OR DELETE ON market_review.material_spend
+ FOR EACH ROW EXECUTE FUNCTION market_review.immutable();
+CREATE TRIGGER material_spent_lot_immutable BEFORE UPDATE OR DELETE ON market_review.material_spent_lot
+ FOR EACH ROW EXECUTE FUNCTION market_review.immutable();
 -- Check each original issued quantity separately, then reconcile account totals
 -- and outstanding offer/delivery projections. No credit from history twice.
 CREATE FUNCTION market_review.assert_material_conservation() RETURNS void
@@ -103,7 +120,8 @@ BEGIN
   coalesce((SELECT sum(quantity) FROM market_review.material_stock_lot s WHERE s.origin=o.id),0)
   +coalesce((SELECT sum(remaining) FROM market_review.material_escrow_lot e WHERE e.origin=o.id),0)
   +coalesce((SELECT sum(quantity) FROM market_review.material_delivery_lot d WHERE d.origin=o.id
-    AND NOT EXISTS(SELECT 1 FROM market_review.resource_claim c WHERE c.delivery_actor=d.actor AND c.delivery_request=d.request_id)),0))
+    AND NOT EXISTS(SELECT 1 FROM market_review.resource_claim c WHERE c.delivery_actor=d.actor AND c.delivery_request=d.request_id)),0)
+  +coalesce((SELECT sum(quantity) FROM market_review.material_spent_lot x WHERE x.origin=o.id),0))
  OR EXISTS(SELECT 1 FROM market_review.resource_stock s WHERE s.quantity IS DISTINCT FROM
   coalesce((SELECT sum(l.quantity) FROM market_review.material_stock_lot l JOIN market_review.material_origin o ON o.id=l.origin
    WHERE l.owner=s.owner AND o.item=s.item),0))

@@ -46,7 +46,7 @@ export function legacyStoryMigrationReview(book,snapshot,expected){
 }
 export function pinnedQuestTrackerReview(model,context,expected){
  const hidden=()=>({...flags,status:'hidden'});
- if(!model||model.status!=='review'||!context||!expected||context.accountId!==expected.accountId||context.characterId!==expected.characterId||!expected.accountId||!expected.characterId)return hidden();
+ if(!model||model.status!=='review'||model.accountId!==expected?.accountId||model.characterId!==expected?.characterId||!context||!expected||context.accountId!==expected.accountId||context.characterId!==expected.characterId||!expected.accountId||!expected.characterId)return hidden();
  if(!['Home','World','Skills','Inventory','Character'].includes(context.screen)||context.modalOpen||context.inDungeon||context.inBossFight||context.tutorialVisible||context.activityControlsObscured)return hidden();
  const pinned=model.pinned;
  if(!pinned||!['active','ready'].includes(pinned.status))return hidden();

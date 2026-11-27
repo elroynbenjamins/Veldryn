@@ -54,7 +54,8 @@ assert.equal(intent(achievement,9999,'accept',undefined,true),null);
 assert.equal(percent(2,4),50);assert.equal(percent(5,4),100);assert.equal(percent(1,0),0);
 compile(component);
 const source=fs.readFileSync(component,'utf8');
-assert.match(source,/width<360\|\|fontScale>1\.2/);
+assert.match(source,/availableWidth<360\|\|fontScale>1\.2/);
+assert.match(source,/onLayout=/);
 assert.match(source,/flexDirection:'column'/);
 assert.match(source,/GameButton compact/);
 assert.match(source,/C\.warning/);
@@ -155,3 +156,25 @@ assert.equal(activeRequests.view(34169).fresh,false,'clock reversal fails closed
 const inactiveGate=new Active();inactiveGate.setScope(activeScope);inactiveGate.setActive(true);
 assert.equal(inactiveGate.beginRead(0),null);
 console.log('PARTY_ACTIVE_REQUESTS_V115_V116_PASS');
+
+const localeModule={exports:{}};
+new Function('module','exports',compile(path.join(root,'i18n','party-chat-preview-v117.ts')))(localeModule,localeModule.exports);
+const {partyChatPreviewRowsV117:rows,partyChatPreviewLabelsV117:labelsFor,partyChatPreviewTitleV117:titleFor}=localeModule.exports;
+const languages=['en','de','es','nl','it','fr','ru','tr'];
+const tokens=s=>[...s.matchAll(/\{([a-zA-Z][a-zA-Z0-9_]*)\}/g)].map(m=>m[1]).sort();
+for(const [key,row] of Object.entries(rows)){
+ assert.equal(row.length,languages.length,key);
+ for(const label of row){assert.ok(label.trim().length,key);assert.deepEqual(tokens(label),tokens(row[0]),key);}
+}
+for(const language of languages){
+ const {cards,panel}=labelsFor(language);
+ for(const card of [swap,vote,event,ready,recruit,achievement])assert.ok(titleFor(language,card.kind));
+ for(const label of [cards.expiresIn(125),cards.votes(2,4),cards.confirmations(2,4),cards.readiness(3,4),panel.count(2,1),panel.more(21)]){
+  assert.ok(label.length>0);assert.deepEqual(tokens(label),[]);
+ }
+ assert.ok(cards.expiresIn(125).includes('2:05'));
+}
+assert.notEqual(labelsFor('en').cards.readiness(3,4),labelsFor('en').cards.confirmations(3,4));
+assert.match(fs.readFileSync(activePanel,'utf8'),/requests\.slice\(0,limit\)/);
+assert.match(fs.readFileSync(activePanel,'utf8'),/setLimit\(previous=>previous\+3\)/);
+console.log('PARTY_CHAT_V117_V118_LOCALE_LAYOUT_PASS');

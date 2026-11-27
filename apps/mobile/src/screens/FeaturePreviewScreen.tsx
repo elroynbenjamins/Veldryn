@@ -10,6 +10,7 @@ import {decodePartyEventReadOnlySnapshot,decodePartyEventReadTransportV39,partyE
 import {decodePartyEventRewardReadOnlyV62,type PartyRewardMobileV62} from '../core/party-event-reward-readonly-v62';
 import {decodeWorldBossReadOnlyStatusV46,type WorldBossScreenSnapshotV46} from '../core/world-boss-readonly-snapshot';
 import {WORLD_BOSS_PRESENTATION} from '../core/world-boss-presentation';
+import {WorldBossChestOpeningPreview} from '../components/WorldBossChestOpeningPreview';
 import {WorldBossBattleStage} from '../components/WorldBossBattleStage';
 import {WORLD_BOSS_REPLAY_FIXTURE} from '../dev/world-boss-replay-fixture';
 import {filterMarketPreviewItems,type MarketPreviewItem,type MarketPreviewSort} from '../core/market-preview-filter';
@@ -223,7 +224,7 @@ export function FeaturePreviewScreen({route,onClose,onOpenParty,onOpenPartyChat,
     </ScrollView>
     {feature==='boss'?<Action label="Watch a recorded World Boss fight" s={s} onPress={()=>setFightPreview(true)}/>:null}
     {feature==='boss'&&fightPreview?<WorldBossBattleStage input={WORLD_BOSS_REPLAY_FIXTURE} language="en" reduceMotion={reduceMotion} onClose={()=>setFightPreview(false)}/>:null}
-    {feature==='boss'?<BossContents s={s} C={C} accent={accent} tab={activeTab} onTab={changeTab} status={bossStatus}/>:null}
+    {feature==='boss'?<BossContents s={s} C={C} accent={accent} tab={activeTab} onTab={changeTab} status={bossStatus} reduceMotion={reduceMotion}/>:null}
     {feature==='party'?<PartyPreviewPanel s={s} C={C} accent={accent} tab={activeTab} onTab={changeTab} storyId={storyId} onStoryChange={setStoryId} onOpenParty={onOpenParty} partyEventStatus={displayPartyStatus} partyEventRewardStatus={partyEventRewardStatus} trustedAccountId={partyEventAccountId} nowMs={statusNowMs}/>:null}
     {feature==='market'?<MarketContents s={s} C={C} accent={accent} tab={activeTab}/>:null}
     <View style={s.footer}><Text style={s.footerText}>VELDRYN  •  FEATURE DESIGN REVIEW</Text></View>
@@ -290,7 +291,7 @@ const unverifiedBoss={
 } as const;
 const phaseTitles={upcoming:'Upcoming',preparation:'War Camp',raid:'Battle',cooldown:'Recovery',expired:'Ended'} as const;
 const bossTracks=['fortifications','fieldProvisions','siegecraft'] as const;
-function BossContents({s,accent,tab,onTab,status}:Shared&{tab:string;onTab:(value:string)=>void;status:WorldBossScreenSnapshotV46|null}){
+function BossContents({s,accent,tab,onTab,status,reduceMotion}:Shared&{tab:string;onTab:(value:string)=>void;status:WorldBossScreenSnapshotV46|null;reduceMotion:boolean}){
  const boss=bosses.find(item=>item.serverId===status?.bossId)??unverifiedBoss;
  const active=status;
  const phaseEnd=active?(active.phase==='upcoming'?active.startsAtUtcMs:active.phase==='preparation'?active.startsAtUtcMs+5*86400000:active.phase==='raid'?active.endsAtUtcMs:active.phase==='cooldown'?active.startsAtUtcMs+14*86400000:null):null;
@@ -392,7 +393,9 @@ function BossContents({s,accent,tab,onTab,status}:Shared&{tab:string;onTab:(valu
     </View>
    </View>
    <Text style={s.finePrint}>Personal damage: 10% chance per server-configured damage threshold, up to 3 extra chests. Each earned chest independently has a 10% gear chance. No authenticated entitlement or opening is available in this design QA screen.</Text>
+   <Text style={s.finePrint}>Personal Damage Chest · 450 Gold · 6 Essence · 2 Gem Dust · 2 Tempering Dust · 8 boss-specific materials</Text>
    <Action label="Open chest · Not available" s={s} disabled/>
+   <WorldBossChestOpeningPreview reduceMotion={reduceMotion}/>
   </Card>
  </>;
  return <Card s={s}><SectionHeading s={s} kicker="CONTRIBUTION BOARD" title="Realm rankings" sub="Official ranks must come from finalized server-verified account contributions, with a consistent power bracket and privacy checks."/><View style={s.empty}><UiIcon name="world" size={34}/><Text style={s.choiceTitle}>No authenticated ranking feed yet</Text><Text style={s.bodyText}>Personal contribution, final placements and account-wide rewards cannot be inferred from a boss health snapshot.</Text></View><Action label="Review battle rules" s={s} secondary onPress={()=>onTab('battle')}/></Card>;

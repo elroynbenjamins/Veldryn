@@ -224,3 +224,25 @@ assert.equal(prepared.preparation?.digest,effects.digest);
 assert.equal(prepared.guardSettlement,false);
 assert.equal(prepared.globalHpCredited,0);
 console.log('WORLD_BOSS_V94A_PREPARATION_GUARD_REVIEW: starting HP executed; Guard transitions separate; no settlement');
+
+assert.ok(prepared.guardReview);
+assert.ok(prepared.guardReview.trace.some(x=>x.kind==='hit'&&x.guardDamage>0));
+assert.ok(prepared.guardReview.state.totalGuardDamage>0);
+assert.ok(Math.abs(prepared.guardReview.state.remaining-
+ (effects.initialGuard+prepared.guardReview.state.totalRestored-prepared.guardReview.state.totalGuardDamage))<1e-6);
+assert.equal(prepared.combat.enemies[0].shield,0,'authored WB guard casts must not also grant ordinary shields');
+assert.ok(Math.abs(prepared.combat.players.reduce((s,p)=>s+p.damageDone,0)-prepared.localBossHpLoss)<1e-6);
+assert.deepEqual(simulateWorldBossSharedEngineReviewV2(f.input,f.builds,f.runtime,f.traitPorts,preparedScope,
+ binding=>enemyV2SnapshotDigest(binding)===enemyV2SnapshotDigest(preparedBinding),true),prepared);
+const maxGuardPrep={...preparation,guardMax:100000000};
+const maxGuardScope={...f.scope,preparation:maxGuardPrep};
+const maxGuardEffects=deriveWorldBossPreparationReviewV2(maxGuardPrep,f.scope);
+const maxGuardInput=applyWorldBossStartingHpReviewV2({...f.input,players:f.compiled.players},maxGuardEffects);
+const maxGuardBinding={scope:maxGuardScope,bossDefinitionDigest:enemyV2SnapshotDigest(maxGuardInput.enemies[0]),
+ compiledInputDigest:enemyV2SnapshotDigest(maxGuardInput),equipmentSourcesDigest:enemyV2SnapshotDigest(f.compiled.sources)};
+const maxGuard=simulateWorldBossSharedEngineReviewV2(f.input,f.builds,f.runtime,f.traitPorts,maxGuardScope,
+ binding=>enemyV2SnapshotDigest(binding)===enemyV2SnapshotDigest(maxGuardBinding),true);
+assert.equal(maxGuard.localBossHpLoss,0);
+assert.ok(maxGuard.guardReview&&maxGuard.guardReview.state.totalGuardDamage>0);
+assert.equal(maxGuard.globalHpCredited,0);
+console.log('WORLD_BOSS_V94B_GUARD_ENGINE_REVIEW: actual local guard routing, replay parity, fully guarded HP exclusion');

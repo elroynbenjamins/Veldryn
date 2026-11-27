@@ -4,6 +4,8 @@ import type {HuntGoalId} from './hunt-goals';
 import {claimActivity,craftRecipe,startCombat,startGathering,startHerbalism,stopActivity} from './game';
 import {gatheringToolDef} from '../content/gathering-tools';
 import {equipmentCraftAvailability} from './equipment-crafting-queue';
+import {processingAvailability} from './processing';
+import {isWinterHearthLightRecipe} from './winter-hearth-2026';
 
 /** Settle earned rewards before replacing or stopping an activity. Pure and atomic. */
 export function transitionActivity(state:GameState,nowMs:number,next?:{kind:'combat'|'gathering';id:string;tacticId?:CombatTacticId;goalId?:HuntGoalId}){
@@ -31,6 +33,7 @@ export function settleStartupActivity(state:GameState,nowMs:number):{state:GameS
 
 /** Reuse the pure craft operation so UI checks include bank use and output capacity. */
 export function recipeAvailability(state:GameState,recipeId:string){
+  if(isWinterHearthLightRecipe(recipeId))return processingAvailability(state,recipeId,1,true);
   const recipe=recipeDef(recipeId);
   if(!recipe)return {ready:false,reason:'Unknown recipe',inputs:[]};
   const learned=!recipe.requiredKnowledgeId||(state.account.unlockedKnowledgeIds??[]).includes(recipe.requiredKnowledgeId);

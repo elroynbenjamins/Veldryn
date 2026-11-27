@@ -8,6 +8,7 @@ on:
       - 'backend/tests/permanent-party-registration-v124-recruitment.sql'
       - 'backend/tests/permanent-party-registration-v125-outbox.sql'
       - 'backend/tests/permanent-party-registration-v126-compatibility.sql'
+      - 'backend/tests/permanent-party-registration-v127-performance.sql'
       - '.github/workflows/hidden-party-registration-v111.yml'
   workflow_dispatch:
 permissions:
@@ -15,7 +16,7 @@ permissions:
 jobs:
   disposable-postgres:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 12
     services:
       postgres:
         image: postgres:17.6
@@ -56,4 +57,11 @@ jobs:
           set -euo pipefail
           cat docs/roadmap/party-events/hidden-migrations/permanent-party-compatibility-v126-review.sql \
             backend/tests/permanent-party-registration-v126-compatibility.sql \
+            | docker exec -i ${{ job.services.postgres.id }} psql -U postgres -d postgres -v ON_ERROR_STOP=1
+      - name: Benchmark scoped Party outbox reads on disposable synthetic data
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat docs/roadmap/party-events/hidden-migrations/permanent-party-query-performance-v127-review.sql \
+            backend/tests/permanent-party-registration-v127-performance.sql \
             | docker exec -i ${{ job.services.postgres.id }} psql -U postgres -d postgres -v ON_ERROR_STOP=1

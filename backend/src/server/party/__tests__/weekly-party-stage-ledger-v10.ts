@@ -160,6 +160,36 @@ const duplicate={...week,roster:week.roster.map((member,index)=>index===1
  ?{...member,accountId:week.roster[0]!.accountId}:member)};
 rejects(()=>projectLockedPartyEventStageV10({...stageOne,week:duplicate}),
  'invalid_enrollment');
+// Enrollment must be in the actual event window and before the stage opened.
+for(const joinedAtMs of [week.eventStartsAtMs-1,stageOne.stageRecord.openedAtMs+1]){
+ const changed={...week,roster:week.roster.map((m,i)=>i===0?{...m,joinedAtMs}:m)};
+ rejects(()=>projectLockedPartyEventStageV10({...stageOne,week:changed}),'invalid_frozen_loadout');
+}
+for(const size of [2,3,4]){
+ const flexible={...allDamageWeek,roster:allDamageWeek.roster.slice(0,size)};
+ const projected=projectLockedPartyEventStageV10({...stageOne,week:flexible});
+ assert(projected.eligibleForRewardGrant===false,'valid flexible roster size '+size);
+}
+for(const size of [0,1,5]){
+ const roster=size===5?[...week.roster,week.roster[0]!]:week.roster.slice(0,size);
+ rejects(()=>projectLockedPartyEventStageV10({...stageOne,week:{...week,roster}}),'invalid_enrollment');
+}
+const duplicateCharacter={...week,roster:week.roster.map((m,i)=>i===1?{...m,characterId:member.characterId}:m)};
+rejects(()=>projectLockedPartyEventStageV10({...stageOne,week:duplicateCharacter}),'invalid_enrollment');
+const wrongOwner={...week,roster:week.roster.map((m,i)=>i===0?{...m,loadout:{...m.loadout,accountId:'foreign-owner-test'}}:m)};
+rejects(()=>projectLockedPartyEventStageV10({...stageOne,week:wrongOwner}),'invalid_frozen_loadout');
+// V11 uniqueness applies across parties and weeks, not just the current view.
+const planWith=(existingReceipts:readonly PartyEventStageReceiptV10[])=>planPartyEventStageReceiptV10({
+ context:stageOne,evidence,requestId,actionId:'scout_route',existingReceipts,
+});
+rejects(()=>planWith([{...plan.receipt,partyId:'other-party-0001'}]),'action_already_claimed');
+for(const collision of [
+ {...plan.receipt,eventStartsAtMs:week.eventStartsAtMs-21*DAY,requestId:'old-request-0001'},
+ {...plan.receipt,eventStartsAtMs:week.eventStartsAtMs-21*DAY,sourceEventId:'old-source-0001'},
+ {...plan.receipt,partyId:'other-party-0001',accountId:'other-account-0001'},
+])rejects(()=>planWith([collision]),'reused_source_or_request');
+rejects(()=>planWith([plan.receipt,{...plan.receipt}]),'action_already_claimed');
+rejects(()=>planWith([plan.receipt,{...plan.receipt,eventStartsAtMs:week.eventStartsAtMs-21*DAY}]),'reused_source_or_request');
 const leaking={...stageOne,stageRecord:{...stageOne.stageRecord,
  stage3Vote:{choice:'brace_wagons',lockedAtMs:stageOne.nowMs}}};
 rejects(()=>projectLockedPartyEventStageV10(leaking),'future_vote_leak');

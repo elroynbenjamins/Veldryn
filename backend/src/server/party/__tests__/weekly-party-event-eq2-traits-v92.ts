@@ -237,6 +237,19 @@ denied(()=>simulateFrozenPartyEventEquipmentV92({
  'untrusted_or_unbounded_v90_boss');
 // V94: off-budget attacks were already denied; these within-budget edits
 // used to pass. Every bit of the authored V90 kit must now be canonical.
+// A copied physical item identity across actors is invalid even with a permissive
+// QA persistence callback. A distinct item template is not the custody key.
+for(const size of [2,3,4]){
+ const scope=fixture('broken_caravan','standard',size,1);
+ let verifierCalls=0;
+ const reused=scope.sources.map((row,i)=>i===1?{
+  ...row,ownedEquippedInstanceIds:[...row.ownedEquippedInstanceIds,scope.sources[0]!.ownedEquippedInstanceIds[0]!],
+ }:row);
+ denied(()=>simulateFrozenPartyEventEquipmentV92({
+  ...scope,sources:reused,ports:{verifyPersisted:()=>{verifierCalls++;return true;}},
+ },true),'duplicate_party_equipment_copy');
+ assert.equal(verifierCalls,0,'duplicate physical copy rejected before persistence');
+}
 const canonicalBoss=original.combat.enemies[0];
 for(const changed of [
  {...canonicalBoss,stats:{...canonicalBoss.stats,accuracy:751}},

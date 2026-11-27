@@ -5,6 +5,7 @@ on:
       - 'docs/roadmap/party-events/hidden-migrations/permanent-party-*-review.sql'
       - 'backend/tests/permanent-party-registration-v111-*.sql'
       - 'backend/tests/permanent-party-registration-v121-concurrency.py'
+      - 'backend/tests/permanent-party-registration-v124-recruitment.sql'
       - '.github/workflows/hidden-party-registration-v111.yml'
   workflow_dispatch:
 permissions:
@@ -38,3 +39,10 @@ jobs:
             | docker exec -i ${{ job.services.postgres.id }} psql -U postgres -d postgres -v ON_ERROR_STOP=1
       - name: Verify independent PostgreSQL sessions and atomic action receipts
         run: python3 backend/tests/permanent-party-registration-v121-concurrency.py ${{ job.services.postgres.id }}
+      - name: Verify applicant consent and leader-approved private registration
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat docs/roadmap/party-events/hidden-migrations/permanent-party-recruitment-applications-v124-review.sql \
+            backend/tests/permanent-party-registration-v124-recruitment.sql \
+            | docker exec -i ${{ job.services.postgres.id }} psql -U postgres -d postgres -v ON_ERROR_STOP=1

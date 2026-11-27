@@ -987,7 +987,7 @@ var DUNGEON_SHOP_PROFILE_ICONS_V1 = [
 
 // ../apps/mobile/src/core/release-flags.ts
 var EVENTS_RELEASED = true;
-var FROSTFALL_REWARDS_RELEASED = false;
+var FROSTFALL_REWARDS_RELEASED = true;
 var WINTER_HEARTH_GUILD_RELEASED = true;
 var EVENT_COMMUNITY_ENABLED = false;
 var DUNGEON_MARKS_SHOP_RELEASED = true;

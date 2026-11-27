@@ -459,7 +459,7 @@ var GUILD_COMBAT_COMPANIONS = seeds2.map((seed) => {
 
 // ../apps/mobile/src/core/release-flags.ts
 var EVENTS_RELEASED = true;
-var FROSTFALL_REWARDS_RELEASED = false;
+var FROSTFALL_REWARDS_RELEASED = true;
 var DUNGEON_MARKS_SHOP_RELEASED = true;
 
 // ../apps/mobile/src/content/event-companions-active.ts

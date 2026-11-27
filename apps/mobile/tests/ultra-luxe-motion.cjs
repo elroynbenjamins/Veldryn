@@ -261,6 +261,7 @@ assert(drLayer.includes('pointerEvents="none"')&&drLayer.includes('useMemo('));
 assert(dragonScene.includes('running?<UltraLuxeRail')&&fx.includes('return <DraconicBorderLight'),'dedicated showcase delegates to the shared Draconic rail');
 assert(AWAKENING_ENERGY.draconic[1]>=.8,'visible awakening by two seconds');
 assert(AWAKENING_PET_LIFT.draconic>=4&&AWAKENING_PET_LIFT.draconic<=5,'bounded dragon lift');
-assert(fx.includes('Animated.modulo(Animated.multiply(clock,3),1)'),'faster closed ember passes reuse the scene clock');
+assert(fx.includes('Animated.modulo(Animated.multiply(clock,celestial?2:3),1)'),'faster closed ambient passes reuse the scene clock');
+assert(AWAKENING_ENERGY.celestial[1]>=.6,'visible celestial awakening by two seconds');
 assert(draconicBorderTracks(340,205,true).find(t=>t.key==='left-ember').size>=13,'visible showcase ember size');
 console.log('Draconic parity: rising embers, staggered molten ornament pulses, safe perimeter and equal native node budget passed.');

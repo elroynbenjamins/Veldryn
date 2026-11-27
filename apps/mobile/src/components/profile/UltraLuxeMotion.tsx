@@ -51,6 +51,8 @@ function SignatureAwakening({clock,scale:k,theme,particle}:Common){
 /** Environment is mounted behind the identity plates, in all pet modes. */
 function UltraLuxeEnvironmentLayer({clock,scale:k,theme,particle}:Common){
  const celestial=theme==='celestial',energy=awakeningEnergy(clock,theme);
+ // Three closed ember passes per signature; keep the same native parent clock.
+ const emberClock=celestial?clock:Animated.modulo(Animated.multiply(clock,3),1);
  const swell=clock.interpolate({inputRange:[...SIGNATURE_PHASE],outputRange:[.85,.85,1.2,1.5,1.12,.85]});
  const drift=clock.interpolate({inputRange:[0,.5,1],outputRange:[-5*k,5*k,-5*k]});
  const glow=clock.interpolate({inputRange:[...SIGNATURE_PHASE],outputRange:[.12,.12,.33,.65,.25,.12]});
@@ -60,10 +62,10 @@ function UltraLuxeEnvironmentLayer({clock,scale:k,theme,particle}:Common){
   <Animated.Image source={HAZE} resizeMode="stretch" style={[pos(k,112,9,118,75),{tintColor:celestial?'#a9b8ff':'#a95c48',opacity:glow,transform:[{scale:swell},{translateX:drift}]}]}/>
   <Animated.Image source={HAZE} resizeMode="stretch" style={[pos(k,237,46,77,112),{tintColor:light(theme),opacity:Animated.multiply(energy,.65),transform:[{scale:swell}]}]}/>
   {FX_POINTS[theme].map(([x,y],i)=>{
-   const size=i%3===0?9:6;
-   const dy=clock.interpolate({inputRange:[...LOOP_PHASE],outputRange:shiftClosed(celestial?[0,-3,-5,-2,1,3,4,2,0]:[0,-8,-15,-22,-29,-22,-13,-6,0],i).map(v=>v*k)});
-   const dx=clock.interpolate({inputRange:[0,.25,.5,.75,1],outputRange:[0,(i%2?4:-4)*k,(i%2?8:-8)*k,2*k,0]});
-   return <Animated.Image key={i} source={particle} resizeMode="contain" style={[pos(k,x,y,size,size),{opacity:pulse(clock,i),transform:[{translateX:dx},{translateY:dy}]}]}/>;
+   const size=celestial?(i%3===0?9:6):(i%3===0?13:9);
+   const dy=emberClock.interpolate({inputRange:[...LOOP_PHASE],outputRange:shiftClosed(celestial?[0,-3,-5,-2,1,3,4,2,0]:[0,-10,-20,-30,-38,-30,-18,-8,0],i).map(v=>v*k)});
+   const dx=emberClock.interpolate({inputRange:[0,.25,.5,.75,1],outputRange:[0,(i%2?4:-4)*k,(i%2?8:-8)*k,2*k,0]});
+   return <Animated.Image key={i} source={particle} resizeMode="contain" style={[pos(k,x,y,size,size),{opacity:celestial?pulse(clock,i):Animated.add(.22,Animated.multiply(pulse(emberClock,i),.78)),transform:[{translateX:dx},{translateY:dy}]}]}/>;
   })}
   <Animated.Image source={GLOW} resizeMode="stretch" style={[pos(k,142,24,56,42),{tintColor:light(theme),opacity:Animated.multiply(energy,.95),transform:[{scale:swell}]}]}/>
  </Decorative>;

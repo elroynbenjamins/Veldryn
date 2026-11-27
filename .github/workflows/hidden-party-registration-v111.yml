@@ -1,0 +1,35 @@
+name: Hidden Party registration PG17 review
+on:
+  pull_request:
+    paths:
+      - 'docs/roadmap/party-events/hidden-migrations/permanent-party-*-review.sql'
+      - 'backend/tests/permanent-party-registration-v111-*.sql'
+      - '.github/workflows/hidden-party-registration-v111.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  disposable-postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17.6
+        env:
+          POSTGRES_PASSWORD: local-fixture-only
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run isolated storage and round-trip regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat backend/tests/permanent-party-registration-v111-fixture.sql \
+            docs/roadmap/party-events/hidden-migrations/permanent-party-role-swap-storage-v108-review.sql \
+            docs/roadmap/party-events/hidden-migrations/permanent-party-stable-registration-v110-review.sql \
+            docs/roadmap/party-events/hidden-migrations/permanent-party-atomic-exchange-v111-review.sql \
+            backend/tests/permanent-party-registration-v111-regression.sql \
+            | docker exec -i ${{ job.services.postgres.id }} psql -U postgres -d postgres -v ON_ERROR_STOP=1

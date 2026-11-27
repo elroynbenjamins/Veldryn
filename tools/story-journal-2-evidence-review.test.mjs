@@ -28,13 +28,15 @@ assert.equal(p.quests[0].status,'ready');assert.equal(p.quests[1].status,'locked
 s.events.push(event({receiptId:'r6',quantity:1}));assert.equal(projectStoryReview(book,s,expected).reason,'conflicting_receipt');
 s=snap();s.claimedLegacyIds=['QST_001','QST_002','QST_007'];s.activationSequences[scout.id]=10;s.retainedCharacterRoutes=['SCOUT_IRONWOOD'];
 p=projectStoryReview(book,s,expected);assert.equal(p.quests.find(q=>q.id===scout.id).status,'active');
-s.actualAccountMaps=['SCOUT_IRONWOOD'];p=projectStoryReview(book,s,expected);
+s.actualAccountMaps=['SCOUT_IRONWOOD'];
+assert.equal(projectStoryReview(book,s,expected).quests.find(q=>q.id===scout.id).status,'active');
+s.characterDiscoveredRoutes=['SCOUT_IRONWOOD'];p=projectStoryReview(book,s,expected);
 assert.equal(p.quests.find(q=>q.id===scout.id).status,'ready');assert.equal(p.authorizesAccess,false);
 s.claimedLegacyIds.push('QST_003','QST_015');s.level=1;
 p=projectStoryReview(book,s,expected);assert.equal(p.quests.at(-1).status,'claimed');assert.equal(p.quests.at(-1).migrated,true);assert.equal(p.quests.find(q=>q.id===scout.id).status,'claimed');
 assert.equal(projectStoryReview(book,s,{...expected,characterId:'alt'}).status,'unavailable');
-let alt={...s,characterId:'alt',claimedLegacyIds:[],activationSequences:{},events:[]};
-assert.equal(projectStoryReview(book,alt,{accountId:'a',characterId:'alt'}).quests.find(q=>q.id===scout.id).objectives[0].complete,true);
+let alt={...s,characterId:'alt',characterDiscoveredRoutes:[],claimedLegacyIds:[],activationSequences:{},events:[]};
+assert.equal(projectStoryReview(book,alt,{accountId:'a',characterId:'alt'}).quests.find(q=>q.id===scout.id).objectives[0].complete,false);
 assert.equal(projectStoryReview(book,alt,{accountId:'a',characterId:'alt'}).quests.at(-1).status,'locked');
 const sideGather=side.quests.find(q=>q.objective.kind==='gather');
 s=snap();s.activationSequences[sideGather.id]=2;

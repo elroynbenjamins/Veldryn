@@ -13,7 +13,7 @@ export function celestialBorderTracks(width:number,height:number,showcase:boolea
  const phase=CELESTIAL_BORDER_PHASE;
  const periodic=(t:number)=>t===1?0:t;
  const pulse=(t:number,offset:number)=>.5-.5*Math.cos(2*Math.PI*(3*periodic(t)+offset));
- const wave=(t:number)=>.5-.5*Math.cos(2*Math.PI*periodic(t));
+ const wave=(t:number)=>.5-.5*Math.cos(4*Math.PI*periodic(t));
  const make=(key:string,kind:CelestialBorderTrack['kind'],diameter:number,lower:boolean,cx:(t:number)=>number,cy:(t:number)=>number,alpha:(t:number)=>number):CelestialBorderTrack=>{
   const size=Math.min(diameter*k,rail*.9),r=size/2;
   const x=phase.map(t=>Math.max(r,Math.min(width-r,cx(t))));
@@ -34,16 +34,16 @@ export function celestialBorderTracks(width:number,height:number,showcase:boolea
  const crestY=showcase?23*k:rail*.65;
  const lowerY=showcase?13*k:rail*.55;
  const tracks=[
-  make('upper-rail','star',12,false,t=>width*(.10+.80*wave(t)),()=>rail*.40,t=>glint(t,.28)),
-  make('lower-rail','star',10,true,t=>width*(.90-.80*wave(t)),()=>rail*.40,t=>glint(t,.70)),
+  make('upper-rail','star',15,false,t=>width*(.10+.80*wave(t)),()=>rail*.40,t=>glint(t,.28)),
+  make('lower-rail','star',13,true,t=>width*(.90-.80*wave(t)),()=>rail*.40,t=>glint(t,.70)),
   make('crown-halo','glow',25,false,()=>width/2,()=>crestY,t=>Math.min(.94,.16+.50*pulse(t,.12)+.27*energy(t))),
   make('medallion-halo','glow',21,true,()=>width/2,()=>lowerY,t=>Math.min(.9,.12+.45*pulse(t,.58)+.26*energy(t))),
   make('crown-star','star',13,false,()=>width/2,()=>crestY,t=>glint(t,.12)),
   make('medallion-star','star',11,true,()=>width/2,()=>lowerY,t=>glint(t,.58)),
  ];
  if(showcase)tracks.push(
-  make('left-wing','star',9,false,()=>width*.20,()=>rail*.50,t=>glint(t,.35)),
-  make('right-wing','star',9,false,()=>width*.80,()=>rail*.50,t=>glint(t,.85)),
+  make('left-wing','star',12,false,()=>width*.20,()=>rail*.50,t=>glint(t,.35)),
+  make('right-wing','star',12,false,()=>width*.80,()=>rail*.50,t=>glint(t,.85)),
  );
  return tracks;
 }

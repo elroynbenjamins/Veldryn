@@ -11,6 +11,13 @@ export interface GuildShopReadServices {
  authenticate(token: string): Promise<string | null>;
  rpc<T>(name: string, args: Record<string, unknown>): Promise<T>;
  guildLevelForAccount(accountId: string): Promise<number | null>;
+ /** Enable only after the service-only batch RPC is deployed and verified. */
+ batchSnapshotEnabled?: boolean;
+}
+type BatchSection={ok:boolean;value?:unknown};
+type GuildShopBatch={base:GuildShopSnapshot;construction?:BatchSection;eventBonuses?:BatchSection;constructionUnlocks?:BatchSection;weeklyRewards?:BatchSection;bank?:BatchSection;constructionBenefits?:BatchSection;constructionCosts?:BatchSection};
+function batchSection<T>(section:BatchSection|undefined):PromiseSettledResult<T>{
+ return section?.ok===true?{status:'fulfilled',value:section.value as T}:{status:'rejected',reason:'projection_unavailable'};
 }
 const responseHeaders = { "Content-Type":"application/json", "Cache-Control":"no-store" };
 const json = (value: unknown, status = 200) =>
@@ -31,7 +38,7 @@ export function guildShopReadHandler(services: GuildShopReadServices) {
    // Wallet, owned rewards and balances are required; optional projections
    // should not take down the entire shop if a guild feature is temporarily
    // unavailable. Claims/purchases still use separate authoritative RPCs.
-   const [base,constructionResult,eventResult,enabledResult,weeklyResult,bankResult,perksResult,costsResult]=await Promise.allSettled([
+   const legacyRead=()=>Promise.allSettled([
     services.rpc<GuildShopSnapshot>("guild_shop_snapshot_server_v1",{p_account_id:accountId}),
     services.rpc<Array<{templateId:string;completed:boolean;resources:Record<string,number>}>>("guild_construction_snapshot_server_v1",{p_account_id:accountId}),
     services.rpc<Array<{eventId:string;milestonePercent:number;tokens:number;claimed:boolean}>>("guild_shop_event_community_rewards_server_v1",{p_account_id:accountId}),
@@ -40,7 +47,19 @@ export function guildShopReadHandler(services: GuildShopReadServices) {
     services.rpc<{balances:Array<{resourceId:string;amount:number}>;activity:Array<{kind:string;resourceId:string;amount:number;templateId?:string;mine:boolean;createdAt:string}>}>("guild_bank_snapshot_server_v1",{p_account_id:accountId}),
     services.rpc<{guildTokenBonusBps:number;guildTokenWeeklyCap:number}>("guild_construction_benefits_server_v1",{p_account_id:accountId}),
     services.rpc<{memberCount:number;requirements:Array<{templateId:string;resourceId:string;amount:number;costMemberCount:number}>}>("guild_construction_costs_server_v1",{p_account_id:accountId}),
-   ]);
+   ] as const);
+   const batchedRead=async():Promise<Awaited<ReturnType<typeof legacyRead>>>=>{
+    const batch=await services.rpc<GuildShopBatch>("guild_shop_batch_snapshot_server_v1",{p_account_id:accountId});
+    if(!batch||typeof batch!=='object'||!batch.base)throw new Error("invalid_batch_snapshot");
+    return [
+     {status:'fulfilled',value:batch.base},
+     batchSection(batch.construction),batchSection(batch.eventBonuses),
+     batchSection(batch.constructionUnlocks),batchSection(batch.weeklyRewards),
+     batchSection(batch.bank),batchSection(batch.constructionBenefits),batchSection(batch.constructionCosts),
+    ];
+   };
+   const [base,constructionResult,eventResult,enabledResult,weeklyResult,bankResult,perksResult,costsResult]=
+    await (services.batchSnapshotEnabled===true?batchedRead():legacyRead());
    if(base.status!=="fulfilled")throw new Error("guild_shop_wallet_snapshot_unavailable");
    const snapshot=base.value;
    if(!snapshot||!Number.isSafeInteger(snapshot.balance)||!Array.isArray(snapshot.ownedItemIds))

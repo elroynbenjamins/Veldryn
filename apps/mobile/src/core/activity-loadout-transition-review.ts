@@ -116,6 +116,7 @@ function prepareSettledActivityLoadoutReview(state:GameState,category:string,now
   typeof input.verifyNoFrozenEncounter!=='function'||input.verifyNoFrozenEncounter(state.character.id)!==true)
   throw Error('loadout_boundary_not_authorized');
  let next=copy(state);
+ if(!next.character)throw Error('character_required');
  const slotCount=characterLoadoutSlotCount(next);
  const presets=normalizeCharacterLoadouts(next.character.savedLoadouts,next.character.classId,slotCount);
  const route=reviewActivityLoadoutRoute({slotCount,autoSwitch:input.autoSwitch,activity:category,

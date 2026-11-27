@@ -35,3 +35,10 @@ Security: private non-exposed schema; RLS defense in depth; no direct `anon`/`au
 5. Obtain owner review of actual compact UI and themes before any runtime screen changes; then separate staging DB, Android, release and go/no-go approval.
 
 **Do not merge or deploy V18 until its CI is green and future security/economy review is complete.**
+
+## November 27 — reward evidence and settlement integrity follow-up
+
+- V18-only review requires committed receipt count to match frozen account Seal spend (0–8). Mixed legacy/V18 ledgers require explicit migration, not silent eligibility.
+- Evidence digest now binds full receipt contents via canonical key ordering for JSONB round-trips; this is a change detector, **not** a cryptographic signature or proof of authentic database ownership. Run revision, required-node HP/clear consistency and stale zero-credit state are checked.
+- Settlement rejects corrupted run Pressure/revision and mismatched HP/clear flags before computing combat; frozen roster lookup requires an own property.
+- Added synthetic regression cases for receipt edits, canonical reordering, Seal reconciliation and rollback-free rejection. Exact-head CI is required; all existing release fences and future authenticated PostgreSQL, phase, objective, balance and UI gates remain in force.

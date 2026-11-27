@@ -102,6 +102,22 @@ async function main(){
  tamper(s=>{s.receipts[receiptKey].value.beforeCharges.protection=1},
   'invalid_charge_settlement');
  tamper(s=>{s.receipts[receiptKey].value.stance='Guard'},'invalid_receipt');
+ tamper(s=>{s.guild.guildRuns[JSON.stringify([CYCLE,GUILD])]
+  .members[ACCOUNT_A].sealsSpent++},'seal_receipt_mismatch');
+ tamper(s=>{s.receipts[receiptKey].value.guildRevision=999},'invalid_receipt_revision');
+ tamper(s=>{s.guild.guildRuns[JSON.stringify([CYCLE,GUILD])]
+  .nodes['C1-04'].cleared=true},'invalid_node_state');
+ const changed=port.inspect();
+ changed.receipts[receiptKey].value.combat!.effectiveHealing+=1;
+ const changedReview=reviewGuildPveV18Reward({...proofInput(),state:changed});
+ assert.ok(changedReview.sourceEvidenceDigest!==partial.sourceEvidenceDigest);
+ // JSONB-style key reordering must not change the proof digest.
+ const reordered=JSON.parse(JSON.stringify(proofInput().state,(_key,value)=>
+  value!==null&&typeof value==='object'&&!Array.isArray(value)
+   ?Object.fromEntries(Object.keys(value).sort().reverse().map(key=>[key,value[key]]))
+   :value)) as GuildPveV18StoreState;
+ assert.equal(reviewGuildPveV18Reward({...proofInput(),state:reordered})
+  .sourceEvidenceDigest,partial.sourceEvidenceDigest);
  const noBinding=port.inspect();
  delete noBinding.guild.cycleBindings[JSON.stringify([CYCLE,ACCOUNT_A])];
  assert.equal(reviewGuildPveV18Reward({
@@ -111,6 +127,18 @@ async function main(){
   state:port.inspect(),cycleId:CYCLE,guildId:GUILD,accountId:ACCOUNT_B,
  });
  assert.equal(noAction.band,'none');
+
+ // Fail closed on corrupt run metadata before a combat/Seal mutation.
+ const badRun=makeState();
+ badRun.guild.guildRuns[JSON.stringify([CYCLE,GUILD])].pressure=101;
+ const badRunKit=kit(badRun);
+ await rejects(()=>badRunKit.hit(),'invalid_run_state');
+ assert.deepEqual(badRunKit.port.inspect(),badRun);
+ const badNode=makeState();
+ badNode.guild.guildRuns[JSON.stringify([CYCLE,GUILD])].nodes['C1-04'].cleared=true;
+ const badNodeKit=kit(badNode);
+ await rejects(()=>badNodeKit.hit(),'invalid_shared_hp');
+ assert.deepEqual(badNodeKit.port.inspect(),badNode);
 
  // Simulate a transaction abort after a fully computed real-engine fight.
  const aborted=kit();

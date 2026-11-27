@@ -136,8 +136,11 @@ export class GuildPveV18SettlementService {
    }
    const run=state.guild.guildRuns[runKey(action.cycleId,action.guildId)];
    if(!run)reject('unknown_run');
+   if(!Object.hasOwn(run.members,account))reject('not_frozen_member');
    const member=run.members[account];
-   if(!member)reject('not_frozen_member');
+   if(!Number.isSafeInteger(run.revision)||run.revision<0||
+    !Number.isFinite(run.pressure)||run.pressure<0||run.pressure>100)
+    reject('invalid_run_state');
    const existingBinding=state.guild.cycleBindings[bindingKey(action.cycleId,account)];
    if(existingBinding&&existingBinding!==action.guildId)reject('already_bound_elsewhere');
    if(server.nowUtcMs<run.startMs||server.nowUtcMs>=run.endMs)
@@ -147,7 +150,8 @@ export class GuildPveV18SettlementService {
    const node=run.nodes[action.nodeId];
    if(!node)reject('missing_node');
    if(!Number.isFinite(node.hp)||!Number.isFinite(node.maxHp)||
-    node.maxHp<=0||node.hp<0||node.hp>node.maxHp)
+    node.maxHp<=0||node.hp<0||node.hp>node.maxHp||
+    node.cleared!==(node.hp===0))
     reject('invalid_shared_hp');
    if(!definition.all.every(id=>run.nodes[id]?.cleared===true)||
     (definition.any?.length&&!definition.any.some(id=>run.nodes[id]?.cleared===true)))

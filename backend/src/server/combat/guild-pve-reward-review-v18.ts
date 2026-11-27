@@ -11,6 +11,12 @@ export const GUILD_PVE_V18_REWARDS_ENABLED=false as const;
 const sha=(v:unknown)=>createHash('sha256').update(JSON.stringify(v)).digest('hex');
 const safe=(v:unknown):v is string=>
  typeof v==='string'&&/^[A-Za-z0-9][A-Za-z0-9:_-]{1,99}$/.test(v);
+// JSONB may reorder object keys. Bind the proof to receipt values, not just
+// the request hash, using key-order-independent serialization.
+const evidenceHash=(v:unknown)=>createHash('sha256').update(JSON.stringify(v,(_key,value)=>
+ value!==null&&typeof value==='object'&&!Array.isArray(value)
+  ?Object.fromEntries(Object.keys(value).sort().map(key=>[key,value[key]]))
+  :value)).digest('hex');
 const required=GUILD_PVE_V8_MANIFEST.filter(n=>n.required&&n.boss).map(n=>n.id);
 function fail(message:string):never{throw Error('guild_pve_v18_reward_'+message);}
 export interface GuildPveV18RewardReview {
@@ -37,7 +43,13 @@ export function reviewGuildPveV18Reward(input:{
  const binding=state.guild.cycleBindings[JSON.stringify([cycleId,accountId])];
  const competing=Boolean(binding&&binding!==guildId);
  const cleared=required.filter(id=>run.nodes[id]?.cleared&&run.nodes[id]?.hp===0).length;
- if(cleared>7||required.some(id=>!run.nodes[id]))fail('invalid_node_state');
+ if(cleared>7||required.some(id=>{
+  const n=run.nodes[id];
+  return !n||!Number.isFinite(n.hp)||!Number.isFinite(n.maxHp)||
+   n.maxHp<=0||n.hp<0||n.hp>n.maxHp||n.cleared!==(n.hp===0);
+ }))fail('invalid_node_state');
+ if(!Number.isFinite(run.reference.attack)||run.reference.attack<=0||
+  !Number.isSafeInteger(run.revision)||run.revision<0)fail('invalid_run_reference');
  let actions=0,hp=0,healing=0,shield=0,cleanses=0,fair=0;
  const ownEvidence:Array<readonly [string,string]>=[];
  for(const [key,entry] of Object.entries(state.receipts)){
@@ -63,9 +75,12 @@ export function reviewGuildPveV18Reward(input:{
    fail('hp_credit_mismatch');
   if(r.guildId!==guildId)continue;
   if(!frozen)fail('unrostered_receipt');
-  ownEvidence.push([key,entry.fingerprint]);
+  if(!Number.isSafeInteger(r.guildRevision)||r.guildRevision<0||
+   r.guildRevision>run.revision)fail('invalid_receipt_revision');
+  ownEvidence.push([key,evidenceHash([entry.fingerprint,r])]);
   if(r.status==='stale'){
    if(r.sealDebit!==0||r.combat!==null||r.creditedHp!==0||
+    r.beforeHp!==0||r.afterHp!==0||r.phaseTransitions.length!==0||
     r.beforePressure!==r.afterPressure||
     JSON.stringify(r.beforeCharges)!==JSON.stringify(r.afterCharges))
     fail('stale_has_credit');
@@ -104,6 +119,13 @@ export function reviewGuildPveV18Reward(input:{
    Math.min(r.combat.absorbedShield,cap*.4)+
    Math.min(r.combat.cleanseEvents,4)*cap*.05;
  }
+ // This is a V18-only review. Do not silently mix legacy V9 Seal spends
+ // with V18 receipts; migration/reconciliation requires a separate contract.
+ if(frozen){
+  const spent=run.members[accountId].sealsSpent;
+  if(!Number.isSafeInteger(spent)||spent<0||spent>8||spent!==actions)
+   fail('seal_receipt_mismatch');
+ }
  const round=(n:number)=>Number(n.toFixed(2));
  const eligible=frozen&&!competing&&actions>0&&binding===guildId;
  const complete=cleared===7;
@@ -122,6 +144,7 @@ export function reviewGuildPveV18Reward(input:{
   tokenAmount:null,guildXpAmount:null,cosmeticId:null,
   sourceEvidenceDigest:sha([
    cycleId,guildId,accountId,run.revision,cleared,binding??null,
+   run.reference.attack,frozen?run.members[accountId].sealsSpent:null,
    ownEvidence.sort((a,b)=>a[0].localeCompare(b[0])),
   ]),
  };

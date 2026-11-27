@@ -233,7 +233,9 @@ async function main(){
  powerful.stats.maxHp=1_000_000;
  powerful.stats.attackPower=1;
  powerful.stats.accuracy=100000;
- powerful.basicAttackCoeff=1;
+ powerful.basicAttackCoeff=0;
+ powerful.basicAttackMs=90000;
+ powerful.effectGems=[];
  powerful.abilities=[{
   id:'GX_V19_TEST_HIT',name:'Test hit',priority:999,cooldownMs:1000,
   castTimeMs:0,target:'current_target',effects:[{kind:'damage',flat:230,damageType:'true'}],
@@ -254,6 +256,12 @@ async function main(){
  assert.deepEqual(resumed.transitions,[]);
  assert.equal(resumed.bossHpRemoved,200);
  assert.equal(resumed.afterHp,0);
+ const lethalPlayer=structuredClone(powerful);
+ lethalPlayer.abilities[0].effects=[{kind:'damage',flat:2000,damageType:'true'}];
+ const lethal=previewGuildPveV19CrossPhase({...crossInput,player:lethalPlayer});
+ assert.equal(lethal.afterHp,0);
+ assert.deepEqual(lethal.transitions,[]);
+ assert.equal(lethal.observedCues.length,0);
  console.log('V18: authoritative-reader contract, stale races, quota, replay, rollback, finite charge, nonpaying reward reviews PASSED');
 }
 main().catch(e=>{console.error(e);process.exitCode=1});

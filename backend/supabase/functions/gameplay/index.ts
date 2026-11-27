@@ -44130,7 +44130,7 @@ var COMPANION_SANCTUARY_CONFIG = {
   expeditionPens: { maxLevel: 3, goldCosts: [17e3, 32e3, 56e3], essenceCosts: [350, 1150, 1900], materialId: "RUNEBOUND_CORE", materialCosts: [6, 12, 20], description: "Unlocks 1, 2, then 3 simultaneous Sanctuary Companion Expeditions." },
   masteryChamber: { maxLevel: 1, goldCosts: [36e3], essenceCosts: [1400], materialId: "OATHGLASS_FRAGMENT", materialCosts: [18], description: "Required for Prestige Mastery and highest companion progression." }
 };
-var COMPANION_SANCTUARY_TRAINING_XP_PER_DAY = [0, 40, 90, 150];
+var COMPANION_SANCTUARY_TRAINING_XP_PER_DAY = [0, 100, 150, 200];
 var COMPANION_SANCTUARY_WEEKLY_ESSENCE = [0, 20, 48, 80];
 var ability = (id, name, description, cooldownSeconds, target2, kind, baseValue, perLevel, extra = {}) => ({
   id,

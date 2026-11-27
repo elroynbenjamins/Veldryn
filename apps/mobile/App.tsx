@@ -934,7 +934,11 @@ const next=normalizeProfileIcon(migrateGemPouch(migrateRetiredStoryRewards(expli
   // (up to a full AFK reserve). It is a pure function of the authoritative state and the
   // presentation clock, so unrelated root re-renders (tab changes, popups, chat, alerts)
   // reuse the last result instead of re-simulating.
-  const activityPreviewMs=activityRewardPreviewClock(now,state?.activity??undefined,!!state?.character?.classTraining);
+  // During a pending save, the last authoritative read is a stable preview
+  // checkpoint. Do not replay hours of combat on every presentation tick
+  // while a request is trying to reach the server. No settlement math changes.
+  const recoveryPreviewNow=serverGameplayEnabled&&(online.busy||online.pending)?online.snapshot?.serverNow??now:now;
+  const activityPreviewMs=activityRewardPreviewClock(recoveryPreviewNow,state?.activity??undefined,!!state?.character?.classTraining);
   const activityPreview=useMemo(()=>state?.character?previewActivityReward(state,activityPreviewMs):undefined,[state,activityPreviewMs]);
   // Shell projections depend on the save and presentation clock, not tab, chat,
   // modal or cosmetic-preview changes. Keep the existing time-sensitive cadence.

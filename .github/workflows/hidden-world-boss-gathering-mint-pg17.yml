@@ -1,0 +1,70 @@
+name: Hidden World Boss gathering mint PG17 review
+on:
+  pull_request:
+    paths:
+      - 'backend/src/server/loot/world-boss-gathering-mint-v102.ts'
+      - 'backend/src/server/combat/world-boss-gathering-*.ts'
+      - 'backend/src/server/combat/world-boss-chest-policy-v96.ts'
+      - 'backend/tests/world-boss-gathering-mint-v102-pg.mjs'
+      - 'docs/roadmap/party-events/hidden-migrations/20261127133000_world_boss_gathering_mint_v102_review_only.sql'
+      - 'docs/roadmap/party-events/hidden-migrations/20261119104500_universal_chest_ledger_v70.sql'
+      - '.github/workflows/hidden-world-boss-gathering-mint-pg17.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  disposable-mint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: wb_mint_review
+          POSTGRES_PASSWORD: disposable-local-review
+          POSTGRES_DB: wb_mint_review
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U wb_mint_review -d wb_mint_review"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: |
+            apps/mobile/pnpm-lock.yaml
+            backend/pnpm-lock.yaml
+      - run: pnpm --dir apps/mobile install --frozen-lockfile
+      - run: pnpm --dir backend install --frozen-lockfile
+      - name: Compile existing hidden World Boss suite and mint port
+        working-directory: apps/mobile
+        run: pnpm exec tsc -p tsconfig.world-boss-v12.json --outDir .core-build
+      - name: Run disposable embedded PostgreSQL rollback and replay
+        working-directory: backend
+        run: node tests/world-boss-gathering-mint-v102-pg.mjs
+      - name: Install isolated pinned native PG test driver
+        run: npm install --prefix "$RUNNER_TEMP/wb-mint-driver" --ignore-scripts --no-audit --no-fund --save-exact pg@8.16.3
+      - name: Run native PostgreSQL 17 rollback, replay and independent-session issuance
+        working-directory: backend
+        env:
+          WB_MINT_NATIVE_PG: '1'
+          PGHOST: 127.0.0.1
+          PGPORT: '5432'
+          PGDATABASE: wb_mint_review
+          PGUSER: wb_mint_review
+          PGPASSWORD: disposable-local-review
+          PGSSLMODE: disable
+          PGOPTIONS: '-c statement_timeout=15000 -c lock_timeout=10000'
+        run: |
+          export WB_MINT_PG_MODULE="$RUNNER_TEMP/wb-mint-driver/node_modules/pg"
+          node tests/world-boss-gathering-mint-v102-pg.mjs

@@ -78,9 +78,10 @@ export function journalNavigationReview({book,side,storyProgress,sideProgress,ca
  const pinned=all.find(q=>q.id===saved.pinnedQuestId&&['active','available','ready'].includes(q.status));
  const featured=story.find(q=>q.status==='ready')??story.find(q=>q.status==='active')??story.find(q=>q.status==='available');
  const filter=['current','all','completed','locked'].includes(saved.filter)?saved.filter:'current';
+ const zoneId=book.zones.some(z=>z.zoneId===saved.zoneId)?saved.zoneId:undefined;
  const query=typeof saved.query==='string'?saved.query.trim().toLowerCase().slice(0,120):'';
- const visible=(tab==='story'?story:tab==='quests'?quests:[]).filter(q=>(filter==='all'||(filter==='current'&&['ready','active','available'].includes(q.status))||(filter==='completed'&&q.status==='claimed')||(filter==='locked'&&q.status==='locked'))&&(!query||q.title.toLowerCase().includes(query))).sort((a,b)=>priority[a.status]-priority[b.status]);
- return {...base,status:'review',tab,filter,query:typeof saved.query==='string'?saved.query.slice(0,120):'',pinned,featured,visible,storyComplete:story.filter(q=>q.status==='claimed').length,storyTotal:story.length,readyCount:all.filter(q=>q.status==='ready').length,tabs:JOURNAL_TABS};
+ const visible=(tab==='story'?story:tab==='quests'?quests:[]).filter(q=>(filter==='all'||(filter==='current'&&['ready','active','available'].includes(q.status))||(filter==='completed'&&q.status==='claimed')||(filter==='locked'&&q.status==='locked'))&&(!zoneId||q.zoneId===zoneId)&&(!query||q.title.toLowerCase().includes(query))).sort((a,b)=>priority[a.status]-priority[b.status]);
+ return {...base,status:'review',tab,filter,zoneId,zones:book.zones.map(z=>z.zoneId),query:typeof saved.query==='string'?saved.query.slice(0,120):'',pinned,featured,visible,storyComplete:story.filter(q=>q.status==='claimed').length,storyTotal:story.length,readyCount:all.filter(q=>q.status==='ready').length,tabs:JOURNAL_TABS};
 }
 export function journalReturnReview(returnTo,context,availableIds){
  if(returnTo?.screen!=='Journal'||returnTo.accountId!==context?.accountId||returnTo.characterId!==context?.characterId||!JOURNAL_TABS.includes(returnTo.tab)||!availableIds.includes(returnTo.questId))return {screen:'Journal',tab:'story'};

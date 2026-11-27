@@ -195,7 +195,7 @@ assert.equal(savedLoadoutProtection(exactRef,gearId,'copy-other').protected,fals
 assert.equal(savedLoadoutProtection(exactRef,gearId).protected,false);
 console.log('ACTIVITY_LOADOUT_PROTECTION: locked slots retained, legacy references protected, unrelated exact copies remain independent');
 
-import {reviewGatheringSpeedV2,gatheringSpeedEffectiveRatingV2} from '../src/core/gathering-speed-v2-review';
+import {reviewGatheringSpeedV2,gatheringSpeedEffectiveRatingV2,reviewGatheringRewardChannelsV2} from '../src/core/gathering-speed-v2-review';
 for(const [raw,effective] of [[0,0],[10000,10000],[15000,13750],[20000,17500],[25000,20000]]){
  assert.equal(gatheringSpeedEffectiveRatingV2(raw),effective);
 }
@@ -303,6 +303,28 @@ for(const band of bands)for(const targetId of band.nodes)for(const toolMode of [
   assert.ok(reward.kills>=review.baselineReward.kills);
   assert.equal(activityLoadoutSnapshotDigest(started),source);
   if(!arm.pieces)assert.deepEqual(reward,review.baselineReward);
+  if(arm.name==='common_10'||arm.name==='mythic_q100_10'){
+   // Matched speed-only vs same-speed full reward channels.
+   const rewardChannels=arm.name==='common_10'?{skillXpAffixBps:0,rareChanceAffixBps:0}:{skillXpAffixBps:3300,rareChanceAffixBps:8250};
+   const combined={...frozen,rewardChannels};
+   const combinedDigest=activityLoadoutSnapshotDigest(combined);
+   const full=reviewGatheringSettlementV2({accountId:'matrix-account',state:started,nowMs:startMs+3600000,sourceRevision:1,frozen:combined,
+    verifyPersisted:(a,rev,s,g)=>a==='matrix-account'&&rev===1&&s===source&&g===combinedDigest});
+   const qty=(r:typeof reward,id:string)=>r.items.filter(row=>row.itemId===id).reduce((sum,row)=>sum+row.quantity,0);
+   assert.equal(full.candidateReward.kills,reward.kills);
+   assert.equal(full.preview.xp,full.candidateReward.xp);
+   assert.equal(full.pace.gearRateMultiplier,review.pace.gearRateMultiplier);
+   assert.ok(full.candidateReward.xp>=reward.xp);
+   assert.ok(qty(full.candidateReward,node.itemId)>=qty(reward,node.itemId));
+   // Existing ordinary gathering rare-drop consumer is mining essence only.
+   for(const item of reward.items.filter(row=>row.itemId!==node.itemId)){
+    if(skill==='mining')assert.ok(qty(full.candidateReward,item.itemId)>=item.quantity);
+    else assert.equal(qty(full.candidateReward,item.itemId),item.quantity);
+   }
+   console.log('GATHERING_MATRIX_CHANNELS',JSON.stringify({tier:band.tier,skill,toolMode,arm:arm.name,actions:reward.kills,
+    speedOnlyXp:reward.xp,combinedXp:full.candidateReward.xp,primaryBefore:qty(reward,node.itemId),primaryAfter:qty(full.candidateReward,node.itemId),
+    channels:full.channels}));
+  }
   previous=reward.kills;
   matrixRows.push({tier:band.tier,skill,toolMode,arm:arm.name,primaryItem:node.itemId,
    primaryQuantity:reward.items.filter(row=>row.itemId===node.itemId).reduce((s,row)=>s+row.quantity,0),
@@ -325,3 +347,13 @@ for(const band of bands)for(const arm of ['none','common_10','mythic_q100_10']){
  console.log('GATHERING_MATRIX_SMELT',JSON.stringify({tier:band.tier,arm,recipe:recipe.id,output:recipe.output,ingredients,rawMinutes:ingredients.reduce((s,x)=>s+x.minutes,0)}));
 }
 console.log('GATHERING_MATRIX_REVIEW: 300 actual one-hour reward rehearsals; 15 raw-material cost comparisons; no economy or live changes');
+
+for(let pieces=0;pieces<=10;pieces++){
+ const x=reviewGatheringRewardChannelsV2({matchingSetPieces:pieces});
+ assert.equal(x.setXpBps,(pieces>=2?300:0)+(pieces>=10?500:0));
+ assert.equal(x.setYieldBps,(pieces>=4?400:0)+(pieces>=10?300:0));
+ assert.equal(x.setRareBps,pieces>=6?1000:0);
+}
+assert.throws(()=>reviewGatheringRewardChannelsV2({matchingSetPieces:0,skillXpAffixBps:1}));
+assert.throws(()=>reviewGatheringRewardChannelsV2({matchingSetPieces:10,rareChanceAffixBps:8251}));
+console.log('GATHERING_REWARD_CHANNELS_REVIEW: 60 matched one-hour cases, same actions, independent XP/yield/rare channel thresholds');

@@ -27,32 +27,13 @@ export type GatheringMintReadbackV100=GatheringSpeedCopyV99&{
  readonly originalChest:FrozenChestReceiptV69;
  readonly rollDigest:string;
 };
-export function reviewWorldBossGatheringSnapshotV100(input:{
- readonly accountId:string;readonly characterId:string;readonly sourceRevision:number;readonly activityId:string;
- readonly state:GameState;readonly ownedCharacterIds:readonly string[];
- readonly mintRows:readonly GatheringMintReadbackV100[];
- readonly verifyAccountReadback:(accountId:string,revision:number,digest:string)=>boolean;
- readonly verifyMintReadback:(accountId:string,revision:number,digest:string)=>boolean;
-}){
- const {accountId,characterId,sourceRevision,activityId,state}=input;
- const a=state.activity,c=state.character;
- if(!id(accountId)||!UUID.test(accountId)||!id(characterId)||!id(activityId)||!Number.isSafeInteger(sourceRevision)||sourceRevision<1||
- !c||c.id!==characterId||!a||!Number.isSafeInteger(a.startedAtMs)||a.startedAtMs<0||
- !Number.isSafeInteger(a.lastClaimAtMs)||a.lastClaimAtMs!==a.startedAtMs||(a.progressFraction??0)!==0||
- !Array.isArray(input.ownedCharacterIds)||!input.ownedCharacterIds.every(id)||
- new Set(input.ownedCharacterIds).size!==input.ownedCharacterIds.length||
- !Array.isArray(input.mintRows)||input.mintRows.length>10||
- typeof input.verifyAccountReadback!=='function'||typeof input.verifyMintReadback!=='function')
-  throw Error('gathering_snapshot_invalid_scope');
- const node=GATHERING.find(x=>x.id===a.targetId);
- if(!node||node.skillId!==a.kind||node.skillId==='herbalism')throw Error('gathering_snapshot_wrong_activity');
- const stateDigest=gatheringSnapshotDigestV100(state),mintDigest=gatheringSnapshotDigestV100(input.mintRows);
- if(input.verifyAccountReadback(accountId,sourceRevision,stateDigest)!==true||
- gatheringSnapshotDigestV100(state)!==stateDigest||gatheringSnapshotDigestV100(input.mintRows)!==mintDigest)
-  throw Error('gathering_snapshot_unverified_account');
+/** Source-shaped physical scan, shared by hidden move preflight. */
+export function readWorldBossGatheringPhysicalV100(state:GameState,ownedCharacterIds:readonly string[]){
+ const c=state.character;
+ if(!c)throw Error('gathering_snapshot_missing_character');
  const roster=[c,...(state.otherCharacters??[]).map(x=>x.character)];
  if(new Set(roster.map(x=>x.id)).size!==roster.length||
- roster.length!==input.ownedCharacterIds.length||roster.some(x=>!input.ownedCharacterIds.includes(x.id)))
+ roster.length!==ownedCharacterIds.length||roster.some(x=>!ownedCharacterIds.includes(x.id)))
   throw Error('gathering_snapshot_incomplete_roster');
  const physical=new Map<string,{owner:string|null;itemId:string;slot?:string}[]>();
  const add=(instanceId:string,owner:string|null,itemId:string,slot?:string)=>{
@@ -79,6 +60,51 @@ export function reviewWorldBossGatheringSnapshotV100(input:{
    if(instanceId&&!hero.equipment[slot as GearSlot])throw Error('gathering_snapshot_orphan_equipped_copy');
  }
  if([...physical.values()].some(rows=>rows.length!==1))throw Error('gathering_snapshot_duplicate_physical_copy');
+
+ return physical;
+}
+export function assertWorldBossGatheringOriginV100(accountId:string,mint:Pick<GatheringMintReadbackV100,'roll'|'rollDigest'|'originalChest'>){
+ const g=mint.roll,receipt=mint.originalChest;
+ const set=WORLD_BOSS_GATHERING_SETS_V64.find(x=>x.setId===g?.setId);
+ if(!set||mint.rollDigest!==gatheringSnapshotDigestV100(g))throw Error('gathering_snapshot_invalid_roll_digest');
+  if(!receipt||receipt.accountId!==accountId||receipt.rulesVersion!=='chest-settlement-v69'||!receipt.committed||
+   receipt.tableId!=='world_boss_chest'||receipt.tableVersion!=='world_boss_v98_unified_'+set.bossId||
+   !receipt.proofVersion||receipt.recipientCharacterId!==null||receipt.equipmentDeliveryMode!=='account_unclaimed'||
+   !receipt.sourceKey.startsWith('world-boss:')||!UUID.test(receipt.sourceKey.split(':')[1]??'')||receipt.sourceKey.split(':')[2]!==accountId||
+   !/^(donations_goal|three_attempts|community_damage_goal|damage:[1-9][0-9]*)$/.test(receipt.sourceKey.split(':').slice(3).join(':'))||
+   receipt.groups.length!==1||receipt.drops.length!==1)
+   throw Error('gathering_snapshot_invalid_chest_origin');
+  const group=receipt.groups[0],drop=receipt.drops[0],table=worldBossChestLootTableV96(set.bossId,'donations_goal');
+  if(group.groupId!=='equipment'||group.type!=='equipment'||group.chanceBps!==1000||group.hit!==true||
+   group.entryId!==g.slot||group.quantity!==1||drop.groupId!=='equipment'||drop.type!=='equipment'||
+   drop.entryId!==g.slot||drop.quantity!==1||gatheringSnapshotDigestV100(receipt.guaranteed)!==gatheringSnapshotDigestV100(table.guarantees))
+   throw Error('gathering_snapshot_chest_roll_mismatch');
+
+}
+export function reviewWorldBossGatheringSnapshotV100(input:{
+ readonly accountId:string;readonly characterId:string;readonly sourceRevision:number;readonly activityId:string;
+ readonly state:GameState;readonly ownedCharacterIds:readonly string[];
+ readonly mintRows:readonly GatheringMintReadbackV100[];
+ readonly verifyAccountReadback:(accountId:string,revision:number,digest:string)=>boolean;
+ readonly verifyMintReadback:(accountId:string,revision:number,digest:string)=>boolean;
+}){
+ const {accountId,characterId,sourceRevision,activityId,state}=input;
+ const a=state.activity,c=state.character;
+ if(!id(accountId)||!UUID.test(accountId)||!id(characterId)||!id(activityId)||!Number.isSafeInteger(sourceRevision)||sourceRevision<1||
+ !c||c.id!==characterId||!a||!Number.isSafeInteger(a.startedAtMs)||a.startedAtMs<0||
+ !Number.isSafeInteger(a.lastClaimAtMs)||a.lastClaimAtMs!==a.startedAtMs||(a.progressFraction??0)!==0||
+ !Array.isArray(input.ownedCharacterIds)||!input.ownedCharacterIds.every(id)||
+ new Set(input.ownedCharacterIds).size!==input.ownedCharacterIds.length||
+ !Array.isArray(input.mintRows)||input.mintRows.length>10||
+ typeof input.verifyAccountReadback!=='function'||typeof input.verifyMintReadback!=='function')
+  throw Error('gathering_snapshot_invalid_scope');
+ const node=GATHERING.find(x=>x.id===a.targetId);
+ if(!node||node.skillId!==a.kind||node.skillId==='herbalism')throw Error('gathering_snapshot_wrong_activity');
+ const stateDigest=gatheringSnapshotDigestV100(state),mintDigest=gatheringSnapshotDigestV100(input.mintRows);
+ if(input.verifyAccountReadback(accountId,sourceRevision,stateDigest)!==true||
+ gatheringSnapshotDigestV100(state)!==stateDigest||gatheringSnapshotDigestV100(input.mintRows)!==mintDigest)
+  throw Error('gathering_snapshot_unverified_account');
+ const physical=readWorldBossGatheringPhysicalV100(state,input.ownedCharacterIds);
  const equipped=Object.entries(c.equipment).filter(([,itemId])=>!!itemId&&isPiece(itemId));
  if(equipped.length!==input.mintRows.length)throw Error('gathering_snapshot_incomplete_mints');
  const seenSources=new Set<string>(),seenIds=new Set<string>();
@@ -94,18 +120,8 @@ export function reviewWorldBossGatheringSnapshotV100(input:{
    (state.account.craftedGearInstances??[]).some(x=>x.id===mint.instanceId)||
    mint.rollDigest!==gatheringSnapshotDigestV100(g))
    throw Error('gathering_snapshot_invalid_mint_custody');
-  if(!receipt||receipt.accountId!==accountId||receipt.rulesVersion!=='chest-settlement-v69'||!receipt.committed||
-   receipt.tableId!=='world_boss_chest'||receipt.tableVersion!=='world_boss_v98_unified_'+set.bossId||
-   !receipt.proofVersion||receipt.recipientCharacterId!==null||receipt.equipmentDeliveryMode!=='account_unclaimed'||
-   !receipt.sourceKey.startsWith('world-boss:')||!UUID.test(receipt.sourceKey.split(':')[1]??'')||receipt.sourceKey.split(':')[2]!==accountId||
-   !/^(donations_goal|three_attempts|community_damage_goal|damage:[1-9][0-9]*)$/.test(receipt.sourceKey.split(':').slice(3).join(':'))||
-   seenSources.has(receipt.sourceKey)||receipt.groups.length!==1||receipt.drops.length!==1)
-   throw Error('gathering_snapshot_invalid_chest_origin');
-  const group=receipt.groups[0],drop=receipt.drops[0],table=worldBossChestLootTableV96(set.bossId,'donations_goal');
-  if(group.groupId!=='equipment'||group.type!=='equipment'||group.chanceBps!==1000||group.hit!==true||
-   group.entryId!==g.slot||group.quantity!==1||drop.groupId!=='equipment'||drop.type!=='equipment'||
-   drop.entryId!==g.slot||drop.quantity!==1||gatheringSnapshotDigestV100(receipt.guaranteed)!==gatheringSnapshotDigestV100(table.guarantees))
-   throw Error('gathering_snapshot_chest_roll_mismatch');
+  if(seenSources.has(receipt.sourceKey))throw Error('gathering_snapshot_duplicate_source');
+  assertWorldBossGatheringOriginV100(accountId,mint);
   seenIds.add(mint.instanceId);seenSources.add(receipt.sourceKey);
   if(input.verifyMintReadback(accountId,sourceRevision,gatheringSnapshotDigestV100(mint))!==true||
    gatheringSnapshotDigestV100(input.mintRows)!==mintDigest||gatheringSnapshotDigestV100(state)!==stateDigest)

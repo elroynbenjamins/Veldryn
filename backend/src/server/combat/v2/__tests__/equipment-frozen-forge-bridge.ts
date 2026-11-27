@@ -25,6 +25,7 @@ import {soloOffensiveProgressionReviewV2,type SoloProgressionArm} from './solo-o
 import {COMPLETION_BOSSES_REVIEW_V2,createCompletionBossReviewV2,type CompletionBossArmV2} from './regional-completion-boss-review';
 import {completionBossPressureReviewV2,completionBossOffenseReviewV2} from './regional-completion-counterplay-review';
 import {runRegionalCompletionLedgerReviewV2} from './regional-completion-ledger-boundaries';
+import {runCompletionTransactionReviewV2} from './regional-completion-transaction-boundaries';
 import {STAT_GEMS_V1,EFFECT_GEMS_V1,gemItemId,type GemGrade,GEM_BALANCE_REVIEW_V2,STAT_GEMS_REVIEW_V2,EFFECT_GEMS_REVIEW_V2,EFFECT_GEM_REVIEW_MULTIPLIERS_V2} from '../../../equipment/gems/gem-catalog-v1';
 import type {V2GemSidecarState} from '../../../equipment/equipment-crafting-v2-gem-sidecar-types';
 import {writeFileSync} from 'node:fs';
@@ -3548,3 +3549,6 @@ if(process.env.EQ2_V21_PARTY_PATH){
   actualOwnedCandidateCopies:false,conditionalEffectsApplied:false,releaseApproved:false,rows}));
 }
 
+
+// Async transaction emulator runs after the synchronous integration matrix.
+void runCompletionTransactionReviewV2().catch(error=>{console.error(error);process.exitCode=1;});

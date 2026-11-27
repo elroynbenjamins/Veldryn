@@ -11,18 +11,19 @@ export const WORLD_BOSS_DAMAGE_STORE_V105_LIVE=false as const;
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 type Row=Record<string,unknown>;
 const number=(v:unknown)=>{const n=typeof v==='string'&&/^\d+$/.test(v)?Number(v):v;if(typeof n!=='number'||!Number.isSafeInteger(n)||n<0||n>1e12)throw Error('world_boss_v105_invalid_integer');return n;};
-export async function accrueWorldBossDamageChestsV105(tx:ChestSqlV70,input:{
+export type DamageChestStoreInputV105={
  accountId:string;eventId:string;
  readVerifiedCanonicalAttempts:(tx:ChestSqlV70,eventId:string,accountId:string)=>Promise<readonly WorldBossV95SettledAttemptReview[]>;
  readVersionedSecret:(version:string)=>Uint8Array;
-},qaEnabled=false){
+};
+async function reviewLockedDamageHistoryV105(tx:ChestSqlV70,input:DamageChestStoreInputV105,qaEnabled:boolean,accrue:boolean){
  if(!qaEnabled||WORLD_BOSS_DAMAGE_STORE_V105_LIVE||process.env.NODE_ENV==='production')throw Error('world_boss_v105_unreleased');
  const {accountId,eventId}=input;
  if(!UUID.test(accountId)||!UUID.test(eventId)||typeof input.readVerifiedCanonicalAttempts!=='function'||typeof input.readVersionedSecret!=='function')
   throw Error('world_boss_v105_invalid_scope');
  // Same order as V70. The caller must own BEGIN READ COMMITTED and rollback.
  await assertWorldBossChestWriteOpenV73(tx,accountId,'world-boss:'+eventId+':'+accountId+':donations_goal');
- await tx.query('INSERT INTO private.chest_account_fence_v70(account_id) SELECT id FROM auth.users WHERE id=$1::uuid ON CONFLICT DO NOTHING',[accountId]);
+ if(accrue)await tx.query('INSERT INTO private.chest_account_fence_v70(account_id) SELECT id FROM auth.users WHERE id=$1::uuid ON CONFLICT DO NOTHING',[accountId]);
  const locks=(await tx.query<{account_id:string}>('SELECT account_id::text AS account_id FROM private.chest_account_fence_v70 WHERE account_id=$1::uuid FOR UPDATE',[accountId])).rows;
  if(locks.length!==1||locks[0].account_id!==accountId)throw Error('world_boss_v105_account_missing');
  const rows=(await tx.query<Row>('SELECT event_id::text AS event_id,account_id::text AS account_id,boss_id,bracket_id,revision,damage_per_roll,entropy_version FROM private.world_boss_damage_policy_v105 WHERE event_id=$1::uuid AND account_id=$2::uuid FOR UPDATE',[eventId,accountId])).rows;
@@ -43,9 +44,24 @@ export async function accrueWorldBossDamageChestsV105(tx:ChestSqlV70,input:{
  const digest=gatheringSnapshotDigestV100(policy);
  const result=reviewWorldBossDamageChestsV97({canonical,receipts,policy,previous,secret:input.readVersionedSecret(policy.entropyVersion),
  verifyPersistedAttempt:verify,verifyFrozenPolicy:row=>gatheringSnapshotDigestV100(row)===digest});
+ return {result,policy,previous,readHistory};
+}
+/** Accrual alone may persist new rolls; opening never calls this writer. */
+export async function accrueWorldBossDamageChestsV105(tx:ChestSqlV70,input:DamageChestStoreInputV105,qaEnabled=false){
+ const {result,policy,readHistory}=await reviewLockedDamageHistoryV105(tx,input,qaEnabled,true);
+ const {eventId,accountId}=input;
  for(const roll of result.newRolls)await tx.query('INSERT INTO private.world_boss_damage_rolls_v105(event_id,account_id,ordinal,threshold_damage,roll,hit,source_key) VALUES($1,$2,$3,$4,$5,$6,$7)',
  [eventId,accountId,roll.ordinal,roll.thresholdDamage,roll.roll,roll.hit,roll.sourceKey]);
  if(gatheringSnapshotDigestV100(await readHistory())!==gatheringSnapshotDigestV100(result.rolls))throw Error('world_boss_v105_history_readback_mismatch');
  return {...result,policy,earnedSourceKeys:result.rolls.filter(x=>x.hit).map(x=>x.sourceKey),
  persistedInCallerTransaction:true as const,committed:false as const,claimEnabled:false as const};
+}
+
+/** Verify immutable persisted history under the existing event/account lock.
+ * No fence creation, insert, or new earn operation. A newly crossed but
+ * unpersisted winning roll is NOT an earned source. */
+export async function readEarnedWorldBossDamageSourcesV105(tx:ChestSqlV70,input:DamageChestStoreInputV105,qaEnabled=false){
+ const {policy,previous}=await reviewLockedDamageHistoryV105(tx,input,qaEnabled,false);
+ return {policy,earnedSourceKeys:previous.filter(x=>x.hit).map(x=>x.sourceKey),
+  persistedRollCount:previous.length,releaseReady:false as const};
 }

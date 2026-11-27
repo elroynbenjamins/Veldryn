@@ -5,7 +5,7 @@ import {defineChestLootTableV67,resolveChestLootV67} from '../loot/chest-loot-en
 import {worldBossGatheringPiecesV64,WORLD_BOSS_GATHERING_RARITY_V65,
  type WorldBossGatheringBossV64,type WorldBossGatheringRandomV64,type GatheringGearSlotV64} from './world-boss-gathering-loot-v64';
 export const WORLD_BOSS_CHEST_POLICY_V96={
- equipmentChanceBps:1000,damageChestChanceBps:1000,maxDamageChests:3,maxMilestoneChests:3,
+ innateGatheringSpeedBaseBps:1000,equipmentChanceBps:1000,damageChestChanceBps:1000,maxDamageChests:3,maxMilestoneChests:3,
  gearSource:'world_boss_chest_only',sigilGearExchange:false,luckModifiersAllowed:false,
  releaseReady:false,
 } as const;
@@ -57,7 +57,7 @@ export function previewWorldBossChestRollV96(input:{
  });
  return {gear:{rollVersion:96 as const,itemId:piece.itemId,setId:piece.setId,slot:piece.slot,skill:piece.skill,
   rarity:rarity.rarity,quality,primaryStat:'gathering_speed' as const,
-  gatheringSpeedBasisPoints:Math.round(80*rarity.multiplier*(.75+quality*.005)),bonusStats,
+  gatheringSpeedBasisPoints:Math.round(WORLD_BOSS_CHEST_POLICY_V96.innateGatheringSpeedBaseBps*rarity.multiplier*(.75+quality*.005)),bonusStats,
   combatPowerBonus:0 as const,source:'world_boss_chest_only' as const},tableVersion:table.version,
   gearGranted:false as const,releaseReady:false as const};
 }

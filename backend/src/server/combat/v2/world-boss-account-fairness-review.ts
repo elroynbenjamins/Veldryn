@@ -7,9 +7,10 @@ type Raid=ReturnType<typeof simulateWorldBossSharedEngineReviewV2>;
 const idKey=(ids:readonly string[])=>JSON.stringify([...ids].sort());
 const base=(r:Raid)=>{
  const {members,rosterDigest,...scope}=r.binding.scope;
- return {scope,bossDefinitionDigest:r.binding.bossDefinitionDigest};
+ return {scope,bossDefinitionDigest:r.binding.bossDefinitionDigest,reviewRulesDigest:r.reviewRulesDigest};
 };
 export function reviewWorldBossAccountFairnessV2(full:Raid,subsets:readonly Raid[]){
+ if(!full||!Array.isArray(subsets))throw Error('world_boss_fairness_invalid_review');
  const fullMembers=full.binding.scope.members;
  if(fullMembers.length<1||fullMembers.length>3||subsets.length!==2**fullMembers.length-2)
   throw Error('world_boss_fairness_incomplete_subsets');

@@ -103,7 +103,10 @@ export function reviewPartyCharacterSwapV103(input:{
   partyId:input.partyId,previousRevision:input.rosterRevision,
   ...(permanent?{proposalId:input.proposalId}:{}),
   proposedRevision:input.rosterRevision+1,
-  roster:Object.freeze(input.current.map(r=>Object.freeze({...proposedByAccount.get(r.accountId)!}))),
+  roster:Object.freeze(input.current.map(r=>{
+   const proposed=proposedByAccount.get(r.accountId)!;
+   return Object.freeze({... (permanent?owned.get(proposed.characterId)!:proposed)});
+  })),
   changedAccounts:Object.freeze(changed.map(r=>r.accountId).sort()),
   requiresFreshReadyCheck:true as const,requiresFreshLoadouts:true as const,
   releaseEnabled:false as const,canPersist:false as const,canAuthorizeCombat:false as const,

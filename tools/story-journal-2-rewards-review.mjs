@@ -32,8 +32,10 @@ export function regionalRewardReview(books,sideCatalogues,enemyRows,legacyReward
   const totalWeight=weights.reduce((a,x)=>a+x,0);
   let remaining=mainBudget;
   const main=region==='ASTERFALL'?baseline.rows:quests.map((q,i)=>{const gold=i===quests.length-1?remaining:round10(mainBudget*weights[i]/totalWeight);remaining-=gold;return {questId:q.id,candidateGold:gold,pendingBinding:q.bindingStatus==='pending_authoritative_solo_boss_id',...flags};});
-  const perSide=round10(sideBudget/s.quests.length);
-  const side=s.quests.map((q,i)=>({questId:q.id,candidateGold:i===s.quests.length-1?sideBudget-perSide*(s.quests.length-1):perSide,...flags}));
+  const paid=s.quests.filter(q=>q.scope!=='account');
+  if(!paid.length)return {...flags,status:'unavailable',reason:'no_character_side_quests'};
+  const perSide=round10(sideBudget/paid.length);
+  const side=s.quests.map(q=>({questId:q.id,candidateGold:q.scope==='account'?0:q.id===paid.at(-1).id?sideBudget-perSide*(paid.length-1):perSide,...flags}));
   if([...main,...side].some(r=>!integer(r.candidateGold)))return {...flags,status:'unavailable',reason:'invalid_distribution'};
   results.push({regionId:region,nominalMedianGoldPerMinute:rates[region],multiplier,mainBudget,sideBudget,main,side,...flags});
  }

@@ -1,0 +1,117 @@
+{
+  "version": 1,
+  "released": false,
+  "steps": [
+    {
+      "id": "guide2:asterfall:01",
+      "legacyQuestId": "QST_001",
+      "title": "Start your first hunt",
+      "body": "Defeat 5 Moss Rats.",
+      "action": "Find encounter",
+      "system": "combat",
+      "optional": true,
+      "released": false
+    },
+    {
+      "id": "guide2:asterfall:02",
+      "legacyQuestId": "QST_001",
+      "title": "Collect your rewards",
+      "body": "Collect completed hunts to gain XP and items.",
+      "action": "View activity",
+      "system": "collection",
+      "optional": true,
+      "released": false
+    },
+    {
+      "id": "guide2:asterfall:03",
+      "legacyQuestId": "QST_002",
+      "title": "Try a profession",
+      "body": "Gather a few logs, fish or ore.",
+      "action": "Open skills",
+      "system": "gathering",
+      "optional": true,
+      "released": false
+    },
+    {
+      "id": "guide2:asterfall:04",
+      "legacyQuestId": "QST_002",
+      "title": "Prepare for tougher fights",
+      "body": "Check your equipment before hunting boars.",
+      "action": "Open equipment",
+      "system": "equipment",
+      "optional": true,
+      "released": false
+    },
+    {
+      "id": "guide2:asterfall:05",
+      "legacyQuestId": "QST_007",
+      "title": "Meet your scout",
+      "body": "A free guide can map routes while you fight.",
+      "action": "Choose scout",
+      "system": "scouting",
+      "optional": true,
+      "released": false
+    },
+    {
+      "id": "guide2:asterfall:06",
+      "legacyQuestId": "QST_003",
+      "title": "Follow the wolf trail",
+      "body": "Collect the Ironwood scouting report.",
+      "action": "View report",
+      "system": "scouting-report",
+      "optional": true,
+      "released": false
+    },
+    {
+      "id": "guide2:asterfall:07",
+      "legacyQuestId": "QST_004",
+      "title": "Improve your kit",
+      "body": "Equip two pieces of gear.",
+      "action": "Open equipment",
+      "system": "equipment",
+      "optional": true,
+      "released": false
+    },
+    {
+      "id": "guide2:asterfall:08",
+      "legacyQuestId": "QST_005",
+      "title": "Meet your companion",
+      "body": "Choose a companion after unlocking the feature.",
+      "action": "View companions",
+      "system": "companions",
+      "optional": true,
+      "released": false
+    },
+    {
+      "id": "guide2:asterfall:09",
+      "legacyQuestId": "QST_006",
+      "title": "Learn your abilities",
+      "body": "Inspect your available skills and enemy effects.",
+      "action": "View abilities",
+      "system": "abilities",
+      "optional": true,
+      "released": false
+    },
+    {
+      "id": "guide2:asterfall:10",
+      "legacyQuestId": "QST_009",
+      "title": "Prepare for the guardian",
+      "body": "Compare your gear with available T2 options.",
+      "action": "Compare equipment",
+      "system": "tier-transition",
+      "optional": true,
+      "released": false
+    }
+  ],
+  "policy": {
+    "maxVisibleTips": 1,
+    "maxBodyWords": 18,
+    "onePrimaryAction": true,
+    "optionalDismiss": true,
+    "autoOpen": false,
+    "hideAfterSystemUsed": true,
+    "repeatCharacter": "skip previously learned account tutorials; keep character-specific quest requirements",
+    "scouting": "route prerequisites and report state from verified scouting snapshot",
+    "note": "Teach gathering after first rewards; optional practice preserves independent profession progression. No guide should require changing an ongoing activity or open a second modal. If rewards are ready, show collect first. Companion lesson only after QST_005 claim and actual eligibility."
+  }
+}

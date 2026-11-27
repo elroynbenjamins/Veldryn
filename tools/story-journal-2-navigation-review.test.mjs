@@ -47,6 +47,7 @@ assert.equal(journalReturnReview(back,expected,[scout.id]).questId,scout.id);
 assert.equal(journalReturnReview(back,{...expected,accountId:'other'},[scout.id]).questId,undefined);
 assert.equal(journalReturnReview(back,expected,[]).tab,'story');
 snap.actualAccountMaps=['SCOUT_IRONWOOD'];
+snap.characterDiscoveredRoutes=['SCOUT_IRONWOOD'];
 assert.equal(view().featured.primary.label,'Review rewards');
 assert.equal(view().featured.primary.authorizesReward,false);
 assert.equal(view().featured.primary.destination,null);

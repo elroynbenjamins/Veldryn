@@ -16,11 +16,15 @@ function definitions(catalogue){
   const seen=new Set();
   for(const o of q.objectives){
    if(!id(o.id)||seen.has(o.id)||!id(o.targetId)||!natural(o.required)||o.required===0||!['kill','gather','map','boss','level','equipped'].includes(o.kind)||o.kind==='gather'&&!id(o.skillId))throw Error('invalid_objective');
+   if(o.mapScope!==undefined&&(o.kind!=='map'||!['account','character'].includes(o.mapScope)))throw Error('invalid_map_scope');
    seen.add(o.id);
   }
   out.set(q.id,q);
  }
  for(const q of out.values())for(const p of q.prerequisites)if(!out.has(p)||p===q.id)throw Error('invalid_prerequisite');
+ const done=new Set(),visiting=new Set();
+ function visit(key){if(visiting.has(key))throw Error('quest_cycle');if(done.has(key))return;visiting.add(key);for(const p of out.get(key).prerequisites)visit(p);visiting.delete(key);done.add(key);}
+ for(const key of out.keys())visit(key);
  return out;
 }
 function validateState(state,defs,catalogue,expected){

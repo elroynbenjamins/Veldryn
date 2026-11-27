@@ -171,3 +171,26 @@ for(const invalid of [
  assert.equal(rejected,true);
 }
 console.log('ACTIVITY_LOADOUT_UNLOCK_REVIEW: 9 progression/entitlement cases, repeated victories, foreign and unverified proof rejected; no grants');
+
+import {savedLoadoutProtection} from '../src/core/activity-loadout-protection';
+import {canDisposeLegacyEquipment} from '../src/core/equipment-enhancement';
+import {normalizeCharacterLoadouts,saveCharacterLoadout,applyCharacterLoadout,deleteCharacterLoadout} from '../src/core/character-loadouts';
+const savedCombat=state.character!.savedLoadouts!.find(row=>row.slotIndex===1)!;
+const gearId=savedCombat.equipment.weapon!;
+assert.ok(gearId);
+const downgraded={...state,account:{...state.account,entitlements:{}},
+ character:{...state.character!,savedLoadouts:[{...savedCombat,slotIndex:4,id:'loadout-5'}]}};
+assert.equal(normalizeCharacterLoadouts(downgraded.character.savedLoadouts,downgraded.character.classId).length,1);
+assert.equal(normalizeCharacterLoadouts(downgraded.character.savedLoadouts,downgraded.character.classId,1).length,0);
+assert.throws(()=>applyCharacterLoadout(downgraded,'loadout-5'));
+const afterSave=saveCharacterLoadout(downgraded,0,'New active preset',3000);
+assert.equal(afterSave.character?.savedLoadouts?.length,2);
+assert.equal(deleteCharacterLoadout(afterSave,'loadout-5').character?.savedLoadouts?.length,2);
+assert.equal(savedLoadoutProtection(downgraded,gearId).protected,true);
+const legacyStock={...downgraded,inventory:{...downgraded.inventory,stacks:[{itemId:gearId,quantity:3}]}};
+assert.equal(canDisposeLegacyEquipment(legacyStock,gearId,'inventory',1),false);
+const exactRef={...downgraded,character:{...downgraded.character,savedLoadouts:[{...savedCombat,equipment:{weapon:gearId},equipmentInstanceIds:{weapon:'copy-qa'}}]}};
+assert.equal(savedLoadoutProtection(exactRef,gearId,'copy-qa').protected,true);
+assert.equal(savedLoadoutProtection(exactRef,gearId,'copy-other').protected,false);
+assert.equal(savedLoadoutProtection(exactRef,gearId).protected,false);
+console.log('ACTIVITY_LOADOUT_PROTECTION: locked slots retained, legacy references protected, unrelated exact copies remain independent');

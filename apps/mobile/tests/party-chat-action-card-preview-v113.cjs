@@ -97,3 +97,61 @@ async function testRefresh(){
  console.log('PARTY_CHAT_REFRESH_V114_PASS');
 }
 testRefresh().catch(error=>{console.error(error);process.exitCode=1;});
+
+const activeModule={exports:{}};
+new Function('module','exports','require',compile(path.join(root,'core','party-chat-active-requests-preview-v115.ts')))(
+ activeModule,activeModule.exports,id=>{assert.equal(id,'./party-chat-card-preview-v113');return local.exports;});
+const {PartyActiveRequestsPreviewV115:Active,PARTY_CHAT_ACTIVE_REQUESTS_V115_RELEASED}=activeModule.exports;
+assert.equal(PARTY_CHAT_ACTIVE_REQUESTS_V115_RELEASED,false);
+const activePanel=path.join(root,'components','PartyActiveRequestsPanelPreviewV115.tsx');
+compile(activePanel);
+assert.doesNotMatch(fs.readFileSync(activePanel,'utf8'),/\.\.\/online\/|supabase|fetch\(/);
+assert.doesNotMatch(mounted,/PartyActiveRequestsPanelPreviewV115/);
+const activeScope={accountId:'A',partyId:'party'};
+const snapshot={...activeScope,snapshotRevision:7,rosterRevision:4,serverNowMs:1000,requests:[
+ {card:{...swap,id:'swap',messageId:'old-message',expiresAtMs:5000},sourceRevision:2},
+ {card:{...vote,id:'vote',messageId:'vote-message',expiresAtMs:40000},sourceRevision:3},
+ {card:{...ready,id:'ready',messageId:'ready-message',allowedActions:[],expiresAtMs:4000},sourceRevision:4}
+]};
+const activeRequests=new Active(true);
+activeRequests.setScope(activeScope);activeRequests.setActive(true);
+const first=activeRequests.beginRead(10),second=activeRequests.beginRead(20);
+assert.equal(activeRequests.acceptRead(first,snapshot,25),false,'superseded response rejected');
+assert.equal(activeRequests.acceptRead(second,snapshot,30),true);
+assert.equal(activeRequests.view(30).needsResponse,2);
+assert.equal(activeRequests.view(30).waiting,1);
+assert.deepEqual(activeRequests.view(30).requests.map(r=>r.card.id),['swap','vote','ready']);
+assert.equal(activeRequests.intent('swap','accept',30).messageId,'old-message');
+assert.equal(activeRequests.intent('vote','vote',30,'hunt').sourceRevision,3);
+assert.equal(activeRequests.intent('ready','ready',30),null);
+assert.equal(activeRequests.intent('swap','accept',4020),null,'conservative server deadline');
+assert.equal(activeRequests.view(4020).requests.length,1);
+activeRequests.invalidate();
+assert.equal(activeRequests.view(4020).fresh,false);
+const reconnect=activeRequests.beginRead(4030);
+assert.equal(activeRequests.acceptRead(reconnect,{...snapshot,snapshotRevision:6},4040),false);
+const current=activeRequests.beginRead(4050);
+assert.equal(activeRequests.acceptRead(current,{...snapshot,snapshotRevision:8,serverNowMs:6000,requests:[snapshot.requests[1]]},4060),true);
+assert.equal(activeRequests.view(4060).needsResponse,1);
+assert.equal(activeRequests.intent('swap','accept',4060),null);
+assert.equal(activeRequests.view(34050).fresh,false,'freshness measured from read start');
+const stale=activeRequests.beginRead(34060);
+activeRequests.setScope({accountId:'B',partyId:'other'});
+assert.equal(activeRequests.acceptRead(stale,snapshot,34070),false);
+const foreign=activeRequests.beginRead(34080);
+assert.equal(activeRequests.acceptRead(foreign,snapshot,34090),false);
+activeRequests.setScope(activeScope);
+const duplicate=activeRequests.beginRead(34100);
+assert.equal(activeRequests.acceptRead(duplicate,{...snapshot,requests:[snapshot.requests[0],snapshot.requests[0]]},34110),false);
+const invalid=activeRequests.beginRead(34120);
+assert.equal(activeRequests.acceptRead(invalid,{...snapshot,requests:[{...snapshot.requests[1],card:{...snapshot.requests[1].card,eligibleCount:1}}]},34130),false);
+const background=activeRequests.beginRead(34140);
+activeRequests.setActive(false);
+assert.equal(activeRequests.acceptRead(background,snapshot,34150),false);
+activeRequests.setActive(true);
+const resumed=activeRequests.beginRead(34160);
+assert.equal(activeRequests.acceptRead(resumed,snapshot,34170),true);
+assert.equal(activeRequests.view(34169).fresh,false,'clock reversal fails closed');
+const inactiveGate=new Active();inactiveGate.setScope(activeScope);inactiveGate.setActive(true);
+assert.equal(inactiveGate.beginRead(0),null);
+console.log('PARTY_ACTIVE_REQUESTS_V115_V116_PASS');

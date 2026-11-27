@@ -48,7 +48,8 @@ jobs:
       - run: pnpm --dir backend install --frozen-lockfile
       - name: Compile existing hidden World Boss suite and mint port
         working-directory: apps/mobile
-        run: pnpm exec tsc -p tsconfig.world-boss-v12.json --outDir .core-build
+        run: pnpm exec tsc -p tsconfig.core.json --outDir .core-build
+        # The canonical V89 test imports V102; the narrower V12 config does not.
       - name: Run disposable embedded PostgreSQL rollback and replay
         working-directory: backend
         run: node tests/world-boss-gathering-mint-v102-pg.mjs

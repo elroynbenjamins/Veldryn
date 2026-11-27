@@ -1,0 +1,133 @@
+{
+  "version": 1,
+  "released": false,
+  "materialCandidates": [
+    {
+      "regionId": "ASTERFALL",
+      "questId": "story2:asterfall:02",
+      "itemId": "COPPER_ORE",
+      "quantity": 4,
+      "pending": false,
+      "released": false
+    },
+    {
+      "regionId": "ASTERFALL",
+      "questId": "story2:asterfall:05",
+      "itemId": "GREENWOOD_LOG",
+      "quantity": 6,
+      "pending": false,
+      "released": false
+    },
+    {
+      "regionId": "ASTERFALL",
+      "questId": "story2:asterfall:08",
+      "itemId": "ASTER_IRON_ORE",
+      "quantity": 5,
+      "pending": false,
+      "released": false
+    },
+    {
+      "regionId": "ASTERFALL",
+      "questId": "story2:asterfall:14",
+      "itemId": "OATHGLASS_SHARD",
+      "quantity": 5,
+      "pending": false,
+      "released": false
+    },
+    {
+      "regionId": "SUNSCAR",
+      "questId": "story2:sunscar:02",
+      "itemId": "DUNEWOOD",
+      "quantity": 6,
+      "pending": false,
+      "released": false
+    },
+    {
+      "regionId": "SUNSCAR",
+      "questId": "story2:sunscar:09",
+      "itemId": "SUNSTONE_ORE",
+      "quantity": 8,
+      "pending": false,
+      "released": false
+    },
+    {
+      "regionId": "SUNSCAR",
+      "questId": "story2:sunscar:16",
+      "itemId": "SUNSTONE_ORE",
+      "quantity": 12,
+      "pending": true,
+      "released": false
+    },
+    {
+      "regionId": "FROSTMARCH",
+      "questId": "story2:frostmarch:02",
+      "itemId": "WHITEPINE_LOG",
+      "quantity": 8,
+      "pending": false,
+      "released": false
+    },
+    {
+      "regionId": "FROSTMARCH",
+      "questId": "story2:frostmarch:09",
+      "itemId": "FROSTIRON",
+      "quantity": 10,
+      "pending": false,
+      "released": false
+    },
+    {
+      "regionId": "FROSTMARCH",
+      "questId": "story2:frostmarch:16",
+      "itemId": "FROSTIRON",
+      "quantity": 15,
+      "pending": true,
+      "released": false
+    }
+  ],
+  "chapterMilestones": [
+    {
+      "regionId": "ASTERFALL",
+      "questId": "story2:asterfall:15",
+      "titleId": "oathbreaker",
+      "scope": "account",
+      "preserveExisting": true
+    },
+    {
+      "regionId": "SUNSCAR",
+      "questId": "story2:sunscar:16",
+      "titleId": null,
+      "scope": "character",
+      "bindingPending": true
+    },
+    {
+      "regionId": "FROSTMARCH",
+      "questId": "story2:frostmarch:16",
+      "titleId": null,
+      "scope": "character",
+      "bindingPending": true
+    }
+  ],
+  "discoveryPolicy": {
+    "owner": "exploration2",
+    "journalReward": "none",
+    "milestoneIds": [
+      "scouting2:collection:asterfall:v1",
+      "scouting2:collection:sunscar:v1",
+      "scouting2:collection:frostmarch:v1",
+      "scouting2:collection:realm:v1"
+    ],
+    "firstReportAchievementId": "exploration2_first_report",
+    "achievementIds": [
+      "exploration2_asterfall_cartographer",
+      "exploration2_sunscar_cartographer",
+      "exploration2_frostmarch_cartographer",
+      "exploration2_known_realm"
+    ],
+    "accountWide": true,
+    "notes": "Journal lore displays actual discoveries only; collection milestones and corresponding achievement IDs must share a single authoritative entitlement, never independently pay."
+  },
+  "notes": [
+    "Materials are candidate grants for fresh V2 journeys only; legacy continuation retains original entitlement.",
+    "No inventory or gold grant from this catalogue. Final V2 recipe/loot source validation, custody and economy calibration required.",
+    "No new title for pending regional finales until separately approved. No paid map-side reward on top of Exploration collection grants."
+  ]
+}

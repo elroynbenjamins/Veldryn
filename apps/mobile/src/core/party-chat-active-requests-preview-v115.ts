@@ -22,14 +22,13 @@ const valid=(s:unknown):s is string=>typeof s==='string'&&s.length>0&&s.length<=
 const revision=(n:number)=>Number.isSafeInteger(n)&&n>=1;
 const clock=(n:number)=>Number.isFinite(n)&&n>=0;
 function copyCard(card:PartyChatPreviewCardV113):PartyChatPreviewCardV113{
- const base={...card,allowedActions:Object.freeze([...card.allowedActions])};
+ const allowedActions=Object.freeze([...card.allowedActions]);
  switch(card.kind){
-  case 'role_swap':return Object.freeze({...base,kind:card.kind,members:Object.freeze(card.members.map(m=>Object.freeze({...m})))});
-  case 'group_readiness':return Object.freeze({...base,kind:card.kind,members:Object.freeze(card.members.map(m=>Object.freeze({...m})))});
-  case 'contract_vote':case 'event_vote':return Object.freeze({...base,kind:card.kind,
-   options:Object.freeze(card.options.map(o=>Object.freeze({...o}))),eligibleCount:card.eligibleCount,myVote:card.myVote});
-  case 'recruitment_request':return Object.freeze({...base,kind:card.kind,applicantName:card.applicantName});
-  case 'shared_achievement':return Object.freeze({...base,kind:card.kind});
+  case 'role_swap':return Object.freeze({...card,allowedActions,members:Object.freeze(card.members.map(m=>Object.freeze({...m})))});
+  case 'group_readiness':return Object.freeze({...card,allowedActions,members:Object.freeze(card.members.map(m=>Object.freeze({...m})))});
+  case 'contract_vote':case 'event_vote':return Object.freeze({...card,allowedActions,
+   options:Object.freeze(card.options.map(o=>Object.freeze({...o})))});
+  case 'recruitment_request':case 'shared_achievement':return Object.freeze({...card,allowedActions});
  }
 }
 export class PartyActiveRequestsPreviewV115{
@@ -41,6 +40,7 @@ export class PartyActiveRequestsPreviewV115{
  private snapshot:PartyActiveSnapshotV115|null=null;
  private lastRevision=0;
  private receivedAt=0;
+ private startedAt=0;
  private serverUpperAtReceipt=0;
  private lastClock=0;
  private readonly qaPreview:boolean;
@@ -89,7 +89,7 @@ export class PartyActiveRequestsPreviewV115{
   // against the server timestamp, then use monotonic elapsed time only.
   const upper=snapshot.serverNowMs+monotonicNow-ticket.startedAt;
   if(!Number.isSafeInteger(Math.ceil(upper)))return false;
-  this.receivedAt=monotonicNow;this.serverUpperAtReceipt=upper;
+  this.startedAt=ticket.startedAt;this.receivedAt=monotonicNow;this.serverUpperAtReceipt=upper;
   this.lastRevision=snapshot.snapshotRevision;
   this.snapshot=Object.freeze({...snapshot,requests:Object.freeze(rows.map(row=>Object.freeze({
    card:copyCard(row.card),sourceRevision:row.sourceRevision})))});
@@ -98,7 +98,7 @@ export class PartyActiveRequestsPreviewV115{
  view(monotonicNow:number){
   const validClock=this.checkClock(monotonicNow);
   const s=this.snapshot;
-  const fresh=validClock&&this.qaPreview&&this.active&&!!s&&monotonicNow-this.receivedAt<MAX_FRESH_MS;
+  const fresh=validClock&&this.qaPreview&&this.active&&!!s&&monotonicNow-this.startedAt<MAX_FRESH_MS;
   const serverNowMs=fresh?this.serverUpperAtReceipt+monotonicNow-this.receivedAt:0;
   const rows=fresh&&s?s.requests.filter(row=>!partyChatPreviewPresentationV113(row.card,serverNowMs,true).collapsed):[];
   const needsResponse=(row:PartyActiveRequestV115)=>{

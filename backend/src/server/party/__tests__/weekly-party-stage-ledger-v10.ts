@@ -150,6 +150,21 @@ rejects(()=>planPartyEventStageReceiptV10({context:stageTwo,
  requestId:'request-unique-0003',actionId:'support_expedition',
  existingReceipts:[second.receipt]}), 'reused_source_or_request');
 
+// A source before a stage's locked route choice cannot satisfy its objective.
+for(const stage of [2,3] as const){
+ const context=makeContext(week,stage);
+ const lockedAtMs=(stage===2?context.stageRecord.stage2Vote:context.stageRecord.stage3Vote)!.lockedAtMs;
+ const actionId=stage===2?'secure_approach':'prepare_finale';
+ for(const offset of [-1,0,1]){
+  const source={...evidence,sourceEventId:'vote-source-'+stage+'-'+offset,
+   occurredAtMs:lockedAtMs+offset,committedAtMs:lockedAtMs+100};
+  const attempt=()=>planPartyEventStageReceiptV10({context,evidence:source,
+   requestId:'vote-request-'+stage+'-'+offset,actionId,existingReceipts:[]});
+  if(offset<0)rejects(attempt,'unverified_or_out_of_window_source');
+  else assert(attempt().eventPointsGranted===0,'valid locked-vote boundary');
+ }
+}
+
 const changedRoster={...week,roster:week.roster.map((member,index)=>index===0
  ?{...member,loadout:{...member.loadout,actor:{...member.loadout.actor,
  stats:{...member.loadout.actor.stats,attackPower:member.loadout.actor.stats.attackPower+100}}}}

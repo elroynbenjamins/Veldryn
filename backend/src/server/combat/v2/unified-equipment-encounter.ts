@@ -8,6 +8,7 @@
  * PRODUCTION OFF: no router imports this module.
  */
 import {simulateCombat,simulateCombatWithServerAuthoritiesV2} from '../engine';
+import {reviewWorldBossProtectionV2,type ProtectionTraceV2} from './world-boss-protection-review';
 import {compileDraftDungeonRewardCombatV2,type VerifiedDungeonRewardSnapshotV2} from './dungeon-rewards-v2';
 import {issueDungeonRewardEngineAuthorityV2} from './dungeon-reward-engine-v2';
 import {issueEquipmentV2TraitAuthority,issuePersistedPartyEquipmentV2TraitAuthority,
@@ -589,6 +590,7 @@ export function simulateWorldBossSharedEngineReviewV2(
  scope:WorldBossSharedRosterReviewV2,
  verifyFrozen:(binding:WorldBossSharedPreviewBindingV2)=>boolean,
  reviewEnabled=false,
+ collectProtection=true,
 ){
  if(!reviewEnabled||typeof verifyFrozen!=='function')wbReviewFail('disabled');
  if(!input||!Array.isArray(input.enemies)||input.enemies.length!==1||
@@ -616,8 +618,12 @@ export function simulateWorldBossSharedEngineReviewV2(
   return verifyFrozen(binding)===true&&enemyV2SnapshotDigest(binding)===bindingDigest&&
    enemyV2SnapshotDigest(scope)===enemyV2SnapshotDigest(frozenScope);
  });
- const combat=simulateCombatWithServerAuthoritiesV2(finalInput,{equipmentTrait:authority,aiPolicy:'tactical'});
- return {combat,binding,compiledActorDigests:compiled.compiledActorDigests,
+ const trace:ProtectionTraceV2[]=[];
+ const combat=simulateCombatWithServerAuthoritiesV2(finalInput,{equipmentTrait:authority,aiPolicy:'tactical',
+  ...(collectProtection?{protectionTrace:trace}:{})});
+ const protection=collectProtection?reviewWorldBossProtectionV2(trace,finalInput.players.map(p=>p.id),
+  Object.fromEntries([...combat.players,...combat.enemies].map(p=>[p.definition.id,p.shield]))):null;
+ return {combat,binding,protection,compiledActorDigests:compiled.compiledActorDigests,
   equipmentEvidence:compiled.evidence,
   localBossHpLoss:Math.max(0,finalInput.enemies[0].stats.maxHp-combat.enemies[0].hp),
   globalHpCredited:0 as const,releaseReady:false as const,

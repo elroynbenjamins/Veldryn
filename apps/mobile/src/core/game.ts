@@ -650,14 +650,20 @@ function averagedRegionalHunt(state:GameState,monsterId:string,runtime:ReturnTyp
  const killCycleSeconds=seconds/count;
  return {killCycleSeconds,damage:damage/count,healing:healing/count,onKillHealing:onKillHealing/count,net:(damage-healing)/count};
 }
-export function combatSustainProjection(state:GameState,monsterId:string,hours=1){
+export function combatSustainProjection(state:GameState,monsterId:string,hours=1,options:{tacticId?:CombatTacticId;nowMs?:number}={}){
+ const nowMs=options.nowMs??Date.now();
+ // Keep the actual hunt snapshot when active; otherwise forecast a new hunt
+ // against this target, never borrowing weather or tactics from another activity.
+ if(state.activity?.kind!=='combat'||state.activity.targetId!==monsterId){
+   state={...state,activity:{kind:'combat',targetId:monsterId,combatTacticId:normalizeCombatTactic(options.tacticId??'balanced'),sessionKills:0,sessionChampions:0,startedAtMs:nowMs,lastClaimAtMs:nowMs,environment:captureActivityEnvironment(monsterId,nowMs)}};
+ }
  if(!state.character)return undefined;
- const runtime=combatRuntimeDetails(state,monsterId),foodId=autoEatFoodOrder(state.character).find(id=>stackQty(state.inventory.stacks,id)>0)??state.character.equippedFoodId,food=foodId?itemDef(foodId):undefined;
+ const runtime=combatRuntimeDetails(state,monsterId,nowMs),foodId=autoEatFoodOrder(state.character).find(id=>stackQty(state.inventory.stacks,id)>0)??state.character.equippedFoodId,food=foodId?itemDef(foodId):undefined;
  const average=averagedRegionalHunt(state,monsterId,runtime),exchange=average??combatEncounterDamage(runtime),damagePerKill=exchange.damage;
  const killCycleSeconds=average?.killCycleSeconds??runtime.killCycleSeconds;
  const killsPerHour=3600/Math.max(.1,killCycleSeconds),companionHealingPerHour=runtime.stats.hp*runtime.companion.directHealingPctPerHour*(1+runtime.stats.healingPower);
  const recoveryPerKill=exchange.onKillHealing,netDamagePerKill=exchange.net;
- const effect=state.activity?.kind==='combat'&&state.activity.targetId===monsterId?runtime.environment:undefined;
+ const effect=runtime.environment;
  const xpPerHour=killsPerHour*runtime.m.xp*characterCombatXpScale(runtime.m.level,runtime.m.boss)*(effect?.xpMultiplier??1)*runtime.modifiers.characterXpMultiplier;
  const goldPerHour=killsPerHour*runtime.m.gold*(effect?.goldMultiplier??1)*runtime.modifiers.goldMultiplier;
  const healingPerFood=food?.heal?Math.max(1,Math.ceil(food.heal*runtime.modifiers.healingEffectivenessMultiplier)):0;

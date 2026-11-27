@@ -38,6 +38,14 @@ begin
  exception when raise_exception then
   if sqlerrm<>'party_recruit_v124_unverified_message' then raise;end if;
  end;
+ insert into public.player_blocks values(a,member);
+ begin
+  perform private.open_party_recruitment_application_v124(app_a,a,party,ca,ma);
+  raise exception 'expected player-block denial';
+ exception when raise_exception then
+  if sqlerrm<>'party_recruit_v124_player_unavailable' then raise;end if;
+ end;
+ delete from public.player_blocks where blocker_id=a and blocked_id=member;
  if private.open_party_recruitment_application_v124(app_a,a,party,ca,ma)<>app_a then raise exception 'missing application';end if;
  if private.open_party_recruitment_application_v124(app_a,a,party,ca,ma)<>app_a then raise exception 'missing replay';end if;
  perform private.open_party_recruitment_application_v124(app_b,b,party,cb,mb);
@@ -48,6 +56,14 @@ begin
  exception when raise_exception then
   if sqlerrm<>'party_recruit_v124_not_leader' then raise;end if;
  end;
+ insert into public.player_blocks values(member,a);
+ begin
+  perform private.respond_party_recruitment_application_v124(leader,party,app_a,'accept');
+  raise exception 'expected new player-block denial';
+ exception when raise_exception then
+  if sqlerrm<>'party_recruit_v124_player_unavailable' then raise;end if;
+ end;
+ delete from public.player_blocks where blocker_id=member and blocked_id=a;
  -- Existing direct join elsewhere after application invalidates approval.
  insert into public.party_members values(other_party,ca,a,'support',clock_timestamp(),null);
  begin

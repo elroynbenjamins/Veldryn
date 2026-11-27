@@ -2321,6 +2321,18 @@ runRegionalProgressionReviewV2();
    // New sensitivity retains the exact previous encounter and source build.
    // Compare both changes against the already measured solo_tempo arm.
    const tempo=soloOffenseLoopReviewV2(row.classId,originalInput,'solo_tempo').input.players[0];
+   if(row.spec===0&&kind==='normal'){
+    const original=originalInput.players[0];
+    const extreme={...original,stats:{...original.stats,defense:1e6,maxHp:1e6,healingPower:1e6}};
+    const extremeInput={...originalInput,players:[extreme]};
+    const x=soloRoleBudgetReviewV2(row.classId,extremeInput,'role_budget');
+    const y=soloRoleBudgetReviewV2(row.classId,originalInput,'role_budget');
+    assert.ok(x.input.players[0].basicAttackCoeff>=original.basicAttackCoeff);
+    assert.ok(y.ratio>=1);
+    assert.ok(x.ratio<=3.25+1e-8);
+    assert.deepEqual(x.input.players[0].stats,extreme.stats);
+    assert.deepEqual(originalInput.players[0],row.candidates[0].actor);
+   }
    for(const arm of budgetArms){
     const candidate=soloRoleBudgetReviewV2(row.classId,originalInput,arm);
     const input=candidate.input,actor=input.players[0];

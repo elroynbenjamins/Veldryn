@@ -1,5 +1,7 @@
 import {strict as assert} from 'node:assert';
 import type {CombatInput} from '../../types';
+import {CLASS_ROLES_V2,type ClassIdV2} from '../build-contract';
+import {reviewWorldBossProtectionV2} from '../world-boss-protection-review';
 import {bosses,profiles,setup} from './ten-slot-boss-fixture';
 import {compileExactEquipmentTraitSourceV2} from '../equipment-trait-exact-copy-adapter';
 import {enemyV2SnapshotDigest} from '../enemy-engine-authority';
@@ -17,16 +19,16 @@ const cases=[
  {id:'frostmarch',name:'Rimewarden',cast:'Ice Spear',damageType:'ice',regional:bosses[4]},
 ] as const;
 const phases=['armored','exposed','enraged'] as const;
-function fixture(b:typeof cases[number],phase:typeof phases[number],size:number){
- const classes=['IRONWARDEN','WAYFINDER','STONECALLER'] as const;
- const rows=classes.slice(0,size).map(id=>setup(id,0,b.regional,profiles[1]));
+function fixture(b:typeof cases[number],phase:typeof phases[number],size:number,
+ classes:readonly ClassIdV2[]=['IRONWARDEN','WAYFINDER','STONECALLER'],spec:0|1=0,grade:0|1=1,seedIndex=0){
+ const rows=classes.slice(0,size).map(id=>setup(id,spec,b.regional,profiles[grade]));
  const accountId='QA_WORLD_ACCOUNT';
  const builds=rows.map(x=>x.build),runtime=rows.map(x=>x.runtime);
  const ports=rows.map(x=>({...x.signedPort,accountId,verifyPersisted:x.signedPort.verifyPersisted}));
  const sources=ports.map((p,i)=>compileExactEquipmentTraitSourceV2(builds[i],runtime[i],p));
  const traitPorts=ports.map((p,i)=>({...p,verifyPersisted:(rs:readonly typeof sources[number][],digest:string)=>
   rs.length===1&&enemyV2SnapshotDigest(rs[0])===enemyV2SnapshotDigest(sources[i])&&/^[a-f0-9]{64}$/.test(digest)}));
- const seed='QA_WORLD_'+b.id+'_'+phase+'_'+size;
+ const seed='QA_WORLD_'+b.id+'_'+phase+'_'+seedIndex;
  const authored=buildWorldBossAuthoredReviewV2({bossId:b.id,phase,
   level:b.regional.level,stats:rows[0].input.enemies[0].stats,
   localShieldAmount:phase==='armored'?300:150});
@@ -59,6 +61,8 @@ for(const boss of cases)for(const phase of phases)for(let size=1;size<=3;size++)
  const run=()=>simulateWorldBossSharedEngineReviewV2(f.input,f.builds,f.runtime,f.traitPorts,f.scope,f.verify,true);
  const first=run();
  assert.deepEqual(run(),first);
+ assert.ok(first.protection);
+ assert.deepEqual(simulateWorldBossSharedEngineReviewV2(f.input,f.builds,f.runtime,f.traitPorts,f.scope,f.verify,true,false).combat,first.combat);
  assert.equal(first.globalHpCredited,0);
  assert.equal(first.rewardGranted,false);
  assert.equal(first.persisted,false);
@@ -113,3 +117,38 @@ const profile={bossId:'hollowroot' as const,phase:'armored' as const,
 assert.throws(()=>buildWorldBossAuthoredReviewV2({...profile,localShieldAmount:profile.stats.maxHp}),/invalid_profile/);
 assert.throws(()=>buildWorldBossAuthoredReviewV2({...profile,stats:{...profile.stats,attackPower:NaN}}),/invalid_profile/);
 console.log('WORLD_BOSS_AUTHORED_AND_CONTRIBUTION_REVIEW: nine local profiles, fixed-ledger monotonic checks; no Impact or HP credit');
+
+const protection=reviewWorldBossProtectionV2([
+ {kind:'grant',atMs:0,ownerId:'tank',targetId:'dps',amount:30,before:0,after:30},
+ {kind:'grant',atMs:1,ownerId:'support',targetId:'dps',amount:70,before:30,after:100},
+ {kind:'absorb',atMs:2,sourceId:'boss',targetId:'dps',amount:80,before:100,after:20,hpBefore:50,raw:120},
+],['tank','support','dps'],{tank:0,support:0,dps:20,boss:0});
+assert.equal(protection.characters[0].shieldConsumed,30);
+assert.equal(protection.characters[0].effectiveHpProtected,0);
+assert.equal(protection.characters[1].shieldConsumed,50);
+assert.equal(protection.characters[1].effectiveHpProtected,10);
+assert.throws(()=>reviewWorldBossProtectionV2([],['tank'],{tank:1}),/final_pool_mismatch/);
+
+// Matched threat and seed per boss/phase; synthetic common Q0 vs epic Q100
+// profiles are not equal-CP evidence, and no coefficient is tuned here.
+let matrixCount=0,upgradeDamageRegressions=0;
+const summaries:Record<string,{runs:number;damage:number;healing:number;protected:number;survivors:number}>={};
+for(const b of cases)for(const phase of phases)for(const id of Object.keys(CLASS_ROLES_V2) as ClassIdV2[])
+ for(const spec of [0,1] as const)for(const seedIndex of [0,1]){
+  const outcomes=([0,1] as const).map(grade=>{
+   const f=fixture(b,phase,1,[id],spec,grade,seedIndex);
+   const result=simulateWorldBossSharedEngineReviewV2(f.input,f.builds,f.runtime,f.traitPorts,f.scope,f.verify,true);
+   const evidence=reviewWorldBossContributionV2(result.combat);
+   assert.ok(result.protection);
+   assert.equal(result.globalHpCredited,0);
+   const key=b.id+'|'+phase+'|'+id+'|'+spec+'|'+grade;
+   const cell=summaries[key]??{runs:0,damage:0,healing:0,protected:0,survivors:0};
+   cell.runs++;cell.damage+=evidence.localHpLoss;cell.healing+=evidence.characters[0].engineEffectiveHealing;
+   cell.protected+=result.protection.characters[0].effectiveHpProtected;
+   cell.survivors+=evidence.characters[0].survived?1:0;
+   summaries[key]=cell;matrixCount++;return evidence.localHpLoss;
+  });
+  if(outcomes[1]<outcomes[0])upgradeDamageRegressions++;
+ }
+assert.equal(matrixCount,648);
+console.log(JSON.stringify({kind:'WORLD_BOSS_V93_SOLO_MATCHED_MATRIX_NOT_APPROVED',matrixCount,upgradeDamageRegressions,summaries}));

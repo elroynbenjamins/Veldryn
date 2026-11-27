@@ -9,6 +9,8 @@ import {useEffect,useMemo,useState} from 'react';
 import type {ReactNode} from 'react';
 import {Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {GameModalSurface} from './GameModalSurface';
+import {StatHelpDisclosure,type StatHelpEntry} from './StatHelpDisclosure';
+import {weaponBonusStatText} from '../i18n/weapon-bonus-ux';
 import {GameState} from '../core/types';
 import {itemInspectModel} from '../core/item-inspect';
 import {companionMaterialUseLabels} from '../core/resource-codex';
@@ -87,6 +89,22 @@ export function ItemQuickInspect({state,itemId,instanceId,source='inventory',onC
     const match=/^([+-]\d+(?:\.\d+)?%)\s+(.+)$/.exec(valueAndStat);
     return {id:index,label:match?.[2]??valueAndStat,value:match?.[1]??''};
   });
+  const gearHelpEntries:StatHelpEntry[]=[
+    ...(model.stats?.attack?[{id:'attack' as const,label:gl('Attack')}]:[]),
+    ...(model.stats?.defense?[{id:'defense' as const,label:gl('Defense')}]:[]),
+    ...(model.stats?.hp?[{id:'health' as const,label:gl('Max HP')}]:[]),
+    ...(model.selectedQuality!==undefined?[{id:'gearQuality' as const,label:'Q'+model.selectedQuality}]:[]),
+  ];
+  // Match only the known canonical English roll labels from the existing
+  // exact-copy inspector; an unrecognized legacy roll gets no guessed help.
+  const rollHelpMap=[{name:'Max HP',id:'health',stat:'maxHp'},{name:'Armor',id:'armor',stat:'armor'},{name:'Crit Rate',id:'critChance',stat:'critRate'},{name:'Crit Damage',id:'critDamage',stat:'critDamage'},{name:'Accuracy',id:'accuracy',stat:'accuracy'},{name:'Evasion',id:'evasion',stat:'evasion'},{name:'Haste',id:'haste',stat:'haste'}] as const;
+  const rollHelpEntries:StatHelpEntry[]=rollHelpMap.filter(row=>bonusRows.some(roll=>roll.label===row.name)).map(row=>({id:row.id,label:weaponBonusStatText(language,row.stat)}));
+  const toolHelpEntries:StatHelpEntry[]=[
+    {id:'gatheringSpeed',label:gt('Gathering Speed')},
+    ...(detailToolCopies.some(copy=>copy.bonus.stat==='rarity')?[{id:'gatheringRarity' as const,label:gt('Gathering Rarity Chance')}]:[]),
+    ...(detailToolCopies.some(copy=>copy.bonus.stat==='xp')?[{id:'gatheringXp' as const,label:gl(toolDef?.skillId??'Skill')+' XP'}]:[]),
+    ...(detailToolCopies.length?[{id:'toolQuality' as const,label:'Q0–100'}]:[]),
+  ];
   const traitLine=item.type==='gear'?item.passive?.trim():undefined;
   const otherEffectLines=model.effectLines.filter(line=>!isBonusRoll(line)&&(!traitLine||line!==traitLine)&&!(item.type==='tool'&&(line.includes(' · Q')||line.startsWith('Tool roll record unavailable'))));
   const sources=prioritizeItemSources(model.sources),uses=prioritizeItemUses(model.usedIn);
@@ -117,7 +135,7 @@ export function ItemQuickInspect({state,itemId,instanceId,source='inventory',onC
           {scrollWholeSheet?header:null}
           <View style={s.content}>
           {item.type==='gear'&&model.stats&&(model.stats.attack!==0||model.stats.defense!==0||model.stats.hp!==0)?<View style={s.statGroup}>
-            <Text style={s.statHeading}>{gt("BASE STATS")}</Text>
+            <StatHelpDisclosure key={itemId+':'+instanceId+':base'} label={gt("BASE STATS")} entries={gearHelpEntries}/>
             <View style={s.basePanel} accessibilityLabel={gt("Equipment base stats")}>
               {model.stats.attack!==0?<Stat label="ATK" value={model.stats.attack}/>:null}
               {model.stats.defense!==0?<Stat label="DEF" value={model.stats.defense}/>:null}
@@ -129,7 +147,7 @@ export function ItemQuickInspect({state,itemId,instanceId,source='inventory',onC
             <View style={s.traitPanel}><Text style={s.traitText}>{contentText(traitLine)}</Text></View>
           </View>:null}
           {item.type==='gear'&&bonusRows.length>0?<View style={s.statGroup}>
-            <Text style={s.statHeading}>{ui('RANDOM BONUS ROLLS')}</Text>
+            {rollHelpEntries.length?<StatHelpDisclosure key={itemId+':'+instanceId+':rolls'} label={ui('RANDOM BONUS ROLLS')} entries={rollHelpEntries}/>:<Text style={s.statHeading}>{ui('RANDOM BONUS ROLLS')}</Text>}
             <View style={[s.bonusPanel,{borderColor:rarity.color,backgroundColor:rarity.surface}]}>
               {bonusRows.map(roll=><View key={roll.id} style={s.bonusRow}>
                 <Text style={s.bonusLabel}>{contentText(roll.label)}</Text>
@@ -165,6 +183,7 @@ export function ItemQuickInspect({state,itemId,instanceId,source='inventory',onC
           {detailsOpen&&<>
           {(otherEffectLines.length>0||companionUses.length>0||(model.craftedCopies>1&&item.type==='gear'&&!gearDecision?.alreadyEquipped))&&<Section title={gt("WHAT IT DOES")}>{model.craftedCopies>1&&item.type==='gear'&&!gearDecision?.alreadyEquipped?<Text style={s.note}>{gt("Choose a specific equipment copy to compare")}</Text>:null}{otherEffectLines.map((line,index)=><Text key={index} style={s.body}>{'• '+contentText(line)}</Text>)}{companionUses.map(use=><Text key={use} style={s.body}>{'• '+contentText(use)}</Text>)}</Section>}
           {toolDef?<Section title={gt('GATHERING TOOL DETAILS')}>
+            <StatHelpDisclosure key={itemId+':'+instanceId+':tool'} label={gt('Gathering Speed')} entries={toolHelpEntries}/>
             {(detailToolCopies.length?detailToolCopies:instanceId?[]:[undefined]).map((copy,index)=>{
               const breakdown=gatheringToolContribution(toolDef,copy);
               const rarityChange=(breakdown.rarityAdjustmentPercent>=0?'+':'')+gatheringToolPercent(breakdown.rarityAdjustmentPercent);

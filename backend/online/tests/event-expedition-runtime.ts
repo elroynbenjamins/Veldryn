@@ -122,7 +122,7 @@ async function main(){
  const echoStates=[preparedState('WAYFINDER','Echo Archer',50,'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb2'),preparedState('RAVAGER','Echo Ravager',50,'cccccccc-cccc-4ccc-8ccc-ccccccccccc3'),preparedState('DAWNKEEPER','Echo Keeper',50,'dddddddd-dddd-4ddd-8ddd-ddddddddddd4')];
  const controllerRecord=deriveOnlineCoopLoadout('00000000-0000-4000-8000-000000000001',controllerState,7);
  const echoRecords=echoStates.map((state,index)=>deriveOnlineCoopLoadout(`00000000-0000-4000-8000-00000000000${index+2}`,state,3));
- let liveEvent={eventId:'EVT_ANNUAL_006_2026',enabled:true,startsAtMs:now-60_000,endsAtMs:now+60_000};
+ let liveEvent:{eventId:string;enabled:boolean;startsAtMs:number;endsAtMs:number;modules?:string[]}={eventId:'EVT_ANNUAL_006_2026',enabled:true,startsAtMs:now-60_000,endsAtMs:now+60_000};
  let stored:{stateVersion:number;eventCursor:number;privateState:any;clientProjection:any;serverNow:number}|undefined;
  let frozenControllerSnapshot:{revision:number;characterId:string;accountId:string;snapshotHash:string}|undefined;
  const randomIds=['11111111-1111-4111-8111-111111111111','22222222-2222-4222-8222-222222222222','33333333-3333-4333-8333-333333333333'];
@@ -160,7 +160,9 @@ async function main(){
  stored!.privateState.run.phase='completed';stored!.privateState.run.settlement='pending';stored!.privateState.run.rewardMarks=96;
  const claimed=await runtime.claim(controllerRecord.accountId,start.runId,'event-claim-0001') as any;
  assert.equal(claimed.stateVersion,3);assert.equal(claimed.settlement.status,'claimed');assert.equal(claimed.settlement.rewardMarks,96);
- liveEvent={eventId:'EVT_ANNUAL_012_2026',enabled:true,startsAtMs:now-60_000,endsAtMs:now+60_000};
+ liveEvent={eventId:'EVT_ANNUAL_012_2026',enabled:true,startsAtMs:now-60_000,endsAtMs:now+60_000,modules:['overview','shop']};
+ await assert.rejects(()=>runtime.start(controllerRecord.accountId,{requestId:'frost-module-off-0001',eventExpeditionId:'EVENT_FROSTFALL_AURORA_HOLLOW',tier:1,characterId:controllerRecord.characterId,loadoutId:'current',loadoutRevision:7}),/event_not_live/);
+ liveEvent={...liveEvent,modules:['overview','shop','expedition']};
  const frostPractice=await runtime.start(controllerRecord.accountId,{requestId:'frost-practice-0001',eventExpeditionId:'EVENT_FROSTFALL_AURORA_HOLLOW',tier:1,characterId:controllerRecord.characterId,loadoutId:'current',loadoutRevision:7}) as any;
  assert.equal(frostPractice.eventExpeditionId,'EVENT_FROSTFALL_AURORA_HOLLOW');
  assert.equal(frostPractice.settlement.status,'pending');

@@ -1,3 +1,4 @@
+import {planPartyRoleSwapResponseV107} from '../party-role-swap-transition-review-v107';
 import {reviewPartyChatActionTransactionV106,type PartyChatStoreV106,type PartyChatTransactionV106,type PartyChatRequestV106,type PartyChatReceiptV106,type PartyChatEffectV106,type PartyChatWorkflowV106} from '../party-chat-action-transaction-review-v106';
 import {projectPartyChatCardV105,type VoteCardV105,type ReadyCardV105,type RecruitmentCardV105,type AchievementCardV105} from '../party-chat-action-cards-review-v105';
 import {projectPartySwapChatV104,type PartySwapChatProposalV104} from '../party-role-swap-chat-review-v104';
@@ -243,6 +244,34 @@ denied(()=>projectPartySwapChatV104({...chatInput,viewerAccountId:'OUTSIDER'},tr
 denied(()=>projectPartySwapChatV104({...chatInput,activePartyId:'OTHER_PARTY'},true),'chat_scope_mismatch');
 denied(()=>projectPartySwapChatV104(chatInput),'unreleased');
 console.log('PARTY_ROLE_SWAP_CHAT_V104_REVIEW_OK');
+const swapTransition={scope:chatInput,response:'accept' as const,current:currentRoster,
+ ownedCharacters:permanent.ownedCharacters,minimumLevel:10,phase:'lobby' as const};
+const finalSwap=planPartyRoleSwapResponseV107(swapTransition,true);
+assert.equal(finalSwap.proposal.state,'completed');
+assert.equal(finalSwap.proposedRevision,8);
+assert.equal(finalSwap.refreshRoster,true);
+assert.equal(finalSwap.canPersist,false);
+assert.deepEqual(finalSwap.roster?.map(x=>x.characterId),['A_damage','B_tank','C_damage','D_support']);
+assert.equal(currentRoster[0]!.characterId,'A_tank');
+const initiallyUnaccepted={...chatProposal,members:chatProposal.members.map(m=>({...m,accepted:false}))};
+const firstConsent=planPartyRoleSwapResponseV107({...swapTransition,scope:{...chatInput,proposal:initiallyUnaccepted,viewerAccountId:'A'}},true);
+assert.equal(firstConsent.proposal.state,'pending');
+assert.equal(firstConsent.roster,null);
+assert.equal(firstConsent.proposedRevision,7);
+assert.equal(firstConsent.refreshRoster,false);
+const afterBoth=planPartyRoleSwapResponseV107({...swapTransition,scope:{...chatInput,proposal:firstConsent.proposal}},true);
+assert.deepEqual(afterBoth.roster,finalSwap.roster);
+const declined=planPartyRoleSwapResponseV107({...swapTransition,response:'decline'},true);
+assert.equal(declined.proposal.state,'declined');
+assert.equal(declined.roster,null);
+denied(()=>planPartyRoleSwapResponseV107({...swapTransition,scope:{...chatInput,serverNowMs:301000}},true),'response_not_allowed');
+denied(()=>planPartyRoleSwapResponseV107({...swapTransition,scope:{...chatInput,viewerAccountId:'C'}},true),'response_not_allowed');
+denied(()=>planPartyRoleSwapResponseV107({...swapTransition,phase:'committed_run'},true),'roster_locked');
+denied(()=>planPartyRoleSwapResponseV107({...swapTransition,ownedCharacters:permanent.ownedCharacters.filter(x=>x.characterId!=='B_tank')},true),'character_mismatch');
+denied(()=>planPartyRoleSwapResponseV107({...swapTransition,minimumLevel:26},true),'character_minimum_level_not_met');
+denied(()=>planPartyRoleSwapResponseV107(swapTransition),'unreleased');
+console.log('PARTY_ROLE_SWAP_TRANSITION_V107_REVIEW_OK');
+
 const workflowBase={partyId:'QA_PARTY_SWAP',messageId:'QA_SYSTEM_MSG',sourceId:'QA_SOURCE',
  createdAtMs:1000,expiresAtMs:301000,rosterRevision:7,sourceRevision:2,state:'pending' as const,
  eligibleAccountIds:['A','B','C','D']};

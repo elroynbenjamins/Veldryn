@@ -1,9 +1,9 @@
 /** 2.0 isolated routing policy. No runtime application or slot grants.
  * Activity kind must be resolved from the server's canonical target,
  * not a client-provided category. Actual equip/settlement is a later pass. */
-export type ActivityLoadoutCategory='combat'|'mining'|'woodcutting'|'fishing'|'herbalism';
+export type ActivityLoadoutCategory='combat'|'mining'|'woodcutting'|'fishing';
 export type ActivityLoadoutBinding={readonly slotIndex:number;readonly presetId:string;readonly category:ActivityLoadoutCategory};
-const categories:readonly ActivityLoadoutCategory[]=['combat','mining','woodcutting','fishing','herbalism'];
+const categories:readonly ActivityLoadoutCategory[]=['combat','mining','woodcutting','fishing'];
 export function reviewActivityLoadoutRoute(input:{
  readonly slotCount:number;readonly autoSwitch:boolean;readonly activity:string;
  readonly bindings:readonly ActivityLoadoutBinding[];

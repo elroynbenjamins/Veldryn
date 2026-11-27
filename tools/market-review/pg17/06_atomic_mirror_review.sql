@@ -162,6 +162,48 @@ DO $$ BEGIN
  OR market_review.mirror_receipt_status('b','mirror-deposit')->>'status' IS DISTINCT FROM 'unknown'
  THEN RAISE EXCEPTION 'mirror_settlement_failed'; END IF;
 END $$;
+
+-- Two further resales, with the original exact-copy mint unchanged.
+CREATE TEMP TABLE saved_resale_mint AS SELECT * FROM market_review.mint WHERE id='x';
+SELECT market_review.mirror_act('list','b','resale-list-b','x',5,4,4,'resale-b',150,200);
+SELECT market_review.expect_error($q$SELECT market_review.mirror_act('buy','c','resale-buy-c','x',6,0,5,'resale-b',150,201,'c1',false,true)$q$,'injected_after_receipt');
+DO $$ BEGIN
+ IF (SELECT count(*) FROM market_review.sale WHERE instance='x')<>1
+ OR NOT EXISTS(SELECT 1 FROM market_review.custody WHERE id='x' AND owner='b' AND state='escrow' AND revision=6)
+ OR market_review.mirror_receipt_status('c','resale-buy-c')->>'status' IS DISTINCT FROM 'unknown'
+ OR (SELECT gold FROM market_review.wallet WHERE id='c')<>1000
+ OR (SELECT gold FROM market_review.wallet WHERE id='b')<>875
+ THEN RAISE EXCEPTION 'resale_atomic_rollback_failed'; END IF;
+END $$;
+SELECT market_review.mirror_act('buy','c','resale-buy-c','x',6,0,5,'resale-b',150,201,'c1');
+CREATE TEMP TABLE saved_resale_status AS SELECT market_review.mirror_receipt_status('c','resale-buy-c') AS status;
+SELECT market_review.mirror_act('claim','c','resale-claim-c','x',7,1,1,p_recipient=>'c1');
+SELECT market_review.mirror_act('list','c','resale-list-c','x',8,2,2,'resale-c',100,300);
+SELECT market_review.mirror_act('buy','a','resale-buy-a','x',9,2,3,'resale-c',100,301,'a1');
+SELECT market_review.mirror_act('claim','a','resale-claim-a','x',10,3,3,p_recipient=>'a1');
+-- Historic receipts remain exact, even after the copy returns to its first owner.
+SELECT market_review.mirror_act('buy','b','mirror-buy','x',1,0,1,'mirror-offer',125,101,'b1');
+SELECT market_review.mirror_act('buy','c','resale-buy-c','x',6,0,5,'resale-b',150,201,'c1');
+SELECT market_review.expect_error($q$UPDATE market_review.sale SET buyer='b' WHERE instance='x' AND ordinal=3$q$,'immutable_history');
+SELECT market_review.expect_error($q$UPDATE market_review.mint SET snapshot='{}' WHERE id='x'$q$,'immutable_history');
+DO $$ BEGIN
+ IF (SELECT count(*) FROM market_review.sale WHERE instance='x')<>3
+ OR NOT EXISTS(SELECT 1 FROM market_review.sale WHERE instance='x' AND ordinal=1 AND parent IS NULL AND seller='a' AND buyer='b' AND gross=125 AND fee=7)
+ OR NOT EXISTS(SELECT 1 FROM market_review.sale WHERE instance='x' AND ordinal=2 AND parent=1 AND seller='b' AND buyer='c' AND gross=150 AND fee=8)
+ OR NOT EXISTS(SELECT 1 FROM market_review.sale WHERE instance='x' AND ordinal=3 AND parent=2 AND seller='c' AND buyer='a' AND gross=100 AND fee=5)
+ OR EXISTS(SELECT * FROM market_review.mint WHERE id='x' EXCEPT SELECT * FROM pg_temp.saved_resale_mint)
+ OR (SELECT count(*) FROM market_review.mint WHERE id='x' AND original_owner='a' AND receipt='mint-x')<>1
+ OR NOT EXISTS(SELECT 1 FROM market_review.custody WHERE id='x' AND owner='a' AND holder='a1' AND state='inventory' AND revision=11)
+ OR market_review.mirror_receipt_status('b','mirror-buy') IS DISTINCT FROM (SELECT status FROM pg_temp.saved_buy_status)
+ OR market_review.mirror_receipt_status('c','resale-buy-c') IS DISTINCT FROM (SELECT status FROM pg_temp.saved_resale_status)
+ OR EXISTS(SELECT 1 FROM market_review.mirror_online m WHERE m.state IS DISTINCT FROM market_review.mirror_projection(m.account_id,m.character_id))
+ OR (SELECT gold FROM market_review.mirror_character_wallet WHERE character_id='b2')<>77
+ OR (SELECT gold FROM market_review.wallet WHERE id='a')<>1018
+ OR (SELECT gold FROM market_review.wallet WHERE id='b')<>1017
+ OR (SELECT gold FROM market_review.wallet WHERE id='c')<>945
+ OR (SELECT sum(gold) FROM market_review.wallet)+(SELECT sum(fee) FROM market_review.sale)<>3000
+ THEN RAISE EXCEPTION 'complete_equipment_resale_history_failed'; END IF;
+END $$;
 ROLLBACK;
 
 -- Independent original issuance registration rehearsal, in a fresh rollback.

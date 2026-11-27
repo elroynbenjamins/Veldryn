@@ -1,0 +1,303 @@
+{
+  "version": 1,
+  "released": false,
+  "regionId": "ASTERFALL",
+  "quests": [
+    {
+      "id": "side2:asterfall:greenfields",
+      "regionId": "ASTERFALL",
+      "narrativeZoneId": "GREENFIELDS",
+      "title": "The Missing Supply Cart",
+      "description": "Clear the road used by the quartermaster's supply cart.",
+      "scope": "character",
+      "prerequisites": [],
+      "objective": {
+        "kind": "kill",
+        "targetId": "ROADSIDE_BOAR",
+        "required": 6,
+        "evidence": "sinceActivation"
+      },
+      "accessPolicy": "combat",
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "side2:asterfall:greenfields-map",
+      "regionId": "ASTERFALL",
+      "narrativeZoneId": "GREENFIELDS",
+      "title": "A Map of Home",
+      "description": "Record the first map with a local guide; optional introduction before Ironwood.",
+      "scope": "account",
+      "prerequisites": [],
+      "objective": {
+        "kind": "map",
+        "targetId": "SCOUT_GREENFIELDS",
+        "required": 1,
+        "evidence": "verifiedFact"
+      },
+      "accessPolicy": "scouting",
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "side2:asterfall:silverbrook",
+      "regionId": "ASTERFALL",
+      "narrativeZoneId": "SILVERBROOK",
+      "title": "A Ferryman's Request",
+      "description": "Collect fish for the ferrymen; no combat prerequisite.",
+      "scope": "character",
+      "prerequisites": [],
+      "objective": {
+        "kind": "gather",
+        "targetId": "SILVERFIN",
+        "required": 8,
+        "skillId": "fishing",
+        "evidence": "sinceActivation"
+      },
+      "accessPolicy": "profession",
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "side2:asterfall:silverbrook-return",
+      "regionId": "ASTERFALL",
+      "narrativeZoneId": "SILVERBROOK",
+      "title": "The Sunken Pilgrim",
+      "description": "Return later to investigate the river's drowned traveler.",
+      "scope": "character",
+      "prerequisites": [],
+      "objective": {
+        "kind": "kill",
+        "targetId": "DROWNED_PILGRIM",
+        "required": 6,
+        "evidence": "sinceActivation"
+      },
+      "accessPolicy": "combat",
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "side2:asterfall:ironwood",
+      "regionId": "ASTERFALL",
+      "narrativeZoneId": "IRONWOOD",
+      "title": "Venom on the Trail",
+      "description": "Learn to recognize poisonous attacks; no particular class required.",
+      "scope": "character",
+      "prerequisites": [],
+      "objective": {
+        "kind": "kill",
+        "targetId": "VENOM_WEAVER",
+        "required": 8,
+        "evidence": "sinceActivation"
+      },
+      "accessPolicy": "combat",
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "side2:asterfall:ironwood-wood",
+      "regionId": "ASTERFALL",
+      "narrativeZoneId": "IRONWOOD",
+      "title": "Timber for the Wardens",
+      "description": "Gather timber through an eligible profession route.",
+      "scope": "character",
+      "prerequisites": [],
+      "objective": {
+        "kind": "gather",
+        "targetId": "IRONWOOD_LOG",
+        "required": 10,
+        "skillId": "woodcutting",
+        "evidence": "sinceActivation"
+      },
+      "accessPolicy": "profession",
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "side2:asterfall:ironwood-return",
+      "regionId": "ASTERFALL",
+      "narrativeZoneId": "IRONWOOD",
+      "title": "The Old Guardian",
+      "description": "Return for a tougher forest encounter.",
+      "scope": "character",
+      "prerequisites": [],
+      "objective": {
+        "kind": "kill",
+        "targetId": "FOREST_TROLL",
+        "required": 5,
+        "evidence": "sinceActivation"
+      },
+      "accessPolicy": "combat",
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "side2:asterfall:mines",
+      "regionId": "ASTERFALL",
+      "narrativeZoneId": "OLD_MINES",
+      "title": "Beneath the Bell",
+      "description": "Trace the echoes through the old shafts.",
+      "scope": "character",
+      "prerequisites": [],
+      "objective": {
+        "kind": "kill",
+        "targetId": "ECHO_BAT",
+        "required": 8,
+        "evidence": "sinceActivation"
+      },
+      "accessPolicy": "combat",
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "side2:asterfall:mines-ore",
+      "regionId": "ASTERFALL",
+      "narrativeZoneId": "OLD_MINES",
+      "title": "The Smith's Survey",
+      "description": "Locate an iron source and collect ore without a combat quest prerequisite.",
+      "scope": "character",
+      "prerequisites": [],
+      "objective": {
+        "kind": "gather",
+        "targetId": "ASTER_IRON_ORE",
+        "required": 10,
+        "skillId": "mining",
+        "evidence": "sinceActivation"
+      },
+      "accessPolicy": "profession",
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "side2:asterfall:mines-deep",
+      "regionId": "ASTERFALL",
+      "narrativeZoneId": "OLD_MINES",
+      "title": "The Ironback Problem",
+      "description": "Learn to handle a tougher defensive enemy.",
+      "scope": "character",
+      "prerequisites": [],
+      "objective": {
+        "kind": "kill",
+        "targetId": "IRONBACK_MOLE",
+        "required": 6,
+        "evidence": "sinceActivation"
+      },
+      "accessPolicy": "combat",
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "side2:asterfall:road",
+      "regionId": "ASTERFALL",
+      "narrativeZoneId": "KINGS_ROAD",
+      "title": "The Tattered Standard",
+      "description": "Investigate the remnants of the old army.",
+      "scope": "character",
+      "prerequisites": [],
+      "objective": {
+        "kind": "kill",
+        "targetId": "BANNER_SHADE",
+        "required": 8,
+        "evidence": "sinceActivation"
+      },
+      "accessPolicy": "combat",
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "side2:asterfall:road-fish",
+      "regionId": "ASTERFALL",
+      "narrativeZoneId": "KINGS_ROAD",
+      "title": "A Royal Catch",
+      "description": "Discover a suitable fishing source; independent profession route.",
+      "scope": "character",
+      "prerequisites": [],
+      "objective": {
+        "kind": "gather",
+        "targetId": "CROWN_CARP",
+        "required": 6,
+        "skillId": "fishing",
+        "evidence": "sinceActivation"
+      },
+      "accessPolicy": "profession",
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "side2:asterfall:road-return",
+      "regionId": "ASTERFALL",
+      "narrativeZoneId": "KINGS_ROAD",
+      "title": "Echoes of the Oath",
+      "description": "An optional late regional challenge, separate from the solo finale.",
+      "scope": "character",
+      "prerequisites": [],
+      "objective": {
+        "kind": "kill",
+        "targetId": "OATHGLASS_REVENANT",
+        "required": 5,
+        "evidence": "sinceActivation"
+      },
+      "accessPolicy": "combat",
+      "rewardPolicy": "unapproved",
+      "released": false
+    }
+  ],
+  "lore": [
+    {
+      "id": "lore2:asterfall:SCOUT_GREENFIELDS",
+      "routeId": "SCOUT_GREENFIELDS",
+      "title": "The Old Milestone",
+      "text": "An old milestone bears a royal emblem worn almost smooth.",
+      "scope": "account",
+      "evidence": "actualSettledDiscovery",
+      "rewardPolicy": "none",
+      "released": false
+    },
+    {
+      "id": "lore2:asterfall:SCOUT_SILVERBROOK",
+      "routeId": "SCOUT_SILVERBROOK",
+      "title": "The River's Echo",
+      "text": "A fragment of carved stone rests beneath the ferry crossing.",
+      "scope": "account",
+      "evidence": "actualSettledDiscovery",
+      "rewardPolicy": "none",
+      "released": false
+    },
+    {
+      "id": "lore2:asterfall:SCOUT_IRONWOOD",
+      "routeId": "SCOUT_IRONWOOD",
+      "title": "The Warm Oath-Mark",
+      "text": "The wolf trail ends at a stone whose carved oath-mark is warm despite the cold moss.",
+      "scope": "account",
+      "evidence": "actualSettledDiscovery",
+      "rewardPolicy": "none",
+      "released": false
+    },
+    {
+      "id": "lore2:asterfall:SCOUT_OLD_MINES",
+      "routeId": "SCOUT_OLD_MINES",
+      "title": "The Bell Without a Rope",
+      "text": "A scout reports a faint resonance beneath a collapsed shaft.",
+      "scope": "account",
+      "evidence": "actualSettledDiscovery",
+      "rewardPolicy": "none",
+      "released": false
+    },
+    {
+      "id": "lore2:asterfall:SCOUT_KINGS_ROAD",
+      "routeId": "SCOUT_KINGS_ROAD",
+      "title": "The Last Watch",
+      "text": "Weathered road markers still point toward the shattered royal gate.",
+      "scope": "account",
+      "evidence": "actualSettledDiscovery",
+      "rewardPolicy": "none",
+      "released": false
+    }
+  ],
+  "notes": [
+    "All quantities and rewards are review candidates. Gathering objectives count settled production, not inventory ownership or purchases.",
+    "Optional side quests have no main-story prerequisite. Actual canonical access and skill requirements still apply.",
+    "Lore is deterministic from actual map evidence. Retained access alone grants no lore or collection credit.",
+    "Existing chronicle entries must map to existing lore identities during integration, not duplicate them."
+  ]
+}

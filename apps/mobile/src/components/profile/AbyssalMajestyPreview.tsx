@@ -42,11 +42,11 @@ const Decorative=memo(function Decorative({children}:{children:ReactNode}){
 });
 const AbyssalTide=memo(function AbyssalTide({clock,k,assets}:{clock:Animated.Value;k:number;assets:AbyssalSceneAssets}){
  const motion=useMemo(()=>{
-  const opacity=clock.interpolate({inputRange:CURVE.phase,outputRange:CURVE.energy.map(e=>.14+.55*e)});
+  const opacity=clock.interpolate({inputRange:CURVE.phase,outputRange:CURVE.energy.map(e=>.20+.65*e)});
   const rise=clock.interpolate({inputRange:CURVE.phase,outputRange:CURVE.energy.map(e=>-9*k*e)});
   const motes=ABYSSAL_MOTE_PATHS.map((p,i)=>{
    const inputRange=p.map((_,j)=>j/(p.length-1));
-   return {x:clock.interpolate({inputRange,outputRange:p.map(([x])=>x*k)}),y:clock.interpolate({inputRange,outputRange:p.map(([,y])=>y*k)}),opacity:clock.interpolate({inputRange:CURVE.phase,outputRange:CURVE.energy.map(e=>.38+e*(.42-i*.04))})};
+   return {x:clock.interpolate({inputRange,outputRange:p.map(([x])=>x*k)}),y:clock.interpolate({inputRange,outputRange:p.map(([,y])=>y*k)}),opacity:clock.interpolate({inputRange:CURVE.phase,outputRange:CURVE.energy.map(e=>.48+e*(.43-i*.04))})};
   });
   return {opacity,rise,motes};
  },[clock,k]);
@@ -74,7 +74,7 @@ const AbyssalPet=memo(function AbyssalPet({clock,k,assets,running,mode,alternate
   const lift=clock.interpolate({inputRange:IDLE_PHASE,outputRange:IDLE_LIFT.map(v=>v*k)});
   const tideLift=clock.interpolate({inputRange:CURVE.phase,outputRange:CURVE.energy.map(e=>-1.5*e*k)});
   const tilt=clock.interpolate({inputRange:IDLE_PHASE,outputRange:IDLE_TILT});
-  const aura=clock.interpolate({inputRange:CURVE.phase,outputRange:CURVE.energy.map(e=>.28+.55*e)});
+  const aura=clock.interpolate({inputRange:CURVE.phase,outputRange:CURVE.energy.map(e=>.28+.66*e)});
   return {lift:Animated.add(lift,tideLift),tilt,aura};
  },[running,clock,k,mode]);
  if(mode==='none')return null;

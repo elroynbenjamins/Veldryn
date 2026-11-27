@@ -124,7 +124,7 @@ try{
  await assert.rejects(()=>db.query("UPDATE private.world_boss_damage_policy_v105 SET damage_per_roll=2"),/IMMUTABLE/);
  await assert.rejects(()=>db.query('DELETE FROM private.world_boss_damage_rolls_v105'),/IMMUTABLE/);
  const n=fresh.rolls.length+1;
- await assert.rejects(()=>db.query('INSERT INTO private.world_boss_damage_rolls_v105 VALUES($1,$2,$3,$3,0,true,$4)',[event,owner,n,source('damage:'+n)]),/INVALID_APPEND/);
+ await assert.rejects(()=>db.query('INSERT INTO private.world_boss_damage_rolls_v105 VALUES($1,$2,$3::integer,$4::bigint,0,true,$5)',[event,owner,n,n,source('damage:'+n)]),/INVALID_APPEND/);
  assert.equal(await historyCount(),fresh.rolls.length);
  console.log('WB_DAMAGE_CHEST_V105_PG: frozen policy, actual credited HP, persisted hit/miss history, rollback/replay, entropy drift rejection, cap');
  console.log('WB_CHEST_SOURCE_V104_PG: actual V73 reads and V104 checks, 3 milestone proofs, canonical credited HP match, legacy/foreign/erasure/damage gate');

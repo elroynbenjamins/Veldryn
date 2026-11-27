@@ -41,4 +41,14 @@ assert.ok(focus.includes("earlyFeatureUnlocked(state,'pets')")&&focus.includes("
 assert.ok(focus.includes('quickPending.current=true')&&focus.includes('finally{quickPending.current=false;setQuickBusy(false);}')&&focus.includes('closeDisabled={quickBusy}')&&focus.includes('dismissOnBackdrop={!quickBusy}'),'Quick commands are single-flight with guarded dismissal and recovery');
 assert.ok(focus.includes('loading={quickBusy&&pendingPet===null}')&&focus.includes('quickBusy&&pendingPet===row.id?<ActivityIndicator'),'Both clearing and selecting a pet must display pending feedback');
 assert.ok(focus.includes('quickButton:{width:44,height:44')&&focus.includes('eyebrow:{flex:1,minWidth:0'),'Keep independent touch targets and a flexible title');
+const gameplay=src('i18n/gameplay.ts');
+assert.ok(faithPanel.includes('stackActions&&s.blessingRowStack')&&faithPanel.includes("blessingActionStack:{width:'100%'"),'Narrow Faith sheets must move the action onto its own row rather than squeezing the text');
+assert.ok(faithPanel.includes('gl(faithBlessingEffectLabel(blessing))')&&focus.includes('gl(faithBlessingEffectLabel(blessing))'),'Faith effects must use shared localization in both selectors and accessibility labels');
+for(const key of ['CURRENT ACTIVITY','AFK FULL','+{percent}% Damage','{percent}% Damage reduction','+{percent}% Maximum HP','+{percent}% Combat speed','+{percent}% Gathering speed','+{percent}% Production speed','+{percent}% Combat & skill XP','Favorite {name}','Remove {name} from favorites']){
+ const matches=gameplay.split('\n').filter(line=>line.trimStart().startsWith(JSON.stringify(key)+':'));
+ assert.equal(matches.length,2,key+' must have the six-language row and the Russian/Turkish row');
+ const translated=matches.map(line=>JSON.parse(line.slice(line.indexOf(':')+1).replace(/,\s*$/,'')));
+ assert.equal(translated[0].length,6);assert.equal(translated[1].length,2);
+ for(const value of translated.flat())for(const placeholder of key.match(/\{\w+\}/g)??[])assert.ok(value.includes(placeholder),key+' must preserve '+placeholder);
+}
 console.log('PASS: Home approved hierarchy, server-backed rewards, confirmation, queue safety and native sheets');

@@ -18,6 +18,7 @@ import {regionalProgressionAtV2,regionalPressureReviewV2} from './regional-progr
 import {runRegionalProgressionReviewV2} from './regional-progression-forge-audit';
 import {regionalMechanicsV2,regionalMechanicPressureV2,type RegionalMechanicArm} from './regional-mechanics-review';
 import {selectSoloReviewLoadoutsV2,type SoloReviewArm} from './solo-counterbuild-review';
+import {secondaryOffenseActorReviewV2,secondaryOffenseAmountV2,type SecondaryOffenseArm} from './secondary-offense-review';
 import {STAT_GEMS_V1,EFFECT_GEMS_V1,gemItemId,type GemGrade,GEM_BALANCE_REVIEW_V2,STAT_GEMS_REVIEW_V2,EFFECT_GEMS_REVIEW_V2,EFFECT_GEM_REVIEW_MULTIPLIERS_V2} from '../../../equipment/gems/gem-catalog-v1';
 import type {V2GemSidecarState} from '../../../equipment/equipment-crafting-v2-gem-sidecar-types';
 import {writeFileSync} from 'node:fs';
@@ -2210,6 +2211,90 @@ runRegionalProgressionReviewV2();
  }),loadouts:rows.filter(r=>r.kind==='normal').map(({level,classId,spec,arm,skills,counterAvailable})=>({level,classId,spec,arm,skills,counterAvailable})),
  releaseEnabled:false,cpApproved:false}));
 }
+// Secondary offense: same gear/skills per comparison, all T1–T4.
+{
+ const arms:SecondaryOffenseArm[]=['baseline','approved_start','sensitivity_double'];
+ const rows:{level:number;tier:number;classId:ClassIdV2;spec:number;kind:string;arm:SecondaryOffenseArm;win:number;reason:string;hp:number;enemyHp:number;duration:number;damage:number;ratio:number;additional:number;skills:number}[]=[];
+ for(const level of [10,13,26,38,51,63]){
+  const progression=regionalProgressionAtV2(level);
+  if(progression.region==='region4'||progression.expectedTier===5)throw Error('secondary_offense_scope');
+  const tier=progression.expectedTier,region=progression.region,k=30+2*level;
+  const builds=(Object.keys(CLASS_NAMES_V2) as ClassIdV2[]).flatMap(classId=>([0,1] as const).map(spec=>{
+   const qa=makeV21Loadout(classId,spec,tier,level);
+   const classProfile=qa.source.classBaselinePolicy.profiles[classId]!;
+   const source={...qa.source,classBaselinePolicy:{version:'QA_COMPACT_REGION_MECHANICS',profiles:{
+    [classId]:{...classProfile,maxLevel:100,statsAtLevel:(n:number)=>compactUnifiedStatsV2(classId,n)}}}};
+   const original=compileRealFrozenForgeActorV2(qa.actor,qa.build,source);
+   const choice=selectSoloReviewLoadoutsV2(qa.build,region);
+   const compiled=compileRealFrozenForgeActorV2(qa.actor,{...qa.build,selected:{...qa.build.selected,activeSkills:choice.selections.counter_full}},source);
+   assert.deepEqual(compiled.evidence.equippedInstanceIds,original.evidence.equippedInstanceIds);
+   assert.deepEqual(compiled.actor.stats,original.actor.stats);
+   const candidates=arms.map(arm=>secondaryOffenseActorReviewV2(classId,compiled.actor,arm));
+   assert.deepEqual(candidates[0].actor,compiled.actor);
+   for(const candidate of candidates){
+    assert.deepEqual(candidate.actor.stats,compiled.actor.stats);
+    assert.deepEqual(candidate.actor.combatV2,compiled.actor.combatV2);
+    assert.equal(candidate.actor.basicAttackCoeff,compiled.actor.basicAttackCoeff);
+    assert.ok(candidate.effective<=compiled.actor.stats.attackPower*2+1e-8);
+    assert.ok(candidate.ratio>=1);
+    if(compiled.actor.role==='damage')assert.deepEqual(candidate.actor,compiled.actor);
+    for(const [i,a] of candidate.actor.abilities.entries())for(const [j,e] of a.effects.entries()){
+     const before=compiled.actor.abilities[i].effects[j];
+     if(e.kind!=='damage'||e.damageType==='true')assert.deepEqual(e,before);
+     else assert.deepEqual({...e,coeff:before.coeff},before);
+    }
+   }
+   assert.ok(candidates[2].effective>=candidates[1].effective);
+   const extreme={...compiled.actor,stats:{...compiled.actor.stats,defense:1e6,maxHp:1e6,healingPower:1e6}};
+   const bound=secondaryOffenseAmountV2(classId,extreme,'approved_start');
+   assert.ok(bound.effective<=extreme.stats.attackPower*2+1e-8);
+   return {classId,spec,original:original.actor,candidates};
+  }));
+  const meanHp=builds.reduce((n,x)=>n+x.original.stats.maxHp,0)/builds.length;
+  const meanAttack=builds.reduce((n,x)=>n+x.original.stats.attackPower,0)/builds.length;
+  const p=level===10?regionalPressureReviewV2(level):regionalMechanicPressureV2(level,'mixed');
+  for(const row of builds)for(const kind of ['normal','elite'] as const){
+   const seed=['QA_REGION_MECHANICS',level,row.classId,row.spec,kind].join('_');
+   const id='QA_REGION_MECHANIC_ENEMY';
+   const base:CombatantDefinition={...boss,id,name:'Regional mechanics fixture',level,boss:false,
+    phases:undefined,abilities:[],tags:[kind==='elite'?'pve:archetype:guardian':'pve:archetype:caster'],
+    stats:{...boss.stats,maxHp:Math.round(meanAttack*10*p.hp*(kind==='elite'?1.5:1)),
+     attackPower:Math.round(meanHp*.055*p.attack*(kind==='elite'?1.2:1)),defense:Math.round(k*.30*p.defense)}};
+   const foe=regionalMechanicsV2(base,kind,level!==10);
+   const proposed=prepareSoloEnemyKitsV2([foe],{ruleset:ENEMY_V2_RULESET,region,equipmentTier:Math.max(2,tier) as 2|3|4,
+    encounterId:seed,serverSeed:seed,eliteEnemyIds:kind==='elite'?[id]:[]});
+   const persisted={...proposed,source:'server-persisted-v2' as const,revision:6};
+   const verified=verifyPersistedEnemyKitsV2([foe],persisted);
+   for(const [i,arm] of arms.entries()){
+    const candidate=row.candidates[i],actor=candidate.actor;
+    const input:CombatInput={seed,players:[actor],enemies:[...verified.enemies],maxDurationMs:60000,mitigationConstant:k};
+    const scope={source:'server-persisted-v2' as const,version:2 as const,ruleset:persisted.ruleset,
+     mode:'solo' as const,encounterId:persisted.encounterId,revision:persisted.revision,seed:persisted.seed,
+     playerIds:[actor.id],enemyIds:persisted.enemyIds,bossIds:persisted.bossIds};
+    const run=()=>simulateCombat(input,issueEnemyV2EngineAuthority(scope,input,(_s,d)=>/^[a-f0-9]{64}$/.test(d)));
+    const result=run();
+    if(row.spec===0&&kind==='normal'&&arm==='approved_start')assert.deepEqual(run(),result);
+    assert.ok(result.events.every(e=>e.amount===undefined||Number.isFinite(e.amount)));
+    assert.ok(result.players[0].hp>=0&&result.players[0].hp<=actor.stats.maxHp+1e-8);
+    rows.push({level,tier,classId:row.classId,spec:row.spec,kind,arm,win:Number(result.victory),reason:result.reason,
+     hp:result.players[0].hp/actor.stats.maxHp,enemyHp:result.enemies[0].hp/result.enemies[0].definition.stats.maxHp,
+     duration:result.durationMs,damage:result.players[0].damageDone,ratio:candidate.ratio,additional:candidate.additional,skills:candidate.abilityIds.length});
+   }
+  }
+ }
+ assert.equal(rows.length,648);
+ const original=rows.filter(r=>r.level!==10&&r.arm==='baseline');
+ assert.equal(original.reduce((n,r)=>n+r.win,0),146);
+ const mean=(values:number[])=>values.reduce((n,v)=>n+v,0)/values.length;
+ const keys=[...new Set(rows.map(r=>r.level+'|'+r.classId+'|'+r.kind+'|'+r.arm))].sort();
+ console.log('SECONDARY_OFFENSE_SOLO_REVIEW '+JSON.stringify({matchedSets:216,executions:rows.length,groups:keys.map(key=>{
+  const a=rows.filter(r=>r.level+'|'+r.classId+'|'+r.kind+'|'+r.arm===key);
+  return {key,cases:a.length,wins:a.reduce((n,r)=>n+r.win,0),timeouts:a.filter(r=>r.reason==='timeout').length,
+   wipes:a.filter(r=>r.reason==='wipe').length,meanHp:mean(a.map(r=>r.hp)),meanEnemyHp:mean(a.map(r=>r.enemyHp)),
+   meanDuration:mean(a.map(r=>r.duration)),meanDamage:mean(a.map(r=>r.damage)),meanRatio:mean(a.map(r=>r.ratio)),
+   meanAddedPower:mean(a.map(r=>r.additional)),meanQualifyingSkills:mean(a.map(r=>r.skills))};
+ }),releaseEnabled:false,cpApproved:false}));
+}
 // Unified compact class -> actual V2 skills -> original Forge -> exact socket
 // projection -> verified authored party enemy kits. The only modified source
 // policy is the versioned test class baseline; no post-compile stat scaling.
@@ -2226,6 +2311,7 @@ runRegionalProgressionReviewV2();
   damage:['stat_might','stat_keen','stat_savage','stat_precision'],
   support:['stat_swift','stat_potent','stat_vitality','stat_ward']} as const;
  type Comparison=ReturnType<ReturnType<typeof createGentleGemPartyPressureReviewV2>>;
+ const partySecondaryRows:{boss:string;band:string;result:ReturnType<ReturnType<typeof createGentleGemPartyPressureReviewV2>['compareSecondaryOffense']>}[]=[];
  const rows:{region:string;boss:string;band:string;classId:ClassIdV2;spec:number;seed:number;cp:number;arm:'stat'|'effect';result:Comparison}[]=[];
  const cpRows:{boss:string;classId:ClassIdV2;spec:number;index:number;gearPoints:number;slots:number}[]=[];
  let baseCount=0;
@@ -2283,6 +2369,7 @@ runRegionalProgressionReviewV2();
     const enemy={...fixed,stats:{...fixed.stats,maxHp:Math.round(fixed.stats.maxHp*hpFactor),attackPower:Math.round(fixed.stats.attackPower*apFactor)}};
     const fight=createGentleGemPartyPressureReviewV2(members,{region:profile.region,tier:profile.tier,enemy,mitigationConstant:k},
      ['COMPACT',profile.id,pi,spec,seed,band].join('_'));
+    for(const arm of ['approved_start','sensitivity_double'] as const)partySecondaryRows.push({boss:profile.id,band,result:fight.compareSecondaryOffense(arm)});
     baseCount++;
     // Rotate wearer deterministically; across two specs/seeds all four
     // positions are exercised. Compare independent stat/effect arms only.
@@ -2309,6 +2396,21 @@ runRegionalProgressionReviewV2();
     meanDpsDelta:mean(a.map(r=>r.result.after.dps-r.result.before.dps)),meanHpsDelta:mean(a.map(r=>r.result.after.hps-r.result.before.hps)),
     meanWearerHpDelta:mean(a.map(r=>r.result.after.hpFraction-r.result.before.hpFraction))};
   }),releaseEnabled:false,cpApproved:false}));
+ assert.equal(partySecondaryRows.length,432);
+ const partyKeys=[...new Set(partySecondaryRows.map(r=>r.boss+'|'+r.band+'|'+r.result.arm))].sort();
+ console.log('SECONDARY_OFFENSE_PARTY_REVIEW '+JSON.stringify({cases:partySecondaryRows.length,groups:partyKeys.map(key=>{
+  const a=partySecondaryRows.filter(r=>r.boss+'|'+r.band+'|'+r.result.arm===key);
+  return {key,cases:a.length,baselineWins:a.filter(r=>r.result.beforeReason==='victory').length,candidateWins:a.filter(r=>r.result.afterReason==='victory').length,
+   lostVictories:a.filter(r=>r.result.beforeReason==='victory'&&r.result.afterReason!=='victory').length,
+   byRole:['tank','damage','support'].map(role=>{
+    const b=a.flatMap(r=>r.result.before.filter(x=>x.role===role)),c=a.flatMap(r=>r.result.after.filter(x=>x.role===role));
+    return {role,baselineDps:mean(b.map(x=>x.dps)),candidateDps:mean(c.map(x=>x.dps)),
+     baselineHps:mean(b.map(x=>x.hps)),candidateHps:mean(c.map(x=>x.hps)),
+     baselineShield:mean(b.map(x=>x.shield)),candidateShield:mean(c.map(x=>x.shield)),
+     baselineDowns:b.filter(x=>!x.alive).length,candidateDowns:c.filter(x=>!x.alive).length};
+   })};
+ }),releaseEnabled:false,cpApproved:false}));
+
 }
 // Exact-copy effect magnitude and resonance: every family at 1/2/3
 // copies, low, mixed and max strength. No execution of effect hooks here.

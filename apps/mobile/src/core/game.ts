@@ -902,7 +902,7 @@ export function activeCombatHitProjection(state:GameState,nowMs:number,previous?
 }
 
 /** Nonpersisted gathering rate review hook. Normal gameplay callers omit it. */
-export type GatheringRateReview=(state:GameState)=>number;
+export type GatheringRateReview=(state:GameState)=>{rateMultiplier:number;xpMultiplier:number;yieldMultiplier:number;rareChanceMultiplier:number};
 function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number,rateReview?:GatheringRateReview):RewardBundle{
   if(!state.activity||!state.character)return {xp:0,gold:0,items:[],kills:0,elapsedSeconds:0};
   const elapsed=Math.min(offlineCapSeconds(state),Math.max(0,Math.floor((effectiveNowMs-state.activity.lastClaimAtMs)/1000)));
@@ -926,9 +926,10 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number,
     const pacing=gatheringPacing(state,g),mastery=professionMasteryMultipliers(g.id,state.account.professionMasteryByAction?.[g.id]),affinity=activeSkillAffinity(state,g.skillId);
     const herbLevel=state.skills.find(row=>row.skillId==='herbalism')?.level??1,method=g.skillId==='herbalism'?herbalismMethod(state.activity.herbalismMethodId??state.character.herbalismMethodId,herbLevel):undefined;
     const specialtySpeed=g.skillId==='fishing'?multipliers.fishingSpeedMultiplier:g.skillId==='herbalism'?multipliers.herbalismSpeedMultiplier:1;
-    const gearRate=rateReview&&g.skillId!=='herbalism'?rateReview(state):1;
-    if(!Number.isFinite(gearRate)||gearRate<1||gearRate>6.75)throw Error('gathering_review_invalid_rate');
-    const effectiveActionSeconds=g.seconds*GATHER_TIME_SCALE*pacing.timeMultiplier*effect.actionTimeMultiplier*(method?.actionTimeMultiplier??1)/(multipliers.gatheringSpeedMultiplier*specialtySpeed*mastery.speed*affinity.speedMultiplier*dailySupplySpeedMultiplier(state,'gathering_speed',elapsed)*gearRate);
+    const gear=rateReview&&g.skillId!=='herbalism'?rateReview(state):{rateMultiplier:1,xpMultiplier:1,yieldMultiplier:1,rareChanceMultiplier:1};
+    const validGearMultiplier=(value:number,max:number)=>Number.isFinite(value)&&value>=1&&value<=max+1e-9;
+    if(!gear||!validGearMultiplier(gear.rateMultiplier,6.75)||!validGearMultiplier(gear.xpMultiplier,1.41)||!validGearMultiplier(gear.yieldMultiplier,1.07)||!validGearMultiplier(gear.rareChanceMultiplier,1.925))throw Error('gathering_review_invalid_multiplier');
+    const effectiveActionSeconds=g.seconds*GATHER_TIME_SCALE*pacing.timeMultiplier*effect.actionTimeMultiplier*(method?.actionTimeMultiplier??1)/(multipliers.gatheringSpeedMultiplier*specialtySpeed*mastery.speed*affinity.speedMultiplier*dailySupplySpeedMultiplier(state,'gathering_speed',elapsed)*gear.rateMultiplier);
     const elapsedMs=Math.min(offlineCapSeconds(state)*1000,Math.max(0,effectiveNowMs-state.activity.lastClaimAtMs));
     const timeline=WINTER_HEARTH_GUILD_RELEASED&&state.winterHearthBonusWindows?.length
       ?winterHearthGatheringTimeline({startsAtMs:state.activity.lastClaimAtMs,elapsedSeconds:elapsedMs/1000,
@@ -943,17 +944,17 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number,
     const seed=`${state.character.id}:${state.activity.lastClaimAtMs}:${g.id}:yield`;
     let baseQuantity=0;
     for(let i=0;i<actions;i++)baseQuantity+=g.min+Math.floor(random01(seed,i)*(g.max-g.min+1));
-    const quantityFloat=baseQuantity*effect.itemMultiplier*(method?.yieldMultiplier??1)*multipliers.gatheringYieldMultiplier*mastery.yield+(state.rewardRemainders?.[g.itemId]??0);
+    const quantityFloat=baseQuantity*effect.itemMultiplier*(method?.yieldMultiplier??1)*multipliers.gatheringYieldMultiplier*mastery.yield*gear.yieldMultiplier+(state.rewardRemainders?.[g.itemId]??0);
     const quantity=Math.floor(quantityFloat);
     const skill=state.skills.find(x=>x.skillId===g.skillId);
     const xpKey=affinityXpRemainderKey(state.character.id,g.skillId);
-    const gain=settleAffinitySkillXp(actions*g.xp*effect.xpMultiplier*(method?.xpMultiplier??1)*multipliers.skillXpMultiplier*mastery.xp*affinity.xpMultiplier*candyXpMultiplier*gatheringToolSkillXpMultiplier(state,g.skillId)*(WINTER_HEARTH_GUILD_RELEASED?winterHearthXpFactorForActionTimes(state.winterHearthBonusWindows??[],timeline.encounters.map(row=>row.atMs),'skill'):1),state.rewardRemainders?.[xpKey],totalXpAtLevel(100)-(skill?.xp??0));
+    const gain=settleAffinitySkillXp(actions*g.xp*effect.xpMultiplier*(method?.xpMultiplier??1)*multipliers.skillXpMultiplier*mastery.xp*affinity.xpMultiplier*candyXpMultiplier*gatheringToolSkillXpMultiplier(state,g.skillId)*gear.xpMultiplier*(WINTER_HEARTH_GUILD_RELEASED?winterHearthXpFactorForActionTimes(state.winterHearthBonusWindows??[],timeline.encounters.map(row=>row.atMs),'skill'):1),state.rewardRemainders?.[xpKey],totalXpAtLevel(100)-(skill?.xp??0));
     const xp=gain.xp;
     const items:ItemStack[]=quantity?[{itemId:g.itemId,quantity}]:[];
     if(g.skillId==='mining'){
       const essence=MINING_ESSENCE_BY_ZONE[g.zoneId];
       if(essence&&actions>0){
-        const rareChance=Math.min(1,essence.baseChance*effect.dropChanceMultiplier*multipliers.dropChanceMultiplier*gatheringToolRarityChanceMultiplier(state,'mining'));
+        const rareChance=Math.min(1,essence.baseChance*effect.dropChanceMultiplier*multipliers.dropChanceMultiplier*gatheringToolRarityChanceMultiplier(state,'mining')*gear.rareChanceMultiplier);
         const rareSeed=`${state.character.id}:${state.activity.lastClaimAtMs}:${g.id}:mineral-essence`;
         let rareQuantity=0;
         for(let i=0;i<actions;i++)if(random01(rareSeed,i)<rareChance)rareQuantity++;

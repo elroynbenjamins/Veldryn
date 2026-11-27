@@ -62,3 +62,38 @@ assert.doesNotMatch(source,/\.\.\/online\/|supabase|fetch\(/);
 const mounted=fs.readFileSync(path.join(root,'components','OnlinePartyChat.tsx'),'utf8');
 assert.doesNotMatch(mounted,/PartyChatActionCardPreviewV113/);
 console.log('PARTY_CHAT_CARD_PREVIEW_V113_PASS');
+
+const refreshModule={exports:{}};
+new Function('module','exports',compile(path.join(root,'core','party-chat-refresh-preview-v114.ts')))(refreshModule,refreshModule.exports);
+const {PartyChatRefreshPreviewV114:Refresh,PARTY_CHAT_REFRESH_V114_RELEASED}=refreshModule.exports;
+assert.equal(PARTY_CHAT_REFRESH_V114_RELEASED,false);
+async function testRefresh(){
+ const scope={accountId:'A',partyId:'P'},calls=[];
+ let fail=false;
+ const read=async(scope,targets)=>{calls.push({scope,targets});if(fail)throw Error('offline');};
+ const refresh=new Refresh(read,true);
+ const hint={...scope,eventId:'1',kind:'role_swap',terminal:false,rosterChanged:false};
+ refresh.setScope(scope);refresh.setActive(true);await refresh.flush();
+ assert.deepEqual(calls.pop().targets,{feed:true,party:true});
+ assert.equal(refresh.invalidate(hint),true);
+ assert.equal(refresh.invalidate(hint),false);
+ assert.equal(refresh.invalidate({...hint,eventId:'2',accountId:'OTHER'}),false);
+ assert.equal(refresh.invalidate({...hint,eventId:'2',rosterChanged:true}),false);
+ assert.equal(refresh.invalidate({...hint,eventId:'2',terminal:true,rosterChanged:true}),true);
+ await Promise.all([refresh.flush(),refresh.flush()]);
+ assert.equal(calls.length,1);assert.deepEqual(calls.pop().targets,{feed:true,party:true});
+ refresh.setActive(false);
+ refresh.invalidate({...hint,eventId:'3'});await refresh.flush();assert.equal(calls.length,0);
+ refresh.setActive(true);await refresh.flush();assert.equal(calls.length,1);calls.length=0;
+ refresh.invalidate({...hint,eventId:'4'});fail=true;
+ await assert.rejects(refresh.flush(),/offline/);
+ fail=false;await refresh.flush();assert.equal(calls.length,2);calls.length=0;
+ refresh.invalidate({...hint,eventId:'5'});const old=refresh.flush();
+ refresh.setScope({accountId:'B',partyId:'Q'});await old;await refresh.flush();
+ assert.equal(calls.length,1);assert.equal(calls[0].scope.accountId,'B');
+ assert.equal(refresh.invalidate({...hint,eventId:'6'}),false);
+ const disabled=new Refresh(read);disabled.setScope(scope);disabled.setActive(true);
+ assert.equal(disabled.invalidate(hint),false);await disabled.flush();assert.equal(calls.length,1);
+ console.log('PARTY_CHAT_REFRESH_V114_PASS');
+}
+testRefresh().catch(error=>{console.error(error);process.exitCode=1;});

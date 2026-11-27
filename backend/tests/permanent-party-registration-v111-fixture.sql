@@ -4,7 +4,7 @@ create role authenticated;
 create role service_role;
 create schema auth;
 create table auth.users(id uuid primary key);
-create table public.parties(id uuid primary key,status text not null);
+create table public.parties(id uuid primary key,status text not null,leader_account_id uuid,leader_character_id uuid,minimum_level integer not null default 10);
 create table public.characters(id uuid primary key,account_id uuid not null references auth.users(id),
  class_id text not null,level integer not null,unique(id,account_id));
 create table public.player_blocks(blocker_id uuid not null references auth.users(id),blocked_id uuid not null references auth.users(id),primary key(blocker_id,blocked_id));

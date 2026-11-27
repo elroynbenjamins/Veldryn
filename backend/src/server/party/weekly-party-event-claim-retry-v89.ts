@@ -57,10 +57,18 @@ export function createPartyEventClaimRetryV89(
  return async request=>{
   if(process.env.NODE_ENV==='production')
    throw Error('party_event_v89_unreleased');
-  validateRequest(request);
+  // Capture the authenticated identity once; readonly TypeScript fields do
+  // not prevent the original caller from mutating a JS object during await.
+  const frozenRequest:ChestOpenRequestV69=Object.freeze({
+   authenticatedAccountId:request?.authenticatedAccountId,
+   sourceKey:request?.sourceKey,
+  });
+  validateRequest(frozenRequest);
   for(let attempt=1;attempt<=PARTY_EVENT_CLAIM_MAX_ATTEMPTS_V89;attempt++){
+   if(process.env.NODE_ENV==='production')
+    throw Error('party_event_v89_unreleased');
    try{
-    return await open(request);
+    return await open(frozenRequest);
    }catch(error){
     if(attempt===PARTY_EVENT_CLAIM_MAX_ATTEMPTS_V89||
      !retryableTransactionError(error))throw error;

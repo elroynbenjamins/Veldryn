@@ -260,6 +260,7 @@ console.log('WORLD_BOSS_V95A_REWARD_HANDOFF: existing chest rules, canonical-onl
 import {WORLD_BOSS_CHEST_POLICY_V96,worldBossChestLootTableV96,previewWorldBossChestRollV96} from '../../../backend/src/server/combat/world-boss-chest-policy-v96';
 import {worldBossChestLootTableV68} from '../../../backend/src/server/combat/world-boss-chests-v58';
 assert.equal(WORLD_BOSS_CHEST_POLICY_V96.sigilGearExchange,false);
+assert.equal(WORLD_BOSS_CHEST_POLICY_V96.innateGatheringSpeedBaseBps,1000);
 assert.equal(WORLD_BOSS_CHEST_POLICY_V96.luckModifiersAllowed,false);
 assert.equal(WORLD_BOSS_CHEST_POLICY_V96.maxDamageChests,3);
 for(const bossId of bossIds)for(const kind of ['donations_goal','three_attempts','community_damage_goal','personal_damage'] as const){
@@ -271,8 +272,15 @@ for(const bossId of bossIds)for(const kind of ['donations_goal','three_attempts'
  assert.equal(miss.gear,null);
  const low=previewWorldBossChestRollV96({...input,hitRoll:999,nextInt:max=>max===1_000_000?999999:0});
  assert.equal(low.gear?.rarity,'common');assert.equal(low.gear?.quality,100);
+ assert.equal(low.gear?.gatheringSpeedBasisPoints,1250);
+ let drawIndex=0;
+ const neutral=previewWorldBossChestRollV96({...input,hitRoll:0,nextInt:max=>{
+  const i=drawIndex++;return i===0?999999:i===1?Math.floor(Math.pow(50.5/101,.8)*1_000_000):0;
+ }});
+ assert.equal(neutral.gear?.quality,50);assert.equal(neutral.gear?.gatheringSpeedBasisPoints,1000);
  const high=previewWorldBossChestRollV96({...input,hitRoll:0,nextInt:()=>0});
  assert.equal(high.gear?.rarity,'mythic');assert.equal(high.gear?.quality,0);
+ assert.equal(high.gear?.gatheringSpeedBasisPoints,1500);
  assert.equal(high.gear?.primaryStat,'gathering_speed');
  assert.equal(high.gear?.combatPowerBonus,0);
  assert.equal(high.gear?.bonusStats.length,2);

@@ -43,6 +43,15 @@ const captured=environmentForActivity(state.activity!);
 ok(captured.seasonId==='spring'&&captured.zoneId==='SILVERBROOK','Starting an activity must snapshot its environment');
 const elapsed=3600,reward=previewActivityReward(state,spring+elapsed*1000);
 ok(reward.kills>0&&reward.xp>0,'Captured weather must produce deterministic activity rewards');
+// Hold the action count constant: changing the season must never change the
+// base material reward for the same completed cycles and RNG seed.
+const neutralFishing={...state,activity:{...state.activity!,environment:{...state.activity!.environment!,seasonId:'winter' as const,weatherId:'snow' as const}}};
+const fasterFishing={...neutralFishing,activity:{...neutralFishing.activity,environment:{...neutralFishing.activity.environment,seasonId:'autumn' as const}}};
+const neutralReward=previewActivityReward(neutralFishing,spring+3600000);
+const fasterReward=previewActivityReward(fasterFishing,spring+3420000);
+ok(neutralReward.kills===fasterReward.kills,'Shorter seasonal cycles must complete the same actions in less time');
+ok(JSON.stringify(neutralReward.items)===JSON.stringify(fasterReward.items),'Season must not change materials per completed action');
+ok(previewActivityReward(fasterFishing,spring+3600000).kills>neutralReward.kills,'Speed bonus must increase completed actions over equal elapsed time');
 const stillCaptured=environmentForActivity(state.activity!);
 ok(JSON.stringify(stillCaptured)===JSON.stringify(captured),'Active activity weather must remain captured until the activity changes');
 const malformed=JSON.parse(JSON.stringify(state));malformed.activity.environment={seasonId:'bad',weatherId:'bad',zoneId:4,capturedAtMs:'never'};

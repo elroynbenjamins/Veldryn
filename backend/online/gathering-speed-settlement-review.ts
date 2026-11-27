@@ -50,7 +50,7 @@ export function reviewGatheringSettlementV2(input:{
    segment.activity.targetId!==frozen.targetId||segment.activity.startedAtMs!==frozen.startedAtMs)
    throw Error('gathering_review_activity_changed');
   return {rateMultiplier:pace.gearRateMultiplier,xpMultiplier:channels?.xpMultiplier??1,
-   yieldMultiplier:channels?.yieldMultiplier??1,rareChanceMultiplier:channels?.rareChanceMultiplier??1};
+   rareChanceMultiplier:channels?.rareChanceMultiplier??1};
  };
  const preview=previewActivityReward(structuredClone(state),nowMs,rateReview);
  const baseline=claimActivity(structuredClone(state),nowMs);

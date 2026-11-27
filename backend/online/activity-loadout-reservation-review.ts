@@ -49,7 +49,9 @@ export function reviewCombatLoadoutReservation(input:{
  if(config.autoSwitch&&prepared.route.decision!=='candidate')throw Error('loadout_reservation_combat_preset_required');
  const audit=auditCraftedGearOwnership(next);
  if(audit.problems.length)throw Error('loadout_reservation_ownership_conflict');
- const exactCopyIds=Object.values(character.equipmentInstanceIds??{}).sort();
+ const rawCopies=Object.values(character.equipmentInstanceIds??{});
+ if(rawCopies.some(id=>!validId(id)))throw Error('loadout_reservation_invalid_exact_copies');
+ const exactCopyIds=rawCopies.filter(validId).sort();
  if(new Set(exactCopyIds).size!==exactCopyIds.length||exactCopyIds.some(id=>!audit.linked.some(row=>row.instanceId===id&&row.holderCharacterId===character.id&&row.place==='equipped')))
   throw Error('loadout_reservation_invalid_exact_copies');
  if(input.verifyReservationCustody(Object.freeze({...scope}),Object.freeze([...exactCopyIds]))!==true||

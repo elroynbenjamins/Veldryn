@@ -1,0 +1,34 @@
+name: Hidden Market authenticated boundary
+on:
+  pull_request:
+    paths:
+      - 'backend/online/market-*.ts'
+      - 'backend/online/tests/market-*.ts'
+      - '.github/workflows/hidden-market-auth-boundary.yml'
+permissions:
+  contents: read
+jobs:
+  isolated-typescript:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install isolated compiler and Node declarations
+        run: npm install --prefix "$RUNNER_TEMP/market-ts" --ignore-scripts --no-save --no-audit --no-fund typescript@5.8.3 @types/node@22.15.3
+      - name: Strict compile actual hidden boundary and readback
+        run: |
+          "$RUNNER_TEMP/market-ts/node_modules/.bin/tsc" --strict --skipLibCheck --esModuleInterop --target ES2022 --module commonjs --moduleResolution node --lib ES2022,DOM --typeRoots "$RUNNER_TEMP/market-ts/node_modules/@types" --rootDir backend/online --outDir "$RUNNER_TEMP/market-build" backend/online/tests/market-auth-boundary.ts backend/online/tests/market-read-gateway-v25.ts backend/online/tests/market-sql-reader-v26.ts backend/online/tests/market-eq2-physical-readback-review.ts
+      - name: Run existing and new authenticated boundary tests
+        run: |
+          node "$RUNNER_TEMP/market-build/tests/market-auth-boundary.js"
+          node "$RUNNER_TEMP/market-build/tests/market-read-gateway-v25.js"
+          node "$RUNNER_TEMP/market-build/tests/market-sql-reader-v26.js"
+          node "$RUNNER_TEMP/market-build/tests/market-eq2-physical-readback-review.js"
+      - name: Ensure Market modules remain unmounted
+        run: |
+          if grep -En 'market-auth-boundary|market-read-gateway-v25|market-sql-reader-v26|market-eq2-physical-readback-review' backend/online/edge.ts; then exit 1; fi

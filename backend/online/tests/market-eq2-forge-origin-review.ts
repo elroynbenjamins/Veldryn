@@ -12,13 +12,22 @@ const make=()=>{
  return {ledger,item,job,start,claim,input:{originalAccountId:'original',expectedRevision:9,instanceId:'copy',itemId:'EQ2_TEST',row:{account_id:'original',revision:9,state:{account:{equipmentV2Hidden:ledger}}},expectedOriginalDigest:undefined as string|undefined}};
 };
 let checks=0;
+function matchedDigest(got:ReturnType<typeof inspectMarketForgeOrigin>):string{
+ assert.equal(got.receiptMatch,true);
+ assert.equal(got.marketAuthorized,false);assert.equal(got.canCommit,false);
+ if(!('originalDigest' in got)||typeof got.originalDigest!=='string')throw Error('matched receipt must contain digest');
+ assert.match(got.originalDigest,/^[a-f0-9]{64}$/);
+ return got.originalDigest;
+}
 function test(name:string,mutate:(x:ReturnType<typeof make>)=>void,reason:string){
  const x=make();mutate(x);const before=JSON.stringify(x);const got=inspectMarketForgeOrigin(x.input);
  assert.equal(got.reason,reason,name);assert.equal(got.marketAuthorized,false);assert.equal(got.canCommit,false);
+ assert.equal(Object.prototype.hasOwnProperty.call(got,'originalDigest'),false,name);
+ assert.equal(Object.prototype.hasOwnProperty.call(got,'claimRequestId'),false,name);
  assert.equal(JSON.stringify(x),before);checks++;
 }
 const base=make(),original=inspectMarketForgeOrigin(base.input);
-assert.equal(original.receiptMatch,true);assert.match(original.originalDigest??'',/^[a-f0-9]{64}$/);checks++;
+const originalDigest=matchedDigest(original);checks++;
 test('wrong original account',x=>{x.input.originalAccountId='buyer'},'account_or_revision');
 test('revision',x=>{x.input.expectedRevision=8},'account_or_revision');
 test('no original',x=>{x.ledger.items=[]},'missing_original_item');
@@ -37,7 +46,9 @@ test('modified quality',x=>{x.item.exactItem.quality=99},'receipt_mismatch');
 test('modified affix snapshot',x=>{x.claim.response.exactItem.baseStats.attack=99},'receipt_mismatch');
 test('award mismatch',x=>{x.ledger.skillAwards[0].xp=6},'award_mismatch');
 test('digest mismatch',x=>{x.input.expectedOriginalDigest='0'.repeat(64)},'original_digest_mismatch');
-test('coordinated forgery vs pinned digest',x=>{x.input.expectedOriginalDigest=original.originalDigest;x.item.exactItem.quality=99;x.claim.response.exactItem.quality=99},'original_digest_mismatch');
+test('coordinated forgery vs pinned digest',x=>{x.input.expectedOriginalDigest=originalDigest;x.item.exactItem.quality=99;x.claim.response.exactItem.quality=99},'original_digest_mismatch');
 const reordered=make();reordered.item.exactItem.baseStats={hp:3,attack:2.5};
-assert.equal(inspectMarketForgeOrigin(reordered.input).originalDigest,original.originalDigest);checks++;
+assert.equal(matchedDigest(inspectMarketForgeOrigin(reordered.input)),originalDigest);checks++;
+const pinned=make();pinned.input.expectedOriginalDigest=originalDigest;
+assert.equal(matchedDigest(inspectMarketForgeOrigin(pinned.input)),originalDigest);checks++;
 console.log('Market Forge origin receipt review checks passed: '+checks);

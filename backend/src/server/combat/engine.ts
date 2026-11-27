@@ -253,7 +253,9 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
         (effect.damageType==='physical'?sync(source,'armor_penetration_pct'):0),0,1):0;
     const eq2TimedDefense=eq2PrivateHit&&effect.damageType!==undefined&&effect.damageType!=='true'
       ?eq2PrivateHit.timedStat(target.definition.id,now,'defense'):undefined;
-    const effectiveDefense=effect.damageType==='true'?0:gemEffectiveDefenseV1(target,now)*v2Defense*(1-authoredPenetration)*(1+(effect.damageType==='physical'?sync(target,'armor_pct'):0));
+    const privateDefense=privateDamageGem&&source.definition.team==='enemies'&&effect.damageType!=='true'
+      ?privateDamageGem.defenseFraction(now,target):0;
+    const effectiveDefense=effect.damageType==='true'?0:gemEffectiveDefenseV1(target,now)*v2Defense*(1-authoredPenetration)*(1+(effect.damageType==='physical'?sync(target,'armor_pct'):0))*(1+privateDefense);
     const mit=effect.damageType==='true'?0:defenseMitigation(effectiveDefense*(1+(eq2TimedDefense?.pct??0)/100),mitigationConstant);
     if(eq2TimedDefense?.pct&&mit>defenseMitigation(effectiveDefense,mitigationConstant))
       events.push({atMs:now,type:'equipment_trait_trigger',actorId:target.definition.id,targetId:source.definition.id,
@@ -346,9 +348,18 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
     // non-true damage, including DoT ticks. Physical and true bypass it.
     if(v2Encounter&&targetGear&&effect.damageType&&
        effect.damageType!=='physical'&&effect.damageType!=='true'){
-      raw*=1-clamp(targetGear.wardPp*(1+sync(target,'ward_strength_pct')),0,1);
+      raw*=1-clamp(targetGear.wardPp*(1+sync(target,'ward_strength_pct'))*(1+privateDefense),0,1);
     }
     raw*=1-sync(target,'damage_reduction_pct');
+    if(privateDamageGem&&source.definition.team==='enemies'&&effect.damageType!=='true'){
+      for(const row of privateDamageGem.incomingReductions(now,target)){
+        raw*=1-clamp(row.fraction,0,1);
+        events.push({atMs:now,type:'gem_state',actorId:target.definition.id,targetId:source.definition.id,
+          abilityId,amount:row.fraction,detail:'private_qa_defense_used:'+row.familyId});
+      }
+      if(privateDefense>0)events.push({atMs:now,type:'gem_state',actorId:target.definition.id,targetId:source.definition.id,
+        abilityId,amount:privateDefense,detail:'private_qa_defense_used:effect_unyielding'});
+    }
     // Server-verified Equipment 2.0 action bonuses apply only to original
     // direct player hits. No periodic, gem, capstone, companion or trait
     // secondary damage can enter these hooks.
@@ -414,6 +425,10 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
       ?Math.min(target.hp,residual):residual);
     target.hp=Math.max(0,target.hp-dealt); source.damageDone+=dealt; target.damageTaken+=dealt;
     const privateActualHpDamage=privateDamageGem?Math.max(0,privateHpBefore-target.hp):0;
+    if(privateDamageGem&&eventType==='damage')
+      for(const row of privateDamageGem.afterIncomingDefense(now,source,target,abilityId,privateHpBefore))
+        events.push({atMs:now,type:'gem_state',actorId:target.definition.id,targetId:source.definition.id,
+          abilityId,amount:row.fraction,expiresAtMs:row.expiresAt,detail:'private_qa_defense_earned:'+row.familyId});
     if(eq2PrivateHit&&eq2Incoming){
       for(const id of eq2PrivateHit.afterIncomingHit(eq2Incoming,Math.max(0,eq2Incoming.targetHp-target.hp)))
         events.push({atMs:now,type:'equipment_trait_trigger',actorId:target.definition.id,targetId:source.definition.id,
@@ -691,7 +706,11 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
       (1+sync(source,'shield_strength_pct')));
       const amt=enemyV2Effects&&target.definition.team==='enemies'
         ?enemyV2AllowedShieldAmount(target.definition.stats.maxHp,target.shield,requested):requested;
-      target.shield+=amt;if(effect.shieldReflectPct&&amt>0)(target.reflectiveShields??=[]).push({remaining:amt,rate:clamp(effect.shieldReflectPct,0,.5),sourceId:source.definition.id});gemOnShieldAppliedV1(now,source,target);gemConsumeSupportChargeV1(now,source);emitGemState(now);events.push({atMs:now,type:'shield',actorId:source.definition.id,targetId:target.definition.id,abilityId,amount:Number(amt.toFixed(2))});if(amt>0&&source.definition.team==='players'){
+      target.shield+=amt;
+      if(privateDamageGem)for(const row of privateDamageGem.onBarrier(now,source,target,abilityId,amt))
+        events.push({atMs:now,type:'gem_state',actorId:source.definition.id,targetId:row.recipientId,
+          abilityId,amount:row.fraction,expiresAtMs:row.expiresAt,detail:'private_qa_defense_earned:'+row.familyId});
+      if(effect.shieldReflectPct&&amt>0)(target.reflectiveShields??=[]).push({remaining:amt,rate:clamp(effect.shieldReflectPct,0,.5),sourceId:source.definition.id});gemOnShieldAppliedV1(now,source,target);gemConsumeSupportChargeV1(now,source);emitGemState(now);events.push({atMs:now,type:'shield',actorId:source.definition.id,targetId:target.definition.id,abilityId,amount:Number(amt.toFixed(2))});if(amt>0&&source.definition.team==='players'){
       resource(source,'shield_granted',now,abilityId);
       if(!abilityId.startsWith('V2_CAPSTONE')){
         const ability=source.definition.abilities.find(a=>a.id===abilityId);

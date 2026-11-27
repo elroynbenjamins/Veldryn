@@ -17,7 +17,7 @@ import type {compileRealFrozenForgeActorV2} from '../equipment-frozen-forge-brid
 import type {reviewFrozenForgeSocketsV2} from '../frozen-forge-socket-review';
 import {gentleStatGemActorReviewV2} from './gentle-stat-gem-combat-review';
 import {reviewPotentAuthoredActorV2} from './potent-authored-output-combat-review';
-import {issuePrivateDamageGemAuthorityV2} from '../effect-gem-private-damage-authority';
+import {issuePrivateDamageGemAuthorityV2,authorizePrivateDamageGemReviewV2} from '../effect-gem-private-damage-authority';
 type Projection=ReturnType<typeof reviewFrozenForgeSocketsV2>;
 type Member={classId:ClassIdV2;accountId:string;characterId:string;revision:number;
  compiled:ReturnType<typeof compileRealFrozenForgeActorV2>;baseline:Projection};
@@ -86,6 +86,56 @@ export function createGentleGemPartyPressureReviewV2(members:readonly Member[],p
     {enemy,equipmentTrait,aiPolicy:'tactical',rngReviewPolicy:ACTION_STREAM_RNG_QA_V2,privateDamageGem}),/scope_does_not_match|not_matching_compiled/);
    assert.throws(()=>simulateCombatWithServerAuthoritiesV2(input,{enemy,equipmentTrait,aiPolicy:'tactical',privateDamageGem}),/private_damage_gem_review_engine_scope/);
   }
+  // Fresh private runtime probes, independent of the encounter's RNG.
+  if(privateDamageGem&&projection){
+   const group=projection.effectResonanceReview?.families[0];
+   const runtime=authorizePrivateDamageGemReviewV2(input,privateDamageGem,new Map(sources.map(s=>[s.actorId,s])))!;
+   const original=result.players.find(p=>p.definition.id===projection.forgeEvidence.actorId)!;
+   const owner={...original,alive:true,hp:original.definition.stats.maxHp};
+   const enemy={...result.enemies[0],alive:true};
+   if(group?.familyId==='effect_last_stand'){
+    const threshold=group.resonance>=2?.35:.30;
+    const before=owner.hp;
+    owner.hp=before*(threshold-.01);
+    assert.equal(runtime.afterIncomingDefense(100,enemy,owner,'V2_GENERATED',before).length,0);
+    assert.equal(runtime.incomingReductions(100,owner).length,0);
+    const earned=runtime.afterIncomingDefense(100,enemy,owner,'BASIC',before);
+    assert.equal(earned.length,1);assert.equal(earned[0].fraction,group.totalValue);
+    assert.equal(earned[0].expiresAt,100+(group.resonance===3?8000:6000));
+    assert.equal(runtime.incomingReductions(101,owner)[0].fraction,group.totalValue);
+    assert.equal(runtime.incomingReductions(earned[0].expiresAt,owner).length,0);
+    assert.equal(runtime.afterIncomingDefense(10000,enemy,owner,'BASIC',before).length,0);
+   }
+   if(group?.familyId==='effect_unyielding'){
+    const before=owner.hp;owner.hp=before-1;
+    assert.equal(runtime.defenseFraction(100,owner),0);
+    assert.equal(runtime.afterIncomingDefense(100,enemy,owner,'V2_GENERATED',before).length,0);
+    assert.equal(runtime.afterIncomingDefense(100,enemy,owner,'BASIC',owner.hp).length,0);
+    assert.equal(runtime.afterIncomingDefense(100,enemy,owner,'BASIC',before).length,1);
+    assert.equal(runtime.afterIncomingDefense(849,enemy,owner,'BASIC',before).length,0);
+    const cap=group.resonance>=2?5:4;
+    for(let i=1;i<=cap;i++)runtime.afterIncomingDefense(100+i*750,enemy,owner,'BASIC',before);
+    assert.ok(Math.abs(runtime.defenseFraction(100+cap*750,owner)-group.totalValue*cap)<1e-9);
+    assert.equal(runtime.defenseFraction(15000,owner),0);
+   }
+   if(group?.familyId==='effect_guardians_gift'){
+    const shield=owner.definition.abilities.find(a=>a.id.includes(':v2:')&&a.effects.some(e=>e.kind==='shield'));
+    if(shield){
+     const ally={...result.players.find(p=>p.definition.id!==owner.definition.id)!,alive:true};
+     runtime.beginAction(100,owner,shield.id);
+     assert.equal(runtime.onBarrier(100,owner,ally,shield.id,0).length,0);
+     assert.equal(runtime.onBarrier(100,owner,owner,shield.id,10).length,0);
+     assert.equal(runtime.onBarrier(100,owner,ally,'V2_GENERATED',10).length,0);
+     const grants=runtime.onBarrier(100,owner,ally,shield.id,10);
+     assert.equal(grants.length,group.resonance===3?2:1);
+     assert.equal(runtime.incomingReductions(101,ally)[0].fraction,group.totalValue);
+     assert.equal(runtime.incomingReductions(101,owner)[0]?.fraction??0,group.resonance===3?group.totalValue*.5:0);
+     runtime.beginAction(200,owner,shield.id);runtime.onBarrier(200,owner,ally,shield.id,10);
+     assert.equal(runtime.incomingReductions(201,ally).length,1);
+     assert.equal(runtime.incomingReductions(200+(group.resonance>=2?6000:4000),ally).length,0);
+    }
+   }
+  }
   assert.equal(result.events[0].detail,ACTION_STREAM_RNG_QA_V2);
   return result;
  };
@@ -135,13 +185,24 @@ export function createGentleGemPartyPressureReviewV2(members:readonly Member[],p
   assert.ok(!before.events.some(e=>e.detail?.startsWith('private_qa_opportunist_extension:')));
   assert.ok(extensions.every(e=>e.type==='gem_state'&&e.actorId===actor.id&&e.statusKind==='debuff'&&!!e.statusTag&&e.amount===1000&&(e.expiresAtMs??0)>e.atMs));
   if(extensions.length)assert.equal(p.effectResonanceReview?.families.find(g=>g.familyId==='effect_opportunist')?.resonance,3);
-  const recoveryEvents=after.events.filter(e=>e.abilityId==='V2_QA_GEM_RETALIATION');
+  const defenseEvents=after.events.filter(e=>e.detail?.startsWith('private_qa_defense_'));
+   const defenseEarned=defenseEvents.filter(e=>e.detail?.startsWith('private_qa_defense_earned:'));
+   assert.ok(!before.events.some(e=>e.detail?.startsWith('private_qa_defense_')));
+   for(const event of defenseEvents){
+    const group=p.effectResonanceReview?.families.find(g=>g.familyId===event.detail!.split(':')[1]);
+    assert.ok(group&&event.type==='gem_state'&&event.amount!==undefined&&event.amount>0&&event.amount<=group.peak.candidate+1e-9);
+    if(event.detail?.startsWith('private_qa_defense_earned:'))assert.ok((event.expiresAtMs??0)>event.atMs);
+   }
+   assert.ok(defenseEarned.filter(e=>e.detail==='private_qa_defense_earned:effect_last_stand').length<=1);
+   const u=defenseEarned.filter(e=>e.detail==='private_qa_defense_earned:effect_unyielding');
+   for(let i=1;i<u.length;i++)assert.ok(u[i].atMs-u[i-1].atMs>=750);
+   const recoveryEvents=after.events.filter(e=>e.abilityId==='V2_QA_GEM_RETALIATION');
   const armed=after.events.filter(e=>e.detail==='private_qa_retaliation_armed');
   assert.ok(recoveryEvents.every(e=>e.actorId===actor.id&&e.targetId===actor.id&&e.type==='heal'&&e.detail==='private_qa_terminal_recovery'&&(e.amount??0)<=actor.stats.maxHp*.01+.011));
   for(let i=1;i<recoveryEvents.length;i++)assert.ok(recoveryEvents[i].atMs-recoveryEvents[i-1].atMs>=10000);
   for(let i=1;i<armed.length;i++)assert.ok(armed[i].atMs-armed[i-1].atMs>=8000);
   if(recoveryEvents.length)assert.equal(p.effectResonanceReview?.families.find(g=>g.familyId==='effect_retaliation')?.resonance,3);
-  return {before:a,after:b,triggerCount:triggers.length,stackTriggers:stackTriggers.length,armed:armed.length,recoveryEvents:recoveryEvents.length,extensions:extensions.length,
+  return {before:a,after:b,triggerCount:triggers.length,stackTriggers:stackTriggers.length,armed:armed.length,recoveryEvents:recoveryEvents.length,extensions:extensions.length,defenseEarned:defenseEarned.length,defenseUses:defenseEvents.length-defenseEarned.length,
    hasteUses:triggers.filter(e=>e.detail?.startsWith('private_qa_haste_gem:')).length,
    maxStacks:Math.max(0,...stackTriggers.map(e=>Number(e.detail!.split(':')[3]))),
    maxFraction:Math.max(0,...triggers.map(e=>e.amount??0)),releaseEnabled:false as const};

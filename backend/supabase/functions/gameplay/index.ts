@@ -61342,7 +61342,13 @@ function gameplayHandler(services2, authenticatePlayer2 = async (token) => {
         request.method === "GET" ? recordActivity("foreground") : Promise.resolve()
       ]);
       if (privateGrants && !Array.isArray(loaded.ultraLuxeCollectionIds)) throw new Error("ultra_luxe_grant_projection_missing");
-      const storedState = rebaseCombatGameState(privateGrants ? withVerifiedUltraLuxeGrants(loaded.state ?? newGame(loaded.serverNow), loaded.ultraLuxeCollectionIds, true, fullSetAuthority) : loaded.state ?? newGame(loaded.serverNow));
+      const trustedCollectionIds = privateGrants ? loaded.ultraLuxeCollectionIds.map((id) => {
+        const canonicalId = canonicalUltraLuxeCollection(id);
+        if (!canonicalId || canonicalId !== id) throw Error("ultra_luxe_grant_projection_invalid");
+        return canonicalId;
+      }).sort() : [];
+      if (new Set(trustedCollectionIds).size !== trustedCollectionIds.length) throw Error("ultra_luxe_grant_projection_invalid");
+      const storedState = rebaseCombatGameState(privateGrants ? withVerifiedUltraLuxeGrants(loaded.state ?? newGame(loaded.serverNow), trustedCollectionIds, true, true) : loaded.state ?? newGame(loaded.serverNow));
       const trustedState = request.method === "POST" ? snapshotEarnedLegacySeasonalClaims(storedState, loaded.serverNow) : storedState;
       const state = reconcileAccountProfileIcon(restoreCumulativeMonsterUnlocks(ensurePersonalSeasonalState(trustedState)));
       state.account.longTermAccountScopeId = accountId;
@@ -61426,11 +61432,7 @@ function gameplayHandler(services2, authenticatePlayer2 = async (token) => {
       ];
       const response = { guildProjectEffort, guildPveEffort, state: restoreCumulativeMonsterUnlocks(result.state), version: loaded.version + 1, serverNow: loaded.serverNow, accountId, reward: result.reward, activity: result.activity, message: result.message, won: result.won, storyBossBattle: result.storyBossBattle, upgrade: result.upgrade, forgeResults: result.forgeResults };
       const commitRpc = privateGrants ? "commit_online_game_ultra_luxe_v1" : "commit_online_game_guild_pve_v1";
-      const committed = await services2.rpc(commitRpc, { p_account_id: accountId, p_expected_version: loaded.version, p_expected_gold: loaded.walletGold, p_request_id: body.requestId, p_request_hash: requestHash, p_response: response, p_contributions: contributions, ...privateGrants ? { p_expected_grants: (fullSetAuthority ? loaded.ultraLuxeCollectionIds.map((id) => {
-        const canonicalId = canonicalUltraLuxeCollection(id);
-        if (!canonicalId || canonicalId !== id) throw Error("ultra_luxe_grant_projection_invalid");
-        return canonicalId;
-      }) : [...ultraLuxeGrantProjection(loaded.ultraLuxeCollectionIds, true).collectionIds]).sort() } : {}, ...command.type === "roster_delete" ? { p_deleted_character_id: command.args.id } : {} });
+      const committed = await services2.rpc(commitRpc, { p_account_id: accountId, p_expected_version: loaded.version, p_expected_gold: loaded.walletGold, p_request_id: body.requestId, p_request_hash: requestHash, p_response: response, p_contributions: contributions, ...privateGrants ? { p_expected_grants: trustedCollectionIds } : {}, ...command.type === "roster_delete" ? { p_deleted_character_id: command.args.id } : {} });
       if (contributions.length > 0) try {
         await services2.rpc("guild_quest_record_contributions_v1", { p_account_id: accountId, p_contributions: contributions.map((e) => ({ ...e, units: e.questUnits ?? e.units })) });
       } catch {

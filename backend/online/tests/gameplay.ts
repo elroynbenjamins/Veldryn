@@ -98,9 +98,57 @@ async function fullSetHttpRouting(){
  console.log('PASS combined Ultra Luxe HTTP dispatch, independent authority flags, receipt prefix, account scope and stale conflict');
 }
 
+
+async function grantAuthoritySurvivesFullSetPause(){
+ const state=createCharacter(newGame(0),'IRONWARDEN','Grant Pause Fixture');
+ const cid='11111111-1111-4111-8111-111111111111';
+ state.character!.id=cid;
+ const sakura='ascendant-sakura-enchantment',storm='ascendant-stormforged-sovereign';
+ const scene='ascendant-sakura-petal-sanctuary',frame='ascendant-sakura-blossom-crown',pet='ascendant-sakura-spirit-fox';
+ Object.assign(state.character!,{profileBackgroundId:scene,profileBorderId:frame,selectedCosmeticPetId:pet,profileTitle:'Sakura Dreamkeeper'});
+ const originalGold=state.character!.gold;
+ let grants:unknown=[storm,sakura],commits=0;
+ const services:GameplayServices={
+  authenticate:async token=>token==='alice-token'?'alice':null,
+  randomId:()=>{throw Error('unexpected_random');},randomRoll:()=>{throw Error('unexpected_random');},
+  ultraLuxeGrantAuthority:true,ultraLuxeFullSetAuthority:false,
+  rpc:async<T>(name:string,args:Record<string,unknown>):Promise<T>=>{
+   if(name==='record_player_activity_server_v1'||name==='record_online_command_outcome_server_v1')return null as T;
+   assert.equal(args.p_account_id,'alice');
+   if(name==='read_online_game_receipt_ultra_luxe_v1')return null as T;
+   if(name==='load_online_game_ultra_luxe_v1')return {state:structuredClone(state),version:7,serverNow:1,characterId:cid,walletGold:originalGold,guildMember:false,communityProgress:{},ultraLuxeCollectionIds:grants} as T;
+   assert.equal(name,'commit_online_game_ultra_luxe_v1');
+   assert.deepEqual(args.p_expected_grants,[sakura,storm]);
+   const response=args.p_response as {state:GameState;version:number};
+   assert.equal(response.state.character?.profileBackgroundId,scene);
+   assert.equal(response.state.character?.profileBorderId,frame);
+   assert.equal(response.state.character?.selectedCosmeticPetId,pet);
+   assert.equal(response.state.character?.profileTitle,'Sakura Dreamkeeper');
+   assert.equal(response.state.character?.gold,originalGold);
+   assert(response.state.account.unlockedTitleIds?.includes('ascendant-stormforged-title'));
+   commits++;return response as T;
+  },
+ };
+ const handle=gameplayHandler(services),headers={Authorization:'Bearer alice-token'};
+ const get=()=>handle(new Request('https://example.invalid/gameplay',{headers}));
+ const post=(command:unknown,requestId:string)=>handle(new Request('https://example.invalid/gameplay',{method:'POST',headers,body:JSON.stringify({command,requestId,expectedVersion:7})}));
+ const read=await get();assert.equal(read.status,200);
+ const snapshot=await read.json();assert.equal(snapshot.state.character.profileBackgroundId,scene);
+ assert(snapshot.state.account.unlockedTitleIds.includes('ascendant-stormforged-title'));
+ const saved=await post({type:'claim'},'grant-pause-claim-01');assert.equal(saved.status,200);assert.equal(commits,1);
+ assert.equal((await post({type:'ultra_luxe_full_set',args:{collectionId:storm,characterId:cid,expectedNameId:null}},'luxe_full_set_pause_fixture_123456789')).status,403);
+ for(const malformed of [undefined,{},[sakura,'unknown-grant'],[sakura,sakura],['sakura-enchantment']]){
+  grants=malformed;assert.equal((await get()).status,503);
+  assert.equal((await post({type:'claim'},'grant-pause-invalid-01')).status,503);
+ }
+ assert.equal(commits,1,'malformed authority never settles gameplay');
+ console.log('PASS ordinary gameplay and owned six-set cosmetics survive combined-equip pause; malformed grants fail closed');
+}
+
 async function main(){
  await latencyReadOverlap();
  await fullSetHttpRouting();
+ await grantAuthoritySurvivesFullSetPause();
  let state:GameState|null=null,version=0,commits=0,clock=1700000000000,transportFailure=false,suppressLiveEvent=false,generatedIds=0,blockedDeleteCharacterId:string|null=null,deletedCommitCharacterId:string|null=null;
  const commandMetrics:Record<string,unknown>[]=[],guildQuestCalls:Record<string,unknown>[]=[];
  const receipts=new Map<string,{response:unknown;requestHash:string}>();

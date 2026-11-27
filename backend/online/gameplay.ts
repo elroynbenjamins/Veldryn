@@ -2,7 +2,7 @@ import {executeUltraLuxeFullSetCommand,FullSetCommandError} from './ultra-luxe-f
 import {ULTRA_LUXE_FULL_SET_COMMAND,ULTRA_LUXE_REQUEST_PREFIX,canonicalUltraLuxeCollection} from '../../apps/mobile/src/core/ultra-luxe-full-set-command';
 import {reconcileAccountProfileIcon} from '../../apps/mobile/src/core/profile-icons';
 import {executeGameCommand,validateGameCommand} from '../../apps/mobile/src/core/game-commands';
-import {withVerifiedUltraLuxeGrants,ultraLuxeGrantProjection} from '../../apps/mobile/src/core/ultra-luxe-grants';
+import {withVerifiedUltraLuxeGrants} from '../../apps/mobile/src/core/ultra-luxe-grants';
 import {newGame} from '../../apps/mobile/src/core/game';
 import {WINTER_HEARTH_GUILD_RELEASED} from '../../apps/mobile/src/core/release-flags';
 import {validateWinterHearthBonusWindows} from '../../apps/mobile/src/core/winter-hearth-bonus-windows';
@@ -85,7 +85,16 @@ export function gameplayHandler(services:GameplayServices,authenticatePlayer:Aut
   // A stored legacy claim must be frozen using trusted server data BEFORE the
   // old account projection is migrated to the currently active character.
   if(privateGrants&&!Array.isArray(loaded.ultraLuxeCollectionIds))throw new Error('ultra_luxe_grant_projection_missing');
-  const storedState=rebaseCombatGameState(privateGrants?withVerifiedUltraLuxeGrants(loaded.state??newGame(loaded.serverNow),loaded.ultraLuxeCollectionIds,true,fullSetAuthority):loaded.state??newGame(loaded.serverNow));
+  // Grant authority is independent of the combined-equip command kill switch.
+  // Never strip already-owned cosmetics or truncate the SQL CAS grant set
+  // when pausing only the full-set command. Unknown/duplicate rows fail closed.
+  const trustedCollectionIds=privateGrants?(loaded.ultraLuxeCollectionIds as unknown[]).map(id=>{
+   const canonicalId=canonicalUltraLuxeCollection(id);
+   if(!canonicalId||canonicalId!==id)throw Error('ultra_luxe_grant_projection_invalid');
+   return canonicalId;
+  }).sort():[];
+  if(new Set(trustedCollectionIds).size!==trustedCollectionIds.length)throw Error('ultra_luxe_grant_projection_invalid');
+  const storedState=rebaseCombatGameState(privateGrants?withVerifiedUltraLuxeGrants(loaded.state??newGame(loaded.serverNow),trustedCollectionIds,true,true):loaded.state??newGame(loaded.serverNow));
   const trustedState=request.method==='POST'
     ?snapshotEarnedLegacySeasonalClaims(storedState,loaded.serverNow)
     :storedState;
@@ -157,7 +166,7 @@ export function gameplayHandler(services:GameplayServices,authenticatePlayer:Aut
   ];
   const response={guildProjectEffort,guildPveEffort,state:restoreCumulativeMonsterUnlocks(result.state),version:loaded.version+1,serverNow:loaded.serverNow,accountId,reward:result.reward,activity:result.activity,message:result.message,won:result.won,storyBossBattle:result.storyBossBattle,upgrade:result.upgrade,forgeResults:result.forgeResults};
   const commitRpc=privateGrants?'commit_online_game_ultra_luxe_v1':'commit_online_game_guild_pve_v1';
-  const committed=await services.rpc(commitRpc,{p_account_id:accountId,p_expected_version:loaded.version,p_expected_gold:loaded.walletGold,p_request_id:body.requestId,p_request_hash:requestHash,p_response:response,p_contributions:contributions,...(privateGrants?{p_expected_grants:(fullSetAuthority?(loaded.ultraLuxeCollectionIds as unknown[]).map(id=>{const canonicalId=canonicalUltraLuxeCollection(id);if(!canonicalId||canonicalId!==id)throw Error('ultra_luxe_grant_projection_invalid');return canonicalId;}):[...ultraLuxeGrantProjection(loaded.ultraLuxeCollectionIds,true).collectionIds]).sort()}:{}),...(command.type==='roster_delete'?{p_deleted_character_id:(command.args as {id:string}).id}: {})});
+  const committed=await services.rpc(commitRpc,{p_account_id:accountId,p_expected_version:loaded.version,p_expected_gold:loaded.walletGold,p_request_id:body.requestId,p_request_hash:requestHash,p_response:response,p_contributions:contributions,...(privateGrants?{p_expected_grants:trustedCollectionIds}:{}),...(command.type==='roster_delete'?{p_deleted_character_id:(command.args as {id:string}).id}: {})});
   // The service-only bridge iterates contribution entries; an empty array is a
   // verified no-op. Do not send a database request for an unrelated command.
   if(contributions.length>0)try{await services.rpc('guild_quest_record_contributions_v1',{p_account_id:accountId,p_contributions:contributions.map(e=>({...e,units:(e as typeof e&{questUnits?:number}).questUnits??e.units}))});}catch{/* Quest telemetry must not invalidate an already committed gameplay action. */}

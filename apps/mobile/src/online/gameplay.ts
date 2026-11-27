@@ -1,3 +1,5 @@
+import {ULTRA_LUXE_UNDO_COMMAND,isFullSetEquipReceipt} from '../core/ultra-luxe-full-set-undo-command';
+import {ULTRA_LUXE_FULL_SET_COMMAND} from '../core/ultra-luxe-full-set-command';
 import {versionedFetch as fetch} from './versioned-fetch';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {OnlineCommandError,OnlineGameRepository,type OnlineSnapshot,type PendingGameCommand} from '../core/online-game-repository';
@@ -17,7 +19,11 @@ export function createOnlineGameRepository(accountId:string){
   if(!session||session.user.id!==accountId)throw new Error('Please sign in again.');
   const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),25000);
   try{const response=await fetch(`${url}/functions/v1/gameplay`,{method:body?'POST':'GET',signal:controller.signal,headers:{Authorization:`Bearer ${session.access_token}`,apikey:key,'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined});
-   const payload=await response.json();if(!response.ok)throw new OnlineCommandError(payload.error??payload.message??'Online service unavailable.',response.status>=400&&response.status<500&&![408,426,429].includes(response.status));return payload as OnlineSnapshot;
+   const payload=await response.json();if(!response.ok)throw new OnlineCommandError(payload.error??payload.message??'Online service unavailable.',response.status>=400&&response.status<500&&![408,426,429].includes(response.status));if(body?.command?.type===ULTRA_LUXE_FULL_SET_COMMAND||body?.command?.type===ULTRA_LUXE_UNDO_COMMAND){
+    if(!payload?.gameplay||payload.gameplay.accountId!==accountId||payload.nameSelection?.accountId!==accountId||typeof payload.replayed!=='boolean')throw new Error('Full set readback unavailable. Retry the pending action.');
+    return {...payload.gameplay,ultraLuxeNameSelection:payload.nameSelection,ultraLuxeFullSetReplayed:payload.replayed,ultraLuxeUndoEquipRequestId:body.command.type===ULTRA_LUXE_FULL_SET_COMMAND&&isFullSetEquipReceipt(payload.undoEquipRequestId)&&payload.undoEquipRequestId===body.requestId?payload.undoEquipRequestId:undefined} as OnlineSnapshot;
+   }
+   return payload as OnlineSnapshot;
   }finally{clearTimeout(timeout);}
  }
  const durablePending=new SessionPendingStore<PendingGameCommand>({

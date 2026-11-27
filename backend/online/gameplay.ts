@@ -1,3 +1,7 @@
+import {executeUltraLuxeUndoCommand} from './ultra-luxe-full-set-undo-command';
+import {ULTRA_LUXE_UNDO_COMMAND,ULTRA_LUXE_UNDO_PREFIX} from '../../apps/mobile/src/core/ultra-luxe-full-set-undo-command';
+import {executeUltraLuxeFullSetCommand,FullSetCommandError} from './ultra-luxe-full-set-command';
+import {ULTRA_LUXE_FULL_SET_COMMAND,ULTRA_LUXE_REQUEST_PREFIX,canonicalUltraLuxeCollection} from '../../apps/mobile/src/core/ultra-luxe-full-set-command';
 import {reconcileAccountProfileIcon} from '../../apps/mobile/src/core/profile-icons';
 import {executeGameCommand,validateGameCommand} from '../../apps/mobile/src/core/game-commands';
 import {withVerifiedUltraLuxeGrants,ultraLuxeGrantProjection} from '../../apps/mobile/src/core/ultra-luxe-grants';
@@ -18,6 +22,8 @@ export interface GameplayServices{
  authenticate(token:string):Promise<string|null>;
  /** Only enable after the verified grant-aware RPC migration is installed. Server configuration, not client input. */
  ultraLuxeGrantAuthority?:boolean;
+ ultraLuxeFullSetAuthority?:boolean;
+ ultraLuxeUndoAuthority?:boolean;
  rpc<T>(name:string,args:Record<string,unknown>):Promise<T>;
  randomId():string;randomRoll():number;
 }
@@ -34,6 +40,8 @@ export function gameplayHandler(services:GameplayServices,authenticatePlayer:Aut
  return accountId?{accountId,adminQa:false}:null;
 }){
  const privateGrants=services.ultraLuxeGrantAuthority===true;
+ const fullSetAuthority=privateGrants&&services.ultraLuxeFullSetAuthority===true;
+ const undoAuthority=fullSetAuthority&&services.ultraLuxeUndoAuthority===true;
  const receiptRpc=privateGrants?'read_online_game_receipt_ultra_luxe_v1':'read_online_game_receipt_server_v1';
  const loadRpc=privateGrants?'load_online_game_ultra_luxe_v1':'load_online_game_server_v1';
  return async(request:Request):Promise<Response>=>{
@@ -56,6 +64,22 @@ export function gameplayHandler(services:GameplayServices,authenticatePlayer:Aut
    const raw=await request.text();if(raw.length>16384)return json({error:'request_too_large'},413);
    try{body=JSON.parse(raw);}catch{throw new GameplayError('invalid_json');}if(!body||typeof body!=='object'||Array.isArray(body)||Object.keys(body).some(key=>!['requestId','expectedVersion','command'].includes(key)))throw new GameplayError('invalid_request');
    if(typeof body.requestId!=='string'||!/^[a-zA-Z0-9_-]{8,128}$/.test(body.requestId)||!Number.isSafeInteger(body.expectedVersion)||(body.expectedVersion as number)<0)throw new GameplayError('invalid_request');
+   // Dedicated command has its own strict schema and transactional receipt.
+   // Do not feed it into ordinary gameplay validation or its historical replay path.
+   if((body.command as {type?:unknown}|undefined)?.type===ULTRA_LUXE_FULL_SET_COMMAND){
+    telemetryCommandType=ULTRA_LUXE_FULL_SET_COMMAND;
+    const result=await executeUltraLuxeFullSetCommand({enabled:fullSetAuthority,rpc:services.rpc,hash},accountId,body);
+    await recordOutcome(result.replayed?'replayed':'committed');
+    return json(result);
+   }
+   if((body.command as {type?:unknown}|undefined)?.type===ULTRA_LUXE_UNDO_COMMAND){
+    telemetryCommandType=ULTRA_LUXE_UNDO_COMMAND;
+    const result=await executeUltraLuxeUndoCommand({enabled:undoAuthority,rpc:services.rpc,hash},accountId,body);
+    await recordOutcome(result.replayed?'replayed':'committed');
+    return json(result);
+   }
+   if(body.requestId.startsWith(ULTRA_LUXE_REQUEST_PREFIX))throw new GameplayError('invalid_request');
+   if(body.requestId.startsWith(ULTRA_LUXE_UNDO_PREFIX))throw new GameplayError('invalid_request');
    try{command=validateGameCommand(body.command);telemetryCommandType=command.type;}catch(e){throw new GameplayError(e instanceof Error?e.message:'invalid_command');}
    if(command.type.startsWith('qa_')&&!adminQa)throw new GameplayError('admin_qa_required',403);
    requestHash=await hash(canonical(command));
@@ -72,7 +96,7 @@ export function gameplayHandler(services:GameplayServices,authenticatePlayer:Aut
   // A stored legacy claim must be frozen using trusted server data BEFORE the
   // old account projection is migrated to the currently active character.
   if(privateGrants&&!Array.isArray(loaded.ultraLuxeCollectionIds))throw new Error('ultra_luxe_grant_projection_missing');
-  const storedState=rebaseCombatGameState(privateGrants?withVerifiedUltraLuxeGrants(loaded.state??newGame(loaded.serverNow),loaded.ultraLuxeCollectionIds):loaded.state??newGame(loaded.serverNow));
+  const storedState=rebaseCombatGameState(privateGrants&&!fullSetAuthority?withVerifiedUltraLuxeGrants(loaded.state??newGame(loaded.serverNow),loaded.ultraLuxeCollectionIds):loaded.state??newGame(loaded.serverNow));
   const trustedState=request.method==='POST'
     ?snapshotEarnedLegacySeasonalClaims(storedState,loaded.serverNow)
     :storedState;
@@ -144,11 +168,11 @@ export function gameplayHandler(services:GameplayServices,authenticatePlayer:Aut
   ];
   const response={guildProjectEffort,guildPveEffort,state:restoreCumulativeMonsterUnlocks(result.state),version:loaded.version+1,serverNow:loaded.serverNow,accountId,reward:result.reward,activity:result.activity,message:result.message,won:result.won,storyBossBattle:result.storyBossBattle,upgrade:result.upgrade,forgeResults:result.forgeResults};
   const commitRpc=privateGrants?'commit_online_game_ultra_luxe_v1':'commit_online_game_guild_pve_v1';
-  const committed=await services.rpc(commitRpc,{p_account_id:accountId,p_expected_version:loaded.version,p_expected_gold:loaded.walletGold,p_request_id:body.requestId,p_request_hash:requestHash,p_response:response,p_contributions:contributions,...(privateGrants?{p_expected_grants:[...ultraLuxeGrantProjection(loaded.ultraLuxeCollectionIds).collectionIds].sort()}:{}),...(command.type==='roster_delete'?{p_deleted_character_id:(command.args as {id:string}).id}: {})});
+  const committed=await services.rpc(commitRpc,{p_account_id:accountId,p_expected_version:loaded.version,p_expected_gold:loaded.walletGold,p_request_id:body.requestId,p_request_hash:requestHash,p_response:response,p_contributions:contributions,...(privateGrants?{p_expected_grants:(fullSetAuthority?(loaded.ultraLuxeCollectionIds as unknown[]).map(id=>{const canonicalId=canonicalUltraLuxeCollection(id);if(!canonicalId||canonicalId!==id)throw Error('ultra_luxe_grant_projection_invalid');return canonicalId;}):[...ultraLuxeGrantProjection(loaded.ultraLuxeCollectionIds).collectionIds]).sort()}:{}),...(command.type==='roster_delete'?{p_deleted_character_id:(command.args as {id:string}).id}: {})});
   // The service-only bridge iterates contribution entries; an empty array is a
   // verified no-op. Do not send a database request for an unrelated command.
   if(contributions.length>0)try{await services.rpc('guild_quest_record_contributions_v1',{p_account_id:accountId,p_contributions:contributions.map(e=>({...e,units:(e as typeof e&{questUnits?:number}).questUnits??e.units}))});}catch{/* Quest telemetry must not invalidate an already committed gameplay action. */}
   await recordOutcome('committed');
   return json(committed);
- }catch(error){const message=error instanceof Error?error.message:'server_error';const conflict=/stale_state|idempotency_key_conflict/.test(message);const status=conflict?409:error instanceof GameplayError?error.status:503;await recordOutcome(conflict?'conflict':status===503?'retryable_failure':'rejected');return json({error:status===503?'Server temporarily unavailable. Retry the pending action.':message},status);}
+ }catch(error){const message=error instanceof Error?error.message:'server_error';const conflict=/stale_state|idempotency_key_conflict|^STALE_ULTRA_LUXE_|^ULTRA_LUXE_REQUEST_HASH_MISMATCH$/.test(message);const status=conflict?409:error instanceof GameplayError||error instanceof FullSetCommandError?error.status:503;await recordOutcome(conflict?'conflict':status===503?'retryable_failure':'rejected');return json({error:status===503?'Server temporarily unavailable. Retry the pending action.':message},status);}
 };}

@@ -1,0 +1,132 @@
+{
+  "apps/mobile/assets/ascendant/sakura/blossom_crest_256.webp": {
+    "width": 256,
+    "height": 256,
+    "bytes": 33634,
+    "sha256": "3ebc2ec2a51ec47064a5bfdc133de61a8ad0a2d3143aee2a94c49e587061547e",
+    "alpha_bounds": [
+      13,
+      13,
+      243,
+      242
+    ],
+    "kind": "badge"
+  },
+  "apps/mobile/assets/ascendant/sakura/blossom_crest_64.webp": {
+    "width": 64,
+    "height": 64,
+    "bytes": 4266,
+    "sha256": "d661e074fbab6823f52a22016dbaf8161d8f468b28313c2a11c2fbb2070f22d1",
+    "alpha_bounds": [
+      3,
+      3,
+      61,
+      61
+    ],
+    "kind": "badge"
+  },
+  "apps/mobile/assets/ascendant/stormforged/wolf_crest_256.webp": {
+    "width": 256,
+    "height": 256,
+    "bytes": 30370,
+    "sha256": "2a35b277495510cf264244a75d124161d7426dced31e42f8d98cff8b3260a122",
+    "alpha_bounds": [
+      13,
+      14,
+      243,
+      241
+    ],
+    "kind": "badge"
+  },
+  "apps/mobile/assets/ascendant/stormforged/wolf_crest_64.webp": {
+    "width": 64,
+    "height": 64,
+    "bytes": 4018,
+    "sha256": "5043fe0b7948193f176d587409a3853ea0533e45c232cbb61a5426e649c1c47d",
+    "alpha_bounds": [
+      3,
+      3,
+      61,
+      60
+    ],
+    "kind": "badge"
+  },
+  "apps/mobile/assets/ascendant/sakura/petal.webp": {
+    "width": 64,
+    "height": 64,
+    "bytes": 1412,
+    "sha256": "8d1df2ec7e4ed843859973b8b685f162d189a179d7cf8ab21dff4721cea25a17",
+    "alpha_bounds": [
+      11,
+      9,
+      52,
+      50
+    ],
+    "kind": "fx"
+  },
+  "apps/mobile/assets/ascendant/sakura/crest_glow.webp": {
+    "width": 64,
+    "height": 64,
+    "bytes": 1188,
+    "sha256": "6d9a83cfc793f971846cc18e63c5bcb67114f67ee3308db02d3f2e9507d9a06b",
+    "alpha_bounds": [
+      9,
+      9,
+      55,
+      55
+    ],
+    "kind": "fx"
+  },
+  "apps/mobile/assets/ascendant/sakura/ambient_haze.webp": {
+    "width": 64,
+    "height": 64,
+    "bytes": 836,
+    "sha256": "6ee3ef2093e912ae479db3d4063734f2a79212872fb28b28108772571c8d6760",
+    "alpha_bounds": [
+      8,
+      19,
+      56,
+      45
+    ],
+    "kind": "fx"
+  },
+  "apps/mobile/assets/ascendant/stormforged/lightning_arc.webp": {
+    "width": 64,
+    "height": 64,
+    "bytes": 2552,
+    "sha256": "9cf39eeaefa5fe4c5886167d497b830620907020df6f825c9e83e71783fdc140",
+    "alpha_bounds": [
+      4,
+      8,
+      59,
+      49
+    ],
+    "kind": "fx"
+  },
+  "apps/mobile/assets/ascendant/stormforged/crest_glow.webp": {
+    "width": 64,
+    "height": 64,
+    "bytes": 1128,
+    "sha256": "2f7d999e6b1d77177e85c94b6a97d42cb57d288a4b9851055ea8603496c71dd1",
+    "alpha_bounds": [
+      9,
+      9,
+      55,
+      55
+    ],
+    "kind": "fx"
+  },
+  "apps/mobile/assets/ascendant/stormforged/ambient_haze.webp": {
+    "width": 64,
+    "height": 64,
+    "bytes": 808,
+    "sha256": "b61dc10ba97bdd68d21ffc7c138d90ffca475d5f376bc56188f5f19c16750541",
+    "alpha_bounds": [
+      8,
+      19,
+      56,
+      45
+    ],
+    "kind": "fx"
+  }
+}

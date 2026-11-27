@@ -41,7 +41,7 @@ CREATE FUNCTION private.world_boss_gathering_mint_immutable_v102() RETURNS trigg
  BEGIN
   IF TG_OP='DELETE' AND NOT EXISTS (SELECT 1 FROM auth.users WHERE id=OLD.account_id) THEN RETURN OLD; END IF;
   RAISE EXCEPTION 'WB_GATHERING_MINT_V102_IMMUTABLE';
- END $;
+ END $$;
 CREATE TRIGGER world_boss_gathering_mint_immutable_v102 BEFORE UPDATE OR DELETE ON private.world_boss_gathering_mints_v102
  FOR EACH ROW EXECUTE FUNCTION private.world_boss_gathering_mint_immutable_v102();
 ALTER TABLE private.world_boss_gathering_mints_v102 ENABLE ROW LEVEL SECURITY;

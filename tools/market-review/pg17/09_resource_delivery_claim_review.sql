@@ -71,4 +71,42 @@ DO $$ BEGIN
  OR (SELECT sum(gold) FROM market_review.wallet)+(SELECT sum(fee) FROM market_review.resource_delivery)<>3000
  THEN RAISE EXCEPTION 'material_resale_partition_failed'; END IF;
 END $$;
+
+-- Purchased materials are consumed from the crafter's own pack before Bank.
+\ir 13_material_consumption_schema.sql
+SELECT market_review.resource_act('list','a','craft-list','craft-offer',0,'ore',20,2,300);
+SELECT market_review.resource_act('buy','b','craft-buy','craft-offer',0,p_quantity=>20,p_price=>2,p_now=>301);
+SELECT market_review.expect_error($q$SELECT market_review.consume_material('b','craft-unclaimed','b2','fixture-ore-consumption',6)$q$,'insufficient_claimed_materials');
+SELECT market_review.claim_resource_delivery('b','craft-collect','b','craft-buy','bank');
+SELECT market_review.expect_error($q$SELECT market_review.consume_material('b','craft-foreign','c1','fixture-ore-consumption',1)$q$,'invalid_consume_character');
+SELECT market_review.expect_error($q$SELECT market_review.consume_material('b','craft-invalid','b2','unknown',1)$q$,'unregistered_consume_recipe');
+SELECT market_review.expect_error($q$SELECT market_review.consume_material('b','craft-alt','b1','fixture-ore-consumption',7)$q$,'insufficient_claimed_materials');
+SELECT market_review.expect_error($q$SELECT market_review.consume_material('b','craft-spend','b2','fixture-ore-consumption',6,true)$q$,'injected_after_consumption');
+SELECT market_review.assert_material_conservation();
+DO $$ BEGIN
+ IF EXISTS(SELECT 1 FROM market_review.material_spend)
+ OR EXISTS(SELECT 1 FROM market_review.material_spent_lot)
+ OR EXISTS(SELECT 1 FROM market_review.request WHERE actor='b' AND request_id='craft-spend')
+ OR (SELECT quantity FROM market_review.resource_stock WHERE owner='b' AND item='ore') IS DISTINCT FROM 30::bigint
+ THEN RAISE EXCEPTION 'material_consume_rollback_failed'; END IF;
+END $$;
+UPDATE market_review.resource_policy SET approved=false WHERE item='ore';
+SELECT market_review.consume_material('b','craft-spend','b2','fixture-ore-consumption',6);
+SELECT market_review.consume_material('b','craft-spend','b2','fixture-ore-consumption',6);
+SELECT market_review.expect_error($q$SELECT market_review.consume_material('b','craft-spend','b2','fixture-ore-consumption',5)$q$,'request_conflict');
+SELECT market_review.expect_error($q$SELECT market_review.consume_material('b','craft-overdraw','b2','fixture-ore-consumption',5)$q$,'insufficient_claimed_materials');
+SELECT market_review.expect_error($q$DELETE FROM market_review.material_spent_lot WHERE owner='b'$q$,'immutable_history');
+SELECT market_review.assert_material_conservation();
+DO $$ BEGIN
+ IF (SELECT count(*) FROM market_review.material_spend)<>1
+ OR (SELECT sum(quantity) FROM market_review.material_spent_lot WHERE owner='b' AND origin='origin-02') IS DISTINCT FROM 18::numeric
+ OR (SELECT quantity FROM market_review.material_spent_lot WHERE owner='b' AND destination='inventory:b2') IS DISTINCT FROM 10::bigint
+ OR (SELECT quantity FROM market_review.material_spent_lot WHERE owner='b' AND destination='bank') IS DISTINCT FROM 8::bigint
+ OR (SELECT quantity FROM market_review.resource_stock WHERE owner='b' AND item='ore') IS DISTINCT FROM 12::bigint
+ OR (SELECT quantity FROM market_review.resource_claim_projection WHERE owner='b' AND destination='inventory:b2' AND item='ore') IS DISTINCT FROM 0::bigint
+ OR (SELECT quantity FROM market_review.resource_claim_projection WHERE owner='b' AND destination='bank' AND item='ore') IS DISTINCT FROM 12::bigint
+ OR (SELECT gold FROM market_review.wallet WHERE id='b')<>957
+ OR (SELECT sum(gold) FROM market_review.wallet)+(SELECT sum(fee) FROM market_review.resource_delivery)<>3000
+ THEN RAISE EXCEPTION 'material_consumption_invariant_failed'; END IF;
+END $$;
 ROLLBACK;

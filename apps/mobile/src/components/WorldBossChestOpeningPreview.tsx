@@ -6,7 +6,7 @@ import {useGameTheme} from '../theme/ThemeContext';
 import {UiIcon} from './UiIcon';
 import {buildWorldBossChestOpeningReviewV97,type ChestOpenEntryReviewV97} from '../core/world-boss-chest-opening-review-v97';
 const DEMO_ACCOUNT='qa-chest-opening';
-const DEMO:readonly ChestOpenEntryReviewV97[]=[450,650,900,450,450,450].map((gold,i)=>{
+const DEMO:readonly ChestOpenEntryReviewV97[]=[450,650,900,450,450,450].map((gold,i):ChestOpenEntryReviewV97=>{
  const sourceKey='qa-world-chest-'+i;
  const resources=[{itemId:'gold',name:'Gold',quantity:gold},
   {itemId:'companion_essence',name:'Companion Essence',quantity:i===1?8:i===2?10:6},

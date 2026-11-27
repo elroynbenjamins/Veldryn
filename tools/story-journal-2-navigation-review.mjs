@@ -11,7 +11,7 @@ const unavailable=detail=>action('View requirements',null,detail);
 function safeDestination(d,context,questId,tab){
  if(!d||d.status!=='destination')return null;
  const {status,authorizesAccess,...rest}=d;
- return {...rest,returnTo:{screen:'Journal',tab,questId,characterId:context.characterId}};
+ return {...rest,returnTo:{screen:'Journal',tab,questId,accountId:context.accountId,characterId:context.characterId}};
 }
 function routeAction(d,context,nav) {
  const facts=context.scouting;
@@ -83,6 +83,6 @@ export function journalNavigationReview({book,side,storyProgress,sideProgress,ca
  return {...base,status:'review',tab,filter,pinned,featured,visible,storyComplete:story.filter(q=>q.status==='claimed').length,storyTotal:story.length,readyCount:all.filter(q=>q.status==='ready').length,tabs:JOURNAL_TABS};
 }
 export function journalReturnReview(returnTo,context,availableIds){
- if(returnTo?.screen!=='Journal'||returnTo.characterId!==context?.characterId||!JOURNAL_TABS.includes(returnTo.tab)||!availableIds.includes(returnTo.questId))return {screen:'Journal',tab:'story'};
+ if(returnTo?.screen!=='Journal'||returnTo.accountId!==context?.accountId||returnTo.characterId!==context?.characterId||!JOURNAL_TABS.includes(returnTo.tab)||!availableIds.includes(returnTo.questId))return {screen:'Journal',tab:'story'};
  return {screen:'Journal',tab:returnTo.tab,questId:returnTo.questId};
 }

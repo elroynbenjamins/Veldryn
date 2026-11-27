@@ -13,7 +13,7 @@ export function validateStoryBook(book) {
   if (zones.size !== book.zones.length || [...zones].some(z => !id(z))) throw Error('duplicate_zone');
   const byId = new Map(), legacy = new Set();
   for (const q of book.quests) {
-    if (!id(q.id) || byId.has(q.id) || !id(q.legacyQuestId) || legacy.has(q.legacyQuestId)) throw Error('duplicate_or_invalid_quest');
+    if (!id(q.id) || byId.has(q.id) || (book.regionId==='ASTERFALL'&&!id(q.legacyQuestId)) || (q.legacyQuestId!==undefined&&(!id(q.legacyQuestId)||legacy.has(q.legacyQuestId)))) throw Error('duplicate_or_invalid_quest');
     if (q.regionId !== book.regionId || !zones.has(q.narrativeZoneId) || q.released !== false || q.rewardPolicy !== 'unapproved') throw Error('invalid_quest_scope');
     if (!Array.isArray(q.objectives) || !q.objectives.length || !Array.isArray(q.prerequisites)) throw Error('missing_objectives_or_prerequisites');
     const seen = new Set();
@@ -21,7 +21,7 @@ export function validateStoryBook(book) {
       if (!id(o.id) || seen.has(o.id) || !kinds.has(o.kind) || !id(o.targetId) || !positive(o.required) || o.evidence !== (o.kind === 'kill' ? 'sinceActivation' : 'verifiedFact')) throw Error('invalid_objective');
       seen.add(o.id);
     }
-    byId.set(q.id,q); legacy.add(q.legacyQuestId);
+    byId.set(q.id,q); if(q.legacyQuestId!==undefined)legacy.add(q.legacyQuestId);
   }
   const done = new Set(), visiting = new Set();
   function visit(key) {

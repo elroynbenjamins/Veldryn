@@ -45,6 +45,7 @@ export function createWorldBossChestOpeningV103(pool:ChestPoolV70,source:WorldBo
     return [...new Set(rows.map(x=>x.slot))];
    },
    verifyPhysical:async(tx,receipt,legs,phase)=>{
+    if(!await source.verifyLockedSource(tx,receipt.accountId,receipt.sourceKey))return false;
     const drops=legs.filter(x=>x.kind==='drop');
     if(drops.length!==receipt.drops.length||drops.length>1)return false;
     if(!await physical.verifyPhysical(tx,receipt,legs.filter(x=>x.kind!=='drop'),phase))return false;

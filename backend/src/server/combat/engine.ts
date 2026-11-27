@@ -271,19 +271,15 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
        !abilityId.startsWith('V2_')&&
        source.definition.abilities.some(a=>a.id===abilityId))
       raw*=1+clamp(sourceGear?.abilityDamagePct??0,0,1);
+    let reviewPreReactive:number|undefined;
     const hpBeforeReactive=hpPct(target);
     if(v2Encounter&&eventType==='damage'&&!abilityId.startsWith('V2_')){
       if(source.combatV2)raw*=outgoingReactiveMultiplierV2(source,target,now);
       if(target.combatV2){
-        const beforeReactive=raw;
+        if(protectionTrace&&source.definition.team==='enemies'&&target.definition.team==='players')reviewPreReactive=raw;
         raw*=incomingReactiveMultiplierV2(target,source,now);
         raw=Math.max(0,raw-reactiveDamageFlatReductionV2(target,raw));
-        if(protectionTrace&&source.definition.team==='enemies'&&target.definition.team==='players'){
-          // Conservative ordered marginal: mitigation before shield. Do not
-          // double-count the shield's subsequent HP-saving contribution.
-          const saved=Math.max(0,Math.min(target.hp,beforeReactive)-Math.min(target.hp,raw));
-          if(saved>0)protectionTrace.push({kind:'reactive_reduction',atMs:now,targetId:target.definition.id,amount:saved});
-        }
+
       }
     }
     // V2 Rupture consumes one own applied DoT and converts a bounded portion of
@@ -309,9 +305,13 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
     // non-true damage, including DoT ticks. Physical and true bypass it.
     if(v2Encounter&&targetGear&&effect.damageType&&
        effect.damageType!=='physical'&&effect.damageType!=='true'){
-      raw*=1-clamp(targetGear.wardPp*(1+sync(target,'ward_strength_pct')),0,1);
+      const wardMultiplier=1-clamp(targetGear.wardPp*(1+sync(target,'ward_strength_pct')),0,1);
+      raw*=wardMultiplier;
+      if(reviewPreReactive!==undefined)reviewPreReactive*=wardMultiplier;
     }
-    raw*=1-sync(target,'damage_reduction_pct');
+    const syncReduction=1-sync(target,'damage_reduction_pct');
+    raw*=syncReduction;
+    if(reviewPreReactive!==undefined)reviewPreReactive*=syncReduction;
     // Server-verified Equipment 2.0 action bonuses apply only to original
     // direct player hits. No periodic, gem, capstone, companion or trait
     // secondary damage can enter these hooks.
@@ -362,6 +362,12 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
     // Poison applied as a true-damage DoT attacks HP directly, regardless of shields.
     // Direct true damage retains its legacy shield interaction.
     const bypassShield=eventType==='dot_tick'&&effect.damageType==='true';
+    if(protectionTrace&&reviewPreReactive!==undefined){
+      // Ordered marginal after Ward, before shields; not a general tank
+      // mitigation claim. Keep the two protection lanes non-overlapping.
+      const saved=Math.max(0,Math.min(target.hp,reviewPreReactive)-Math.min(target.hp,raw));
+      if(saved>0)protectionTrace.push({kind:'reactive_reduction',atMs:now,targetId:target.definition.id,amount:saved});
+    }
     const absorbed=bypassShield?0:Math.min(target.shield,raw); const shieldBefore=target.shield; target.shield-=absorbed;
     if(protectionTrace&&absorbed>0)protectionTrace.push({kind:'absorb',atMs:now,sourceId:source.definition.id,
       targetId:target.definition.id,amount:absorbed,before:shieldBefore,after:target.shield,hpBefore:target.hp,raw});

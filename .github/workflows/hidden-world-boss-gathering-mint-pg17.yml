@@ -57,7 +57,9 @@ jobs:
         run: pnpm exec tsc -p tsconfig.world-boss-mint-review.json --outDir .core-build
       - name: Run disposable embedded PostgreSQL rollback and replay
         working-directory: backend
-        run: node tests/world-boss-gathering-mint-v102-pg.mjs
+        run: |
+          node tests/world-boss-gathering-mint-v102-pg.mjs
+          node tests/world-boss-chest-opening-v103-pg.mjs
       - name: Install isolated pinned native PG test driver
         run: npm install --prefix "$RUNNER_TEMP/wb-mint-driver" --ignore-scripts --no-audit --no-fund --save-exact pg@8.16.3
       - name: Run native PostgreSQL 17 rollback, replay and independent-session issuance

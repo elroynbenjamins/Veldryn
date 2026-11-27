@@ -10,7 +10,7 @@ import {useState,type ComponentProps} from 'react';
 import {View,useWindowDimensions} from 'react-native';
 import {useCosmeticMotionPolicy,useLoopProgress} from '../anim/motion';
 import {NEXT_PREMIUM_SETS,NEXT_PREMIUM_STAGE,nextPremiumStageSupported} from '../../core/next-premium-set-review';
-import {NextPremiumShowcaseReview} from './NextPremiumShowcaseReview';
+import {NextPremiumShowcaseReview,NextPremiumStandardBorderEffects} from './NextPremiumShowcaseReview';
 type Props=Omit<ComponentProps<typeof AbyssalMajestyPreview>,'assets'> & {collectionId:string};
 export function VerifiedCandidateShowcase({collectionId,...props}:Props){
  if(collectionId==='ascendant-abyssal-majesty')return <AbyssalMajestyPreview {...props} assets={getAbyssalReviewAssets().scene}/>;
@@ -33,5 +33,6 @@ function VerifiedNextPremiumShowcase({collectionId,equippedPetId,alternatePetSou
 export function VerifiedCandidateBorderEffects({id,active,reduceMotion}:{id:string;active:boolean;reduceMotion?:boolean}){
  if(id===ABYSSAL_IDS.border)return <AbyssalStandardBorderEffects active={active} reduceMotion={reduceMotion} art={getAbyssalReviewAssets().scene}/>;
  if(id===PARADOX_IDS.border)return <ParadoxStandardBorderEffects active={active} reduceMotion={reduceMotion} art={getParadoxReviewAssets().scene}/>;
- return null;
+ const set=NEXT_PREMIUM_SETS.find(s=>s.border===id);
+ return set?<NextPremiumStandardBorderEffects set={set} active={active} reduceMotion={reduceMotion}/>:null;
 }

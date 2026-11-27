@@ -3,7 +3,7 @@
  * must independently read the immutable start snapshot and verify custody. */
 import type {GameState} from '../../apps/mobile/src/core/types';
 import {claimActivity,previewActivityReward,type GatheringRateReview} from '../../apps/mobile/src/core/game';
-import {reviewGatheringSpeedV2,type GatheringGearSkillV2} from '../../apps/mobile/src/core/gathering-speed-v2-review';
+import {reviewGatheringSpeedV2,reviewGatheringRewardChannelsV2,type GatheringGearSkillV2} from '../../apps/mobile/src/core/gathering-speed-v2-review';
 import {activityLoadoutSnapshotDigest} from './activity-loadout-reservation-review';
 export const GATHERING_SETTLEMENT_REVIEW_LIVE=false as const;
 export type FrozenGatheringRateReview={
@@ -11,6 +11,8 @@ export type FrozenGatheringRateReview={
  readonly activityId:string;readonly skill:GatheringGearSkillV2;
  readonly targetId:string;readonly startedAtMs:number;
  readonly gearRatingBps:number;readonly matchingSetPieces:number;
+ /** Optional opt-in: old speed-only review receipts retain their prior meaning. */
+ readonly rewardChannels?:{readonly skillXpAffixBps:number;readonly rareChanceAffixBps:number};
  readonly exactCopyIds:readonly string[];readonly equippedReceiptDigest:string;
 };
 export function reviewGatheringSettlementV2(input:{
@@ -42,17 +44,19 @@ export function reviewGatheringSettlementV2(input:{
  gearRatingBps:frozen.gearRatingBps,setTimeMultiplier:frozen.matchingSetPieces>=8?.96:1});
  // The hook can never follow another activity or character. The ordinary
  // reward engine retains all tool, weather, meal, mastery and XP effects.
+ const channels=frozen.rewardChannels===undefined?null:reviewGatheringRewardChannelsV2({matchingSetPieces:frozen.matchingSetPieces,...frozen.rewardChannels});
  const rateReview:GatheringRateReview=segment=>{
   if(segment.character?.id!==c.id||segment.activity?.kind!==frozen.skill||
    segment.activity.targetId!==frozen.targetId||segment.activity.startedAtMs!==frozen.startedAtMs)
    throw Error('gathering_review_activity_changed');
-  return pace.gearRateMultiplier;
+  return {rateMultiplier:pace.gearRateMultiplier,xpMultiplier:channels?.xpMultiplier??1,
+   yieldMultiplier:channels?.yieldMultiplier??1,rareChanceMultiplier:channels?.rareChanceMultiplier??1};
  };
  const preview=previewActivityReward(structuredClone(state),nowMs,rateReview);
  const baseline=claimActivity(structuredClone(state),nowMs);
  const candidate=claimActivity(structuredClone(state),nowMs,undefined,rateReview);
  if(activityLoadoutSnapshotDigest(state)!==stateDigest)throw Error('gathering_review_source_mutated');
- return {pace,preview,baselineReward:baseline.reward,candidateReward:candidate.reward,
+ return {pace,channels,preview,baselineReward:baseline.reward,candidateReward:candidate.reward,
   candidateState:candidate.state,stateDigest,frozenDigest,
   persisted:false as const,rewardGranted:false as const,releaseReady:false as const};
 }

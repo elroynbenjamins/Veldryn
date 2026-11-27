@@ -75,6 +75,19 @@ assert.ok(strongRate.killCycleSeconds>3,'even a one-shot hunt must still search 
 const sustain=combatSustainProjection(strong,'MOSS_RAT')!;
 assert.ok(Math.abs(sustain.killCycleSeconds-strongRate.killCycleSeconds)<.000001,'HUD combat rate and food forecast must use the same average');
 assert.ok(Math.abs(activityCycleSeconds(strong)-strongRate.killCycleSeconds)<.000001,'dashboard must no longer show the obsolete fixed combat timer');
+// The encounter card and hunting screen share a target-specific forecast.
+const preview= combatSustainProjection(strongBase,'MOSS_RAT',1,{nowMs:T})!;
+const started= combatSustainProjection(strong,'MOSS_RAT',1,{nowMs:T})!;
+for(const key of ['killCycleSeconds','killsPerHour','xpPerHour','goldPerHour','foodPerHour'] as const){
+  assert.ok(Math.abs(preview[key]-started[key])<.000001,'pre-hunt and active estimates agree for '+key);
+}
+const unrelated={...strongBase,activity:{...strong.activity!,kind:'mining' as const,targetId:'UNRELATED_ACTIVITY'}};
+const unrelatedPreview=combatSustainProjection(unrelated,'MOSS_RAT',1,{nowMs:T})!;
+assert.equal(unrelatedPreview.killsPerHour,preview.killsPerHour,'unrelated activity cannot leak weather or cadence into a hunt preview');
+assert.equal(unrelatedPreview.xpPerHour,preview.xpPerHour,'preview must use target-specific XP modifiers');
+assert.equal(unrelatedPreview.goldPerHour,preview.goldPerHour,'preview must use target-specific gold modifiers');
+assert.equal(unrelated.activity.kind,'mining','forecast must not mutate the current activity');
+assert.ok(strongBase.activity?.kind!=='combat','forecast must not start a hunt');
 const dashboard=activityRate(strong);
 assert.equal(dashboard.actionsPerHour,Math.floor(strongRate.killsPerHour),'home kill rate must agree with live combat');
 assert.equal(dashboard.xpPerHour,Math.floor(strongRate.xpPerHour),'home XP rate must agree with live combat');
@@ -109,6 +122,9 @@ assert.ok(Math.abs(second.nextProgressFraction-all.nextProgressFraction)<1e-7,'p
 const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string};
 const huntUi=fs.readFileSync('src/components/HuntingPreview.tsx','utf8');
 const stageUi=fs.readFileSync('src/components/BattleStage.tsx','utf8');
+const encounterUi=fs.readFileSync('src/components/RegionEncounterList.tsx','utf8');
+assert.ok(encounterUi.includes('combatSustainProjection(state,monster.id,1,{tacticId})')&&encounterUi.includes('cycleSeconds:sustain.killCycleSeconds')&&encounterUi.includes('characterLevelPace(state,pace.xpPerHour)')&&encounterUi.includes('ESTIMATED REWARDS'),'encounter card must use the character-specific reward and ETA calculation');
+assert.ok(huntUi.includes('combatSustainProjection(state,monster.id)')&&huntUi.includes('ESTIMATED REWARDS'),'active hunting must use the same forecast and label');
 assert.ok(huntUi.includes('fight.searching')&&huntUi.includes("!fight?.searching&&fight?.lastHit"),'hunting UI must hide unencountered enemy HP and stale hit effects');
 assert.ok(stageUi.includes("!fight?.searching&&fight?.lastHit"),'live combat theater must hide leftover hits while searching');
 console.log('PASS damage-based regional hunts, search-state polish, consistent HUD estimates, stamina food and split claims');

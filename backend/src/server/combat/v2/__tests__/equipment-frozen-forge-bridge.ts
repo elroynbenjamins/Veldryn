@@ -21,6 +21,7 @@ import {selectSoloReviewLoadoutsV2,type SoloReviewArm} from './solo-counterbuild
 import {secondaryOffenseActorReviewV2,secondaryOffenseAmountV2,type SecondaryOffenseArm} from './secondary-offense-review';
 import {soloOffenseLoopReviewV2,type SoloOffenseLoopArm} from './solo-offense-loop-review';
 import {soloRoleBudgetReviewV2,type SoloRoleBudgetArm} from './solo-role-budget-review';
+import {soloOffensiveProgressionReviewV2,type SoloProgressionArm} from './solo-offensive-progression-review';
 import {STAT_GEMS_V1,EFFECT_GEMS_V1,gemItemId,type GemGrade,GEM_BALANCE_REVIEW_V2,STAT_GEMS_REVIEW_V2,EFFECT_GEMS_REVIEW_V2,EFFECT_GEM_REVIEW_MULTIPLIERS_V2} from '../../../equipment/gems/gem-catalog-v1';
 import type {V2GemSidecarState} from '../../../equipment/equipment-crafting-v2-gem-sidecar-types';
 import {writeFileSync} from 'node:fs';
@@ -2451,6 +2452,8 @@ runRegionalProgressionReviewV2();
 {
  const arms=['solo_tempo','role_budget','role_budget_skill'] as const;
  type Arm=typeof arms[number];
+ const progressionArms:SoloProgressionArm[]=['efficient_defense','offensive_progression'];
+ const progressionRows:{level:number;classId:ClassIdV2;spec:number;profile:SoloGearReviewProfile;seed:number;kind:string;arm:SoloProgressionArm;win:number;reason:string;duration:number;hp:number;enemyHp:number;damage:number;healing:number;priorityChanges:string[];strengthChanges:string[];supportActions:number;interrupts:number}[]=[];
  const rows:{level:number;classId:ClassIdV2;spec:number;profile:SoloGearReviewProfile;seed:number;kind:string;arm:Arm;
   win:number;reason:string;duration:number;hp:number;enemyHp:number;damage:number;healing:number;ratio:number}[]=[];
  const gearRows:{level:number;classId:ClassIdV2;spec:number;profile:SoloGearReviewProfile;
@@ -2527,6 +2530,51 @@ runRegionalProgressionReviewV2();
      hp:result.players[0].hp/actor.stats.maxHp,enemyHp:result.enemies[0].hp/result.enemies[0].definition.stats.maxHp,
      damage:result.players[0].damageDone,healing:result.players[0].healingDone,ratio:candidate.ratio});
    }
+   const prior=soloRoleBudgetReviewV2(row.classId,originalInput,'role_budget_skill').input.players[0];
+   for(const arm of progressionArms){
+    const candidate=soloOffensiveProgressionReviewV2(row.classId,originalInput,arm);
+    const input=candidate.input,actor=input.players[0];
+    assert.deepEqual(input.enemies,originalInput.enemies);
+    assert.deepEqual(actor.stats,prior.stats);
+    assert.deepEqual(actor.combatV2,prior.combatV2);
+    assert.equal(actor.basicAttackCoeff,prior.basicAttackCoeff);
+    assert.equal(actor.basicAttackMs,prior.basicAttackMs);
+    assert.equal(actor.abilities.length,prior.abilities.length);
+    if(arm==='efficient_defense')assert.equal(candidate.strengthChanges.length,0);
+    for(const [i,a] of actor.abilities.entries()){
+     const before=prior.abilities[i];
+     assert.equal(a.id,before.id);assert.equal(a.cooldownMs,before.cooldownMs);assert.equal(a.castTimeMs,before.castTimeMs);
+     assert.deepEqual(a.combatV2,before.combatV2);
+     assert.equal(a.target,before.target);
+     if(a.aiCondition!==before.aiCondition){
+      assert.equal(before.aiCondition,'ally_below_80_or_targeted');assert.equal(a.aiCondition,'ally_below_80');
+      assert.ok(a.effects.every(e=>['heal','hot','shield'].includes(e.kind)));
+     }
+     for(const [j,e] of a.effects.entries()){
+      const old=before.effects[j];
+      if(e.kind!=='damage'||e.damageType==='true'||arm==='efficient_defense')assert.deepEqual(e,old);
+      else assert.deepEqual({...e,coeff:old.coeff},old);
+     }
+    }
+    const run=()=>simulateCombat(input,issueEnemyV2EngineAuthority(scope,input,(_s,d)=>/^[a-f0-9]{64}$/.test(d)));
+    const result=run();
+    if(actor.role==='damage'){assert.deepEqual(actor,row.actor);assert.deepEqual(result,reference);}
+    if(row.spec===0&&kind==='normal'&&seedIndex===0&&arm==='offensive_progression'){
+     assert.deepEqual(run(),result);
+     assert.throws(()=>soloOffensiveProgressionReviewV2(row.classId,{...originalInput,enemies:[{...originalInput.enemies[0],boss:true}]},arm),/fresh_solo_only/);
+     assert.throws(()=>soloOffensiveProgressionReviewV2(row.classId,{...originalInput,players:[...originalInput.players,...originalInput.players]},arm),/fresh_solo_only/);
+    }
+    assert.ok(result.events.every(e=>e.amount===undefined||Number.isFinite(e.amount)));
+    assert.ok(result.players[0].hp>=0&&result.players[0].hp<=actor.stats.maxHp+1e-8);
+    const own=result.events.filter(e=>e.actorId===actor.id);
+    progressionRows.push({level,classId:row.classId,spec:row.spec,profile:row.profile,seed:seedIndex,kind,arm,
+     win:Number(result.victory),reason:result.reason,duration:result.durationMs,
+     hp:result.players[0].hp/actor.stats.maxHp,enemyHp:result.enemies[0].hp/result.enemies[0].definition.stats.maxHp,
+     damage:result.players[0].damageDone,healing:result.players[0].healingDone,
+     priorityChanges:candidate.priorityChanges,strengthChanges:candidate.strengthChanges,
+     supportActions:own.filter(e=>e.type==='heal'||e.type==='shield'||e.type==='hot_tick').length,
+     interrupts:own.filter(e=>e.type==='interrupt').length});
+   }
   }
  }
  assert.equal(gearRows.length,198);
@@ -2566,6 +2614,32 @@ runRegionalProgressionReviewV2();
     killsPerMinute:throughput,sameGearDamageKillsPerMinute:reference,pinnedDamageKillsPerMinute:pinnedReference,
     relativeEfficiency:reference>0?throughput/reference:null,relativePinnedEfficiency:pinnedReference>0?throughput/pinnedReference:null};
   }),releaseEnabled:false,cpApproved:false}));
+ assert.equal(progressionRows.length,1584);
+ const progressionKeys=[...new Set(progressionRows.map(r=>r.classId+'|'+r.profile+'|'+r.arm))].sort();
+ assert.equal(progressionKeys.length,54);
+ console.log('SOLO_OFFENSIVE_PROGRESSION_SUMMARY '+JSON.stringify({matchedSets:792,executions:progressionRows.length,
+ groups:progressionKeys.map(key=>{
+  const a=progressionRows.filter(r=>r.classId+'|'+r.profile+'|'+r.arm===key);
+  const old=rows.filter(r=>r.classId===a[0].classId&&r.profile===a[0].profile&&r.arm==='role_budget_skill');
+  const bands=[...new Set(a.map(r=>r.level+'|'+r.kind))];
+  const relative=bands.map(band=>{
+   const subset=a.filter(r=>r.level+'|'+r.kind===band),s=subset[0];
+   const reference=rows.filter(r=>r.level===s.level&&r.kind===s.kind&&r.profile===s.profile&&r.arm==='role_budget_skill'&&CLASS_ROLES_V2[r.classId]==='damage');
+   const prior=old.filter(r=>r.level+'|'+r.kind===band);
+   const rate=killsPerMinute(reference);
+   return {band,efficiency:rate>0?killsPerMinute(subset)/rate:null,priorEfficiency:rate>0?killsPerMinute(prior)/rate:null,
+    wins:subset.reduce((n,r)=>n+r.win,0),cases:subset.length,meanHp:mean(subset.map(r=>r.hp))};
+  });
+  const valid=relative.map(r=>r.efficiency).filter((r):r is number=>r!==null);
+  return {key,cases:a.length,wins:a.reduce((n,r)=>n+r.win,0),priorWins:old.reduce((n,r)=>n+r.win,0),
+   timeouts:a.filter(r=>r.reason==='timeout').length,wipes:a.filter(r=>r.reason==='wipe').length,
+   meanRelative:valid.length?mean(valid):null,minRelative:valid.length?Math.min(...valid):null,maxRelative:valid.length?Math.max(...valid):null,
+   below75:valid.filter(r=>r<.75).length,withinTarget:valid.filter(r=>r>=.75&&r<=.85).length,above85:valid.filter(r=>r>.85).length,
+   priorityChanges:[...new Set(a.flatMap(r=>r.priorityChanges))],strengthChanges:[...new Set(a.flatMap(r=>r.strengthChanges))],
+   meanHp:mean(a.map(r=>r.hp)),meanHeal:mean(a.map(r=>r.healing)),meanSupportEvents:mean(a.map(r=>r.supportActions)),
+   interrupts:a.reduce((n,r)=>n+r.interrupts,0),bands:relative};
+ }),releaseEnabled:false,cpApproved:false}));
+
 }
 // Unified compact class -> actual V2 skills -> original Forge -> exact socket
 // projection -> verified authored party enemy kits. The only modified source

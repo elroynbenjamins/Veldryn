@@ -1,13 +1,10 @@
-/** Standalone core test process. Simulate certification before loading catalogue
- * modules; never change the checked-in readiness gate or create a player preview. */
+/** Release integration: exercise the exact checked-in readiness catalogue, not
+ * a simulated activation or a tester entitlement. */
 import assert from 'node:assert/strict';
-import type {Wave2Id} from '../src/core/profile-cosmetic-wave2';
 import type {GameState} from '../src/core/types';
 const wave=require('../src/core/profile-cosmetic-wave2') as typeof import('../src/core/profile-cosmetic-wave2');
-const ready=wave.WAVE2_READY_SET_IDS as Wave2Id[];
-const prior=[...ready];
-ready.splice(0,ready.length,...wave.WAVE2_SETS.map(s=>s.id));
-try{
+assert.deepEqual([...wave.WAVE2_READY_SET_IDS],wave.WAVE2_SETS.map(s=>s.id),'release candidate must certify exactly the four authored Wave 2 sets');
+{
  const {createCharacter,newGame}=require('../src/core/game') as typeof import('../src/core/game');
  const {profileWardrobe,wardrobeEquipped}=require('../src/core/profile-wardrobe') as typeof import('../src/core/profile-wardrobe');
  const {quickCosmeticSets,quickSetSelection}=require('../src/core/profile-quick-set-equip') as typeof import('../src/core/profile-quick-set-equip');
@@ -55,5 +52,15 @@ try{
   assert.equal(quickCosmeticSets(partial).length,0);
   assert.equal(rows(partial).filter(r=>allIds.has(r.id)).length,3);
  }
-}finally{ready.splice(0,ready.length,...prior);}
+ const allOwned:GameState={...base,account:{...base.account,unlockedProfileBorderIds:wave.WAVE2_SETS.map(s=>s.borderId),unlockedProfileEffectIds:wave.WAVE2_SETS.map(s=>s.effectId),unlockedProfileIconIds:wave.WAVE2_SETS.flatMap(s=>[...s.iconIds])}};
+ assert(!profileCosmeticsTester(allOwned));
+ assert.equal(rows(allOwned).filter(r=>allIds.has(r.id)).length,16);
+ assert.equal(quickCosmeticSets(allOwned).filter(s=>wave.WAVE2_SETS.some(w=>w.id===s.id)).length,4);
+ const first=wave.WAVE2_SETS[0],second=wave.WAVE2_SETS[1];
+ const mixed:GameState={...base,account:{...base.account,unlockedProfileBorderIds:[first.borderId],unlockedProfileEffectIds:[second.effectId],unlockedProfileIconIds:[...first.iconIds]}};
+ assert.equal(quickCosmeticSets(mixed).length,0,'mixed partial collections never unlock a full set');
+ assert(!wave.wave2PublicRenderable('effect',first.borderId));
+ assert(!wave.wave2PublicRenderable('border',first.effectId));
+ assert(!wave.wave2PublicRenderable('icon','unknown-wave2-id'));
+}
 console.log('PASS all four certified sets through ordinary wardrobe, quick equip and authoritative profile command without tester access');

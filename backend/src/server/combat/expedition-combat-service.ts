@@ -13,6 +13,8 @@ export interface BuildExpeditionEncounterInput {
   enemyAttackMultiplier?:number;
   enemyHpMultiplier?:number;
   enemyDefenseMultiplier?:number;
+  /** Optional trusted event-boss shield scaling; absent for all old/regular runs. */
+  enemyShieldMultiplier?:number;
   bossTuning?:EncounterBossTuning;
   enemyLevel?:number;
   enemyDamageProfile?:'qmode-v1';
@@ -69,22 +71,32 @@ export function expeditionBossTelegraph(encounterId:string):PveBossTelegraph|und
  const factory=EXPEDITION_ENCOUNTERS[encounterId];return factory?pveBossTelegraph(factory()):undefined;
 }
 
+/** Scale only flat boss shield values; no change to damage or other ability effects. */
+function withScaledBossShields(enemy:CombatantDefinition,scale:number):CombatantDefinition{
+ if(!enemy.boss||scale===1)return enemy;
+ const effect=(e:CombatantDefinition['abilities'][number]['effects'][number])=>e.kind==='shield'&&typeof e.flat==='number'?{...e,flat:e.flat*scale}:e;
+ return {...enemy,abilities:enemy.abilities.map(a=>({...a,effects:a.effects.map(effect)})),
+  ...(enemy.phases?{phases:enemy.phases.map(p=>({...p,effects:p.effects.map(effect)}))}:{})};
+}
+
 export function buildExpeditionEncounter(input:BuildExpeditionEncounterInput):CombatantDefinition[] {
   const factory=EXPEDITION_ENCOUNTERS[input.encounterId]; if(!factory) throw new Error(`unknown_encounter:${input.encounterId}`);
+  const shieldScale=input.enemyShieldMultiplier??1;
+  if(!Number.isFinite(shieldScale)||shieldScale<0||shieldScale>1)throw new Error('invalid_enemy_shield_multiplier');
   const tuning=input.bossTuning,removed=new Set(tuning?.removeAbilityIds??[]);
   return factory().map((enemy,index)=>{
     // Frostfall's five accessible tiers span levels 10–30; do not clamp its level-10 enemies to 65% of level-35 stats.
     const minimumRatio=input.encounterId.startsWith('EVENT_FROSTFALL_')?.25:.65;
     const levelRatio=input.enemyLevel===undefined?1:Math.max(minimumRatio,Math.min(1.2,input.enemyLevel/Math.max(1,enemy.level)));
     const base={...enemy,level:input.enemyLevel??enemy.level,stats:{...enemy.stats,maxHp:enemy.stats.maxHp*levelRatio*(input.enemyHpMultiplier??1),attackPower:enemy.stats.attackPower*levelRatio*(input.enemyAttackMultiplier??1),defense:enemy.stats.defense*levelRatio*(input.enemyDefenseMultiplier??1)}};
-    if(!base.boss||!tuning)return applyCoopRoomModifier(base,input.roomModifierId,index,input.roomModifierElite);
+    if(!base.boss||!tuning)return withScaledBossShields(applyCoopRoomModifier(base,input.roomModifierId,index,input.roomModifierElite),shieldScale);
     const abilities=base.abilities.filter(ability=>!removed.has(ability.id)).map(ability=>{
       const damageMultiplier=tuning.abilityDamageMultipliers?.[ability.id]??1,cooldownMultiplier=tuning.abilityCooldownMultipliers?.[ability.id]??1;
       return {...ability,cooldownMs:Math.max(500,Math.round(ability.cooldownMs*cooldownMultiplier)),effects:ability.effects.map(effect=>(effect.kind==='damage'||effect.kind==='dot')&&effect.coeff!==undefined?{...effect,coeff:effect.coeff*damageMultiplier}:effect)};
     });
     for(const added of tuning.addAbilities??[])if(!abilities.some(ability=>ability.id===added.id))abilities.push(structuredClone(added));
     const phases=[...(base.phases??[])];for(const added of tuning.addPhases??[])if(!phases.some(phase=>phase.id===added.id))phases.push(structuredClone(added));
-    return applyCoopRoomModifier({...base,abilities,phases},input.roomModifierId,index,input.roomModifierElite);
+    return withScaledBossShields(applyCoopRoomModifier({...base,abilities,phases},input.roomModifierId,index,input.roomModifierElite),shieldScale);
   });
 }
 

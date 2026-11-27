@@ -1,0 +1,29 @@
+name: AAB release lossless asset parity
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  verify:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'release/1.0.13-candidate-20261126'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: Fetch pinned original and optimized source commits
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          git fetch --no-tags --depth=1 origin 473922df91a881356ed9e07fa1e1a3fa34dc6411 74ab3d14eaea111b1050ba6b583070d321f4740c
+      - name: Install PNG decoder
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends python3-pil
+      - name: Verify all 47 imported PNGs and report raw size savings
+        run: /usr/bin/python3 tools/verify-aab-1.0.13-lossless-png.py

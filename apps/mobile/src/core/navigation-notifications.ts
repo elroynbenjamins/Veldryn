@@ -84,7 +84,7 @@ export const QUICK_NOTIFICATION_DESTINATIONS:Record<NotificationKind,QuickNavDes
  event_reward_ready:'Events',
  account_action:'Account',
  companion_attention:'Companions',
- equipment_craft_ready:'Home',
+ equipment_craft_ready:'Forge',
 };
 
 export type QuickNavigationBadgeMap=Partial<Record<QuickNavDestination,NavigationBadge>>;

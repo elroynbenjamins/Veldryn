@@ -3,9 +3,9 @@ import {AppState} from 'react-native';
 import {useAuthSession} from './AuthSessionProvider';
 import {supabase} from './supabase';
 import {invalidatePlayerIdentity,subscribePlayerIdentityChanges} from './player-identity-cache';
-import {normalizeUltraLuxeNameSelection,verifiedUltraLuxeNameStyle,type UltraLuxeNamePresetId} from '../core/ultra-luxe-prestige';
+import {normalizeLuxeNameReadback,verifiedLuxeNameReadbackStyle,type UltraLuxeGradientId} from './ultra-luxe-name-readback';
 
-type Projection=NonNullable<ReturnType<typeof normalizeUltraLuxeNameSelection>>;
+type Projection=NonNullable<ReturnType<typeof normalizeLuxeNameReadback>>;
 async function pinnedClient(accountId:string){
  const db=supabase;if(!db)throw new Error('Online services unavailable.');
  const {data,error}=await db.auth.getSession();if(error)throw error;
@@ -16,7 +16,7 @@ async function readSelection(accountId:string){
  const {db,token}=await pinnedClient(accountId);
  const {data,error}=await db.rpc('ultra_luxe_name_self_v1').setHeader('Authorization',`Bearer ${token}`);
  if(error)throw error;
- const projection=normalizeUltraLuxeNameSelection(data,accountId);
+ const projection=normalizeLuxeNameReadback(data,accountId);
  if(!projection)throw new Error('Invalid private name projection.');
  return projection;
 }
@@ -42,7 +42,7 @@ export function useUltraLuxeNameSelection(enabled:boolean){
   return()=>{serial.current++;app.remove();unsub();};
  },[scope,refresh]);
  const verified=projection?.accountId===scope?projection:undefined;
- const select=useCallback(async(id:UltraLuxeNamePresetId|null)=>{
+ const select=useCallback(async(id:UltraLuxeGradientId|null)=>{
   if(!scope||current.current!==scope||!verified||id!==null&&!verified.ownedIds.includes(id)||writing.current===scope)return;
   writing.current=scope;setPending(scope);setError(undefined);
   const request=++serial.current;
@@ -51,7 +51,7 @@ export function useUltraLuxeNameSelection(enabled:boolean){
    if(current.current!==scope||!mounted.current)return;
    const {data,error}=await db.rpc('ultra_luxe_name_select_v1',{p_preset_id:id}).setHeader('Authorization',`Bearer ${token}`);
    if(error)throw error;
-   const ack=normalizeUltraLuxeNameSelection(data,scope);
+   const ack=normalizeLuxeNameReadback(data,scope);
    if(!ack||ack.selectedId!==id)throw new Error('Name style was not confirmed.');
    const confirmed=await readSelection(scope);
    if(confirmed.selectedId!==id)throw new Error('Name style changed before confirmation.');
@@ -60,5 +60,5 @@ export function useUltraLuxeNameSelection(enabled:boolean){
   }catch(e){if(mounted.current&&current.current===scope)setError({accountId:scope,message:e instanceof Error?e.message:'Could not save name style.'});}
   finally{if(writing.current===scope)writing.current=null;if(mounted.current)setPending(v=>v===scope?'':v);}
  },[scope,verified]);
- return {verifiedOwnedIds:verified?.ownedIds??[],selectedId:verified?.selectedId??null,style:verifiedUltraLuxeNameStyle(verified?.selectedId,verified?.ownedIds),saving:pending===scope&&!!scope,error:error?.accountId===scope?error.message:undefined,onSelect:(id:UltraLuxeNamePresetId|null)=>void select(id)};
+ return {verifiedOwnedIds:verified?.ownedIds??[],selectedId:verified?.selectedId??null,projection:verified,style:verifiedLuxeNameReadbackStyle(verified),saving:pending===scope&&!!scope,error:error?.accountId===scope?error.message:undefined,onSelect:(id:UltraLuxeGradientId|null)=>void select(id)};
 }

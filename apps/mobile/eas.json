@@ -39,6 +39,7 @@
       "autoIncrement": true,
       "env": {
         "EXPO_PUBLIC_RELEASE_CHANNEL": "production",
+        "EXPO_PUBLIC_ULTRA_LUXE_FULL_SET": "true",
         "EXPO_PUBLIC_SOCIAL_NAMES_STAGING_PREVIEW": "false",
         "EXPO_PUBLIC_SOCIAL_NAMES_PRODUCTION_ENABLED": "true",
         "EXPO_PUBLIC_SUPABASE_URL": "https://nyjwigipamnvpdvpauuv.supabase.co",
@@ -64,6 +65,7 @@
       },
       "env": {
         "EXPO_PUBLIC_RELEASE_CHANNEL": "staging",
+        "EXPO_PUBLIC_ULTRA_LUXE_FULL_SET": "true",
         "EXPO_PUBLIC_SOCIAL_NAMES_STAGING_PREVIEW": "true",
         "EXPO_PUBLIC_SUPABASE_URL": "https://iqfmmpvwanvvmxcftfxw.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_HaIHb8qe4wN3Ir4Vd7bGQg_9ec854Ta",

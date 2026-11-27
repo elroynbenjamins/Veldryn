@@ -30,3 +30,65 @@ assert(canUsePrivateTitleText(none,undefined));
 const commands=fs.readFileSync(path.join(__dirname,'../src/core/game-commands.ts'),'utf8');
 assert(commands.includes('!canUsePrivateTitleText(state,patch.profileTitle)'));
 console.log('Ultra Luxe grant projection: spoofed ownership, revocation, roster cleanup, idempotency and unrelated cosmetics passed.');
+
+const {ULTRA_LUXE_CANDIDATE_GRANT_COLLECTIONS:N}=mod.exports;
+assert.equal(N.length,2);
+for(const row of N){
+ assert.deepEqual(ultraLuxeGrantProjection([row.id]).collectionIds,[]);
+ const g=ultraLuxeGrantProjection([row.id],true);
+ assert.deepEqual(g.collectionIds,[row.id]);
+ assert.deepEqual(g.backgrounds,[row.background]);assert.deepEqual(g.borders,[row.border]);assert.deepEqual(g.pets,[row.pet]);
+ assert.deepEqual(g.titles,[row.title]);assert.deepEqual(g.badges,[row.badge]);
+ assert.deepEqual(g.icons,[]);assert.deepEqual(g.nameStyles,[]);
+ const input={...base,character:{...hero,profileBackgroundId:row.background,profileBorderId:row.border,selectedCosmeticPetId:row.pet,profileTitle:row.titleName,profileIconId:'class:BASTION'},account:{...base.account,unlockedProfileBackgroundIds:[row.background],unlockedProfileBorderIds:[row.border],unlockedCosmeticPetIds:[row.pet],unlockedTitleIds:[row.title]}};
+ const owned=withVerifiedUltraLuxeGrants(input,[row.id],true);
+ assert.equal(owned.character.profileBackgroundId,row.background);
+ assert.equal(owned.character.profileBorderId,row.border);
+ assert.equal(owned.character.selectedCosmeticPetId,row.pet);
+ assert.equal(owned.character.profileTitle,row.titleName);
+ assert.equal(owned.character.profileIconId,'class:BASTION');
+ assert.equal(verifiedUltraLuxeTitleId(row.titleName,[row.id],true),row.title);
+ assert.equal(verifiedUltraLuxeTitleId(row.titleName,[row.id]),undefined);
+ const revoked=withVerifiedUltraLuxeGrants(owned,[],true);
+ assert.equal(revoked.character.profileBackgroundId,'asterfall-night');
+ assert.equal(revoked.character.profileBorderId,undefined);
+ assert.equal(revoked.character.selectedCosmeticPetId,undefined);
+ assert.equal(revoked.character.profileTitle,'New Adventurer');
+ assert(!canUsePrivateTitleText(revoked,row.titleName.toUpperCase()));
+ assert(canUsePrivateTitleText(owned,row.titleName));
+ assert.deepEqual(withVerifiedUltraLuxeGrants(owned,[row.id],true),owned);
+}
+assert.equal(ultraLuxeGrantProjection([...C,...N].map(r=>r.id),true).collectionIds.length,4);
+const sql=fs.readFileSync(path.join(__dirname,'../../../docs/roadmap/ultra-luxe-grant-schema-candidate.sql'),'utf8');
+for(const row of [...C,...N])for(const field of ['id','background','border','pet','title','titleName','badge'])assert(sql.includes(row[field]),field+' '+row.id);
+assert(!sql.includes("else 'ascendant_dragon_sovereign'")&&!sql.includes("else 'ascendant-draconic-name'"));
+assert(sql.includes("if preset is not null then delete"));
+assert(sql.includes("stale_state_ultra_luxe_grants"));
+console.log('PASS: gated four-collection projection, revocation, exact SQL mapping and no invented icon/name preset');
+
+const sixIds=[...C,...N].map(row=>row.id).concat('ascendant-sakura-enchantment','ascendant-stormforged-sovereign');
+assert.equal(ultraLuxeGrantProjection(sixIds).collectionIds.length,2,'Default authority unchanged');
+assert.equal(ultraLuxeGrantProjection(sixIds,true).collectionIds.length,4,'Four-set authority unchanged');
+assert.equal(ultraLuxeGrantProjection(sixIds,false,true).collectionIds.length,2,'Six-set mode requires candidate grant authority');
+const six=ultraLuxeGrantProjection(sixIds,true,true);
+assert.deepEqual(six.collectionIds,sixIds);
+assert.equal(six.nameStyles.length,6);
+assert.equal(six.icons.length,2,'Do not invent icons for new collections');
+const sixSql=fs.readFileSync(path.join(__dirname,'../../../docs/roadmap/ultra-luxe-six-set-grant-schema-candidate.sql'),'utf8');
+for(const [i,titleName] of [[4,'Sakura Dreamkeeper'],[5,'Stormforged Warden']]){
+ const ownId=sixIds[i],row=ultraLuxeGrantProjection([ownId],true,true);
+ const input={...base,character:{...hero,profileBackgroundId:row.backgrounds[0],profileBorderId:row.borders[0],selectedCosmeticPetId:row.pets[0],profileTitle:titleName,profileIconId:'class:BASTION'}};
+ const owned=withVerifiedUltraLuxeGrants(input,[ownId],true,true);
+ assert.equal(owned.character.profileBackgroundId,row.backgrounds[0]);
+ assert.equal(owned.character.profileTitle,titleName);
+ assert.deepEqual(owned.account.unlockedTitleIds,row.titles);
+ assert(canUsePrivateTitleText(owned,titleName));
+ const revoked=withVerifiedUltraLuxeGrants(owned,[],true,true);
+ assert.equal(revoked.character.profileBackgroundId,'asterfall-night');
+ assert.equal(revoked.character.profileBorderId,undefined);
+ assert.equal(revoked.character.selectedCosmeticPetId,undefined);
+ assert.equal(revoked.character.profileTitle,'New Adventurer');
+ assert(!canUsePrivateTitleText(revoked,titleName));
+ for(const id of [ownId,...row.backgrounds,...row.borders,...row.pets,...row.titles,...row.badges])assert(sixSql.includes(id),id+' must agree with six-set SQL candidate');
+}
+console.log('PASS: six-set authority is explicitly gated, revocation fails closed and legacy authority remains unchanged');

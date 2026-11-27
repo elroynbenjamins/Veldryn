@@ -8,6 +8,7 @@ import {OnlineEventExpeditionRuntime,projectOnlineEventRun} from '../event-exped
 import {EVENT_EXPEDITIONS} from '../../src/server/expeditions/content/event-expeditions';
 import {seasonalEventExpeditionInfo} from '../../../apps/mobile/src/core/coop-event-expeditions';
 import {EventExpeditionService,MemoryEventRunRepository,effectiveEventNode,eventBossMechanicProjection} from '../../src/server/expeditions/event-service';
+import {FROSTFALL_ENDURANCE_GENERATOR} from '../../src/server/expeditions/frostfall-endurance';
 import {launchPlayer} from '../../src/server/combat/content/launch-combat';
 
 function preparedState(classId:ClassId,name:string,level:number,characterId:string):GameState{
@@ -38,8 +39,8 @@ async function main(){
  for(const [index,definition] of EVENT_EXPEDITIONS.entries()){
   const service=new EventExpeditionService(new MemoryEventRunRepository(),`online-route-preflight-${index}`);
   const run=service.start({requestId:`event-preflight-${index}`,runId:`event-route-${index}`,accountId:'domain-a',eventId:definition.id,activeLiveEventId:`${definition.liveEventSeriesId}_2026`,members:domainMembers,players:domainPlayers,nowMs:Date.UTC(2026,6,15)});
-  assert.equal(run.graph.preBossNodeCount,definition.routeNodeCount,`route length failed for ${definition.id}`);
-  assert.equal(run.graph.generatorVersion,'event-route-v5');
+  assert.equal(run.graph.preBossNodeCount,definition.id==='EVENT_FROSTFALL_AURORA_HOLLOW'?42:definition.routeNodeCount,`route length failed for ${definition.id}`);
+  assert.equal(run.graph.generatorVersion,definition.id==='EVENT_FROSTFALL_AURORA_HOLLOW'?FROSTFALL_ENDURANCE_GENERATOR:'event-route-v5');
   assert.equal(run.mechanic?.id,definition.mechanic.id);
   assert.equal(run.objective?.id,definition.objective.id);
   assert.equal(run.objective?.count,definition.objective.startCount);
@@ -80,6 +81,27 @@ async function main(){
    assert.ok(bossProfile!.telegraph.castAbilities.some(ability=>ability.id==='EVENT_FROSTFALL_BOSS_NOVA'&&ability.label==='Aurora Shatter'));
   }
  }
+ const seasonal=EVENT_EXPEDITIONS.find(item=>item.id==='EVENT_FROSTFALL_AURORA_HOLLOW')!;
+ const checkpointRepository=new MemoryEventRunRepository(),checkpointService=new EventExpeditionService(checkpointRepository,'event-checkpoint-recap-secret');
+ let checkpointRun=checkpointService.start({requestId:'event-checkpoint-start',runId:'event-checkpoint-run',accountId:'domain-a',eventId:seasonal.id,activeLiveEventId:'EVT_ANNUAL_012_2026',members:domainMembers,players:domainPlayers,nowMs:Date.UTC(2026,11,10)});
+ for(let depth=1;depth<=7;depth++){
+  const source=checkpointRun.graph.nodes.find(node=>node.nodeId===checkpointRun.currentNodeId)!;
+  const combat=source.nextNodeIds.map(id=>checkpointRun.graph.nodes.find(node=>node.nodeId===id)!).find(node=>node.kind==='battle')!;
+  checkpointRun=checkpointService.choose({runId:checkpointRun.id,accountId:'domain-a',optionNodeId:combat.nodeId,requestId:'checkpoint-combat-'+depth});
+  assert.equal(checkpointRun.phase,'awaiting_choice');
+ }
+ checkpointRun=checkpointService.choose({runId:checkpointRun.id,accountId:'domain-a',optionNodeId:'d8-c2',requestId:'checkpoint-exit'});
+ assert.equal(checkpointRun.phase,'completed');
+ const checkpointProjection=projectOnlineEventRun(checkpointRun,9,'EVT_ANNUAL_012_2026',Date.UTC(2026,11,10)) as any;
+ assert.deepEqual(checkpointProjection.endurance,{normalRoomsCleared:7,maxNormalRooms:42},'checkpoint boss does not count as a normal room');
+ assert.equal(checkpointProjection.practiceOnly,false);
+ const failedRoom=structuredClone(checkpointRun);failedRoom.phase='failed';failedRoom.currentNodeId='d7-c0';
+ assert.deepEqual(projectOnlineEventRun(failedRoom,10,'EVT_ANNUAL_012_2026').endurance,{normalRoomsCleared:6,maxNormalRooms:42},'failed normal room must not count as cleared');
+ const failedBoss=structuredClone(checkpointRun);failedBoss.phase='failed';
+ assert.deepEqual(projectOnlineEventRun(failedBoss,10,'EVT_ANNUAL_012_2026').endurance,{normalRoomsCleared:7,maxNormalRooms:42},'failed optional boss retains the seven cleared rooms');
+ assert.ok(checkpointProjection.bossRecap,'optional seasonal boss exit must preserve boss recap');
+ assert.ok(checkpointProjection.lastCombat?.cues.length,'optional seasonal boss exit must show the combat replay');
+
  const bossRepo=new MemoryEventRunRepository(),bossService=new EventExpeditionService(bossRepo,'boss-tuning-integration-secret'),suncrest=EVENT_EXPEDITIONS.find(row=>row.id==='EVENT_SUNCREST_SHATTERED_ISLES')!;
  let bossRun=bossService.start({requestId:'boss-profile-request',runId:'boss-profile-run',accountId:'domain-a',eventId:suncrest.id,activeLiveEventId:'EVT_ANNUAL_006_2026',members:domainMembers,players:domainPlayers,nowMs:Date.UTC(2026,6,15)});
  bossRun.currentNodeId=`d${bossRun.graph.preBossNodeCount}-c0`;bossRun.objective={id:suncrest.objective.id,count:suncrest.objective.maxCount};bossRun.mechanic={id:suncrest.mechanic.id,value:suncrest.mechanic.maxValue};bossRepo.save(bossRun);
@@ -88,6 +110,8 @@ async function main(){
  assert.equal(bossRun.phase,'completed');assert.equal(bossRun.lastResolution?.result.summary.bossTuningProfile,expectedBossProfile.tuning.profileId);
  assert.ok(expectedBossProfile.telegraph.suppressedAbilities.some(ability=>ability.label==='Solar Nova'));
  const projectedBoss=projectOnlineEventRun(bossRun,99,'EVT_ANNUAL_006_2026') as any,bossSummary=bossRun.lastResolution!.result.summary as any;
+ assert.equal(projectedBoss.endurance,undefined,'ordinary seasonal routes do not show Frostfall depth');
+ assert.equal(projectedBoss.practiceOnly,undefined);
  assert.equal(bossSummary.pveTelemetry.schemaVersion,2);assert.equal(bossSummary.pveTelemetry.encounterId,suncrest.bossEncounterId);assert.equal(bossSummary.pveTelemetry.reason,bossSummary.reason);assert.equal(bossSummary.pveTelemetry.durationMs,bossSummary.durationMs);assert.equal(bossSummary.pveTelemetry.players.length,4);assert.ok(Array.isArray(bossSummary.pveTelemetry.bossCasts));assert.ok(Array.isArray(bossSummary.pveTelemetry.enemyCasts));assert.ok(Array.isArray(bossSummary.pveTelemetry.bossPhases));assert.ok(Array.isArray(bossSummary.pveTelemetry.encounterArchetypes));assert.ok(Array.isArray(bossSummary.pveTelemetry.encounterMechanics));assert.ok(typeof bossSummary.pveTelemetry.enemyEndHpPctAvg==='number');assert.ok(bossSummary.pveTelemetry.partyDamageByAbility&&typeof bossSummary.pveTelemetry.partyDamageByAbility==='object');assert.ok(bossSummary.pveTelemetry.enemyHealingByAbility&&typeof bossSummary.pveTelemetry.enemyHealingByAbility==='object');
  assert.equal(projectedBoss.bossMechanic.telegraph.bossName,'Aureon, First Champion');assert.ok(projectedBoss.bossMechanic.telegraph.phases.some((phase:any)=>phase.label==='Pressure Break'));assert.ok(projectedBoss.bossRecap);
  assert.equal(projectedBoss.bossRecap.durationMs,bossSummary.durationMs);assert.equal(projectedBoss.bossRecap.downs,bossSummary.downs.length);assert.equal(projectedBoss.bossRecap.phasesTriggered.length,bossSummary.bossPhaseIds.length);assert.equal(projectedBoss.bossRecap.abilitiesCast.length,bossSummary.bossCastAbilityIds.length);
@@ -98,7 +122,7 @@ async function main(){
  const echoStates=[preparedState('WAYFINDER','Echo Archer',50,'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb2'),preparedState('RAVAGER','Echo Ravager',50,'cccccccc-cccc-4ccc-8ccc-ccccccccccc3'),preparedState('DAWNKEEPER','Echo Keeper',50,'dddddddd-dddd-4ddd-8ddd-ddddddddddd4')];
  const controllerRecord=deriveOnlineCoopLoadout('00000000-0000-4000-8000-000000000001',controllerState,7);
  const echoRecords=echoStates.map((state,index)=>deriveOnlineCoopLoadout(`00000000-0000-4000-8000-00000000000${index+2}`,state,3));
- let liveEvent={eventId:'EVT_ANNUAL_006_2026',enabled:true,startsAtMs:now-60_000,endsAtMs:now+60_000};
+ let liveEvent:{eventId:string;enabled:boolean;startsAtMs:number;endsAtMs:number;modules?:string[]}={eventId:'EVT_ANNUAL_006_2026',enabled:true,startsAtMs:now-60_000,endsAtMs:now+60_000};
  let stored:{stateVersion:number;eventCursor:number;privateState:any;clientProjection:any;serverNow:number}|undefined;
  let frozenControllerSnapshot:{revision:number;characterId:string;accountId:string;snapshotHash:string}|undefined;
  const randomIds=['11111111-1111-4111-8111-111111111111','22222222-2222-4222-8222-222222222222','33333333-3333-4333-8333-333333333333'];
@@ -106,6 +130,7 @@ async function main(){
   randomId:()=>randomIds.shift()??'44444444-4444-4444-8444-444444444444',
   rpc:async<T>(name:string,args:Record<string,unknown>):Promise<T>=>{
    if(name==='read_online_coop_receipt_server_v1')return null as T;
+   if(name==='online_event_expedition_daily_budget_server_v1')return 0 as T;
    if(name==='load_online_game_server_v1')return {state:controllerState,version:7,serverNow:now,liveEvent} as T;
    if(name==='eligible_online_coop_echoes_server_v1')return echoRecords.map((record,index)=>({profileId:`55555555-5555-4555-8555-55555555555${index}`,sourceAccountId:record.accountId,publishedAtMs:now-1000,record})) as T;
    if(name==='start_online_event_expedition_server_v1'){
@@ -135,6 +160,17 @@ async function main(){
  stored!.privateState.run.phase='completed';stored!.privateState.run.settlement='pending';stored!.privateState.run.rewardMarks=96;
  const claimed=await runtime.claim(controllerRecord.accountId,start.runId,'event-claim-0001') as any;
  assert.equal(claimed.stateVersion,3);assert.equal(claimed.settlement.status,'claimed');assert.equal(claimed.settlement.rewardMarks,96);
+ liveEvent={eventId:'EVT_ANNUAL_012_2026',enabled:true,startsAtMs:now-60_000,endsAtMs:now+60_000,modules:['overview','shop']};
+ await assert.rejects(()=>runtime.start(controllerRecord.accountId,{requestId:'frost-module-off-0001',eventExpeditionId:'EVENT_FROSTFALL_AURORA_HOLLOW',tier:1,characterId:controllerRecord.characterId,loadoutId:'current',loadoutRevision:7}),/event_not_live/);
+ liveEvent={...liveEvent,modules:['overview','shop','expedition']};
+ const frostPractice=await runtime.start(controllerRecord.accountId,{requestId:'frost-practice-0001',eventExpeditionId:'EVENT_FROSTFALL_AURORA_HOLLOW',tier:1,characterId:controllerRecord.characterId,loadoutId:'current',loadoutRevision:7}) as any;
+ assert.equal(frostPractice.eventExpeditionId,'EVENT_FROSTFALL_AURORA_HOLLOW');
+ assert.equal(frostPractice.settlement.status,'pending');
+ assert.equal(frostPractice.settlement.rewardMarks,0);
+ assert.equal(frostPractice.practiceOnly,true);
+ assert.deepEqual(frostPractice.endurance,{normalRoomsCleared:0,maxNormalRooms:42});
+ assert.equal(stored?.privateState.run.practiceOnly,true,'no daily reward slots makes the next Frostfall attempt practice-only');
+ assert.equal(stored?.privateState.run.graph.preBossNodeCount,42);
  liveEvent={eventId:'EVT_ANNUAL_010_2026',enabled:true,startsAtMs:now-60_000,endsAtMs:now+60_000};
  await assert.rejects(()=>runtime.start(controllerRecord.accountId,{requestId:'event-start-0002',eventExpeditionId:'EVENT_SUNCREST_SHATTERED_ISLES',characterId:controllerRecord.characterId,loadoutId:'current',loadoutRevision:7}),/event_not_live/);
  console.log('PASS persistent seasonal expedition start, choice, settlement and LiveOps gating');

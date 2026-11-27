@@ -1,3 +1,6 @@
+import {candidateAppearanceIds,candidateShowcase,candidateVerifiedTitle,verifiedPublicCandidateCollections} from '../core/ultra-luxe-owned-wardrobe';
+import {newLuxeBackground,newLuxeBorder,newLuxePet} from '../theme/ultra-luxe-candidate-art';
+import {VerifiedCandidateShowcase,VerifiedCandidateBorderEffects} from './profile/VerifiedCandidateShowcase';
 import {UltraLuxeTitleText} from './profile/UltraLuxeIdentityMotion';
 import {ultraLuxeVisualTier,resolveTesterUltraLuxeVisuals,ultraLuxeSceneEffectCompatible} from '../core/ultra-luxe-set-visuals';
 import {playerBadgeIds,profileBadgeIds} from '../core/player-badges';
@@ -46,15 +49,19 @@ export function PublicProfileScene({profile,height=205,reduceMotion=false,showGu
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const badgeNow=useBadgeClock(profile.playerBadges);
  const displayedBadges=[...playerBadgeIds(profile.playerBadges,badgeNow),...profileBadgeIds(profile.playerBadges,badgeNow)];
- const verifiedTitleId=verifiedUltraLuxeTitleColor(profile.title,profile.ultraLuxeTitleId)?profile.ultraLuxeTitleId:undefined;
+ const allowed=verifiedPublicCandidateCollections(profile.ultraLuxeAppearanceVerified,profile.ultraLuxeAppearanceVersion);
+ const safe=candidateAppearanceIds({background:profile.backgroundId,border:profile.borderId,pet:profile.petId,displayedBadges},allowed);
+ const candidateTitle=candidateVerifiedTitle(profile.title,profile.ultraLuxeTitleId,allowed);
+ const verifiedTitleId=candidateTitle?.titleId??(verifiedUltraLuxeTitleColor(profile.title,profile.ultraLuxeTitleId)?profile.ultraLuxeTitleId:undefined);
  const testerPreview=profile.cosmeticsPreview===true;
- const visualSelection=resolveTesterUltraLuxeVisuals({background:profile.backgroundId,border:profile.borderId,pet:profile.petId,verifiedTitleId,displayedBadges},{
+ const visualSelection=resolveTesterUltraLuxeVisuals({...safe,verifiedTitleId,displayedBadges},{
   background:testerPreview,border:testerPreview,pet:testerPreview,
  });
- const renderBackgroundId=visualSelection.background??profile.backgroundId;
- const renderBorderId=visualSelection.border??profile.borderId??'';
- const renderPetId=visualSelection.pet??profile.petId??'';
- const background=profileBackgroundPreviewById.get(renderBackgroundId)??profileBackgroundPreviewById.get(profile.backgroundId),base=BASE_PROFILE_BACKGROUNDS.find(row=>row.id===profile.backgroundId);
+ const renderBackgroundId=visualSelection.background??safe.background??'asterfall-night';
+ const renderBorderId=visualSelection.border??'';
+ const renderPetId=visualSelection.pet??'';
+ const newBackground=newLuxeBackground(renderBackgroundId);
+ const background=newBackground??profileBackgroundPreviewById.get(renderBackgroundId),base=BASE_PROFILE_BACKGROUNDS.find(row=>row.id===renderBackgroundId);
  const review=__DEV__?reviewCosmetics:undefined;
  const active=cosmeticsActive&&(stageActive??true)&&(review?.active??true);
  const animated=PROFILE_ANIMATED_COSMETICS_RELEASED||allowUnreleasedCosmetics||profile.cosmeticsPreview===true;
@@ -65,9 +72,9 @@ export function PublicProfileScene({profile,height=205,reduceMotion=false,showGu
  const borderRuntime=review?.borderRuntime??(!review&&borderAnimated&&renderBorderId?profileCosmeticRuntimeByBorder.get(renderBorderId):undefined),effectRuntime=review?.effectRuntime??(!review&&effectAnimated&&profile.effectId?profileCosmeticRuntimeByEffect.get(profile.effectId):undefined);
  const reviewBorderId=review?.borderRuntime?.borderId;
  const runtimeFallbackBorderId=review?.borderRuntime?.fallbackBorderId??borderRuntime?.fallbackBorderId;
- const directBorder=!review&&renderBorderId?profileBorderSourceById.get(renderBorderId):undefined;
+ const directBorder=!review&&renderBorderId?(newLuxeBorder(renderBorderId)??profileBorderSourceById.get(renderBorderId)):undefined;
  const reviewArtworkId=review?resolveProfileBorderArtworkId(reviewBorderId,runtimeFallbackBorderId):undefined;
- const border=review?(borderArt?.border??(reviewArtworkId?profileBorderSourceById.get(reviewArtworkId):undefined)):borderArt?.border??directBorder??(borderRuntime?profileBorderSourceById.get(borderRuntime.fallbackBorderId):undefined),pet=renderPetId?(petArtSource(renderPetId)??(profile.petId?petArtSource(profile.petId):undefined)):undefined;
+ const border=review?(borderArt?.border??(reviewArtworkId?profileBorderSourceById.get(reviewArtworkId):undefined)):borderArt?.border??directBorder??(borderRuntime?profileBorderSourceById.get(borderRuntime.fallbackBorderId):undefined),pet=renderPetId?(newLuxePet(renderPetId)??petArtSource(renderPetId)):undefined;
  const anchors=profileSceneContentAnchors(border?8:0);
  const classId=(CLASSES.some(row=>row.id===profile.character.classId)?profile.character.classId:'IRONWARDEN') as ClassId;
  const className=CLASSES.find(row=>row.id===classId)!.name;
@@ -82,7 +89,7 @@ export function PublicProfileScene({profile,height=205,reduceMotion=false,showGu
   <View style={[s.surface,!!border&&s.framedSurface]}>
   <View style={[s.scene,{height}]}>
    <ProfileBorderBackdrop borderId={borderArt||directBorder?(review?reviewBorderId:renderBorderId):(reviewArtworkId??runtimeFallbackBorderId??(review?reviewBorderId:renderBorderId))} source={border} existingInset={8}>
-   {background?<CardBackground sources={personalBackgroundVariants.get(renderBackgroundId)??{wide:background.source,square:background.source}}/>:base?<RegionArtwork regionId={base.region}/>:null}
+   {background?<CardBackground sources={newBackground?.variants??personalBackgroundVariants.get(renderBackgroundId)??{wide:background.source,square:background.source}}/>:base?<RegionArtwork regionId={base.region}/>:null}
    <View style={s.shade}/>
    {active&&draconicBackground&&draconic?<DraconicStandardEffects ember={draconic.scene.ember} kind="background" active={active} reduceMotion={reduceMotion}/>:null}
    {active&&celestialBackground?<CelestialStandardBackgroundEffects active={active} reduceMotion={reduceMotion}/>:null}
@@ -108,7 +115,16 @@ export function PublicProfileScene({profile,height=205,reduceMotion=false,showGu
   {borderArt?<AnimatedProfileBorderGlows art={borderArt} active={active} reduceMotion={reduceMotion}/>:borderRuntime?<ProceduralProfileBorderGlows runtime={borderRuntime} active={active} reduceMotion={reduceMotion}/>:null}
   {active&&draconicBorder&&draconic?<DraconicStandardEffects ember={draconic.scene.ember} kind="border" active={active} reduceMotion={reduceMotion}/>:null}
   {active&&celestialBorder?<CelestialStandardBorderEffects active={active} reduceMotion={reduceMotion}/>:null}
+  {!review&&newLuxeBorder(renderBorderId)?<VerifiedCandidateBorderEffects id={renderBorderId} active={active} reduceMotion={reduceMotion}/>:null}
  </View>;
+ const candidate=!review&&height>=205?candidateShowcase({...visualSelection,effect:profile.effectId},allowed):undefined;
+ if(candidate)return <VerifiedCandidateShowcase collectionId={candidate.id} fullSet={candidate.fullSet} equippedPetId={visualSelection.pet} alternatePetSource={pet} active={active} reduceMotion={reduceMotion} fallback={standard}
+  portrait={<CharacterPortraitSelection classId={classId} body={profile.character.bodyPresentation} profileIconId={profile.character.profileIconId} compact style={{width:'100%',height:'100%'}}/>}
+  identity={<View style={s.draconicIdentity}>
+   <GuildTaggedPlayerName accountId={profile.accountId} badges={profile.playerBadges} name={profile.character.name||profile.displayName} nameStyle={profile.nameStyle??undefined} reduceMotion={!active||reduceMotion} style={s.draconicName} badgeSize={11}/>
+   <UltraLuxeTitleText title={profile.title} verified={!!candidateTitle} color={candidateTitle?.accent??'#EDEBFF'} style={s.draconicTitle}/>
+   <Text numberOfLines={1} style={s.draconicMeta}>{profileT(language,'Lv. {level}',{level:profile.character.level})} · {className}</Text>{profile.combatPower!==undefined?<Text numberOfLines={1} style={s.draconicMeta}>{profile.combatPower.toLocaleString()} CP</Text>:null}
+  </View>} badges={<PlayerBadgeShowcase identity={profile.playerBadges} size={12} variant="bare"/>} guild={showGuild&&guild?<ProfileGuildAffiliation guild={guild} showcase/>:undefined}/>;
  const celestial=!review&&height>=205&&ultraLuxeSceneEffectCompatible(profile.effectId,'premium:celestial-sovereign:celestial-alignment')&&visualSelection.background===CELESTIAL_IDS.background&&visualSelection.border===CELESTIAL_IDS.border?celestialAssets:undefined;
  if(!review&&draconic&&ultraLuxeSceneEffectCompatible(profile.effectId,'premium:draconic-dominion:awakening-of-the-dragon')&&visualSelection.background===DRACONIC_IDS.background&&visualSelection.border===DRACONIC_IDS.border&&height>=205){
  return <DraconicDominionPreview fullSet={ultraLuxeVisualTier({...DRACONIC_IDS,title:'ascendant-draconic-title'},visualSelection)==='ascendant'} assets={draconic.scene} equippedPetId={visualSelection.pet} alternatePetSource={pet} petAccessibilityLabel={visualSelection.pet===DRACONIC_IDS.pet?'Vharaxis, the Eternal Flame':profileT(language,'Pet preview')} active={active} reduceMotion={reduceMotion} fallback={standard}

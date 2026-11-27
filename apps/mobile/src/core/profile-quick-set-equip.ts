@@ -6,9 +6,11 @@ import {CELESTIAL_IDS} from './ascendant-cosmetics';
 import {DRACONIC_IDS} from './draconic-showcase-layout';
 import {ownedUltraLuxeTitles} from './ultra-luxe-titles';
 import {profileAnimatedCosmeticsEnabled} from './profile-cosmetic-access';
+import {ultraLuxeFullSetNamePreset} from './ultra-luxe-full-set-name';
+import type {UltraLuxeGradientId} from './ultra-luxe-name-gradients';
 import {wave2SetFor,wave2Complete} from './profile-cosmetic-wave2';
 
-export type QuickSetChoice={id:string;name:string;patch:Partial<WardrobeEquipped>};
+export type QuickSetChoice={id:string;name:string;patch:Partial<WardrobeEquipped>;namePresetId?:UltraLuxeGradientId};
 export type QuickCosmeticSet={id:string;name:string;accent:string;choices:QuickSetChoice[]};
 const READY_LUXE=[
  {catalogue:'celestial-sovereign',ids:CELESTIAL_IDS,title:'ascendant-celestial-title'},
@@ -41,7 +43,7 @@ export function quickCosmeticSets(state:GameState):QuickCosmeticSet[]{
   if(!scene||!frame||!pet)continue;
   const title=ownedUltraLuxeTitles(state).find(t=>t.id===def.title);
   sets.push({id:row.id,name:row.name,accent:row.accent,choices:[{
-   id:row.id,name:row.name,patch:{scene,frame,effect:row.effectId,pet,...(title?{title:title.name}:{})},
+   id:row.id,name:row.name,namePresetId:ultraLuxeFullSetNamePreset(row.id),patch:{scene,frame,effect:row.effectId,pet,...(title?{title:title.name}:{})},
   }]});
  }
  return sets;

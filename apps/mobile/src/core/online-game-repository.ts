@@ -1,7 +1,9 @@
+import {fullSetRequestId,ULTRA_LUXE_FULL_SET_COMMAND} from './ultra-luxe-full-set-command';
+import type {VerifiedFullSetNames} from './ultra-luxe-full-set-name';
 import type {GameRepository} from './repository';
 import type {GameState,RewardBundle} from './types';
 import type {GameCommand,GameCommandResult} from './game-commands';
-export interface OnlineSnapshot {accountId:string;state:GameState;version:number;serverNow:number;reward?:RewardBundle;activity?:GameState['activity'];message?:string;won?:boolean;storyBossBattle?:GameCommandResult['storyBossBattle'];upgrade?:GameCommandResult['upgrade'];forgeResults?:GameCommandResult['forgeResults']}
+export interface OnlineSnapshot {ultraLuxeNameSelection?:VerifiedFullSetNames;ultraLuxeFullSetReplayed?:boolean;accountId:string;state:GameState;version:number;serverNow:number;reward?:RewardBundle;activity?:GameState['activity'];message?:string;won?:boolean;storyBossBattle?:GameCommandResult['storyBossBattle'];upgrade?:GameCommandResult['upgrade'];forgeResults?:GameCommandResult['forgeResults']}
 /** Local command context for presentation, including a retry loaded from storage.
  * It is never sent to the server, persisted in a save, or added to a receipt.
  */
@@ -45,7 +47,7 @@ export class OnlineGameRepository implements GameRepository{
   if(!command)throw new Error('No pending action.');
   if(!this.snapshot)await this.refresh();
   const original=this.snapshot!;
-  const request={requestId:this.key(),expectedVersion:original.version,command};
+  const request={requestId:command.type===ULTRA_LUXE_FULL_SET_COMMAND?fullSetRequestId(this.key()):this.key(),expectedVersion:original.version,command};
   await this.pending.write(request);
   let completed:ExecutedOnlineCommand;
   try{completed=await this.sendPending(request);}

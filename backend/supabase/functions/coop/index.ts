@@ -46530,23 +46530,22 @@ function characterNameError(value) {
 
 // ../apps/mobile/src/core/quick-navigation.ts
 var QUICK_NAV_DESTINATIONS = [
-  "Home",
-  "Character",
-  "Skills",
-  "World",
-  "Inventory",
-  "More",
   "Guild",
-  "Dungeon",
   "Quests",
-  "Companions",
-  "Friends",
-  "Settings",
-  "Social",
+  "ResourceCodex",
   "Party",
-  "Empty"
+  "Activity",
+  "Forge",
+  "Dungeon",
+  "Companions",
+  "Pets",
+  "Collections",
+  "Friends",
+  "Social",
+  "Events",
+  "Settings"
 ];
-var DEFAULT_QUICK_NAV_DESTINATIONS = ["Quests", "Dungeon", "Companions", "Guild", "Settings"];
+var DEFAULT_QUICK_NAV_DESTINATIONS = ["Guild", "Quests", "ResourceCodex", "Party", "Activity"];
 var allowed = new Set(QUICK_NAV_DESTINATIONS);
 
 // ../apps/mobile/src/core/account-roster.ts
@@ -48968,6 +48967,22 @@ function possibleDungeonCompanionCounters(dungeonId) {
   return [...result];
 }
 
+// ../apps/mobile/src/core/ultra-luxe-grants.ts
+var ULTRA_LUXE_GRANT_COLLECTIONS = [
+  { id: "ascendant-celestial-sovereign", background: "ascendant-celestial-astral-sanctum", border: "ascendant-celestial-crown-of-the-cosmos", pet: "ascendant-celestial-aetherion", icon: "ascendant-celestial-crown-icon", title: "ascendant-celestial-title", titleName: "Sovereign of the Stars", badge: "ascendant_sovereign_of_stars", nameStyle: "ascendant-celestial-name" },
+  { id: "ascendant-draconic-dominion", background: "ascendant-draconic-dominion-of-ash", border: "ascendant-draconic-throne-of-embers", pet: "ascendant-draconic-vharaxis", icon: "ascendant-draconic-ruby-icon", title: "ascendant-draconic-title", titleName: "Dragon Sovereign", badge: "ascendant_dragon_sovereign", nameStyle: "ascendant-draconic-name" }
+];
+var ULTRA_LUXE_CANDIDATE_GRANT_COLLECTIONS = [
+  { id: "ascendant-abyssal-majesty", background: "ascendant-abyssal-forgotten-abyss", border: "ascendant-abyssal-crown-of-the-depths", pet: "ascendant-abyssal-nhalzuun", icon: null, title: "ascendant-abyssal-title", titleName: "Monarch of the Deep", badge: "ascendant_monarch_of_deep", nameStyle: null },
+  { id: "ascendant-paradox-eternal", background: "ascendant-paradox-beyond-the-veil", border: "ascendant-paradox-fractured-eternity", pet: "ascendant-paradox-aeon", icon: null, title: "ascendant-paradox-title", titleName: "Beyond Existence", badge: "ascendant_beyond_existence", nameStyle: null }
+];
+var FOUR_COLLECTIONS = [...ULTRA_LUXE_GRANT_COLLECTIONS, ...ULTRA_LUXE_CANDIDATE_GRANT_COLLECTIONS];
+var SIX_ONLY_COLLECTIONS = [
+  { id: "ascendant-sakura-enchantment", background: "ascendant-sakura-petal-sanctuary", border: "ascendant-sakura-blossom-crown", pet: "ascendant-sakura-spirit-fox", icon: null, title: "ascendant-sakura-title", titleName: "Sakura Dreamkeeper", badge: "ascendant_sakura_blossom_crest", nameStyle: "ascendant-sakura-name" },
+  { id: "ascendant-stormforged-sovereign", background: "ascendant-stormforged-thunderkeep", border: "ascendant-stormforged-steel-crown", pet: "ascendant-stormforged-direwolf", icon: null, title: "ascendant-stormforged-title", titleName: "Stormforged Warden", badge: "ascendant_stormforged_wolf_crest", nameStyle: "ascendant-stormforged-name" }
+];
+var ALL_COLLECTIONS = [...ULTRA_LUXE_GRANT_COLLECTIONS, { ...ULTRA_LUXE_CANDIDATE_GRANT_COLLECTIONS[0], nameStyle: "ascendant-abyssal-name" }, { ...ULTRA_LUXE_CANDIDATE_GRANT_COLLECTIONS[1], nameStyle: "ascendant-paradox-name" }, ...SIX_ONLY_COLLECTIONS];
+
 // ../apps/mobile/src/core/profile-premium-cosmetics.ts
 var PREMIUM_PROFILE_COSMETICS = [
   { id: "celestial-sovereign", name: "Celestial Sovereign", tier: "ascendant", borderId: "premium:celestial-sovereign:crown-of-cosmos", borderName: "Crown of the Cosmos", fallbackBorderId: "guild-border-royal", effectId: "premium:celestial-sovereign:celestial-alignment", effectName: "Celestial Alignment", backgroundId: "premium:celestial-sovereign:astral-sanctum", backgroundName: "Astral Sanctum", fallbackBackgroundId: "bg_frostfall", petId: "premium:celestial-sovereign:aetherion-starborn", petName: "Aetherion, the Starborn", fallbackPetId: "EVT_PET_009", badgeId: "ascendant_sovereign_of_stars", badgeName: "Sovereign of the Stars", accent: "#F5D982", softAccent: "#7181C8" },
@@ -49983,6 +49998,14 @@ function coopEntryHandler(services) {
       }
       const liveRecruitment = await services.rpc("browse_online_coop_lfg_server_v1", { p_account_id: accountId });
       const runtime = loaded.liveEvent, activeLiveEventId = runtime?.enabled && loaded.serverNow >= runtime.startsAtMs && loaded.serverNow < runtime.endsAtMs ? runtime.eventId : void 0;
+      let frostfallDailyBudget;
+      if (activeLiveEventId?.startsWith("EVT_ANNUAL_012_") && runtime?.modules?.includes("expedition")) {
+        try {
+          const budget = await services.rpc("online_event_expedition_daily_budget_server_v1", { p_account_id: accountId, p_event_id: activeLiveEventId });
+          if (Number.isInteger(budget) && budget >= 0 && budget <= 2) frostfallDailyBudget = budget;
+        } catch {
+        }
+      }
       return json({
         ...participation,
         serverNow: loaded.serverNow,
@@ -49992,8 +50015,8 @@ function coopEntryHandler(services) {
         ...rewardBudget ? { rewardBudget } : {},
         dungeons: Object.values(EXPEDITIONS).filter(listedRegularDungeon).map((def) => ({ id: def.id, name: def.name, region: def.region, baseMarks: def.baseMarks, expectedMarksByTier: Object.fromEntries(tiers.map((tier) => [tier, baseMarks(def.baseMarks, tier)])), minLevel: regularDungeonTierRequiredLevel(def, 1), recommendedLevel: Math.max(regularDungeonTierRequiredLevel(def, 1), rebasedCombatLevelFromLegacyLevel(def.recommendedLevel)), recommendedLiveTier: !regularDungeonEntryError(def, gameState, character.level, combatPower) && prepared?.assessment.readiness.ready ? regularDungeonReadyTier(def, character.level, prepared.assessment.readiness.normalizedScore, combatPower) : void 0, recommendedPower: regularDungeonTierRequiredPower(def, 1), itemDropRates: [], bossVariants: publishedRegularDungeon(def) ? publishedDungeonBossVariants(def.id) : [], companionCounterIds: possibleDungeonCompanionCounters(def.id), syncLevel: def.recommendedLevel, available: !regularDungeonEntryError(def, gameState, character.level, combatPower, 1, "qmode"), lockedReason: regularDungeonLockedReason(def, gameState, character.level, combatPower, "qmode"), difficulties: tiers, tierMinLevels: Object.fromEntries(tiers.map((tier) => [tier, regularDungeonTierRequiredLevel(def, tier)])), tierMinPower: Object.fromEntries(tiers.map((tier) => [tier, regularDungeonTierRequiredPower(def, tier)])), preBossRoomMin: 7, preBossRoomMax: 7, estimatedMinutes: { min: 8, max: 12 } })),
         eventExpeditions: eventExpeditionPreviews(loaded.serverNow).map((def) => {
-          const matches = Boolean(activeLiveEventId && activeLiveEventId.startsWith(`${def.liveEventSeriesId}_`)), levelReady = character.level >= (isFrostfallEventExpedition(def.id) ? def.minLevel : rebasedCombatLevelFromLegacyLevel(def.minLevel)), available = matches && levelReady && prepared?.assessment.readiness.ready === true;
-          return { ...def, minLevel: isFrostfallEventExpedition(def.id) ? def.minLevel : rebasedCombatLevelFromLegacyLevel(def.minLevel), tiers: isFrostfallEventExpedition(def.id) ? [1, 2, 3, 4, 5] : [1], tierMinLevels: isFrostfallEventExpedition(def.id) ? [10, 15, 20, 25, 30] : [rebasedCombatLevelFromLegacyLevel(def.minLevel)], tierRewardMarks: isFrostfallEventExpedition(def.id) ? [1, 2, 3, 4, 5].map((tier) => eventTierRewardMarks(def, tier)) : [def.rewardMarks], status: available ? "available" : "preview", liveEventId: matches ? activeLiveEventId : void 0, lockedReason: available ? void 0 : !matches ? `Available only while ${def.eventName} is active.` : !levelReady ? `Requires level ${isFrostfallEventExpedition(def.id) ? def.minLevel : rebasedCombatLevelFromLegacyLevel(def.minLevel)}` : "Current co-op loadout is not expedition-ready." };
+          const matches = Boolean(activeLiveEventId && activeLiveEventId.startsWith(`${def.liveEventSeriesId}_`)), levelReady = character.level >= (isFrostfallEventExpedition(def.id) ? def.minLevel : rebasedCombatLevelFromLegacyLevel(def.minLevel)), moduleReady = !isFrostfallEventExpedition(def.id) || runtime?.modules?.includes("expedition") === true, available = matches && moduleReady && levelReady && prepared?.assessment.readiness.ready === true;
+          return { ...def, ...isFrostfallEventExpedition(def.id) ? { routeNodeCount: void 0, endurance: { checkpointInterval: 7, maxNormalRooms: 42 }, ...matches && frostfallDailyBudget !== void 0 ? { rewardedClearsRemaining: frostfallDailyBudget } : {} } : {}, minLevel: isFrostfallEventExpedition(def.id) ? def.minLevel : rebasedCombatLevelFromLegacyLevel(def.minLevel), tiers: isFrostfallEventExpedition(def.id) ? [1, 2, 3, 4, 5] : [1], tierMinLevels: isFrostfallEventExpedition(def.id) ? [10, 15, 20, 25, 30] : [rebasedCombatLevelFromLegacyLevel(def.minLevel)], tierRewardMarks: isFrostfallEventExpedition(def.id) ? [1, 2, 3, 4, 5].map((tier) => eventTierRewardMarks(def, tier)) : [def.rewardMarks], status: available ? "available" : "preview", liveEventId: matches ? activeLiveEventId : void 0, lockedReason: available ? void 0 : !matches ? `Available only while ${def.eventName} is active.` : !moduleReady ? "Seasonal expedition is not yet available." : !levelReady ? `Requires level ${isFrostfallEventExpedition(def.id) ? def.minLevel : rebasedCombatLevelFromLegacyLevel(def.minLevel)}` : "Current co-op loadout is not expedition-ready." };
         }),
         loadouts: prepared ? [{ id: "current", characterId: character.id, revision: loaded.version, verifiedRevision: loaded.version, name: "Current equipment", characterName: character.name, className: CLASSES.find((row) => row.id === character.classId).name, role: prepared.assessment.readiness.role, status: prepared.assessment.readiness.ready ? "verified" : "ineligible", ready: prepared.assessment.readiness.ready, failures: prepared.assessment.readiness.failures, level: character.level, effectiveLevel: prepared.assessment.normalized.effectiveLevel, beforeStats: prepared.assessment.normalized.before, effectiveStats: prepared.assessment.normalized.snapshot, normalizationVersion: prepared.assessment.normalized.normalizationVersion, verifiedAt: new Date(loaded.serverNow).toISOString(), skills: prepared.record.abilities.map((row) => row.name), equipment: Object.values(character.equipment).filter(Boolean) }] : []
       });
@@ -50501,15 +50524,26 @@ function expeditionBossTelegraph(encounterId) {
   const factory = EXPEDITION_ENCOUNTERS[encounterId];
   return factory ? pveBossTelegraph(factory()) : void 0;
 }
+function withScaledBossShields(enemy4, scale) {
+  if (!enemy4.boss || scale === 1) return enemy4;
+  const effect2 = (e) => e.kind === "shield" && typeof e.flat === "number" ? { ...e, flat: e.flat * scale } : e;
+  return {
+    ...enemy4,
+    abilities: enemy4.abilities.map((a) => ({ ...a, effects: a.effects.map(effect2) })),
+    ...enemy4.phases ? { phases: enemy4.phases.map((p) => ({ ...p, effects: p.effects.map(effect2) })) } : {}
+  };
+}
 function buildExpeditionEncounter(input) {
   const factory = EXPEDITION_ENCOUNTERS[input.encounterId];
   if (!factory) throw new Error(`unknown_encounter:${input.encounterId}`);
+  const shieldScale = input.enemyShieldMultiplier ?? 1;
+  if (!Number.isFinite(shieldScale) || shieldScale < 0 || shieldScale > 1) throw new Error("invalid_enemy_shield_multiplier");
   const tuning = input.bossTuning, removed = new Set(tuning?.removeAbilityIds ?? []);
   return factory().map((enemy4, index) => {
     const minimumRatio = input.encounterId.startsWith("EVENT_FROSTFALL_") ? 0.25 : 0.65;
     const levelRatio = input.enemyLevel === void 0 ? 1 : Math.max(minimumRatio, Math.min(1.2, input.enemyLevel / Math.max(1, enemy4.level)));
     const base = { ...enemy4, level: input.enemyLevel ?? enemy4.level, stats: { ...enemy4.stats, maxHp: enemy4.stats.maxHp * levelRatio * (input.enemyHpMultiplier ?? 1), attackPower: enemy4.stats.attackPower * levelRatio * (input.enemyAttackMultiplier ?? 1), defense: enemy4.stats.defense * levelRatio * (input.enemyDefenseMultiplier ?? 1) } };
-    if (!base.boss || !tuning) return applyCoopRoomModifier(base, input.roomModifierId, index, input.roomModifierElite);
+    if (!base.boss || !tuning) return withScaledBossShields(applyCoopRoomModifier(base, input.roomModifierId, index, input.roomModifierElite), shieldScale);
     const abilities = base.abilities.filter((ability3) => !removed.has(ability3.id)).map((ability3) => {
       const damageMultiplier = tuning.abilityDamageMultipliers?.[ability3.id] ?? 1, cooldownMultiplier = tuning.abilityCooldownMultipliers?.[ability3.id] ?? 1;
       return { ...ability3, cooldownMs: Math.max(500, Math.round(ability3.cooldownMs * cooldownMultiplier)), effects: ability3.effects.map((effect2) => (effect2.kind === "damage" || effect2.kind === "dot") && effect2.coeff !== void 0 ? { ...effect2, coeff: effect2.coeff * damageMultiplier } : effect2) };
@@ -50517,7 +50551,7 @@ function buildExpeditionEncounter(input) {
     for (const added of tuning.addAbilities ?? []) if (!abilities.some((ability3) => ability3.id === added.id)) abilities.push(structuredClone(added));
     const phases = [...base.phases ?? []];
     for (const added of tuning.addPhases ?? []) if (!phases.some((phase2) => phase2.id === added.id)) phases.push(structuredClone(added));
-    return applyCoopRoomModifier({ ...base, abilities, phases }, input.roomModifierId, index, input.roomModifierElite);
+    return withScaledBossShields(applyCoopRoomModifier({ ...base, abilities, phases }, input.roomModifierId, index, input.roomModifierElite), shieldScale);
   });
 }
 function publicReplay(result, initialPlayerState) {
@@ -50844,7 +50878,7 @@ function resolveCoopNode(input) {
     });
     const depthMultiplier = input.node.depth >= balance.lateDepthStart ? balance.lateDepthAttackMultiplier : 1;
     const tierScale = input.tier ? coopTierEnemyMultipliers(input.tier) : { attack: 1, hp: 1, defense: 1 };
-    const combat = resolveExpeditionCombat({ runId: input.runId, nodeIndex: input.node.depth, encounterId: input.node.contentId, serverSeed: input.serverSecret, players, initialPlayerState: state.actors, safetyAiPlayerIds: input.safetyAiPlayerIds, enemyAttackMultiplier: (rootbound ? balance.enemyAttackMultiplier * depthMultiplier : 1) * tierScale.attack * (input.enemyAttackMultiplier ?? 1), enemyHpMultiplier: tierScale.hp * (input.enemyHpMultiplier ?? 1), enemyDefenseMultiplier: tierScale.defense * (input.enemyDefenseMultiplier ?? 1), enemyDamageProfile: input.enemyDamageProfile, enemyLevel: input.enemyLevel, bossTuning: input.bossTuning, maxDurationMs: input.maxDurationMs, roomModifierId: input.node.kind === "elite" ? input.node.modifierId : void 0, roomModifierElite: input.node.kind === "elite" });
+    const combat = resolveExpeditionCombat({ runId: input.runId, nodeIndex: input.node.depth, encounterId: input.node.contentId, serverSeed: input.serverSecret, players, initialPlayerState: state.actors, safetyAiPlayerIds: input.safetyAiPlayerIds, enemyAttackMultiplier: (rootbound ? balance.enemyAttackMultiplier * depthMultiplier : 1) * tierScale.attack * (input.enemyAttackMultiplier ?? 1), enemyHpMultiplier: tierScale.hp * (input.enemyHpMultiplier ?? 1), enemyDefenseMultiplier: tierScale.defense * (input.enemyDefenseMultiplier ?? 1), enemyShieldMultiplier: input.enemyShieldMultiplier, enemyDamageProfile: input.enemyDamageProfile, enemyLevel: input.enemyLevel, bossTuning: input.bossTuning, maxDurationMs: input.maxDurationMs, roomModifierId: input.node.kind === "elite" ? input.node.modifierId : void 0, roomModifierElite: input.node.kind === "elite" });
     state = { ...state, actors: combat.endingPlayerState };
     return { success: combat.success, state, summary: { kind: "combat", ...combat.resultJson, ...input.bossTuning ? { bossTuningProfile: input.bossTuning.profileId } : {} } };
   }
@@ -51006,8 +51040,8 @@ function generateCoopRouteGraph(secret, expeditionId, runId, contentVersion, bal
   const finalBosses = dungeonBossVariantsFor(expeditionId);
   const bossId = finalBosses.length ? finalBosses[deterministicInt(secret, 0, finalBosses.length - 1, "regional-boss-v1", runId, expeditionId, contentVersion, balanceVersion)].bossId : def.bossId;
   const nodes = [];
-  const idsAt = (depth) => Array.from({ length: COOP_ROGUELITE_CONFIG.choicesPerDepth }, (_, choice) => `d${depth}-c${choice}`);
-  nodes.push({ nodeId: "entry", depth: 0, kind: "entry", contentId: "COOP_ENTRY", modifierId: "none", risk: 1, rewardTag: "none", nextNodeIds: idsAt(1) });
+  const idsAt2 = (depth) => Array.from({ length: COOP_ROGUELITE_CONFIG.choicesPerDepth }, (_, choice) => `d${depth}-c${choice}`);
+  nodes.push({ nodeId: "entry", depth: 0, kind: "entry", contentId: "COOP_ENTRY", modifierId: "none", risk: 1, rewardTag: "none", nextNodeIds: idsAt2(1) });
   for (let depth = 1; depth <= preBossNodeCount; depth++) {
     const layerModifierOffset = deterministicInt(secret, 0, MODIFIERS.length - 1, regularRoomSeedVersion, runId, expeditionId, contentVersion, balanceVersion, "modifier-layer", depth);
     const checkpoint = isEndurance && depth > 1 && (depth - 1) % DUNGEON_ENDURANCE.checkpointInterval === 0;
@@ -51022,7 +51056,7 @@ function generateCoopRouteGraph(secret, expeditionId, runId, contentVersion, bal
         const kind2 = choice === 0 ? "camp" : "shrine";
         const pool = coopContentPool(expeditionId, kind2);
         const index = deterministicInt(secret, 0, pool.length - 1, baseGeneratorVersion, runId, expeditionId, contentVersion, balanceVersion, "checkpoint-choice", depth, kind2);
-        nodes.push({ nodeId: `d${depth}-c${choice}`, depth, kind: kind2, contentId: pool[index], modifierId: kind2 === "camp" ? "checkpoint-camp-v2" : "checkpoint-boon-v2", risk: 1, rewardTag: kind2 === "camp" ? "camp" : "boon", nextNodeIds: idsAt(depth + 1) });
+        nodes.push({ nodeId: `d${depth}-c${choice}`, depth, kind: kind2, contentId: pool[index], modifierId: kind2 === "camp" ? "checkpoint-camp-v2" : "checkpoint-boon-v2", risk: 1, rewardTag: kind2 === "camp" ? "camp" : "boon", nextNodeIds: idsAt2(depth + 1) });
         continue;
       }
       let kind = coopKind(secret, expeditionId, runId, contentVersion, balanceVersion, depth, choice);
@@ -51038,7 +51072,7 @@ function generateCoopRouteGraph(secret, expeditionId, runId, contentVersion, bal
       const contentId = contentPool[contentIndex];
       usedContentIds.add(contentId);
       const modifierIndex = (layerModifierOffset + choice) % MODIFIERS.length;
-      nodes.push({ nodeId: `d${depth}-c${choice}`, depth, kind, contentId, modifierId: kind === "elite" ? MODIFIERS[modifierIndex] : "steady", risk: kind === "risk" ? 1.15 : kind === "elite" ? 1.08 : 1, rewardTag: kind, nextNodeIds: depth === preBossNodeCount ? ["boss"] : idsAt(depth + 1) });
+      nodes.push({ nodeId: `d${depth}-c${choice}`, depth, kind, contentId, modifierId: kind === "elite" ? MODIFIERS[modifierIndex] : "steady", risk: kind === "risk" ? 1.15 : kind === "elite" ? 1.08 : 1, rewardTag: kind, nextNodeIds: depth === preBossNodeCount ? ["boss"] : idsAt2(depth + 1) });
     }
   }
   nodes.push({ nodeId: "boss", depth: preBossNodeCount + 1, kind: "boss", contentId: bossId, modifierId: "final", risk: 1.25, rewardTag: "boss", nextNodeIds: [] });
@@ -52660,6 +52694,75 @@ function eventBossMechanicProfile(input) {
   }
 }
 
+// src/server/expeditions/frostfall-endurance.ts
+var FROSTFALL_ENDURANCE_GENERATOR = "event-route-v5-endurance-v2";
+var FROSTFALL_ENDURANCE_DEPTH_REWARDS = [1, 1.15, 1.28, 1.38, 1.46, 1.52];
+var FROSTFALL_ENDURANCE_ENEMY_PACING_V3 = { attack: 0.72, hp: 0.8, defense: 0.9 };
+var FROSTFALL_ENDURANCE_TIER1_EXTRA_V3 = { attack: 0.7, hp: 0.85, defense: 0.9 };
+var FROSTFALL_ENDURANCE_TIER2_EXTRA_V3 = { attack: 0.85, hp: 0.9, defense: 0.95 };
+var FROSTFALL_ENDURANCE_BALANCE_V3 = "event-frostfall-endurance-v3";
+var FROSTFALL_ENDURANCE_DEPTH_CURVE_V3 = { attack: 1.01, hp: 1.016, defense: 1.005 };
+var ORIGINAL_FROSTFALL_DEPTH_CURVE = { attack: 1.022, hp: 1.035, defense: 1.012 };
+function frostfallDepthCurveForGraph(graph2) {
+  return graph2.generatorVersion === FROSTFALL_ENDURANCE_GENERATOR && graph2.balanceVersion === FROSTFALL_ENDURANCE_BALANCE_V3 ? FROSTFALL_ENDURANCE_DEPTH_CURVE_V3 : ORIGINAL_FROSTFALL_DEPTH_CURVE;
+}
+var ORIGINAL_FROSTFALL_ENEMY_PACING = { attack: 1, hp: 1, defense: 1 };
+function frostfallEnemyPacingForGraph(graph2, tier) {
+  if (graph2.generatorVersion !== FROSTFALL_ENDURANCE_GENERATOR || graph2.balanceVersion !== FROSTFALL_ENDURANCE_BALANCE_V3) return ORIGINAL_FROSTFALL_ENEMY_PACING;
+  const extra = tier === 1 ? FROSTFALL_ENDURANCE_TIER1_EXTRA_V3 : tier === 2 ? FROSTFALL_ENDURANCE_TIER2_EXTRA_V3 : null;
+  if (!extra) return FROSTFALL_ENDURANCE_ENEMY_PACING_V3;
+  return {
+    attack: FROSTFALL_ENDURANCE_ENEMY_PACING_V3.attack * extra.attack,
+    hp: FROSTFALL_ENDURANCE_ENEMY_PACING_V3.hp * extra.hp,
+    defense: FROSTFALL_ENDURANCE_ENEMY_PACING_V3.defense * extra.defense
+  };
+}
+var idsAt = (depth) => [0, 1, 2].map((choice) => "d" + depth + "-c" + choice);
+function frostfallRewardMultiplierForBoss(graph2, bossNode) {
+  if (graph2.generatorVersion !== FROSTFALL_ENDURANCE_GENERATOR) return 1;
+  if (bossNode.kind !== "boss" || bossNode.contentId !== graph2.nodes.find((node) => node.nodeId === graph2.bossNodeId)?.contentId) throw new Error("invalid_frostfall_boss_exit");
+  const cleared = bossNode.depth - 1;
+  if (cleared < 7 || cleared > DUNGEON_ENDURANCE.maxNormalRooms || cleared % DUNGEON_ENDURANCE.checkpointInterval !== 0) throw new Error("invalid_frostfall_boss_depth");
+  const canonical2 = graph2.nodes.find((node) => node.nodeId === bossNode.nodeId);
+  if (!canonical2 || canonical2.kind !== "boss" || canonical2.depth !== bossNode.depth || canonical2.contentId !== bossNode.contentId || canonical2.modifierId !== bossNode.modifierId || canonical2.nextNodeIds.length !== 0) throw new Error("invalid_frostfall_boss_exit");
+  return FROSTFALL_ENDURANCE_DEPTH_REWARDS[cleared / DUNGEON_ENDURANCE.checkpointInterval - 1];
+}
+function generateFrostfallEnduranceGraph(def, runId, secret) {
+  if (def.id !== "EVENT_FROSTFALL_AURORA_HOLLOW") throw new Error("invalid_frostfall_definition");
+  const count = DUNGEON_ENDURANCE.maxNormalRooms;
+  const nodes = [{ nodeId: "entry", depth: 0, kind: "entry", contentId: "COOP_ENTRY", modifierId: "none", risk: 1, rewardTag: "none", nextNodeIds: idsAt(1) }];
+  for (let depth = 1; depth <= count; depth++) {
+    const checkpoint = depth > 1 && (depth - 1) % DUNGEON_ENDURANCE.checkpointInterval === 0;
+    const next = depth === count ? ["boss"] : idsAt(depth + 1);
+    const localDepth = (depth - 1) % DUNGEON_ENDURANCE.checkpointInterval + 1;
+    const base = deterministicInt(secret, 1, 3, "frostfall-endurance-v2", def.id, runId, depth);
+    for (const choice of [0, 1, 2]) {
+      const nodeId = "d" + depth + "-c" + choice;
+      if (checkpoint) {
+        if (choice === 2) {
+          nodes.push({ nodeId, depth, kind: "boss", contentId: def.bossEncounterId, modifierId: "checkpoint", risk: 1.25, rewardTag: "boss", nextNodeIds: [], title: def.finalBoss });
+          continue;
+        }
+        const isCamp = choice === 0;
+        nodes.push({ nodeId, depth, kind: isCamp ? "camp" : "shrine", contentId: isCamp ? "EVENT_FROSTFALL_FESTIVAL_HEARTH" : "EVENT_FROSTFALL_AURORA_BRAZIER", modifierId: isCamp ? "checkpoint-camp-v2" : "checkpoint-boon-v2", risk: 1, rewardTag: isCamp ? "camp" : "boon", nextNodeIds: next, title: isCamp ? "Festival Campfire \xB7 Continue" : "Aurora Boon \xB7 Continue", mechanicDelta: isCamp ? 18 : 12, objectiveDelta: isCamp ? 1 : 0 });
+        continue;
+      }
+      const special2 = def.specialNodes.find((item) => item.depth === localDepth && item.choice === choice);
+      if (special2) {
+        nodes.push({ nodeId, depth, kind: special2.kind, contentId: special2.contentId, modifierId: "frostfall-" + choice, risk: special2.risk ?? (special2.kind === "risk" ? 1.18 : special2.kind === "elite" ? 1.1 : 1), rewardTag: special2.rewardTag, nextNodeIds: next, title: special2.title, mechanicDelta: special2.mechanicDelta, objectiveDelta: special2.objectiveDelta ?? 0 });
+        continue;
+      }
+      const contentIndex = (base + choice - 1) % 3 + 1;
+      const highlight = def.routeHighlights[(depth - 1) % def.routeHighlights.length];
+      nodes.push({ nodeId, depth, kind: "battle", contentId: def.encounterPrefix + "_BATTLE_0" + contentIndex, modifierId: "frostfall-" + choice, risk: 1, rewardTag: "battle", nextNodeIds: next, title: "Battle through " + highlight, mechanicDelta: -4, objectiveDelta: 0 });
+    }
+  }
+  nodes.push({ nodeId: "boss", depth: count + 1, kind: "boss", contentId: def.bossEncounterId, modifierId: "final", risk: 1.25, rewardTag: "boss", nextNodeIds: [], title: def.finalBoss });
+  const graph2 = { schemaVersion: 1, generatorVersion: FROSTFALL_ENDURANCE_GENERATOR, runId, expeditionId: def.id, contentVersion: "event-frostfall-endurance-v2", balanceVersion: FROSTFALL_ENDURANCE_BALANCE_V3, preBossNodeCount: count, entryNodeId: "entry", bossNodeId: "boss", nodes };
+  validateCoopRouteGraph(graph2);
+  return graph2;
+}
+
 // src/server/expeditions/event-service.ts
 var MemoryEventRunRepository = class {
   runs = /* @__PURE__ */ new Map();
@@ -52729,7 +52832,7 @@ function eventSyncLevel(definition, players) {
 }
 var displayId = (value) => value.replace(/^EVENT_[A-Z]+_BOSS_/, "").replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
 function eventBossMechanicProjection(run) {
-  if (run.graph.generatorVersion !== "event-route-v5") return void 0;
+  if (run.graph.generatorVersion !== "event-route-v5" && run.graph.generatorVersion !== FROSTFALL_ENDURANCE_GENERATOR) return void 0;
   const definition = definitionFor(run.eventId), mechanic = eventMechanicProjection(run), objective = eventObjectiveProjection(run);
   const profile = eventBossMechanicProfile({ eventId: run.eventId, objectiveCount: objective.count, objectiveMax: objective.maxCount, mechanicStatus: mechanic.status });
   const baseBoss = buildExpeditionEncounter({ encounterId: definition.bossEncounterId, enemyLevel: run.syncLevel }).find((enemy4) => enemy4.boss);
@@ -52742,7 +52845,7 @@ function eventBossMechanicProjection(run) {
 }
 function effectiveEventNode(run, node) {
   const next = { ...node };
-  if (!["event-route-v4", "event-route-v5"].includes(run.graph.generatorVersion) || node.kind === "entry" || node.kind === "boss") return next;
+  if (!["event-route-v4", "event-route-v5", FROSTFALL_ENDURANCE_GENERATOR].includes(run.graph.generatorVersion) || node.kind === "entry" || node.kind === "boss") return next;
   const mechanic = eventMechanicProjection(run), objective = eventObjectiveProjection(run), battleLike = node.kind === "battle" || node.kind === "elite";
   const title2 = () => next.title ?? next.kind.charAt(0).toUpperCase() + next.kind.slice(1);
   const prefix = (label) => {
@@ -52872,10 +52975,11 @@ function healBeforeBoss(state, players, pct) {
 }
 function graph(eventId, runId, serverSecret) {
   const definition = definitionFor(eventId), prefix = definition.encounterPrefix, boss4 = definition.bossEncounterId, count = definition.routeNodeCount;
-  const idsAt = (depth) => [0, 1, 2].map((choice) => `d${depth}-c${choice}`);
-  const nodes = [{ nodeId: "entry", depth: 0, kind: "entry", contentId: "COOP_ENTRY", modifierId: "none", risk: 1, rewardTag: "none", nextNodeIds: idsAt(1) }];
+  if (isFrostfallEventExpedition(eventId)) return generateFrostfallEnduranceGraph(definition, runId, serverSecret);
+  const idsAt2 = (depth) => [0, 1, 2].map((choice) => `d${depth}-c${choice}`);
+  const nodes = [{ nodeId: "entry", depth: 0, kind: "entry", contentId: "COOP_ENTRY", modifierId: "none", risk: 1, rewardTag: "none", nextNodeIds: idsAt2(1) }];
   for (let depth = 1; depth <= count; depth++) {
-    const next = depth === count ? ["boss"] : idsAt(depth + 1);
+    const next = depth === count ? ["boss"] : idsAt2(depth + 1);
     const base = deterministicInt(serverSecret, 1, 3, "event-route-v5", eventId, runId, depth);
     for (const choice of [0, 1, 2]) {
       const special2 = definition.specialNodes.find((item) => item.depth === depth && item.choice === choice);
@@ -52893,6 +52997,7 @@ function graph(eventId, runId, serverSecret) {
   validateCoopRouteGraph(result, { preBossNodeMin: 5, preBossNodeMax: 7 });
   return result;
 }
+var EVENT_EXPEDITION_DAILY_REWARDED_CLEARS = 2;
 var EventExpeditionService = class {
   constructor(repository, serverSecret) {
     this.repository = repository;
@@ -52913,7 +53018,7 @@ var EventExpeditionService = class {
     if (input.players.length !== 4 || input.players.some((player2) => player2.level < requiredLevel)) throw new Error("event_level_requirement");
     validateUniqueDamageClasses(input.players.map((player2) => ({ role: player2.role, classId: player2.classId ?? "" })));
     if (!/^[-a-zA-Z0-9_]{8,128}$/.test(input.requestId) || !/^[-a-zA-Z0-9_]{8,128}$/.test(input.runId)) throw new Error("invalid_event_identity");
-    const syncLevel = isFrostfallEventExpedition(definition.id) ? requiredLevel : eventSyncLevel(definition, input.players), run = { id: input.runId, requestId: input.requestId, accountIds: input.members.map((member) => member.accountId), eventId: input.eventId, tier, graph: graph(input.eventId, input.runId, this.serverSecret), players: input.players, persistentState: initialPersistentRunState(input.players), mechanic: { id: definition.mechanic.id, value: definition.mechanic.startValue }, objective: { id: definition.objective.id, count: definition.objective.startCount }, ...syncLevel === void 0 ? {} : { syncLevel }, currentNodeId: "entry", phase: "awaiting_choice", settlement: "pending" };
+    const syncLevel = isFrostfallEventExpedition(definition.id) ? requiredLevel : eventSyncLevel(definition, input.players), run = { id: input.runId, requestId: input.requestId, accountIds: input.members.map((member) => member.accountId), eventId: input.eventId, tier, graph: graph(input.eventId, input.runId, this.serverSecret), players: input.players, persistentState: initialPersistentRunState(input.players), mechanic: { id: definition.mechanic.id, value: definition.mechanic.startValue }, objective: { id: definition.objective.id, count: definition.objective.startCount }, ...syncLevel === void 0 ? {} : { syncLevel }, currentNodeId: "entry", phase: "awaiting_choice", settlement: "pending", ...input.practiceOnly ? { practiceOnly: true } : {} };
     this.repository.save(run);
     return structuredClone(run);
   }
@@ -52933,9 +53038,15 @@ var EventExpeditionService = class {
     if (!baseSelected) throw new Error("invalid_event_option");
     const selected2 = effectiveEventNode(run, baseSelected);
     const beforeMechanic = eventMechanicProjection(run), beforeObjective = eventObjectiveProjection(run), bossMechanic = selected2.kind === "boss" ? eventBossMechanicProjection(run) : void 0;
+    const isFrostfallEndurance = run.graph.generatorVersion === FROSTFALL_ENDURANCE_GENERATOR;
+    const depthBeyondOpening = isFrostfallEndurance && ["battle", "elite", "boss"].includes(selected2.kind) ? Math.max(0, selected2.depth - 8) : 0;
+    const curve = frostfallDepthCurveForGraph(run.graph);
+    const depthAttack = Math.pow(curve.attack, depthBeyondOpening), depthHp = Math.pow(curve.hp, depthBeyondOpening), depthDefense = Math.pow(curve.defense, depthBeyondOpening);
+    const seasonalPacing = frostfallEnemyPacingForGraph(run.graph, run.tier ?? 1);
+    const eventBossShieldMultiplier = selected2.kind === "boss" && run.graph.balanceVersion === FROSTFALL_ENDURANCE_BALANCE_V3 && isFrostfallEndurance ? seasonalPacing.hp * Math.max(0.25, (run.syncLevel ?? 35) / 35) : void 0;
     let startingState = run.persistentState;
     if (selected2.kind === "boss" && beforeObjective.preBossHealPct > 0) startingState = healBeforeBoss(startingState, run.players, beforeObjective.preBossHealPct);
-    const result = resolveCoopNode({ runId: run.id, serverSecret: this.serverSecret, node: selected2, players: run.players, state: startingState, enemyLevel: run.syncLevel, enemyAttackMultiplier: selected2.kind === "boss" ? beforeMechanic.bossAttackMultiplier * beforeObjective.bossAttackMultiplier : selected2.encounterAttackMultiplier ?? 1, enemyHpMultiplier: selected2.kind === "boss" ? beforeObjective.bossHpMultiplier : 1, enemyDefenseMultiplier: selected2.kind === "boss" ? beforeObjective.bossDefenseMultiplier : 1, bossTuning: bossMechanic?.tuning });
+    const result = resolveCoopNode({ runId: run.id, serverSecret: this.serverSecret, node: selected2, players: run.players, state: startingState, enemyLevel: run.syncLevel, enemyAttackMultiplier: seasonalPacing.attack * depthAttack * (selected2.kind === "boss" ? beforeMechanic.bossAttackMultiplier * beforeObjective.bossAttackMultiplier : selected2.encounterAttackMultiplier ?? 1), enemyHpMultiplier: seasonalPacing.hp * depthHp * (selected2.kind === "boss" ? beforeObjective.bossHpMultiplier : 1), enemyDefenseMultiplier: seasonalPacing.defense * depthDefense * (selected2.kind === "boss" ? beforeObjective.bossDefenseMultiplier : 1), enemyShieldMultiplier: eventBossShieldMultiplier, bossTuning: bossMechanic?.tuning, ...isFrostfallEndurance ? { enduranceLootVersion: 1, campfireBalanceVersion: 2 } : {} });
     run.lastResolution = { nodeId: selected2.nodeId, result: structuredClone(result) };
     run.persistentState = result.state;
     run.currentNodeId = selected2.nodeId;
@@ -52954,14 +53065,16 @@ var EventExpeditionService = class {
     if (selected2.kind === "boss" && result.success) {
       run.phase = "completed";
       const definition = definitionFor(run.eventId), mechanic = eventMechanicProjection(run), objective = eventObjectiveProjection(run);
-      run.rewardMarks = eventTierRewardMarks(definition, run.tier ?? 1) + mechanic.rewardBonus + objective.rewardBonus;
+      const tierBase = eventTierRewardMarks(definition, run.tier ?? 1), depthMultiplier = isFrostfallEndurance ? frostfallRewardMultiplierForBoss(run.graph, baseSelected) : 1;
+      run.rewardMarks = run.practiceOnly ? 0 : Math.round(tierBase * depthMultiplier) + mechanic.rewardBonus + objective.rewardBonus;
+      if (run.practiceOnly) run.settlement = "claimed";
     }
     this.repository.save(run);
     this.commandReceipts.set(receiptKey, { hash, run: structuredClone(run) });
     return structuredClone(run);
   }
   claimReward(input) {
-    const key = `${input.accountId}:${input.requestId}`, prior = this.claims.get(key);
+    const key = `${input.accountId}:${input.runId}:${input.requestId}`, prior = this.claims.get(key);
     if (prior) return { marks: prior.marks, idempotentReplay: true };
     const run = this.repository.get(input.runId);
     if (!run) throw new Error("event_run_not_found");
@@ -52969,7 +53082,7 @@ var EventExpeditionService = class {
     if (run.phase !== "completed" || !run.rewardMarks) throw new Error("event_reward_not_ready");
     if (run.settlement === "claimed") return { marks: run.rewardMarks, idempotentReplay: true };
     const day = new Date(input.nowMs ?? Date.now()).toISOString().slice(0, 10), dailyKey = `${input.accountId}:${run.eventId}:${day}`, used = this.dailyClears.get(dailyKey) ?? 0;
-    if (used >= 2) throw new Error("event_daily_clear_limit");
+    if (used >= EVENT_EXPEDITION_DAILY_REWARDED_CLEARS) throw new Error("event_daily_clear_limit");
     this.dailyClears.set(dailyKey, used + 1);
     run.settlement = "claimed";
     this.repository.save(run);
@@ -52993,7 +53106,8 @@ function projectOnlineEventRun(run, version, liveEventId, serverNow = Date.now()
   const options = run.phase === "awaiting_choice" && current ? current.nextNodeIds.map((id) => run.graph.nodes.find((node) => node.nodeId === id)).filter((node) => Boolean(node)).map((node) => effectiveEventNode(run, node)).map((node) => ({ nodeId: node.nodeId, kind: node.kind, risk: node.risk, rewardTag: node.rewardTag, title: node.title, mechanicDelta: node.mechanicDelta ?? 0, objectiveDelta: node.objectiveDelta ?? 0, reactionLabel: node.reactionLabel, ...["battle", "elite", "boss"].includes(node.kind) ? { encounterPreview: expeditionEncounterPreview(node.contentId, run.syncLevel) } : {} })) : [];
   const mechanic = eventMechanicProjection(run), objective = eventObjectiveProjection(run), bossProfile = eventBossMechanicProjection(run);
   const bossMechanic = bossProfile ? { profileId: bossProfile.profileId, label: bossProfile.label, summary: bossProfile.summary, tone: bossProfile.tone, telegraph: bossProfile.telegraph } : void 0;
-  const summary = run.lastResolution?.nodeId === run.graph.bossNodeId ? run.lastResolution.result.summary : void 0;
+  const wasBossExit = run.graph.nodes.some((node) => node.nodeId === run.lastResolution?.nodeId && node.kind === "boss");
+  const summary = wasBossExit ? run.lastResolution?.result.summary : void 0;
   const list = (value) => Array.isArray(value) ? value.filter((item) => typeof item === "string") : [];
   const phaseLabels = new Map(bossProfile?.telegraph.phases.map((item) => [item.id, item.label]) ?? []);
   const abilityLabels = new Map(bossProfile?.telegraph.castAbilities.map((item) => [item.id, item.label]) ?? []);
@@ -53015,6 +53129,7 @@ function projectOnlineEventRun(run, version, liveEventId, serverNow = Date.now()
     stateVersion: version,
     decisionId: run.currentNodeId,
     decisionRevision: version,
+    ...run.graph.generatorVersion === "event-route-v5-endurance-v2" && current ? { endurance: { normalRoomsCleared: Math.min(run.graph.preBossNodeCount, Math.max(0, current.kind === "boss" || run.phase === "failed" ? current.depth - 1 : current.depth)), maxNormalRooms: run.graph.preBossNodeCount }, practiceOnly: run.practiceOnly === true } : {},
     team: run.players.map((member, index) => {
       const state = run.persistentState.actors[member.id], companionId = (member.tags ?? []).find((tag) => tag.startsWith("companion:"))?.slice("companion:".length), bodyTag = (member.tags ?? []).find((tag) => tag.startsWith("body:"))?.slice("body:".length), bodyPresentation = bodyTag === "female" ? "female" : bodyTag === "male" ? "male" : void 0;
       return { memberId: member.id, displayName: member.name, role: role(member.role), classId: member.classId ?? "", bodyPresentation, companionId, kind: index === 0 ? "controller" : "echo", effectiveLevel: member.level, currentHp: state?.hp ?? member.stats.maxHp, maximumHp: member.stats.maxHp, downed: state?.downed ?? false };
@@ -53026,7 +53141,7 @@ function projectOnlineEventRun(run, version, liveEventId, serverNow = Date.now()
     bossRecap,
     lastCombat: projectCombatReplay(run.lastResolution),
     lastRoomOutcome: publicCoopRoomOutcome(run.lastResolution?.nodeId, run.lastResolution?.result.summary),
-    settlement: { status: run.settlement, rewardMarks: run.rewardMarks ?? promotedEventCurrency(liveEventId, eventTierRewardMarks(definition, run.tier ?? 1) + mechanic.rewardBonus + objective.rewardBonus, serverNow) }
+    settlement: { status: run.settlement, rewardMarks: run.rewardMarks ?? (run.practiceOnly ? 0 : promotedEventCurrency(liveEventId, eventTierRewardMarks(definition, run.tier ?? 1) + mechanic.rewardBonus + objective.rewardBonus, serverNow)) }
   };
 }
 var OnlineEventExpeditionRuntime = class {
@@ -53048,6 +53163,10 @@ var OnlineEventExpeditionRuntime = class {
     const game = await this.services.rpc("load_online_game_server_v1", { p_account_id: accountId });
     const runtime = game.liveEvent;
     if (!runtime?.enabled || game.serverNow < runtime.startsAtMs || game.serverNow >= runtime.endsAtMs || !runtime.eventId.startsWith(`${definition.liveEventSeriesId}_`)) throw new GameplayError("event_not_live");
+    if (isFrostfallEventExpedition(definition.id) && runtime.modules?.includes("expedition") !== true) throw new GameplayError("event_not_live");
+    const dailyBudget = isFrostfallEventExpedition(definition.id) ? await this.services.rpc("online_event_expedition_daily_budget_server_v1", { p_account_id: accountId, p_event_id: runtime.eventId }) : 2;
+    if (!Number.isInteger(dailyBudget) || dailyBudget < 0 || dailyBudget > 2) throw new GameplayError("event_reward_budget_unavailable", 503);
+    const practiceOnly = isFrostfallEventExpedition(definition.id) && dailyBudget === 0;
     if (!game.state?.character) throw new GameplayError("character_required");
     const record = deriveOnlineCoopLoadout(accountId, game.state, game.version);
     if (record.characterId !== request.characterId || request.loadoutId !== "current") throw new GameplayError("loadout_not_owned", 403);
@@ -53074,7 +53193,7 @@ var OnlineEventExpeditionRuntime = class {
     const selectedSources = selected2.map((echo) => raw2.find((item) => item.profileId === echo.profileId)).filter((value) => Boolean(value));
     const scaling = definition.levelScaling, averageLobbyLevel = isFrostfallEventExpedition(definition.id) ? requiredLevel : scaling ? Math.max(scaling.minLevel, Math.min(scaling.maxLevel, Math.round([record.combatScalingLevel ?? record.characterLevel, ...selectedSources.map((echo) => echo.record.combatScalingLevel ?? echo.record.characterLevel)].reduce((sum, level) => sum + level, 0) / (1 + selectedSources.length)))) : definition.minLevel;
     const controller = freeze(record, averageLobbyLevel), snapshots = [controller, ...selectedSources.map((echo) => freeze(echo.record, averageLobbyLevel))], runId = this.services.randomId(), repository = new MemoryEventRunRepository(), domain = new EventExpeditionService(repository, seed);
-    const run = domain.start({ requestId: request.requestId, runId, accountId, eventId: definition.id, tier: selectedTier, activeLiveEventId: runtime.eventId, members: snapshots.map((snapshot) => ({ accountId: snapshot.accountId, characterId: snapshot.characterId, role: snapshot.readiness.role })), players: snapshots.map(player), nowMs: game.serverNow });
+    const run = domain.start({ requestId: request.requestId, runId, accountId, eventId: definition.id, tier: selectedTier, practiceOnly, activeLiveEventId: runtime.eventId, members: snapshots.map((snapshot) => ({ accountId: snapshot.accountId, characterId: snapshot.characterId, role: snapshot.readiness.role })), players: snapshots.map(player), nowMs: game.serverNow });
     const members = snapshots.map((snapshot, index) => {
       if (index === 0) return { snapshot, sourceHash: onlineCoopLoadoutHash(record), profileId: null };
       const chosen = selected2[index - 1], source = selectedSources[index - 1];
@@ -53101,7 +53220,7 @@ var OnlineEventExpeditionRuntime = class {
     repository.save(before);
     const domain = new EventExpeditionService(repository, loaded.privateState.seed);
     const run = domain.choose({ runId, accountId, optionNodeId: request.optionId, requestId: request.requestId });
-    if (run.phase === "completed" && before.phase !== "completed" && run.rewardMarks !== void 0) run.rewardMarks = promotedEventCurrency(loaded.privateState.liveEventId, run.rewardMarks, loaded.serverNow);
+    if (run.phase === "completed" && before.phase !== "completed" && !run.practiceOnly && run.rewardMarks !== void 0) run.rewardMarks = promotedEventCurrency(loaded.privateState.liveEventId, run.rewardMarks, loaded.serverNow);
     const result = run.lastResolution;
     if (!result) throw new GameplayError("event_resolution_missing");
     const projection3 = projectOnlineEventRun(run, loaded.stateVersion + 1, loaded.privateState.liveEventId, loaded.serverNow);

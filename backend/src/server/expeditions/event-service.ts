@@ -8,10 +8,11 @@ import { deterministicInt } from './rng';
 import { validateCoopRouteGraph } from './route-generation';
 import { eventBossMechanicProfile } from './event-boss-mechanics';
 import { buildExpeditionEncounter } from '../combat/expedition-combat-service';
+import {FROSTFALL_ENDURANCE_BALANCE_V3,FROSTFALL_ENDURANCE_GENERATOR,frostfallDepthCurveForGraph,frostfallEnemyPacingForGraph,generateFrostfallEnduranceGraph,frostfallRewardMultiplierForBoss} from './frostfall-endurance';
 
 export interface EventMechanicState {id:string;value:number;}
 export interface EventObjectiveState {id:string;count:number;}
-export interface EventRun {id:string;requestId:string;accountIds:string[];eventId:string;tier?:number;graph:CoopRouteGraph;players:CombatantDefinition[];persistentState:PersistentRunState;mechanic?:EventMechanicState;objective?:EventObjectiveState;syncLevel?:number;currentNodeId:string;phase:'awaiting_choice'|'completed'|'failed';settlement:'pending'|'claimed';rewardMarks?:number;lastResolution?:{nodeId:string;result:NodeResolutionResult};}
+export interface EventRun {id:string;requestId:string;accountIds:string[];eventId:string;tier?:number;graph:CoopRouteGraph;players:CombatantDefinition[];persistentState:PersistentRunState;mechanic?:EventMechanicState;objective?:EventObjectiveState;syncLevel?:number;currentNodeId:string;phase:'awaiting_choice'|'completed'|'failed';settlement:'pending'|'claimed';/** Server-frozen daily-limit state. A practice clear never credits currency. */practiceOnly?:boolean;rewardMarks?:number;lastResolution?:{nodeId:string;result:NodeResolutionResult};}
 export interface EventRunRepository {get(id:string):EventRun|undefined;getByRequest(accountId:string,requestId:string):EventRun|undefined;save(run:EventRun):void;}
 export class MemoryEventRunRepository implements EventRunRepository{private runs=new Map<string,EventRun>();private requests=new Map<string,string>();get(id:string){const run=this.runs.get(id);return run?structuredClone(run):undefined;}getByRequest(accountId:string,requestId:string){const id=this.requests.get(`${accountId}:${requestId}`);return id?this.get(id):undefined;}save(run:EventRun){this.runs.set(run.id,structuredClone(run));this.requests.set(`${run.accountIds[0]}:${run.requestId}`,run.id);}}
 
@@ -48,7 +49,7 @@ function eventSyncLevel(definition:EventExpeditionDefinition,players:readonly Co
 const displayId=(value:string)=>value.replace(/^EVENT_[A-Z]+_BOSS_/,'').replace(/_/g,' ').toLowerCase().replace(/\b\w/g,char=>char.toUpperCase());
 
 export function eventBossMechanicProjection(run:EventRun){
- if(run.graph.generatorVersion!=='event-route-v5')return undefined;
+ if(run.graph.generatorVersion!=='event-route-v5'&&run.graph.generatorVersion!==FROSTFALL_ENDURANCE_GENERATOR)return undefined;
  const definition=definitionFor(run.eventId),mechanic=eventMechanicProjection(run),objective=eventObjectiveProjection(run);
  const profile=eventBossMechanicProfile({eventId:run.eventId,objectiveCount:objective.count,objectiveMax:objective.maxCount,mechanicStatus:mechanic.status});
  const baseBoss=buildExpeditionEncounter({encounterId:definition.bossEncounterId,enemyLevel:run.syncLevel}).find(enemy=>enemy.boss);
@@ -64,7 +65,7 @@ export interface EffectiveEventNode extends CoopRouteNode {encounterAttackMultip
 
 export function effectiveEventNode(run:EventRun,node:CoopRouteNode):EffectiveEventNode{
  const next:EffectiveEventNode={...node};
- if(!['event-route-v4','event-route-v5'].includes(run.graph.generatorVersion)||node.kind==='entry'||node.kind==='boss')return next;
+ if(!['event-route-v4','event-route-v5',FROSTFALL_ENDURANCE_GENERATOR].includes(run.graph.generatorVersion)||node.kind==='entry'||node.kind==='boss')return next;
  const mechanic=eventMechanicProjection(run),objective=eventObjectiveProjection(run),battleLike=node.kind==='battle'||node.kind==='elite';
  const title=()=>next.title??next.kind.charAt(0).toUpperCase()+next.kind.slice(1);
  const prefix=(label:string)=>{next.title=`${label}: ${title()}`;next.reactionLabel=label;};
@@ -118,6 +119,7 @@ function healBeforeBoss(state:PersistentRunState,players:readonly CombatantDefin
 
 function graph(eventId:string,runId:string,serverSecret:string):CoopRouteGraph{
  const definition=definitionFor(eventId),prefix=definition.encounterPrefix,boss=definition.bossEncounterId,count=definition.routeNodeCount;
+ if(isFrostfallEventExpedition(eventId))return generateFrostfallEnduranceGraph(definition,runId,serverSecret);
  const idsAt=(depth:number)=>[0,1,2].map(choice=>`d${depth}-c${choice}`);
  const nodes:CoopRouteNode[]=[{nodeId:'entry',depth:0,kind:'entry',contentId:'COOP_ENTRY',modifierId:'none',risk:1,rewardTag:'none',nextNodeIds:idsAt(1)}];
  for(let depth=1;depth<=count;depth++){
@@ -138,10 +140,12 @@ function graph(eventId:string,runId:string,serverSecret:string):CoopRouteGraph{
  const result:CoopRouteGraph={schemaVersion:1,generatorVersion:'event-route-v5',runId,expeditionId:eventId,contentVersion:'event-v5',balanceVersion:'event-balance-v5',preBossNodeCount:count,entryNodeId:'entry',bossNodeId:'boss',nodes};validateCoopRouteGraph(result,{preBossNodeMin:5,preBossNodeMax:7});return result;
 }
 
+/** All event expeditions: per-account UTC-day reward cap, not a weekly attempt cap. */
+export const EVENT_EXPEDITION_DAILY_REWARDED_CLEARS=2;
 export class EventExpeditionService{
  private commandReceipts=new Map<string,{hash:string;run:EventRun}>();private claims=new Map<string,{marks:number}>();private dailyClears=new Map<string,number>();
  constructor(private repository:EventRunRepository,private serverSecret:string){}
- start(input:{requestId:string;runId:string;accountId:string;eventId:string;tier?:number;activeLiveEventId?:string;members:Array<{accountId:string;characterId:string;role:CoopRole}>;players:CombatantDefinition[];nowMs:number}):EventRun{
+ start(input:{requestId:string;runId:string;accountId:string;eventId:string;tier?:number;practiceOnly?:boolean;activeLiveEventId?:string;members:Array<{accountId:string;characterId:string;role:CoopRole}>;players:CombatantDefinition[];nowMs:number}):EventRun{
   const prior=this.repository.getByRequest(input.accountId,input.requestId);if(prior)return prior;
   const definition=definitionFor(input.eventId);
   if(!input.activeLiveEventId||!input.activeLiveEventId.startsWith(`${definition.liveEventSeriesId}_`))throw new Error('event_not_live');
@@ -149,16 +153,27 @@ export class EventExpeditionService{
   validateCoopRoster(input.members);if(input.players.length!==4||input.players.some(player=>player.level<requiredLevel))throw new Error('event_level_requirement');
   validateUniqueDamageClasses(input.players.map(player=>({role:player.role as CoopRole,classId:player.classId??''})));
   if(!/^[-a-zA-Z0-9_]{8,128}$/.test(input.requestId)||!/^[-a-zA-Z0-9_]{8,128}$/.test(input.runId))throw new Error('invalid_event_identity');
-  const syncLevel=isFrostfallEventExpedition(definition.id)?requiredLevel:eventSyncLevel(definition,input.players),run:EventRun={id:input.runId,requestId:input.requestId,accountIds:input.members.map(member=>member.accountId),eventId:input.eventId,tier,graph:graph(input.eventId,input.runId,this.serverSecret),players:input.players,persistentState:initialPersistentRunState(input.players),mechanic:{id:definition.mechanic.id,value:definition.mechanic.startValue},objective:{id:definition.objective.id,count:definition.objective.startCount},...(syncLevel===undefined?{}:{syncLevel}),currentNodeId:'entry',phase:'awaiting_choice',settlement:'pending'};this.repository.save(run);return structuredClone(run);
+  const syncLevel=isFrostfallEventExpedition(definition.id)?requiredLevel:eventSyncLevel(definition,input.players),run:EventRun={id:input.runId,requestId:input.requestId,accountIds:input.members.map(member=>member.accountId),eventId:input.eventId,tier,graph:graph(input.eventId,input.runId,this.serverSecret),players:input.players,persistentState:initialPersistentRunState(input.players),mechanic:{id:definition.mechanic.id,value:definition.mechanic.startValue},objective:{id:definition.objective.id,count:definition.objective.startCount},...(syncLevel===undefined?{}:{syncLevel}),currentNodeId:'entry',phase:'awaiting_choice',settlement:'pending',...(input.practiceOnly?{practiceOnly:true}:{})};this.repository.save(run);return structuredClone(run);
  }
  choose(input:{runId:string;accountId:string;optionNodeId:string;requestId:string}):EventRun{
   const hash=`${input.runId}:${input.accountId}:${input.optionNodeId}`,receiptKey=`${input.runId}:${input.requestId}`,prior=this.commandReceipts.get(receiptKey);if(prior){if(prior.hash!==hash)throw new Error('event_idempotency_conflict');return structuredClone(prior.run);}
   const run=this.repository.get(input.runId);if(!run)throw new Error('event_run_not_found');if(!run.accountIds.includes(input.accountId))throw new Error('not_participant');if(run.phase!=='awaiting_choice')throw new Error('event_run_not_awaiting_choice');
   const current=run.graph.nodes.find(node=>node.nodeId===run.currentNodeId);if(!current||!current.nextNodeIds.includes(input.optionNodeId))throw new Error('invalid_event_option');const baseSelected=run.graph.nodes.find(node=>node.nodeId===input.optionNodeId);if(!baseSelected)throw new Error('invalid_event_option');const selected=effectiveEventNode(run,baseSelected);
   const beforeMechanic=eventMechanicProjection(run),beforeObjective=eventObjectiveProjection(run),bossMechanic=selected.kind==='boss'?eventBossMechanicProjection(run):undefined;
+  const isFrostfallEndurance=run.graph.generatorVersion===FROSTFALL_ENDURANCE_GENERATOR;
+  // Only new seasonal graphs receive depth attrition. Saved short events stay numerically identical.
+  const depthBeyondOpening=isFrostfallEndurance&&['battle','elite','boss'].includes(selected.kind)?Math.max(0,selected.depth-8):0;
+  const curve=frostfallDepthCurveForGraph(run.graph);
+  const depthAttack=Math.pow(curve.attack,depthBeyondOpening),depthHp=Math.pow(curve.hp,depthBeyondOpening),depthDefense=Math.pow(curve.defense,depthBeyondOpening);
+  const seasonalPacing=frostfallEnemyPacingForGraph(run.graph,run.tier??1);
+  // Event boss ward/carpace originally kept level-35 flat shield values at
+  // tier-1 sync level 10. Scale only new v3 boss barriers to their actual HP
+  // bracket; retain v2, saved legacy and every other dungeon unchanged.
+  const eventBossShieldMultiplier=selected.kind==='boss'&&run.graph.balanceVersion===FROSTFALL_ENDURANCE_BALANCE_V3&&isFrostfallEndurance
+   ?seasonalPacing.hp*Math.max(.25,(run.syncLevel??35)/35):undefined;
   let startingState=run.persistentState;
   if(selected.kind==='boss'&&beforeObjective.preBossHealPct>0)startingState=healBeforeBoss(startingState,run.players,beforeObjective.preBossHealPct);
-  const result=resolveCoopNode({runId:run.id,serverSecret:this.serverSecret,node:selected,players:run.players,state:startingState,enemyLevel:run.syncLevel,enemyAttackMultiplier:selected.kind==='boss'?beforeMechanic.bossAttackMultiplier*beforeObjective.bossAttackMultiplier:(selected.encounterAttackMultiplier??1),enemyHpMultiplier:selected.kind==='boss'?beforeObjective.bossHpMultiplier:1,enemyDefenseMultiplier:selected.kind==='boss'?beforeObjective.bossDefenseMultiplier:1,bossTuning:bossMechanic?.tuning});
+  const result=resolveCoopNode({runId:run.id,serverSecret:this.serverSecret,node:selected,players:run.players,state:startingState,enemyLevel:run.syncLevel,enemyAttackMultiplier:seasonalPacing.attack*depthAttack*(selected.kind==='boss'?beforeMechanic.bossAttackMultiplier*beforeObjective.bossAttackMultiplier:(selected.encounterAttackMultiplier??1)),enemyHpMultiplier:seasonalPacing.hp*depthHp*(selected.kind==='boss'?beforeObjective.bossHpMultiplier:1),enemyDefenseMultiplier:seasonalPacing.defense*depthDefense*(selected.kind==='boss'?beforeObjective.bossDefenseMultiplier:1),enemyShieldMultiplier:eventBossShieldMultiplier,bossTuning:bossMechanic?.tuning,...(isFrostfallEndurance?{enduranceLootVersion:1 as const,campfireBalanceVersion:2 as const}:{})});
   run.lastResolution={nodeId:selected.nodeId,result:structuredClone(result)};run.persistentState=result.state;run.currentNodeId=selected.nodeId;
   if(result.success&&selected.kind!=='boss'){
    const definition=definitionFor(run.eventId);
@@ -166,8 +181,8 @@ export class EventExpeditionService{
    if(selected.objectiveDelta){const currentCount=run.objective?.count??definition.objective.startCount;run.objective={id:definition.objective.id,count:clamp(currentCount+selected.objectiveDelta,0,definition.objective.maxCount)};}
   }
   if(!result.success)run.phase='failed';
-  if(selected.kind==='boss'&&result.success){run.phase='completed';const definition=definitionFor(run.eventId),mechanic=eventMechanicProjection(run),objective=eventObjectiveProjection(run);run.rewardMarks=eventTierRewardMarks(definition,run.tier??1)+mechanic.rewardBonus+objective.rewardBonus;}
+  if(selected.kind==='boss'&&result.success){run.phase='completed';const definition=definitionFor(run.eventId),mechanic=eventMechanicProjection(run),objective=eventObjectiveProjection(run);const tierBase=eventTierRewardMarks(definition,run.tier??1),depthMultiplier=isFrostfallEndurance?frostfallRewardMultiplierForBoss(run.graph,baseSelected):1;run.rewardMarks=run.practiceOnly?0:Math.round(tierBase*depthMultiplier)+mechanic.rewardBonus+objective.rewardBonus;if(run.practiceOnly)run.settlement='claimed';}
   this.repository.save(run);this.commandReceipts.set(receiptKey,{hash,run:structuredClone(run)});return structuredClone(run);
  }
- claimReward(input:{runId:string;accountId:string;requestId:string;nowMs?:number}):{marks:number;idempotentReplay:boolean}{const key=`${input.accountId}:${input.requestId}`,prior=this.claims.get(key);if(prior)return{marks:prior.marks,idempotentReplay:true};const run=this.repository.get(input.runId);if(!run)throw new Error('event_run_not_found');if(!run.accountIds.includes(input.accountId))throw new Error('not_participant');if(run.phase!=='completed'||!run.rewardMarks)throw new Error('event_reward_not_ready');if(run.settlement==='claimed')return{marks:run.rewardMarks,idempotentReplay:true};const day=new Date(input.nowMs??Date.now()).toISOString().slice(0,10),dailyKey=`${input.accountId}:${run.eventId}:${day}`,used=this.dailyClears.get(dailyKey)??0;if(used>=2)throw new Error('event_daily_clear_limit');this.dailyClears.set(dailyKey,used+1);run.settlement='claimed';this.repository.save(run);const result={marks:run.rewardMarks,idempotentReplay:false};this.claims.set(key,{marks:result.marks});return result;}
+ claimReward(input:{runId:string;accountId:string;requestId:string;nowMs?:number}):{marks:number;idempotentReplay:boolean}{const key=`${input.accountId}:${input.runId}:${input.requestId}`,prior=this.claims.get(key);if(prior)return{marks:prior.marks,idempotentReplay:true};const run=this.repository.get(input.runId);if(!run)throw new Error('event_run_not_found');if(!run.accountIds.includes(input.accountId))throw new Error('not_participant');if(run.phase!=='completed'||!run.rewardMarks)throw new Error('event_reward_not_ready');if(run.settlement==='claimed')return{marks:run.rewardMarks,idempotentReplay:true};const day=new Date(input.nowMs??Date.now()).toISOString().slice(0,10),dailyKey=`${input.accountId}:${run.eventId}:${day}`,used=this.dailyClears.get(dailyKey)??0;if(used>=EVENT_EXPEDITION_DAILY_REWARDED_CLEARS)throw new Error('event_daily_clear_limit');this.dailyClears.set(dailyKey,used+1);run.settlement='claimed';this.repository.save(run);const result={marks:run.rewardMarks,idempotentReplay:false};this.claims.set(key,{marks:result.marks});return result;}
 }

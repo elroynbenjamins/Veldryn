@@ -22,6 +22,8 @@ export const PLAYER_BADGE_ARTWORK:Record<Exclude<PlayerBadgeId,`ascendant_${stri
  event_champion:require('../../assets/player-badges-v1/event_champion.webp'),
  ascendant_sovereign_of_stars:require('../../assets/ascendant/celestial/sovereign_badge_64.webp'),
  ascendant_dragon_sovereign:require('../../assets/ascendant/draconic/dragon_sovereign_64.webp'),
+ ascendant_monarch_of_deep:require('../../assets/ascendant/abyssal/monarch_of_the_deep_64.webp'),
+ ascendant_beyond_existence:require('../../assets/ascendant/paradox/beyond_existence_64.webp'),
  vip:require('../../assets/store-membership-badges-v1/vip.png'),
  vip_plus:require('../../assets/store-membership-badges-v1/vip-plus.png'),
 };

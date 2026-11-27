@@ -72,7 +72,7 @@ function healAtCamp(state:PersistentRunState,players:readonly CombatantDefinitio
  return {...state,actors};
 }
 
-export function resolveCoopNode(input:{runId:string;serverSecret:string;node:CoopRouteNode;players:CombatantDefinition[];state:PersistentRunState;tier?:ExpeditionTier;rootboundBalance?:RootboundCoopBalance;enemyAttackMultiplier?:number;enemyHpMultiplier?:number;enemyDefenseMultiplier?:number;enemyDamageProfile?:'qmode-v1';enemyLevel?:number;enduranceLootVersion?:1;deferArtifactChoice?:boolean;campfireBalanceVersion?:2;bossTuning?:EncounterBossTuning;maxDurationMs?:number;safetyAiPlayerIds?:readonly string[]}):NodeResolutionResult{
+export function resolveCoopNode(input:{runId:string;serverSecret:string;node:CoopRouteNode;players:CombatantDefinition[];state:PersistentRunState;tier?:ExpeditionTier;rootboundBalance?:RootboundCoopBalance;enemyAttackMultiplier?:number;enemyHpMultiplier?:number;enemyDefenseMultiplier?:number;enemyShieldMultiplier?:number;enemyDamageProfile?:'qmode-v1';enemyLevel?:number;enduranceLootVersion?:1;deferArtifactChoice?:boolean;campfireBalanceVersion?:2;bossTuning?:EncounterBossTuning;maxDurationMs?:number;safetyAiPlayerIds?:readonly string[]}):NodeResolutionResult{
  if(input.state.visitedNodeIds.includes(input.node.nodeId))throw new Error('node_already_resolved');
  if(input.node.kind==='entry')throw new Error('entry_is_not_resolvable');
  let state={...input.state,visitedNodeIds:[...input.state.visitedNodeIds,input.node.nodeId]};
@@ -110,7 +110,7 @@ export function resolveCoopNode(input:{runId:string;serverSecret:string;node:Coo
   });
   const depthMultiplier=input.node.depth>=balance.lateDepthStart?balance.lateDepthAttackMultiplier:1;
   const tierScale=input.tier?coopTierEnemyMultipliers(input.tier):{attack:1,hp:1,defense:1};
-  const combat=resolveExpeditionCombat({runId:input.runId,nodeIndex:input.node.depth,encounterId:input.node.contentId,serverSeed:input.serverSecret,players,initialPlayerState:state.actors,safetyAiPlayerIds:input.safetyAiPlayerIds,enemyAttackMultiplier:(rootbound?balance.enemyAttackMultiplier*depthMultiplier:1)*tierScale.attack*(input.enemyAttackMultiplier??1),enemyHpMultiplier:tierScale.hp*(input.enemyHpMultiplier??1),enemyDefenseMultiplier:tierScale.defense*(input.enemyDefenseMultiplier??1),enemyDamageProfile:input.enemyDamageProfile,enemyLevel:input.enemyLevel,bossTuning:input.bossTuning,maxDurationMs:input.maxDurationMs,roomModifierId:input.node.kind==='elite'?input.node.modifierId:undefined,roomModifierElite:input.node.kind==='elite'});
+  const combat=resolveExpeditionCombat({runId:input.runId,nodeIndex:input.node.depth,encounterId:input.node.contentId,serverSeed:input.serverSecret,players,initialPlayerState:state.actors,safetyAiPlayerIds:input.safetyAiPlayerIds,enemyAttackMultiplier:(rootbound?balance.enemyAttackMultiplier*depthMultiplier:1)*tierScale.attack*(input.enemyAttackMultiplier??1),enemyHpMultiplier:tierScale.hp*(input.enemyHpMultiplier??1),enemyDefenseMultiplier:tierScale.defense*(input.enemyDefenseMultiplier??1),enemyShieldMultiplier:input.enemyShieldMultiplier,enemyDamageProfile:input.enemyDamageProfile,enemyLevel:input.enemyLevel,bossTuning:input.bossTuning,maxDurationMs:input.maxDurationMs,roomModifierId:input.node.kind==='elite'?input.node.modifierId:undefined,roomModifierElite:input.node.kind==='elite'});
   state={...state,actors:combat.endingPlayerState};
   return {success:combat.success,state,summary:{kind:'combat',...combat.resultJson,...(input.bossTuning?{bossTuningProfile:input.bossTuning.profileId}: {})}};
  }

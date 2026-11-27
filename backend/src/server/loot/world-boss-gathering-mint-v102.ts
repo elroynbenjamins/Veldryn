@@ -41,6 +41,8 @@ export function worldBossMintEntropyV102(secret:Uint8Array,sourceKey:string,vers
 }
 export async function issueWorldBossGatheringMintV102(tx:ChestSqlV70,input:{
  accountId:string;sourceKey:string;entropyVersion:string;secret:Uint8Array;
+ /** Verification must never recreate a missing historical item. */
+ requireExisting?:boolean;
  /** Independent same-transaction proof of the V57 source/erasure lock and
   * current earned chest. It must not be a client or constant-true port. */
  verifyLockedSource:(tx:ChestSqlV70,accountId:string,sourceKey:string)=>Promise<boolean>;
@@ -77,6 +79,7 @@ export async function issueWorldBossGatheringMintV102(tx:ChestSqlV70,input:{
  let rows=(await tx.query<MintRow>('SELECT '+columns+' FROM private.world_boss_gathering_mints_v102 WHERE source_key=$1 AND account_id=$2::uuid FOR UPDATE',[sourceKey,accountId])).rows;
  if(rows.length>1)throw Error('world_boss_mint_duplicate');
  const replayed=rows.length===1;
+ if(!replayed&&input.requireExisting)throw Error('world_boss_mint_missing_existing');
  if(!replayed){
   const roll=rollWorldBossGatheringSlotV96(set.bossId,slot,worldBossMintEntropyV102(input.secret,sourceKey,input.entropyVersion));
   const digest=gatheringSnapshotDigestV100(roll);

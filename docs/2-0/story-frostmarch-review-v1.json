@@ -1,0 +1,428 @@
+{
+  "version": 1,
+  "released": false,
+  "regionId": "FROSTMARCH",
+  "entryRequirement": {
+    "previousBook": "SUNSCAR",
+    "previousFinale": "story2:sunscar:16",
+    "authoritativeCharacterAccess": true
+  },
+  "suggestedLevels": [
+    51,
+    75
+  ],
+  "equipmentBands": [
+    {
+      "tier": 5,
+      "levels": [
+        51,
+        75
+      ],
+      "note": "Launch scope T5 only; midpoint requires stronger tactics and improved T5 readiness, not a mandatory T6 set."
+    }
+  ],
+  "zones": [
+    {
+      "zoneId": "ZONE_011",
+      "suggestedStoryBand": [
+        51,
+        56
+      ],
+      "routeId": "SCOUT_FROSTMARCH"
+    },
+    {
+      "zoneId": "ZONE_012",
+      "suggestedStoryBand": [
+        57,
+        62
+      ],
+      "routeId": "SCOUT2_FROST_WHITEPINE"
+    },
+    {
+      "zoneId": "ZONE_013",
+      "suggestedStoryBand": [
+        63,
+        68
+      ],
+      "routeId": "SCOUT2_FROST_SHIVERLAKE"
+    },
+    {
+      "zoneId": "ZONE_015",
+      "suggestedStoryBand": [
+        69,
+        75
+      ],
+      "routeId": "SCOUT2_FROST_WYRMSPINE"
+    }
+  ],
+  "quests": [
+    {
+      "id": "story2:frostmarch:01",
+      "regionId": "FROSTMARCH",
+      "narrativeZoneId": "ZONE_011",
+      "act": 1,
+      "suggestedLevel": 51,
+      "title": "Beyond the Thawgate",
+      "summary": "Scout the northern pass.",
+      "prerequisites": [],
+      "objectives": [
+        {
+          "id": "1",
+          "kind": "map",
+          "targetId": "SCOUT_FROSTMARCH",
+          "required": 1,
+          "evidence": "verifiedFact"
+        }
+      ],
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "story2:frostmarch:02",
+      "regionId": "FROSTMARCH",
+      "narrativeZoneId": "ZONE_011",
+      "act": 1,
+      "suggestedLevel": 52,
+      "title": "Fangs in the Frost",
+      "summary": "Clear the frozen trail.",
+      "prerequisites": [
+        "story2:frostmarch:01"
+      ],
+      "objectives": [
+        {
+          "id": "1",
+          "kind": "kill",
+          "targetId": "FROSTWOLF",
+          "required": 8,
+          "evidence": "sinceActivation"
+        }
+      ],
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "story2:frostmarch:03",
+      "regionId": "FROSTMARCH",
+      "narrativeZoneId": "ZONE_011",
+      "act": 1,
+      "suggestedLevel": 54,
+      "title": "The Last Shelter",
+      "summary": "Secure the road to Thawgate.",
+      "prerequisites": [
+        "story2:frostmarch:02"
+      ],
+      "objectives": [
+        {
+          "id": "1",
+          "kind": "kill",
+          "targetId": "ICEBOUND_RAIDER",
+          "required": 6,
+          "evidence": "sinceActivation"
+        }
+      ],
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "story2:frostmarch:04",
+      "regionId": "FROSTMARCH",
+      "narrativeZoneId": "ZONE_011",
+      "act": 1,
+      "suggestedLevel": 56,
+      "title": "The Bitter Watch",
+      "summary": "Face the northern raiders.",
+      "prerequisites": [
+        "story2:frostmarch:03"
+      ],
+      "objectives": [
+        {
+          "id": "1",
+          "kind": "kill",
+          "targetId": "RIME_BERSERKER",
+          "required": 5,
+          "evidence": "sinceActivation"
+        }
+      ],
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "story2:frostmarch:05",
+      "regionId": "FROSTMARCH",
+      "narrativeZoneId": "ZONE_012",
+      "act": 1,
+      "suggestedLevel": 57,
+      "title": "Tracks in Whitepine",
+      "summary": "Chart the forest paths.",
+      "prerequisites": [
+        "story2:frostmarch:04"
+      ],
+      "objectives": [
+        {
+          "id": "1",
+          "kind": "map",
+          "targetId": "SCOUT2_FROST_WHITEPINE",
+          "required": 1,
+          "evidence": "verifiedFact"
+        }
+      ],
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "story2:frostmarch:06",
+      "regionId": "FROSTMARCH",
+      "narrativeZoneId": "ZONE_012",
+      "act": 2,
+      "suggestedLevel": 58,
+      "title": "Roots Beneath the Snow",
+      "summary": "Investigate the frozen roots.",
+      "prerequisites": [
+        "story2:frostmarch:05"
+      ],
+      "objectives": [
+        {
+          "id": "1",
+          "kind": "kill",
+          "targetId": "SNOW_TREANT",
+          "required": 8,
+          "evidence": "sinceActivation"
+        }
+      ],
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "story2:frostmarch:07",
+      "regionId": "FROSTMARCH",
+      "narrativeZoneId": "ZONE_012",
+      "act": 2,
+      "suggestedLevel": 60,
+      "title": "The Bell Without a Tower",
+      "summary": "Find the source of the ringing.",
+      "prerequisites": [
+        "story2:frostmarch:06"
+      ],
+      "objectives": [
+        {
+          "id": "1",
+          "kind": "kill",
+          "targetId": "BELLWRAITH",
+          "required": 6,
+          "evidence": "sinceActivation"
+        }
+      ],
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "story2:frostmarch:08",
+      "regionId": "FROSTMARCH",
+      "narrativeZoneId": "ZONE_012",
+      "act": 2,
+      "suggestedLevel": 63,
+      "title": "Needles in the Silence",
+      "summary": "Prepare for the deeper cold.",
+      "prerequisites": [
+        "story2:frostmarch:07"
+      ],
+      "objectives": [
+        {
+          "id": "1",
+          "kind": "kill",
+          "targetId": "FROSTNEEDLE_BROOD",
+          "required": 5,
+          "evidence": "sinceActivation"
+        }
+      ],
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "story2:frostmarch:09",
+      "regionId": "FROSTMARCH",
+      "narrativeZoneId": "ZONE_013",
+      "act": 2,
+      "suggestedLevel": 63,
+      "title": "Voices Under Ice",
+      "summary": "Trace the voices across the lake.",
+      "prerequisites": [
+        "story2:frostmarch:08"
+      ],
+      "objectives": [
+        {
+          "id": "1",
+          "kind": "map",
+          "targetId": "SCOUT2_FROST_SHIVERLAKE",
+          "required": 1,
+          "evidence": "verifiedFact"
+        },
+        {
+          "id": "2",
+          "kind": "kill",
+          "targetId": "RIME_STALKER",
+          "required": 6,
+          "evidence": "sinceActivation"
+        }
+      ],
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "story2:frostmarch:10",
+      "regionId": "FROSTMARCH",
+      "narrativeZoneId": "ZONE_013",
+      "act": 2,
+      "suggestedLevel": 66,
+      "title": "The Hollow Choir",
+      "summary": "Investigate the echo beneath the ice.",
+      "prerequisites": [
+        "story2:frostmarch:09"
+      ],
+      "objectives": [
+        {
+          "id": "1",
+          "kind": "kill",
+          "targetId": "LAKEBOUND_SPECTER",
+          "required": 8,
+          "evidence": "sinceActivation"
+        }
+      ],
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "story2:frostmarch:11",
+      "regionId": "FROSTMARCH",
+      "narrativeZoneId": "ZONE_013",
+      "act": 3,
+      "suggestedLevel": 69,
+      "title": "Silence the Defiler",
+      "summary": "Break the choir's hold.",
+      "prerequisites": [
+        "story2:frostmarch:10"
+      ],
+      "objectives": [
+        {
+          "id": "1",
+          "kind": "kill",
+          "targetId": "CHOIR_DEFILER",
+          "required": 5,
+          "evidence": "sinceActivation"
+        }
+      ],
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "story2:frostmarch:12",
+      "regionId": "FROSTMARCH",
+      "narrativeZoneId": "ZONE_015",
+      "act": 3,
+      "suggestedLevel": 69,
+      "title": "The Wyrmspine Ascent",
+      "summary": "Chart the mountain path.",
+      "prerequisites": [
+        "story2:frostmarch:11"
+      ],
+      "objectives": [
+        {
+          "id": "1",
+          "kind": "map",
+          "targetId": "SCOUT2_FROST_WYRMSPINE",
+          "required": 1,
+          "evidence": "verifiedFact"
+        }
+      ],
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "story2:frostmarch:13",
+      "regionId": "FROSTMARCH",
+      "narrativeZoneId": "ZONE_015",
+      "act": 3,
+      "suggestedLevel": 70,
+      "title": "Hunted by the Choir",
+      "summary": "Clear the path to the lair.",
+      "prerequisites": [
+        "story2:frostmarch:12"
+      ],
+      "objectives": [
+        {
+          "id": "1",
+          "kind": "kill",
+          "targetId": "CHOIR_HUNTER",
+          "required": 8,
+          "evidence": "sinceActivation"
+        }
+      ],
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "story2:frostmarch:14",
+      "regionId": "FROSTMARCH",
+      "narrativeZoneId": "ZONE_015",
+      "act": 3,
+      "suggestedLevel": 72,
+      "title": "The Ancient Guardian",
+      "summary": "Defeat the guardian of the ascent.",
+      "prerequisites": [
+        "story2:frostmarch:13"
+      ],
+      "objectives": [
+        {
+          "id": "1",
+          "kind": "kill",
+          "targetId": "WYRMSPINE_GUARDIAN",
+          "required": 6,
+          "evidence": "sinceActivation"
+        }
+      ],
+      "rewardPolicy": "unapproved",
+      "released": false
+    },
+    {
+      "id": "story2:frostmarch:15",
+      "regionId": "FROSTMARCH",
+      "narrativeZoneId": "ZONE_015",
+      "act": 3,
+      "suggestedLevel": 74,
+      "title": "The Stormglass Colossus",
+      "summary": "Prepare for the final encounter.",
+      "prerequisites": [
+        "story2:frostmarch:14"
+      ],
+      "objectives": [
+        {
+          "id": "1",
+          "kind": "kill",
+          "targetId": "STORMGLASS_COLOSSUS",
+          "required": 3,
+          "evidence": "sinceActivation"
+        }
+      ],
+      "rewardPolicy": "unapproved",
+      "released": false
+    }
+  ],
+  "finale": {
+    "id": "story2:frostmarch:16",
+    "title": "The Frost Wyrm",
+    "suggestedLevel": 75,
+    "narrativeZoneId": "ZONE_015",
+    "prerequisites": [
+      "story2:frostmarch:15"
+    ],
+    "bindingStatus": "pending_authoritative_solo_boss_id",
+    "released": false,
+    "rewardPolicy": "unapproved"
+  },
+  "notes": [
+    "Finale placeholder only, no executable boss objective or automatic next-region unlock.",
+    "Midpoint introduces more demanding mechanics, not a hard tier upgrade. Final combat and readiness thresholds await V2 combat balancing.",
+    "Scouting IDs use canonical legacyId from Exploration 2.0 branch #1723; three new Frostmarch routes are not present in live catalogue. Preserve exact IDs; no duplicate discovery reward.",
+    "No Ashlands chapter in 2.0 launch scope."
+  ]
+}

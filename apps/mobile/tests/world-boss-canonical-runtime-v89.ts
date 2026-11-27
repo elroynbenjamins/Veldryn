@@ -220,3 +220,39 @@ has(sourceSparse,'restorative_bloom_four_real_ticks_required');
 has({...base(),actors:[{...base().actors[0],equippedCopyIds:Array<string>(1),activeTraits:[]}]},
  'invalid_equipped_copies');
 console.log('WORLD_BOSS_V90B_OWNED_ROSTER_REVIEW_OK: frozen slot limits and ownership mismatches; no database or authority');
+
+import {reviewWorldBossRewardHandoffV95,type WorldBossV95SettledAttemptReview} from '../../../backend/src/server/combat/world-boss-v95-reward-handoff-review';
+import type {WorldBossCanonicalChestReadV59} from '../../../backend/src/server/combat/world-boss-chest-proof-v59';
+const event95='10000000-0000-4000-8000-000000000001',account95='20000000-0000-4000-8000-000000000001';
+for(const bossId of bossIds){
+ const canonical95:WorldBossCanonicalChestReadV59={eventId:event95,accountId:account95,
+  event:{bossId,initialHp:10000,remainingHp:3000},
+  warCamp:{eventId:event95,trackTiers:{fortifications:1,fieldProvisions:1,siegecraft:0},
+   ownDonationReceipts:[{eventId:event95,accountId:account95,requestId:'donation_01',status:'committed'}]},
+  attacks:[1,2,3].map(ordinal=>({eventId:event95,accountId:account95,ordinal,requestId:'attack_00'+ordinal,
+   status:'committed' as const,replayProof:'verified' as const}))};
+ const receipts95:WorldBossV95SettledAttemptReview[]=canonical95.attacks.map(a=>({
+  eventId:a.eventId,accountId:a.accountId,requestId:a.requestId,ordinal:a.ordinal,bossId,
+  engineVersion:'canonical-combat-v2',settlementStatus:'committed',
+  bindingDigest:'a'.repeat(64),replayDigest:a.ordinal.toString(16).repeat(64),
+  settlementReceiptDigest:(a.ordinal+4).toString(16).repeat(64),localHpDamage:1000,committedGlobalHpDamage:900,
+ }));
+ const result95=reviewWorldBossRewardHandoffV95(canonical95,receipts95,()=>true);
+ assert.equal(result95.previews.length,3);assert.equal(result95.verifiedAttempts,3);
+ assert.equal(result95.rewardAuthorized,false);assert.equal(result95.impactEnabled,false);
+ assert.equal(result95.previews.every(c=>c.gearChanceBps===100&&c.gearPiecesInSet===10&&!c.claimable),true);
+ assert.equal(result95.previews.reduce((sum,c)=>sum+c.guaranteed.gold,0),2000);
+ const rejects=(rows:readonly WorldBossV95SettledAttemptReview[],verify:(r:WorldBossV95SettledAttemptReview)=>boolean=()=>true)=>{
+  let rejected=false;try{reviewWorldBossRewardHandoffV95(canonical95,rows,verify);}catch{rejected=true;}
+  assert.equal(rejected,true);
+ };
+ rejects(receipts95.slice(1));rejects([receipts95[0],receipts95[0],receipts95[2]]);
+ rejects([{...receipts95[0],committedGlobalHpDamage:1001},...receipts95.slice(1)]);
+ rejects([{...receipts95[0],accountId:event95},...receipts95.slice(1)]);
+ rejects([{...receipts95[0],replayDigest:receipts95[1].replayDigest},...receipts95.slice(1)]);
+ rejects(receipts95,()=>false);
+ const noAttack={...canonical95,attacks:[]};
+ const campOnly=reviewWorldBossRewardHandoffV95(noAttack,[],()=>false);
+ assert.equal(campOnly.previews.length,1);assert.equal(campOnly.previews[0].kind,'donations_goal');
+}
+console.log('WORLD_BOSS_V95A_REWARD_HANDOFF: existing chest rules, canonical-only settlement review, no payout');

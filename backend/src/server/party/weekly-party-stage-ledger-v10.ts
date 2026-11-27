@@ -216,6 +216,9 @@ export function planPartyEventStageReceiptV10(input:{
    &&m.joinedAtMs<=e.occurredAtMs)
   ||!validTime(e.occurredAtMs)||!validTime(e.committedAtMs)
   ||e.occurredAtMs<stageRecord.openedAtMs
+  // V11 receipt SQL also requires source activity after the current vote lock.
+  ||(stageRecord.stage===2&&e.occurredAtMs<stageRecord.stage2Vote!.lockedAtMs)
+  ||(stageRecord.stage===3&&e.occurredAtMs<stageRecord.stage3Vote!.lockedAtMs)
   ||e.occurredAtMs>=week.eventEndsAtMs
   ||e.committedAtMs<e.occurredAtMs||e.committedAtMs>nowMs
   ||!['verified_combat','verified_noncombat'].includes(e.kind)

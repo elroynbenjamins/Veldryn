@@ -47,6 +47,25 @@ test('modified affix snapshot',x=>{x.claim.response.exactItem.baseStats.attack=9
 test('award mismatch',x=>{x.ledger.skillAwards[0].xp=6},'award_mismatch');
 test('digest mismatch',x=>{x.input.expectedOriginalDigest='0'.repeat(64)},'original_digest_mismatch');
 test('coordinated forgery vs pinned digest',x=>{x.input.expectedOriginalDigest=originalDigest;x.item.exactItem.quality=99;x.claim.response.exactItem.quality=99},'original_digest_mismatch');
+// Even an unrelated malformed record must not establish a trusted origin.
+test('second result for same job',x=>{x.ledger.items.push({...x.item,id:'copy-2'})},'incoherent_account_ledger');
+test('orphan item',x=>{x.ledger.items.push({...x.item,id:'copy-2',jobId:'missing'})},'incoherent_account_ledger');
+test('orphan skill award',x=>{x.ledger.skillAwards.push({...x.ledger.skillAwards[0],jobId:'missing'})},'incoherent_account_ledger');
+test('orphan receipt',x=>{x.ledger.receipts.push({...x.start,requestId:'start-2',response:{...x.start.response,jobId:'missing'}})},'incoherent_account_ledger');
+test('unrelated job without start receipt',x=>{x.ledger.jobs.push({...x.job,id:'job-2',status:'queued',resultId:''})},'incoherent_account_ledger');
+test('foreign queued job with start receipt',x=>{
+ x.ledger.jobs.push({...x.job,id:'job-2',accountId:'other',status:'queued',resultId:''});
+ x.ledger.receipts.push({...x.start,requestId:'start-2',response:{...x.start.response,jobId:'job-2'}});
+},'incoherent_account_ledger');
+test('queued job with reward',x=>{
+ x.ledger.jobs.push({...x.job,id:'job-2',status:'queued',resultId:''});
+ x.ledger.receipts.push({...x.start,requestId:'start-2',response:{...x.start.response,jobId:'job-2'}});
+ x.ledger.skillAwards.push({...x.ledger.skillAwards[0],jobId:'job-2'});
+},'incoherent_account_ledger');
+const unrelated=make();
+unrelated.ledger.jobs.push({...unrelated.job,id:'job-2',status:'queued',resultId:''});
+unrelated.ledger.receipts.push({...unrelated.start,requestId:'start-2',response:{...unrelated.start.response,jobId:'job-2'}});
+assert.equal(matchedDigest(inspectMarketForgeOrigin(unrelated.input)),originalDigest);checks++;
 const reordered=make();reordered.item.exactItem.baseStats={hp:3,attack:2.5};
 assert.equal(matchedDigest(inspectMarketForgeOrigin(reordered.input)),originalDigest);checks++;
 const pinned=make();pinned.input.expectedOriginalDigest=originalDigest;

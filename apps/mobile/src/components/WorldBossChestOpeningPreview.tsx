@@ -6,13 +6,13 @@ import {useGameTheme} from '../theme/ThemeContext';
 import {UiIcon} from './UiIcon';
 import {buildWorldBossChestOpeningReviewV97,type ChestOpenEntryReviewV97} from '../core/world-boss-chest-opening-review-v97';
 const DEMO_ACCOUNT='qa-chest-opening';
-const DEMO:readonly ChestOpenEntryReviewV97[]=[450,650,900,450,450,450].map((gold,i):ChestOpenEntryReviewV97=>{
+const DEMO:readonly ChestOpenEntryReviewV97[]=[450,450,450,450,450,450].map((gold,i):ChestOpenEntryReviewV97=>{
  const sourceKey='qa-world-chest-'+i;
  const resources=[{itemId:'gold',name:'Gold',quantity:gold},
-  {itemId:'companion_essence',name:'Companion Essence',quantity:i===1?8:i===2?10:6},
-  {itemId:'gem_dust',name:'Gem Dust',quantity:i===1?3:i===2?4:2},
-  {itemId:'tempering_dust',name:'Tempering Dust',quantity:i===1?3:i===2?4:2},
-  ...(i>=3?[{itemId:'IRONWOOD_LOG',name:'Ironwood Logs',quantity:8}]:[])];
+  {itemId:'companion_essence',name:'Companion Essence',quantity:6},
+  {itemId:'gem_dust',name:'Gem Dust',quantity:2},
+  {itemId:'tempering_dust',name:'Tempering Dust',quantity:2},
+  {itemId:'IRONWOOD_LOG',name:'Ironwood Logs',quantity:8}];
  return {sourceKey,state:'committed',receipt:{sourceKey,accountId:DEMO_ACCOUNT,status:'committed',
   resources,gear:i===1?{instanceId:'qa-rootbound-grips',name:'Rootbound Grips',rarity:'epic',quality:87,skill:'woodcutting'}:null}};
 });
@@ -69,7 +69,7 @@ export function WorldBossChestOpeningPreview({reduceMotion=false}:{reduceMotion?
       </View>)}</View>
       {button(expanded?'Hide chest breakdown':'Show chest breakdown',()=>setExpanded(x=>!x),true)}
       {expanded?DEMO.slice(0,count).map((entry,i)=>entry.state==='committed'?<View key={entry.sourceKey} style={{gap:3}}>
-       <Text style={[s.name,{color:C.text}]}>{i===0?'War Camp':i===1?'Warrior':i===2?'Realm Victory':'Personal Damage'} Chest</Text>
+       <Text style={[s.name,{color:C.text}]}>World Boss Chest {i+1}</Text>
        <Text style={{color:C.muted,fontSize:11}}>{entry.receipt.resources.map(x=>x.quantity+' '+x.name).join(' · ')}</Text>
        {entry.receipt.gear?<Text style={{color:rarityColor[entry.receipt.gear.rarity],fontSize:12}}>{entry.receipt.gear.name}</Text>:null}
       </View>:null):null}

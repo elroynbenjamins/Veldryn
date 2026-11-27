@@ -18,7 +18,7 @@ const DEMO:readonly ChestOpenEntryReviewV97[]=[450,650,900,450,450,450].map((gol
 });
 const rarityColor={common:'#B8BAC1',uncommon:'#79C88A',rare:'#79AEFF',epic:'#C084FC',legendary:'#E8B66B',mythic:'#FF8CA4'};
 export function WorldBossChestOpeningPreview({reduceMotion=false}:{reduceMotion?:boolean}){
- const {colors:C}=useGameTheme();
+ const C=useGameTheme();
  const [count,setCount]=useState(0),[revealed,setRevealed]=useState(false),[expanded,setExpanded]=useState(false);
  const [glow]=useState(()=>new Animated.Value(0));
  const result=useMemo(()=>count?buildWorldBossChestOpeningReviewV97(DEMO_ACCOUNT,DEMO.slice(0,count)):null,[count]);
@@ -58,8 +58,8 @@ export function WorldBossChestOpeningPreview({reduceMotion=false}:{reduceMotion?
       {result.gear.length?result.gear.map(g=><View key={g.instanceId} style={[s.gear,{backgroundColor:C.panelRaised,borderColor:rarityColor[g.rarity]}]}>
        <UiIcon name="rewards" size={32}/><View style={s.flex}>
         <Text style={[s.name,{color:rarityColor[g.rarity]}]}>{g.name}</Text>
-        <Text style={{color:C.text,fontSize:12}}>Epic · Quality {g.quality}</Text>
-        <Text style={{color:C.muted,fontSize:11}}>Woodcutting · +17.78% innate speed (example)</Text>
+        <Text style={{color:C.text,fontSize:12}}>{g.rarity[0].toUpperCase()+g.rarity.slice(1)} · Quality {g.quality}</Text>
+        <Text style={{color:C.muted,fontSize:11}}>{g.skill[0].toUpperCase()+g.skill.slice(1)} · +17.78% innate speed (example)</Text>
        </View>
       </View>):<Text style={{color:C.muted,fontSize:12}}>No equipment in this example. Resources are still received.</Text>}
       <Text style={[s.kicker,{color:C.muted}]}>TOTAL RESOURCES</Text>
@@ -84,7 +84,7 @@ const s=StyleSheet.create({
  shade:{flex:1,justifyContent:'center',padding:14},panel:{maxHeight:'90%',borderWidth:1,borderRadius:14,padding:14,gap:12},
  header:{flexDirection:'row',alignItems:'center',gap:8},flex:{flex:1,minWidth:0},kicker:{fontSize:10,fontWeight:'900',letterSpacing:1},
  title:{fontSize:19,fontWeight:'900'},close:{width:44,height:44,alignItems:'center',justifyContent:'center'},chest:{alignItems:'center',justifyContent:'center',minHeight:70},
- scroll:{flexGrow:0},gear:{flexDirection:'row',gap:10,alignItems:'center',borderWidth:1,borderRadius:9,padding:10},
+ scroll:{flexGrow:0,flexShrink:1},gear:{flexDirection:'row',gap:10,alignItems:'center',borderWidth:1,borderRadius:9,padding:10},
  name:{fontWeight:'800',fontSize:13},grid:{flexDirection:'row',flexWrap:'wrap',gap:6},
  resource:{flexGrow:1,flexBasis:'46%',minWidth:100,borderWidth:1,borderRadius:8,padding:8,alignItems:'center',gap:3},
  buttons:{flexDirection:'row',flexWrap:'wrap',gap:8},button:{flexGrow:1,minHeight:44,borderRadius:8,borderWidth:1,paddingHorizontal:12,paddingVertical:10,alignItems:'center',justifyContent:'center'},

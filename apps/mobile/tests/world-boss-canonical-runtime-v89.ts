@@ -528,3 +528,43 @@ for(const changed of [
  {...input100,state:{...equipped100,activity:{...equipped100.activity!,lastClaimAtMs:3000}},verifyAccountReadback:()=>true},
 ])rejectsGatheringSpeedReview(()=>reviewWorldBossGatheringSnapshotV100(changed));
 console.log('WORLD_BOSS_GATHERING_SNAPSHOT_V100: original chest receipt, full physical roster, exact equipped copy, frozen handoff; quarantined/stale/duplicate/foreign proof rejection');
+
+import {reviewWorldBossGatheringCustodyV101,type GatheringCustodyCopyV101,type GatheringCustodyIntentV101} from '../../../backend/src/server/combat/world-boss-gathering-custody-v101';
+assert.equal(roll100.slot,'helmet');
+const unclaimed101:GatheringCustodyCopyV101={accountId:snapAccount,instanceId:mint100.instanceId,roll:roll100,rollDigest:mint100.rollDigest,
+ originalChest:mint100.originalChest,holderCharacterId:null,location:'unclaimed'};
+let custodyState101=baseSnapshotHero,custodyRows101=[unclaimed101],revision101=1;
+function runMove101(kind:GatheringCustodyIntentV101['kind']){
+ const intent={kind,instanceId:mint100.instanceId,requestId:'qa-move-'+revision101};
+ const input={accountId:snapAccount,revision:revision101,state:custodyState101,ownedCharacterIds:[snapCharacter],copies:custodyRows101,intent,
+ verifyPersisted:()=>true,verifyMoveAllowed:()=>true};
+ const before=gatheringSnapshotDigestV100(input.state);
+ const result=reviewWorldBossGatheringCustodyV101(input);
+ assert.equal(gatheringSnapshotDigestV100(input.state),before);
+ assert.equal(result.persisted,false);assert.equal(result.canCommit,false);
+ assert.equal(result.receipt.nextRevision,revision101+1);
+ rejectsGatheringSpeedReview(()=>reviewWorldBossGatheringCustodyV101({...input,verifyMoveAllowed:()=>false}));
+ custodyState101=result.candidateState;custodyRows101=result.candidateCopies;revision101++;
+ return result;
+}
+const claimed101=runMove101('claim_to_bank');
+assert.equal(claimed101.candidateCopies[0].location,'bank');
+assert.equal(claimed101.candidateState.bank.stacks.some(x=>x.instanceId===mint100.instanceId),true);
+rejectsGatheringSpeedReview(()=>runMove101('claim_to_bank'));
+runMove101('withdraw_bank');
+const equipped101=runMove101('equip');
+assert.equal(equipped101.candidateState.character?.equipmentInstanceIds?.helmet,mint100.instanceId);
+assert.equal(equipped101.candidateState.inventory.stacks.some(x=>x.instanceId===mint100.instanceId),false);
+const started101=startSnapshotGather(equipped101.candidateState,'GREENWOOD_TREE',4000);
+const snap101=reviewWorldBossGatheringSnapshotV100({...input100,state:started101,sourceRevision:revision101,
+ verifyAccountReadback:()=>true,verifyMintReadback:()=>true});
+assert.equal(snap101.frozen.gearRatingBps,1034);
+assert.equal(snap101.frozen.startedAtMs,4000);
+runMove101('unequip');runMove101('deposit_bank');
+assert.equal(custodyRows101[0].location,'bank');
+assert.equal(custodyRows101[0].rollDigest,mint100.rollDigest);
+const fullBank101={...baseSnapshotHero,bank:{...baseSnapshotHero.bank,capacity:0,stacks:[]}};
+rejectsGatheringSpeedReview(()=>reviewWorldBossGatheringCustodyV101({accountId:snapAccount,revision:1,state:fullBank101,
+ copies:[unclaimed101],ownedCharacterIds:[snapCharacter],intent:{kind:'claim_to_bank',requestId:'qa-full',instanceId:mint100.instanceId},
+ verifyPersisted:()=>true,verifyMoveAllowed:()=>true}));
+console.log('WORLD_BOSS_GATHERING_CUSTODY_V101: unclaimed-to-bank/withdraw/equip/freeze/unequip/deposit; no mutation, duplicate claim and full bank rejection');

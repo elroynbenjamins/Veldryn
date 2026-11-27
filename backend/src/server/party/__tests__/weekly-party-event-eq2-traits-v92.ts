@@ -1,3 +1,4 @@
+import {permanentPartyRosterDigestV109,planPermanentPartyRosterWriteV109,type PartyStorageSnapshotV109} from '../permanent-party-roster-write-plan-v109';
 import {planPartyRoleSwapResponseV107} from '../party-role-swap-transition-review-v107';
 import {reviewPartyChatActionTransactionV106,type PartyChatStoreV106,type PartyChatTransactionV106,type PartyChatRequestV106,type PartyChatReceiptV106,type PartyChatEffectV106,type PartyChatWorkflowV106} from '../party-chat-action-transaction-review-v106';
 import {projectPartyChatCardV105,type VoteCardV105,type ReadyCardV105,type RecruitmentCardV105,type AchievementCardV105} from '../party-chat-action-cards-review-v105';
@@ -271,6 +272,38 @@ denied(()=>planPartyRoleSwapResponseV107({...swapTransition,ownedCharacters:perm
 denied(()=>planPartyRoleSwapResponseV107({...swapTransition,minimumLevel:26},true),'character_minimum_level_not_met');
 denied(()=>planPartyRoleSwapResponseV107(swapTransition),'unreleased');
 console.log('PARTY_ROLE_SWAP_TRANSITION_V107_REVIEW_OK');
+const storageSnapshot:PartyStorageSnapshotV109={
+ partyId:chatInput.activePartyId,status:'active',leaderAccountId:'A',leaderCharacterId:'A_tank',
+ minimumLevel:10,updatedAt:'2026-11-27T12:00:00Z',
+ rows:currentRoster.map((member,index)=>({partyId:chatInput.activePartyId,
+ accountId:member.accountId,characterId:member.characterId,
+ role:(['tank','damage','damage','support'] as const)[index]!,
+ joinedAt:'2026-11-01T12:00:00Z',leftAt:null})),
+};
+const rosterDigest=permanentPartyRosterDigestV109(storageSnapshot);
+const storageInput={snapshot:storageSnapshot,originalRosterDigest:rosterDigest,transition:swapTransition};
+const writePlan=planPermanentPartyRosterWriteV109(storageInput,true);
+assert.equal(writePlan.updates.length,2);
+assert.equal(writePlan.nextLeaderCharacterId,'A_damage');
+assert.equal(writePlan.leaderAccountId,'A');
+assert.equal(writePlan.requiresAtomicReadback,true);
+assert.equal(writePlan.canPersist,false);
+assert.ok(writePlan.updates.every(row=>row.expectedJoinedAt==='2026-11-01T12:00:00Z'));
+assert.equal(storageSnapshot.rows[0]!.characterId,'A_tank');
+assert.equal(permanentPartyRosterDigestV109({...storageSnapshot,rows:[...storageSnapshot.rows].reverse()}),rosterDigest);
+const historicalCollision:PartyStorageSnapshotV109={...storageSnapshot,rows:[...storageSnapshot.rows,
+ {partyId:storageSnapshot.partyId,accountId:'A',characterId:'A_damage',role:'damage',
+ joinedAt:'2026-10-01T12:00:00Z',leftAt:'2026-10-02T12:00:00Z'}]};
+denied(()=>planPermanentPartyRosterWriteV109({...storageInput,snapshot:historicalCollision},true),'historical_character_key_collision');
+denied(()=>planPermanentPartyRosterWriteV109({...storageInput,snapshot:{...storageSnapshot,updatedAt:'2026-11-27T12:01:00Z'}},true),'stale_roster');
+const declinedWrite=planPermanentPartyRosterWriteV109({...storageInput,transition:{...swapTransition,response:'decline'}},true);
+assert.equal(declinedWrite.updates.length,0);
+assert.equal(declinedWrite.nextLeaderCharacterId,'A_tank');
+const pendingWrite=planPermanentPartyRosterWriteV109({...storageInput,transition:{...swapTransition,scope:{...chatInput,proposal:initiallyUnaccepted,viewerAccountId:'A'}}},true);
+assert.equal(pendingWrite.updates.length,0);
+denied(()=>planPermanentPartyRosterWriteV109(storageInput),'unreleased');
+console.log('PERMANENT_PARTY_ROSTER_WRITE_PLAN_V109_REVIEW_OK');
+
 
 const workflowBase={partyId:'QA_PARTY_SWAP',messageId:'QA_SYSTEM_MSG',sourceId:'QA_SOURCE',
  createdAtMs:1000,expiresAtMs:301000,rosterRevision:7,sourceRevision:2,state:'pending' as const,

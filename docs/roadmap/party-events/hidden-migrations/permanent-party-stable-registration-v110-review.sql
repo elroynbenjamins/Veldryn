@@ -46,7 +46,7 @@ revoke all on private.party_registration_state_v110,private.party_registration_m
 -- SQL-specific canonical JSONB snapshot. Do not equate this digest format
 -- with the TypeScript V109 snapshot digest without explicit reconciliation.
 create function private.party_registration_snapshot_v110(p_party uuid)
-returns jsonb language sql stable security invoker set search_path='' as $$
+returns jsonb language sql stable security invoker set search_path='' set timezone='UTC' as $
  select jsonb_build_object(
  'partyId',s.party_id,'rosterRevision',s.roster_revision,'leaderAccountId',s.leader_account_id,
  'minimumLevel',s.minimum_level,

@@ -20,6 +20,7 @@ import {regionalMechanicsV2,regionalMechanicPressureV2,type RegionalMechanicArm}
 import {selectSoloReviewLoadoutsV2,type SoloReviewArm} from './solo-counterbuild-review';
 import {secondaryOffenseActorReviewV2,secondaryOffenseAmountV2,type SecondaryOffenseArm} from './secondary-offense-review';
 import {soloOffenseLoopReviewV2,type SoloOffenseLoopArm} from './solo-offense-loop-review';
+import {soloRoleBudgetReviewV2,type SoloRoleBudgetArm} from './solo-role-budget-review';
 import {STAT_GEMS_V1,EFFECT_GEMS_V1,gemItemId,type GemGrade,GEM_BALANCE_REVIEW_V2,STAT_GEMS_REVIEW_V2,EFFECT_GEMS_REVIEW_V2,EFFECT_GEM_REVIEW_MULTIPLIERS_V2} from '../../../equipment/gems/gem-catalog-v1';
 import type {V2GemSidecarState} from '../../../equipment/equipment-crafting-v2-gem-sidecar-types';
 import {writeFileSync} from 'node:fs';
@@ -2216,6 +2217,8 @@ runRegionalProgressionReviewV2();
 {
  const arms:SecondaryOffenseArm[]=['baseline','approved_start','sensitivity_double'];
  const loopArms:SoloOffenseLoopArm[]=['expanded_start','expanded_double','solo_tempo'];
+ const budgetArms:SoloRoleBudgetArm[]=['role_budget','role_budget_skill'];
+ const budgetRows:{level:number;classId:ClassIdV2;spec:number;kind:string;arm:SoloRoleBudgetArm;win:number;reason:string;duration:number;hp:number;enemyHp:number;damage:number;basicDamage:number;directDamage:number;dotDamage:number;heal:number;ratio:number;additionalScale:number;adjustedSkills:string[]}[]=[];
  const loopRows:{level:number;tier:number;classId:ClassIdV2;spec:number;kind:string;arm:SoloOffenseLoopArm;win:number;reason:string;duration:number;hp:number;enemyHp:number;damage:number;basicDamage:number;basicHits:number;directDamage:number;dotDamage:number;heal:number;periodicSkills:number;tempoSkills:number;ratio:number}[]=[];
  const rows:{level:number;tier:number;classId:ClassIdV2;spec:number;kind:string;arm:SecondaryOffenseArm;win:number;reason:string;hp:number;enemyHp:number;duration:number;damage:number;ratio:number;additional:number;skills:number}[]=[];
  for(const level of [10,13,26,38,51,63]){
@@ -2315,6 +2318,59 @@ runRegionalProgressionReviewV2();
      dotDamage:sum(own.filter(e=>e.type==='dot_tick')),heal:result.players[0].healingDone,
      periodicSkills:candidate.periodicSkills,tempoSkills:candidate.tempoSkills,ratio:candidate.ratio});
    }
+   // New sensitivity retains the exact previous encounter and source build.
+   // Compare both changes against the already measured solo_tempo arm.
+   const tempo=soloOffenseLoopReviewV2(row.classId,originalInput,'solo_tempo').input.players[0];
+   if(row.spec===0&&kind==='normal'){
+    const original=originalInput.players[0];
+    const extreme={...original,stats:{...original.stats,defense:1e6,maxHp:1e6,healingPower:1e6}};
+    const extremeInput={...originalInput,players:[extreme]};
+    const x=soloRoleBudgetReviewV2(row.classId,extremeInput,'role_budget');
+    const y=soloRoleBudgetReviewV2(row.classId,originalInput,'role_budget');
+    assert.ok(x.input.players[0].basicAttackCoeff>=original.basicAttackCoeff);
+    assert.ok(y.ratio>=1);
+    assert.ok(x.ratio<=3.25+1e-8);
+    assert.deepEqual(x.input.players[0].stats,extreme.stats);
+    assert.deepEqual(originalInput.players[0],row.candidates[0].actor);
+   }
+   for(const arm of budgetArms){
+    const candidate=soloRoleBudgetReviewV2(row.classId,originalInput,arm);
+    const input=candidate.input,actor=input.players[0];
+    assert.deepEqual(input.enemies,originalInput.enemies);
+    assert.deepEqual(actor.stats,tempo.stats);
+    assert.deepEqual(actor.combatV2,tempo.combatV2);
+    assert.equal(actor.basicAttackMs,tempo.basicAttackMs);
+    assert.equal(actor.role,tempo.role);
+    assert.ok(candidate.additionalScale>=1&&candidate.ratio>=1);
+    if(arm==='role_budget')assert.equal(candidate.adjustedSkills.length,0);
+    for(const [i,a] of actor.abilities.entries()){
+     const before=tempo.abilities[i];
+     assert.equal(a.id,before.id);assert.equal(a.cooldownMs,before.cooldownMs);assert.equal(a.castTimeMs,before.castTimeMs);
+     assert.deepEqual(a.combatV2,before.combatV2);
+     for(const [j,e] of a.effects.entries()){
+      const prior=before.effects[j];
+      if(!['damage','dot'].includes(e.kind)||e.damageType==='true')assert.deepEqual(e,prior);
+      else assert.deepEqual({...e,coeff:prior.coeff},prior);
+     }
+    }
+    const run=()=>simulateCombat(input,issueEnemyV2EngineAuthority(loopScope,input,(_s,d)=>/^[a-f0-9]{64}$/.test(d)));
+    const result=run();
+    if(tempo.role==='damage'){assert.deepEqual(actor,tempo);assert.deepEqual(result,loopBaseline);}
+    if(row.spec===0&&kind==='normal'&&arm==='role_budget_skill'){
+     assert.deepEqual(run(),result);
+     assert.throws(()=>soloRoleBudgetReviewV2(row.classId,{...originalInput,enemies:[{...originalInput.enemies[0],boss:true}]},arm),/fresh_solo_only/);
+     assert.throws(()=>soloRoleBudgetReviewV2(row.classId,{...originalInput,players:[...originalInput.players,...originalInput.players]},arm),/fresh_solo_only/);
+    }
+    assert.ok(result.events.every(e=>e.amount===undefined||Number.isFinite(e.amount)));
+    assert.ok(result.players[0].hp>=0&&result.players[0].hp<=actor.stats.maxHp+1e-8);
+    const own=result.events.filter(e=>e.actorId===actor.id);
+    const sum=(events:typeof own)=>events.reduce((n,e)=>n+(e.amount??0),0);
+    budgetRows.push({level,classId:row.classId,spec:row.spec,kind,arm,win:Number(result.victory),reason:result.reason,
+     duration:result.durationMs,hp:result.players[0].hp/actor.stats.maxHp,enemyHp:result.enemies[0].hp/result.enemies[0].definition.stats.maxHp,
+     damage:result.players[0].damageDone,basicDamage:sum(own.filter(e=>e.type==='damage'&&e.abilityId==='BASIC')),
+     directDamage:sum(own.filter(e=>e.type==='damage'&&actor.abilities.some(a=>a.id===e.abilityId))),dotDamage:sum(own.filter(e=>e.type==='dot_tick')),
+     heal:result.players[0].healingDone,ratio:candidate.ratio,additionalScale:candidate.additionalScale,adjustedSkills:candidate.adjustedSkills});
+   }
    for(const [i,arm] of arms.entries()){
     const candidate=row.candidates[i],actor=candidate.actor;
     const input:CombatInput={seed,players:[actor],enemies:[...verified.enemies],maxDurationMs:60000,mitigationConstant:k};
@@ -2362,6 +2418,24 @@ runRegionalProgressionReviewV2();
    meanRatio:mean(a.map(r=>r.ratio)),meanPeriodicSkills:mean(a.map(r=>r.periodicSkills)),meanTempoSkills:mean(a.map(r=>r.tempoSkills)),
    killsPerMinute:throughput,priorDirectOnlyKillsPerMinute:killsPerMinute(old),
    damageReferenceKillsPerMinute:reference,relativeEfficiency:reference>0?throughput/reference:null};
+ }),releaseEnabled:false,cpApproved:false}));
+
+ assert.equal(budgetRows.length,432);
+ const budgetKeys=[...new Set(budgetRows.map(r=>r.level+'|'+r.classId+'|'+r.kind+'|'+r.arm))].sort();
+ assert.equal(budgetKeys.length,216);
+ console.log('SOLO_ROLE_BUDGET_REVIEW '+JSON.stringify({matchedSets:216,executions:budgetRows.length,
+ groups:budgetKeys.map(key=>{
+  const a=budgetRows.filter(r=>r.level+'|'+r.classId+'|'+r.kind+'|'+r.arm===key);
+  const old=loopRows.filter(r=>r.level===a[0].level&&r.classId===a[0].classId&&r.kind===a[0].kind&&r.arm==='solo_tempo');
+  const damageReference=loopRows.filter(r=>r.level===a[0].level&&r.kind===a[0].kind&&r.arm==='solo_tempo'&&CLASS_ROLES_V2[r.classId]==='damage');
+  const throughput=killsPerMinute(a),reference=killsPerMinute(damageReference);
+  return {key,cases:a.length,wins:a.reduce((n,r)=>n+r.win,0),timeouts:a.filter(r=>r.reason==='timeout').length,wipes:a.filter(r=>r.reason==='wipe').length,
+   meanDuration:mean(a.map(r=>r.duration)),meanHp:mean(a.map(r=>r.hp)),meanEnemyHp:mean(a.map(r=>r.enemyHp)),
+   meanDamage:mean(a.map(r=>r.damage)),meanBasicDamage:mean(a.map(r=>r.basicDamage)),meanDirectDamage:mean(a.map(r=>r.directDamage)),
+   meanDotDamage:mean(a.map(r=>r.dotDamage)),meanHeal:mean(a.map(r=>r.heal)),meanRatio:mean(a.map(r=>r.ratio)),
+   meanAdditionalScale:mean(a.map(r=>r.additionalScale)),adjustedSkills:[...new Set(a.flatMap(r=>r.adjustedSkills))].sort(),
+   killsPerMinute:throughput,priorSoloTempoKillsPerMinute:killsPerMinute(old),damageReferenceKillsPerMinute:reference,
+   relativeEfficiency:reference>0?throughput/reference:null};
  }),releaseEnabled:false,cpApproved:false}));
 
 }

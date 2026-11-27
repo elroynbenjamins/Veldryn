@@ -48,12 +48,14 @@ export function reviewPartyCharacterSwapV103(input:{
  const size=input.current.length;
  if(size<2||size>4||(input.mode==='dungeon'&&size!==4))fail('invalid_party_size');
  checkRoster(input.current,size);checkRoster(input.proposed,size);
- const current=new Map(input.current.map(r=>[r.accountId,r]));
+ const currentRows:readonly PartyCharacterV103[]=input.current;
+ const current=new Map(currentRows.map(r=>[r.accountId,r]));
  if(input.proposed.some(r=>!current.has(r.accountId)))fail('membership_changed');
  if(!Array.isArray(input.ownedCharacters)||!Array.isArray(input.consents))fail('missing_verified_sources');
  const owned=new Map<string,PartyCharacterV103>();
  const ownedRoles=new Set<string>();
- for(const row of input.ownedCharacters){
+ const ownedRows:readonly PartyCharacterV103[]=input.ownedCharacters;
+ for(const row of ownedRows){
   if(!row||!id(row.accountId)||!id(row.characterId)||
    !Object.prototype.hasOwnProperty.call(CLASS_ROLES_V2,row.classId)||owned.has(row.characterId))
    fail('invalid_ownership_source');

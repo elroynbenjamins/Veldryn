@@ -1,0 +1,8 @@
+{
+  "extends": "./tsconfig.core.json",
+  "include": [
+    "../../backend/src/server/loot/world-boss-chest-opening-v103.ts",
+    "../../backend/src/server/loot/world-boss-gathering-mint-v102.ts"
+  ],
+  "exclude": []
+}

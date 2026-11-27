@@ -135,6 +135,93 @@ export function createGentleGemPartyPressureReviewV2(members:readonly Member[],p
      assert.equal(runtime.incomingReductions(200+(group.resonance>=2?6000:4000),ally).length,0);
     }
    }
+   const ally={...result.players.find(p=>p.definition.id!==owner.definition.id)!,alive:true,shield:0};
+   const heal=owner.definition.abilities.find(a=>a.id.includes(':v2:')&&a.effects.some(e=>e.kind==='heal'));
+   const shield=owner.definition.abilities.find(a=>a.id.includes(':v2:')&&a.effects.some(e=>e.kind==='shield'));
+   if(group?.familyId==='effect_bulwark'){
+    assert.equal(runtime.onDefensiveAction(0,owner,'BASIC'),undefined);
+    const defensive=owner.definition.abilities.find(a=>a.id.includes(':v2:')&&a.effects.some(e=>e.kind==='shield'||(e.kind==='buff'&&((e.tag==='damage_taken'&&(e.value??0)<0)||(e.tag==='defense_pct'&&(e.value??0)>0)))));
+    if(defensive){
+     runtime.beginAction(100,owner,defensive.id);
+     const row=runtime.onDefensiveAction(100,owner,defensive.id)!;
+     assert.equal(row.fraction,group.totalValue);
+     assert.equal(row.expiresAt,100+(group.resonance>=2?5000:4000));
+     assert.equal(runtime.incomingReductions(row.expiresAt,owner).length,0);
+    }
+   }
+   if(group?.familyId==='effect_aegis'&&shield){
+    runtime.beginAction(100,owner,shield.id);
+    const effect=shield.effects.find(e=>e.kind==='shield')!;
+    const out=runtime.aegisBarrier(100,owner,ally,shield.id,10,effect);
+    if(effect.shieldReflectPct)assert.equal(out,undefined);
+    else{
+     assert.ok(out);assert.ok(out.amount>=0&&out.amount<=10*(1+group.totalValue)+1e-9);
+     assert.equal(out.owned,!!effect.durationMs&&effect.durationMs>0);
+     ally.shield+=out.amount;
+     if(out.owned){
+      const expiry=100+effect.durationMs!;
+      assert.equal(runtime.tickLifecycle(expiry-1).expired.length,0);
+      const due=runtime.tickLifecycle(expiry);
+      assert.equal(due.expired.length,1);
+      assert.equal(due.expiryHeals.length,group.resonance>=2?1:0);
+     }else assert.equal(runtime.tickLifecycle(30000).expired.length,0);
+    }
+   }
+   if(group?.familyId==='effect_mercy'&&heal){
+    runtime.beginAction(100,owner,heal.id);
+    assert.equal(runtime.afterHeal(100,owner,ally,'V2_GENERATED',100,0).mercy,0);
+    const out=runtime.afterHeal(100,owner,ally,heal.id,100,0);
+    const expected=Math.min(100*group.totalValue,ally.definition.stats.maxHp*(group.resonance>=2?.04:.03));
+    assert.ok(Math.abs(out.mercy-expected)<1e-9);ally.shield+=out.mercy;
+    const absorbed=runtime.absorbOwned(101,ally,out.mercy/2);ally.shield-=absorbed;
+    assert.ok(Math.abs(absorbed-out.mercy/2)<1e-9);
+    const due=runtime.tickLifecycle(100+(group.resonance===3?10000:8000));
+    assert.equal(due.expired.length,1);assert.equal(due.expiryHeals.length,0);
+   }
+   if(group?.familyId==='effect_renewal'&&heal){
+    runtime.beginAction(100,owner,heal.id);
+    assert.equal(runtime.afterHeal(100,owner,ally,heal.id,100,0).renewal,0);
+    const out=runtime.afterHeal(100,owner,ally,heal.id,100,50);
+    const expected=50*group.totalValue*(group.resonance>=2?1.2:1);
+    assert.ok(Math.abs(out.renewal-expected)<1e-9);
+    assert.equal(runtime.tickLifecycle(2099).renewalHeals.length,0);
+    const due=runtime.tickLifecycle(6100).renewalHeals;
+    assert.equal(due.length,group.resonance>=2?3:2);
+    assert.ok(Math.abs(due.reduce((n,x)=>n+x.amount,0)-expected)<1e-9);
+    assert.equal(runtime.tickLifecycle(6100).renewalHeals.length,0);
+   }
+   if(group?.familyId==='effect_benediction'&&(heal||shield)){
+    const ability=(heal??shield)!,kind=heal?'heal':'shield';
+    runtime.beginAction(100,owner,ability.id);
+    assert.equal(runtime.supportMultiplier(100,owner,ally,ability.id,kind),1);
+    runtime.markSupportOutput(100,owner,ally,ability.id,kind,10);
+    const first=runtime.finishAction(100,owner,ability.id)!;
+    assert.equal(first.consumed,false);assert.equal(first.granted,true);
+    runtime.beginAction(200,owner,ability.id);
+    assert.equal(runtime.supportMultiplier(200,owner,ally,ability.id,kind),1+group.totalValue);
+    runtime.markSupportOutput(200,owner,ally,ability.id,kind,10);
+    runtime.markSupportOutput(200,owner,owner,ability.id,kind,10);
+    const second=runtime.finishAction(200,owner,ability.id)!;
+    assert.equal(second.consumed,true);assert.equal(second.charges,1);
+    assert.equal(runtime.finishAction(200,owner,ability.id),undefined);
+    assert.equal(runtime.haste(201,owner).find(x=>x.familyId==='effect_benediction')?.fraction??0,group.resonance===3?.02:0);
+   }
+   if(group?.familyId==='effect_shared_resolve'){
+    const ability=owner.definition.abilities.find(a=>a.id.includes(':v2:')&&a.effects.some(e=>e.kind==='shield'||e.kind==='buff'));
+    if(ability){
+     const kind=ability.effects.some(e=>e.kind==='shield')?'shield':'buff';
+     runtime.beginAction(100,owner,ability.id);
+     assert.equal(runtime.onAllySupport(100,owner,owner,ability.id,kind,10),undefined);
+     assert.equal(runtime.onAllySupport(100,owner,ally,ability.id,kind,10)?.stacks,1);
+     assert.equal(runtime.onAllySupport(100,owner,ally,ability.id,kind,10),undefined);
+     if(heal||shield){
+      const next=(heal??shield)!,output=heal?'heal':'shield';
+      runtime.finishAction(100,owner,ability.id);
+      runtime.beginAction(200,owner,next.id);
+      assert.equal(runtime.supportMultiplier(200,owner,ally,next.id,output),1+group.totalValue);
+     }
+    }
+   }
   }
   assert.equal(result.events[0].detail,ACTION_STREAM_RNG_QA_V2);
   return result;
@@ -202,7 +289,23 @@ export function createGentleGemPartyPressureReviewV2(members:readonly Member[],p
   for(let i=1;i<recoveryEvents.length;i++)assert.ok(recoveryEvents[i].atMs-recoveryEvents[i-1].atMs>=10000);
   for(let i=1;i<armed.length;i++)assert.ok(armed[i].atMs-armed[i-1].atMs>=8000);
   if(recoveryEvents.length)assert.equal(p.effectResonanceReview?.families.find(g=>g.familyId==='effect_retaliation')?.resonance,3);
-  return {before:a,after:b,triggerCount:triggers.length,stackTriggers:stackTriggers.length,armed:armed.length,recoveryEvents:recoveryEvents.length,extensions:extensions.length,defenseEarned:defenseEarned.length,defenseUses:defenseEvents.length-defenseEarned.length,
+  const supportEvents=after.events.filter(e=>e.detail?.startsWith('private_qa_support_'));
+  const lifecycleEvents=after.events.filter(e=>e.detail?.startsWith('private_qa_lifecycle_'));
+  assert.ok(!before.events.some(e=>e.detail?.startsWith('private_qa_support_')||e.detail?.startsWith('private_qa_lifecycle_')));
+  for(const event of supportEvents){
+   const parts=event.detail!.split(':'),g=p.effectResonanceReview?.families.find(x=>x.familyId===parts[1]);
+   assert.ok(g&&event.actorId===actor.id&&event.type==='gem_state'&&Number(parts[2])>0);
+   if(parts[0]==='private_qa_support_stack'){
+    assert.ok(Number(parts[3])<= (g.resonance===3?3:2)&&Math.abs(event.amount!-Number(parts[3])*g.totalValue)<1e-9);
+   }else{
+    assert.ok(Number(parts[4])<=(g.resonance>=2?2:1)&&Math.abs(event.amount!-Number(parts[3])*g.totalValue)<1e-9);
+   }
+  }
+  assert.equal(new Set(supportEvents.map(e=>e.detail!.split(':').slice(0,3).join(':'))).size,supportEvents.length);
+  assert.ok(lifecycleEvents.every(e=>e.actorId===actor.id&&Number.isFinite(e.amount)&&e.amount!>0));
+  const terminal=lifecycleEvents.filter(e=>e.detail==='private_qa_lifecycle_terminal');
+  assert.ok(terminal.every(e=>e.type==='heal'&&['V2_QA_GEM_RENEWAL_TICK','V2_QA_GEM_AEGIS_EXPIRY'].includes(e.abilityId??'')));
+  return {before:a,after:b,supportEvents:supportEvents.length,lifecycleEvents:lifecycleEvents.length,terminalHeals:terminal.length,triggerCount:triggers.length,stackTriggers:stackTriggers.length,armed:armed.length,recoveryEvents:recoveryEvents.length,extensions:extensions.length,defenseEarned:defenseEarned.length,defenseUses:defenseEvents.length-defenseEarned.length,
    hasteUses:triggers.filter(e=>e.detail?.startsWith('private_qa_haste_gem:')).length,
    maxStacks:Math.max(0,...stackTriggers.map(e=>Number(e.detail!.split(':')[3]))),
    maxFraction:Math.max(0,...triggers.map(e=>e.amount??0)),releaseEnabled:false as const};

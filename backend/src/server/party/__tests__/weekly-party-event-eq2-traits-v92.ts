@@ -1,3 +1,4 @@
+import {projectPartyChatCardV105,type VoteCardV105,type ReadyCardV105,type RecruitmentCardV105,type AchievementCardV105} from '../party-chat-action-cards-review-v105';
 import {projectPartySwapChatV104,type PartySwapChatProposalV104} from '../party-role-swap-chat-review-v104';
 import {reviewPartyCharacterSwapV103,type PartyCharacterV103} from '../party-roster-character-swap-review-v103';
 import {strict as assert} from 'node:assert';
@@ -241,6 +242,66 @@ denied(()=>projectPartySwapChatV104({...chatInput,viewerAccountId:'OUTSIDER'},tr
 denied(()=>projectPartySwapChatV104({...chatInput,activePartyId:'OTHER_PARTY'},true),'chat_scope_mismatch');
 denied(()=>projectPartySwapChatV104(chatInput),'unreleased');
 console.log('PARTY_ROLE_SWAP_CHAT_V104_REVIEW_OK');
+const workflowBase={partyId:'QA_PARTY_SWAP',messageId:'QA_SYSTEM_MSG',sourceId:'QA_SOURCE',
+ createdAtMs:1000,expiresAtMs:301000,rosterRevision:7,sourceRevision:2,state:'pending' as const,
+ eligibleAccountIds:['A','B','C','D']};
+const cardScope={...chatInput,leaderAccountId:'A',currentSourceRevision:2};
+const options=[{id:'hunt',labelKey:'contract_hunt'},{id:'gather',labelKey:'contract_gather'}];
+for(const kind of ['contract_vote','event_vote'] as const){
+ const vote:VoteCardV105={...workflowBase,kind,options,ballots:[{accountId:'A',optionId:'hunt'}]};
+ const open=projectPartyChatCardV105({...cardScope,card:vote},true);
+ assert.equal(open.kind,kind);
+ assert.deepEqual(open.actions,['vote']);
+ assert.equal(open.canExecute,false);
+ assert.equal(open.canGrantRewards,false);
+ if(open.kind!=='contract_vote'&&open.kind!=='event_vote')throw Error('wrong vote card');
+ assert.equal(open.options[0]!.votes,1);
+ assert.equal(open.respondedCount,1);
+ assert.deepEqual(projectPartyChatCardV105({...cardScope,card:vote,viewerAccountId:'A'},true).actions,[]);
+ assert.deepEqual(projectPartyChatCardV105({...cardScope,card:vote,serverNowMs:301000},true).actions,[]);
+ assert.deepEqual(projectPartyChatCardV105({...cardScope,card:vote,currentSourceRevision:3},true).actions,[]);
+ assert.deepEqual(projectPartyChatCardV105({...cardScope,card:vote,rosterRevision:8},true).actions,[]);
+ assert.deepEqual(projectPartyChatCardV105({...cardScope,card:{...vote,state:'completed',selectedOptionId:'hunt'}},true).actions,[]);
+ denied(()=>projectPartyChatCardV105({...cardScope,card:{...vote,ballots:[...vote.ballots,...vote.ballots]}},true),'invalid_ballot');
+ denied(()=>projectPartyChatCardV105({...cardScope,card:{...vote,ballots:[{accountId:'OUTSIDER',optionId:'hunt'}]}},true),'invalid_ballot');
+ denied(()=>projectPartyChatCardV105({...cardScope,card:{...vote,ballots:[{accountId:'A',optionId:'FORGED'}]}},true),'invalid_ballot');
+ denied(()=>projectPartyChatCardV105({...cardScope,card:{...vote,state:'completed',selectedOptionId:'FORGED'}},true),'invalid_vote_result');
+}
+const groupReady:ReadyCardV105={...workflowBase,kind:'group_readiness',responses:[
+ {accountId:'A',ready:true},{accountId:'C',ready:false}]};
+const readyCard=projectPartyChatCardV105({...cardScope,card:groupReady},true);
+assert.equal(readyCard.kind,'group_readiness');
+if(readyCard.kind!=='group_readiness')throw Error('wrong readiness card');
+assert.deepEqual(readyCard.actions,['ready','not_ready']);
+assert.equal(readyCard.readyCount,1);
+assert.equal(readyCard.members.find(m=>m.accountId==='C')?.ready,false);
+assert.equal(readyCard.canLaunchCombat,false);
+assert.deepEqual(projectPartyChatCardV105({...cardScope,card:groupReady,viewerAccountId:'C'},true).actions,[]);
+denied(()=>projectPartyChatCardV105({...cardScope,card:{...groupReady,responses:[...groupReady.responses,...groupReady.responses]}},true),'invalid_readiness');
+const recruit:RecruitmentCardV105={...workflowBase,kind:'recruitment_request',eligibleAccountIds:['A'],applicantAccountId:'APPLICANT'};
+const leaderCard=projectPartyChatCardV105({...cardScope,viewerAccountId:'A',card:recruit},true);
+assert.deepEqual(leaderCard.actions,['accept','decline']);
+const memberCard=projectPartyChatCardV105({...cardScope,card:recruit},true);
+if(memberCard.kind!=='recruitment_request')throw Error('wrong recruitment card');
+assert.equal(memberCard.applicantAccountId,null);
+assert.deepEqual(memberCard.actions,[]);
+assert.deepEqual(projectPartyChatCardV105({...cardScope,card:recruit,viewerAccountId:'A',rosterRevision:8},true).actions,[]);
+denied(()=>projectPartyChatCardV105({...cardScope,card:recruit,leaderAccountId:'B'},true),'invalid_recruitment');
+const achievement:AchievementCardV105={partyId:workflowBase.partyId,messageId:workflowBase.messageId,
+ sourceId:'QA_CONTRACT',createdAtMs:1000,kind:'shared_achievement',achievementKind:'contract_completed',
+ milestoneId:'tier_1',verifiedReceiptId:'QA_RECEIPT'};
+const announcement=projectPartyChatCardV105({...cardScope,card:achievement},true);
+if(announcement.kind!=='shared_achievement')throw Error('wrong achievement card');
+assert.deepEqual(announcement.actions,[]);
+assert.equal(announcement.canGrantRewards,false);
+const duplicate=projectPartyChatCardV105({...cardScope,card:{...achievement,verifiedReceiptId:'RETRY_RECEIPT'}},true);
+if(duplicate.kind!=='shared_achievement')throw Error('wrong achievement retry card');
+assert.equal(duplicate.deduplicationKey,announcement.deduplicationKey);
+denied(()=>projectPartyChatCardV105({...cardScope,card:achievement,message:{...cardScope.message,isSystem:false,accountId:'A'}},true),'chat_scope_mismatch');
+denied(()=>projectPartyChatCardV105({...cardScope,card:achievement,viewerAccountId:'OUTSIDER'},true),'chat_scope_mismatch');
+denied(()=>projectPartyChatCardV105({...cardScope,card:achievement}), 'unreleased');
+console.log('PARTY_CHAT_ACTION_CARDS_V105_REVIEW_OK');
+
 
 console.log('PARTY_ROSTER_SWAP_V103_REVIEW_OK: account-stable role exchange and frozen encounter isolation');
 assert.equal(PARTY_EVENT_EQ2_TRAIT_V92_RELEASED,false);

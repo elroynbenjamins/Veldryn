@@ -34,3 +34,4 @@ jobs:
       - run: node --experimental-strip-types tools/story-journal-2-localization-review.test.mjs
       - run: node --experimental-strip-types tools/story-journal-2-persistence-review.test.mjs
       - run: node --experimental-strip-types tools/story-journal-2-atomic-review.test.mjs
+      - run: node tools/story-journal-2-compact-state-review.test.mjs

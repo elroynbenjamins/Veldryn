@@ -3,12 +3,14 @@ on:
   pull_request:
     branches:
       - review/v2-regional-mechanics-progression-20261127
+      - review/v2-regional-source-reconciliation-20261127
     paths:
       - 'docs/2-0/regional-source-reconciliation.test.mjs'
       - '.github/workflows/regional-source-reconciliation.yml'
   push:
     branches:
       - review/v2-regional-source-reconciliation-20261127
+      - review/v2-solo-counterbuild-calibration-20261127
   workflow_dispatch:
 permissions:
   contents: read

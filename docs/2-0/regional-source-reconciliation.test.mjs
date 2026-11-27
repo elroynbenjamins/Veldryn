@@ -34,6 +34,26 @@ function audit(read){
   if(x.drops.length||x.nodes.length||x.rareGathering.length)return true;
   return x.recipes.some(r=>r.inputs.every(i=>reachable(i.itemId,[...path,id])));
  };
+ // Prospective common T1 binder: ordinary equipment only. Preserve the
+ // original premium resin route, existing item IDs and all mint snapshots.
+ // New output is a design identity, not a registered material or recipe.
+ const pinnedPieces=['manifest','expansion-manifest','armament-manifest'].flatMap(n=>[...read(equip+'equipment-crafting-v2-'+n+'.ts').matchAll(/(?:CORE|EXPANSION|ARMAMENT)_PIECES:readonly V2ServerPiece\[\]=(\[.*?\]);/gs)].flatMap(m=>JSON.parse(m[1])));
+ const premiumResin=recipes.find(r=>r.id==='BREW_VERDANT_BINDING_RESIN');
+ if(!premiumResin)throw Error('missing_original_resin');
+ const commonInputs=premiumResin.inputs.filter(i=>i.itemId!=='ASTERFALL_BOTANICAL_ESSENCE').map(i=>({itemId:i.itemId,quantity:Math.ceil(i.quantity*1.25)}));
+ const commonBinder={id:'EQ2_REVIEW_T1_COMMON_BINDER',output:'EQ2_T1_COMMON_BINDER',skill:'alchemy',level:1,quantity:1,seconds:120,gold:18,
+  inputs:commonInputs,registration:false,mayCraft:false,mayMint:false,releaseEnabled:false};
+ const beginnerRoutes=pinned.filter(r=>r.tier===1).map(r=>{
+  const piece=pinnedPieces.find(p=>p.id===r.pieceId);if(!piece)throw Error('missing_pinned_piece');
+  const ordinary=!piece.setId;
+  return {recipeId:r.id,pieceId:r.pieceId,ordinary,
+   oldInputs:r.inputs,proposedInputs:r.inputs.map(i=>ordinary&&i.itemId==='VERDANT_BINDING_RESIN'?{...i,itemId:commonBinder.output}:{...i}),
+   gold:r.gold,sourceUnchanged:true,mayCraft:false};
+ });
+ const beginnerAudit={commonBinder,commonInputsHaveDeclaredNonBossPath:commonInputs.every(i=>reachable(i.itemId)),
+  ordinaryRoutes:beginnerRoutes.filter(r=>r.ordinary).length,premiumRoutes:beginnerRoutes.filter(r=>!r.ordinary).length,
+  changedRoutes:beginnerRoutes.filter(r=>JSON.stringify(r.oldInputs)!==JSON.stringify(r.proposedInputs)).length,
+  routes:beginnerRoutes,releaseEnabled:false};
  const preparation=[{tier:1,prepare:1,wear:2,need:1},{tier:2,prepare:8,wear:12,need:13},
   {tier:3,prepare:32,wear:37,need:38},{tier:4,prepare:57,wear:62,need:63}];
  const preparationAudit=preparation.map(p=>{
@@ -66,7 +86,7 @@ function audit(read){
  // expected actions only, one essence per hit assumed; no bonus, pity,
  // multi-yield or trade, and not an observed completion time.
  const earlyBinderIllustration={baseChance:essence?.baseChance,expectedActionsPerSingleEssence:1/(essence?.baseChance??NaN),node:dewleaf?.id,assumesOneEssencePerSuccess:true};
- return {pinnedRecipeCount:pinned.length,roots,preparationAudit,graph:[...graph].map(([id,x])=>({id,...x})),monsters:mapped,t5:{count:five.length,sourceCounts,closed:five.every(e=>!e.mayMint&&!e.mayEquip&&!e.mayTrade&&!e.mayDrop),raw:t5Production.existingRaw,processing:t5Production.processing.length,productionClosed:t5Production.releaseActivation===false&&t5Production.mayMint===false},gateEvidence:{asterfall:monsters.find(x=>x.id==='FALLEN_KNIGHT'),sunscar:{...gate(sandServer,'BOSS_002',50),mobileCatalogueMatched:Boolean(sand)},frostmarch:gate(frostServer,'BOSS_003',75)},earlyBinderIllustration};
+ return {pinnedRecipeCount:pinned.length,roots,preparationAudit,beginnerAudit,graph:[...graph].map(([id,x])=>({id,...x})),monsters:mapped,t5:{count:five.length,sourceCounts,closed:five.every(e=>!e.mayMint&&!e.mayEquip&&!e.mayTrade&&!e.mayDrop),raw:t5Production.existingRaw,processing:t5Production.processing.length,productionClosed:t5Production.releaseActivation===false&&t5Production.mayMint===false},gateEvidence:{asterfall:monsters.find(x=>x.id==='FALLEN_KNIGHT'),sunscar:{...gate(sandServer,'BOSS_002',50),mobileCatalogueMatched:Boolean(sand)},frostmarch:gate(frostServer,'BOSS_003',75)},earlyBinderIllustration};
 }
 const read=p=>readFileSync(new URL('../../'+p,import.meta.url),'utf8');
 test('canonical source declarations, preparation requirements and closed T5 design',()=>{
@@ -74,6 +94,13 @@ test('canonical source declarations, preparation requirements and closed T5 desi
  assert.equal(a.pinnedRecipeCount,338);assert.equal(a.roots.length,22);
  assert.ok(a.preparationAudit.every(x=>x.missingDeclaredPath.length===0));
  assert.ok(a.preparationAudit.every(x=>x.actualAccessVerified===false&&x.professionIndependentAccessVerified===false));
+ const b=a.beginnerAudit;
+ assert.equal(b.ordinaryRoutes+b.premiumRoutes,74);assert.ok(b.ordinaryRoutes>0&&b.premiumRoutes>0);
+ assert.equal(b.changedRoutes,b.ordinaryRoutes);
+ assert.ok(b.commonInputsHaveDeclaredNonBossPath);
+ assert.deepEqual(b.commonBinder.inputs,[{itemId:'DEWLEAF',quantity:7},{itemId:'MOSS_FIBER',quantity:15},{itemId:'WISP_DUST',quantity:4}]);
+ assert.ok(b.routes.every(r=>!r.mayCraft&&r.sourceUnchanged&&(r.ordinary?r.proposedInputs.some(i=>i.itemId===b.commonBinder.output)&&!r.proposedInputs.some(i=>i.itemId==='VERDANT_BINDING_RESIN'):JSON.stringify(r.oldInputs)===JSON.stringify(r.proposedInputs))));
+ assert.equal(b.commonBinder.mayMint,false);
  assert.equal(a.t5.count,125);assert.ok(a.t5.closed&&a.t5.productionClosed);
  assert.ok(a.roots.find(x=>x.id==='THORN_SAP').drops.some(x=>x.id==='VENOM_WEAVER'));
  assert.ok(a.roots.find(x=>x.id==='ASTRAL_SCRIPT').drops.some(x=>x.id==='DUNE_ORACLE'&&x.unlock===32));

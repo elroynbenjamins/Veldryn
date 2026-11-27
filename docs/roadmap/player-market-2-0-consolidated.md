@@ -60,6 +60,11 @@ A synthetic pass cannot mark a real integration gate complete. If an authoritati
 - Rollback suite covers purchase/claim, unclaimed-stock rejection, foreign character, unknown recipe, other character's Inventory exclusion, post-write failure, same-key replay, changed batch and overdraw, immutable spend, and conservation. Example: 30 collected ore -> 18 consumed (10 Inventory + 8 Bank), 12 Bank remaining; no double debit.
 - Source and wiring read back; execution pending. Prior exact head `3f1396445e0cb98cce5ad9e360e7ad8d72b52b0c` still had ten queued runs. Next: competing craft/list and craft/craft writes, multi-material canonical recipe and processing output lineage with independent source authority. Actual GameState CAS, canonical recipes, Forge job/material/Gold/XP/output settlement and physical storage remain blockers. No live changes.
 
+### Shared crafting and Market contention
+- Extended the fresh disposable resource-claims matrix job with two-session crafting-before-listing, listing-before-crafting, and craft-before-craft races, plus same-key replay. Uses the identical claim/consumption/lot implementations as rollback tests. No separate transaction logic.
+- Fixture: 100 purchased and collected ore; 66 consumed, 30 in escrow, 4 still in Bank. Failed competitors must leave no offer, receipt or spent lots; Gold and each original material source must be conserved. Check after each race. Deterministic sleep barriers follow the existing test harness; actual simultaneous execution has not yet been verified.
+- Current canonical Forge persistence remains a dependency. Next: multi-input recipe atomicity and processing lineage; no approval of recipe costs or live material changes.
+
 ## Verification and release policy
 - Previous exact head `113cc6325dfe26d9923e30861e44c2a115486359`: dedicated PG17 and source review success, merge regression success; auth and several broad workflows failed on Forge test narrowing. Fixed in `f7918835781d725e72f798117da77c2523958463`, not yet revalidated in a completed exact-head run.
 - Latest audited pre-consolidation head `5f10d8800ff4b1259ebc61ed3b432a709358a213`: all ten observed workflows queued (PG17 46016411961, auth 46016411854, source 46016411955); no pass claimed for new receipt, mint registration or race tests. New consolidation head must run again.

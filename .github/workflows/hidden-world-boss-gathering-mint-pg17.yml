@@ -4,6 +4,8 @@ on:
     paths:
       - 'backend/src/server/loot/world-boss-gathering-mint-v102.ts'
       - 'backend/src/server/loot/world-boss-chest-opening-v103.ts'
+      - 'backend/src/server/loot/world-boss-chest-source-v104.ts'
+      - 'backend/tests/world-boss-chest-source-v104-pg.mjs'
       - 'backend/src/server/loot/world-boss-real-reward-ports-v103.ts'
       - 'backend/src/server/loot/chest-postgres-store-v70.ts'
       - 'backend/tests/world-boss-chest-opening-v103-pg.mjs'
@@ -60,6 +62,7 @@ jobs:
         run: |
           node tests/world-boss-gathering-mint-v102-pg.mjs
           node tests/world-boss-chest-opening-v103-pg.mjs
+          node tests/world-boss-chest-source-v104-pg.mjs
       - name: Install isolated pinned native PG test driver
         run: npm install --prefix "$RUNNER_TEMP/wb-mint-driver" --ignore-scripts --no-audit --no-fund --save-exact pg@8.16.3
       - name: Run native PostgreSQL 17 rollback, replay and independent-session issuance

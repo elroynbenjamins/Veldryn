@@ -125,6 +125,7 @@ for(const theme of ['petal-waltz','thunder-pulse']){
    }
   }
  }
+ assert(sig.nextPremiumSignatureEnvelope(theme,2/24,2,'border')>.3,'early signature crest response');
  const cfg=sig.NEXT_PREMIUM_REACTION[theme];
  assert(cfg.duration>=600&&cfg.duration<=1000);
  assert.deepEqual([cfg.lift[0],cfg.scale[0],cfg.tilt[0]],[0,1,0]);

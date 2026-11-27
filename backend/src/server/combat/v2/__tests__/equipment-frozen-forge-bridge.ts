@@ -2048,7 +2048,8 @@ function makeV21Loadout(classId:ClassIdV2,specIndex:0|1,targetTier:1|2|3|4,targe
   // Same fixed boss input for all parties and both gem arms; not dynamic
   // scaling to a wearer's CP or gear. Region progression follows reference
   // fixture stats and the mitigation curve, not approved difficulty values.
-  const fixed={...boss,id:profile.id,name:profile.id,level,abilities:[],phases:undefined,
+  const names:Readonly<Record<typeof profile.id,string>>={BOSS_EXP_ROOT:'Asterfall Root',BOSS_EXP_BELL:'Asterfall Bell',BOSS_EXP_SOLAR:'The Buried Heliarch',BOSS_EXP_SPHINX:'The Veiled Sphinx',BOSS_EXP_BELLBEAST:'The Bellbeast of Shiverlake',BOSS_EXP_CANTOR:'The Frozen Cantor'};
+  const fixed={...boss,id:profile.id,name:names[profile.id],level,abilities:[],phases:undefined,
    stats:{...boss.stats,maxHp:Math.round(meanAttack*4*30),attackPower:Math.round(meanHp*.30),defense:Math.round(k*.60)}};
   for(const [pi,ids] of parties.entries())for(const spec of [0,1] as const){
    const members=ids.map(id=>membersByClass.get(id)![spec]);

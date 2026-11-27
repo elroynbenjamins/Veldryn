@@ -41,3 +41,23 @@ export function reviewGatheringSpeedV2(input:{
  return {rawRatingBps,effectiveRatingBps,setRatingBps,gearRateMultiplier,existingSeconds,actionSeconds,
   relativeTimeReduction:1-1/gearRateMultiplier,live:false as const,releaseReady:false as const};
 }
+
+/** Bounds follow ten V96 mythic affixes at maximum strength plus V64 set
+ * bonuses. They are review guardrails, not a new general stat cap. */
+export function reviewGatheringRewardChannelsV2(input:{
+ matchingSetPieces:number;skillXpAffixBps?:number;rareChanceAffixBps?:number;
+}){
+ const {matchingSetPieces,skillXpAffixBps=0,rareChanceAffixBps=0}=input;
+ if(!Number.isInteger(matchingSetPieces)||matchingSetPieces<0||matchingSetPieces>10||
+ !Number.isSafeInteger(skillXpAffixBps)||skillXpAffixBps<0||skillXpAffixBps>330*matchingSetPieces||
+ !Number.isSafeInteger(rareChanceAffixBps)||rareChanceAffixBps<0||rareChanceAffixBps>825*matchingSetPieces)
+  throw Error('gathering_review_invalid_reward_channels');
+ const setXpBps=(matchingSetPieces>=2?300:0)+(matchingSetPieces>=10?500:0);
+ const setYieldBps=(matchingSetPieces>=4?400:0)+(matchingSetPieces>=10?300:0);
+ const setRareBps=matchingSetPieces>=6?1000:0;
+ return {skillXpAffixBps,rareChanceAffixBps,setXpBps,setYieldBps,setRareBps,
+  xpMultiplier:1+(skillXpAffixBps+setXpBps)/10000,
+  yieldMultiplier:1+setYieldBps/10000,
+  rareChanceMultiplier:1+(rareChanceAffixBps+setRareBps)/10000,
+  releaseReady:false as const};
+}

@@ -7,7 +7,7 @@ import {unlockCombatCompanion} from '../src/core/combat-companions';
 import {canUseProfileCosmetic,profileCosmeticReleased} from '../src/core/profile-cosmetics';
 import {profileRewardSource} from '../src/core/profile-customization';
 import {executeGameCommand} from '../src/core/game-commands';
-import {EVENT_BOND_CANDY_MATERIAL_CAP,eventBondCandyMaterialUses,canAnnounceLiveEventStart,acceptEventContract,activeLiveEvent,applyEventDiscoveries,applyEventDrops,chooseEventProject,claimAllEventMilestones,claimEventDailyGift,claimEventDiscovery,claimEventReward,consumeEventCandy,availableEventRepeatCaches,eventCandyStatus,eventCollectionJournal,eventContractBoard,eventDailyGift,eventEffectiveDropRate,eventLifecycle,eventPrestigeBalance,eventProgress,eventRewardClaimed,eventShopOffers,eventOfferPurchaseCount,purchaseEventOffer,setLocalEventEnabled} from '../src/core/live-events';
+import {EVENT_BOND_CANDY_MATERIAL_CAP,eventBondCandyMaterialUses,canAnnounceLiveEventStart,acceptEventContract,activeLiveEvent,applyEventDiscoveries,applyEventDrops,chooseEventProject,claimAllEventMilestones,claimEventDailyGift,claimEventDiscovery,claimEventReward,consumeEventCandy,availableEventRepeatCaches,eventCandyStatus,eventCollectionJournal,eventContractBoard,eventDailyGift,eventEffectiveDropRate,eventLifecycle,eventPrestigeBalance,eventProgress,eventRewardClaimed,eventRewardOwned,eventShopOffers,eventOfferPurchaseCount,purchaseEventOffer,setLocalEventEnabled} from '../src/core/live-events';
 
 function ok(condition:boolean,message:string){if(!condition)throw new Error(message);}
 
@@ -144,6 +144,27 @@ ok(liveEventDef('EVT_ANNUAL_012_2027')?.name==='Frostfall Festival','Frostfall c
 ok(EQUIPMENT_MAIN_RESOURCE_BUNDLES.length===7,'Both shops use seven reviewed equipment resource inputs');
 ok(eventShopOffers(frost,frostTime).filter(offer=>offer.reward.kind==='crafting_material').length===7,'Frostfall offers all seven selectable main materials');
 ok(eventShopOffers(frost,frostTime).length>=20,'Frostfall has a full holiday catalogue beyond the original five rewards');
+const frostShopCatalog=liveEventDef(frostId)!.shop;
+ok(frostShopCatalog.length===20,'Frostfall shop must retain its 20 permanent/consumable offer definitions');
+ok(new Set(frostShopCatalog.map(offer=>offer.id)).size===20,'Frostfall offer IDs must remain unique');
+for(const offer of frostShopCatalog){
+ ok(Number.isInteger(offer.cost)&&offer.cost>0&&Number.isInteger(offer.limit)&&offer.limit>=1,'Frostfall prices and purchase limits must be positive integers: '+offer.id);
+ const trialBase=createCharacter(newGame(frostTime),'IRONWARDEN','FrostShopAudit');
+ const prepared={...trialBase,character:{...trialBase.character!,level:100},skills:trialBase.skills.map(skill=>({...skill,level:100})),account:{...trialBase.account,liveEvent:{eventId:frostId,enabled:true,startsAtMs:Date.UTC(2026,11,3),endsAtMs:Date.UTC(2026,11,27),graceEndsAtMs:Date.UTC(2026,11,29)},eventCurrencyBalanceById:{[frostId]:100_000},eventPrestigeBalanceById:{[frostId]:100}}};
+ const purchased=purchaseEventOffer(prepared,offer.id,frostTime);
+ const commonAfter=purchased.account.eventCurrencyBalanceById?.[frostId]??0;
+ const prestigeAfter=purchased.account.eventPrestigeBalanceById?.[frostId]??0;
+ ok(commonAfter===(offer.currency==='common'?100_000-offer.cost:100_000),'Frostfall common price must be debited once: '+offer.id);
+ ok(prestigeAfter===(offer.currency==='prestige'?100-offer.cost:100),'Frostfall prestige price must be debited once: '+offer.id);
+ ok(eventOfferPurchaseCount(purchased,frostId,offer.id,frostTime)===1,'Frostfall receipt must record exactly one purchase: '+offer.id);
+ if(!['candy','gold','companion_essence','bondstones','crafting_material'].includes(offer.reward.kind))ok(eventRewardOwned(purchased,offer.reward),'Frostfall durable reward must be owned after claim: '+offer.id);
+ if(offer.limit===1){
+  let duplicateRejected=false;try{purchaseEventOffer(purchased,offer.id,frostTime)}catch{duplicateRejected=true}
+  ok(duplicateRejected,'Frostfall single-purchase offer must reject duplicates: '+offer.id);
+ }
+}
+
+
 const bellframeId='frame_frostfall_aurora_bellframe',bellframeOffer='frostfall_aurora_bellframe';
 const bellframeStart=Date.UTC(2026,11,3),bellframeEnd=Date.UTC(2026,11,27),bellframeGrace=Date.UTC(2026,11,29);
 const frameState={...frost,account:{...frost.account,liveEvent:{eventId:frostId,enabled:true,startsAtMs:bellframeStart,endsAtMs:bellframeEnd,graceEndsAtMs:bellframeGrace},eventCurrencyBalanceById:{[frostId]:6000}}};

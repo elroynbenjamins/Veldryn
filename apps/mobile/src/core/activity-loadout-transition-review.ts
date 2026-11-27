@@ -81,6 +81,9 @@ export function reviewActivityLoadoutTransition(input:{
  if(!state.character||!Number.isSafeInteger(nowMs)||nowMs<0||
   nowMs<(state.activity?.lastClaimAtMs??0)||typeof input.verifyNoFrozenEncounter!=='function'||
   input.verifyNoFrozenEncounter(state.character.id)!==true)throw Error('loadout_boundary_not_authorized');
+ // Queue/offline continuations need their own boundary hook, not a second claim.
+ if(state.activity?.queueManaged||state.character.activityQueue?.length||state.character.classTraining)
+  throw Error('loadout_queue_or_training_integration_pending');
  const category=categoryForTarget(target);
  const candidate=copy(state);
  const claimed=claimActivity(candidate,nowMs);
@@ -98,6 +101,7 @@ export function reviewActivityLoadoutTransition(input:{
   const preset=presets.find(row=>row.id===route.presetId);
   if(!preset)throw Error('loadout_missing');
   const oldFood=next.character.equippedFoodId,oldCompanion=next.character.equippedCombatCompanionId;
+  const settledHp=next.character.currentHp;
   const gathering=category!=='combat';
   const originalPresets=next.character.savedLoadouts;
   if(gathering){
@@ -108,8 +112,10 @@ export function reviewActivityLoadoutTransition(input:{
   }
   next=applyCharacterLoadout(next,preset.id);
   if(gathering)next={...next,character:{...next.character!,savedLoadouts:originalPresets,
-   equippedFoodId:oldFood,equippedCombatCompanionId:oldCompanion}};
+   equippedFoodId:oldFood,equippedCombatCompanionId:oldCompanion,currentHp:settledHp}};
   const selections=Object.prototype.hasOwnProperty.call(input.selectionsByPreset,preset.id)?input.selectionsByPreset[preset.id]:{};
+  // Clamp once against final combined equipment, pet and Faith selection.
+  next={...next,character:{...next.character!,currentHp:settledHp}};
   next=applyActivityLoadoutSelectionsReview(next,selections,nowMs);
  }
  const started=target.kind==='combat'?startCombat(next,target.id,nowMs,target.tacticId??'balanced',target.goalId??'open'):

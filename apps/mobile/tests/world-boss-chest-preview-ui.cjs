@@ -5,7 +5,7 @@ const file=readFileSync(join(__dirname,'../src/screens/FeaturePreviewScreen.tsx'
 function check(ok,label){
  if(!ok)throw Error('world_boss_chest_preview_qa:'+label);
 }
-for(const title of ['War Camp Chest','Warrior Chest','Realm Victory Chest']){
+for(const title of ['War Camp milestone','Three completed attacks','Community damage milestone']){
  check(file.includes("name:'"+title+"'"),'missing_chest_'+title);
 }
 for(const collection of ['Rootbound Harvester','Sunforged Prospector','Rimebound Angler']){
@@ -14,6 +14,7 @@ for(const collection of ['Rootbound Harvester','Sunforged Prospector','Rimebound
 check(file.includes('10% gathering gear chance'),'ten_percent_per_chest_notice');
 check(file.includes('Each earned chest independently has a 10% gear chance'),'no_guaranteed_gear_claim');
 check(file.includes('Up to six chests per account'),'account_wide_cap');
+check(file.includes('One universal World Boss Chest'),'unified_chest');
 check(file.includes('No authenticated entitlement or opening is available'),
  'no_fake_live_entitlement');
 check(file.includes('<Action label="Open chest · Not available" s={s} disabled/>'),

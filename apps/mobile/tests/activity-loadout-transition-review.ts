@@ -215,3 +215,32 @@ assert.ok(gearPace.actionSeconds<1&&gearPace.actionSeconds>0);
 assert.throws(()=>gatheringSpeedEffectiveRatingV2(-1));
 assert.throws(()=>reviewGatheringSpeedV2({baseActionSeconds:10,toolTimeMultiplier:0,existingRateMultiplier:1,gearRatingBps:0,setTimeMultiplier:1}));
 console.log('GATHERING_SPEED_V2_REVIEW: 6020 monotonic pace cases; preserve legacy tool/buff baseline and positive action times');
+
+import {reviewGatheringSettlementV2,type FrozenGatheringRateReview} from '../../../backend/online/gathering-speed-settlement-review';
+const frozenGathering:FrozenGatheringRateReview={accountId:'qa-account',characterId:wood.state.character!.id,
+ activityId:'qa-activity',skill:'woodcutting',targetId:'GREENWOOD_TREE',startedAtMs:2000,
+ gearRatingBps:0,matchingSetPieces:0,exactCopyIds:[],equippedReceiptDigest:'a'.repeat(64)};
+const gatherSource=JSON.stringify(wood.state);
+let lastActions=-1;
+for(const gearRatingBps of [0,5000,10000,15000,20000,25000,30000]){
+ const frozen={...frozenGathering,gearRatingBps,matchingSetPieces:gearRatingBps?10:0,
+ exactCopyIds:gearRatingBps?Array.from({length:10},(_,i)=>'qa-copy-'+i):[]};
+ const stateDigest=activityLoadoutSnapshotDigest(wood.state),frozenDigest=activityLoadoutSnapshotDigest(frozen);
+ const input={accountId:'qa-account',state:wood.state,nowMs:602000,sourceRevision:7,frozen,
+ verifyPersisted:(account:string,revision:number,stateHash:string,rateHash:string)=>account==='qa-account'&&revision===7&&stateHash===stateDigest&&rateHash===frozenDigest};
+ const result=reviewGatheringSettlementV2(input);
+ assert.equal(result.preview.kills,result.candidateReward.kills);
+ assert.equal(result.preview.xp,result.candidateReward.xp);
+ assert.ok(result.candidateReward.kills>lastActions);
+ if(!gearRatingBps)assert.deepEqual(result.candidateReward,result.baselineReward);
+ else assert.ok(result.candidateReward.kills>result.baselineReward.kills);
+ assert.equal(result.persisted,false);assert.equal(result.rewardGranted,false);
+ assert.equal(result.candidateReward.elapsedSeconds,result.baselineReward.elapsedSeconds);
+ assert.equal(JSON.stringify(wood.state),gatherSource);
+ lastActions=result.candidateReward.kills;
+ console.log('GATHERING_SETTLEMENT_RATE',JSON.stringify({gearRatingBps,effective:result.pace.effectiveRatingBps,baselineActions:result.baselineReward.kills,reviewActions:result.candidateReward.kills,xp:result.candidateReward.xp}));
+ assert.throws(()=>reviewGatheringSettlementV2({...input,frozen:{...frozen,startedAtMs:1000}}));
+ assert.throws(()=>reviewGatheringSettlementV2({...input,frozen:{...frozen,gearRatingBps:gearRatingBps+100}}));
+ assert.throws(()=>reviewGatheringSettlementV2({...input,verifyPersisted:()=>false}));
+}
+console.log('GATHERING_SETTLEMENT_REVIEW: actual 10-minute reward engine, unchanged elapsed time, preview/settlement action and XP parity, independent frozen receipt fence');

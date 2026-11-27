@@ -61,7 +61,7 @@ export function SectionGuide({scope,area,section,guide,translate,showReplay=true
    {header!==undefined?<View style={styles.headerRow}><View style={styles.headerMain}>{header}</View>{trigger}</View>:trigger}
    <Modal transparent visible={visible} statusBarTranslucent animationType="fade" onRequestClose={close}>
     <View style={styles.shade}>
-     <Pressable accessible={false} style={StyleSheet.absoluteFill} onPress={close}/>
+     <Pressable accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={StyleSheet.absoluteFill} onPress={close}/>
      <View accessibilityViewIsModal onAccessibilityEscape={close} style={[styles.dialog,{backgroundColor:C.panel,borderColor:C.selectionLine}]}>
       <View style={styles.dialogHeading}>
        {area==='guild'?<View style={[styles.guideIcon,{backgroundColor:C.selection,borderColor:C.selectionLine}]}><ThemedIcon name="guild" size={22}/></View>:null}
@@ -73,7 +73,7 @@ export function SectionGuide({scope,area,section,guide,translate,showReplay=true
         <Text style={[styles.closeText,{color:C.muted}]}>×</Text>
        </Pressable>
       </View>
-      <ScrollView style={styles.dialogScroll} contentContainerStyle={styles.dialogScrollContent} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} nestedScrollEnabled>
+      <ScrollView key={stepThrough?`step-${topicIndex}`:section} style={styles.dialogScroll} contentContainerStyle={styles.dialogScrollContent} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} nestedScrollEnabled>
        <Text style={[styles.dialogBody,{color:C.muted}]}>{t(guide.body)}</Text>
        {topics.length>0?(stepThrough?selectedTopic?<View style={styles.topicContent}>
         <Text accessibilityRole="header" style={[styles.topicHeading,{color:C.text}]}>{t(selectedTopic.title)}</Text>
@@ -139,12 +139,12 @@ const styles=StyleSheet.create({
  headerQuestion:{fontSize:18,fontWeight:'800'},
  newDot:{position:'absolute',top:5,right:5,width:6,height:6,borderRadius:3},
  pressed:{opacity:.78},
- shade:{flex:1,justifyContent:'center',padding:22,backgroundColor:'rgba(0,0,0,0.76)'},
+ shade:{flex:1,justifyContent:'center',paddingHorizontal:14,paddingVertical:24,backgroundColor:'rgba(0,0,0,0.76)'},
  dialog:{width:'100%',maxWidth:430,maxHeight:'91%',minHeight:0,alignSelf:'center',borderWidth:1,borderRadius:16,padding:14,gap:10},
  dialogScroll:{flexShrink:1,minHeight:0},
  dialogScrollContent:{gap:10,paddingBottom:6},
- dialogHeading:{flexDirection:'row',alignItems:'flex-start',gap:12},
- guideIcon:{width:40,height:40,borderWidth:1,borderRadius:10,alignItems:'center',justifyContent:'center'},
+ dialogHeading:{flexDirection:'row',alignItems:'flex-start',gap:9},
+ guideIcon:{width:40,height:40,flexShrink:0,borderWidth:1,borderRadius:10,alignItems:'center',justifyContent:'center'},
  walkthrough:{gap:8,paddingTop:5,borderTopWidth:StyleSheet.hairlineWidth,borderColor:'rgba(140,150,155,.3)'},
  stepHead:{flexDirection:'row',alignItems:'center',gap:10},
  stepCount:{fontSize:11,lineHeight:15,fontWeight:'700'},stepTrack:{flex:1,height:5,borderRadius:3,overflow:'hidden'},
@@ -157,11 +157,11 @@ const styles=StyleSheet.create({
  dialogEyebrow:{fontSize:10,fontWeight:'900',letterSpacing:1,marginBottom:5},
  dialogTitle:{fontSize:19,lineHeight:25,fontWeight:'900'},
  dialogBody:{fontSize:14,lineHeight:21},
- closeButton:{width:44,height:44,justifyContent:'center',alignItems:'center',borderRadius:9,borderWidth:1},
+ closeButton:{width:44,height:44,flexShrink:0,justifyContent:'center',alignItems:'center',borderRadius:9,borderWidth:1},
  closeText:{fontSize:24,lineHeight:27,fontWeight:'500'},
  detailButton:{minHeight:38,alignSelf:'flex-start',justifyContent:'center',paddingRight:15},
  detailToggle:{fontSize:13,fontWeight:'800'},
  dialogDetail:{fontSize:13,lineHeight:19},
- confirmButton:{marginTop:5,minHeight:46,alignItems:'center',justifyContent:'center',borderRadius:10,borderWidth:1},
- confirmText:{fontSize:14,fontWeight:'900'},
+ confirmButton:{marginTop:2,minHeight:46,paddingHorizontal:12,paddingVertical:10,alignItems:'center',justifyContent:'center',borderRadius:10,borderWidth:1},
+ confirmText:{fontSize:14,fontWeight:'900',textAlign:'center'},
 });

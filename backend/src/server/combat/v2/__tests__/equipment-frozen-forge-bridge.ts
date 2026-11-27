@@ -170,7 +170,7 @@ function make(classId:ClassIdV2,specIndex:0|1,
  const pieceId=originalPieceId??(kind==='set'?
   (specIndex===0?'EQ2_FIELDBORN_GUARD_HELMET':'EQ2_FIELDBORN_GUARD_CHEST'):
   tierItems[tier][role]);
- const acceptance=kind==='supported'?eligible(pieceId):
+ const acceptance:(roll:V2DraftRollOutcome)=>boolean=kind==='supported'?eligible(pieceId):
   kind==='unsupported'?roll=>roll.affixes.length>0&&!EQ2_COMBAT_FROZEN_AFFIX_MAP_V2[roll.affixes[0].stat]:
   kind==='offslot'?roll=>roll.affixes.length>0&&
    Boolean(EQ2_COMBAT_FROZEN_AFFIX_MAP_V2[roll.affixes[0].stat])&&
@@ -2537,7 +2537,8 @@ runRegionalProgressionReviewV2();
  const keys=[...new Set(rows.map(r=>r.level+'|'+r.classId+'|'+r.profile+'|'+r.kind+'|'+r.arm))].sort();
  assert.equal(keys.length,594);
  console.log('SOLO_EQUIPMENT_ROBUSTNESS_REVIEW '+JSON.stringify({matchedSets:rows.length/3,executions:rows.length,
-  gearProfiles:gearRows,groups:keys.map(key=>{
+  gearProfiles:gearRows.map(({rolls,...r})=>({...r,minQuality:Math.min(...rolls.map(x=>x.quality)),maxQuality:Math.max(...rolls.map(x=>x.quality))})),
+  groups:keys.map(key=>{
    const a=rows.filter(r=>r.level+'|'+r.classId+'|'+r.profile+'|'+r.kind+'|'+r.arm===key);
    const sample=a[0];
    const sameGearDamage=rows.filter(r=>r.level===sample.level&&r.kind===sample.kind&&r.profile===sample.profile&&r.arm===sample.arm&&CLASS_ROLES_V2[r.classId]==='damage');

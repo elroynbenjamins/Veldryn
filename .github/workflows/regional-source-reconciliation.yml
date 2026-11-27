@@ -1,0 +1,24 @@
+name: Hidden regional source reconciliation
+on:
+  pull_request:
+    branches:
+      - review/v2-regional-mechanics-progression-20261127
+    paths:
+      - 'docs/2-0/regional-source-reconciliation.test.mjs'
+      - '.github/workflows/regional-source-reconciliation.yml'
+  push:
+    branches:
+      - review/v2-regional-source-reconciliation-20261127
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-reconciliation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --test docs/2-0/regional-source-reconciliation.test.mjs

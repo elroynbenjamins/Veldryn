@@ -22,7 +22,7 @@ export const WINTER_HEARTH_GOALS = Object.freeze({ logs: 25000, lights: 2500 });
 export const WINTER_HEARTH_WEEKLY_CAPS = Object.freeze({ logs: 2500, lights: 250 });
 const lightRecipe=(skillId,primary,id)=>Object.freeze({
  id,skillId,level:4,
- inputs:Object.freeze([{itemId:primary,quantity:8},{itemId:'DEWLEAF',quantity:4},{itemId:'WISP_DUST',quantity:1}].map(Object.freeze)),
+ inputs:Object.freeze([{itemId:primary,quantity:8},...(skillId==='tailoring'?[{itemId:'COPPER_ORE',quantity:4}]:[]),{itemId:'DEWLEAF',quantity:4},{itemId:'WISP_DUST',quantity:1}].map(Object.freeze)),
  output:Object.freeze({itemId:WINTER_HEARTH_LIGHT_ID,quantity:5}),seconds:40,gold:30,xp:35,
 });
 export const WINTER_HEARTH_LIGHT_RECIPES=Object.freeze({

@@ -46,7 +46,8 @@ const AbyssalTide=memo(function AbyssalTide({clock,k,assets}:{clock:Animated.Val
   const rise=clock.interpolate({inputRange:CURVE.phase,outputRange:CURVE.energy.map(e=>-9*k*e)});
   const motes=ABYSSAL_MOTE_PATHS.map((p,i)=>{
    const inputRange=p.map((_,j)=>j/(p.length-1));
-   return {x:clock.interpolate({inputRange,outputRange:p.map(([x])=>x*k)}),y:clock.interpolate({inputRange,outputRange:p.map(([,y])=>y*k)}),opacity:clock.interpolate({inputRange:CURVE.phase,outputRange:CURVE.energy.map(e=>.48+e*(.43-i*.04))})};
+   const current=Animated.modulo(Animated.add(Animated.multiply(clock,3),i/3),1);
+   return {x:current.interpolate({inputRange,outputRange:p.map(([x])=>x*k)}),y:current.interpolate({inputRange,outputRange:p.map(([,y])=>y*k)}),opacity:clock.interpolate({inputRange:CURVE.phase,outputRange:CURVE.energy.map(e=>.48+e*(.43-i*.04))})};
   });
   return {opacity,rise,motes};
  },[clock,k]);

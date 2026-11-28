@@ -36,7 +36,7 @@ for(const [id,factory] of Object.entries(EXPEDITION_ENCOUNTERS)){
  const enemies=factory();
  for(const enemy of enemies){
   names.add(enemy.name);
-  for(const name of [enemy.name,enemy.name+' Echo',enemy.name.toUpperCase()]){
+  for(const name of [enemy.name,enemy.name.endsWith(' Echo')?enemy.name:enemy.name+' Echo',enemy.name.toUpperCase()]){
    if(!resolves(name))missing.add(id+': '+name);
   }
  }

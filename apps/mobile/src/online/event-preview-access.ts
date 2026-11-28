@@ -13,6 +13,7 @@ export function useEventPreviewAccess(characterId:string|undefined,nowMs:number)
   if(!client||!characterId)return;
   let live=true,epoch=0;
   let accountId:string|undefined;
+  let authRefresh:ReturnType<typeof setTimeout>|undefined;
   const refresh=async()=>{
    const request=++epoch;
    try{
@@ -31,12 +32,12 @@ export function useEventPreviewAccess(characterId:string|undefined,nowMs:number)
   };
   const {data:{subscription}}=client.auth.onAuthStateChange((_event,session)=>{
    const next=session?.user.id;
-   if(accountId!==next){accountId=next;epoch++;setGrant(undefined);}
+   if(accountId!==next){accountId=next;epoch++;setGrant(undefined);if(authRefresh)clearTimeout(authRefresh);if(next)authRefresh=setTimeout(()=>{if(live&&AppState.currentState==='active')void refresh();},0);}
   });
   const appState=AppState.addEventListener('change',status=>{if(status==='active')void refresh();else{epoch++;setGrant(undefined);}});
   const timer=setInterval(()=>{if(AppState.currentState==='active')void refresh();},30_000);
   void refresh();
-  return()=>{live=false;epoch++;clearInterval(timer);subscription.unsubscribe();appState.remove();};
+  return()=>{live=false;epoch++;clearInterval(timer);if(authRefresh)clearTimeout(authRefresh);subscription.unsubscribe();appState.remove();};
  },[characterId]);
- return grant?.characterId===characterId&&grant.expiresAtMs>nowMs?grant:undefined;
+ return grant&&grant.characterId===characterId&&grant.expiresAtMs>nowMs?grant:undefined;
 }

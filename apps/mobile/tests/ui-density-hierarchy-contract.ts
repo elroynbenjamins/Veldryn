@@ -414,7 +414,7 @@ ok(friends.includes('<GameButton compact title={st("Accept")}'),"Friend-request 
 ok(friends.includes('<GameButton compact title={st("Decline")} tone="secondary"'),"Friend-request decline must remain compact");
 
 const characterPolish=read('src/screens/CharacterScreen.tsx');
-ok(characterPolish.includes('<GameButton compact title={selectedDecision.upgrade.canAfford?')&&characterPolish.includes('selectedDecision.upgrade.successChance')&&characterPolish.includes("openEnhancement('upgrade')"),"Selected equipment actions must remain compact even when the enhancement chance is surfaced");
+ok(characterPolish.includes('<GameButton compact title={profileT(language,selectedDecision.upgrade.maxed?')&&characterPolish.includes('selectedDecision.upgrade.successChance')&&characterPolish.includes("openEnhancement('upgrade')")&&characterPolish.includes('stackItem&&s.stackedActions'),"Selected equipment actions must remain compact, with live chance and narrow-screen fallback");
 
 const worldPolish=read('src/components/WorldChapterNavigator.tsx');
 ok(worldPolish.includes('currentArtwork:{width:82')&&worldPolish.includes('currentHero:{flexDirection')&&worldPolish.includes('backgroundColor:C.panel'),'World current-location artwork must remain separate from theme-safe text content');

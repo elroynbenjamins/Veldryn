@@ -60411,6 +60411,7 @@ var fields = {
   seasonal: ["period", "id", "choiceId"],
   monthly_quest_milestone: ["month", "threshold", "characterId", "skillId"],
   settings: ["settings"],
+  chat_dock_lines: ["lines"],
   inventory_preference: ["id", "kind", "enabled"],
   inventory_preference_bulk: ["ids", "kind", "enabled"],
   inventory_seen_all: [],
@@ -60444,6 +60445,7 @@ function validateGameCommand(value) {
     if (values.batchMode === "selected") integer(values, "batches", 1, 1e4);
     else if (values.batches !== void 0 && values.batches !== 1) throw new Error("invalid_batches");
   }
+  if (row.type === "chat_dock_lines") integer(values, "lines", 1, 3);
   if (row.type === "faith_practice" && values.count !== void 0) integer(values, "count", 1, 1);
   if (row.type === "craft" && values.quantity !== void 0) integer(values, "quantity", 1, 999);
   if (row.type === "create" || row.type === "roster_create" || row.type === "qa_prepare" || row.type === "qa_switch_class") {
@@ -60569,7 +60571,7 @@ function executeGameCommand(previous, value, now, options = {}) {
     settle();
     state = stopActivity(state, now);
   };
-  const settlementFreeCommand = command.type === "companion_training" || command.type === "companion_essence" || command.type === "queue_add" && a.handoffGoal === void 0 || command.type === "queue_remove" || command.type === "queue_move" || command.type === "queue_clear" || command.type === "queue_start" || command.type === "daily_supplies_claim" || command.type === "monthly_quest_milestone" || command.type === "roster_delete" || command.type === "inventory_preference" || command.type === "inventory_seen_all" || command.type === "event_accept" || command.type.startsWith("qa_");
+  const settlementFreeCommand = command.type === "companion_training" || command.type === "companion_essence" || command.type === "queue_add" && a.handoffGoal === void 0 || command.type === "queue_remove" || command.type === "queue_move" || command.type === "queue_clear" || command.type === "queue_start" || command.type === "daily_supplies_claim" || command.type === "monthly_quest_milestone" || command.type === "roster_delete" || command.type === "chat_dock_lines" || command.type === "inventory_preference" || command.type === "inventory_seen_all" || command.type === "event_accept" || command.type.startsWith("qa_");
   const activityStartCommand = ["start", "explore", "class_training", "faith_practice", "alchemy_start", "processing_start"].includes(command.type);
   if (state.character && command.type !== "create" && !settlementFreeCommand) {
     if (activityStartCommand) settleAndStop();
@@ -61160,6 +61162,11 @@ function executeGameCommand(previous, value, now, options = {}) {
     case "settings":
       state = { ...state, settings: validateGameSettings(a.settings) };
       break;
+    case "chat_dock_lines": {
+      const lines = integer(a, "lines", 1, 3);
+      state = { ...state, settings: { ...state.settings, chatDockLines: lines } };
+      break;
+    }
     case "inventory_preference": {
       const id = text(a, "id", 120), kind = oneOf(a.kind, ["lock", "favorite", "seen"]);
       if (typeof a.enabled !== "boolean" || kind === "seen" && a.enabled !== true) throw new Error("invalid_inventory_preference");

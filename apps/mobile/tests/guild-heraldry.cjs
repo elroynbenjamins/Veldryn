@@ -44,4 +44,12 @@ for(const file of ['GuildCustomizationPanel.tsx','OnlineGuildCustomizationPanel.
  assert.ok(source.includes('<GuildFrameSwatch'),'Preview actual frame artwork');
  assert.ok(source.includes('<GuildBannerArtwork'),'Preview actual banner artwork');
 }
+const guildAssets=fs.readFileSync(path.join(root,'src/theme/guild-customization-assets.ts'),'utf8');
+for(const [id,asset] of [
+ ['border_halloween_veil','../../assets/guild-customization/borders/border_halloween_veil_runtime.webp'],
+ ['border_frostfall_frozen_majesty_2026','../../assets/events/frostfall/winter-hearth/border_frostfall_frozen_majesty_2026.webp'],
+]){
+ assert.ok(guildAssets.includes("'"+id+"',require('"+asset+"')"),'Missing seasonal guild frame mapping: '+id);
+ assert.ok(fs.existsSync(path.resolve(root,'src/theme',asset)),'Missing seasonal guild frame artwork: '+id);
+}
 console.log('PASS: guild frame geometry, unclipped crests, full banners and shared appearance previews');

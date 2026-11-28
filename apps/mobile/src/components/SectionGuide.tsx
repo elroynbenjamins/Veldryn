@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useEffect,useState,type ReactNode} from 'react';
 import {Modal,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {ThemedIcon} from './ThemedNavigationIcon';
+import {GuideTopicAccordion} from './GuideTopicAccordion';
 import {createSectionGuideStore} from '../core/section-guidance';
 import {useGameTheme} from '../theme/ThemeContext';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
@@ -28,7 +29,7 @@ export function SectionGuide({scope,area,section,guide,translate,showReplay=true
   void store.load(scope,area).then(seen=>{if(active)setSaved({identity,seen})});
   return()=>{active=false;};
  },[scope,area,identity]);
- useEffect(()=>{setOpen(null);setMore(false);setTopicIndex(0)},[section]);
+ useEffect(()=>{setOpen(null);setMore(false);setTopicIndex(0)},[identity,section]);
  if(!scope||!section||saved?.identity!==identity)return header??null;
  const seen=saved.seen.includes(section);
  const topics=guide.topics??[];
@@ -60,7 +61,7 @@ export function SectionGuide({scope,area,section,guide,translate,showReplay=true
    {header!==undefined?<View style={styles.headerRow}><View style={styles.headerMain}>{header}</View>{trigger}</View>:trigger}
    <Modal transparent visible={visible} statusBarTranslucent animationType="fade" onRequestClose={close}>
     <View style={styles.shade}>
-     <Pressable accessible={false} style={StyleSheet.absoluteFill} onPress={close}/>
+     <Pressable accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={StyleSheet.absoluteFill} onPress={close}/>
      <View accessibilityViewIsModal onAccessibilityEscape={close} style={[styles.dialog,{backgroundColor:C.panel,borderColor:C.selectionLine}]}>
       <View style={styles.dialogHeading}>
        {area==='guild'?<View style={[styles.guideIcon,{backgroundColor:C.selection,borderColor:C.selectionLine}]}><ThemedIcon name="guild" size={22}/></View>:null}
@@ -72,20 +73,12 @@ export function SectionGuide({scope,area,section,guide,translate,showReplay=true
         <Text style={[styles.closeText,{color:C.muted}]}>×</Text>
        </Pressable>
       </View>
-      <ScrollView style={styles.dialogScroll} contentContainerStyle={styles.dialogScrollContent} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} nestedScrollEnabled>
+      <ScrollView key={stepThrough?`step-${topicIndex}`:section} style={styles.dialogScroll} contentContainerStyle={styles.dialogScrollContent} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} nestedScrollEnabled>
        <Text style={[styles.dialogBody,{color:C.muted}]}>{t(guide.body)}</Text>
-       {selectedTopic?<View style={styles.topicArea}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} showsVerticalScrollIndicator={false} contentContainerStyle={styles.topicTabs} accessibilityRole="tablist" nestedScrollEnabled>
-         {topics.map((topic,index)=><Pressable key={topic.id} accessibilityRole="tab" accessibilityState={{selected:topicIndex===index}}
-          onPress={()=>setTopicIndex(index)} style={[styles.topicTab,{backgroundColor:topicIndex===index?C.selection:C.panel2,borderColor:topicIndex===index?C.selectionLine:C.line}]}>
-          <Text style={[styles.topicTabLabel,{color:topicIndex===index?C.text:C.muted}]}>{t(topic.title)}</Text>
-         </Pressable>)}
-        </ScrollView>
-        <View style={styles.topicContent}>
-         <Text accessibilityRole="header" style={[styles.topicHeading,{color:C.text}]}>{t(selectedTopic.title)}</Text>
-         <Text style={[styles.topicBody,{color:C.muted}]}>{t(selectedTopic.body)}</Text>
-        </View>
-       </View>:null}
+       {topics.length>0?(stepThrough?selectedTopic?<View style={styles.topicContent}>
+        <Text accessibilityRole="header" style={[styles.topicHeading,{color:C.text}]}>{t(selectedTopic.title)}</Text>
+        <Text style={[styles.topicBody,{color:C.muted}]}>{t(selectedTopic.body)}</Text>
+       </View>:null:<GuideTopicAccordion topics={topics} expandedIndex={topicIndex} onChange={setTopicIndex} translate={t}/>):null}
        {guide.detail?<Pressable accessibilityRole="button" accessibilityState={{expanded:more}} onPress={()=>setMore(value=>!value)} style={styles.detailButton}>
         <Text style={[styles.detailToggle,{color:C.accent}]}>{t(more?'Less detail':'More detail')} {more?'−':'+'}</Text>
        </Pressable>:null}
@@ -120,6 +113,7 @@ export function SectionGuide({scope,area,section,guide,translate,showReplay=true
    </Pressable>
   </View>
   <Text style={[styles.body,{color:C.muted}]}>{t(guide.body)}</Text>
+  {topics.length>0?<GuideTopicAccordion topics={topics} expandedIndex={topicIndex} onChange={setTopicIndex} translate={t}/>:null}
   {guide.detail?<Pressable accessibilityRole="button" accessibilityState={{expanded:more}} onPress={()=>setMore(v=>!v)} style={styles.more}>
    <Text style={[styles.extraLink,{color:C.accent}]}>{t(more?'Less detail':'More detail')} {more?'−':'+'}</Text>
   </Pressable>:null}
@@ -145,33 +139,29 @@ const styles=StyleSheet.create({
  headerQuestion:{fontSize:18,fontWeight:'800'},
  newDot:{position:'absolute',top:5,right:5,width:6,height:6,borderRadius:3},
  pressed:{opacity:.78},
- shade:{flex:1,justifyContent:'center',padding:22,backgroundColor:'rgba(0,0,0,0.76)'},
+ shade:{flex:1,justifyContent:'center',paddingHorizontal:14,paddingVertical:24,backgroundColor:'rgba(0,0,0,0.76)'},
  dialog:{width:'100%',maxWidth:430,maxHeight:'91%',minHeight:0,alignSelf:'center',borderWidth:1,borderRadius:16,padding:14,gap:10},
  dialogScroll:{flexShrink:1,minHeight:0},
  dialogScrollContent:{gap:10,paddingBottom:6},
- dialogHeading:{flexDirection:'row',alignItems:'flex-start',gap:12},
- guideIcon:{width:40,height:40,borderWidth:1,borderRadius:10,alignItems:'center',justifyContent:'center'},
- topicArea:{gap:9,minHeight:0},
+ dialogHeading:{flexDirection:'row',alignItems:'flex-start',gap:9},
+ guideIcon:{width:40,height:40,flexShrink:0,borderWidth:1,borderRadius:10,alignItems:'center',justifyContent:'center'},
  walkthrough:{gap:8,paddingTop:5,borderTopWidth:StyleSheet.hairlineWidth,borderColor:'rgba(140,150,155,.3)'},
  stepHead:{flexDirection:'row',alignItems:'center',gap:10},
  stepCount:{fontSize:11,lineHeight:15,fontWeight:'700'},stepTrack:{flex:1,height:5,borderRadius:3,overflow:'hidden'},
  stepActions:{flexDirection:'row',gap:8},
  stepButton:{flex:1,minHeight:44,alignItems:'center',justifyContent:'center',paddingHorizontal:7,borderRadius:9,borderWidth:1},
  stepNext:{flex:1},stepDisabled:{opacity:.35},stepButtonText:{fontSize:12,fontWeight:'800',textAlign:'center'},
- topicTabs:{gap:6,paddingVertical:2},
- topicTab:{minHeight:44,justifyContent:'center',paddingHorizontal:10,paddingVertical:7,borderWidth:1,borderRadius:9},
- topicTabLabel:{fontSize:12,fontWeight:'800'},
   topicContent:{gap:6,paddingBottom:4},
  topicHeading:{fontSize:14,fontWeight:'800',lineHeight:20},
  topicBody:{fontSize:13,lineHeight:20},
  dialogEyebrow:{fontSize:10,fontWeight:'900',letterSpacing:1,marginBottom:5},
  dialogTitle:{fontSize:19,lineHeight:25,fontWeight:'900'},
  dialogBody:{fontSize:14,lineHeight:21},
- closeButton:{width:44,height:44,justifyContent:'center',alignItems:'center',borderRadius:9,borderWidth:1},
+ closeButton:{width:44,height:44,flexShrink:0,justifyContent:'center',alignItems:'center',borderRadius:9,borderWidth:1},
  closeText:{fontSize:24,lineHeight:27,fontWeight:'500'},
  detailButton:{minHeight:38,alignSelf:'flex-start',justifyContent:'center',paddingRight:15},
  detailToggle:{fontSize:13,fontWeight:'800'},
  dialogDetail:{fontSize:13,lineHeight:19},
- confirmButton:{marginTop:5,minHeight:46,alignItems:'center',justifyContent:'center',borderRadius:10,borderWidth:1},
- confirmText:{fontSize:14,fontWeight:'900'},
+ confirmButton:{marginTop:2,minHeight:46,paddingHorizontal:12,paddingVertical:10,alignItems:'center',justifyContent:'center',borderRadius:10,borderWidth:1},
+ confirmText:{fontSize:14,fontWeight:'900',textAlign:'center'},
 });

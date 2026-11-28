@@ -1,9 +1,14 @@
 /** Pure release-note helpers shared by the startup panel and tests. */
+export const releaseNoteCategories=['Loot & Drop Rates','Economy & Gold','Combat & Skills','Crafting & Gathering','Equipment & Companions','Content & Events','UI & Quality of Life','Server & Performance','Bug Fixes'] as const;
+export type ReleaseNoteCategory=typeof releaseNoteCategories[number];
+export type ReleaseNoteMode='highlights'|'details';
+export type ReleaseNoteSection={category:ReleaseNoteCategory;entries:string[]};
 export type ReleaseNote={
  version:string;
  title:string;
  highlights:string[];
  publishedAt:string;
+ details?:ReleaseNoteSection[];
 };
 
 /** Render a release's published date in UTC, without shifting days for device time zones. */
@@ -26,6 +31,19 @@ export function compareReleaseVersions(left:string,right:string):number{
  return 0;
 }
 
+/** Older clients ignore non-string array entries; exactly one tagged details envelope is allowed. */
+export function parseReleaseNoteDetails(value:unknown):ReleaseNoteSection[]{
+ if(!Array.isArray(value))return [];
+ const envelopes=value.filter(entry=>entry&&typeof entry==='object'&&!Array.isArray(entry)&&entry.kind==='detailed-patch-notes-v1');
+ if(envelopes.length!==1||!Array.isArray(envelopes[0].sections))return [];
+ const sections:ReleaseNoteSection[]=[];
+ for(const category of releaseNoteCategories){
+  const entries=envelopes[0].sections.filter((section:unknown)=>section&&typeof section==='object'&&!Array.isArray(section)&&(section as Record<string,unknown>).category===category).flatMap((section:{entries?:unknown})=>Array.isArray(section.entries)?section.entries:[]).filter((entry:unknown):entry is string=>typeof entry==='string').map((entry:string)=>entry.trim().slice(0,500)).filter(Boolean);
+  if(entries.length)sections.push({category,entries:[...new Set<string>(entries)].slice(0,100)});
+ }
+ return sections;
+}
+
 export function parseReleaseNoteRow(value:Record<string,unknown>):ReleaseNote|null{
  const version=typeof value.version==='string'?value.version.trim():'';
  if(!/^\d+\.\d+\.\d+$/.test(version))return null;
@@ -33,7 +51,7 @@ export function parseReleaseNoteRow(value:Record<string,unknown>):ReleaseNote|nu
  const highlights=Array.isArray(value.highlights)?value.highlights.filter((entry):entry is string=>typeof entry==='string').map(entry=>entry.trim().slice(0,200)).filter(Boolean).slice(0,8):[];
  if(!title||!highlights.length)return null;
  const publishedAt=typeof value.published_at==='string'?value.published_at:'';
- return {version,title,highlights,publishedAt};
+ return {version,title,highlights,publishedAt,details:parseReleaseNoteDetails(value.highlights)};
 }
 
 export function shouldAutoShowReleaseNotes(notes:readonly ReleaseNote[],installedVersion:string,seen:boolean):boolean{

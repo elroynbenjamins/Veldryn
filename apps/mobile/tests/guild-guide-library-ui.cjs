@@ -19,7 +19,17 @@ assert.match(library,/guildGuideSectionTitle\(language,id,item.title\)/,'Library
 assert.match(library,/style={s.libraryScroll}/,'Guide Library is scrollable on smaller screens');
 assert.match(library,/group\.leadership\|\|leadership/,'Leadership guide groups are role-gated');
 assert.match(library,/accessibilityViewIsModal/,'Guide Library uses modal accessibility semantics');
-assert.match(library,/accessibilityRole="tab"/,'Guide topic choices are accessible');
+const accordion=read('src/components/GuideTopicAccordion.tsx');
+assert.match(library,/<GuideTopicAccordion topics={guide.topics}/,'Library uses shared accordion');
+assert.match(sectionHelp,/<GuideTopicAccordion topics={topics}/,'Section help uses shared accordion');
+assert.doesNotMatch(library,/<ScrollView horizontal/,'Library never clips topic labels in a horizontal strip');
+assert.doesNotMatch(sectionHelp,/<ScrollView horizontal/,'Section help never clips topic labels in a horizontal strip');
+assert.match(accordion,/accessibilityRole="button" accessibilityState={{expanded}}/,'Topic buttons expose expanded state');
+assert.match(accordion,/onChange\(expanded\?-1:index\)/,'Only one topic is expanded and can be collapsed');
+assert.match(accordion,/minHeight:44/,'Topic buttons retain accessible touch targets');
+assert.match(accordion,/label:{flex:1,minWidth:0/,'Long localized labels can wrap without clipping');
+assert.match(accordion,/{expanded\?<View/,'Only expanded topic content is rendered');
+assert.match(sectionHelp,/setTopicIndex\(0\)/,'Guide reopening resets the selected topic');
 assert.match(library,/localizedGuildDetailedGuide\(language,section\)/,'Library resolves translated detail content');
 assert.match(library,/localizedGuildDetailedGuide\(language,id\)/,'Library tiles also resolve translated summaries');
 assert.match(screen,/localizedGuildDetailedGuide\(language,guideSection\)/,'Section question-mark help uses the same translation resolver');

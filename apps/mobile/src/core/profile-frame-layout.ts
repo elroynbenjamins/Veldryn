@@ -39,8 +39,9 @@ export function profileBackdropTopInset(borderId:string|undefined,width:number,h
 
 /** Shared full-profile design contract, in outer card logical pixels (dp).
  * No cosmetic ID is allowed to alter these anchors. Compact authoring previews
- * scale the permitted ornament envelope down, never up. */
-export const PROFILE_SCENE_SAFE_LAYOUT={sideAnchor:46,bottomAnchor:28,stageBottomAnchor:31,petSize:58,contentGap:8,sideRail:18,horizontalRail:24,topCorner:30,bottomCorner:40,referenceWidth:300,referenceHeight:205} as const;
+ * scale the permitted ornament envelope down, never up. Top and bottom corners
+ * reserve the same ornament envelope so inward crystal tips are not cut off. */
+export const PROFILE_SCENE_SAFE_LAYOUT={sideAnchor:46,bottomAnchor:28,stageBottomAnchor:31,petSize:58,contentGap:8,sideRail:18,horizontalRail:24,topCorner:40,bottomCorner:40,referenceWidth:300,referenceHeight:205} as const;
 export function profileSceneContentAnchors(surfaceInset:number,compactStage=false){
  const l=PROFILE_SCENE_SAFE_LAYOUT;
  return {side:l.sideAnchor-surfaceInset,bottom:(compactStage?l.stageBottomAnchor:l.bottomAnchor)-surfaceInset,

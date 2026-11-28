@@ -7,7 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {APP_BUILD_INFO} from './src/app-build';
 import {runWhileForeground} from './src/online/foreground-tasks';
 import {fetchReleaseNotes} from './src/online/release-notes';
-import {firstInstalledReleaseVersion,shouldAutoAnnounceReleaseNotes,shouldAutoShowReleaseNotes,type ReleaseNote} from './src/core/release-notes';
+import {firstInstalledReleaseVersion,shouldAutoAnnounceReleaseNotes,shouldAutoShowReleaseNotes,type ReleaseNote,type ReleaseNoteMode} from './src/core/release-notes';
 import {WhatsNewModal} from './src/components/WhatsNewModal';
 import {selectGlobalPopup} from './src/core/global-popup-priority';
 import {buildWelcomeBackFromStates,type WelcomeBackProgressReport} from './src/core/welcome-back-v46';
@@ -326,6 +326,7 @@ function VeldrynApp(){
   const [optionalUpdateSeen,setOptionalUpdateSeen]=useState(false);
   const [optionalUpdateSeenLoaded,setOptionalUpdateSeenLoaded]=useState(false);
   const [showWhatsNew,setShowWhatsNew]=useState(false);
+  const [releaseNoteMode,setReleaseNoteMode]=useState<ReleaseNoteMode>('highlights');
   const releaseSeenKey='veldryn.release.seen.'+APP_BUILD_INFO.version;
   const firstInstalledReleaseKey='veldryn.release.first-installed-version';
   const availableUpdateVersion=versionGate?.updateAvailable?versionGate.policy?.latestVersion:undefined;
@@ -333,6 +334,7 @@ function VeldrynApp(){
   const hasUnseenUpdate=!!availableUpdateVersion&&!optionalUpdateSeen||(releaseSeenLoaded&&!releaseSeen&&shouldAutoShowReleaseNotes(releaseNotes,APP_BUILD_INFO.version,false));
   const closeWhatsNew=()=>{
     setShowWhatsNew(false);
+    setReleaseNoteMode('highlights');
     if(releaseNotes.some(note=>note.version===APP_BUILD_INFO.version)){
       setReleaseSeen(true);
       void AsyncStorage.setItem(releaseSeenKey,'1').catch(()=>{});
@@ -777,6 +779,10 @@ function VeldrynApp(){
       // so this optimization cannot admit additional server-owned changes.
       const serializedCandidate=JSON.stringify(candidate);
       if(serializedCandidate===JSON.stringify(current))return;
+      const chatDockLines=candidate.settings.chatDockLines;
+      if(chatDockLines!==current.settings.chatDockLines&&chatDockLines!==undefined&&serializedCandidate===JSON.stringify({...current,settings:{...current.settings,chatDockLines}})){
+        await perform({type:'chat_dock_lines',args:{lines:chatDockLines}});return;
+      }
       if(serializedCandidate===JSON.stringify({...current,settings:candidate.settings})){await perform({type:'settings',args:{settings:settingsForOnlineCommand(candidate.settings)}});return;}
       if(candidate.activity===null&&serializedCandidate===JSON.stringify({...current,activity:null})){await perform({type:'stop'});return;}
       const profileKeys=['profileIconId','profileTitle','profileBackgroundId','profileBorderId','profileEffectId','selectedCosmeticPetId'] as const;
@@ -1093,7 +1099,7 @@ const next=normalizeProfileIcon(migrateGemPouch(migrateRetiredStoryRewards(expli
     {tab==='Settings'&&<SettingsScreen onOpenUpdates={()=>setShowWhatsNew(true)} initialSection={settingsSection} focusChatEmotes={focusChatEmotes} onChatEmotesFocusHandled={()=>setFocusChatEmotes(false)} onSectionChange={setSettingsSection} onStartMainScreenTour={()=>{setSettingsSection(undefined);setMainScreenTourIndex(0);setTab('Home')}} onNavigateGuide={destination=>{if(destination==='Skills')setSelectedSkill(undefined);setTab(destination)}} online={serverGameplayEnabled} state={state} onChange={commit} onUiThemeChange={selectUiTheme} uiThemeId={displayedThemeId} onExport={exportSave} onImport={importSave} onOpenCoopUiGallery={__DEV__?()=>setShowCoopUiGallery(true):undefined} onLanguage={language=>commit({...state,settings:{...state.settings,language}})} onReset={()=>serverGameplayEnabled?showAlert('Online save','Your online character is saved on the server.'):showAlert('Reset local save?','This deletes prototype progress only.',[{text:'Cancel'},{text:'Reset',style:'destructive',onPress:async()=>{await repo.reset();setState(newGame(Date.now()));setCurrentTab('Home');setTabHistory([])}}])}/>}
     {tab==='Store'&&<StoreScreen state={state} onChange={commit} online={serverGameplayEnabled} onRefreshCommerce={serverGameplayEnabled?online.refreshCommerce:undefined} onRedeemCode={serverGameplayEnabled?async code=>{const message=await redeemCode(code);await online.refresh();return message}:undefined}/>}
     {tab==='NewUnlocks'&&<NewUnlocksScreen language={state.settings.language} entries={unlockInbox} onBack={()=>setTab('More')} onCustomize={()=>{setProfileCustomizeSection('Look');setTab('ProfileCustomize')}}/>}
-    {tab==='More'&&<MoreScreen character={state.character} accountStatus={serverGameplayEnabled?(auth.session?(accountLinkStep(auth.session.user)==='linked'?'linked':accountLinkStep(auth.session.user)==='guest'?'guest':'pending'):'guest'):'local'} onOpenUpdates={()=>setShowWhatsNew(true)} onOpenRoadmap={()=>setTab('Roadmap')} onOpenFeaturePreview={FEATURE_HUB_QA_ENABLED?route=>setTab(route):undefined} newReleaseAvailable={hasUnseenUpdate} language={state.settings.language} onNavigate={destination=>{if(destination==='Dungeon'){setTab('Coop');return;}if(destination==='Quests'){openQuestMode('story');return;}if(destination==='Settings'){setSettingsSection(undefined);}setTab(destination)}} lockedDestinations={lockedAccountDestinations} companionUnlocked={companionsUnlocked} companionAttention={earlyFeatureUnlocked(state,'companions')&&companionAttention.hasAttention} dailySuppliesAttention={dailySuppliesReady} questRewardCount={questClaims.total} friendRequestCount={notificationCounts.friendRequests} guildAttentionCount={notificationCounts.guild+notificationCounts.guildChatUnread+notificationCounts.guildProjectRewards} guildProjectRewardCount={guildUnlocked?notificationCounts.guildProjectRewards:0} onOpenGuildProjects={openClaimableGuildProjects} socialAttentionCount={notificationCounts.partyInvites+notificationCounts.partyChatUnread} newUnlockCount={unreadUnlockCount(unlockInbox)} onOpenAdminQa={adminQa||(__DEV__&&!serverGameplayEnabled)?()=>setShowAdminQa(true):undefined}/>}
+    {tab==='More'&&<MoreScreen character={state.character} accountStatus={serverGameplayEnabled?(auth.session?(accountLinkStep(auth.session.user)==='linked'?'linked':accountLinkStep(auth.session.user)==='guest'?'guest':'pending'):'guest'):'local'} onOpenUpdates={mode=>{setReleaseNoteMode(mode);setShowWhatsNew(true)}} onOpenRoadmap={()=>setTab('Roadmap')} onOpenFeaturePreview={FEATURE_HUB_QA_ENABLED?route=>setTab(route):undefined} newReleaseAvailable={hasUnseenUpdate} language={state.settings.language} onNavigate={destination=>{if(destination==='Dungeon'){setTab('Coop');return;}if(destination==='Quests'){openQuestMode('story');return;}if(destination==='Settings'){setSettingsSection(undefined);}setTab(destination)}} lockedDestinations={lockedAccountDestinations} companionUnlocked={companionsUnlocked} companionAttention={earlyFeatureUnlocked(state,'companions')&&companionAttention.hasAttention} dailySuppliesAttention={dailySuppliesReady} questRewardCount={questClaims.total} friendRequestCount={notificationCounts.friendRequests} guildAttentionCount={notificationCounts.guild+notificationCounts.guildChatUnread+notificationCounts.guildProjectRewards} guildProjectRewardCount={guildUnlocked?notificationCounts.guildProjectRewards:0} onOpenGuildProjects={openClaimableGuildProjects} socialAttentionCount={notificationCounts.partyInvites+notificationCounts.partyChatUnread} newUnlockCount={unreadUnlockCount(unlockInbox)} onOpenAdminQa={adminQa||(__DEV__&&!serverGameplayEnabled)?()=>setShowAdminQa(true):undefined}/>}
     {tab==='Roadmap'&&<CommunityRoadmapScreen language={state.settings.language}/>}
     {tab==='Arena'&&<ArenaScreen state={state} onChange={candidate=>void commit(candidate)} onCommand={serverGameplayEnabled?command=>void perform(command):undefined}/>}
     {RANKINGS_RELEASED&&tab==='Rankings'&&<RankingsScreen/>}
@@ -1110,7 +1116,7 @@ const next=normalizeProfileIcon(migrateGemPouch(migrateRetiredStoryRewards(expli
     <PrimaryNavigation destinations={primaryTabs} active={activePrimary} labelFor={item=>tabLabel(state.settings.language,item)} onNavigate={setTab} badges={primaryBadges} guidedDestination={(mainScreenTour?.highlightPrimary??visibleTutorialStep?.highlightPrimary) as PrimaryTab|undefined} reduceMotion={state.settings.reduceMotion}/>
   {activeGlobalPopup==='character-welcome'&&creationWelcome&&<AsterfallWelcomeModal visible name={creationWelcome.name} classId={creationWelcome.classId} onContinue={()=>{const characterId=state.character?.id;if(characterId)void completeFirstSessionTutorialStep(characterId,'first_hunt').then(ids=>setTutorialCompleted(ids));setGoalMonsterId('MOSS_RAT');setCreationWelcome(null);setCurrentTab('Combat')}}/>}
   <WhatsNewModal visible={activeGlobalPopup==='whats-new'}
-    currentVersion={APP_BUILD_INFO.version} notes={releaseNotes} latestVersion={versionGate?.policy?.latestVersion}
+    mode={releaseNoteMode} onModeChange={setReleaseNoteMode} currentVersion={APP_BUILD_INFO.version} notes={releaseNotes} latestVersion={versionGate?.policy?.latestVersion}
     updateAvailable={!!versionGate?.updateAvailable} reduceMotion={state.settings.reduceMotion}
     onUpdate={openStoreListing} onClose={closeWhatsNew}/>
   <RewardPopup reward={activeGlobalPopup==='activity-reward'?collected?.reward??null:null} activity={collected?.activity??null} classId={state.character?.classId} welcomeBack={!!collected?.welcomeBack} welcomeReport={collected?.welcomeReport} progressionMoments={collected?.progressionMoments??[]} reduceMotion={state.settings.reduceMotion} numberMode={state.settings.numberMode} onClose={()=>setCollected(null)} onInventory={()=>setTab('Inventory')} onCollections={()=>setTab('Collections')} onCompanions={()=>setTab('Companions')} onSkill={id=>{const skillId=id as SkillId;setSelectedSkill(skillId);setSkillsMode(id==='faith'?'faith':['mining','woodcutting','fishing','herbalism'].includes(id)?'gathering':'crafting');setTab('Skills')}}/>

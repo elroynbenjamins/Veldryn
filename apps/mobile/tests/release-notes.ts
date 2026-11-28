@@ -41,3 +41,14 @@ assert(!shouldAutoAnnounceReleaseNotes({
  optionalUpdateAvailable:true,optionalUpdateSeen:true,startupReady:true
 }),'Dismissed optional updates must not auto-show again');
 console.log('PASS: release note parsing, player eligibility and popup priority');
+
+const detailed=parseReleaseNoteRow({version:'1.0.14',title:'Balance',published_at:'2026-11-28',highlights:['Balance changes',{kind:'detailed-patch-notes-v1',sections:[{category:'Economy & Gold',entries:['Sell value: 250 → 150 gold','Sell value: 250 → 150 gold',null]},{category:'Loot & Drop Rates',entries:['Drop chance: 5% → 3%']},{category:'Unknown',entries:['Do not show']},{category:'Bug Fixes',entries:[]}]}]});
+assert(detailed?.highlights.length===1,'Details must not leak into highlights');
+assert(detailed?.details?.length===2,'Only valid non-empty categories should be rendered');
+assert(detailed?.details?.[0]?.category==='Loot & Drop Rates','Categories must be consistently ordered');
+assert(detailed?.details?.[1]?.entries.length===1,'Duplicate or invalid entries must be ignored');
+assert(note?.details?.length===0,'Legacy notes should fall back to highlights');
+const malformed=parseReleaseNoteRow({version:'1.0.14',title:'Balance',highlights:['Fix',{kind:'detailed-patch-notes-v1',sections:null}]});
+assert(malformed?.details?.length===0,'Malformed details must not prevent highlights from displaying');
+const duplicate=parseReleaseNoteRow({version:'1.0.14',title:'Balance',highlights:['Fix',{kind:'detailed-patch-notes-v1',sections:[]},{kind:'detailed-patch-notes-v1',sections:[]}]});
+assert(duplicate?.details?.length===0,'Ambiguous details envelopes must be ignored');

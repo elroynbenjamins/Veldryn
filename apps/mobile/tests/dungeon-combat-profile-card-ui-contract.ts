@@ -1,3 +1,4 @@
+import {dungeonAnticipationFeedback} from '../src/core/dungeon-anticipation-feedback';
 export {};
 const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string};
 function ok(value:boolean,message:string){if(!value)throw new Error(message)}
@@ -49,7 +50,7 @@ ok(stage.includes('bossPhaseLabel')&&stage.includes('bossCast={bossEncounter?bos
 ok(card.includes('AnimatedHealthBar')&&card.includes('animateHealth'),'Combat HP bars must animate between authoritative replay states and honor reduced motion');
 ok(card.includes('BARRIER +')&&card.includes('barrierTrack'),'Party combat cards must show active replay-time barriers');
 ok(card.includes('boss?st("BOSS HP"):st("HP")')&&card.includes('enemyHpTrack'),'Enemy and boss cards must show localized replay-time HP');
-ok(card.includes('enemyPct===undefined?(preview?ui("Preparing battle"):st("Syncing"))')&&card.includes('enemyPct===undefined?<View style={s.enemyHpTrack}/>')&&!card.includes('{enemyPct!==undefined?<><View style={s.enemyHpHead}>'),'Boss HP heading and empty track must remain visible for unknown HP; preview labels preparing without inventing values');
+ok(card.includes('enemyPct===undefined?(preview?ui("Preparing battle"):st("Syncing"))')&&card.includes('enemyPct===undefined?<View style={s.enemyHpTrack}/>')&&!card.includes('{enemyPct!==undefined?<><View style={s.enemyHpHead}>'),'Boss HP heading and empty track must remain visible when neither preview nor authoritative HP is available');
 ok(stage.includes('playbackCombatantState')&&stage.includes('currentHp={state?.hp}')&&stage.includes('combatShield={state?.shield??0}'),'Battlefield must drive each replay enemy HP and shield from authoritative snapshots');
 ok(stage.includes('ready:state.hp>0')&&stage.includes('currentHp:state.hp'),'Party downed and HP state must follow the current replay cue rather than final run state');
 ok(card.includes('LOW')&&card.includes('criticalInline'),'Party cards must call out critical health inline without adding another card row');
@@ -124,3 +125,24 @@ ok(!art.includes('profileIconId'),'Dungeon combat art must remain class-locked r
 ok(art.includes("body:BodyPresentation='male'"),'Combat art must preserve male/female presentation when available');
 
 console.log('PASS: dungeon combat uses compact profile-derived cards with fixed class artwork and combat-first information');
+
+// Anticipation is not a replay and cannot affect authoritative outcomes.
+const previewParty=[{role:'tank',ready:true,currentHp:1000,maximumHp:1000},{role:'damage',ready:true},{role:'damage',ready:true},{role:'support',ready:true}];
+const originalPreviewParty=JSON.stringify(previewParty);
+const previewAt=(tick:number,boss=false,count=2)=>dungeonAnticipationFeedback(previewParty,count,boss,25,tick);
+ok(previewAt(0).enemies.every(e=>e.pct===1&&!e.feedback),'Reduced motion starts at static full enemy preview bars');
+ok(previewAt(1).enemies[0].pct<1&&previewAt(1).enemies[0].feedback?.kind==='damage','First party attack affects only its preview target');
+ok(previewAt(3).enemies.some(e=>e.feedback?.outcome==='CRIT'),'Preview supports occasional critical hits');
+ok(previewAt(5).party[0].feedback?.kind==='damage','Enemy attack targets the tank');
+ok(previewAt(9).party[0].feedback?.kind==='heal','Support heals preview damage on its own turn');
+ok(previewAt(1,true,1).enemies[0].pct>previewAt(1,false,1).enemies[0].pct,'Boss preview HP moves more slowly');
+ok(previewAt(100000).enemies.every(e=>e.pct>=.72-1e-8&&!e.feedback)&&previewAt(100000).party.every(p=>p.pct>=.78-1e-8),'Long waits never fake deaths or keep generating damage');
+ok(JSON.stringify(previewParty)===originalPreviewParty,'Preview never mutates authoritative party slots');
+ok(dungeonAnticipationFeedback([{role:'tank',ready:false,currentHp:0,maximumHp:100}],1,false,25,100).party[0].pct===0,'Preview cannot revive a genuinely downed member');
+ok(stage.includes('previewState=anticipation?dungeonAnticipationFeedback')&&stage.includes('replay=anticipation?undefined:pending?')&&stage.includes('previewState?.party[index]')&&stage.includes('previewState?.enemies[index]')&&stage.includes('previewState?.enemies[0]'),'Preview state only enters presentation cards, including fallback enemies');
+ok(card.includes('!preview&&enemyPct!==undefined&&boss?')&&card.includes('previewState?\x60~\x24{Math.round'),'Estimated health is marked approximate and does not trigger boss phases');
+
+ok(stage.includes('previewActor=anticipation&&!reduceMotion?')&&stage.includes('ordered[index]?.ready!==false')&&stage.includes('previewPartyActive(index)?<CombatAttackSprite'),'Preview highlights and attack art respect reduced motion and genuine downed state');
+ok(stage.includes('Boolean(previewState?.enemies[index]?.feedback)')&&stage.includes("previewState?.party[index]?.feedback?.kind==='damage'"),'Preview impacts highlight the individual target');
+ok(card.split("key={previewState?'preview-hp':'confirmed-hp'}").length===3,'Both party and enemy HP bars discard cosmetic interpolation on authoritative handoff');
+ok(card.includes('floatCrit:{borderColor:C.warning,backgroundColor:C.warningSurface}')&&card.includes('floatCritText:{color:C.warning}'),'Critical feedback uses a consistent contrasting gold pill');

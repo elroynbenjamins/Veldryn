@@ -125,3 +125,20 @@ for(const set of sets){
 }
 assert(motionCalls.some(([active,reduced])=>active&&reduced)&&motionCalls.some(([active])=>!active));
 console.log('PASS: verified native route mock, portrait/badge shelf, static fallback, six-node standard rails; '+checks+' interpolated perimeter samples');
+
+ // Shop uses the same presentation stage, with a local sample rather than a verified grant.
+const {NextPremiumShowcaseStage}=load(path.join(src,'components/profile/VerifiedCandidateShowcase.tsx'));
+mockWidth=340;mockFontScale=1;
+const sakura=sets[0],sample={collectionId:sakura.id,fullSet:true,equippedPetId:sakura.pet,portrait:'Sample portrait',identity:'Sample name',fallback:'Artwork fallback',active:true};
+const shopTree=NextPremiumShowcaseStage(sample);
+assert.equal(count(shopTree,'Animated.Image'),15);
+assert.equal(bySource(shopTree,'blossom_crest_64').length,1);
+assert.equal(bySource(shopTree,'spirit_fox_idle_atlas').length,1);
+assert.equal(count(NextPremiumShowcaseStage({...sample,active:false}),'Animated.Image'),0);
+assert.equal(count(NextPremiumShowcaseStage({...sample,reduceMotion:true}),'Animated.Image'),0);
+const shop=fs.readFileSync(path.join(src,'components/StoreCosmeticSetPreview.tsx'),'utf8');
+assert(shop.includes('<PublicProfileScene')&&shop.includes('<NextPremiumShowcaseStage'));
+assert(!/ultraLuxeAppearanceVerified\s*:|cosmeticsPreview\s*:|unlockedProfile|\.rpc\(|onChange\(/.test(shop),'local preview must not manufacture grants or persist state');
+const catalogue=fs.readFileSync(path.join(src,'components/StoreCosmeticsCatalog.tsx'),'utf8');
+assert(catalogue.includes('preview?<StoreCosmeticSetPreview')&&catalogue.includes('runtime&&!preview')&&catalogue.includes('CHECKOUT OFF'));
+console.log('PASS: shared native catalogue stage, local sample isolation, static motion and modal-only rendering contracts');

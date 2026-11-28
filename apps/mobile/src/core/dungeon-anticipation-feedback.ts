@@ -3,8 +3,9 @@ export type PreviewFeedback={label:string;kind:'damage'|'heal';outcome?:'CRIT'};
 export type PreviewCombatant={pct:number;feedback?:PreviewFeedback};
 type PreviewSlot={role:string;ready?:boolean;currentHp?:number;maximumHp?:number};
 const finite=(n:number|undefined,fallback:number)=>typeof n==='number'&&Number.isFinite(n)?n:fallback;
+const initialPct=(slot:PreviewSlot)=>Math.max(0,Math.min(1,finite(slot.currentHp,finite(slot.maximumHp,1))/Math.max(1,finite(slot.maximumHp,finite(slot.currentHp,1)))));
 export function dungeonAnticipationFeedback(slots:readonly PreviewSlot[],enemyCount:number,boss:boolean,level:number,tick:number){
- const party:PreviewCombatant[]=slots.map(slot=>({pct:Math.max(0,Math.min(1,finite(slot.currentHp,1)/Math.max(1,finite(slot.maximumHp,finite(slot.currentHp,1)))))}));
+ const party:PreviewCombatant[]=slots.map(slot=>({pct:initialPct(slot)}));
  const enemies:PreviewCombatant[]=Array.from({length:Math.max(1,Math.min(4,enemyCount))},()=>({pct:1}));
  const target=slots.findIndex(slot=>slot.role==='tank'&&slot.ready!==false&&finite(slot.currentHp,1)>0);
  const partyTarget=target>=0?target:slots.findIndex(slot=>slot.ready!==false&&finite(slot.currentHp,1)>0);
@@ -21,8 +22,8 @@ export function dungeonAnticipationFeedback(slots:readonly PreviewSlot[],enemyCo
    if(last)p.feedback={label:'−'+Math.max(1,Math.round(delta*finite(slots[partyTarget].maximumHp,scale*40))),kind:'damage'};
   }else if(slots[actor].ready!==false&&party[actor].pct>0){
    const p=party[partyTarget];
-   if(slots[actor].role==='support'&&p&&p.pct<Math.min(1,finite(slots[partyTarget].currentHp,1)/Math.max(1,finite(slots[partyTarget].maximumHp,finite(slots[partyTarget].currentHp,1))))){
-    const ceiling=Math.min(1,finite(slots[partyTarget].currentHp,1)/Math.max(1,finite(slots[partyTarget].maximumHp,finite(slots[partyTarget].currentHp,1))));
+   if(slots[actor].role==='support'&&p&&p.pct<initialPct(slots[partyTarget])){
+    const ceiling=initialPct(slots[partyTarget]);
     const delta=Math.min(.04,ceiling-p.pct);
     p.pct+=delta;
     if(last)p.feedback={label:'+'+Math.max(1,Math.round(delta*finite(slots[partyTarget].maximumHp,scale*40))),kind:'heal'};

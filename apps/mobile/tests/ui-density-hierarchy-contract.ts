@@ -275,10 +275,10 @@ const character=read('src/screens/CharacterScreen.tsx');
 ok(character.includes('disclosure:{minHeight:54'),'Character secondary disclosures must remain compact');
 ok(character.includes('identityKicker')&&character.includes('characterName')&&character.includes('classMeta'),'Character must use one consolidated identity hero instead of separate page and class headers');
 ok(!character.includes('pageHeading')&&!character.includes('headingCopy'),'Character must not regress to the duplicate heading stack');
-ok(character.includes("profileT(language,'NEXT ACTION')")&&character.includes('equipmentFocusModel(selectedDecision)')&&character.includes('s.itemFocus')&&character.includes('setEquipmentTool(equipmentFocus.kind)'),"Character equipment preview must have a purpose-specific title");
+ok(!character.includes("profileT(language,'NEXT ACTION')")&&character.includes('s.itemFocus')&&character.includes('s.rarityLabel')&&character.includes('selected.item?localizedItemName'),"Character equipment must show the selected item directly without redundant next-action guidance");
 ok(!character.includes('>Lv. {character.level}<')&&character.includes('selectedDecision.stats'),"Character preview must not repeat the character level beside readiness");
-ok(character.includes("keyStat:{flex:1,alignItems:'center',gap:2,paddingVertical:6")&&character.includes('backgroundColor:C.panel2'),'Character key stats must use compact HUD-style cells');
-ok(character.includes('primaryAction:{flexGrow:2,flexBasis:180}')&&character.includes('secondaryAction:{flexGrow:1,flexBasis:110'),'Character global actions must preserve one obvious primary equipment action');
+ok(character.includes('baseCell:{flex:1,minWidth:60,alignItems:')&&character.includes('s.baseGrid')&&character.includes('visibleBaseStats.map'),'Character equipment stats must use compact responsive cells');
+ok(character.includes('s.focusButtons')&&character.includes("tone={selectedDecision?'secondary':'primary'}")&&character.includes("onPress={()=>openEnhancement('upgrade')}"),'Character equipment must keep a clear primary action and secondary swap');
 ok(!character.includes("title={showLoadouts?'Hide guides':'Build guides'}"),'Build Guides disclosure must not be duplicated by a second global button');
 ok(character.includes('disclosureOpen:{borderColor:C.info,backgroundColor:C.infoSurface}'),'Character secondary disclosures must show a clean selected/open state');
 ok(character.includes('<GameButton compact title={profileT(language,\'Equip set\')}')&&character.includes('<GameButton compact title={profileT(language,"Craft missing gear")}')&&character.includes('onPress={()=>setConfirming(true)}'),"Novice-set utility actions must stay compact");
@@ -414,7 +414,7 @@ ok(friends.includes('<GameButton compact title={st("Accept")}'),"Friend-request 
 ok(friends.includes('<GameButton compact title={st("Decline")} tone="secondary"'),"Friend-request decline must remain compact");
 
 const characterPolish=read('src/screens/CharacterScreen.tsx');
-ok(characterPolish.includes('<GameButton compact title={selectedDecision.upgrade.canAfford?')&&characterPolish.includes('selectedDecision.upgrade.successChance')&&characterPolish.includes("openEnhancement('upgrade')"),"Selected equipment actions must remain compact even when the enhancement chance is surfaced");
+ok(characterPolish.includes('<GameButton compact title={profileT(language,selectedDecision.upgrade.maxed?')&&characterPolish.includes('selectedDecision.upgrade.successChance')&&characterPolish.includes("openEnhancement('upgrade')")&&characterPolish.includes('stackItem&&s.stackedActions'),"Selected equipment actions must remain compact, with live chance and narrow-screen fallback");
 
 const worldPolish=read('src/components/WorldChapterNavigator.tsx');
 ok(worldPolish.includes('currentArtwork:{width:82')&&worldPolish.includes('currentHero:{flexDirection')&&worldPolish.includes('backgroundColor:C.panel'),'World current-location artwork must remain separate from theme-safe text content');

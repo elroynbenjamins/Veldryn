@@ -1,0 +1,220 @@
+{
+  "release": "2.0-only",
+  "runtimeEnabled": false,
+  "binaryAssetsCommitted": false,
+  "deviceVerified": false,
+  "sourceRegistry": "PRs #1598 #1635 #1653",
+  "reviewDirectory": "docs/art/eq2-material-review/icons",
+  "canvas": [
+    192,
+    192
+  ],
+  "safeInset": 26,
+  "targetBytes": 32768,
+  "totalBytes": 489804,
+  "items": [
+    {
+      "itemId": "EQ2_BOAR_TUSK",
+      "category": "raw",
+      "file": "eq2_boar_tusk.webp",
+      "bytes": 9976,
+      "sha256": "099cc9629e247eeb0469abe66e8a8e2c2b8d9b48987ba474cc2a7481bbb09678"
+    },
+    {
+      "itemId": "EQ2_RIVERSTONE",
+      "category": "raw",
+      "file": "eq2_riverstone.webp",
+      "bytes": 12042,
+      "sha256": "9fd19c4a062417fbdd551c001eedf6b2a0f96702ecfe00ce4b7f2e78a6aa2421"
+    },
+    {
+      "itemId": "EQ2_TROLL_SINEW",
+      "category": "raw",
+      "file": "eq2_troll_sinew.webp",
+      "bytes": 25270,
+      "sha256": "0ef1bc082f8f72c4419dbece3634deac468d18802cf502a9736037b622e8a198"
+    },
+    {
+      "itemId": "EQ2_THORNSTONE",
+      "category": "raw",
+      "file": "eq2_thornstone.webp",
+      "bytes": 10794,
+      "sha256": "3ed3a00e8b0e86c3a4a28a1dcdaa8948a8da70be5c00cc19394efdc7d195a2c3"
+    },
+    {
+      "itemId": "EQ2_THORN_FIBRE",
+      "category": "raw",
+      "file": "eq2_thorn_fibre.webp",
+      "bytes": 26032,
+      "sha256": "af9eaa1991f37d30e6fd26e14a17ed6d35ae199f6153930e96d03dda1fce1685"
+    },
+    {
+      "itemId": "EQ2_SUNSCAR_SCALE",
+      "category": "raw",
+      "file": "eq2_sunscar_scale.webp",
+      "bytes": 29616,
+      "sha256": "e987cd3edc28e2f3d8bf637b5b5542af92f5d364be018ac37929a6db633b91e8"
+    },
+    {
+      "itemId": "EQ2_MIRAGEFANG_CORE",
+      "category": "raw",
+      "file": "eq2_miragefang_core.webp",
+      "bytes": 27510,
+      "sha256": "5b085715e8a6e68d35a006d399c983fcab1530b66739f094a0c98c25130dd922"
+    },
+    {
+      "itemId": "EQ2_SUNSCAR_HIDE",
+      "category": "raw",
+      "file": "eq2_sunscar_hide.webp",
+      "bytes": 13606,
+      "sha256": "8f617d6971821ffd18c2e0bf36f2a2ed0c33be033761ad782ed4b55996f0726c"
+    },
+    {
+      "itemId": "EQ2_DUNE_FIBRE",
+      "category": "raw",
+      "file": "eq2_dune_fibre.webp",
+      "bytes": 21628,
+      "sha256": "dd17bb2baba92cb1a14d186fffb84a86e74cfb6dd6ba1928b2b7af24fc984479"
+    },
+    {
+      "itemId": "EQ2_GLASSBOUND_PLATE",
+      "category": "raw",
+      "file": "eq2_glassbound_plate.webp",
+      "bytes": 9710,
+      "sha256": "e9e838ee329ea745b3ea460d7eb2d395d8ae0e820e690248e00d907b19a87a05"
+    },
+    {
+      "itemId": "EQ2_GLASSHEART_FRAGMENT",
+      "category": "raw",
+      "file": "eq2_glassheart_fragment.webp",
+      "bytes": 21568,
+      "sha256": "7ffd8f14a3f406a980f1355a660c0c5f9e5f05acc3caf8adac11219669d3ec"
+    },
+    {
+      "itemId": "EQ2_GLASSBOUND_DUST",
+      "category": "raw",
+      "file": "eq2_glassbound_dust.webp",
+      "bytes": 14896,
+      "sha256": "5db3aa23eaccfb3ea02be7fd189fc62bc8a86e8dc07ac0cfda1f950f31042fa8"
+    },
+    {
+      "itemId": "EQ2_GLASSBOUND_SHARD",
+      "category": "raw",
+      "file": "eq2_glassbound_shard.webp",
+      "bytes": 27354,
+      "sha256": "57750b11e941a237c9e5756607554595b9e6938fd08ecb52484da995ecffa03d"
+    },
+    {
+      "itemId": "EQ2_SOUL_FIBRE",
+      "category": "raw",
+      "file": "eq2_soul_fibre.webp",
+      "bytes": 29532,
+      "sha256": "a0834c1310c64f07021e4b9bfa9a6c54718415c89dca2294c648864cf023ecb8"
+    },
+    {
+      "itemId": "EQ2_COPPER_BAR",
+      "category": "processed",
+      "file": "eq2_copper_bar.webp",
+      "bytes": 6876,
+      "sha256": "daead8f496c7c9156ede4e22545d0d58fc12225057dccf450a97c0d8dc6d5c2e"
+    },
+    {
+      "itemId": "EQ2_IRON_BAR",
+      "category": "processed",
+      "file": "eq2_iron_bar.webp",
+      "bytes": 6000,
+      "sha256": "d25552993ef689ef92aae7c9f644f065aa249efb7c52ae5ebf5ef6cdb326cf94"
+    },
+    {
+      "itemId": "EQ2_GLASSBOUND_ALLOY_BAR",
+      "category": "processed",
+      "file": "eq2_glassbound_alloy_bar.webp",
+      "bytes": 11074,
+      "sha256": "c1b335e914a87cb4d9aa122327236827efe755374e4f52c9e0fafb1b777b2503"
+    },
+    {
+      "itemId": "EQ2_GREENWOOD_PLANK",
+      "category": "processed",
+      "file": "eq2_greenwood_plank.webp",
+      "bytes": 11198,
+      "sha256": "85ed654a465357ad7c9923a03bee93002a2a960ef7ca99ef04c547b4042fc96a"
+    },
+    {
+      "itemId": "EQ2_IRONWOOD_PLANK",
+      "category": "processed",
+      "file": "eq2_ironwood_plank.webp",
+      "bytes": 9430,
+      "sha256": "2d4c5aa8de4a616d652e70386f1bfacab0be00168f4a0ef44bc48a76d71caa64"
+    },
+    {
+      "itemId": "EQ2_TREATED_DUNEWOOD",
+      "category": "processed",
+      "file": "eq2_treated_dunewood.webp",
+      "bytes": 10906,
+      "sha256": "c3b349c524eba3b4c2f7a3e8b0fd13808c7c7b26d7140321887450cfa7e4c1aa"
+    },
+    {
+      "itemId": "EQ2_REINFORCED_DUNEWOOD",
+      "category": "processed",
+      "file": "eq2_reinforced_dunewood.webp",
+      "bytes": 22370,
+      "sha256": "0626efac581137c95c44f343a9ac7cd2a516444338dc62abcdc13abc76f75050"
+    },
+    {
+      "itemId": "EQ2_BOAR_LEATHER",
+      "category": "processed",
+      "file": "eq2_boar_leather.webp",
+      "bytes": 9682,
+      "sha256": "c4206f0b34518a46d723a41ad5e579ab42e32b0029bc49ad4b69f8f66ae37ef0"
+    },
+    {
+      "itemId": "EQ2_WOLF_LEATHER",
+      "category": "processed",
+      "file": "eq2_wolf_leather.webp",
+      "bytes": 9298,
+      "sha256": "2ced93261fc574fc163d67ab7404da542cccf5b8ae4eb3e1963f7ec9ffe01dcd"
+    },
+    {
+      "itemId": "EQ2_SUNSCAR_LEATHER",
+      "category": "processed",
+      "file": "eq2_sunscar_leather.webp",
+      "bytes": 27684,
+      "sha256": "746cbf0c2f58c3609c98532ece6d7365acb750860fb35d3aa18ddcbfbe5767ec"
+    },
+    {
+      "itemId": "EQ2_HARDENED_SUNSCAR_LEATHER",
+      "category": "processed",
+      "file": "eq2_hardened_sunscar_leather.webp",
+      "bytes": 25304,
+      "sha256": "f90cfb89f8cd3c980d209b1f1d9ca012bfd07c73567806bfb185778509fc69fa"
+    },
+    {
+      "itemId": "EQ2_MOSS_CLOTH",
+      "category": "processed",
+      "file": "eq2_moss_cloth.webp",
+      "bytes": 9990,
+      "sha256": "f996939be5d7ec50fc318f1c1accd813ffdc264926856715d10f5262842355d5"
+    },
+    {
+      "itemId": "EQ2_THORN_CLOTH",
+      "category": "processed",
+      "file": "eq2_thorn_cloth.webp",
+      "bytes": 10222,
+      "sha256": "08d0c98fae09dfb97dd722a7bdabb5362baf06819fecffc23052fcba5dd9d25c"
+    },
+    {
+      "itemId": "EQ2_DUNE_CLOTH",
+      "category": "processed",
+      "file": "eq2_dune_cloth.webp",
+      "bytes": 12512,
+      "sha256": "0b528957553fe1f46959b1e49e20ea637bba851443ccc77a891742c22019cd15"
+    },
+    {
+      "itemId": "EQ2_SOULWEAVE_CLOTH",
+      "category": "processed",
+      "file": "eq2_soulweave_cloth.webp",
+      "bytes": 27724,
+      "sha256": "713d8c96df899cb924f5bccb1e173ec610ab17e7e03460719af13abefc13cc89"
+    }
+  ]
+}

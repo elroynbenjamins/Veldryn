@@ -91,7 +91,7 @@ export const RETIRED_STAT_GEM_FAMILIES_REVIEW_V2:readonly string[]=Object.freeze
 /** Historical input to the reviewed 2.0 candidate, pinned independently of
  * live V1 balance updates. The original November review doubled these exact
  * values; current live gem adjustments must not silently retune 2.0. */
-export const STAT_GEM_BASELINE_REVIEW_V2:readonly StatGemDefinition[]=Object.freeze([
+export const STAT_GEM_BASELINE_REVIEW_V2:readonly StatGemDefinition[]=Object.freeze(([
  {familyId:'stat_might',name:'Might',stat:'power',unit:'percent',values:vals(.004,.005,.0065,.008,.01)},
  {familyId:'stat_vitality',name:'Vitality',stat:'maxHp',unit:'percent',values:vals(.006,.008,.01,.0125,.015)},
  {familyId:'stat_iron',name:'Iron',stat:'armor',unit:'percent',values:vals(.005,.0065,.008,.01,.0125)},
@@ -103,7 +103,7 @@ export const STAT_GEM_BASELINE_REVIEW_V2:readonly StatGemDefinition[]=Object.fre
  {familyId:'stat_swift',name:'Swift',stat:'haste',unit:'percent',values:vals(.0035,.0045,.0055,.0065,.008)},
  {familyId:'stat_potent',name:'Potent',stat:'potency',unit:'percent',values:vals(.005,.0065,.008,.01,.012)},
  {familyId:'stat_elusive',name:'Elusive',stat:'evasion',unit:'percentage_point',values:vals(.002,.0025,.003,.004,.005)},
-].map(def=>Object.freeze({...def,values:Object.freeze(def.values)})) as StatGemDefinition[]);
+] satisfies StatGemDefinition[]).map(def=>Object.freeze({...def,values:Object.freeze(def.values)})));
 export const STAT_GEMS_REVIEW_V2:readonly StatGemDefinition[]=Object.freeze(
  STAT_GEM_BASELINE_REVIEW_V2.map(def=>Object.freeze({...def,values:scaledGemValuesV2(def.values,2)})));
 export const EFFECT_GEMS_REVIEW_V2:readonly EffectGemDefinition[]=Object.freeze(

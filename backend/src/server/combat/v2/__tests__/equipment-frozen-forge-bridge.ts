@@ -26,7 +26,7 @@ import {COMPLETION_BOSSES_REVIEW_V2,createCompletionBossReviewV2,type Completion
 import {completionBossPressureReviewV2,completionBossOffenseReviewV2} from './regional-completion-counterplay-review';
 import {runRegionalCompletionLedgerReviewV2} from './regional-completion-ledger-boundaries';
 import {runCompletionTransactionReviewV2} from './regional-completion-transaction-boundaries';
-import {STAT_GEMS_V1,EFFECT_GEMS_V1,gemItemId,type GemGrade,GEM_BALANCE_REVIEW_V2,STAT_GEMS_REVIEW_V2,EFFECT_GEMS_REVIEW_V2,EFFECT_GEM_REVIEW_MULTIPLIERS_V2} from '../../../equipment/gems/gem-catalog-v1';
+import {STAT_GEMS_V1,EFFECT_GEMS_V1,gemItemId,type GemGrade,GEM_BALANCE_REVIEW_V2,STAT_GEM_BASELINE_REVIEW_V2,STAT_GEMS_REVIEW_V2,EFFECT_GEMS_REVIEW_V2,EFFECT_GEM_REVIEW_MULTIPLIERS_V2} from '../../../equipment/gems/gem-catalog-v1';
 import type {V2GemSidecarState} from '../../../equipment/equipment-crafting-v2-gem-sidecar-types';
 import {writeFileSync} from 'node:fs';
 import {launchPlayer} from '../../content/launch-combat';
@@ -412,12 +412,26 @@ function make(classId:ClassIdV2,specIndex:0|1,
  assert.equal(STAT_GEMS_REVIEW_V2.length,11);assert.equal(STAT_GEMS_V1.length,12);assert.equal(EFFECT_GEMS_REVIEW_V2.length,20);
  assert.ok(STAT_GEMS_V1.some(x=>x.familyId==='stat_resolute'));
  assert.ok(!STAT_GEMS_REVIEW_V2.some(x=>x.familyId==='stat_resolute'||x.stat==='tenacity'));
- for(const old of STAT_GEMS_V1.filter(x=>x.familyId!=='stat_resolute')){
+ // The 2.0 candidate is an independent policy, not a live V1 multiplier.
+ assert.equal(STAT_GEM_BASELINE_REVIEW_V2.length,11);
+ assert.ok(Object.isFrozen(STAT_GEM_BASELINE_REVIEW_V2));
+ for(const old of STAT_GEM_BASELINE_REVIEW_V2){
+  assert.ok(Object.isFrozen(old)&&Object.isFrozen(old.values));
   const next=STAT_GEMS_REVIEW_V2.find(x=>x.familyId===old.familyId)!;
   const {values:_a,...identity}=old,{values:_b,...nextIdentity}=next;
   assert.deepEqual(nextIdentity,identity);
   for(const grade of grades)assert.ok(Math.abs(next.values[grade]-old.values[grade]*2)<1e-10);
  }
+ const pinned:Record<string,readonly number[]>={
+  stat_might:[.008,.01,.013,.016,.02],stat_vitality:[.012,.016,.02,.025,.03],
+  stat_iron:[.01,.013,.016,.02,.025],stat_ward:[.01,.013,.016,.02,.025],
+  stat_precision:[.006,.008,.01,.013,.016],stat_keen:[.004,.006,.008,.01,.012],
+  stat_savage:[.02,.026,.032,.04,.05],stat_piercing:[.005,.007,.009,.012,.015],
+  stat_swift:[.007,.009,.011,.013,.016],stat_potent:[.01,.013,.016,.02,.024],
+  stat_elusive:[.004,.005,.006,.008,.01],
+ };
+ assert.deepEqual(Object.keys(pinned).sort(),STAT_GEMS_REVIEW_V2.map(def=>def.familyId).sort());
+ for(const def of STAT_GEMS_REVIEW_V2)assert.deepEqual(grades.map(grade=>def.values[grade]),pinned[def.familyId]);
  for(const old of EFFECT_GEMS_V1){
   const next=EFFECT_GEMS_REVIEW_V2.find(x=>x.familyId===old.familyId)!;
   const {values:_a,...identity}=old,{values:_b,...nextIdentity}=next;
@@ -442,7 +456,10 @@ function make(classId:ClassIdV2,specIndex:0|1,
   const before=reviewFrozenForgeSocketsV2(qa.actor,qa.build,source,state,legacy);
   const after=reviewFrozenForgeSocketsV2(qa.actor,qa.build,source,state,policy);
   assert.notEqual(after.digest,before.digest);
-  assert.ok(Math.abs(after.gemSources[0].fraction-before.gemSources[0].fraction*2)<1e-9);
+  const legacyValue=STAT_GEMS_V1.find(def=>def.familyId===family)!.values[grade];
+  const reviewValue=STAT_GEMS_REVIEW_V2.find(def=>def.familyId===family)!.values[grade];
+  assert.ok(Math.abs(before.gemSources[0].fraction-legacyValue*1.2)<1e-9);
+  assert.ok(Math.abs(after.gemSources[0].fraction-reviewValue*1.2)<1e-9);
   assert.equal(after.canExecuteCombat,false);assert.equal(after.cpApproved,false);
  }
  for(const def of EFFECT_GEMS_REVIEW_V2)for(const grade of grades){

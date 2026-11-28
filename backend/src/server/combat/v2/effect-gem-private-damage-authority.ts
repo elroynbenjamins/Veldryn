@@ -2,10 +2,9 @@
  * server QA authority; no public adapter, no reward or persistence path.
  * Damage, haste and defensive families, never use legacy effectGems as input. */
 import type {CombatInput,CombatantState,AbilityEffect} from '../types';
-import type {reviewFrozenForgeSocketsV2} from './frozen-forge-socket-review';
 import type {VerifiedV2EquipmentEffectSource} from './equipment-trait-engine-authority';
 import {enemyV2SnapshotDigest} from './enemy-engine-authority';
-import {reviewEffectGemResonanceV2} from './effect-gem-resonance-review';
+import {reviewEffectGemResonanceV2,type EffectGemReviewCopyV2} from './effect-gem-resonance-review';
 import {reviewExecutionDamageV2,reviewOpeningStrikeV2,reviewPredatorHitV2,
  emptyEffectStackReviewV2,reviewEffectStackTransitionV2,
  reviewRuinDamageV2,reviewOpportunistApplicationV2,reviewOpportunistHitV2,
@@ -20,13 +19,29 @@ import {reviewExecutionDamageV2,reviewOpeningStrikeV2,reviewPredatorHitV2,
 const brand:unique symbol=Symbol('private-effect-gem-damage-review');
 export type PrivateDamageGemAuthorityV2=Readonly<{readonly [brand]:true}>;
 export const PRIVATE_DAMAGE_GEM_REVIEW_V2='private-damage-gem-review-v2-20261126' as const;
-type Projection=ReturnType<typeof reviewFrozenForgeSocketsV2>;
+/** Minimal engine-facing projection. Never import the server Forge compiler,
+ * even as a type: the shared mobile engine's TS graph follows type imports.
+ * The generic issuer retains the complete caller projection for verification
+ * and digesting; no projection fields are removed from the runtime snapshot. */
+interface Projection {
+ readonly scope:'PRIVATE_EXACT_FORGE_SOCKET_PROJECTION_V1';
+ readonly mechanicsReview?:string;
+ readonly canExecuteCombat:false;
+ readonly cpApproved:false;
+ readonly releaseEnabled:false;
+ readonly effectResonanceReview?:ReturnType<typeof reviewEffectGemResonanceV2>;
+ readonly gemSources:readonly unknown[];
+ readonly digest:string;
+ readonly forgeEvidence:{readonly actorId:string};
+ readonly deferredEffectSources:readonly EffectGemReviewCopyV2[];
+ readonly equippedInstanceIds:readonly string[];
+}
 type Row={actorId:string;digest:string;worn:readonly string[];groups:readonly EffectTriggerReviewGroupV2[]};
 const tokens=new WeakMap<object,{inputDigest:string;row:Row}>();
 const supported=new Set(['effect_execution','effect_opening_strike','effect_predator','effect_momentum','effect_critical_surge','effect_flow','effect_ruin','effect_opportunist','effect_retaliation','effect_guardians_gift','effect_unyielding','effect_last_stand','effect_bulwark','effect_aegis','effect_mercy','effect_renewal','effect_benediction','effect_shared_resolve','effect_sustenance','effect_battle_rhythm']);
 const fail=(why:string):never=>{throw Error('private_damage_gem_review_'+why);};
-export function issuePrivateDamageGemAuthorityV2(input:CombatInput,p:Projection,
- verifyPersisted:(projection:Projection,inputDigest:string)=>boolean):PrivateDamageGemAuthorityV2{
+export function issuePrivateDamageGemAuthorityV2<P extends Projection>(input:CombatInput,p:P,
+ verifyPersisted:(projection:P,inputDigest:string)=>boolean):PrivateDamageGemAuthorityV2{
  if(typeof verifyPersisted!=='function'||input.players.length!==4||input.initialPlayerState!==undefined||
   input.enemyDamageProfile!==undefined||input.players.some(x=>x.team!=='players'||x.combatV2?.version!==2||
    x.effectGems?.length||x.alchemyModifiers)||

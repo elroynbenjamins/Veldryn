@@ -11,7 +11,7 @@ import {firstInstalledReleaseVersion,shouldAutoAnnounceReleaseNotes,shouldAutoSh
 import {WhatsNewModal} from './src/components/WhatsNewModal';
 import {selectGlobalPopup} from './src/core/global-popup-priority';
 import {buildWelcomeBackFromStates,type WelcomeBackProgressReport} from './src/core/welcome-back-v46';
-import {ActivityIndicator,Animated,ScrollView,AppState,BackHandler,Image,Keyboard,PanResponder,Pressable,Share,StyleSheet,Text,TextInput,View,useWindowDimensions} from 'react-native';
+import {ActivityIndicator,ScrollView,AppState,BackHandler,Image,Keyboard,PanResponder,Pressable,Share,StyleSheet,Text,TextInput,View,useWindowDimensions} from 'react-native';
 import {StatusBar} from 'expo-status-bar';
 import {SafeAreaProvider,SafeAreaView} from 'react-native-safe-area-context';
 import {AccountWelcomeScreen} from './src/components/AccountWelcomeScreen';
@@ -311,6 +311,7 @@ function VeldrynApp(){
   const appStateRef=useRef(AppState.currentState);
   const settlingRef=useRef(false);
   const onlineStartupSettlementAccountRef=useRef<string|undefined>(undefined);
+  const onlinePendingRecoveryArrivalRef=useRef<string|undefined>(undefined);
   const initialCharacterAtLaunchRef=useRef<boolean|undefined>(undefined);
   const [onlineStartupRewardsReadyKey,setOnlineStartupRewardsReadyKey]=useState<string|undefined>();
   const [showAdminQa,setShowAdminQa]=useState(false);
@@ -353,30 +354,12 @@ function VeldrynApp(){
   const [guildInitialPve,setGuildInitialPve]=useState(false);
   const [guildMembershipRevision,setGuildMembershipRevision]=useState(0);
   const [eventStartPopup,setEventStartPopup]=useState<import('./src/core/types').LiveEventRuntime|null>(null);
-  const startupOpacity=useRef(new Animated.Value(1)).current;
-  const appEntranceOpacity=useRef(new Animated.Value(1)).current;
-  const appEntranceY=useRef(new Animated.Value(0)).current;
-  const [startupOverlayVisible,setStartupOverlayVisible]=useState(true);
   const versionGateOwnsScreen=!!(versionGate?.maintenanceMode&&versionGate.policy)||!!(versionGate?.updateRequired&&versionGate.policy);
   const startupBlocking=!versionGateChecked||(!versionGateOwnsScreen&&(serverGameplayEnabled
     ?auth.loading||online.loading||!!(auth.session&&!auth.recovering&&online.snapshot&&!ready)
     :!ready));
-  useEffect(()=>{
-    startupOpacity.stopAnimation();appEntranceOpacity.stopAnimation();appEntranceY.stopAnimation();
-    if(startupBlocking){
-      startupOpacity.setValue(1);appEntranceOpacity.setValue(1);appEntranceY.setValue(0);setStartupOverlayVisible(true);return;
-    }
-    const reduced=state?.settings.reduceMotion===true;
-    setStartupOverlayVisible(true);
-    startupOpacity.setValue(1);appEntranceOpacity.setValue(reduced?1:.94);appEntranceY.setValue(reduced?0:4);
-    if(reduced){startupOpacity.setValue(0);setStartupOverlayVisible(false);return;}
-    Animated.parallel([
-        Animated.timing(startupOpacity,{toValue:0,duration:240,useNativeDriver:true}),
-        Animated.timing(appEntranceOpacity,{toValue:1,duration:260,useNativeDriver:true}),
-        Animated.timing(appEntranceY,{toValue:0,duration:260,useNativeDriver:true}),
-      ]).start(({finished})=>{if(finished)setStartupOverlayVisible(false);});
-    return()=>{startupOpacity.stopAnimation();appEntranceOpacity.stopAnimation();appEntranceY.stopAnimation();};
-  },[startupBlocking,state?.settings.reduceMotion,startupOpacity,appEntranceOpacity,appEntranceY]);
+  // Keep the interactive root stationary and remove the splash window as soon as ready.
+  const startupOverlayVisible=startupBlocking;
   useEffect(()=>{let alive=true;
     const check=async()=>{try{const result=await Promise.race([fetchAppVersionGate(),new Promise<null>(resolve=>setTimeout(()=>resolve(null),2500))]);if(alive&&result)setVersionGate(result);}finally{if(alive)setVersionGateChecked(true);}};
     void check();
@@ -518,9 +501,19 @@ function VeldrynApp(){
   useEffect(()=>{if(serverGameplayEnabled){setReady(!online.loading);setLoadError('');}},[online.loading]);
   useEffect(()=>{
     const snapshot=online.snapshot;
-    if(!auth.session?.user.id){onlineStartupSettlementAccountRef.current=undefined;return;}
+    if(!auth.session?.user.id){onlineStartupSettlementAccountRef.current=undefined;onlinePendingRecoveryArrivalRef.current=undefined;return;}
     const arrivalKey=snapshot?`${snapshot.accountId}:${online.foregroundRevision}`:undefined;
-    if(!serverGameplayEnabled||!snapshot?.state||online.loading||online.busy||online.pending||onlineStartupSettlementAccountRef.current===arrivalKey)return;
+    if(!serverGameplayEnabled||!snapshot?.state||online.loading||online.busy)return;
+    if(online.pending){
+      // Replay the original durable request once per arrival, even if the
+      // global retry control cannot receive touches. Never discard its ID.
+      if(onlinePendingRecoveryArrivalRef.current!==arrivalKey){
+        onlinePendingRecoveryArrivalRef.current=arrivalKey;
+        void perform();
+      }
+      return;
+    }
+    if(onlineStartupSettlementAccountRef.current===arrivalKey)return;
     // The initial snapshot may have unclaimed offline rewards; complete settlement
     // before scheduling a release announcement. Pending commands are recovered
     // separately; waiting for them must never block navigation or touch input.
@@ -576,7 +569,7 @@ function VeldrynApp(){
   useEffect(()=>{if(!forgeClaimFeedback)return;const timer=setTimeout(()=>setForgeClaimFeedback(null),4500);return()=>clearTimeout(timer)},[forgeClaimFeedback]);
   useEffect(()=>{if(tab!=='Skills'){toolRecipeReturnRef.current=null;setSelectedSkill(undefined);setGoalActionId(undefined);setGoalRecipeId(undefined)}},[tab]);
   // Global announcements share one presentation slot; foreground user dialogs win.
-  const popupBlocked=!!profileDiscardAction||creatingRoster||showChatOverlay||showAdminQa||showCoopUiGallery
+  const popupBlocked=(serverGameplayEnabled&&online.pending)||!!profileDiscardAction||creatingRoster||showChatOverlay||showAdminQa||showCoopUiGallery
     ||startupBlocking||startupOverlayVisible||offlineSettling||hasBlockingAlert;
   const popupCandidates={
     characterWelcome:!!creationWelcome,activityReward:!!collected,storyBoss:!!storyBossBattle,
@@ -947,7 +940,11 @@ const next=normalizeProfileIcon(migrateGemPouch(migrateRetiredStoryRewards(expli
   // (up to a full AFK reserve). It is a pure function of the authoritative state and the
   // presentation clock, so unrelated root re-renders (tab changes, popups, chat, alerts)
   // reuse the last result instead of re-simulating.
-  const activityPreviewMs=activityRewardPreviewClock(now,state?.activity??undefined,!!state?.character?.classTraining);
+  // During a pending save, the last authoritative read is a stable preview
+  // checkpoint. Do not replay hours of combat on every presentation tick
+  // while a request is trying to reach the server. No settlement math changes.
+  const recoveryPreviewNow=serverGameplayEnabled&&(online.busy||online.pending)?online.snapshot?.serverNow??now:now;
+  const activityPreviewMs=activityRewardPreviewClock(recoveryPreviewNow,state?.activity??undefined,!!state?.character?.classTraining);
   const activityPreview=useMemo(()=>state?.character?previewActivityReward(state,activityPreviewMs):undefined,[state,activityPreviewMs]);
   // Shell projections depend on the save and presentation clock, not tab, chat,
   // modal or cosmetic-preview changes. Keep the existing time-sensitive cadence.
@@ -1025,7 +1022,7 @@ const next=normalizeProfileIcon(migrateGemPouch(migrateRetiredStoryRewards(expli
   const disableHistorySwipe=immersiveDungeonFlow||(tab==='Skills'&&skillsMode==='crafting'&&!!selectedSkill);
   const featureHubShell=featureHubShellPolicy(tab);
   const mainTabGuide=MAIN_TAB_GUIDANCE[tab];
-  return <GameThemeProvider themeId={displayedThemeId}><TutorialHighlightProvider active={(mainScreenTour?.highlightBeacon??visibleTutorialStep?.highlightBeacon)??null}><SafeAreaView edges={['top','left','right']} style={[s.safe,{backgroundColor:theme.bg}]}><StatusBar style={theme.dark?'light':'dark'}/>{!immersiveDungeonFlow&&<GameTopBar key={`${state.createdAtMs}:${state.character.id}`} state={state} nowMs={now} reward={preview} online={serverGameplayEnabled&&!online.error} attention={quickNavigationBadges} labelForDestination={destination=>tabLabel(state.settings.language,destination)} onNavigate={destination=>{if(destination==='Dungeon'){setTab('Coop');return;}if(destination==='Quests'){openQuestMode(storyClaimCount>0?'story':questClaims.challenges>0||questClaims.milestones>0?'challenges':'story');return;}if(destination==='Forge'){setTab('Skills');toolRecipeReturnRef.current=null;setGoalActionId(undefined);setGoalRecipeId(undefined);setSkillsOpenedAsLink(true);setSkillsMode('crafting');setSelectedSkill('smithing');return;}if(destination==='Settings')setSettingsSection(undefined);setTab(destination)}} onChangeDestinations={destinations=>commit({...state,settings:{...state.settings,quickNavDestinations:destinations}})} showActivityBar={tab!=='ProfileCustomize'&&tab!=='Coop'&&tab!=='Events'&&!(tab==='Guild'&&(guildEventPageOpen||guildInitialPve||guildRaidScope===((auth.session?.user.id??state.character.id)+':'+guildMembershipRevision)))&&!featureHubShell.hideActivityBar} onOpenActivity={()=>{if(preview.stoppedReason){setTab('Home');return;}openActiveActivity()}} onRecoverCombat={recoverStoppedCombat} onFoodCommand={quickFoodCommand}/>}{serverGameplayEnabled&&(offlineSettling||(online.busy&&!quietCraftSaving))?<View pointerEvents="none" accessible accessibilityRole="progressbar" accessibilityLabel={appText(state.settings.language,offlineSettling?'Calculating offline rewards…':'Saving…')} style={{position:'absolute',top:52,right:12,zIndex:30,flexDirection:'row',alignItems:'center',gap:6,paddingVertical:6,paddingHorizontal:10,borderWidth:1,borderColor:theme.info,borderRadius:12,backgroundColor:theme.panelRaised}}><ActivityIndicator color={theme.info} size="small"/><Text style={{color:theme.text,fontSize:11,fontWeight:'800'}}>{appText(state.settings.language,offlineSettling?'Calculating offline rewards…':'Saving…')}</Text></View>:null}{serverGameplayEnabled&&online.pending?<View style={{paddingHorizontal:12}}><GameButton title={appText(languageRef.current,"Retry pending action")} disabled={online.busy} onPress={()=>perform()}/></View>:null}{onlineActionError?<View style={{paddingHorizontal:12,paddingVertical:6}}><ActionFeedback tone="error" message={onlineActionError} compact actionLabel={appText(state.settings.language,'Close')} onAction={()=>setOnlineActionError('')}/></View>:null}<View style={s.body} {...(disableHistorySwipe?{}:backSwipe.panHandlers)}>
+  return <GameThemeProvider themeId={displayedThemeId}><TutorialHighlightProvider active={(mainScreenTour?.highlightBeacon??visibleTutorialStep?.highlightBeacon)??null}><SafeAreaView edges={['top','left','right']} style={[s.safe,{backgroundColor:theme.bg}]}><StatusBar style={theme.dark?'light':'dark'}/>{!immersiveDungeonFlow&&<GameTopBar key={`${state.createdAtMs}:${state.character.id}`} state={state} nowMs={now} reward={preview} online={serverGameplayEnabled&&!online.error} attention={quickNavigationBadges} labelForDestination={destination=>tabLabel(state.settings.language,destination)} onNavigate={destination=>{if(destination==='Dungeon'){setTab('Coop');return;}if(destination==='Quests'){openQuestMode(storyClaimCount>0?'story':questClaims.challenges>0||questClaims.milestones>0?'challenges':'story');return;}if(destination==='Forge'){setTab('Skills');toolRecipeReturnRef.current=null;setGoalActionId(undefined);setGoalRecipeId(undefined);setSkillsOpenedAsLink(true);setSkillsMode('crafting');setSelectedSkill('smithing');return;}if(destination==='Settings')setSettingsSection(undefined);setTab(destination)}} onChangeDestinations={destinations=>commit({...state,settings:{...state.settings,quickNavDestinations:destinations}})} showActivityBar={tab!=='ProfileCustomize'&&tab!=='Coop'&&tab!=='Events'&&!(tab==='Guild'&&(guildEventPageOpen||guildInitialPve||guildRaidScope===((auth.session?.user.id??state.character.id)+':'+guildMembershipRevision)))&&!featureHubShell.hideActivityBar} onOpenActivity={()=>{if(preview.stoppedReason){setTab('Home');return;}openActiveActivity()}} onRecoverCombat={recoverStoppedCombat} onFoodCommand={quickFoodCommand}/>}{serverGameplayEnabled&&(offlineSettling||(online.busy&&!quietCraftSaving))?<View pointerEvents="none" accessible accessibilityRole="progressbar" accessibilityLabel={appText(state.settings.language,offlineSettling?'Calculating offline rewards…':'Saving…')} style={{position:'absolute',top:52,right:12,zIndex:30,flexDirection:'row',alignItems:'center',gap:6,paddingVertical:6,paddingHorizontal:10,borderWidth:1,borderColor:theme.info,borderRadius:12,backgroundColor:theme.panelRaised}}><ActivityIndicator color={theme.info} size="small"/><Text style={{color:theme.text,fontSize:11,fontWeight:'800'}}>{appText(state.settings.language,offlineSettling?'Calculating offline rewards…':'Saving…')}</Text></View>:null}{serverGameplayEnabled&&online.pending?<View style={{flexShrink:0,zIndex:31,elevation:2,paddingHorizontal:12,paddingVertical:4,backgroundColor:theme.bg}}><GameButton title={appText(languageRef.current,"Retry pending action")} loading={online.busy} onPress={()=>perform()}/></View>:null}{onlineActionError?<View style={{paddingHorizontal:12,paddingVertical:6}}><ActionFeedback tone="error" message={onlineActionError} compact actionLabel={appText(state.settings.language,'Close')} onAction={()=>setOnlineActionError('')}/></View>:null}<View style={s.body} {...(disableHistorySwipe?{}:backSwipe.panHandlers)}>
     <ScreenTransition key={tab} kind={transitionKind} reduceMotion={state.settings.reduceMotion||systemReduceMotion||immersiveDungeonFlow}>
     {!immersiveDungeonFlow&&mainTabGuide&&!mainScreenTour&&!visibleTutorialStep?<SectionGuide scope={auth.session?.user.id??state.character.id} area="main" section={tab} guide={mainTabGuide} showReplay={false}/>:null}
     {tab==='Home'&&<HomeScreen onQuickCommand={runCompanionCommand} onOpenGuide={()=>{setTab('Settings');setSettingsSection('guide')}} state={state} forgeReadyCount={forgeReadyCount} preview={preview} nowMs={now} onOpenContracts={()=>openQuestMode('contracts')} onNavigateGoal={openWorkingTowardDestination} onOpenCombat={()=>setTab('Combat')} onOpenSkill={skillId=>{setSelectedSkill(skillId);setSkillsMode(skillId==='faith'?'faith':['mining','woodcutting','fishing','herbalism','exploration'].includes(skillId)?'gathering':'crafting');setTab('Skills')}} onNavigate={destination=>{if(destination==='Skills')setSelectedSkill(undefined);if(destination==='Quests'){openQuestMode('story');return;}setTab(destination)}} onQueueRemove={index=>mutateActionQueue({type:'queue_remove',args:{index}})} onQueueMove={(index,direction)=>mutateActionQueue({type:'queue_move',args:{index,direction}})} onQueueClear={()=>mutateActionQueue({type:'queue_clear'})} onQueueStart={()=>mutateActionQueue({type:'queue_start'},true)} onSetCurrentHandoff={()=>{const id=stateRef.current?.activity?.targetId;if(id)void submitHomeQueueCommand({type:'queue_set_goal',args:{id,goal:{kind:'duration_seconds',value:14400}}});}} onQueueAdd={(entry,handoff)=>submitHomeQueueCommand({type:'queue_add',args:{kind:entry.kind,id:entry.targetId,...(entry.combatTacticId?{tacticId:entry.combatTacticId}:{}),...(entry.huntGoalId?{goalId:entry.huntGoalId}:{}),...(entry.faithPracticeCount?{count:entry.faithPracticeCount}:{}),...(entry.goal?{goal:entry.goal}:{}),...(handoff?.goal?{handoffGoal:handoff.goal,handoffTargetId:handoff.targetId}:{}),...(handoff?.keepCurrentRunning?{keepCurrentRunning:true}:{})}})} onClaim={()=>{if(serverGameplayEnabled){void perform({type:'claim'});return;}const result=claimActivity(state,Date.now());commit(result.state);presentCollected(result.reward,state.activity,state,result.state)}} onStop={()=>changeActivity()}/>}
@@ -1132,10 +1129,10 @@ const next=normalizeProfileIcon(migrateGemPouch(migrateRetiredStoryRewards(expli
   };
   const renderedApp=renderApp();
   return <GameLanguageProvider language={state?.settings.language??recoveryLanguage}><View style={s.appRoot}>
-    <Animated.View style={[s.appRoot,{opacity:appEntranceOpacity,transform:[{translateY:appEntranceY}]}]}><ActiveProfileCharacterContext.Provider value={activeProfileCharacter}>{renderedApp}</ActiveProfileCharacterContext.Provider></Animated.View>
-    {(startupOverlayVisible||startupBlocking)&&<Animated.View pointerEvents={startupBlocking?'auto':'none'} style={[s.startupOverlay,{opacity:startupBlocking?1:startupOpacity}]}>
+    <View style={s.appRoot}><ActiveProfileCharacterContext.Provider value={activeProfileCharacter}>{renderedApp}</ActiveProfileCharacterContext.Provider></View>
+    {startupBlocking&&<View style={s.startupOverlay}>
       <StartupScreen scene={startupScene} language={state?.settings.language??recoveryLanguage} themeId={displayedThemeId}/>
-    </Animated.View>}
+    </View>}
   </View></GameLanguageProvider>;
 }
 const s=StyleSheet.create({appRoot:{flex:1},startupOverlay:{...StyleSheet.absoluteFill,zIndex:100},startupUnderlay:{flex:1,backgroundColor:C.bg},safe:{flex:1,backgroundColor:C.bg},offlineLoadingOverlay:{...StyleSheet.absoluteFill,zIndex:20,justifyContent:'center',padding:16,backgroundColor:'rgba(5,9,15,.86)'},masteryNotice:{paddingHorizontal:10,paddingVertical:4,backgroundColor:C.bg},center:{flex:1,backgroundColor:C.bg,alignItems:'center',justifyContent:'center',gap:10},txt:{color:C.text},body:{flex:1}});

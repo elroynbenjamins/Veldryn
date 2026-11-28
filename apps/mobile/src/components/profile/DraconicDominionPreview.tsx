@@ -1,3 +1,4 @@
+import {ASCENDANT_SURFACES} from './ascendant-showcase-surfaces';
 import {useCosmeticMotionPolicy} from '../anim/motion';
 import {useUltraLuxePetReaction,UltraLuxePetReaction} from './UltraLuxePetReaction';
 import {DraconicBorderLight} from './DraconicBorderLight';
@@ -90,10 +91,10 @@ const s=StyleSheet.create({
  card:{width:'100%',position:'relative',overflow:'hidden',backgroundColor:'#170c13'},
  fill:{...StyleSheet.absoluteFill,width:'100%',height:'100%'},
  heat:{...StyleSheet.absoluteFill,backgroundColor:'#f65d12'},
- plate:{backgroundColor:'#200e17',borderColor:'#b16a34',borderWidth:1,borderRadius:6},
- portrait:{backgroundColor:'#200e17',borderColor:'#c78c46',borderWidth:1,borderRadius:5},
+ plate:ASCENDANT_SURFACES.draconic.identity,
+ portrait:ASCENDANT_SURFACES.draconic.portrait,
  protected:{overflow:'hidden'},
  badges:{justifyContent:'center',alignItems:'flex-start'},
- guild:{backgroundColor:'#41151a',borderColor:'#b16a34',borderWidth:1,borderRadius:4,alignItems:'stretch',justifyContent:'center'},
+ guild:{...ASCENDANT_SURFACES.draconic.guild,alignItems:'stretch',justifyContent:'center'},
  ember:{position:'absolute',width:12,height:12},
 });

@@ -1,3 +1,4 @@
+import {ASCENDANT_SURFACES} from './ascendant-showcase-surfaces';
 import {memo,useMemo,useState,type ReactNode} from 'react';
 import {Animated,Image,Pressable,StyleSheet,View,useWindowDimensions,type ImageSourcePropType} from 'react-native';
 import {useCosmeticMotionPolicy,useLoopProgress} from '../anim/motion';
@@ -118,9 +119,9 @@ const s=StyleSheet.create({
  outer:{width:'100%',maxWidth:480,alignSelf:'center'},
  card:{width:'100%',position:'relative',overflow:'hidden',backgroundColor:'#05151c'},
  fill:{...StyleSheet.absoluteFill,width:'100%',height:'100%'},
- plate:{backgroundColor:'#071e29',borderColor:'#478e92',borderWidth:1,borderRadius:6},
- portrait:{backgroundColor:'#091b24',borderColor:'#72c9c3',borderWidth:1,borderRadius:5},
+ plate:ASCENDANT_SURFACES.abyssal.identity,
+ portrait:ASCENDANT_SURFACES.abyssal.portrait,
  protected:{overflow:'hidden'},
  badges:{justifyContent:'center',alignItems:'flex-start'},
- guild:{backgroundColor:'#10313b',borderColor:'#478e92',borderWidth:1,borderRadius:4,alignItems:'stretch',justifyContent:'center'},
+ guild:{...ASCENDANT_SURFACES.abyssal.guild,alignItems:'stretch',justifyContent:'center'},
 });

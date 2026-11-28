@@ -67,7 +67,8 @@ export const AWAKENING_ENERGY={
  celestial:[0,.18,.42,.20,.40,.76,1,.80,.24,0],
  draconic:[0,.34,.64,.26,.52,.88,1,.65,.18,0],
 } as const;
-export const AWAKENING_PET_LIFT={celestial:7,draconic:2.5} as const;
+// Aetherion's current atlas includes its platform: keep the combined sprite near its ground light.
+export const AWAKENING_PET_LIFT={celestial:3,draconic:2.5} as const;
 export function awakeningCurve(theme:keyof typeof AWAKENING_ENERGY){
  const values=AWAKENING_ENERGY[theme],phase:number[]=[0],energy:number[]=[0];
  for(let i=1;i<AWAKENING_PHASE.length;i++){
@@ -103,3 +104,17 @@ export const FRAME_ORNAMENTS={
  celestial:[[20,16],[310,16],[164,186]],
  draconic:[[13,91],[315,91],[164,184]],
 } as const;
+
+/** Four readable, smooth elliptical orbits per 24-second native clock.
+ * The two stars are opposite one another; position, not sprite rotation,
+ * follows the orbit. Exact endpoint closure avoids jumps on repeat. */
+export const CELESTIAL_ORBIT_PHASE=Array.from({length:97},(_,i)=>i/96);
+export function celestialOrbitTrack(opposite=false){
+ const samples=CELESTIAL_ORBIT_PHASE.map(t=>{
+  const angle=t*Math.PI*8+(opposite?Math.PI:0);
+  return {x:43*Math.cos(angle),y:13*Math.sin(angle)};
+ });
+ samples[samples.length-1]=samples[0];
+ return samples;
+}
+export const CELESTIAL_ORBITS=[celestialOrbitTrack(),celestialOrbitTrack(true)] as const;

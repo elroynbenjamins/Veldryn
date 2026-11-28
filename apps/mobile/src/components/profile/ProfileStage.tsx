@@ -87,7 +87,7 @@ export function ProfileStage({state,collapsed,onToggle,onAudiencePreview,trailin
  if(dedicated||candidate)return <View style={s.dedicatedRoot}>
   <ProfileScenePreview state={state} backgroundId={backgroundId} active={active}/>
   <View style={s.dedicatedTools}>
-   {onAudiencePreview?<Pressable accessibilityRole="button" accessibilityLabel={profileT(language,"Preview as others see me")} onPress={onAudiencePreview} style={({pressed})=>[s.tool,pressed&&s.pressed]}><Text style={s.toolMark}>◎</Text></Pressable>:null}
+   {onAudiencePreview?<Pressable accessibilityRole="button" accessibilityLabel={profileT(language,"Preview as others see me")} onPress={onAudiencePreview} style={({pressed})=>[s.dedicatedPreview,pressed&&s.pressed]}><Text style={s.dedicatedPreviewText}>{profileT(language,"Preview as others see me")}</Text></Pressable>:null}
    <Pressable accessibilityRole="button" accessibilityLabel={profileT(language,"Collapse the profile stage")} onPress={onToggle} style={({pressed})=>[s.tool,pressed&&s.pressed]}><Text style={s.toolMark}>▴</Text></Pressable>
   </View>
  </View>;
@@ -123,7 +123,9 @@ export function ProfileStage({state,collapsed,onToggle,onAudiencePreview,trailin
 
 function makeStyles(C:ThemeColors){return StyleSheet.create({
  dedicatedRoot:{width:'100%',position:'relative',gap:4},
- dedicatedTools:{flexDirection:'row',justifyContent:'flex-end',gap:6},
+ dedicatedTools:{flexDirection:'row',justifyContent:'flex-end',alignItems:'center',gap:6},
+ dedicatedPreview:{flex:1,minHeight:44,justifyContent:'center',alignItems:'center',paddingHorizontal:10},
+ dedicatedPreviewText:{fontSize:12,color:C.text,fontWeight:'600',textAlign:'center'},
  root:{width:'100%',height:168,position:'relative'},
  surface:{...StyleSheet.absoluteFill,borderRadius:radii.lg,overflow:'hidden',borderWidth:1,borderColor:C.lineStrong,backgroundColor:C.stage},
  surfaceFramed:{top:7,left:7,right:7,bottom:7,borderRadius:5,borderColor:C.line},

@@ -1,8 +1,9 @@
+import {ASCENDANT_SURFACES} from './ascendant-showcase-surfaces';
 import {useCosmeticMotionPolicy} from '../anim/motion';
 import {useUltraLuxePetReaction,UltraLuxePetReaction} from './UltraLuxePetReaction';
 import {UltraLuxeIdentityMotionProvider} from './UltraLuxeIdentityMotion';
 import {UltraLuxePetPoseSprite} from './UltraLuxePetPoseSprite';
-import {ULTRA_LUXE_CYCLE_MS,PET_IDLE_PHASE,CELESTIAL_ATLAS_LIFT} from '../../core/ultra-luxe-motion';
+import {ULTRA_LUXE_CYCLE_MS,PET_IDLE_PHASE,CELESTIAL_ATLAS_LIFT,CELESTIAL_ORBIT_PHASE,CELESTIAL_ORBITS} from '../../core/ultra-luxe-motion';
 import {UltraLuxeEnvironment,UltraLuxeRail,UltraLuxePetAura,UltraLuxeAscendantFlourish,petIdleMotion,awakeningEnergy,awakeningPetLift} from './UltraLuxeMotion';
 import {useEffect,useMemo,useState,type ReactNode} from 'react';
 import {Animated,Easing,Image,Pressable,StyleSheet,View,useWindowDimensions,type ImageSourcePropType} from 'react-native';
@@ -60,25 +61,23 @@ export function CelestialSovereignPreview({assets,equippedPetId,matchingPetId,al
  const idle=useMemo(()=>petIdleMotion(clock,scale,petMode==='alternate'?'alternate':'celestial'),[clock,scale,petMode]);
  const matchingLift=useMemo(()=>clock.interpolate({inputRange:PET_IDLE_PHASE,outputRange:CELESTIAL_ATLAS_LIFT.map(y=>y*scale)}),[clock,scale]);
  const bodyLift=useMemo(()=>Animated.add(assets.smoothPoseAtlas?matchingLift:idle.lift,signatureLift),[assets.smoothPoseAtlas,matchingLift,idle.lift,signatureLift]);
- const orbit=useMemo(()=>clock.interpolate({inputRange:[0,.25,.5,.75,1],outputRange:['0deg','180deg','360deg','540deg','720deg']}),[clock]);
+ const orbits=useMemo(()=>CELESTIAL_ORBITS.map(track=>({x:clock.interpolate({inputRange:CELESTIAL_ORBIT_PHASE,outputRange:track.map(point=>point.x*scale)}),y:clock.interpolate({inputRange:CELESTIAL_ORBIT_PHASE,outputRange:track.map(point=>point.y*scale)})})),[clock,scale]);
  return <View style={styles.outer} onLayout={e=>{const next=e.nativeEvent.layout.width;setWidth(old=>Math.abs(old-next)<.5?old:next);}}>
   {!supported?fallback:<View style={[styles.card,{height:CELESTIAL_STAGE.height*scale}]}>
    <View pointerEvents="none" accessible={false} importantForAccessibility="no-hide-descendants" style={StyleSheet.absoluteFill}>
     <Image source={assets.background} fadeDuration={0} resizeMode="cover" style={styles.fillImage}/>
     {running?<UltraLuxeEnvironment clock={clock} scale={scale} theme="celestial" particle={assets.star}/>:null}
-    <Image source={assets.orrery} fadeDuration={0} resizeMode="contain" style={pos(119,26,102,48)}/>
-    <Animated.View style={[pos(129,24,82,55),{transform:[{rotate:orbit}]}]}>
-     <Image source={assets.star} resizeMode="contain" style={{position:'absolute',left:0,top:21*scale,width:7*scale,height:7*scale}}/>
-     <Image source={assets.star} resizeMode="contain" style={{position:'absolute',right:0,top:21*scale,width:7*scale,height:7*scale}}/>
-    </Animated.View>
-    <Animated.Image source={assets.corona} fadeDuration={0} resizeMode="contain" style={[pos(130,26,80,48),{opacity:pulse}]}/>
+    <Image source={assets.orrery} fadeDuration={0} resizeMode="contain" style={pos(126,30,88,42)}/>
+    {running?orbits.map((orbit,i)=><Animated.Image key={i} source={assets.star} fadeDuration={0} resizeMode="contain" style={[pos(166.5,47.5,7,7),{transform:[{translateX:orbit.x},{translateY:orbit.y}]}]}/>):null}
+    {running?<Animated.Image source={assets.corona} fadeDuration={0} resizeMode="contain" style={[pos(136,31,68,40),{opacity:Animated.multiply(pulse,.7)}]}/>:null}
     {petMode==='matching'?<>
+     <Animated.Image source={assets.fallbackGlow} fadeDuration={0} resizeMode="contain" style={[pos(246,164,66,14),{opacity:Animated.add(.42,Animated.multiply(pulse,.38))}]}/>
      <Animated.View style={[StyleSheet.absoluteFill,{transform:[{translateY:bodyLift}]}]}>
       {running&&assets.smoothPoseAtlas?<Animated.View style={box(CELESTIAL_PET_BOX.matching)}><UltraLuxePetPoseSprite source={assets.smoothPoseAtlas} clock={clock} theme="celestial" width={CELESTIAL_PET_BOX.matching.width*scale} height={CELESTIAL_PET_BOX.matching.height*scale}/></Animated.View>:<Animated.Image source={assets.petShowcase} fadeDuration={0} resizeMode="contain" style={[box(CELESTIAL_PET_BOX.matching),{transform:[{rotate:idle.tilt},{scaleX:idle.scaleX},{scaleY:idle.scaleY}]}]}/>}
-      {running?<UltraLuxePetAura clock={clock} scale={scale} theme="celestial" particle={assets.star}/>:null}
-      {reactionEnabled?<UltraLuxePetReaction reaction={reaction} scale={scale} theme="celestial" particle={assets.star} glow={assets.corona}/>:null}
-      <Animated.Image source={assets.star} resizeMode="contain" style={[pos(258,80,16,16),{opacity:Animated.add(Animated.multiply(idle.glow,.65),Animated.multiply(pulse,.55))}]}/>
+      {running?<Animated.Image source={assets.star} resizeMode="contain" style={[pos(258,80,12,12),{opacity:Animated.add(Animated.multiply(idle.glow,.55),Animated.multiply(pulse,.35))}]}/>:null}
      </Animated.View>
+     {running?<UltraLuxePetAura clock={clock} scale={scale} theme="celestial" particle={assets.star}/>:null}
+     {reactionEnabled?<UltraLuxePetReaction reaction={reaction} scale={scale} theme="celestial" particle={assets.star} glow={assets.corona}/>:null}
     </>:petMode==='alternate'&&alternatePetSource?<>
      <Animated.Image source={assets.fallbackGlow} resizeMode="contain" style={[box(CELESTIAL_PET_BOX.glow),{opacity:Animated.add(.55,Animated.multiply(idle.glow,.5))}]}/>
      <Animated.Image source={alternatePetSource} resizeMode="contain" style={[box(CELESTIAL_PET_BOX.alternate),{transform:[{translateY:idle.lift},{rotate:idle.tilt},{scaleX:idle.scaleX},{scaleY:idle.scaleY}]}]}/>
@@ -104,6 +103,6 @@ const styles=StyleSheet.create({
  outer:{width:'100%',maxWidth:480,alignSelf:'center'},
  card:{width:'100%',overflow:'hidden',backgroundColor:'#091225',position:'relative'},
  fillImage:{...StyleSheet.absoluteFill,width:'100%',height:'100%'},
- identityPlate:{borderRadius:6,borderWidth:1,borderColor:'#a48b55',backgroundColor:'#0a1228'},
- guildPlate:{borderRadius:4,borderWidth:1,borderColor:'#a48b55',backgroundColor:'#0a1228',justifyContent:'center',alignItems:'stretch'},
+ identityPlate:ASCENDANT_SURFACES.celestial.identity,
+ guildPlate:{...ASCENDANT_SURFACES.celestial.guild,justifyContent:'center',alignItems:'stretch'},
 });

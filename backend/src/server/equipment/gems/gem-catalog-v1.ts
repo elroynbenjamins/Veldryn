@@ -88,9 +88,24 @@ function scaledGemValuesV2(values:Readonly<Record<GemGrade,number>>,factor:numbe
 /** Retired only from the new gem balance pool. Preserve V1 identity and
  * historical socket receipts until an explicit replacement policy exists. */
 export const RETIRED_STAT_GEM_FAMILIES_REVIEW_V2:readonly string[]=Object.freeze(['stat_resolute']);
+/** Historical input to the reviewed 2.0 candidate, pinned independently of
+ * live V1 balance updates. The original November review doubled these exact
+ * values; current live gem adjustments must not silently retune 2.0. */
+export const STAT_GEM_BASELINE_REVIEW_V2:readonly StatGemDefinition[]=Object.freeze([
+ {familyId:'stat_might',name:'Might',stat:'power',unit:'percent',values:vals(.004,.005,.0065,.008,.01)},
+ {familyId:'stat_vitality',name:'Vitality',stat:'maxHp',unit:'percent',values:vals(.006,.008,.01,.0125,.015)},
+ {familyId:'stat_iron',name:'Iron',stat:'armor',unit:'percent',values:vals(.005,.0065,.008,.01,.0125)},
+ {familyId:'stat_ward',name:'Ward',stat:'ward',unit:'percent',values:vals(.005,.0065,.008,.01,.0125)},
+ {familyId:'stat_precision',name:'Precision',stat:'accuracy',unit:'percentage_point',values:vals(.003,.004,.005,.0065,.008)},
+ {familyId:'stat_keen',name:'Keen',stat:'critRate',unit:'percentage_point',values:vals(.002,.003,.004,.005,.006)},
+ {familyId:'stat_savage',name:'Savage',stat:'critDamage',unit:'percent',values:vals(.01,.013,.016,.02,.025)},
+ {familyId:'stat_piercing',name:'Piercing',stat:'penetration',unit:'percentage_point',values:vals(.0025,.0035,.0045,.006,.0075)},
+ {familyId:'stat_swift',name:'Swift',stat:'haste',unit:'percent',values:vals(.0035,.0045,.0055,.0065,.008)},
+ {familyId:'stat_potent',name:'Potent',stat:'potency',unit:'percent',values:vals(.005,.0065,.008,.01,.012)},
+ {familyId:'stat_elusive',name:'Elusive',stat:'evasion',unit:'percentage_point',values:vals(.002,.0025,.003,.004,.005)},
+].map(def=>Object.freeze({...def,values:Object.freeze(def.values)})) as StatGemDefinition[]);
 export const STAT_GEMS_REVIEW_V2:readonly StatGemDefinition[]=Object.freeze(
- STAT_GEMS_V1.filter(def=>!RETIRED_STAT_GEM_FAMILIES_REVIEW_V2.includes(def.familyId))
-  .map(def=>Object.freeze({...def,values:scaledGemValuesV2(def.values,2)})));
+ STAT_GEM_BASELINE_REVIEW_V2.map(def=>Object.freeze({...def,values:scaledGemValuesV2(def.values,2)})));
 export const EFFECT_GEMS_REVIEW_V2:readonly EffectGemDefinition[]=Object.freeze(
  EFFECT_GEMS_V1.map(def=>{
   const factor=EFFECT_GEM_REVIEW_MULTIPLIERS_V2[def.familyId];

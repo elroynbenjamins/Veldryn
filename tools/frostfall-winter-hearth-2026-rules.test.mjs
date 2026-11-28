@@ -27,7 +27,7 @@ test('accept only the six existing authored woodcutting item IDs and crafted lig
 test('both professions craft the same five lights using existing resources', () => {
   assert.equal(WINTER_HEARTH_LIGHT_RECIPE.level, 4);
   assert.equal(WINTER_HEARTH_LIGHT_RECIPE.output.quantity, 5);
-  for(const [skill,primary] of [['smithing','COPPER_ORE'],['tailoring','MOSS_FIBER']]) { const r=WINTER_HEARTH_LIGHT_RECIPES[skill]; assert.deepEqual(r.inputs,[{itemId:primary,quantity:8},{itemId:'DEWLEAF',quantity:4},{itemId:'WISP_DUST',quantity:1}]); assert.deepEqual(r.output,WINTER_HEARTH_LIGHT_RECIPE.output); assert.equal(r.level,4); assert.equal(r.gold,30); assert.equal(r.xp,35); }
+  for(const [skill,primary] of [['smithing','COPPER_ORE'],['tailoring','COPPER_ORE']]) { const r=WINTER_HEARTH_LIGHT_RECIPES[skill]; assert.deepEqual(r.inputs,[{itemId:primary,quantity:8},{itemId:'DEWLEAF',quantity:4},{itemId:'WISP_DUST',quantity:1}]); assert.deepEqual(r.output,WINTER_HEARTH_LIGHT_RECIPE.output); assert.equal(r.level,4); assert.equal(r.gold,30); assert.equal(r.xp,35); }
   assert.equal(500 * WINTER_HEARTH_LIGHT_RECIPE.output.quantity, WINTER_HEARTH_GOALS.lights);
 });
 test('Monday 00:00 UTC resets account-wide weekly donation allowance', () => {

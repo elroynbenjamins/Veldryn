@@ -27,7 +27,7 @@ const lightRecipe=(skillId,primary,id)=>Object.freeze({
 });
 export const WINTER_HEARTH_LIGHT_RECIPES=Object.freeze({
  smithing:lightRecipe('smithing','COPPER_ORE','CRAFT_FROSTFALL_CHRISTMAS_LIGHTS_2026'),
- tailoring:lightRecipe('tailoring','MOSS_FIBER','CRAFT_FROSTFALL_CHRISTMAS_LIGHTS_TAILORING_2026'),
+ tailoring:lightRecipe('tailoring','COPPER_ORE','CRAFT_FROSTFALL_CHRISTMAS_LIGHTS_TAILORING_2026'),
 });
 export const WINTER_HEARTH_LIGHT_RECIPE=WINTER_HEARTH_LIGHT_RECIPES.smithing;
 import {FROSTFALL_2026_GUILD_COSMETICS,guildEventCosmeticsAtMilestones} from './guild-event-cosmetic-review.mjs';

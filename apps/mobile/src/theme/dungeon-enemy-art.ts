@@ -52,6 +52,7 @@ export const DUNGEON_MONSTER_PORTRAIT_ALIASES:Readonly<Record<string,string>>=Ob
  'ashen colossus':'CINDER_TITAN',
  'the crucible prime':'CINDER_TITAN',
  // Event dungeon encounters: use existing monsters rather than another icon set.
+ 'shoreline colossus':'GLASSBOUND_SENTINEL',
  'solar reef warden':'GLASSBOUND_SENTINEL',
  'meteoric sentinel':'GLASSBOUND_SENTINEL',
  'hourglass golem':'GLASSBOUND_SENTINEL',
@@ -97,6 +98,10 @@ const DUNGEON_ENEMY_ART:Readonly<Record<string,ImageSourcePropType>>=Object.free
   'veilshade stalker':require('../../assets/dungeon-enemies-v1/veilshade-stalker.webp'),
   'ledger hexer':require('../../assets/dungeon-enemies-v1/ledger-hexer.webp'),
   'bellfrost spirit':require('../../assets/dungeon-enemies-v1/bellfrost-spirit.webp'),
+  // Reuse the winter construct and Bloomwake deer silhouettes until dedicated
+  // enemy art is available. These are presentation aliases, not combat changes.
+  'giftwork colossus':require('../../assets/dungeon-enemies-v1/rimebell-colossus.webp'),
+  'rootbound stag':require('../../assets/event_collectibles/bloomwake/pets/EVT_PET_006_Verdant_Fawn.png'),
 });
 
 /** Reuse only lore- and archetype-compatible humanoid NPC portraits.
@@ -108,6 +113,9 @@ export const DUNGEON_TRIAL_PORTRAIT_ALIASES:Readonly<Record<string,string>>=Obje
   'briar scout':'Gloamblade Raider',
   'root guardian':'Runebound Bulwark',
   'moss stalker':'Gloamblade Raider',
+  'bramble reaver':'Gloamblade Raider',
+  'mycelial oracle':'Silverbrook Adept',
+  'mourning cantor':'Regent Adept',
   'grove sentinel':'Runebound Bulwark',
   'root warden':'Runebound Bulwark',
   'lantern wretch':'Gloamblade Raider',
@@ -146,6 +154,19 @@ export const DUNGEON_TRIAL_PORTRAIT_ALIASES:Readonly<Record<string,string>>=Obje
   'crucible warden':'Forgeplate Custodian',
 });
 
+// Older encounter previews may contain archetype labels rather than a named
+// roster. Give those temporary cards recognizable role art, not a diamond.
+const DUNGEON_PREVIEW_PORTRAIT_ALIASES:Readonly<Record<string,string>>=Object.freeze({
+  'assassin':'Gloamblade Raider',
+  'bruiser':'Runebound Bulwark',
+  'caster':'Silverbrook Adept',
+  'swarm':'Echo Predator',
+  'guardian':'Oathglass Sentinel',
+  'hexer':'Regent Adept',
+  'executioner':'Crown Bulwark',
+  'support':'Silverbrook Adept',
+});
+
 function enemyKey(name:string){return name.trim().toLocaleLowerCase().replace(/\s+/g,' ');}
 
 const TRIAL_ART_BY_KEY:Readonly<Record<string,ImageSourcePropType>>=Object.freeze(
@@ -158,7 +179,7 @@ const TRIAL_ART_BY_KEY:Readonly<Record<string,ImageSourcePropType>>=Object.freez
 export function dungeonEnemyPortraitSource(name:string|undefined):ImageSourcePropType|undefined{
  if(!name?.trim())return undefined;
  const key=enemyKey(name),base=baseKey(key);
- const trialAlias=DUNGEON_TRIAL_PORTRAIT_ALIASES[base]??DUNGEON_EVENT_TRIAL_PORTRAIT_ALIASES[base];
+ const trialAlias=DUNGEON_TRIAL_PORTRAIT_ALIASES[base]??DUNGEON_EVENT_TRIAL_PORTRAIT_ALIASES[base]??DUNGEON_PREVIEW_PORTRAIT_ALIASES[base];
  // Order: bespoke dungeon art, existing same-species overworld art, Trial NPC.
  // Echo variants deliberately share their original enemy portrait at no new cost.
  return DUNGEON_ENEMY_ART[key]??DUNGEON_ENEMY_ART[base]

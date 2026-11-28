@@ -19,6 +19,8 @@ import {Panel} from '../components/Panel';
 import {claimAllEventMilestones,claimEventCommunityMilestone,claimEventDailyGift,claimEventDiscovery,claimEventRepeatCache,claimEventReward,claimEventWeeklyObjective,consumeEventCandy,eventCurrencyBalance,eventCurrencyBonusBps,eventDailyGift,eventLifecycle,eventPrestigeBalance,eventRewardTabReadyClaimCount,eventShopOffers,purchaseEventOffer} from '../core/live-events';
 import {onlineConfigured} from '../online/supabase';
 import {fetchActiveEventRuntime} from '../online/live-events';
+import {useEventPreviewAccess} from '../online/event-preview-access';
+import {eventPrestigeSupplyOffers,liveEventDef} from '../content/live-events';
 import type {EventCandyKind,LiveEventDef} from '../content/live-events';
 import {liveEventVisuals} from '../ui/live-event-visuals-active';
 import {GameThemeScope,useGameTheme} from '../theme/ThemeContext';
@@ -55,6 +57,8 @@ function EventContent({state,onChange,onCommand,onOpenSeasonalExpedition,onOpenG
  const scroll=useRef<ComponentRef<typeof ScrollView>>(null);
  const C=useGameTheme(),[tab,setTab]=useState<Tab>('Overview'),[notice,setNotice]=useState(''),[pendingAction,setPendingAction]=useState<string|null>(null),[tone,setTone]=useState<FeedbackTone>('success'),[guildBoss,setGuildBoss]=useState<GuildPveEncounter|null>(),[guildBossLoading,setGuildBossLoading]=useState(false),[guildBossError,setGuildBossError]=useState(false),busy=useRef(false);
  const event=eventLifecycle(state,now);
+ const preview=useEventPreviewAccess(state.character?.id,now);
+ const previewDefinition=preview&&(!event||event.phase==='upcoming')?liveEventDef(preview.eventId):undefined;
  const changeTab=(next:Tab)=>{setTab(next);scroll.current?.scrollTo({y:0,animated:false})};
  const latest=useRef({state,onChange});latest.current={state,onChange};
  const characterId=state.character?.id;
@@ -64,6 +68,16 @@ function EventContent({state,onChange,onCommand,onOpenSeasonalExpedition,onOpenG
   let live=true,reading=false;const eventId=event.definition.id;setGuildBoss(undefined);const refresh=async()=>{if(reading||AppState.currentState==='background')return;reading=true;setGuildBossLoading(true);setGuildBossError(false);try{const rows=await guildPveBoard();if(live)setGuildBoss(rows.find(row=>row.kind==='event'&&row.eventId===eventId)??null)}catch{if(live){setGuildBoss(null);setGuildBossError(true)}}finally{reading=false;if(live)setGuildBossLoading(false)}};void refresh();const sub=AppState.addEventListener('change',status=>{if(status==='active')void refresh()});return()=>{live=false;sub.remove()};
  },[authoritativeGuildPve,event?.definition.id,event?.phase,tab,characterId]);
  const act=async(message:string,local:()=>GameState,command:GameCommand,pendingId:string=command.type)=>{if(busy.current)return;busy.current=true;setPendingAction(pendingId);setNotice('');try{if(onCommand){if(!await onCommand(command))throw new Error(command.type==='event_reward'?eventRewardText(language,'Reward could not be confirmed. Please retry.') :localizeGameplay(language,'Action could not be confirmed. Please retry.'));}else await onChange(local());setTone('success');setNotice(localizeGameplay(language,message));}catch(error){setTone('error');setNotice(playerFacingGameplayError(error instanceof Error?error.message:localizeGameplay(language,'Action could not be completed.')));}finally{busy.current=false;setPendingAction(null);}};
+ if(previewDefinition&&preview&&now<preview.expiresAtMs){
+  const definition=previewDefinition;
+  const previewTab=tab==='Shop'?'Shop':'Overview';
+  return <GameThemeScope colors={eventTheme(C,definition)}><ScrollView ref={scroll} contentContainerStyle={s.page} showsVerticalScrollIndicator={false}>
+   <EventHero definition={definition} endsAtMs={preview.expiresAtMs} now={now} compact={previewTab==='Shop'} section={previewTab}/>
+   <Panel><Text style={[s.heading,{color:C.text}]}>{localizeGameplay(language,'Private event preview')}</Text><Text style={[s.muted,{color:C.muted}]}>{localizeGameplay(language,'Browse only. Purchases, rewards and activities unlock at the official launch.')}</Text></Panel>
+   <BoardTabs label={localizeGameplay(language,'Event sections')} items={(['Overview','Shop'] as const).map(id=>({id,label:localizeGameplay(language,id)}))} value={previewTab} onChange={changeTab}/>
+   {previewTab==='Shop'?<EventShopCatalogue key={definition.id+':preview'} state={state} definition={definition} offers={[...definition.shop,...eventPrestigeSupplyOffers(definition)]} currency={0} prestige={0} busy={false} pendingId={null} previewOnly onBuy={async()=>{}}/>:<>{definition.visualKey==='frostfall'?<FrostfallPreview startsAtMs={preview.expiresAtMs} nowMs={now}/>:null}<GameButton title={localizeGameplay(language,'Preview event shop')} onPress={()=>changeTab('Shop')}/></>}
+  </ScrollView></GameThemeScope>;
+ }
  if(!event)return <ScrollView contentContainerStyle={s.page} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}><Text style={[s.heading,{color:C.text}]}>{accountText(language,'Events')}</Text><Text style={[s.muted,{color:C.muted}]}>{accountText(language,'Browse upcoming festivals and seasonal previews.')}</Text><AnnualEventCalendarPanel state={state} nowMs={now}/></ScrollView>;
  if(event.phase==='upcoming'){
   const frostfallTeaser=event.definition.visualKey==='frostfall'&&frostfallPreviewPhase(event.runtime.startsAtMs,now)!==null;

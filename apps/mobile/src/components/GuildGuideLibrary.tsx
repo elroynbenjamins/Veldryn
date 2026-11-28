@@ -5,6 +5,7 @@ import {guildGuideLibraryText,guildGuideSectionTitle,type GuildGuideLibraryLabel
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {useGameTheme} from '../theme/ThemeContext';
 import {ThemedIcon} from './ThemedNavigationIcon';
+import {GuideTopicAccordion} from './GuideTopicAccordion';
 
 type GuildRole='member'|'officer'|'leader'|null;
 const GROUPS:readonly {id:GuildGuideLibraryLabel;sections:readonly string[];leadership?:boolean}[]=[
@@ -24,7 +25,6 @@ export function GuildGuideLibrary({visible,onClose,role}:{visible:boolean;onClos
  useEffect(()=>{if(!leadership&&(section==='Manage'||section==='Appearance')){setSection(null);setTopicIndex(0)}},[leadership,section]);
  if(!visible)return null;
  const guide=section?localizedGuildDetailedGuide(language,section):undefined;
- const topic=guide?.topics[Math.min(topicIndex,guide.topics.length-1)];
  const choose=(id:string)=>{setSection(id);setTopicIndex(0)};
  const back=()=>{setSection(null);setTopicIndex(0)};
  return <Modal visible={visible} animationType="fade" transparent statusBarTranslucent onRequestClose={onClose}>
@@ -55,15 +55,9 @@ export function GuildGuideLibrary({visible,onClose,role}:{visible:boolean;onClos
      </View>)}
     </ScrollView>:<View style={s.detail}>
      <Pressable accessibilityRole="button" accessibilityLabel={t('All guides')} onPress={back} style={s.back}><Text style={[s.backText,{color:C.accent}]}>‹ {t('All guides')}</Text></Pressable>
-     <Text style={[s.intro,{color:C.muted}]}>{guide.body}</Text>
-     <ScrollView horizontal showsHorizontalScrollIndicator={false} showsVerticalScrollIndicator={false} accessibilityRole="tablist" contentContainerStyle={s.topicRow}>
-      {guide.topics.map((item,index)=><Pressable key={item.id} accessibilityRole="tab" accessibilityState={{selected:topicIndex===index}} onPress={()=>setTopicIndex(index)}
-       style={[s.topicButton,{backgroundColor:topicIndex===index?C.selection:C.panel2,borderColor:topicIndex===index?C.selectionLine:C.line}]}>
-       <Text style={[s.topicLabel,{color:topicIndex===index?C.text:C.muted}]}>{item.title}</Text>
-      </Pressable>)}
-     </ScrollView>
-     <ScrollView style={s.topicScroll} contentContainerStyle={s.topicBody} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
-      {topic?<><Text accessibilityRole="header" style={[s.topicHeading,{color:C.text}]}>{topic.title}</Text><Text style={[s.topicText,{color:C.muted}]}>{topic.body}</Text></>:null}
+     <ScrollView key={section} style={s.topicScroll} contentContainerStyle={s.topicBody} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
+      <Text style={[s.intro,{color:C.muted}]}>{guide.body}</Text>
+      <GuideTopicAccordion topics={guide.topics} expandedIndex={topicIndex} onChange={setTopicIndex}/>
      </ScrollView>
     </View>}
    </View>
@@ -77,10 +71,9 @@ const s=StyleSheet.create({
  header:{flexDirection:'row',alignItems:'center',gap:9},flex:{flex:1,minWidth:0},icon:{width:42,height:42,borderWidth:1,borderRadius:10,alignItems:'center',justifyContent:'center'},
  eyebrow:{fontSize:10,fontWeight:'900',letterSpacing:.7},title:{fontSize:18,lineHeight:24,fontWeight:'800'},
  close:{width:44,height:44,borderWidth:1,borderRadius:10,alignItems:'center',justifyContent:'center'},closeText:{fontSize:22,lineHeight:27},
- body:{gap:13,paddingBottom:12},intro:{fontSize:12.5,lineHeight:19},group:{gap:7},groupTitle:{fontSize:11,fontWeight:'900',letterSpacing:.6},
+ body:{gap:13,paddingBottom:12},intro:{fontSize:13,lineHeight:20},group:{gap:7},groupTitle:{fontSize:11,fontWeight:'900',letterSpacing:.6},
  tiles:{flexDirection:'row',flexWrap:'wrap',gap:7},tile:{width:'48%',minWidth:130,flexGrow:1,gap:4,padding:10,minHeight:83,borderWidth:1,borderRadius:10,justifyContent:'center'},
  tileTitle:{fontSize:13,fontWeight:'800'},tileDescription:{fontSize:11,lineHeight:16},pressed:{opacity:.8},
- detail:{minHeight:190,maxHeight:'80%',flexShrink:1,gap:10},back:{minHeight:44,alignSelf:'flex-start',justifyContent:'center'},backText:{fontSize:12,fontWeight:'800'},
- topicRow:{gap:6,paddingVertical:2},topicButton:{minHeight:44,maxWidth:190,paddingHorizontal:10,paddingVertical:7,justifyContent:'center',borderWidth:1,borderRadius:9},
- topicLabel:{fontSize:12,fontWeight:'800'},topicScroll:{flexShrink:1,minHeight:0},topicBody:{gap:8,paddingBottom:8},topicHeading:{fontSize:15,lineHeight:21,fontWeight:'800'},topicText:{fontSize:13,lineHeight:21},
+ detail:{minHeight:0,flexShrink:1,gap:6},back:{minHeight:44,alignSelf:'flex-start',justifyContent:'center',paddingHorizontal:4},backText:{fontSize:12,fontWeight:'800'},
+ topicScroll:{flexShrink:1,minHeight:0},topicBody:{gap:10,paddingBottom:8},
 });

@@ -53,7 +53,7 @@ def displacement(x,y,p):
 
 def source_xy(x,y,p):
     sx,sy=x,y
-    for _ in range(8):
+    for _ in range(16):
         dx,dy=displacement(sx,sy,p)
         sx,sy=x-dx,y-dy
     return sx,sy
@@ -70,9 +70,9 @@ def warp(base,p):
 def base_pose(source):
     raw=source.crop((0,0,W,H)).convert("RGBA")
     crop=raw.crop(raw.getchannel("A").getbbox())
-    crop.thumbnail((112,104),Image.Resampling.LANCZOS)
+    crop.thumbnail((110,100),Image.Resampling.LANCZOS)
     base=Image.new("RGBA",(W,H))
-    base.alpha_composite(crop,((W-crop.width)//2,112-crop.height))
+    base.alpha_composite(crop,((W-crop.width)//2,114-crop.height))
     return base
 
 def visible(frame):
@@ -154,7 +154,7 @@ def main():
       "sha256":hashlib.sha256(target.read_bytes()).hexdigest(),"review_only":True}
     (args.out/"vharaxis_report.json").write_text(json.dumps(report,indent=2)+"\n")
     print(json.dumps(report,indent=2))
-    if target.stat().st_size>budget or unique<24 or peak<35 or seam>max(12,peak*.25):
+    if target.stat().st_size>budget or unique<24 or peak<max(35,max(original_motion)*1.25) or seam>max(12,peak*.25):
         raise SystemExit("Candidate did not meet preliminary asset budget, motion or seam gate; review artifacts before revising.")
     print("Preliminary technical gate passed; visual approval and device QA still required.")
 

@@ -16,6 +16,16 @@ import {useGameTheme} from '../theme/ThemeContext';
 import type {GuildBannerId,GuildFrameId} from '../core/guild-customization';
 import {GuildBannerArtwork} from './GuildHeraldry';
 
+// These three starter portraits have approximately 20–23% transparent canvas
+// around their meaningful silhouette, unlike the tightly framed starter portraits.
+// Calibrate only the artwork viewport: do not enlarge the identity frame or crop
+// guild crests, generic fallback icons, explicit portraits, or atlas cells.
+const COMPACT_PORTRAIT_SCALE:Readonly<Record<string,number>>={
+ 'starter:dune-warden':1.20,
+ 'starter:gilded-duelist':1.24,
+ 'starter:runic-scholar':1.24,
+};
+
 /** Use the selected public icon, then a class emblem or neutral account marker. */
 export function IdentityArtwork({name,accountId,profileIconId,className,portrait,size=44,guild=false}:{name:string;accountId?:string;profileIconId?:string|null;className?:string|null;portrait?:ImageSourcePropType;size?:number;guild?:boolean}){
  const language=useGameLanguage(),tr=(source:string,params?:Record<string,string|number>)=>visualText(language,source,params);
@@ -25,7 +35,10 @@ export function IdentityArtwork({name,accountId,profileIconId,className,portrait
  const selectedIcon=profileIconArtwork(iconId);
  const atlas=!portrait&&!guild&&!!profileCosmeticPortraitAtlasCell(iconId);
  const source=portrait??(guild?uiIcons.guild:selectedIcon??(classId?profileIconSource(undefined,classId):uiIcons.account));
- return <View accessibilityLabel={tr('{name} identity icon',{name})} style={[s.avatar,{width:size,height:size,borderRadius:Math.max(radii.sm,Math.round(size*.24))}]}>{atlas?<ProfileIcon id={iconId} classId={classId??'IRONWARDEN'} size={size-6}/>:<Image accessible={false} source={source} resizeMode="contain" style={{width:size-6,height:size-6}}/>}</View>;
+ const viewportSize=size-6;
+ const artworkScale=!portrait&&!guild&&selectedIcon&&iconId?(COMPACT_PORTRAIT_SCALE[iconId]??1):1;
+ const artworkSize=viewportSize*artworkScale;
+ return <View accessibilityLabel={tr('{name} identity icon',{name})} style={[s.avatar,{width:size,height:size,borderRadius:Math.max(radii.sm,Math.round(size*.24))}]}>{atlas?<ProfileIcon id={iconId} classId={classId??'IRONWARDEN'} size={viewportSize}/>:artworkScale===1?<Image accessible={false} source={source} resizeMode="contain" style={{width:viewportSize,height:viewportSize}}/>:<View style={{width:viewportSize,height:viewportSize,overflow:'hidden'}}><Image accessible={false} source={source} resizeMode="contain" style={{position:'absolute',width:artworkSize,height:artworkSize,left:(viewportSize-artworkSize)/2,top:(viewportSize-artworkSize)/2}}/></View>}</View>;
 }
 export function RoleBadge({role}:{role:PartyRole}){
  const language=useGameLanguage(),tr=(source:string,params?:Record<string,string|number>)=>visualText(language,source,params);

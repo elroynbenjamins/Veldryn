@@ -1,0 +1,36 @@
+name: Vharaxis pose candidate review
+on:
+  pull_request:
+    paths:
+      - 'tools/review-vharaxis-motion.py'
+      - '.github/workflows/vharaxis-pose-review.yml'
+      - 'apps/mobile/assets/ascendant/draconic/vharaxis_smooth_pose_atlas.webp'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            tools/review-vharaxis-motion.py
+            apps/mobile/assets/ascendant/draconic/vharaxis_smooth_pose_atlas.webp
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pinned image tooling
+        run: python -m pip install Pillow==11.3.0
+      - name: Generate and verify review-only pose atlas
+        run: python tools/review-vharaxis-motion.py --out "${{ runner.temp }}/vharaxis-review"
+      - name: Retain candidate, native-scale animation comparison and metrics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vharaxis-pose-review
+          path: ${{ runner.temp }}/vharaxis-review/
+          if-no-files-found: warn
+          retention-days: 14

@@ -56,7 +56,7 @@ export function OnlineGuildBrowser(){
      <View style={s.metaRow}><View style={s.levelPill}><Text style={s.levelText}>LV. {guild.level}</Text></View><View style={[s.policyPill,guild.join_policy==='open'?s.policyOpen:guild.join_policy==='apply'?s.policyApply:s.policyInvite]}><Text style={[s.policyPillText,guild.join_policy==='open'?s.policyOpenText:guild.join_policy==='apply'?s.policyApplyText:s.policyInviteText]}>{policyLabel}</Text></View><Text style={s.meta}>{typeof guild.member_count==='number'?guild.member_count+'/'+guild.member_cap:String(guild.member_cap)+' cap'} · Min Lv. {guild.minimum_level}</Text></View>
      {guild.motto?<Text numberOfLines={1} style={s.motto}>“{guild.motto}”</Text>:null}
     </View>
-    <View style={s.joinAction}><GameButton compact title={full?st("Guild Full"):guild.join_policy==='open'?st("Join"):guild.join_policy==='apply'?st("Apply"):st("Invite only")} tone="secondary" disabled={busy||full||guild.join_policy==='invite'} onPress={()=>join(guild)}/></View>
+    <View style={s.joinAction}><GameButton compact title={full?st("Full"):guild.join_policy==='open'?st("Join"):guild.join_policy==='apply'?st("Apply"):st("Invite only")} tone="secondary" disabled={busy||full||guild.join_policy==='invite'} onPress={()=>join(guild)}/></View>
    </View>;
   })}
  </Panel>;

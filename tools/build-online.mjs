@@ -15,6 +15,9 @@ const bundles=[
 ];
 // Check BOTH bundles before writing EITHER generated production artifact.
 // The private Combat 2.0 TypeScript backend tests still use the real V2 code.
+const args=process.argv.slice(2);
+if(args.length>1||(args.length===1&&args[0]!=='--verify'))throw Error('unknown_edge_build_argument');
+const verifyOnly=args.includes('--verify');
 const prepared=[];
 for(const bundle of bundles){
  const result=await require('esbuild').build({
@@ -33,6 +36,19 @@ for(const bundle of bundles){
  prepared.push({target:path.join(root,bundle.output),
   contents:result.outputFiles[0].contents,audit});
 }
+// Read-only parity must use the exact same compiler options and isolation
+// checks as regeneration. Never report a different, unfiltered bundle as canonical.
+if(verifyOnly){
+ for(const item of prepared){
+  const current=await fs.readFile(item.target);
+  const expected=Buffer.from(item.contents);
+  if(!current.equals(expected)){
+   let offset=0;while(offset<Math.min(current.length,expected.length)&&current[offset]===expected[offset])offset++;
+   console.error('STALE_EDGE_BUNDLE',path.relative(root,item.target),{offset,onDiskLength:current.length,rebuiltLength:expected.length});
+   process.exitCode=1;
+  }else console.log('PASS: canonical isolated Edge bundle matches',path.relative(root,item.target));
+ }
+}else{
 // Stage BOTH outputs before replacing EITHER production artifact. A failed
 // compilation or disk write cannot leave only one newly generated function.
 const staged=[];
@@ -48,4 +64,6 @@ try{
  }
 }finally{
  await Promise.all(staged.map(item=>fs.rm(item.temp,{force:true})));
+}
+
 }

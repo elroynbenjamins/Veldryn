@@ -25,6 +25,8 @@ import {soloOffensiveProgressionReviewV2,type SoloProgressionArm} from './solo-o
 import {COMPLETION_BOSSES_REVIEW_V2,createCompletionBossReviewV2,type CompletionBossArmV2} from './regional-completion-boss-review';
 import {completionBossPressureReviewV2,completionBossOffenseReviewV2} from './regional-completion-counterplay-review';
 import {runRegionalCompletionLedgerReviewV2} from './regional-completion-ledger-boundaries';
+import {createCompletionLedgerReviewV2,reviewCompletionVictoryV2,completionAccessReviewV2} from './regional-completion-ledger-review';
+import {completionEventDigestReviewV2,replayRegionalCompletionReceiptReviewV2} from './regional-completion-engine-receipt-review';
 import {runCompletionTransactionReviewV2} from './regional-completion-transaction-boundaries';
 import {STAT_GEMS_V1,EFFECT_GEMS_V1,gemItemId,type GemGrade,GEM_BALANCE_REVIEW_V2,STAT_GEM_BASELINE_REVIEW_V2,STAT_GEMS_REVIEW_V2,EFFECT_GEMS_REVIEW_V2,EFFECT_GEM_REVIEW_MULTIPLIERS_V2} from '../../../equipment/gems/gem-catalog-v1';
 import type {V2GemSidecarState} from '../../../equipment/equipment-crafting-v2-gem-sidecar-types';
@@ -64,7 +66,7 @@ import {inspectFrozenForgeCombatHandoffV2} from '../equipment-frozen-forge-hando
 import {simulateOriginalForgeAuthoredBossReviewV2}
  from '../equipment-original-forge-authored-boss';
 import {prepareSoloEnemyKitsV2,verifyPersistedEnemyKitsV2} from '../enemy-kit-composer';
-import {issueEnemyV2EngineAuthority} from '../enemy-engine-authority';
+import {issueEnemyV2EngineAuthority,enemyV2SnapshotDigest} from '../enemy-engine-authority';
 import {simulateCombat} from '../../engine';
 import {issueEq2PrivateHitQaV22,type Eq2PrivateHitIdV22} from '../equipment-private-hit-qa-v22';
 import {runPrivateConditionalBoundaries,runPrivateSupportBoundaries} from './equipment-private-conditional-boundaries';
@@ -2667,6 +2669,9 @@ runRegionalCompletionLedgerReviewV2();
 // Separate fresh QA issuer binds the exact authored input; no changes to
 // dungeon composer allowlist, actual persistence, rewards or progression.
 {
+ const receiptIdentity={accountId:'QA_COMPLETION_ACCOUNT',characterId:'QA_COMPLETION_CHARACTER'};
+ let receiptLedger=createCompletionLedgerReviewV2(receiptIdentity);
+ let engineReceipts=0;
  const arms:CompletionBossArmV2[]=['reference','mechanics','mixed'];
  const counterArms=['mixed_counter','pressure_counter','pressure_default','pressure_offensive','pressure_counter_basic'] as const;
  type CounterArm=typeof counterArms[number];
@@ -2728,6 +2733,25 @@ runRegionalCompletionLedgerReviewV2();
      assert.deepEqual(simulateCombat(input,authority),result);
      assert.throws(()=>simulateCombat({...input,maxDurationMs:119900},authority),/scope_does_not_match/);
      assert.throws(()=>soloOffensiveProgressionReviewV2(row.classId,input,'offensive_progression'),/fresh_solo_only/);
+    }
+    if(row.classId==='IRONWARDEN'&&row.spec===0&&seedIndex===0&&row.gear==='pinned_reference'&&arm==='mechanics'){
+     const reservation=Object.freeze({...receiptIdentity,actorId:actor.id,receiptId:'QA_RC_'+profile.id,
+      bossId:profile.id,inputDigest:enemyV2SnapshotDigest(input),startedAtMs:1000000+profile.level*100000,revision:1});
+     const verify=(r:typeof reservation)=>enemyV2SnapshotDigest(r)===enemyV2SnapshotDigest(reservation);
+     const receipt=replayRegionalCompletionReceiptReviewV2(reservation,input,verify);
+     assert.equal(receipt.eventDigest,completionEventDigestReviewV2(result));
+     assert.deepEqual(replayRegionalCompletionReceiptReviewV2(reservation,input,verify),receipt);
+     assert.throws(()=>replayRegionalCompletionReceiptReviewV2(reservation,{...input,seed:input.seed+'_changed'},verify),/reservation_mismatch/);
+     assert.throws(()=>replayRegionalCompletionReceiptReviewV2(reservation,input,()=>false),/reservation_unverified/);
+     assert.throws(()=>replayRegionalCompletionReceiptReviewV2({...reservation,characterId:'QA_OTHER'},input,verify),/reservation_unverified/);
+     const verifyReceipt=(r:typeof receipt)=>enemyV2SnapshotDigest(r)===enemyV2SnapshotDigest(receipt);
+     assert.throws(()=>reviewCompletionVictoryV2(receiptLedger,{...receipt,eventDigest:'0'.repeat(64)},verifyReceipt),/unverified_completion_victory/);
+     const applied=reviewCompletionVictoryV2(receiptLedger,receipt,verifyReceipt);
+     assert.equal(applied.duplicate,false);assert.equal(applied.grant,false);
+     receiptLedger=applied.ledger;
+     const replay=reviewCompletionVictoryV2(receiptLedger,receipt,verifyReceipt);
+     assert.equal(replay.duplicate,true);assert.equal(replay.ledger,receiptLedger);
+     engineReceipts++;
     }
     assert.ok(result.events.every(e=>e.amount===undefined||Number.isFinite(e.amount)));
     assert.ok(result.players[0].hp>=0&&result.players[0].hp<=actor.stats.maxHp+1e-8);
@@ -2801,6 +2825,10 @@ runRegionalCompletionLedgerReviewV2();
    }
   }
  }
+ assert.equal(engineReceipts,3);
+ const receiptAccess=completionAccessReviewV2(receiptLedger);
+ assert.ok(receiptAccess.sunscar&&receiptAccess.frostmarch&&receiptAccess.frostCompletionRecorded&&!receiptAccess.region4&&!receiptAccess.rewardEnabled&&!receiptAccess.releaseEnabled);
+ console.log('REGIONAL_ENGINE_RECEIPT_REVIEW '+JSON.stringify({engineReceipts,orderedLedger:true,exactReplay:true,changedInputRejected:true,wrongCharacterRejected:true,productionIssuer:false,releaseEnabled:false}));
  assert.equal(rows.length,864);
  const keys=[...new Set(rows.map(r=>r.boss+'|'+r.classId+'|'+r.profile+'|'+r.arm))].sort();
  assert.equal(keys.length,216);

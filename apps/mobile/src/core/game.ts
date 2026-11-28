@@ -1295,7 +1295,7 @@ function claimActivitySegmentRaw(state:GameState,nowMs:number){
     const routed=routeRewards(state,reward.items,nowMs);
     const skills=state.skills.map(x=>x.skillId==='alchemy'?{...x,xp:Math.min(totalXpAtLevel(100),x.xp+(reward.xp??0)),level:levelFromXp(Math.min(totalXpAtLevel(100),x.xp+(reward.xp??0)))}:x);
     const nextBase={...state,...routed,skills,rewardRemainders:reward.nextRewardRemainders,activity:reward.nextBrewRemaining?{...state.activity,lastClaimAtMs:nowMs,progressFraction:reward.nextProgressFraction,brew:{...brew,remainingBatches:reward.nextBrewRemaining}}:null} as GameState;
-    const actions=reward.craftingActions??0,withCraftLedger=isWinterHearthLightRecipe(processing.recipeId)?recordWinterHearthCompletedBatches(nextBase,source.startedAtMs,actions):nextBase,next=commitDailySupplyTimedBoost(withCraftLedger,boost);
+    const actions=reward.craftingActions??0,next=commitDailySupplyTimedBoost(nextBase,boost);
     const progressed=actions>0?applyTrustedLongTermProgression(next,[{kind:'crafting',contentId:brew.recipeId,units:actions,skillId:'alchemy',startedAtMs:state.activity.lastClaimAtMs}],reward,nowMs,{accountId:longTermAccountScope(state),eventId:`alchemy:${state.character?.id??'unknown'}:${brew.recipeId}:${state.activity.lastClaimAtMs}:${nowMs}`}).state:next;
     const eventApplied=applyEventDiscoveries(applyEventDrops(progressed,reward.eventDrops??[]),reward.eventDiscoveries??[]);
     const queuedState=!reward.nextBrewRemaining&&(source.queueManaged||state.character?.activityQueue?.length)?startFinishedQueuedActivity(eventApplied,nowMs):eventApplied;
@@ -1309,7 +1309,7 @@ function claimActivitySegmentRaw(state:GameState,nowMs:number){
     const routed=routeRewards(state,[...reward.items,...(refund?.items??[])],nowMs),nextXp=(state.skills.find(x=>x.skillId===processing.skillId)?.xp??0)+(reward.xp??0);
     const skills=state.skills.map(x=>x.skillId===processing.skillId?{...x,xp:Math.min(totalXpAtLevel(100),nextXp),level:levelFromXp(Math.min(totalXpAtLevel(100),nextXp))}:x);
     const nextBase={...state,...routed,skills,...(refund&&state.character?{character:{...state.character,gold:state.character.gold+refund.gold}}:{}),rewardRemainders:reward.nextRewardRemainders,activity:!window.expired&&reward.nextProcessingRemaining?{...state.activity,lastClaimAtMs:nowMs,progressFraction:reward.nextProgressFraction,processing:{...processing,remainingBatches:reward.nextProcessingRemaining}}:null} as GameState;
-    const next=commitDailySupplyTimedBoost(nextBase,boost),actions=reward.craftingActions??0;
+    const actions=reward.craftingActions??0,withCraftLedger=isWinterHearthLightRecipe(processing.recipeId)?recordWinterHearthCompletedBatches(nextBase,source.startedAtMs,actions):nextBase,next=commitDailySupplyTimedBoost(withCraftLedger,boost);
     let progressed=actions>0?applyTrustedLongTermProgression(next,[{kind:'crafting',contentId:processing.recipeId,units:actions,skillId:processing.skillId,startedAtMs:state.activity.lastClaimAtMs}],reward,nowMs,{accountId:longTermAccountScope(state),eventId:`processing:${state.character?.id??'unknown'}:${processing.recipeId}:${state.activity.lastClaimAtMs}:${nowMs}`}).state:next;
     progressed=applyEventDiscoveries(applyEventDrops(progressed,reward.eventDrops??[]),reward.eventDiscoveries??[]);
     progressed=refreshQuests(progressed);

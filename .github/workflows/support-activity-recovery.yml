@@ -1,0 +1,28 @@
+name: Support activity recovery validation
+on:
+  pull_request:
+    paths:
+      - 'backend/online/support-activity-*.ts'
+      - 'backend/online/tests/support-activity-recovery.ts'
+      - 'backend/package.json'
+      - '.github/workflows/support-activity-recovery.yml'
+      - 'control-center/backend_integration/support-activity-recovery*'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - run: pnpm --dir backend install --frozen-lockfile
+      - run: pnpm --dir apps/mobile install --frozen-lockfile
+      - run: pnpm --dir backend exec tsc -p tsconfig.online.json
+      - run: node backend/dist/online/backend/online/tests/support-activity-recovery.js

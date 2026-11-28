@@ -30,8 +30,8 @@ ok(modal.includes('activeSocketKind')&&modal.includes('effectGems')&&modal.inclu
 ok(modal.includes('compactStatGrid')&&modal.includes('compactCostGrid')&&modal.includes('compactChance'),'Enhancement must reveal gains, owned materials and chance without opening details');
 ok(modal.includes('gemPickerOpen')&&modal.includes('compactSocket')&&modal.includes('compactCandidateSelected'),'Gem management must show sockets before opening the filtered compare picker');
 ok(slots.includes('statGemFilled')&&slots.includes('effectGemFilled'),'Equipment tiles must show separate Stat/Effect pips');
-ok(character.includes('equipmentTool===\'gems\'')&&character.includes('selectedDecision?.sockets.statFilled')&&character.includes('selectedDecision?.sockets.effectFilled')&&character.includes("openEnhancement('gems')"),'Character Gems tool must show named socket status and preserve management access');
-ok(character.includes("accessibilityLabel={profileT(language,'Stat Gem')")&&character.includes("accessibilityLabel={profileT(language,'Effect Gem')")&&character.includes("onPress={()=>openEnhancement('gems')}"),'Named gem socket rows must be directly actionable without an extra management button');
+ok(character.includes("selectedDecision.sockets.capacity>0")&&character.includes("selectedEnhancement?.statGemId")&&character.includes("selectedEnhancement?.effectGemId")&&character.includes("selectedDecision.sockets.filled")&&character.includes("openEnhancement('gems')"),'Character item card must show both named sockets and occupancy, with management access');
+ok(character.includes("(['stat','effect'] as const).map")&&character.includes("accessibilityLabel={profileT(language,kind==='stat'?'Stat Gem':'Effect Gem')")&&character.includes("onPress={()=>openEnhancement('gems')}"),'Both named gem socket rows must be directly actionable');
 ok(!character.includes("<GameButton compact title={profileText(language,'Manage gems')}"),'Gem tool should not repeat a redundant Manage Gems action beneath clickable sockets');
 ok(inspect.includes("1 Stat + 1 Effect"),'Quick inspect must describe named socket structure');
 

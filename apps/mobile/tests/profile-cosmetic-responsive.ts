@@ -32,6 +32,18 @@ for(const format of FORMATS){
   ok(p.x>=-.001&&p.y>=-.001&&p.width>0&&p.height>0,name+' clipped frame segment is valid');
   ok(p.x+p.width<=width+.001&&p.y+p.height<=height+.001,name+' frame art stays inside surface');
  }
+ // Inward corner details must survive the same stencil at top and bottom,
+ // while the centre of the scene remains clear of frame art.
+ const cornerScale=Math.min(1,width/300,height/205);
+ const inset=35*cornerScale;
+ for(const [x,y] of [[inset,inset],[width-inset,inset],[inset,height-inset],[width-inset,height-inset]]){
+  ok(zones.some(z=>x>=z.x&&x<=z.x+z.width&&y>=z.y&&y<=z.y+z.height),name+' inward corner is inside the safe stencil');
+  ok(clipped.some(p=>x>=p.x&&x<=p.x+p.width&&y>=p.y&&y<=p.y+p.height),name+' inward corner keeps its original artwork');
+ }
+ for(const z of zones){
+  ok(zones.some(m=>Math.abs(m.x-z.x)<.001&&Math.abs(m.y-(height-z.y-z.height))<.001&&Math.abs(m.width-z.width)<.001&&Math.abs(m.height-z.height)<.001),name+' top and bottom stencil allowances are symmetric');
+ }
+ ok(!zones.some(z=>width/2>=z.x&&width/2<=z.x+z.width&&height/2>=z.y&&height/2<=z.y+z.height),name+' central profile content remains outside the border stencil');
  for(const collection of PROFILE_COSMETIC_RUNTIME){
   for(const track of collection.tracks){
    for(let step=0;step<=120;step++){

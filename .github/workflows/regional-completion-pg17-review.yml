@@ -1,0 +1,35 @@
+name: Regional completion 2.0 PostgreSQL review (private)
+on:
+  pull_request:
+    paths:
+      - 'tools/qa/regional-completion-pg17-*'
+      - '.github/workflows/regional-completion-pg17-review.yml'
+permissions:
+  contents: read
+jobs:
+  disposable-pg17:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: local_review_only
+          POSTGRES_DB: regional_completion_review
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d regional_completion_review"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: local_review_only
+      PGDATABASE: regional_completion_review
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash tools/qa/regional-completion-pg17-review.sh

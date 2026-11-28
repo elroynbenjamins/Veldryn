@@ -80,6 +80,17 @@ ok(homeActions.includes("weekGrid:{flexDirection:'row',gap:8}")&&homeActions.inc
 
 ok(discovery.includes("guildPolicy(selected)==='FULL'")&&discovery.includes('selected.member_count'), 'Full Guilds must be labeled correctly and cannot accept new joins');
 ok(onlineSocial.includes("guild_directory_v1")&&onlineSocial.includes("PGRST202"),'Guild directory must use the private-roster-safe projection and retain rollout fallback');
+const capacityMigration=read('../../backend/supabase/migrations/20261128085900_guild_effective_details_projection.sql');
+const guildBrowser=read('src/components/OnlineGuildBrowser.tsx');
+ok(capacityMigration.includes("'member_cap',public.guild_member_cap_effective_server_v1(g.id)")&&capacityMigration.includes("'member_count',(select count(*)::integer"),'Guild details must return effective capacity and aggregate occupancy from the same server snapshot');
+ok(capacityMigration.includes('auth.uid() is not null and g.id=p_guild_id')&&capacityMigration.includes('from public, anon, authenticated')&&capacityMigration.includes('to authenticated;'),'Exact Guild detail reads must be signed-in only and never return private roster rows');
+ok(onlineSocial.includes("rpc('guild_details_v2',{p_guild_id:guildId})")&&!onlineSocial.includes('readGuildProjection('),'Own Guild details must not read raw guilds.member_cap');
+ok(onlineSocial.includes("browseGuilds(){return searchOnlineGuilds('','all',25);}")&&onlineSocial.includes('p_limit:limit'),'Legacy browser must use the effective directory capacity with the existing result limit');
+ok(memberIdentity.includes('details.member_count??await ownGuildMemberCount'),'Home occupancy must use the same server snapshot as effective capacity');
+ok(discovery.includes('invite.memberCount>=invite.memberCap')&&discovery.includes("guildPolicy(selected)==='FULL'"),'Full Guild invitations and joins must not offer an active accept action');
+ok(management.includes('accept&&members.length>=guild.member_cap')&&management.includes('disabled={busy||members.length>=guild.member_cap}'),'Full Guilds must reject application approval in both the handler and UI');
+ok(guildBrowser.includes('disabled={busy||full||')&&guildBrowser.includes('guild.member_count>=guild.member_cap'),'Legacy directory must block joining full Guilds');
+ok(screen.includes("onlineSection==='Home'?<GuildOnlineHome")&&screen.includes("onlineSection==='Roster'?"),'Home and Roster should remount and fetch fresh details when revisited after a Guild Skill upgrade');
 ok(management.includes('Search Guild members')&&management.includes('members.filter(member=>')&&management.includes('<GameTextInput'),
  'Guild roster search must use the shared theme-aware input and filter the authoritative roster');
 ok(management.includes("view==='Safety'&&leadership")&&management.includes("Number(leadership.inactiveDays??0)>=14"),'Succession safety must stay in the explicit Membership view and emphasize only threshold warnings');

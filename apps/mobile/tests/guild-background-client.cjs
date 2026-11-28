@@ -19,7 +19,17 @@ const input={backgroundId:'plain',bannerId:'world_tree_green',borderId:'classic'
    ?{error:{code:'42703',message:'column background_id does not exist'}}
    :{data:[{id:'guild'}],error:null}})};
  }};
- const read=load({from:()=>mockTable});
+ const read=load({rpc:async(name,args)=>{assert.equal(name,'guild_directory_v1');assert.equal(args.p_filter,'all');assert.equal(args.p_limit,25);return {data:null,error:{code:'PGRST202'}}},from:()=>mockTable});
+ const projected=load({rpc:async(name,args)=>{
+  if(name==='guild_directory_v1'){assert.equal(args.p_limit,25);return {data:[{id:'guild',member_cap:14,member_count:13}],error:null};}
+  assert.equal(name,'guild_details_v2');assert.equal(args.p_guild_id,'guild');return {data:{id:'guild',member_cap:14,member_count:13},error:null};
+ },from:()=>{throw Error('Authoritative projection must not fall back on success')}});
+ assert.equal((await projected.browseGuilds())[0].member_cap,14);
+ assert.equal((await projected.guildDetails('guild')).member_count,13);
+ const missing=load({rpc:async()=>({data:null,error:{code:'PGRST202'}}),from:()=>{throw Error('Exact details must fail closed')}});
+ await assert.rejects(()=>missing.guildDetails('guild'));
+ const mismatch=load({rpc:async()=>({data:{id:'other'},error:null})});
+ await assert.rejects(()=>mismatch.guildDetails('guild'),/Guild details unavailable/);
  assert.equal((await read.browseGuilds())[0].id,'guild');assert.equal(selects.length,2);assert.ok(!selects[1].includes('background_id'));
  console.log('PASS: guild background RPC round trip, missing-deployment rejection and no false save success');
 })().catch(error=>{console.error(error);process.exitCode=1});

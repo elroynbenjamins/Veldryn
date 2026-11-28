@@ -138,24 +138,16 @@ export async function worldMessages(channelId:string){const client=requireClient
 export function worldChatCommandKey(){return `world-chat-${Date.now()}-${Math.random().toString(36).slice(2,14)}`;}
 export async function postWorldMessage(channelId:string,body:string,senderName:string,idempotencyKey:string){const client=requireClient();const clean=body.trim();if(!clean)throw new Error('Write a message first.');const {data,error}=await client.rpc('send_world_chat_v2',{p_channel_id:channelId,p_body:clean,p_sender_name:senderName.slice(0,20)||'Adventurer',p_idempotency_key:idempotencyKey});if(error)throw error;return data as string;}
 const guildFields='id,name,tag,tag_color_id,level,member_cap,minimum_level,join_policy,banner_id,profile_frame_id,name_color_id,nameplate_id,motto';
-async function readGuildProjection(guildId?:string){
- const client=requireClient();
- const query=(fields:string)=>guildId?client.from('guilds').select(fields).eq('id',guildId).single():client.from('guilds').select(fields).order('level',{ascending:false}).limit(25);
- let result=await query(guildFields+',background_id');
- // Keep the existing directory usable during a staged server/client rollout.
- if(result.error&&['42703','PGRST204'].includes(result.error.code)&&result.error.message.includes('background_id'))result=await query(guildFields);
- if(result.error)throw result.error;
- return result.data;
-}
-export async function browseGuilds(){return (await readGuildProjection()??[]) as unknown as OnlineGuild[];}
+/** All list capacity is supplied by the same server projection used by recruitment. */
+export async function browseGuilds(){return searchOnlineGuilds('','all',25);}
 /** Search the actual directory, not just the top 25 cached guilds. */
-export async function searchOnlineGuilds(search='',filter:'recruiting'|'open'|'apply'|'all'='recruiting'){
+export async function searchOnlineGuilds(search='',filter:'recruiting'|'open'|'apply'|'all'='recruiting',limit=50){
  const client=requireClient();
  // A new member-count projection keeps private Guild rosters undisclosed.
  // Older deployments still use the original directory query.
 
  const clean=search.trim().replace(/[^a-zA-Z0-9 '\-]/g,'').slice(0,40);
- const directory=await client.rpc('guild_directory_v1',{p_search:clean,p_filter:filter,p_limit:50});
+ const directory=await client.rpc('guild_directory_v1',{p_search:clean,p_filter:filter,p_limit:limit});
  if(!directory.error)return (directory.data??[]) as unknown as OnlineGuild[];
  if(!['PGRST202','42883'].includes(directory.error.code??''))throw directory.error;
  const build=(fields:string)=>{
@@ -163,7 +155,7 @@ export async function searchOnlineGuilds(search='',filter:'recruiting'|'open'|'a
   if(filter==='recruiting')query=query.in('join_policy',['open','apply']);
   else if(filter!=='all')query=query.eq('join_policy',filter);
   if(clean)query=query.or(`name.ilike.%${clean}%,tag.ilike.%${clean}%`);
-  return query.order('level',{ascending:false}).limit(50);
+  return query.order('level',{ascending:false}).limit(limit);
  };
  let result=await build(guildFields+',background_id');
  if(result.error&&['42703','PGRST204'].includes(result.error.code)&&result.error.message.includes('background_id'))result=await build(guildFields);
@@ -217,7 +209,13 @@ export async function guildRoster(guildId:string){
 export async function guildApplications(guildId:string){const client=requireClient();const {data,error}=await client.from('guild_applications').select('id,account_id,created_at,status').eq('guild_id',guildId).eq('status','pending').order('created_at');if(error)throw error;return (data??[]) as GuildApplication[];}
 export async function reviewGuildApplication(applicationId:string,accept:boolean){const client=requireClient();const {data,error}=await client.rpc('review_guild_application',{p_application_id:applicationId,p_accept:accept});if(error)throw error;return data as 'accepted'|'declined';}
 export async function myGuild(){const client=requireClient();const {data:{session},error:userError}=await client.auth.getSession();if(userError)throw userError;const user=session?.user;if(!user)throw new Error('Sign in before viewing a guild.');const {data,error}=await client.from('guild_members').select('guild_id,role').eq('account_id',user.id).maybeSingle();if(error)throw error;return data?{...(data as {guild_id:string;role:'leader'|'officer'|'member'}),account_id:user.id}:null;}
-export async function guildDetails(guildId:string){return await readGuildProjection(guildId) as unknown as OnlineGuild;}
+export async function guildDetails(guildId:string):Promise<OnlineGuild>{
+ const client=requireClient();
+ const {data,error}=await client.rpc('guild_details_v2',{p_guild_id:guildId});
+ if(error)throw error;
+ if(!data||data.id!==guildId)throw new Error('Guild details unavailable.');
+ return data as unknown as OnlineGuild;
+}
 export async function updateGuildCustomization(input:{bannerId:GuildBannerId;profileFrameId:GuildFrameId;nameplateId:GuildNameplateId;motto:string}){const client=requireClient();const {data,error}=await client.rpc('update_guild_customization',{p_banner_id:input.bannerId,p_profile_frame_id:input.profileFrameId,p_nameplate_id:input.nameplateId,p_motto:input.motto});if(error)throw error;return (data?.[0]??null) as {guild_id:string;banner_id:GuildBannerId;profile_frame_id:GuildFrameId;nameplate_id:GuildNameplateId;motto:string}|null;}
 export async function guildAppearanceEntitlements(){
  const client=requireClient();

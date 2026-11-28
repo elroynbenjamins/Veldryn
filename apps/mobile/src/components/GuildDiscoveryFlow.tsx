@@ -98,7 +98,7 @@ export function GuildDiscoveryFlow({onJoined}:{onJoined:()=>void}){
   finally{setBusy(false)}
  };
  const respondInvite=async(invite:GuildInvitationView,accept:boolean)=>{
-  if(busy||(accept&&(levelLoading||levelLocked(invite.minimumLevel))))return;
+  if(busy||(accept&&(levelLoading||levelLocked(invite.minimumLevel)||invite.memberCount>=invite.memberCap)))return;
   setBusy(true);setError('');
   try{
    await respondGuildInvitation(invite.id,accept);
@@ -138,7 +138,7 @@ export function GuildDiscoveryFlow({onJoined}:{onJoined:()=>void}){
     <View style={s.sectionRow}><Text style={s.section}>INVITATIONS</Text><StatusPill label={String(invites.length)+' PENDING'} tone="info"/></View>
     {invites.map(invite=><View key={invite.id} style={s.invite}>
      <View style={s.flex}><Text style={s.guildName}>{invite.guildName}{invite.guildTag?' ['+invite.guildTag+']':''}</Text><Text style={s.muted}>Invited by {invite.inviterName} · {invite.memberCount}/{invite.memberCap} members · Join Lv. {requiredGuildJoinLevel(invite.minimumLevel)}</Text>{levelLocked(invite.minimumLevel)?<Text style={s.levelHint}>{guildJoinRequirementText(playerLevel,invite.minimumLevel)}</Text>:null}</View>
-     <View style={s.inviteActions}><GameButton compact title={levelLocked(invite.minimumLevel)?`Unlock Lv. ${requiredGuildJoinLevel(invite.minimumLevel)}`:"Accept"} loading={busy} disabled={busy||levelLoading||levelLocked(invite.minimumLevel)} onPress={()=>void respondInvite(invite,true)}/><GameButton compact tone="secondary" title="Decline" loading={busy} disabled={busy} onPress={()=>void respondInvite(invite,false)}/></View>
+     <View style={s.inviteActions}><GameButton compact title={invite.memberCount>=invite.memberCap?"Guild Full":levelLocked(invite.minimumLevel)?`Unlock Lv. ${requiredGuildJoinLevel(invite.minimumLevel)}`:"Accept"} loading={busy} disabled={busy||levelLoading||levelLocked(invite.minimumLevel)||invite.memberCount>=invite.memberCap} onPress={()=>void respondInvite(invite,true)}/><GameButton compact tone="secondary" title="Decline" loading={busy} disabled={busy} onPress={()=>void respondInvite(invite,false)}/></View>
     </View>)}
    </Panel>:null}
    {pending.length?<Panel>

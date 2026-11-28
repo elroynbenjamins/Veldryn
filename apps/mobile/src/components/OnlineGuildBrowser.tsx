@@ -24,7 +24,7 @@ export function OnlineGuildBrowser(){
  useEffect(()=>{void load()},[]);useEffect(()=>setTagStatus(null),[tag]);if(!onlineConfigured)return null;
  const nameIssue=name?guildNameError(name):'';
  const checkTag=async()=>{setBusy(true);try{const result=await guildTagAvailability(tag);setTagStatus(result);return result}catch(error){gameAlert.alert(st("Guild tag"),error instanceof Error?error.message:st("Unable to check that tag."));return null}finally{setBusy(false)}};
- const join=async(guild:OnlineGuild)=>{setBusy(true);try{const result=await requestGuildMembership(guild.id);gameAlert.alert(result==='joined'?'Guild joined':'Application sent',result==='joined'?`You joined ${guild.name}.`:`${guild.name} will review your application.`);await load()}catch(error){gameAlert.alert(st("Guilds"),error instanceof Error?error.message:st("Unable to join guild."))}finally{setBusy(false)}};
+ const join=async(guild:OnlineGuild)=>{if(busy||(typeof guild.member_count==='number'&&guild.member_count>=guild.member_cap))return;setBusy(true);try{const result=await requestGuildMembership(guild.id);gameAlert.alert(result==='joined'?'Guild joined':'Application sent',result==='joined'?`You joined ${guild.name}.`:`${guild.name} will review your application.`);await load()}catch(error){gameAlert.alert(st("Guilds"),error instanceof Error?error.message:st("Unable to join guild."))}finally{setBusy(false)}};
  const create=async()=>{setBusy(true);try{const status=tagStatus?.normalizedTag===normalizeGuildTag(tag)?tagStatus:await guildTagAvailability(tag);setTagStatus(status);if(!status.available)throw new Error(guildTagAvailabilityMessage(status));await createOnlineGuild(normalizeGuildName(name),status.normalizedTag!,policy,1);setName('');setTag('');setTagStatus(null);setShowCreate(false);gameAlert.alert(st("Guild created"),st("Your guild tag is permanently reserved and visible with your guild identity."));await load()}catch(error){gameAlert.alert(st("Create guild"),error instanceof Error?error.message:st("Unable to create guild."))}finally{setBusy(false)}};
 
  return <Panel>
@@ -47,15 +47,16 @@ export function OnlineGuildBrowser(){
   {loaded&&!guilds.length?<View style={s.emptyCard}><Text style={s.emptyTitle}>{st("No online Guilds yet")}</Text><Text style={s.empty}>{st("Create the first Guild, or refresh after other players have founded one.")}</Text></View>:null}
   {guilds.map(guild=>{
    const nameColor=GUILD_NAME_COLORS.find(row=>row.id===normalizeGuildNameColorId(guild.name_color_id))?.color??C.text;
-   const policyLabel=guild.join_policy==='open'?'OPEN':guild.join_policy==='apply'?'APPLICATION':'INVITE ONLY';
+   const full=typeof guild.member_count==='number'&&guild.member_count>=guild.member_cap;
+   const policyLabel=full?'FULL':guild.join_policy==='open'?'OPEN':guild.join_policy==='apply'?'APPLICATION':'INVITE ONLY';
    return <View key={guild.id} style={s.guildCard}>
     <GuildCrest size={44} bannerId={guild.banner_id} frameId={guild.profile_frame_id}/>
     <View style={s.copy}>
      <GuildTaggedPlayerName name={guild.name} guildTag={guild.tag} tagColorId={guild.tag_color_id} style={[s.name,{color:nameColor}]}/>
-     <View style={s.metaRow}><View style={s.levelPill}><Text style={s.levelText}>LV. {guild.level}</Text></View><View style={[s.policyPill,guild.join_policy==='open'?s.policyOpen:guild.join_policy==='apply'?s.policyApply:s.policyInvite]}><Text style={[s.policyPillText,guild.join_policy==='open'?s.policyOpenText:guild.join_policy==='apply'?s.policyApplyText:s.policyInviteText]}>{policyLabel}</Text></View><Text style={s.meta}>{guild.member_cap} cap · Min Lv. {guild.minimum_level}</Text></View>
+     <View style={s.metaRow}><View style={s.levelPill}><Text style={s.levelText}>LV. {guild.level}</Text></View><View style={[s.policyPill,guild.join_policy==='open'?s.policyOpen:guild.join_policy==='apply'?s.policyApply:s.policyInvite]}><Text style={[s.policyPillText,guild.join_policy==='open'?s.policyOpenText:guild.join_policy==='apply'?s.policyApplyText:s.policyInviteText]}>{policyLabel}</Text></View><Text style={s.meta}>{typeof guild.member_count==='number'?guild.member_count+'/'+guild.member_cap:String(guild.member_cap)+' cap'} · Min Lv. {guild.minimum_level}</Text></View>
      {guild.motto?<Text numberOfLines={1} style={s.motto}>“{guild.motto}”</Text>:null}
     </View>
-    <View style={s.joinAction}><GameButton compact title={guild.join_policy==='open'?st("Join"):guild.join_policy==='apply'?st("Apply"):st("Invite only")} tone="secondary" disabled={busy||guild.join_policy==='invite'} onPress={()=>join(guild)}/></View>
+    <View style={s.joinAction}><GameButton compact title={full?st("Full"):guild.join_policy==='open'?st("Join"):guild.join_policy==='apply'?st("Apply"):st("Invite only")} tone="secondary" disabled={busy||full||guild.join_policy==='invite'} onPress={()=>join(guild)}/></View>
    </View>;
   })}
  </Panel>;

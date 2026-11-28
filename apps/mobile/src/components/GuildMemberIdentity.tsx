@@ -31,7 +31,8 @@ export function GuildMemberIdentity({onRoster,onManage}:{onRoster?:()=>void;onMa
     const details=await guildDetails(mine.guild_id);
     if(!active)return;
     setGuild(details);setRole(mine.role);setFailure(false);
-    const count=await ownGuildMemberCount(mine.guild_id).catch(()=>null);
+    // Prefer count and effective capacity from the same authoritative snapshot.
+    const count=details.member_count??await ownGuildMemberCount(mine.guild_id).catch(()=>null);
     if(active)setMembers(count);
    }catch{if(active)setFailure(true)}
   })();

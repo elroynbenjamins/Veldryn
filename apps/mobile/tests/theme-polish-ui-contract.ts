@@ -8,11 +8,10 @@ const theme=read('src/theme/theme.ts');
 const startup=read('src/components/StartupScreen.tsx');
 const app=read('App.tsx');
 ok(startup.includes('resolveTheme')&&startup.includes('bridgeSurface')&&startup.includes('themeId?:UiThemeId'),'Startup loading art must bridge into the active interface theme');
-const transition=app.slice(app.indexOf('startupOpacity.stopAnimation();appEntranceOpacity.stopAnimation();appEntranceY.stopAnimation();'),app.indexOf('},[startupBlocking,state?.settings.reduceMotion'));
-ok(transition.includes('Animated.parallel([')&&transition.includes('Animated.timing(startupOpacity,{toValue:0,duration:240,useNativeDriver:true})')&&transition.includes('Animated.timing(appEntranceOpacity,{toValue:1,duration:260,useNativeDriver:true})')&&transition.includes('Animated.timing(appEntranceY,{toValue:0,duration:260,useNativeDriver:true})')&&transition.includes('if(finished)setStartupOverlayVisible(false)')&&!transition.includes('setTimeout('),'Startup must cross-fade immediately once ready, with no artificial delay');
-ok(transition.includes('if(reduced){startupOpacity.setValue(0);setStartupOverlayVisible(false);return;}')&&transition.includes('return()=>{startupOpacity.stopAnimation();appEntranceOpacity.stopAnimation();appEntranceY.stopAnimation();}'),'Startup must preserve reduced-motion and animation cleanup behavior');
-ok(app.includes('appEntranceOpacity')&&app.includes('appEntranceY'),'The destination shell must ease in underneath the loading art');
-ok(app.includes("state?.settings.reduceMotion===true"),'Startup transition must respect reduced motion');
+// The stationary native root replaces the splash cross-fade: an overlay must
+// never remain mounted above ready gameplay, including after interrupted startup.
+ok(app.includes('const startupOverlayVisible=startupBlocking;')&&app.includes('{startupBlocking&&<View style={s.startupOverlay}>'),'Startup overlay must unmount synchronously once ready');
+ok(!app.includes('appEntranceOpacity')&&!app.includes('appEntranceY')&&!app.includes('startupOpacity'),'Interactive shell must not depend on a transformed root or animation completion');
 ok(theme.includes('accentSurface:string'),'Theme colors must expose a semantic accent surface');
 ok(theme.includes('special:string')&&theme.includes('specialSurface:string'),'Theme colors must expose a theme-safe special/discovery accent');
 for(const id of ['obsidian','ember','ivory']){

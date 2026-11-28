@@ -71,7 +71,7 @@ function EventContent({state,onChange,onCommand,onOpenSeasonalExpedition,onOpenG
  if(previewDefinition&&preview&&now<preview.expiresAtMs){
   const definition=previewDefinition;
   const previewTab=tab==='Shop'?'Shop':'Overview';
-  return <GameThemeScope colors={eventTheme(C,definition)}><ScrollView ref={scroll} contentContainerStyle={s.page} showsVerticalScrollIndicator={false}>
+  return <GameThemeScope colors={eventTheme(C,definition)}><ScrollView ref={scroll} contentContainerStyle={s.page} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
    <EventHero definition={definition} endsAtMs={preview.expiresAtMs} now={now} compact={previewTab==='Shop'} section={previewTab}/>
    <Panel><Text style={[s.heading,{color:C.text}]}>{localizeGameplay(language,'Private event preview')}</Text><Text style={[s.muted,{color:C.muted}]}>{localizeGameplay(language,'Browse only. Purchases, rewards and activities unlock at the official launch.')}</Text></Panel>
    <BoardTabs label={localizeGameplay(language,'Event sections')} items={(['Overview','Shop'] as const).map(id=>({id,label:localizeGameplay(language,id)}))} value={previewTab} onChange={changeTab}/>

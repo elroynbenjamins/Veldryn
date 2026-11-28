@@ -141,3 +141,8 @@ ok(JSON.stringify(previewParty)===originalPreviewParty,'Preview never mutates au
 ok(dungeonAnticipationFeedback([{role:'tank',ready:false,currentHp:0,maximumHp:100}],1,false,25,100).party[0].pct===0,'Preview cannot revive a genuinely downed member');
 ok(stage.includes('previewState=anticipation?dungeonAnticipationFeedback')&&stage.includes('replay=anticipation?undefined:pending?')&&stage.includes('previewState?.party[index]')&&stage.includes('previewState?.enemies[index]')&&stage.includes('previewState?.enemies[0]'),'Preview state only enters presentation cards, including fallback enemies');
 ok(card.includes('!preview&&enemyPct!==undefined&&boss?')&&card.includes('previewState?\x60~\x24{Math.round'),'Estimated health is marked approximate and does not trigger boss phases');
+
+ok(stage.includes('previewActor=anticipation&&!reduceMotion?')&&stage.includes('ordered[index]?.ready!==false')&&stage.includes('previewPartyActive(index)?<CombatAttackSprite'),'Preview highlights and attack art respect reduced motion and genuine downed state');
+ok(stage.includes('Boolean(previewState?.enemies[index]?.feedback)')&&stage.includes("previewState?.party[index]?.feedback?.kind==='damage'"),'Preview impacts highlight the individual target');
+ok(card.split("key={previewState?'preview-hp':'confirmed-hp'}").length===3,'Both party and enemy HP bars discard cosmetic interpolation on authoritative handoff');
+ok(card.includes('floatCrit:{borderColor:C.warning,backgroundColor:C.warningSurface}')&&card.includes('floatCritText:{color:C.warning}'),'Critical feedback uses a consistent contrasting gold pill');

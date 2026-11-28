@@ -425,6 +425,25 @@ async function main(){
  const forgedLegacy=await request({type:'seasonal',args:{period:'daily',id:'DAILY_2026-11-14_1'}},'online-legacy-no-history-1',version);
  assert.equal(forgedLegacy.status,400,'No old historical claims means no entitlement');
  assert.equal(commits,beforeLegacy+1,'Forged migration cannot commit');
+ // Chat line-count requests must not submit or validate unrelated legacy preferences.
+ const chatFixture=createCharacter(newGame(clock),'IRONWARDEN','Chat Fixture');
+ state={...chatFixture,settings:{...chatFixture.settings,chatDockLines:2,defaultWorldChat:99 as unknown as 1}};
+ const beforeChat=commits;
+ for(const lines of [1,3,2]){
+  const response=await request({type:'chat_dock_lines',args:{lines}},'chat-lines-'+lines,version);
+  const payload=await response.json();
+  assert.equal(response.status,200,'Chat setting must save independently: '+JSON.stringify(payload).slice(0,200));
+  assert.equal(payload.state.settings.chatDockLines,lines);
+  assert.equal(payload.state.settings.autoJoinWorldChat,chatFixture.settings.autoJoinWorldChat);
+  assert.equal(payload.state.character.gold,chatFixture.character!.gold);
+ }
+ assert.equal(commits,beforeChat+3);
+ for(const [index,lines] of [0,4,1.5,'2',null].entries()){
+  const response=await request({type:'chat_dock_lines',args:{lines}},'chat-invalid-'+index,version);
+  assert.equal(response.status,400);
+ }
+ assert.equal((await request({type:'chat_dock_lines',args:{lines:1,gold:100}},'chat-injection-1',version)).status,400);
+ assert.equal(commits,beforeChat+3,'Invalid chat preference requests cannot commit');
  console.log('PASS authenticated gameplay HTTP, input authority, Admin QA authorization, canonical replay, stale version, lost-response recovery and aggregate command telemetry');
 }
 void main().catch(error=>{console.error(error);process.exitCode=1;});

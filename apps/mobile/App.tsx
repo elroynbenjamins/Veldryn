@@ -777,6 +777,10 @@ function VeldrynApp(){
       // so this optimization cannot admit additional server-owned changes.
       const serializedCandidate=JSON.stringify(candidate);
       if(serializedCandidate===JSON.stringify(current))return;
+      const chatDockLines=candidate.settings.chatDockLines;
+      if(chatDockLines!==current.settings.chatDockLines&&chatDockLines!==undefined&&serializedCandidate===JSON.stringify({...current,settings:{...current.settings,chatDockLines}})){
+        await perform({type:'chat_dock_lines',args:{lines:chatDockLines}});return;
+      }
       if(serializedCandidate===JSON.stringify({...current,settings:candidate.settings})){await perform({type:'settings',args:{settings:settingsForOnlineCommand(candidate.settings)}});return;}
       if(candidate.activity===null&&serializedCandidate===JSON.stringify({...current,activity:null})){await perform({type:'stop'});return;}
       const profileKeys=['profileIconId','profileTitle','profileBackgroundId','profileBorderId','profileEffectId','selectedCosmeticPetId'] as const;

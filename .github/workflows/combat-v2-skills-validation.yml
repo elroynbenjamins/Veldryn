@@ -24,6 +24,7 @@ on:
       - 'apps/mobile/src/content/skills-v2-preview.ts'
       - 'apps/mobile/src/content/skills-v2-preview-descriptions.ts'
       - 'apps/mobile/tests/skills-v2-preview-ui.cjs'
+      - 'apps/mobile/tests/eq2-mobile-authority-graph.cjs'
       - 'tools/build-online.mjs'
       - 'tools/combat-v2-live-edge-isolation.mjs'
       - 'tools/tests/combat-v2-edge-isolation.test.mjs'
@@ -49,6 +50,7 @@ on:
       - 'apps/mobile/src/content/skills-v2-preview.ts'
       - 'apps/mobile/src/content/skills-v2-preview-descriptions.ts'
       - 'apps/mobile/tests/skills-v2-preview-ui.cjs'
+      - 'apps/mobile/tests/eq2-mobile-authority-graph.cjs'
       - 'tools/build-online.mjs'
       - 'tools/combat-v2-live-edge-isolation.mjs'
       - 'tools/tests/combat-v2-edge-isolation.test.mjs'
@@ -220,12 +222,35 @@ jobs:
           cache: pnpm
           cache-dependency-path: apps/mobile/pnpm-lock.yaml
       - run: pnpm --dir apps/mobile install --frozen-lockfile
+        id: mobile_dependencies
       - name: Install backend dependencies for cross-root shared combat imports
+        id: backend_dependencies
         run: pnpm --dir backend install --frozen-lockfile
       - name: Typecheck the React Native mobile app including the hidden Skills 2.0 screen
+        id: mobile_typecheck
         run: pnpm --dir apps/mobile typecheck
       - name: Verify preview catalogue, accessible interactions and isolation from production
         run: node apps/mobile/tests/skills-v2-preview-ui.cjs
+      - name: Reject transitive mobile inclusion of server-only Forge authority
+        if: ${{ always() && steps.mobile_dependencies.outcome == 'success' && steps.backend_dependencies.outcome == 'success' }}
+        id: forge_graph
+        run: node apps/mobile/tests/eq2-mobile-authority-graph.cjs
+      - name: Capture compiler inclusion evidence on mobile boundary failure
+        if: ${{ always() && (steps.mobile_typecheck.outcome == 'failure' || steps.forge_graph.outcome == 'failure') }}
+        run: |
+          mkdir -p /tmp/mobile-forge-graph
+          status=0
+          pnpm --dir apps/mobile exec tsc --noEmit --explainFiles --pretty false > /tmp/mobile-forge-graph/explain-files.log 2>&1 || status=$?
+          grep -n -A 12 -B 2 'equipment-crafting-v2-rolls.ts\|equipment-crafting-v2-transaction.ts' /tmp/mobile-forge-graph/explain-files.log | head -n 150 || true
+          echo "Diagnostic compiler exit: $status"
+      - name: Retain compiler inclusion evidence
+        if: ${{ always() && (steps.mobile_typecheck.outcome == 'failure' || steps.forge_graph.outcome == 'failure') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-forge-graph-${{ github.sha }}
+          path: /tmp/mobile-forge-graph/
+          if-no-files-found: error
+          retention-days: 7
 
   build_api_boundary:
     name: Hidden authenticated Combat 2.0 build transport

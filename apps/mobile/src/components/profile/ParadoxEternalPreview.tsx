@@ -15,7 +15,8 @@ const Decorative=({children}:{children:ReactNode})=><View pointerEvents="none" a
 const ParadoxAmbient=memo(function ParadoxAmbient({clock,k,source}:{clock:Animated.Value;k:number;source:ImageSourcePropType}){
  const tracks=useMemo(()=>PARADOX_AMBIENT_PATHS.map((p,i)=>{
   const inputRange=p.map((_,j)=>j/(p.length-1));
-  return {x:clock.interpolate({inputRange,outputRange:p.map(([x])=>x*k)}),y:clock.interpolate({inputRange,outputRange:p.map(([,y])=>y*k)}),opacity:clock.interpolate({inputRange:CURVE.phase,outputRange:CURVE.energy.map(e=>.24+(.46-i*.06)*e)})};
+  const fold=Animated.modulo(Animated.add(Animated.multiply(clock,2),i/3),1);
+  return {x:fold.interpolate({inputRange,outputRange:p.map(([x])=>x*k)}),y:fold.interpolate({inputRange,outputRange:p.map(([,y])=>y*k)}),opacity:clock.interpolate({inputRange:CURVE.phase,outputRange:CURVE.energy.map(e=>.38+(.53-i*.06)*e)})};
  }),[clock,k]);
  return <Decorative>{tracks.map((t,i)=><Animated.Image key={i} source={source} fadeDuration={0} resizeMode="contain" style={[pos(k,-4,-4,8,8),{opacity:t.opacity,transform:[{translateX:t.x},{translateY:t.y}]}]}/>)}</Decorative>;
 });
@@ -46,14 +47,14 @@ const ParadoxPetReaction=memo(function ParadoxPetReaction({reaction,k,assets}:{r
   {effects.shards.map((p,i)=><Animated.Image key={i} source={assets.glint} fadeDuration={0} resizeMode="contain" style={[pos(k,center.x+p.x-r,center.y+p.y-r,2*r,2*r),{opacity:reaction,transform:[{translateX:p.xMotion},{translateY:p.yMotion}]}]}/>)}
  </Decorative>;
 });
-const ParadoxPet=memo(function ParadoxPet({clock,k,assets,mode,running,alternate}:{clock:Animated.Value;k:number;assets:ParadoxSceneAssets;mode:'matching'|'alternate'|'none';running:boolean;alternate?:ImageSourcePropType}){
+const ParadoxPet=memo(function ParadoxPet({clock,reaction,k,assets,mode,running,alternate}:{clock:Animated.Value;reaction:Animated.Value;k:number;assets:ParadoxSceneAssets;mode:'matching'|'alternate'|'none';running:boolean;alternate?:ImageSourcePropType}){
  const motion=useMemo(()=>{
   if(!running||mode!=='matching')return null;
   const idle=clock.interpolate({inputRange:PARADOX_IDLE_PHASE,outputRange:PARADOX_IDLE_LIFT.map(v=>v*k)});
   const surge=clock.interpolate({inputRange:CURVE.phase,outputRange:CURVE.energy.map(e=>-1.5*k*e)});
-  const glow=clock.interpolate({inputRange:CURVE.phase,outputRange:CURVE.energy.map(e=>.24+.54*e)});
-  return {lift:Animated.add(idle,surge),glow};
- },[clock,k,mode,running]);
+  const glow=clock.interpolate({inputRange:CURVE.phase,outputRange:CURVE.energy.map(e=>.24+.67*e)});
+  return {lift:Animated.add(Animated.add(idle,surge),Animated.multiply(reaction,-4*k)),glow};
+ },[clock,reaction,k,mode,running]);
  if(mode==='alternate'&&alternate)return <Image source={alternate} fadeDuration={0} resizeMode="contain" style={box(k,B.alternate)}/>;
  if(mode!=='matching')return null;
  return <Decorative>
@@ -75,7 +76,7 @@ export const ParadoxEternalPreview=memo(function ParadoxEternalPreview({assets,e
    <Decorative>
     <Image source={assets.background} fadeDuration={0} resizeMode="cover" style={s.fill}/>
     {running?<ParadoxAmbient clock={clock} k={k} source={assets.glint}/>:null}
-    <ParadoxPet clock={clock} k={k} assets={assets} mode={mode} running={running} alternate={alternatePetSource}/>
+    <ParadoxPet clock={clock} reaction={reaction} k={k} assets={assets} mode={mode} running={running} alternate={alternatePetSource}/>
     {reactionEnabled?<ParadoxPetReaction reaction={reaction} k={k} assets={assets}/>:null}
    </Decorative>
    {reactionEnabled?<Pressable accessibilityRole="button" accessibilityLabel={petAccessibilityLabel??'Aeon, the Timeless'} onPress={trigger} style={box(k,B.aeon)}/>:mode!=='none'&&petAccessibilityLabel?<View accessible accessibilityLabel={petAccessibilityLabel} pointerEvents="none" style={box(k,mode==='matching'?B.aeon:B.alternate)}/>:null}

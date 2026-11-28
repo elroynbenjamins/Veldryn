@@ -218,7 +218,9 @@ for(const showcase of [false,true]){
     assert(t.opacity[i]>=0&&t.opacity[i]<=1);
    }
   }
-  assert(tracks.find(t=>t.key==='upper-rail').x[0]<tracks.find(t=>t.key==='upper-rail').x[Math.floor(bp.length/2)]);
+  const upper=tracks.find(t=>t.key==='upper-rail');
+  assert(upper.x[0]<upper.x[Math.floor(bp.length/4)]);
+  assert(Math.max(...upper.x.slice(0,4))-upper.x[0]>0,'rail starts moving immediately');
  }
 }
 const borderLayer=read('components/profile/CelestialBorderLight.tsx');
@@ -258,5 +260,10 @@ for(const showcase of [false,true]){
 const drLayer=read('components/profile/DraconicBorderLight.tsx');
 assert(!drLayer.includes('Animated.loop(')&&!drLayer.includes('setInterval('));
 assert(drLayer.includes('pointerEvents="none"')&&drLayer.includes('useMemo('));
-assert(dragonScene.includes('running?<DraconicBorderLight'));
+assert(dragonScene.includes('running?<UltraLuxeRail')&&fx.includes('return <DraconicBorderLight'),'dedicated showcase delegates to the shared Draconic rail');
+assert(AWAKENING_ENERGY.draconic[1]>=.8,'visible awakening by two seconds');
+assert(AWAKENING_PET_LIFT.draconic>=4&&AWAKENING_PET_LIFT.draconic<=5,'bounded dragon lift');
+assert(fx.includes('Animated.modulo(Animated.multiply(clock,celestial?2:3),1)'),'faster closed ambient passes reuse the scene clock');
+assert(AWAKENING_ENERGY.celestial[1]>=.6,'visible celestial awakening by two seconds');
+assert(draconicBorderTracks(340,205,true).find(t=>t.key==='left-ember').size>=13,'visible showcase ember size');
 console.log('Draconic parity: rising embers, staggered molten ornament pulses, safe perimeter and equal native node budget passed.');

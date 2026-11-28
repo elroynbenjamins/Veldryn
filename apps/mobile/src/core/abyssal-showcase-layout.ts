@@ -34,7 +34,7 @@ export function abyssalStageSupported(width:number,fontScale:number){
  * A soft early pulse, gathering tide, deep surge and decay. No rapid flashing. */
 export const ABYSSAL_CYCLE_MS=24000;
 export const ABYSSAL_PHASE=[0,2/24,5/24,8/24,11/24,14/24,16/24,19/24,22/24,1] as const;
-export const ABYSSAL_ENERGY=[0,.14,.35,.22,.48,.82,1,.56,.12,0] as const;
+export const ABYSSAL_ENERGY=[0,.60,.82,.36,.62,.87,1,.62,.22,0] as const;
 export function abyssalAwakeningCurve(){
  const phase:number[]=[0],energy:number[]=[0];
  for(let i=1;i<ABYSSAL_PHASE.length;i++){

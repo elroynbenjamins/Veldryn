@@ -6,7 +6,7 @@ const clock={interpolate:config=>({config})};
 const jsx=(type,props)=>typeof type==='function'?type(props):({type,props});
 let starts=0,stops=0,finish,cleanups=[],mockWidth=340,mockFontScale=1,mockSize={width:340,height:205},motionCalls=[];
 const rn={useWindowDimensions:()=>({fontScale:mockFontScale}),View:'View',Image:'Image',Pressable:'Pressable',Easing:{linear:x=>x},
- Animated:{Image:'Animated.Image',View:'Animated.View',multiply:()=>clock,modulo:()=>clock,
+ Animated:{Image:'Animated.Image',View:'Animated.View',multiply:()=>clock,modulo:()=>clock,add:()=>clock,
  Value:class {constructor(v){this.v=v;} interpolate(config){return {config};} setValue(v){this.v=v;}},
  timing:(value,cfg)=>({start:cb=>{starts++;finish=cb;assert.equal(cfg.useNativeDriver,true);assert.equal(cfg.isInteraction,false);},stop:()=>{stops++;}})},
  StyleSheet:{create:x=>x,absoluteFill:{position:'absolute'}}};

@@ -79,6 +79,8 @@ assert.equal(env.NEXT_ENVIRONMENT_PHASE.length,97);
 for(const theme of ['petal-waltz','thunder-pulse'])for(const full of [false,true]){
  const tracks=env.nextPremiumEnvironmentTracks(theme,full);
  assert.equal(tracks.length,6);
+ const moving=tracks.slice(0,4);
+ assert(moving.some(t=>t.frames.slice(0,9).some(p=>Math.hypot(p.x-t.frames[0].x,p.y-t.frames[0].y)>=8&&p.opacity>=.25)),'visible movement within two seconds');
  for(const {radius,frames} of tracks){
   assert.deepEqual(frames[0],frames.at(-1));
   for(let i=1;i<frames.length;i++)for(let j=0;j<=10;j++){
@@ -123,6 +125,7 @@ for(const theme of ['petal-waltz','thunder-pulse']){
    }
   }
  }
+ assert(sig.nextPremiumSignatureEnvelope(theme,2/24,2,'border')>.3,'early signature crest response');
  const cfg=sig.NEXT_PREMIUM_REACTION[theme];
  assert(cfg.duration>=600&&cfg.duration<=1000);
  assert.deepEqual([cfg.lift[0],cfg.scale[0],cfg.tilt[0]],[0,1,0]);

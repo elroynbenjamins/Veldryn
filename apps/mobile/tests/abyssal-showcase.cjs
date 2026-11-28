@@ -18,7 +18,7 @@ assert.equal(phase.length,37);assert.equal(phase.length,energy.length);assert.eq
 assert.equal(energy[0],0);assert.equal(energy.at(-1),0);assert.equal(Math.max(...energy),1);
 assert(energy.every(x=>Number.isFinite(x)&&x>=0&&x<=1));
 assert(phase.every((x,i)=>!i||x>phase[i-1]));
-assert(energy.some((x,i)=>phase[i]<1/3&&x>=.3));
+assert(energy.some((x,i)=>phase[i]<=2/24&&x>=.6),'early tidal awakening');
 assert.equal(phase[energy.indexOf(1)],16/24);
 assert(P.length<=Q.maxAmbientMotes);
 for(const p of P){

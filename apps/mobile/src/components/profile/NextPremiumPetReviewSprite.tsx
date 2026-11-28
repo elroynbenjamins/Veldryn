@@ -1,6 +1,6 @@
 import {memo,useMemo,useRef,useEffect} from 'react';
 import {Animated,Image,View,StyleSheet,Pressable,Easing,type ImageSourcePropType} from 'react-native';
-import {NEXT_PREMIUM_PET_ATLAS,nextPremiumPetAtlasTimeline,nextPremiumPetAtlasCell} from '../../core/next-premium-pet-review';
+import {NEXT_PREMIUM_PET_ATLAS,nextPremiumPetAtlasTimeline,nextPremiumPetAtlasCell,NEXT_PREMIUM_POSTURE_PHASE,NEXT_PREMIUM_POSTURE_LIFT} from '../../core/next-premium-pet-review';
 
 import {NEXT_PREMIUM_REACTION,type SignatureTheme} from '../../core/next-premium-signature-review';
 
@@ -48,12 +48,13 @@ const ReactingAtlas=memo(function ReactingAtlas({source,clock,width,height,theme
  useEffect(()=>()=>{const current=animation.current;animation.current=null;active.current=false;current?.stop();value.setValue(0);},[theme,value]);
  const style=useMemo(()=>{
   const inputRange=[...cfg.phase],ratio=Math.min(width/74,height/76);
+  const posture=clock.interpolate({inputRange:[...NEXT_PREMIUM_POSTURE_PHASE],outputRange:NEXT_PREMIUM_POSTURE_LIFT[theme==='petal-waltz'?'sakura':'stormforged'].map(y=>y*ratio),extrapolate:'clamp'});
   return {transform:[
-   {translateY:value.interpolate({inputRange,outputRange:cfg.lift.map(y=>y*ratio),extrapolate:'clamp'})},
+   {translateY:Animated.add(posture,value.interpolate({inputRange,outputRange:cfg.lift.map(y=>y*ratio),extrapolate:'clamp'}))},
    {scale:value.interpolate({inputRange,outputRange:[...cfg.scale],extrapolate:'clamp'})},
    {rotate:value.interpolate({inputRange,outputRange:cfg.tilt.map(x=>x+'deg'),extrapolate:'clamp'})},
   ]};
- },[value,cfg,width,height]);
+ },[value,cfg,clock,theme,width,height]);
  const react=()=>{
   if(active.current)return;
   active.current=true;value.setValue(0);
@@ -62,7 +63,7 @@ const ReactingAtlas=memo(function ReactingAtlas({source,clock,width,height,theme
   next.start(()=>{if(animation.current!==next)return;animation.current=null;active.current=false;value.setValue(0);});
  };
  return <Pressable accessibilityRole="button" accessibilityLabel={label} accessibilityHint="Play pet reaction" onPress={react}
-  style={{width,height,overflow:'hidden'}}>
+  style={{width,height,overflow:'visible'}}>
   <Animated.View pointerEvents="none" style={[{width,height},style]}>
    <NextPremiumAtlas source={source} clock={clock} width={width} height={height}/>
   </Animated.View>

@@ -13,7 +13,7 @@ assert.equal(phase.length,37);assert.equal(energy.length,37);assert.equal(phase[
 assert.equal(energy[0],0);assert.equal(energy.at(-1),0);assert.equal(Math.max(...energy),1);
 assert.equal(phase[energy.indexOf(1)],16/24);
 assert(phase.every((t,i)=>!i||t>phase[i-1]));assert(energy.every(t=>Number.isFinite(t)&&t>=0&&t<=1));
-assert(energy.some((v,i)=>phase[i]<=4/24&&v>=.4));
+assert(energy.some((v,i)=>phase[i]<=2/24&&v>=.6),'early rift awakening');
 assert.equal(O[0],O.at(-1));assert.equal(O[P.indexOf(.5)],0);assert(O.every(v=>v>=0&&v<=1));
 for(const track of T){
  assert.equal(track.length,P.length);assert.deepEqual(track[0],track.at(-1));

@@ -35,6 +35,9 @@ export function nextPremiumPetIdleSamples(theme:NextPremiumPetTheme){
  frames[frames.length-1]={...frames[0]};
  return frames;
 }
+/** Distinct bounded posture accent on the existing parent clock; not a substitute for authored local pose changes. */
+export const NEXT_PREMIUM_POSTURE_PHASE=[0,2/24,4/24,7/24,10/24,13/24,16/24,19/24,22/24,1] as const;
+export const NEXT_PREMIUM_POSTURE_LIFT={sakura:[0,-2.5,-1,0,-1,-2,-3,-1,0,0],stormforged:[0,-.8,-1.5,0,-.5,-1,-2,-.8,0,0]} as const;
 /** Padded atlas bounds: visible art must fit each frame without clipping.
  * Decoded alpha bounds must still be verified on actual supplied artwork.
  */

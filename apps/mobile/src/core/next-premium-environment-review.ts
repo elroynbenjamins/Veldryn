@@ -19,7 +19,7 @@ export const NEXT_PREMIUM_ENVIRONMENT_ANCHORS={
  'thunder-pulse':{haze:[275,175],light:[250,28]},
 } as const;
 export function nextPremiumEnvironmentTracks(theme:NextPremiumEnvironmentTheme,fullSet:boolean):EnvironmentTrack[]{
- const sakura=theme==='petal-waltz', strength=fullSet?1:.8;
+ const sakura=theme==='petal-waltz', strength=fullSet?1:.92;
  // The identity is right for Sakura, left for Stormforged.
  const mx=(x:number)=>sakura?x:340-x;
  const make=(kind:EnvironmentTrack['kind'],radius:number,fn:(t:number)=>EnvironmentFrame):EnvironmentTrack=>{
@@ -28,15 +28,15 @@ export function nextPremiumEnvironmentTracks(theme:NextPremiumEnvironmentTheme,f
  const tracks:EnvironmentTrack[]=[];
  for(let i=0;i<4;i++){
   tracks.push(make(sakura?'petal':'mote',3,t=>{
-   const p=cycle(t*(sakura?2:3)+i*.25);
+   const p=cycle(t*(sakura?3:4)+i*.25);
    // Drift above the pet/identity region; invisible reset at the endpoints.
-   const x=mx(31+i*18+5*Math.sin(2*Math.PI*p)),y=39+9*Math.sin(2*Math.PI*p+i);
-   return frame(x,y,(sakura?.68:.52)*strength*Math.sin(Math.PI*p)**2,1+.12*wave(p),sakura?25*Math.sin(2*Math.PI*p):0);
+   const x=mx(31+i*18+9*Math.sin(2*Math.PI*p)),y=39+14*Math.sin(2*Math.PI*p+i);
+   return frame(x,y,(.16+(sakura?.52:.36)*Math.sin(Math.PI*p)**2)*strength,1+.12*wave(p),sakura?25*Math.sin(2*Math.PI*p):0);
   }));
  }
  const {haze,light}=NEXT_PREMIUM_ENVIRONMENT_ANCHORS[theme];
- tracks.push(make('haze',8,t=>frame(haze[0],haze[1],.10*strength*wave(t),1+.15*wave(t),0)));
- tracks.push(make('light',5,t=>frame(light[0],light[1],.23*strength*wave(t+.3),1+.15*wave(t),0)));
+ tracks.push(make('haze',8,t=>frame(haze[0],haze[1],.10*strength*wave(t*3),1+.15*wave(t),0)));
+ tracks.push(make('light',5,t=>frame(light[0],light[1],.23*strength*wave(t*3+.3),1+.15*wave(t),0)));
  return tracks;
 }
 /** No geometry intersects identity, guild or pet interaction boxes, even when inactive. */

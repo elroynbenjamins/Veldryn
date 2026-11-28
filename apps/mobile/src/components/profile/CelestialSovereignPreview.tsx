@@ -59,7 +59,7 @@ export function CelestialSovereignPreview({assets,equippedPetId,matchingPetId,al
  const signatureLift=useMemo(()=>awakeningPetLift(clock,scale,'celestial'),[clock,scale]);
  const idle=useMemo(()=>petIdleMotion(clock,scale,petMode==='alternate'?'alternate':'celestial'),[clock,scale,petMode]);
  const matchingLift=useMemo(()=>clock.interpolate({inputRange:PET_IDLE_PHASE,outputRange:CELESTIAL_ATLAS_LIFT.map(y=>y*scale)}),[clock,scale]);
- const bodyLift=useMemo(()=>Animated.add(assets.smoothPoseAtlas?matchingLift:idle.lift,signatureLift),[assets.smoothPoseAtlas,matchingLift,idle.lift,signatureLift]);
+ const bodyLift=useMemo(()=>Animated.add(Animated.add(assets.smoothPoseAtlas?matchingLift:idle.lift,signatureLift),Animated.multiply(reaction,-3*scale)),[assets.smoothPoseAtlas,matchingLift,idle.lift,signatureLift,reaction,scale]);
  const orbit=useMemo(()=>clock.interpolate({inputRange:[0,.25,.5,.75,1],outputRange:['0deg','180deg','360deg','540deg','720deg']}),[clock]);
  return <View style={styles.outer} onLayout={e=>{const next=e.nativeEvent.layout.width;setWidth(old=>Math.abs(old-next)<.5?old:next);}}>
   {!supported?fallback:<View style={[styles.card,{height:CELESTIAL_STAGE.height*scale}]}>

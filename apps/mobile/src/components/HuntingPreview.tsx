@@ -28,7 +28,7 @@ import {useLoopProgress,useMotionEnabled} from './anim/motion';
 
 const BOLT_SHEET={frameWidth:COMBAT_FX.bolt.frameSize,frameHeight:COMBAT_FX.bolt.frameSize,frames:COMBAT_FX.bolt.frames,durationsMs:[1,1,1,1]};
 
-/** An encounter preview; reward projections are deliberately labeled as baseline estimates. */
+/** An encounter preview with character-specific reward estimates when available. */
 export function HuntingPreview({state,monster,regionId,sceneOnly=false}:{state:GameState;monster:MonsterDef;regionId:string;sceneOnly?:boolean}){
  const C=useGameTheme(),sustain=useMemo(()=>monster.boss?undefined:combatSustainProjection(state,monster.id),[state,monster.id,monster.boss]);
  const pace=sustain?{killsPerHour:sustain.killsPerHour,xpPerHour:sustain.xpPerHour,goldPerHour:sustain.goldPerHour}:combatBaselineProjection(monster);
@@ -175,7 +175,7 @@ export function HuntingPreview({state,monster,regionId,sceneOnly=false}:{state:G
     {equippedCompanion?<Text numberOfLines={1} style={{fontFamily:font,fontSize:10,color:C.muted}}>{tr('COMPANION · PASSIVE BONUS')} · {equippedCompanion.name}</Text>:null}
    </View>:null}
   </View>:null}
-  {!sceneOnly&&!monster.boss?<View accessibilityLabel={progressionT(state.settings.language,'BASELINE REWARDS')} style={{margin:8,marginTop:0,padding:11,gap:8,borderWidth:1,borderColor:C.lineStrong,borderRadius:8,backgroundColor:C.panel}}>
+  {!sceneOnly&&!monster.boss?<View accessibilityLabel={progressionT(state.settings.language,sustain?'ESTIMATED REWARDS':'BASELINE REWARDS')} style={{margin:8,marginTop:0,padding:11,gap:8,borderWidth:1,borderColor:C.lineStrong,borderRadius:8,backgroundColor:C.panel}}>
    <View style={{flexDirection:'row',flexWrap:'wrap',justifyContent:'center',gap:6}}>{[[pace.killsPerHour,'kills/hr'],[pace.xpPerHour,'XP/hr'],[pace.goldPerHour,'Gold/hr']].map(([value,label],index)=><Text key={label} style={{fontFamily:font,color:C.text,fontWeight:'600',fontSize:13}}>{index?'·  ':''}~{number(value as number)} {label}</Text>)}</View>
    <Text style={{fontFamily:font,color:C.muted,fontSize:11,lineHeight:15,textAlign:'center'}}>{sustain?.foodId?`${itemDef(sustain.foodId).name} · ~${sustain.foodPerHour.toFixed(1)} food/hr`:progressionT(state.settings.language,'Equip cooked food for sustained hunts.')}</Text>
   </View>:null}

@@ -30,13 +30,16 @@ import {bosses,profiles,setup} from './ten-slot-boss-fixture';
 import {ACTION_STREAM_RNG_QA_V1,ACTION_STREAM_RNG_QA_V2} from '../../deterministic-rng';
 const args=process.argv.slice(2);
 const seedArgs=args.filter(a=>a.startsWith('--seed-batch='));
-assert.ok(args.every(a=>a==='--action-stream-review'||a==='--full-range-review'||/^--seed-batch=[123]$/.test(a))&&
+assert.ok(args.every(a=>a==='--action-stream-review'||a==='--full-range-review'||a==='--long-window-review'||/^--seed-batch=[123]$/.test(a))&&
  !(args.includes('--action-stream-review')&&args.includes('--full-range-review'))&&
  new Set(args).size===args.length&&seedArgs.length<=1,'unknown or duplicate matrix argument');
 const seedBatch=seedArgs.length?Number(seedArgs[0].slice('--seed-batch='.length)):0;
 const rngReviewPolicy=args.includes('--full-range-review')?ACTION_STREAM_RNG_QA_V2:
  args.includes('--action-stream-review')?ACTION_STREAM_RNG_QA_V1:undefined;
 const rngEvidencePolicy=rngReviewPolicy??'legacy-cursor';
+const reviewWindowMs=args.includes('--long-window-review')?30000:9000;
+const matchedVictoryTempoRatios:number[]=[];
+const tempoOutliers:{caseId:string;ratio:number}[]=[];
 const classes=Object.keys(CLASS_NAMES_V2) as ClassIdV2[];
 const tanks=classes.filter(c=>CLASS_ROLES_V2[c]==='tank');
 const damage=classes.filter(c=>CLASS_ROLES_V2[c]==='damage');
@@ -117,7 +120,7 @@ for(const specIndex of [0,1] as const)
     const caseId='PERSIST_SYNC_'+specIndex+'_'+boss.id+'_'+ids.join('_');
     const seed=seedBatch===0?caseId:caseId+'_SEED_'+seedBatch;
     const input:CombatInput={seed,players,enemies:[fixtures[0].input.enemies[0]],
-      maxDurationMs:9000,tickMs:100};
+      maxDurationMs:reviewWindowMs,tickMs:100};
 
     const roster:ReadyRosterMember[]=ids.map((classId,i)=>({
       accountId:traitPorts[i].accountId,characterId:runtime[i].characterId,
@@ -185,12 +188,20 @@ for(const specIndex of [0,1] as const)
 
     const damageRatio=pct(partyDamage(sync.combat),partyDamage(base.combat));
     const healingRatio=pct(partyHealing(sync.combat),partyHealing(base.combat));
+    // Damage totals saturate at enemy HP when both arms win. Report speed
+    // separately rather than incorrectly treating equal totals as equal power.
+    if(base.combat.victory&&sync.combat.victory){
+      const ratio=base.combat.durationMs/sync.combat.durationMs;
+      assert.ok(Number.isFinite(ratio)&&ratio>0);
+      matchedVictoryTempoRatios.push(ratio);
+      if(ratio<.85||ratio>1.5)tempoOutliers.push({caseId,ratio});
+    }
     // Retain identical bounds. Defer only numerical gates until all 432
     // cases are measured, so the first outlier cannot hide later failures.
     const badDamage=isDamageOutlier(damageRatio),badHealing=isHealingOutlier(healingRatio);
     if(badDamage)balanceViolations.push({caseId,metric:'damage',ratio:damageRatio});
     if(badHealing)balanceViolations.push({caseId,metric:'healing',ratio:healingRatio});
-    if(badDamage||badHealing||caseId==='PERSIST_SYNC_1_BOSS_EXP_BELLBEAST_BASTION_RAVAGER_KNIFE_DANCER_STONECALLER'){
+    if(reviewWindowMs===9000&&(badDamage||badHealing||caseId==='PERSIST_SYNC_1_BOSS_EXP_BELLBEAST_BASTION_RAVAGER_KNIFE_DANCER_STONECALLER')){
       const extended={...input,maxDurationMs:30000};
       const longBase=simulateUnifiedEquipmentPersistedPartyCombatV2(extended,builds,runtime,party,true,false,'tactical',rngReviewPolicy);
       const longSync=simulateUnifiedEquipmentPersistedPartyCombatV2(extended,builds,runtime,party,true,true,'tactical',rngReviewPolicy);
@@ -236,7 +247,7 @@ const summarize=(x:Bucket)=>({
 });
 console.log(JSON.stringify({
  kind:'PERSISTED_PARTY_SYNC_FULL_TUNING_EVIDENCE_NOT_RELEASE_APPROVAL',
- rngEvidencePolicy,seedBatch,matchedPairs:cases,standardDungeonCompositions:36,bosses:6,specializationBands:2,
+ rngEvidencePolicy,seedBatch,reviewWindowMs,matchedPairs:cases,standardDungeonCompositions:36,bosses:6,specializationBands:2,
  maxLinks,overall:summarize(overall),
  byLinks:Object.fromEntries([...byLinks.entries()].sort(([a],[b])=>a-b)
   .map(([links,row])=>[String(links),summarize(row)])),
@@ -257,6 +268,7 @@ assert.deepEqual(roleReport,summarizeRoleCalibrationV2([...roleObservations].rev
 assert.throws(()=>summarizeRoleCalibrationV2([...roleObservations,roleObservations[0]]),/duplicate_or_invalid_observation/);
 console.log('ROLE_POWER_CALIBRATION_NOT_CP '+JSON.stringify(roleReport));
 
+console.log('PERSISTED_SYNC_TEMPO_EVIDENCE '+JSON.stringify({rngEvidencePolicy,seedBatch,reviewWindowMs,bothWin:matchedVictoryTempoRatios.length,mean:matchedVictoryTempoRatios.length?matchedVictoryTempoRatios.reduce((a,b)=>a+b,0)/matchedVictoryTempoRatios.length:null,min:matchedVictoryTempoRatios.length?Math.min(...matchedVictoryTempoRatios):null,max:matchedVictoryTempoRatios.length?Math.max(...matchedVictoryTempoRatios):null,tempoOutliers,releaseApproved:false}));
 console.log('PERSISTED_SYNC_BALANCE_FENCES '+JSON.stringify({rngEvidencePolicy,seedBatch,damage:[.85,1.50],healing:[.80,1.60],violations:balanceViolations,victoryLosses:overall.victoryLosses}));
 assert.equal(overall.victoryLosses,0,'Synchronization must not turn a matched baseline victory into a loss in this fixture');
 assert.equal(balanceViolations.length,0,'persisted Synchronization numerical outliers: '+JSON.stringify(balanceViolations));

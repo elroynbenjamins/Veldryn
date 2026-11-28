@@ -12,6 +12,9 @@ on:
       - 'backend/package.json'
       - 'backend/pnpm-lock.yaml'
       - 'tools/verify-gameplay-edge.mjs'
+      - 'tools/build-online.mjs'
+      - 'tools/combat-v2-live-edge-isolation.mjs'
+      - 'apps/mobile/src/**'
       - '.github/workflows/verify-gameplay-edge.yml'
   pull_request:
     paths:
@@ -23,6 +26,9 @@ on:
       - 'backend/package.json'
       - 'backend/pnpm-lock.yaml'
       - 'tools/verify-gameplay-edge.mjs'
+      - 'tools/build-online.mjs'
+      - 'tools/combat-v2-live-edge-isolation.mjs'
+      - 'apps/mobile/src/**'
       - '.github/workflows/verify-gameplay-edge.yml'
   workflow_dispatch:
 
@@ -45,7 +51,25 @@ jobs:
       - run: pnpm install --frozen-lockfile
         working-directory: backend
       - name: Verify committed Edge bundle exactly matches shared engine
+        id: edge_parity
         run: node tools/verify-gameplay-edge.mjs
+      - name: Produce review-only regeneration on stale artifact
+        if: ${{ failure() && steps.edge_parity.outcome == 'failure' && github.event_name == 'pull_request' }}
+        run: |
+          pnpm --dir backend build:online
+          node tools/verify-gameplay-edge.mjs
+          mkdir -p /tmp/v2-edge-review
+          cp backend/supabase/functions/gameplay/index.ts /tmp/v2-edge-review/gameplay.ts
+          cp backend/supabase/functions/coop/index.ts /tmp/v2-edge-review/coop.ts
+          (cd /tmp/v2-edge-review && sha256sum gameplay.ts coop.ts > SHA256SUMS)
+      - name: Retain isolated regenerated bundles for review (no deploy)
+        if: ${{ failure() && steps.edge_parity.outcome == 'failure' && github.event_name == 'pull_request' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: isolated-edge-review-${{ github.sha }}
+          path: /tmp/v2-edge-review/
+          if-no-files-found: error
+          retention-days: 7
       - name: Install mobile dependencies used by shared equipment and theme imports
         run: pnpm --dir apps/mobile install --frozen-lockfile
       - name: Verify server-owned dungeon loadouts change when equipment path changes

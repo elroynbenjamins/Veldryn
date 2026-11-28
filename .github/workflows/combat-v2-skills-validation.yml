@@ -199,6 +199,15 @@ jobs:
           mkdir -p /tmp/v2-sync-evidence
           set -o pipefail
           node backend/dist/server/combat/v2/__tests__/party-sync-ten-slot-matrix.js 2>&1 | tee /tmp/v2-sync-evidence/flexible-matrix.log
+      - name: Compare full boss completion tempo over 30 seconds (additional review)
+        if: ${{ always() && !cancelled() && (steps.full_range_matrix.outcome == 'success' || steps.full_range_matrix.outcome == 'failure') }}
+        run: |
+          mkdir -p /tmp/v2-sync-evidence
+          set -o pipefail
+          status=0
+          node backend/dist/server/combat/v2/__tests__/persisted-party-sync-full-matrix.js --long-window-review 2>&1 | tee /tmp/v2-sync-evidence/legacy-long-window.log || status=1
+          node backend/dist/server/combat/v2/__tests__/persisted-party-sync-full-matrix.js --long-window-review --full-range-review 2>&1 | tee /tmp/v2-sync-evidence/full-range-long-window.log || status=1
+          exit "$status"
       - name: Retain complete private Synchronization evidence even when balance fails
         if: always()
         uses: actions/upload-artifact@v4
